@@ -1456,6 +1456,344 @@ export type Database = {
         }
         Relationships: []
       }
+      chart_alerts: {
+        Row: {
+          alert_type: string
+          condition: string
+          created_at: string
+          id: string
+          indicator: string | null
+          is_active: boolean
+          message: string | null
+          notify_channels: Json
+          params: Json
+          symbol: string
+          target_price: number | null
+          triggered_at: string | null
+          triggered_count: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          alert_type?: string
+          condition?: string
+          created_at?: string
+          id?: string
+          indicator?: string | null
+          is_active?: boolean
+          message?: string | null
+          notify_channels?: Json
+          params?: Json
+          symbol: string
+          target_price?: number | null
+          triggered_at?: string | null
+          triggered_count?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          alert_type?: string
+          condition?: string
+          created_at?: string
+          id?: string
+          indicator?: string | null
+          is_active?: boolean
+          message?: string | null
+          notify_channels?: Json
+          params?: Json
+          symbol?: string
+          target_price?: number | null
+          triggered_at?: string | null
+          triggered_count?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      chart_drawings: {
+        Row: {
+          created_at: string
+          id: string
+          layout_id: string | null
+          locked: boolean
+          points: Json
+          style: Json
+          symbol: string
+          text: string | null
+          timeframe: string | null
+          tool: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          layout_id?: string | null
+          locked?: boolean
+          points?: Json
+          style?: Json
+          symbol: string
+          text?: string | null
+          timeframe?: string | null
+          tool: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          layout_id?: string | null
+          locked?: boolean
+          points?: Json
+          style?: Json
+          symbol?: string
+          text?: string | null
+          timeframe?: string | null
+          tool?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chart_drawings_layout_id_fkey"
+            columns: ["layout_id"]
+            isOneToOne: false
+            referencedRelation: "chart_layouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chart_history: {
+        Row: {
+          id: string
+          symbol: string
+          timeframe: string | null
+          user_id: string
+          viewed_at: string
+        }
+        Insert: {
+          id?: string
+          symbol: string
+          timeframe?: string | null
+          user_id: string
+          viewed_at?: string
+        }
+        Update: {
+          id?: string
+          symbol?: string
+          timeframe?: string | null
+          user_id?: string
+          viewed_at?: string
+        }
+        Relationships: []
+      }
+      chart_indicator_sets: {
+        Row: {
+          created_at: string
+          id: string
+          indicators: Json
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          indicators?: Json
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          indicators?: Json
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      chart_layouts: {
+        Row: {
+          auto_save: boolean
+          created_at: string
+          drawings: Json
+          grid: string
+          id: string
+          indicators: Json
+          is_default: boolean
+          name: string
+          settings: Json
+          symbols: Json
+          timeframes: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_save?: boolean
+          created_at?: string
+          drawings?: Json
+          grid?: string
+          id?: string
+          indicators?: Json
+          is_default?: boolean
+          name: string
+          settings?: Json
+          symbols?: Json
+          timeframes?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_save?: boolean
+          created_at?: string
+          drawings?: Json
+          grid?: string
+          id?: string
+          indicators?: Json
+          is_default?: boolean
+          name?: string
+          settings?: Json
+          symbols?: Json
+          timeframes?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      chart_notes: {
+        Row: {
+          bar_time: number | null
+          color: string | null
+          content: string
+          created_at: string
+          id: string
+          price: number | null
+          symbol: string
+          timeframe: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bar_time?: number | null
+          color?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          price?: number | null
+          symbol: string
+          timeframe?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bar_time?: number | null
+          color?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          price?: number | null
+          symbol?: string
+          timeframe?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      chart_preferences: {
+        Row: {
+          auto_scale: boolean
+          created_at: string
+          crosshair: string
+          default_chart_type: string
+          default_symbol: string
+          default_timeframe: string
+          log_scale: boolean
+          price_format: string
+          session_shading: boolean
+          settings: Json
+          show_grid: boolean
+          theme: string
+          timezone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_scale?: boolean
+          created_at?: string
+          crosshair?: string
+          default_chart_type?: string
+          default_symbol?: string
+          default_timeframe?: string
+          log_scale?: boolean
+          price_format?: string
+          session_shading?: boolean
+          settings?: Json
+          show_grid?: boolean
+          theme?: string
+          timezone?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_scale?: boolean
+          created_at?: string
+          crosshair?: string
+          default_chart_type?: string
+          default_symbol?: string
+          default_timeframe?: string
+          log_scale?: boolean
+          price_format?: string
+          session_shading?: boolean
+          settings?: Json
+          show_grid?: boolean
+          theme?: string
+          timezone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      chart_templates: {
+        Row: {
+          chart_type: string
+          colors: Json
+          created_at: string
+          drawings: Json
+          id: string
+          indicators: Json
+          name: string
+          settings: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          chart_type?: string
+          colors?: Json
+          created_at?: string
+          drawings?: Json
+          id?: string
+          indicators?: Json
+          name: string
+          settings?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          chart_type?: string
+          colors?: Json
+          created_at?: string
+          drawings?: Json
+          id?: string
+          indicators?: Json
+          name?: string
+          settings?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       coin_transactions: {
         Row: {
           balance_after: number
@@ -1581,6 +1919,27 @@ export type Database = {
           id?: string
           layout?: Json
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      favorite_symbols: {
+        Row: {
+          created_at: string
+          id: string
+          symbol: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          symbol: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          symbol?: string
           user_id?: string
         }
         Relationships: []
@@ -4006,6 +4365,33 @@ export type Database = {
             referencedColumns: ["key"]
           },
         ]
+      }
+      saved_symbols: {
+        Row: {
+          created_at: string
+          folder: string | null
+          id: string
+          sort_order: number
+          symbol: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          folder?: string | null
+          id?: string
+          sort_order?: number
+          symbol: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          folder?: string | null
+          id?: string
+          sort_order?: number
+          symbol?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       social_follows: {
         Row: {
