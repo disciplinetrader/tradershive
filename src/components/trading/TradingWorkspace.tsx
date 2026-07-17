@@ -197,10 +197,10 @@ function TradingWorkspaceInner() {
               settings={chartSettings}
               indicators={indicators}
               onQuote={setQuote}
-              onReady={(api) => {
-                setAdapter(api.adapter);
+              onReady={useCallback((api: ChartHandle) => {
+                setAdapter((prev) => (prev === api.adapter ? prev : api.adapter));
                 setTick((t) => t + 1);
-              }}
+              }, [])}
               className="absolute inset-0"
             >
               <OrderLinesOverlay
