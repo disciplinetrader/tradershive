@@ -46,9 +46,10 @@ function SettingsPage() {
             <Select value={form.preferred_provider ?? "mock"} onValueChange={(v) => setForm({ ...form, preferred_provider: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="mock">Development Mock</SelectItem>
                 <SelectItem value="binance">Binance (crypto)</SelectItem>
-                <SelectItem value="oanda">OANDA (forex)</SelectItem>
+                <SelectItem value="twelvedata">Twelve Data (forex, metals, indices)</SelectItem>
+                <SelectItem value="mock">Development Mock</SelectItem>
+
               </SelectContent>
             </Select>
           </Field>
