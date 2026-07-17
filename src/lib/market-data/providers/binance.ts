@@ -117,7 +117,7 @@ export class BinanceProvider implements MarketDataProvider {
         symbol: s.symbol, displayName: `${s.baseAsset} / ${s.quoteAsset}`, market: "crypto" as const,
         baseAsset: s.baseAsset, quoteAsset: s.quoteAsset, tickSize: 0.00001, pricePrecision: s.quotePrecision ?? 2,
       }));
-    } catch { return []; }
+    } catch (e) { console.warn("[binance] getSymbols failed:", e); return []; }
   }
   async searchSymbols({ q, market, limit = 20 }: SearchQuery): Promise<SymbolMeta[]> {
     const all = await this.getSymbols(market);
