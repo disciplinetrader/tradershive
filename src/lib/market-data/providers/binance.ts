@@ -175,7 +175,6 @@ export class BinanceProvider implements MarketDataProvider {
     if (!set || !h) return;
     set.delete(h);
     if (set.size === 0) { this.subs.delete(handle.symbol); this.scheduleResub(); }
-    if (this._status === "connected" && this.ws) { try { this.ws.close(); } catch { /* noop */ } }
   }
 
   async getMarketStatus(market: MarketKind): Promise<MarketStatusInfo> {
