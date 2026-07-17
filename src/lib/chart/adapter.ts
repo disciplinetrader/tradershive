@@ -1,0 +1,58 @@
+/**
+ * ChartAdapter — renderer-agnostic contract.
+ *
+ * The chart workspace, order-line overlay, drawing tools, and screenshot
+ * pipeline all talk to this interface. The concrete rendering library is
+ * pluggable: today `lightweight-charts` powers it; tomorrow the official
+ * TradingView Advanced Charts library can drop into `adapters/tradingview.ts`
+ * without touching any consumer.
+ *
+ * All market data reaches the adapter via `setCandles` / `updateLastCandle`
+ * from callers that themselves consume the MarketDataEngine — the adapter
+ * never fetches its own data and never speaks to a provider directly.
+ */
+
+import type { Candle } from "@/lib/market-data/types";
+import type { ChartSettings, ChartType, IndicatorConfig } from "./types";
+
+export interface ChartMountOptions {
+  container: HTMLElement;
+  settings: ChartSettings;
+  onCrosshair?: (info: { price: number | null; time: number | null }) => void;
+  onVisibleRangeChanged?: (range: { from: number; to: number }) => void;
+}
+
+export interface ChartAdapter {
+  /** Renderer identifier (e.g. "lightweight-charts", "tradingview"). */
+  readonly kind: string;
+
+  /** Push a full candle history — replaces whatever the chart holds. */
+  setCandles(candles: Candle[]): void;
+  /** Update the trailing candle in-place (live tick). */
+  updateLastCandle(candle: Candle): void;
+
+  /** React to setting changes without a full remount. */
+  applySettings(settings: ChartSettings): void;
+  setChartType(type: ChartType): void;
+
+  /** Indicator overlays drawn on the price pane. */
+  syncOverlayIndicators(indicators: IndicatorConfig[], candles: Candle[]): void;
+  /** Volume histogram in the bottom scale margin. */
+  setVolumeVisible(visible: boolean, candles: Candle[]): void;
+
+  /** Coordinate transforms — used by DOM overlays (order lines, drawings). */
+  priceToY(price: number): number | null;
+  yToPrice(y: number): number | null;
+  timeToX(timeMs: number): number | null;
+  xToTime(x: number): number | null;
+
+  /** Screenshot the current viewport as PNG. */
+  screenshot(): Promise<Blob | null>;
+  fitContent(): void;
+  resetPriceScale(): void;
+
+  /** Tear down and release GPU/canvas resources. */
+  destroy(): void;
+}
+
+export type ChartAdapterFactory = (opts: ChartMountOptions) => ChartAdapter;
