@@ -80,6 +80,7 @@ function tick() {
 }
 
 function ensureRunning() {
+  ensureEngineSubscriptions();
   if (interval) return;
   tick();
   interval = setInterval(tick, 1500);
