@@ -125,16 +125,28 @@ export function PositionsTable() {
                       {up ? "+" : ""}{formatCurrency(floating, account?.currency)}
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">{duration}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="sticky right-0 z-10 bg-background/95 text-right shadow-[-8px_0_12px_-8px_rgba(0,0,0,0.4)]">
                       <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setModifying(t)} aria-label="Modify">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setModifying(t)} aria-label="Modify SL/TP" title="Modify SL/TP">
                           <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setClosing(t)} aria-label="Close with custom price" title="Close at custom price…">
+                          <Sliders className="h-3.5 w-3.5" />
                         </Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7" disabled title="Partial close (coming soon)">
                           <Split className="h-3.5 w-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-rose-400 hover:text-rose-300" onClick={() => setClosing(t)} aria-label="Close">
-                          <X className="h-4 w-4" />
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="h-7 gap-1 bg-rose-500/90 px-2 text-[11px] font-semibold text-white hover:bg-rose-500"
+                          onClick={() => instantClose(t)}
+                          disabled={closingIds.has(t.id)}
+                          aria-label="Close at market"
+                          title="Close at market (instant)"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                          {closingIds.has(t.id) ? "…" : "Close"}
                         </Button>
                       </div>
                     </TableCell>
