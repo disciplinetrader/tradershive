@@ -160,25 +160,11 @@ export const setStatus = createServerFn({ method: "POST" })
 /* ================= Templates ================= */
 
 export const listTemplates = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    // requires no auth
-    const { data, error } = await (context as any)?.supabase
-      ? await (context as any).supabase.from("strategy_templates").select("*").order("name")
-      : { data: null, error: null };
-    if (data) return data;
-    const { createClient } = await import("@supabase/supabase-js");
-    const key = process.env.SUPABASE_PUBLISHABLE_KEY!;
-    const supa = createClient(process.env.SUPABASE_URL!, key, {
-      auth: { persistSession: false, autoRefreshToken: false },
-      global: { fetch: (input, init) => {
-        const h = new Headers(init?.headers);
-        if (key.startsWith("sb_") && h.get("Authorization") === `Bearer ${key}`) h.delete("Authorization");
-        h.set("apikey", key);
-        return fetch(input, { ...init, headers: h });
-      } },
-    });
-    const { data: t } = await supa.from("strategy_templates").select("*").order("name");
-    return t ?? [];
+    const { data, error } = await context.supabase.from("strategy_templates").select("*").order("name");
+    if (error) throw error;
+    return data ?? [];
   });
 
 export const createFromTemplate = createServerFn({ method: "POST" })
