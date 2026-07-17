@@ -81,29 +81,32 @@ class MarketDataEngine {
 
   listProviders(): MarketDataProvider[] { return listProviders(); }
 
-  pickProvider(market?: MarketKind): MarketDataProvider {
-    if (!market) {
-      // Return any configured provider as a best-effort fallback.
-      const any = listProviders().find((p) => p.status() === "connected" || p.status() === "disconnected");
+  pickProvider(market?: MarketKind, symbol?: string): MarketDataProvider {
+    const effective = market ?? inferMarketFromSymbol(symbol);
+    if (!effective) {
+      // Best-effort: any non-disabled provider (connecting/connected/disconnected all OK).
+      const any = listProviders().find((p) => p.status() !== "disabled");
       if (any) return any;
       throw new MarketProviderUnavailableError({ reason: "not_assigned" });
     }
-    const a = this.assignments.get(market);
-    if (!a) throw new MarketProviderUnavailableError({ market, reason: "not_assigned" });
+    const a = this.assignments.get(effective);
+    if (!a) throw new MarketProviderUnavailableError({ market: effective, reason: "not_assigned" });
 
+    // A provider that is "connecting" or "error" is still routable — it will
+    // deliver data as soon as its socket comes up. Only "disabled" is fatal.
     const readable = (p?: MarketDataProvider): p is MarketDataProvider =>
-      !!p && p.status() !== "disabled" && p.capabilities.markets.includes(market);
+      !!p && p.status() !== "disabled" && p.capabilities.markets.includes(effective);
 
     const primary = getProvider(a.primary);
     if (readable(primary)) return primary;
 
     const fallback = a.fallback ? getProvider(a.fallback) : undefined;
     if (readable(fallback)) {
-      console.warn(`[market-data] ${market}: primary "${a.primary}" unavailable, using fallback "${a.fallback}".`);
+      console.warn(`[market-data] ${effective}: primary "${a.primary}" unavailable, using fallback "${a.fallback}".`);
       return fallback;
     }
     throw new MarketProviderUnavailableError({
-      market, reason: primary ? "not_configured" : "not_assigned",
+      market: effective, reason: primary ? "not_configured" : "not_assigned",
       providerCode: a.primary,
     });
   }
