@@ -1,12 +1,8 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/use-auth";
+import { AdminShell } from "@/components/admin/AdminShell";
 import { PageHeader } from "@/components/ui/page-header";
-import { GlassCard } from "@/components/ui/glass-card";
-import { StatCard } from "@/components/ui/stat-card";
-import { EmptyState } from "@/components/ui/empty-state";
-import { Shield, Users } from "lucide-react";
+import { Shield } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -18,78 +14,29 @@ export const Route = createFileRoute("/_authenticated/admin")({
   beforeLoad: async () => {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw redirect({ to: "/auth" });
-    const { data: isAdmin } = await supabase.rpc("has_role", {
+    const { data: isAdmin } = await supabase.rpc("is_platform_admin", {
       _user_id: user.user.id,
-      _role: "admin",
     });
     if (!isAdmin) throw redirect({ to: "/dashboard" });
   },
-  component: AdminPage,
+  component: AdminLayout,
 });
 
-function AdminPage() {
-  const { isAdmin } = useAuth();
-
-  const { data: stats } = useQuery({
-    queryKey: ["admin-stats"],
-    enabled: isAdmin,
-    queryFn: async () => {
-      const { count } = await supabase
-        .from("profiles")
-        .select("id", { count: "exact", head: true });
-      return { users: count ?? 0 };
-    },
-  });
-
-  const { data: recent } = useQuery({
-    queryKey: ["admin-recent"],
-    enabled: isAdmin,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, username, display_name, email, level, xp, created_at")
-        .order("created_at", { ascending: false })
-        .limit(10);
-      return data ?? [];
-    },
-  });
-
+function AdminLayout() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageHeader
-        title="Admin"
-        description="System overview and platform moderation."
+        title="Admin Console"
+        description="Enterprise platform management for TradersHIVE Arena."
+        actions={
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-primary">
+            <Shield className="h-3 w-3" /> Restricted
+          </span>
+        }
       />
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Total traders" value={stats?.users ?? "—"} icon={Users} />
-        <StatCard label="Active today" value="—" hint="Last 24h" />
-        <StatCard label="Open challenges" value="—" />
-        <StatCard label="Reports" value="0" icon={Shield} />
-      </div>
-
-      <GlassCard className="p-6">
-        <h2 className="text-lg font-semibold">Recent signups</h2>
-        {!recent || recent.length === 0 ? (
-          <EmptyState className="mt-4" title="No signups yet" />
-        ) : (
-          <ul className="mt-3 divide-y divide-border/60">
-            {recent.map((u) => (
-              <li key={u.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 py-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold">
-                    {u.display_name ?? u.username}
-                  </p>
-                  <p className="truncate text-xs text-muted-foreground">{u.email}</p>
-                </div>
-                <span className="text-xs text-muted-foreground">
-                  Lvl {u.level} · {u.xp} XP
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </GlassCard>
+      <AdminShell>
+        <Outlet />
+      </AdminShell>
     </div>
   );
 }

@@ -32,6 +32,7 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedAchievementsRouteImport } from './routes/_authenticated/achievements'
 import { Route as AuthenticatedStatisticsIndexRouteImport } from './routes/_authenticated/statistics.index'
 import { Route as AuthenticatedLeaderboardIndexRouteImport } from './routes/_authenticated/leaderboard.index'
+import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as JournalShareTokenRouteImport } from './routes/journal.share.$token'
 import { Route as AuthenticatedStatisticsSetupsRouteImport } from './routes/_authenticated/statistics.setups'
 import { Route as AuthenticatedStatisticsSessionsRouteImport } from './routes/_authenticated/statistics.sessions'
@@ -46,6 +47,21 @@ import { Route as AuthenticatedLeaderboardFriendsRouteImport } from './routes/_a
 import { Route as AuthenticatedLeaderboardCountryRouteImport } from './routes/_authenticated/leaderboard.country'
 import { Route as AuthenticatedChallengesRewardsRouteImport } from './routes/_authenticated/challenges/rewards'
 import { Route as AuthenticatedChallengesHistoryRouteImport } from './routes/_authenticated/challenges/history'
+import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin.users'
+import { Route as AuthenticatedAdminTradesRouteImport } from './routes/_authenticated/admin.trades'
+import { Route as AuthenticatedAdminStorageRouteImport } from './routes/_authenticated/admin.storage'
+import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin.settings'
+import { Route as AuthenticatedAdminRolesRouteImport } from './routes/_authenticated/admin.roles'
+import { Route as AuthenticatedAdminReportsRouteImport } from './routes/_authenticated/admin.reports'
+import { Route as AuthenticatedAdminLogsRouteImport } from './routes/_authenticated/admin.logs'
+import { Route as AuthenticatedAdminLeaderboardsRouteImport } from './routes/_authenticated/admin.leaderboards'
+import { Route as AuthenticatedAdminJournalRouteImport } from './routes/_authenticated/admin.journal'
+import { Route as AuthenticatedAdminFeatureFlagsRouteImport } from './routes/_authenticated/admin.feature-flags'
+import { Route as AuthenticatedAdminDashboardRouteImport } from './routes/_authenticated/admin.dashboard'
+import { Route as AuthenticatedAdminContentRouteImport } from './routes/_authenticated/admin.content'
+import { Route as AuthenticatedAdminChallengesRouteImport } from './routes/_authenticated/admin.challenges'
+import { Route as AuthenticatedAdminAnnouncementsRouteImport } from './routes/_authenticated/admin.announcements'
+import { Route as AuthenticatedAdminAchievementsRouteImport } from './routes/_authenticated/admin.achievements'
 
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
   id: '/verify-email',
@@ -166,6 +182,11 @@ const AuthenticatedLeaderboardIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedLeaderboardRoute,
   } as any)
+const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
 const JournalShareTokenRoute = JournalShareTokenRouteImport.update({
   id: '/journal/share/$token',
   path: '/journal/share/$token',
@@ -249,6 +270,93 @@ const AuthenticatedChallengesHistoryRoute =
     path: '/history',
     getParentRoute: () => AuthenticatedChallengesRoute,
   } as any)
+const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
+const AuthenticatedAdminTradesRoute =
+  AuthenticatedAdminTradesRouteImport.update({
+    id: '/trades',
+    path: '/trades',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminStorageRoute =
+  AuthenticatedAdminStorageRouteImport.update({
+    id: '/storage',
+    path: '/storage',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminSettingsRoute =
+  AuthenticatedAdminSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminRolesRoute = AuthenticatedAdminRolesRouteImport.update({
+  id: '/roles',
+  path: '/roles',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
+const AuthenticatedAdminReportsRoute =
+  AuthenticatedAdminReportsRouteImport.update({
+    id: '/reports',
+    path: '/reports',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminLogsRoute = AuthenticatedAdminLogsRouteImport.update({
+  id: '/logs',
+  path: '/logs',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
+const AuthenticatedAdminLeaderboardsRoute =
+  AuthenticatedAdminLeaderboardsRouteImport.update({
+    id: '/leaderboards',
+    path: '/leaderboards',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminJournalRoute =
+  AuthenticatedAdminJournalRouteImport.update({
+    id: '/journal',
+    path: '/journal',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminFeatureFlagsRoute =
+  AuthenticatedAdminFeatureFlagsRouteImport.update({
+    id: '/feature-flags',
+    path: '/feature-flags',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminDashboardRoute =
+  AuthenticatedAdminDashboardRouteImport.update({
+    id: '/dashboard',
+    path: '/dashboard',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminContentRoute =
+  AuthenticatedAdminContentRouteImport.update({
+    id: '/content',
+    path: '/content',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminChallengesRoute =
+  AuthenticatedAdminChallengesRouteImport.update({
+    id: '/challenges',
+    path: '/challenges',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminAnnouncementsRoute =
+  AuthenticatedAdminAnnouncementsRouteImport.update({
+    id: '/announcements',
+    path: '/announcements',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminAchievementsRoute =
+  AuthenticatedAdminAchievementsRouteImport.update({
+    id: '/achievements',
+    path: '/achievements',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -260,7 +368,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/verify-email': typeof VerifyEmailRoute
   '/achievements': typeof AuthenticatedAchievementsRoute
-  '/admin': typeof AuthenticatedAdminRoute
+  '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/challenges': typeof AuthenticatedChallengesRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/journal': typeof AuthenticatedJournalRoute
@@ -271,6 +379,21 @@ export interface FileRoutesByFullPath {
   '/statistics': typeof AuthenticatedStatisticsRouteWithChildren
   '/support': typeof AuthenticatedSupportRoute
   '/users': typeof AuthenticatedUsersRoute
+  '/admin/achievements': typeof AuthenticatedAdminAchievementsRoute
+  '/admin/announcements': typeof AuthenticatedAdminAnnouncementsRoute
+  '/admin/challenges': typeof AuthenticatedAdminChallengesRoute
+  '/admin/content': typeof AuthenticatedAdminContentRoute
+  '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
+  '/admin/feature-flags': typeof AuthenticatedAdminFeatureFlagsRoute
+  '/admin/journal': typeof AuthenticatedAdminJournalRoute
+  '/admin/leaderboards': typeof AuthenticatedAdminLeaderboardsRoute
+  '/admin/logs': typeof AuthenticatedAdminLogsRoute
+  '/admin/reports': typeof AuthenticatedAdminReportsRoute
+  '/admin/roles': typeof AuthenticatedAdminRolesRoute
+  '/admin/settings': typeof AuthenticatedAdminSettingsRoute
+  '/admin/storage': typeof AuthenticatedAdminStorageRoute
+  '/admin/trades': typeof AuthenticatedAdminTradesRoute
+  '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/challenges/history': typeof AuthenticatedChallengesHistoryRoute
   '/challenges/rewards': typeof AuthenticatedChallengesRewardsRoute
   '/leaderboard/country': typeof AuthenticatedLeaderboardCountryRoute
@@ -285,6 +408,7 @@ export interface FileRoutesByFullPath {
   '/statistics/sessions': typeof AuthenticatedStatisticsSessionsRoute
   '/statistics/setups': typeof AuthenticatedStatisticsSetupsRoute
   '/journal/share/$token': typeof JournalShareTokenRoute
+  '/admin/': typeof AuthenticatedAdminIndexRoute
   '/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
   '/statistics/': typeof AuthenticatedStatisticsIndexRoute
 }
@@ -298,7 +422,6 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/verify-email': typeof VerifyEmailRoute
   '/achievements': typeof AuthenticatedAchievementsRoute
-  '/admin': typeof AuthenticatedAdminRoute
   '/challenges': typeof AuthenticatedChallengesRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/journal': typeof AuthenticatedJournalRoute
@@ -307,6 +430,21 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/support': typeof AuthenticatedSupportRoute
   '/users': typeof AuthenticatedUsersRoute
+  '/admin/achievements': typeof AuthenticatedAdminAchievementsRoute
+  '/admin/announcements': typeof AuthenticatedAdminAnnouncementsRoute
+  '/admin/challenges': typeof AuthenticatedAdminChallengesRoute
+  '/admin/content': typeof AuthenticatedAdminContentRoute
+  '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
+  '/admin/feature-flags': typeof AuthenticatedAdminFeatureFlagsRoute
+  '/admin/journal': typeof AuthenticatedAdminJournalRoute
+  '/admin/leaderboards': typeof AuthenticatedAdminLeaderboardsRoute
+  '/admin/logs': typeof AuthenticatedAdminLogsRoute
+  '/admin/reports': typeof AuthenticatedAdminReportsRoute
+  '/admin/roles': typeof AuthenticatedAdminRolesRoute
+  '/admin/settings': typeof AuthenticatedAdminSettingsRoute
+  '/admin/storage': typeof AuthenticatedAdminStorageRoute
+  '/admin/trades': typeof AuthenticatedAdminTradesRoute
+  '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/challenges/history': typeof AuthenticatedChallengesHistoryRoute
   '/challenges/rewards': typeof AuthenticatedChallengesRewardsRoute
   '/leaderboard/country': typeof AuthenticatedLeaderboardCountryRoute
@@ -321,6 +459,7 @@ export interface FileRoutesByTo {
   '/statistics/sessions': typeof AuthenticatedStatisticsSessionsRoute
   '/statistics/setups': typeof AuthenticatedStatisticsSetupsRoute
   '/journal/share/$token': typeof JournalShareTokenRoute
+  '/admin': typeof AuthenticatedAdminIndexRoute
   '/leaderboard': typeof AuthenticatedLeaderboardIndexRoute
   '/statistics': typeof AuthenticatedStatisticsIndexRoute
 }
@@ -336,7 +475,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/verify-email': typeof VerifyEmailRoute
   '/_authenticated/achievements': typeof AuthenticatedAchievementsRoute
-  '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/challenges': typeof AuthenticatedChallengesRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/journal': typeof AuthenticatedJournalRoute
@@ -347,6 +486,21 @@ export interface FileRoutesById {
   '/_authenticated/statistics': typeof AuthenticatedStatisticsRouteWithChildren
   '/_authenticated/support': typeof AuthenticatedSupportRoute
   '/_authenticated/users': typeof AuthenticatedUsersRoute
+  '/_authenticated/admin/achievements': typeof AuthenticatedAdminAchievementsRoute
+  '/_authenticated/admin/announcements': typeof AuthenticatedAdminAnnouncementsRoute
+  '/_authenticated/admin/challenges': typeof AuthenticatedAdminChallengesRoute
+  '/_authenticated/admin/content': typeof AuthenticatedAdminContentRoute
+  '/_authenticated/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
+  '/_authenticated/admin/feature-flags': typeof AuthenticatedAdminFeatureFlagsRoute
+  '/_authenticated/admin/journal': typeof AuthenticatedAdminJournalRoute
+  '/_authenticated/admin/leaderboards': typeof AuthenticatedAdminLeaderboardsRoute
+  '/_authenticated/admin/logs': typeof AuthenticatedAdminLogsRoute
+  '/_authenticated/admin/reports': typeof AuthenticatedAdminReportsRoute
+  '/_authenticated/admin/roles': typeof AuthenticatedAdminRolesRoute
+  '/_authenticated/admin/settings': typeof AuthenticatedAdminSettingsRoute
+  '/_authenticated/admin/storage': typeof AuthenticatedAdminStorageRoute
+  '/_authenticated/admin/trades': typeof AuthenticatedAdminTradesRoute
+  '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/challenges/history': typeof AuthenticatedChallengesHistoryRoute
   '/_authenticated/challenges/rewards': typeof AuthenticatedChallengesRewardsRoute
   '/_authenticated/leaderboard/country': typeof AuthenticatedLeaderboardCountryRoute
@@ -361,6 +515,7 @@ export interface FileRoutesById {
   '/_authenticated/statistics/sessions': typeof AuthenticatedStatisticsSessionsRoute
   '/_authenticated/statistics/setups': typeof AuthenticatedStatisticsSetupsRoute
   '/journal/share/$token': typeof JournalShareTokenRoute
+  '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
   '/_authenticated/statistics/': typeof AuthenticatedStatisticsIndexRoute
 }
@@ -387,6 +542,21 @@ export interface FileRouteTypes {
     | '/statistics'
     | '/support'
     | '/users'
+    | '/admin/achievements'
+    | '/admin/announcements'
+    | '/admin/challenges'
+    | '/admin/content'
+    | '/admin/dashboard'
+    | '/admin/feature-flags'
+    | '/admin/journal'
+    | '/admin/leaderboards'
+    | '/admin/logs'
+    | '/admin/reports'
+    | '/admin/roles'
+    | '/admin/settings'
+    | '/admin/storage'
+    | '/admin/trades'
+    | '/admin/users'
     | '/challenges/history'
     | '/challenges/rewards'
     | '/leaderboard/country'
@@ -401,6 +571,7 @@ export interface FileRouteTypes {
     | '/statistics/sessions'
     | '/statistics/setups'
     | '/journal/share/$token'
+    | '/admin/'
     | '/leaderboard/'
     | '/statistics/'
   fileRoutesByTo: FileRoutesByTo
@@ -414,7 +585,6 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/verify-email'
     | '/achievements'
-    | '/admin'
     | '/challenges'
     | '/dashboard'
     | '/journal'
@@ -423,6 +593,21 @@ export interface FileRouteTypes {
     | '/settings'
     | '/support'
     | '/users'
+    | '/admin/achievements'
+    | '/admin/announcements'
+    | '/admin/challenges'
+    | '/admin/content'
+    | '/admin/dashboard'
+    | '/admin/feature-flags'
+    | '/admin/journal'
+    | '/admin/leaderboards'
+    | '/admin/logs'
+    | '/admin/reports'
+    | '/admin/roles'
+    | '/admin/settings'
+    | '/admin/storage'
+    | '/admin/trades'
+    | '/admin/users'
     | '/challenges/history'
     | '/challenges/rewards'
     | '/leaderboard/country'
@@ -437,6 +622,7 @@ export interface FileRouteTypes {
     | '/statistics/sessions'
     | '/statistics/setups'
     | '/journal/share/$token'
+    | '/admin'
     | '/leaderboard'
     | '/statistics'
   id:
@@ -462,6 +648,21 @@ export interface FileRouteTypes {
     | '/_authenticated/statistics'
     | '/_authenticated/support'
     | '/_authenticated/users'
+    | '/_authenticated/admin/achievements'
+    | '/_authenticated/admin/announcements'
+    | '/_authenticated/admin/challenges'
+    | '/_authenticated/admin/content'
+    | '/_authenticated/admin/dashboard'
+    | '/_authenticated/admin/feature-flags'
+    | '/_authenticated/admin/journal'
+    | '/_authenticated/admin/leaderboards'
+    | '/_authenticated/admin/logs'
+    | '/_authenticated/admin/reports'
+    | '/_authenticated/admin/roles'
+    | '/_authenticated/admin/settings'
+    | '/_authenticated/admin/storage'
+    | '/_authenticated/admin/trades'
+    | '/_authenticated/admin/users'
     | '/_authenticated/challenges/history'
     | '/_authenticated/challenges/rewards'
     | '/_authenticated/leaderboard/country'
@@ -476,6 +677,7 @@ export interface FileRouteTypes {
     | '/_authenticated/statistics/sessions'
     | '/_authenticated/statistics/setups'
     | '/journal/share/$token'
+    | '/_authenticated/admin/'
     | '/_authenticated/leaderboard/'
     | '/_authenticated/statistics/'
   fileRoutesById: FileRoutesById
@@ -656,6 +858,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLeaderboardIndexRouteImport
       parentRoute: typeof AuthenticatedLeaderboardRoute
     }
+    '/_authenticated/admin/': {
+      id: '/_authenticated/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/journal/share/$token': {
       id: '/journal/share/$token'
       path: '/journal/share/$token'
@@ -754,8 +963,154 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedChallengesHistoryRouteImport
       parentRoute: typeof AuthenticatedChallengesRoute
     }
+    '/_authenticated/admin/users': {
+      id: '/_authenticated/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AuthenticatedAdminUsersRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/trades': {
+      id: '/_authenticated/admin/trades'
+      path: '/trades'
+      fullPath: '/admin/trades'
+      preLoaderRoute: typeof AuthenticatedAdminTradesRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/storage': {
+      id: '/_authenticated/admin/storage'
+      path: '/storage'
+      fullPath: '/admin/storage'
+      preLoaderRoute: typeof AuthenticatedAdminStorageRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/settings': {
+      id: '/_authenticated/admin/settings'
+      path: '/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AuthenticatedAdminSettingsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/roles': {
+      id: '/_authenticated/admin/roles'
+      path: '/roles'
+      fullPath: '/admin/roles'
+      preLoaderRoute: typeof AuthenticatedAdminRolesRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/reports': {
+      id: '/_authenticated/admin/reports'
+      path: '/reports'
+      fullPath: '/admin/reports'
+      preLoaderRoute: typeof AuthenticatedAdminReportsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/logs': {
+      id: '/_authenticated/admin/logs'
+      path: '/logs'
+      fullPath: '/admin/logs'
+      preLoaderRoute: typeof AuthenticatedAdminLogsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/leaderboards': {
+      id: '/_authenticated/admin/leaderboards'
+      path: '/leaderboards'
+      fullPath: '/admin/leaderboards'
+      preLoaderRoute: typeof AuthenticatedAdminLeaderboardsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/journal': {
+      id: '/_authenticated/admin/journal'
+      path: '/journal'
+      fullPath: '/admin/journal'
+      preLoaderRoute: typeof AuthenticatedAdminJournalRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/feature-flags': {
+      id: '/_authenticated/admin/feature-flags'
+      path: '/feature-flags'
+      fullPath: '/admin/feature-flags'
+      preLoaderRoute: typeof AuthenticatedAdminFeatureFlagsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/dashboard': {
+      id: '/_authenticated/admin/dashboard'
+      path: '/dashboard'
+      fullPath: '/admin/dashboard'
+      preLoaderRoute: typeof AuthenticatedAdminDashboardRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/content': {
+      id: '/_authenticated/admin/content'
+      path: '/content'
+      fullPath: '/admin/content'
+      preLoaderRoute: typeof AuthenticatedAdminContentRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/challenges': {
+      id: '/_authenticated/admin/challenges'
+      path: '/challenges'
+      fullPath: '/admin/challenges'
+      preLoaderRoute: typeof AuthenticatedAdminChallengesRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/announcements': {
+      id: '/_authenticated/admin/announcements'
+      path: '/announcements'
+      fullPath: '/admin/announcements'
+      preLoaderRoute: typeof AuthenticatedAdminAnnouncementsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/achievements': {
+      id: '/_authenticated/admin/achievements'
+      path: '/achievements'
+      fullPath: '/admin/achievements'
+      preLoaderRoute: typeof AuthenticatedAdminAchievementsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
   }
 }
+
+interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminAchievementsRoute: typeof AuthenticatedAdminAchievementsRoute
+  AuthenticatedAdminAnnouncementsRoute: typeof AuthenticatedAdminAnnouncementsRoute
+  AuthenticatedAdminChallengesRoute: typeof AuthenticatedAdminChallengesRoute
+  AuthenticatedAdminContentRoute: typeof AuthenticatedAdminContentRoute
+  AuthenticatedAdminDashboardRoute: typeof AuthenticatedAdminDashboardRoute
+  AuthenticatedAdminFeatureFlagsRoute: typeof AuthenticatedAdminFeatureFlagsRoute
+  AuthenticatedAdminJournalRoute: typeof AuthenticatedAdminJournalRoute
+  AuthenticatedAdminLeaderboardsRoute: typeof AuthenticatedAdminLeaderboardsRoute
+  AuthenticatedAdminLogsRoute: typeof AuthenticatedAdminLogsRoute
+  AuthenticatedAdminReportsRoute: typeof AuthenticatedAdminReportsRoute
+  AuthenticatedAdminRolesRoute: typeof AuthenticatedAdminRolesRoute
+  AuthenticatedAdminSettingsRoute: typeof AuthenticatedAdminSettingsRoute
+  AuthenticatedAdminStorageRoute: typeof AuthenticatedAdminStorageRoute
+  AuthenticatedAdminTradesRoute: typeof AuthenticatedAdminTradesRoute
+  AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
+  AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
+}
+
+const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminAchievementsRoute: AuthenticatedAdminAchievementsRoute,
+  AuthenticatedAdminAnnouncementsRoute: AuthenticatedAdminAnnouncementsRoute,
+  AuthenticatedAdminChallengesRoute: AuthenticatedAdminChallengesRoute,
+  AuthenticatedAdminContentRoute: AuthenticatedAdminContentRoute,
+  AuthenticatedAdminDashboardRoute: AuthenticatedAdminDashboardRoute,
+  AuthenticatedAdminFeatureFlagsRoute: AuthenticatedAdminFeatureFlagsRoute,
+  AuthenticatedAdminJournalRoute: AuthenticatedAdminJournalRoute,
+  AuthenticatedAdminLeaderboardsRoute: AuthenticatedAdminLeaderboardsRoute,
+  AuthenticatedAdminLogsRoute: AuthenticatedAdminLogsRoute,
+  AuthenticatedAdminReportsRoute: AuthenticatedAdminReportsRoute,
+  AuthenticatedAdminRolesRoute: AuthenticatedAdminRolesRoute,
+  AuthenticatedAdminSettingsRoute: AuthenticatedAdminSettingsRoute,
+  AuthenticatedAdminStorageRoute: AuthenticatedAdminStorageRoute,
+  AuthenticatedAdminTradesRoute: AuthenticatedAdminTradesRoute,
+  AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
+  AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
+}
+
+const AuthenticatedAdminRouteWithChildren =
+  AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
 
 interface AuthenticatedChallengesRouteChildren {
   AuthenticatedChallengesHistoryRoute: typeof AuthenticatedChallengesHistoryRoute
@@ -835,7 +1190,7 @@ const AuthenticatedStatisticsRouteWithChildren =
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAchievementsRoute: typeof AuthenticatedAchievementsRoute
-  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedChallengesRoute: typeof AuthenticatedChallengesRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedJournalRoute: typeof AuthenticatedJournalRoute
@@ -850,7 +1205,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAchievementsRoute: AuthenticatedAchievementsRoute,
-  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedChallengesRoute: AuthenticatedChallengesRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedJournalRoute: AuthenticatedJournalRoute,
