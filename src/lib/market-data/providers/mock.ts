@@ -91,6 +91,13 @@ function vol(symbol: string): number {
 
 export class MockMarketDataProvider implements MarketDataProvider {
   readonly code = "mock";
+  readonly descriptor = {
+    code: "mock", name: "Development Mock",
+    description: "Deterministic synthetic candles. Used only in local dev.",
+    markets: ["forex","crypto","indices","metals","commodities","futures","stocks"] as const as any,
+    publicByDefault: true, credentials: [],
+    capabilities: { markets: ["forex","crypto","indices","metals","commodities","futures","stocks"] as any, supportsRest: true, supportsWs: false, supportsHistorical: true, supportsStreaming: true },
+  };
   readonly name = "Development Mock";
   readonly capabilities: ProviderCapabilities = {
     markets: ["forex","crypto","indices","metals","commodities","futures","stocks"],

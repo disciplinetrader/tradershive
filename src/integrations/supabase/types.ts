@@ -2674,6 +2674,9 @@ export type Database = {
           id: string
           is_default: boolean
           is_enabled: boolean
+          last_health_at: string | null
+          last_health_ok: boolean | null
+          last_latency_ms: number | null
           markets: Database["public"]["Enums"]["market_kind"][]
           name: string
           priority: number
@@ -2691,6 +2694,9 @@ export type Database = {
           id?: string
           is_default?: boolean
           is_enabled?: boolean
+          last_health_at?: string | null
+          last_health_ok?: boolean | null
+          last_latency_ms?: number | null
           markets?: Database["public"]["Enums"]["market_kind"][]
           name: string
           priority?: number
@@ -2708,6 +2714,9 @@ export type Database = {
           id?: string
           is_default?: boolean
           is_enabled?: boolean
+          last_health_at?: string | null
+          last_health_ok?: boolean | null
+          last_latency_ms?: number | null
           markets?: Database["public"]["Enums"]["market_kind"][]
           name?: string
           priority?: number
@@ -3645,6 +3654,99 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      provider_credentials: {
+        Row: {
+          ciphertext: string
+          created_at: string
+          field_key: string
+          id: string
+          provider_code: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          ciphertext: string
+          created_at?: string
+          field_key: string
+          id?: string
+          provider_code: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          ciphertext?: string
+          created_at?: string
+          field_key?: string
+          id?: string
+          provider_code?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      provider_health_checks: {
+        Row: {
+          checked_at: string
+          checked_by: string | null
+          created_at: string
+          error_code: string | null
+          error_message: string | null
+          id: string
+          latency_ms: number | null
+          ok: boolean
+          provider_code: string
+        }
+        Insert: {
+          checked_at?: string
+          checked_by?: string | null
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          latency_ms?: number | null
+          ok: boolean
+          provider_code: string
+        }
+        Update: {
+          checked_at?: string
+          checked_by?: string | null
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          latency_ms?: number | null
+          ok?: boolean
+          provider_code?: string
+        }
+        Relationships: []
+      }
+      provider_market_assignments: {
+        Row: {
+          created_at: string
+          fallback_code: string | null
+          market_kind: string
+          primary_code: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          fallback_code?: string | null
+          market_kind: string
+          primary_code?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          fallback_code?: string | null
+          market_kind?: string
+          primary_code?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
       }
       provider_symbols: {
         Row: {

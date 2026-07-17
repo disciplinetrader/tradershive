@@ -5,6 +5,7 @@
  * on failure so consumers can degrade to the mock provider.
  */
 
+import { DESCRIPTORS_BY_CODE } from "../descriptors";
 import { TIMEFRAME_SECONDS } from "../constants";
 import { DEFAULT_SESSIONS } from "../sessions";
 import type {
@@ -25,6 +26,7 @@ function toNative(symbol: string): string { return symbol.replace(/[\/\-\.]/g, "
 
 export class BinanceProvider implements MarketDataProvider {
   readonly code = "binance";
+  readonly descriptor = DESCRIPTORS_BY_CODE.get("binance")!;
   readonly name = "Binance";
   readonly capabilities: ProviderCapabilities = {
     markets: ["crypto"], supportsRest: true, supportsWs: true, supportsHistorical: true, supportsStreaming: true,

@@ -1,136 +1,120 @@
 /**
  * MarketDataEngine — the ONLY interface every module uses to reach a provider.
  *
- * Responsibilities:
- *  - Provider selection (per market / preferred / fallback)
- *  - Quote + candle caching
- *  - Subscription multiplexing (multiple consumers per symbol share one upstream)
- *  - Health tracking for the admin panel
+ * Selection is driven by DB-backed assignments (Admin Panel → Market Data).
+ * At boot the engine calls `listMarketAssignments` and caches the result;
+ * `pickProvider(market)` then resolves to `primary` (with automatic failover
+ * to `fallback` when primary is unavailable). Silent mock fallback is never
+ * used — if no provider is configured, a `MarketProviderUnavailableError` is
+ * thrown so the UI can surface an actionable message.
  */
 
-import { CANDLE_CACHE_MS, DEFAULT_PROVIDER, QUOTE_CACHE_MS } from "./constants";
+import { CANDLE_CACHE_MS, QUOTE_CACHE_MS } from "./constants";
 import { TTLCache } from "./cache";
 import { bootstrapProviders, getProvider, listProviders } from "./providers/registry";
 import { getActiveSessions, getNextSession } from "./sessions";
+import { MarketProviderUnavailableError } from "./errors";
+import { listMarketAssignments } from "./admin.functions";
 import type {
   Candle, CandleQuery, MarketDataProvider, MarketKind, MarketStatusInfo,
   ProviderStatus, Quote, QuoteHandler, SearchQuery, SessionWindow,
-  SubscriptionHandle, SymbolMeta, Timeframe,
+  SubscriptionHandle, SymbolMeta,
 } from "./types";
 
-export type EngineSelectionStrategy = {
-  preferredProvider?: string;
-  perMarket?: Partial<Record<MarketKind, string>>;
+// Sensible defaults used only until DB assignments load, so first-render
+// components on public routes don't crash the engine.
+const DEFAULT_ASSIGNMENTS: Partial<Record<MarketKind, { primary: string; fallback: string | null }>> = {
+  crypto:      { primary: "binance",    fallback: null },
+  forex:       { primary: "twelvedata", fallback: null },
+  metals:      { primary: "twelvedata", fallback: null },
+  indices:     { primary: "twelvedata", fallback: null },
+  commodities: { primary: "twelvedata", fallback: null },
 };
 
-// Auto-routing when the user has not overridden the preferred provider.
-// Crypto → Binance (public REST + WS, no key required).
-// Forex / Metals / Indices / Commodities → Twelve Data (needs TWELVE_DATA_API_KEY).
-// Stocks are left unmapped for now — a dedicated provider will slot in here.
-const AUTO_PER_MARKET: Partial<Record<MarketKind, string>> = {
-  crypto: "binance",
-  forex: "twelvedata",
-  metals: "twelvedata",
-  indices: "twelvedata",
-  commodities: "twelvedata",
-};
-
+type Assignment = { primary: string; fallback: string | null };
 
 class MarketDataEngine {
   private quoteCache = new TTLCache<Quote>(QUOTE_CACHE_MS);
   private candleCache = new TTLCache<Candle[]>(CANDLE_CACHE_MS);
   private fanout = new Map<string, { upstream: SubscriptionHandle; handlers: Set<QuoteHandler> }>();
-  private selection: EngineSelectionStrategy = { preferredProvider: DEFAULT_PROVIDER };
+  private assignments = new Map<MarketKind, Assignment>();
   private initialized = false;
+  private loadPromise: Promise<void> | null = null;
 
-  init(strategy?: EngineSelectionStrategy) {
+  init() {
     bootstrapProviders();
-    if (strategy) this.selection = { ...this.selection, ...strategy };
-    if (!this.initialized) {
-      this.initialized = true;
-      // Eagerly connect every enabled provider so live streams are warm.
-      for (const p of listProviders()) {
-        if (p.status() === "disabled") continue;
-        void p.connect().catch((e) => {
-          // Surface provider connection failures instead of failing silently.
-          console.warn(`[market-data] provider ${p.code} connect failed:`, e);
-        });
-      }
+    if (this.initialized) return;
+    this.initialized = true;
+    // Seed defaults so consumers work while DB assignments load.
+    for (const [k, v] of Object.entries(DEFAULT_ASSIGNMENTS)) {
+      if (v) this.assignments.set(k as MarketKind, v);
     }
+    // Warm every registered provider (non-blocking).
+    for (const p of listProviders()) {
+      if (p.status() === "disabled") continue;
+      void p.connect().catch((e) => console.warn(`[market-data] ${p.code} connect failed:`, e));
+    }
+    void this.loadAssignments();
   }
 
-  setStrategy(strategy: EngineSelectionStrategy) {
-    this.selection = { ...this.selection, ...strategy };
+  /** Re-load provider→market assignments from the database. */
+  async loadAssignments(): Promise<void> {
+    if (this.loadPromise) return this.loadPromise;
+    this.loadPromise = (async () => {
+      try {
+        const rows = await listMarketAssignments();
+        for (const r of rows) {
+          if (!r.primary_code) continue;
+          this.assignments.set(r.market_kind as MarketKind, {
+            primary: r.primary_code,
+            fallback: r.fallback_code ?? null,
+          });
+        }
+      } catch (e) {
+        console.warn("[market-data] failed to load assignments:", e);
+      } finally {
+        this.loadPromise = null;
+      }
+    })();
+    return this.loadPromise;
   }
 
   listProviders(): MarketDataProvider[] { return listProviders(); }
 
-  pickProvider(market?: MarketKind): MarketDataProvider | undefined {
-    // Strict routing — no silent mock fallback. Priority:
-    //   1. explicit per-market override (from admin panel)
-    //   2. auto per-market map (crypto→binance, fx→oanda, …)
-    //   3. preferredProvider
-    //   4. any capable, non-mock, non-disabled provider
-    // If none of the above resolve we return the routed (possibly disabled)
-    // provider so consumers surface a real error — never mock — unless the
-    // caller explicitly asks for `mock` via preferredProvider/perMarket.
-    const perMarket = market ? this.selection.perMarket?.[market] : undefined;
-    const autoMarket = market ? AUTO_PER_MARKET[market] : undefined;
-    const preferred = this.selection.preferredProvider;
-
-    const isReady = (p?: MarketDataProvider): p is MarketDataProvider =>
-      !!p && p.status() !== "disabled" && p.status() !== "error"
-        && (!market || p.capabilities.markets.includes(market));
-
-    const perMarketProv = perMarket ? getProvider(perMarket) : undefined;
-    if (isReady(perMarketProv)) return perMarketProv;
-
-    const autoProv = autoMarket ? getProvider(autoMarket) : undefined;
-    if (isReady(autoProv)) return autoProv;
-
-    const preferredProv = preferred ? getProvider(preferred) : undefined;
-    if (preferred && preferred !== DEFAULT_PROVIDER && isReady(preferredProv)) return preferredProv;
-
-    if (market) {
-      const capable = listProviders().find((p) => p.code !== DEFAULT_PROVIDER && isReady(p));
-      if (capable) return capable;
+  pickProvider(market?: MarketKind): MarketDataProvider {
+    if (!market) {
+      // Return any configured provider as a best-effort fallback.
+      const any = listProviders().find((p) => p.status() === "connected" || p.status() === "disconnected");
+      if (any) return any;
+      throw new MarketProviderUnavailableError({ reason: "not_assigned" });
     }
+    const a = this.assignments.get(market);
+    if (!a) throw new MarketProviderUnavailableError({ market, reason: "not_assigned" });
 
-    if (perMarket === DEFAULT_PROVIDER || preferred === DEFAULT_PROVIDER) return getProvider(DEFAULT_PROVIDER);
-    const routed = autoProv ?? preferredProv;
-    if (routed) {
-      const hint = routed.code === "twelvedata"
-        ? "Forex provider not configured. Set TWELVE_DATA_API_KEY to enable Twelve Data."
-        : `Provider "${routed.code}" is ${routed.status()}. Check credentials or override the market provider in admin.`;
-      console.error(`[market-data] no ready provider for market=${market ?? "?"} — ${hint}`);
-      return routed;
+    const readable = (p?: MarketDataProvider): p is MarketDataProvider =>
+      !!p && p.status() !== "disabled" && p.capabilities.markets.includes(market);
+
+    const primary = getProvider(a.primary);
+    if (readable(primary)) return primary;
+
+    const fallback = a.fallback ? getProvider(a.fallback) : undefined;
+    if (readable(fallback)) {
+      console.warn(`[market-data] ${market}: primary "${a.primary}" unavailable, using fallback "${a.fallback}".`);
+      return fallback;
     }
-    console.error(`[market-data] no provider registered for market=${market ?? "?"}.`);
-    return undefined;
+    throw new MarketProviderUnavailableError({
+      market, reason: primary ? "not_configured" : "not_assigned",
+      providerCode: a.primary,
+    });
   }
 
-
-
-  private requireProvider(market?: MarketKind): MarketDataProvider {
-    const p = this.pickProvider(market);
-    if (!p) throw new Error(`No market data provider available for ${market ?? "unknown"}.`);
-    return p;
-  }
-
-  async searchSymbols(q: SearchQuery): Promise<SymbolMeta[]> {
-    return this.requireProvider(q.market).searchSymbols(q);
-  }
-  async getSymbols(market?: MarketKind): Promise<SymbolMeta[]> {
-    return this.requireProvider(market).getSymbols(market);
-  }
+  async searchSymbols(q: SearchQuery): Promise<SymbolMeta[]> { return this.pickProvider(q.market).searchSymbols(q); }
+  async getSymbols(market?: MarketKind): Promise<SymbolMeta[]> { return this.pickProvider(market).getSymbols(market); }
 
   async getQuote(symbol: string, market?: MarketKind): Promise<Quote> {
     const cached = this.quoteCache.get(symbol);
     if (cached) return cached;
-    const p = this.requireProvider(market);
-    // No silent mock fallback — propagate the provider error so the UI can
-    // surface an actionable message (e.g. "Forex provider not configured.").
-    const q = await p.getQuote(symbol);
+    const q = await this.pickProvider(market).getQuote(symbol);
     this.quoteCache.set(symbol, q);
     return q;
   }
@@ -139,21 +123,19 @@ class MarketDataEngine {
     const key = `${q.symbol}|${q.timeframe}|${q.from}|${q.to}|${q.limit ?? "*"}`;
     const cached = this.candleCache.get(key);
     if (cached) return cached;
-    const p = this.requireProvider(market);
-    const out = await p.getCandles(q);
+    const out = await this.pickProvider(market).getCandles(q);
     if (out.length) this.candleCache.set(key, out);
     return out;
   }
   getHistoricalData(q: CandleQuery, market?: MarketKind) { return this.getCandles(q, market); }
 
-
   subscribe(symbol: string, handler: QuoteHandler, market?: MarketKind): SubscriptionHandle {
     let entry = this.fanout.get(symbol);
     if (!entry) {
-      const p = this.pickProvider(market);
-      if (!p) {
-        // No provider available — return a no-op handle so callers can still
-        // clean up. The console.error in pickProvider explains what to fix.
+      let p: MarketDataProvider;
+      try { p = this.pickProvider(market); }
+      catch (e) {
+        console.error(`[market-data] subscribe(${symbol}): ${(e as Error).message}`);
         return { id: `noop-${symbol}`, symbol, unsubscribe: () => {} };
       }
       void p.connect();
@@ -169,7 +151,7 @@ class MarketDataEngine {
     entry.handlers.add(handler);
     const c = this.quoteCache.get(symbol); if (c) try { handler(c); } catch { /* noop */ }
     const id = `fan-${symbol}-${Math.random().toString(36).slice(2, 8)}`;
-    const sub: SubscriptionHandle = {
+    return {
       id, symbol,
       unsubscribe: () => {
         const cur = this.fanout.get(symbol);
@@ -181,21 +163,17 @@ class MarketDataEngine {
         }
       },
     };
-    return sub;
   }
 
   async getMarketStatus(market: MarketKind): Promise<MarketStatusInfo> {
-    const p = this.pickProvider(market);
-    if (!p) return { market, status: "closed" };
-    try { return await p.getMarketStatus(market); }
+    try { return await this.pickProvider(market).getMarketStatus(market); }
     catch { return { market, status: "closed" }; }
   }
 
   async getSessions(): Promise<SessionWindow[]> {
-    const p = getProvider(DEFAULT_PROVIDER) ?? listProviders()[0];
+    const p = listProviders().find((p) => p.status() !== "disabled") ?? listProviders()[0];
     return p ? p.getSessions() : [];
   }
-
 
   activeSessions() { return getActiveSessions(); }
   nextSession() { return getNextSession(); }
@@ -206,9 +184,11 @@ class MarketDataEngine {
   health(): { code: string; name: string; status: ProviderStatus }[] {
     return listProviders().map((p) => ({ code: p.code, name: p.name, status: p.status() }));
   }
+
+  /** Legacy accessor kept for old callers — no-op. */
+  setStrategy(_: unknown) { /* deprecated; use Admin Panel */ }
 }
 
 export const marketData = new MarketDataEngine();
 
-// Convenience for consumers that only need a symbol → quote hook shape.
-export type { Candle, CandleQuery, Quote, SymbolMeta, Timeframe, MarketKind };
+export type { Candle, CandleQuery, Quote, SymbolMeta, Timeframe, MarketKind } from "./types";
