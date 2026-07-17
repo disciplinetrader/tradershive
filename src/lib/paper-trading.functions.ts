@@ -172,10 +172,15 @@ export const modifyTrade = createServerFn({ method: "POST" })
     const { error } = await context.supabase
       .from("paper_trades").update(patch).eq("id", id).eq("user_id", context.userId).eq("status", "open");
     if (error) throw error;
-    await context.supabase.from("position_history").insert({
-      user_id: context.userId, account_id: "00000000-0000-0000-0000-000000000000",
-      trade_id: id, event: "modified", payload: patch as Record<string, unknown>,
-    }).select();
+    const { data: t } = await context.supabase.from("paper_trades")
+      .select("account_id").eq("id", id).maybeSingle();
+    if (t?.account_id) {
+      await context.supabase.from("position_history").insert({
+        user_id: context.userId, account_id: t.account_id, trade_id: id,
+        event: "modified",
+        payload: JSON.parse(JSON.stringify(patch)),
+      });
+    }
     return { ok: true };
   });
 
