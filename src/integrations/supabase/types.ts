@@ -184,6 +184,1125 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_alerts: {
+        Row: {
+          acknowledged: boolean
+          acknowledged_at: string | null
+          created_at: string
+          id: string
+          kind: string
+          message: string | null
+          metadata: Json | null
+          severity: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          acknowledged?: boolean
+          acknowledged_at?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          message?: string | null
+          metadata?: Json | null
+          severity?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          acknowledged?: boolean
+          acknowledged_at?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          message?: string | null
+          metadata?: Json | null
+          severity?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_analysis_queue: {
+        Row: {
+          attempts: number
+          created_at: string
+          entity_id: string | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          kind: Database["public"]["Enums"]["ai_analysis_kind"]
+          max_attempts: number
+          payload: Json
+          priority: number
+          result_id: string | null
+          scheduled_at: string
+          started_at: string | null
+          status: Database["public"]["Enums"]["ai_analysis_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          entity_id?: string | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          kind: Database["public"]["Enums"]["ai_analysis_kind"]
+          max_attempts?: number
+          payload?: Json
+          priority?: number
+          result_id?: string | null
+          scheduled_at?: string
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["ai_analysis_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          entity_id?: string | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["ai_analysis_kind"]
+          max_attempts?: number
+          payload?: Json
+          priority?: number
+          result_id?: string | null
+          scheduled_at?: string
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["ai_analysis_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_chat_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          message_ref: string | null
+          model_key: string | null
+          parts: Json
+          provider_key: string | null
+          role: Database["public"]["Enums"]["ai_chat_role"]
+          session_id: string
+          tokens_in: number | null
+          tokens_out: number | null
+          user_id: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          id?: string
+          message_ref?: string | null
+          model_key?: string | null
+          parts?: Json
+          provider_key?: string | null
+          role: Database["public"]["Enums"]["ai_chat_role"]
+          session_id: string
+          tokens_in?: number | null
+          tokens_out?: number | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          message_ref?: string | null
+          model_key?: string | null
+          parts?: Json
+          provider_key?: string | null
+          role?: Database["public"]["Enums"]["ai_chat_role"]
+          session_id?: string
+          tokens_in?: number | null
+          tokens_out?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_chat_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_chat_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_chat_sessions: {
+        Row: {
+          archived: boolean
+          context: Json
+          created_at: string
+          id: string
+          last_message_at: string | null
+          message_count: number
+          model_key: string | null
+          pinned: boolean
+          provider_key: string | null
+          system_hint: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived?: boolean
+          context?: Json
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          message_count?: number
+          model_key?: string | null
+          pinned?: boolean
+          provider_key?: string | null
+          system_hint?: string | null
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          archived?: boolean
+          context?: Json
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          message_count?: number
+          model_key?: string | null
+          pinned?: boolean
+          provider_key?: string | null
+          system_hint?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_habit_logs: {
+        Row: {
+          challenge_completion: number | null
+          created_at: string
+          daily_login: boolean
+          day: string
+          exercise_minutes: number | null
+          id: string
+          journal_consistency: number | null
+          overall_score: number | null
+          risk_discipline: number | null
+          sleep_hours: number | null
+          trading_consistency: number | null
+          trading_hours_within_target: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          challenge_completion?: number | null
+          created_at?: string
+          daily_login?: boolean
+          day: string
+          exercise_minutes?: number | null
+          id?: string
+          journal_consistency?: number | null
+          overall_score?: number | null
+          risk_discipline?: number | null
+          sleep_hours?: number | null
+          trading_consistency?: number | null
+          trading_hours_within_target?: boolean | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          challenge_completion?: number | null
+          created_at?: string
+          daily_login?: boolean
+          day?: string
+          exercise_minutes?: number | null
+          id?: string
+          journal_consistency?: number | null
+          overall_score?: number | null
+          risk_discipline?: number | null
+          sleep_hours?: number | null
+          trading_consistency?: number | null
+          trading_hours_within_target?: boolean | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_journal_reviews: {
+        Row: {
+          better_reflection: string | null
+          completeness: number | null
+          consistency_score: number | null
+          created_at: string
+          emotion_score: number | null
+          id: string
+          journal_id: string
+          missing_information: Json | null
+          model_key: string
+          notes_quality: number | null
+          provider_key: string
+          psychology_score: number | null
+          quality_score: number | null
+          raw: Json | null
+          risk_score: number | null
+          suggested_questions: Json | null
+          summary: string | null
+          superseded_by: string | null
+          tokens_in: number | null
+          tokens_out: number | null
+          updated_at: string
+          user_id: string
+          version: number
+        }
+        Insert: {
+          better_reflection?: string | null
+          completeness?: number | null
+          consistency_score?: number | null
+          created_at?: string
+          emotion_score?: number | null
+          id?: string
+          journal_id: string
+          missing_information?: Json | null
+          model_key: string
+          notes_quality?: number | null
+          provider_key: string
+          psychology_score?: number | null
+          quality_score?: number | null
+          raw?: Json | null
+          risk_score?: number | null
+          suggested_questions?: Json | null
+          summary?: string | null
+          superseded_by?: string | null
+          tokens_in?: number | null
+          tokens_out?: number | null
+          updated_at?: string
+          user_id: string
+          version?: number
+        }
+        Update: {
+          better_reflection?: string | null
+          completeness?: number | null
+          consistency_score?: number | null
+          created_at?: string
+          emotion_score?: number | null
+          id?: string
+          journal_id?: string
+          missing_information?: Json | null
+          model_key?: string
+          notes_quality?: number | null
+          provider_key?: string
+          psychology_score?: number | null
+          quality_score?: number | null
+          raw?: Json | null
+          risk_score?: number | null
+          suggested_questions?: Json | null
+          summary?: string | null
+          superseded_by?: string | null
+          tokens_in?: number | null
+          tokens_out?: number | null
+          updated_at?: string
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_journal_reviews_journal_id_fkey"
+            columns: ["journal_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_journal_reviews_superseded_by_fkey"
+            columns: ["superseded_by"]
+            isOneToOne: false
+            referencedRelation: "ai_journal_reviews"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_models: {
+        Row: {
+          capabilities: Json
+          context_window: number | null
+          created_at: string
+          description: string | null
+          enabled: boolean
+          experimental: boolean
+          id: string
+          input_cost_credits: number | null
+          is_default: boolean
+          model_key: string
+          name: string
+          output_cost_credits: number | null
+          provider_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          capabilities?: Json
+          context_window?: number | null
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          experimental?: boolean
+          id?: string
+          input_cost_credits?: number | null
+          is_default?: boolean
+          model_key: string
+          name: string
+          output_cost_credits?: number | null
+          provider_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          capabilities?: Json
+          context_window?: number | null
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          experimental?: boolean
+          id?: string
+          input_cost_credits?: number | null
+          is_default?: boolean
+          model_key?: string
+          name?: string
+          output_cost_credits?: number | null
+          provider_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_models_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "ai_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_performance_reviews: {
+        Row: {
+          best_day: string | null
+          best_pair: string | null
+          best_session: string | null
+          best_strategy: string | null
+          best_time: string | null
+          created_at: string
+          id: string
+          model_key: string
+          period_end: string
+          period_start: string
+          provider_key: string
+          raw: Json | null
+          suggestions: Json | null
+          summary: string | null
+          tokens_in: number | null
+          tokens_out: number | null
+          updated_at: string
+          user_id: string
+          worst_day: string | null
+          worst_pair: string | null
+          worst_session: string | null
+          worst_strategy: string | null
+          worst_time: string | null
+        }
+        Insert: {
+          best_day?: string | null
+          best_pair?: string | null
+          best_session?: string | null
+          best_strategy?: string | null
+          best_time?: string | null
+          created_at?: string
+          id?: string
+          model_key: string
+          period_end: string
+          period_start: string
+          provider_key: string
+          raw?: Json | null
+          suggestions?: Json | null
+          summary?: string | null
+          tokens_in?: number | null
+          tokens_out?: number | null
+          updated_at?: string
+          user_id: string
+          worst_day?: string | null
+          worst_pair?: string | null
+          worst_session?: string | null
+          worst_strategy?: string | null
+          worst_time?: string | null
+        }
+        Update: {
+          best_day?: string | null
+          best_pair?: string | null
+          best_session?: string | null
+          best_strategy?: string | null
+          best_time?: string | null
+          created_at?: string
+          id?: string
+          model_key?: string
+          period_end?: string
+          period_start?: string
+          provider_key?: string
+          raw?: Json | null
+          suggestions?: Json | null
+          summary?: string | null
+          tokens_in?: number | null
+          tokens_out?: number | null
+          updated_at?: string
+          user_id?: string
+          worst_day?: string | null
+          worst_pair?: string | null
+          worst_session?: string | null
+          worst_strategy?: string | null
+          worst_time?: string | null
+        }
+        Relationships: []
+      }
+      ai_playbooks: {
+        Row: {
+          archived: boolean
+          category: string | null
+          checklist: Json | null
+          created_at: string
+          description: string | null
+          examples: Json | null
+          id: string
+          mistakes_to_avoid: Json | null
+          model_key: string | null
+          pinned: boolean
+          provider_key: string | null
+          raw: Json | null
+          review_frequency: string | null
+          rules: Json | null
+          source: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived?: boolean
+          category?: string | null
+          checklist?: Json | null
+          created_at?: string
+          description?: string | null
+          examples?: Json | null
+          id?: string
+          mistakes_to_avoid?: Json | null
+          model_key?: string | null
+          pinned?: boolean
+          provider_key?: string | null
+          raw?: Json | null
+          review_frequency?: string | null
+          rules?: Json | null
+          source?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          archived?: boolean
+          category?: string | null
+          checklist?: Json | null
+          created_at?: string
+          description?: string | null
+          examples?: Json | null
+          id?: string
+          mistakes_to_avoid?: Json | null
+          model_key?: string | null
+          pinned?: boolean
+          provider_key?: string | null
+          raw?: Json | null
+          review_frequency?: string | null
+          rules?: Json | null
+          source?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_prompt_templates: {
+        Row: {
+          active_version: number
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          active_version?: number
+          category: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          active_version?: number
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_prompt_versions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          params: Json
+          system_prompt: string
+          template_id: string
+          user_prompt: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          params?: Json
+          system_prompt: string
+          template_id: string
+          user_prompt: string
+          version: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          params?: Json
+          system_prompt?: string
+          template_id?: string
+          user_prompt?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_prompt_versions_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "ai_prompt_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_providers: {
+        Row: {
+          auth_header: string | null
+          base_url: string | null
+          config: Json
+          created_at: string
+          description: string | null
+          enabled: boolean
+          experimental: boolean
+          id: string
+          key: string
+          name: string
+          secret_key_ref: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          auth_header?: string | null
+          base_url?: string | null
+          config?: Json
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          experimental?: boolean
+          id?: string
+          key: string
+          name: string
+          secret_key_ref?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          auth_header?: string | null
+          base_url?: string | null
+          config?: Json
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          experimental?: boolean
+          id?: string
+          key?: string
+          name?: string
+          secret_key_ref?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_psychology_reviews: {
+        Row: {
+          created_at: string
+          emotion_vs_profit: Json | null
+          emotions: Json | null
+          heatmap: Json | null
+          id: string
+          model_key: string
+          patterns: Json | null
+          period_end: string
+          period_start: string
+          provider_key: string
+          raw: Json | null
+          summary: string | null
+          timeline: Json | null
+          tokens_in: number | null
+          tokens_out: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emotion_vs_profit?: Json | null
+          emotions?: Json | null
+          heatmap?: Json | null
+          id?: string
+          model_key: string
+          patterns?: Json | null
+          period_end: string
+          period_start: string
+          provider_key: string
+          raw?: Json | null
+          summary?: string | null
+          timeline?: Json | null
+          tokens_in?: number | null
+          tokens_out?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emotion_vs_profit?: Json | null
+          emotions?: Json | null
+          heatmap?: Json | null
+          id?: string
+          model_key?: string
+          patterns?: Json | null
+          period_end?: string
+          period_start?: string
+          provider_key?: string
+          raw?: Json | null
+          summary?: string | null
+          timeline?: Json | null
+          tokens_in?: number | null
+          tokens_out?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_recommendations: {
+        Row: {
+          category: string | null
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          difficulty: number
+          dismissed_at: string | null
+          expires_at: string | null
+          id: string
+          impact: number
+          metadata: Json | null
+          model_key: string | null
+          priority: Database["public"]["Enums"]["ai_recommendation_priority"]
+          provider_key: string | null
+          source: string | null
+          status: Database["public"]["Enums"]["ai_recommendation_status"]
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          difficulty?: number
+          dismissed_at?: string | null
+          expires_at?: string | null
+          id?: string
+          impact?: number
+          metadata?: Json | null
+          model_key?: string | null
+          priority?: Database["public"]["Enums"]["ai_recommendation_priority"]
+          provider_key?: string | null
+          source?: string | null
+          status?: Database["public"]["Enums"]["ai_recommendation_status"]
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          difficulty?: number
+          dismissed_at?: string | null
+          expires_at?: string | null
+          id?: string
+          impact?: number
+          metadata?: Json | null
+          model_key?: string | null
+          priority?: Database["public"]["Enums"]["ai_recommendation_priority"]
+          provider_key?: string | null
+          source?: string | null
+          status?: Database["public"]["Enums"]["ai_recommendation_status"]
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_reports: {
+        Row: {
+          biggest_improvement: string | null
+          biggest_weakness: string | null
+          created_at: string
+          id: string
+          losses: Json | null
+          metrics: Json | null
+          model_key: string
+          period: Database["public"]["Enums"]["ai_report_period"]
+          period_end: string
+          period_start: string
+          provider_key: string
+          raw: Json | null
+          recommended_goals: Json | null
+          summary: string | null
+          title: string | null
+          tokens_in: number | null
+          tokens_out: number | null
+          updated_at: string
+          user_id: string
+          wins: Json | null
+        }
+        Insert: {
+          biggest_improvement?: string | null
+          biggest_weakness?: string | null
+          created_at?: string
+          id?: string
+          losses?: Json | null
+          metrics?: Json | null
+          model_key: string
+          period: Database["public"]["Enums"]["ai_report_period"]
+          period_end: string
+          period_start: string
+          provider_key: string
+          raw?: Json | null
+          recommended_goals?: Json | null
+          summary?: string | null
+          title?: string | null
+          tokens_in?: number | null
+          tokens_out?: number | null
+          updated_at?: string
+          user_id: string
+          wins?: Json | null
+        }
+        Update: {
+          biggest_improvement?: string | null
+          biggest_weakness?: string | null
+          created_at?: string
+          id?: string
+          losses?: Json | null
+          metrics?: Json | null
+          model_key?: string
+          period?: Database["public"]["Enums"]["ai_report_period"]
+          period_end?: string
+          period_start?: string
+          provider_key?: string
+          raw?: Json | null
+          recommended_goals?: Json | null
+          summary?: string | null
+          title?: string | null
+          tokens_in?: number | null
+          tokens_out?: number | null
+          updated_at?: string
+          user_id?: string
+          wins?: Json | null
+        }
+        Relationships: []
+      }
+      ai_score_snapshots: {
+        Row: {
+          breakdown: Json | null
+          challenge_completion: number
+          computed_at: string
+          consistency: number
+          discipline: number
+          execution: number
+          id: string
+          journal_quality: number
+          overall: number
+          performance: number
+          psychology: number
+          risk_management: number
+          user_id: string
+        }
+        Insert: {
+          breakdown?: Json | null
+          challenge_completion?: number
+          computed_at?: string
+          consistency?: number
+          discipline?: number
+          execution?: number
+          id?: string
+          journal_quality?: number
+          overall?: number
+          performance?: number
+          psychology?: number
+          risk_management?: number
+          user_id: string
+        }
+        Update: {
+          breakdown?: Json | null
+          challenge_completion?: number
+          computed_at?: string
+          consistency?: number
+          discipline?: number
+          execution?: number
+          id?: string
+          journal_quality?: number
+          overall?: number
+          performance?: number
+          psychology?: number
+          risk_management?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_settings: {
+        Row: {
+          analysis_depth: string
+          auto_analyze_trades: boolean
+          auto_journal_review: boolean
+          auto_monthly_report: boolean
+          auto_weekly_report: boolean
+          created_at: string
+          extras: Json
+          opt_out: boolean
+          preferred_model: string | null
+          preferred_provider: string | null
+          share_data_with_ai: boolean
+          smart_alerts: boolean
+          updated_at: string
+          user_id: string
+          voice_coach: boolean
+        }
+        Insert: {
+          analysis_depth?: string
+          auto_analyze_trades?: boolean
+          auto_journal_review?: boolean
+          auto_monthly_report?: boolean
+          auto_weekly_report?: boolean
+          created_at?: string
+          extras?: Json
+          opt_out?: boolean
+          preferred_model?: string | null
+          preferred_provider?: string | null
+          share_data_with_ai?: boolean
+          smart_alerts?: boolean
+          updated_at?: string
+          user_id: string
+          voice_coach?: boolean
+        }
+        Update: {
+          analysis_depth?: string
+          auto_analyze_trades?: boolean
+          auto_journal_review?: boolean
+          auto_monthly_report?: boolean
+          auto_weekly_report?: boolean
+          created_at?: string
+          extras?: Json
+          opt_out?: boolean
+          preferred_model?: string | null
+          preferred_provider?: string | null
+          share_data_with_ai?: boolean
+          smart_alerts?: boolean
+          updated_at?: string
+          user_id?: string
+          voice_coach?: boolean
+        }
+        Relationships: []
+      }
+      ai_trade_reviews: {
+        Row: {
+          alternative_entries: Json | null
+          alternative_exits: Json | null
+          better_stop: string | null
+          confidence: number | null
+          created_at: string
+          execution_review: string | null
+          grade: Database["public"]["Enums"]["ai_trade_grade"] | null
+          id: string
+          latency_ms: number | null
+          missed_opportunities: Json | null
+          mistakes: Json | null
+          model_key: string
+          prompt_template_key: string | null
+          prompt_version: number | null
+          provider_key: string
+          psychology_review: string | null
+          raw: Json | null
+          risk_review: string | null
+          strengths: Json | null
+          suggested_take_profit: string | null
+          summary: string | null
+          superseded_by: string | null
+          tokens_in: number | null
+          tokens_out: number | null
+          trade_id: string
+          updated_at: string
+          user_id: string
+          version: number
+        }
+        Insert: {
+          alternative_entries?: Json | null
+          alternative_exits?: Json | null
+          better_stop?: string | null
+          confidence?: number | null
+          created_at?: string
+          execution_review?: string | null
+          grade?: Database["public"]["Enums"]["ai_trade_grade"] | null
+          id?: string
+          latency_ms?: number | null
+          missed_opportunities?: Json | null
+          mistakes?: Json | null
+          model_key: string
+          prompt_template_key?: string | null
+          prompt_version?: number | null
+          provider_key: string
+          psychology_review?: string | null
+          raw?: Json | null
+          risk_review?: string | null
+          strengths?: Json | null
+          suggested_take_profit?: string | null
+          summary?: string | null
+          superseded_by?: string | null
+          tokens_in?: number | null
+          tokens_out?: number | null
+          trade_id: string
+          updated_at?: string
+          user_id: string
+          version?: number
+        }
+        Update: {
+          alternative_entries?: Json | null
+          alternative_exits?: Json | null
+          better_stop?: string | null
+          confidence?: number | null
+          created_at?: string
+          execution_review?: string | null
+          grade?: Database["public"]["Enums"]["ai_trade_grade"] | null
+          id?: string
+          latency_ms?: number | null
+          missed_opportunities?: Json | null
+          mistakes?: Json | null
+          model_key?: string
+          prompt_template_key?: string | null
+          prompt_version?: number | null
+          provider_key?: string
+          psychology_review?: string | null
+          raw?: Json | null
+          risk_review?: string | null
+          strengths?: Json | null
+          suggested_take_profit?: string | null
+          summary?: string | null
+          superseded_by?: string | null
+          tokens_in?: number | null
+          tokens_out?: number | null
+          trade_id?: string
+          updated_at?: string
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_trade_reviews_superseded_by_fkey"
+            columns: ["superseded_by"]
+            isOneToOne: false
+            referencedRelation: "ai_trade_reviews"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_trade_reviews_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: false
+            referencedRelation: "paper_trades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_usage_logs: {
+        Row: {
+          correlation_id: string | null
+          cost_credits: number | null
+          created_at: string
+          error: string | null
+          id: string
+          kind: Database["public"]["Enums"]["ai_analysis_kind"] | null
+          latency_ms: number | null
+          model_key: string
+          ok: boolean
+          provider_key: string
+          run_id: string | null
+          tokens_in: number | null
+          tokens_out: number | null
+          user_id: string | null
+        }
+        Insert: {
+          correlation_id?: string | null
+          cost_credits?: number | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["ai_analysis_kind"] | null
+          latency_ms?: number | null
+          model_key: string
+          ok?: boolean
+          provider_key: string
+          run_id?: string | null
+          tokens_in?: number | null
+          tokens_out?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          correlation_id?: string | null
+          cost_credits?: number | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["ai_analysis_kind"] | null
+          latency_ms?: number | null
+          model_key?: string
+          ok?: boolean
+          provider_key?: string
+          run_id?: string | null
+          tokens_in?: number | null
+          tokens_out?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       announcements: {
         Row: {
           audience: Json
@@ -2360,6 +3479,35 @@ export type Database = {
         | "community"
         | "events"
         | "secret"
+      ai_analysis_kind:
+        | "trade_review"
+        | "journal_review"
+        | "psychology"
+        | "performance"
+        | "weekly_report"
+        | "monthly_report"
+        | "quarterly_report"
+        | "annual_report"
+        | "recommendation"
+        | "alert"
+        | "playbook"
+        | "chat_summary"
+      ai_analysis_status:
+        | "queued"
+        | "processing"
+        | "succeeded"
+        | "failed"
+        | "cancelled"
+      ai_chat_role: "system" | "user" | "assistant" | "tool"
+      ai_recommendation_priority: "low" | "medium" | "high" | "critical"
+      ai_recommendation_status:
+        | "open"
+        | "in_progress"
+        | "completed"
+        | "dismissed"
+        | "expired"
+      ai_report_period: "weekly" | "monthly" | "quarterly" | "annual"
+      ai_trade_grade: "A+" | "A" | "B" | "C" | "D" | "F"
       app_role:
         | "admin"
         | "moderator"
@@ -2572,6 +3720,38 @@ export const Constants = {
         "events",
         "secret",
       ],
+      ai_analysis_kind: [
+        "trade_review",
+        "journal_review",
+        "psychology",
+        "performance",
+        "weekly_report",
+        "monthly_report",
+        "quarterly_report",
+        "annual_report",
+        "recommendation",
+        "alert",
+        "playbook",
+        "chat_summary",
+      ],
+      ai_analysis_status: [
+        "queued",
+        "processing",
+        "succeeded",
+        "failed",
+        "cancelled",
+      ],
+      ai_chat_role: ["system", "user", "assistant", "tool"],
+      ai_recommendation_priority: ["low", "medium", "high", "critical"],
+      ai_recommendation_status: [
+        "open",
+        "in_progress",
+        "completed",
+        "dismissed",
+        "expired",
+      ],
+      ai_report_period: ["weekly", "monthly", "quarterly", "annual"],
+      ai_trade_grade: ["A+", "A", "B", "C", "D", "F"],
       app_role: [
         "admin",
         "moderator",
