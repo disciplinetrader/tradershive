@@ -44,10 +44,20 @@ export function AccountSummary() {
   }, [openTrades, quotes]);
 
   if (!account) {
+    if (loading) {
+      return (
+        <GlassCard className="p-4">
+          <Skeleton className="h-6 w-32 mb-3" />
+          <Skeleton className="h-8 w-40" />
+        </GlassCard>
+      );
+    }
     return (
       <GlassCard className="p-4">
-        <Skeleton className="h-6 w-32 mb-3" />
-        <Skeleton className="h-8 w-40" />
+        <p className="text-sm font-semibold">No paper account yet</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Open the account switcher above to create your first paper trading account.
+        </p>
       </GlassCard>
     );
   }
