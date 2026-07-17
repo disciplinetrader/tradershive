@@ -28,7 +28,7 @@ export const getDashboardLayout = createServerFn({ method: "GET" })
       hidden: Array.isArray(layout?.hidden) ? (layout!.hidden as string[]) : [],
       collapsed: Array.isArray(layout?.collapsed) ? (layout!.collapsed as string[]) : [],
       updatedAt: data?.updated_at ?? null,
-    } satisfies DashboardLayout & { updatedAt: string | null };
+    };
   });
 
 const layoutSchema = z.object({
