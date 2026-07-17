@@ -74,8 +74,8 @@ export function PaperTradingProvider({ children }: { children: ReactNode }) {
 
 
   const [accountId, setAccountIdState] = useState<string | null>(null);
-  const [symbol, setSymbolState] = useState<string>("EUR/USD");
-  const [market, setMarketState] = useState<PaperMarket>(DEFAULT_MARKET);
+  const [symbol, setSymbolState] = useState<string>("BTC/USDT");
+  const [market, setMarketState] = useState<PaperMarket>("crypto");
   const [timeframe, setTimeframeState] = useState("1H");
 
   useEffect(() => {
