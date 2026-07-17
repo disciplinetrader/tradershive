@@ -64,17 +64,23 @@ export class BinanceProvider implements MarketDataProvider {
     try {
       this.ws = new WebSocket(url);
     } catch (e) {
+      console.error("[binance] WebSocket construction failed:", e);
       this.scheduleReconnect(); return;
     }
     this.ws.onopen = () => {
       this.reconnectAttempt = 0;
       this.setStatus("connected");
+      console.info(`[binance] WS connected (${this.subs.size} symbols)`);
       if (this.heartbeat) clearInterval(this.heartbeat);
       this.heartbeat = setInterval(() => { try { this.ws?.send("{}"); } catch { /* noop */ } }, 15_000);
     };
     this.ws.onmessage = (ev) => this.handleMessage(ev.data);
-    this.ws.onerror = () => this.setStatus("error");
-    this.ws.onclose = () => { this.setStatus("disconnected"); this.scheduleReconnect(); };
+    this.ws.onerror = (e) => { console.warn("[binance] WS error:", e); this.setStatus("error"); };
+    this.ws.onclose = (ev) => {
+      this.setStatus("disconnected");
+      if (!ev.wasClean) console.warn(`[binance] WS closed unexpectedly (code=${ev.code}); scheduling reconnect`);
+      this.scheduleReconnect();
+    };
   }
 
   private scheduleReconnect() {
@@ -111,7 +117,7 @@ export class BinanceProvider implements MarketDataProvider {
         symbol: s.symbol, displayName: `${s.baseAsset} / ${s.quoteAsset}`, market: "crypto" as const,
         baseAsset: s.baseAsset, quoteAsset: s.quoteAsset, tickSize: 0.00001, pricePrecision: s.quotePrecision ?? 2,
       }));
-    } catch { return []; }
+    } catch (e) { console.warn("[binance] getSymbols failed:", e); return []; }
   }
   async searchSymbols({ q, market, limit = 20 }: SearchQuery): Promise<SymbolMeta[]> {
     const all = await this.getSymbols(market);
@@ -144,12 +150,21 @@ export class BinanceProvider implements MarketDataProvider {
   }
   getHistoricalData(q: CandleQuery) { return this.getCandles(q); }
 
+  private resubTimer: ReturnType<typeof setTimeout> | null = null;
+  private scheduleResub() {
+    if (this.resubTimer) return;
+    this.resubTimer = setTimeout(() => {
+      this.resubTimer = null;
+      if (this._status === "connected" && this.ws) { try { this.ws.close(); } catch { /* noop */ } }
+      else this.openWs();
+    }, 200);
+  }
   subscribe(symbol: string, handler: QuoteHandler): SubscriptionHandle {
-    if (!this.subs.has(symbol)) this.subs.set(symbol, new Set());
+    const isNew = !this.subs.has(symbol);
+    if (isNew) this.subs.set(symbol, new Set());
     this.subs.get(symbol)!.add(handler);
-    // Re-open WS with updated stream set (simplest reliable approach)
-    if (this._status === "connected" && this.ws) { try { this.ws.close(); } catch { /* noop */ } }
-    else this.connect();
+    if (isNew) this.scheduleResub();
+    else if (this._status !== "connected" && this._status !== "connecting") this.connect();
     const sub: SubscriptionHandle = { id: `${symbol}-${Math.random().toString(36).slice(2, 8)}`, symbol, unsubscribe: () => this.unsubscribe(sub) };
     (sub as unknown as { _handler: QuoteHandler })._handler = handler;
     return sub;
@@ -159,8 +174,7 @@ export class BinanceProvider implements MarketDataProvider {
     const set = this.subs.get(handle.symbol);
     if (!set || !h) return;
     set.delete(h);
-    if (set.size === 0) this.subs.delete(handle.symbol);
-    if (this._status === "connected" && this.ws) { try { this.ws.close(); } catch { /* noop */ } }
+    if (set.size === 0) { this.subs.delete(handle.symbol); this.scheduleResub(); }
   }
 
   async getMarketStatus(market: MarketKind): Promise<MarketStatusInfo> {

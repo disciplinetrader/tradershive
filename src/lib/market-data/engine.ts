@@ -23,6 +23,17 @@ export type EngineSelectionStrategy = {
   perMarket?: Partial<Record<MarketKind, string>>;
 };
 
+// Auto-routing when the user has not overridden the preferred provider.
+// Crypto → Binance (public REST + WS, no key). Others fall through to any
+// capable non-disabled provider; mock is the ultimate last-resort fallback.
+const AUTO_PER_MARKET: Partial<Record<MarketKind, string>> = {
+  crypto: "binance",
+  forex: "oanda",
+  metals: "oanda",
+  indices: "oanda",
+  commodities: "oanda",
+};
+
 class MarketDataEngine {
   private quoteCache = new TTLCache<Quote>(QUOTE_CACHE_MS);
   private candleCache = new TTLCache<Candle[]>(CANDLE_CACHE_MS);
@@ -33,10 +44,16 @@ class MarketDataEngine {
   init(strategy?: EngineSelectionStrategy) {
     bootstrapProviders();
     if (strategy) this.selection = { ...this.selection, ...strategy };
-    // Auto-connect the default provider so charts render immediately.
     if (!this.initialized) {
       this.initialized = true;
-      const def = this.pickProvider(); if (def) void def.connect();
+      // Eagerly connect every enabled provider so live streams are warm.
+      for (const p of listProviders()) {
+        if (p.status() === "disabled") continue;
+        void p.connect().catch((e) => {
+          // Surface provider connection failures instead of failing silently.
+          console.warn(`[market-data] provider ${p.code} connect failed:`, e);
+        });
+      }
     }
   }
 
@@ -47,20 +64,42 @@ class MarketDataEngine {
   listProviders(): MarketDataProvider[] { return listProviders(); }
 
   pickProvider(market?: MarketKind): MarketDataProvider | undefined {
-    // Priority: per-market override → preferred → any capable → mock
+    // Priority: explicit per-market override → auto per-market (crypto→binance,
+    // fx→oanda, …) → preferred (unless it's mock and a real provider exists) →
+    // any capable non-disabled provider → mock.
     const perMarket = market ? this.selection.perMarket?.[market] : undefined;
-    const candidates: (string | undefined)[] = [perMarket, this.selection.preferredProvider];
-    for (const code of candidates) {
-      if (!code) continue;
-      const p = getProvider(code);
-      if (p && p.status() !== "disabled" && (!market || p.capabilities.markets.includes(market))) return p;
+    const autoMarket = market ? AUTO_PER_MARKET[market] : undefined;
+    const preferred = this.selection.preferredProvider;
+
+    const isUsable = (p?: MarketDataProvider): p is MarketDataProvider =>
+      !!p && p.status() !== "disabled" && (!market || p.capabilities.markets.includes(market));
+
+    const perMarketProv = perMarket ? getProvider(perMarket) : undefined;
+    if (isUsable(perMarketProv)) return perMarketProv;
+
+    const autoProv = autoMarket ? getProvider(autoMarket) : undefined;
+    if (isUsable(autoProv)) return autoProv;
+
+    if (preferred && preferred !== DEFAULT_PROVIDER) {
+      const preferredProv = getProvider(preferred);
+      if (isUsable(preferredProv)) return preferredProv;
     }
+
     if (market) {
-      const capable = listProviders().find((p) => p.capabilities.markets.includes(market) && p.status() !== "disabled");
+      const capable = listProviders().find((p) => p.code !== DEFAULT_PROVIDER && isUsable(p));
       if (capable) return capable;
+      if (autoMarket && !getProvider(autoMarket)) {
+        console.warn(`[market-data] no provider registered for market=${market} (auto=${autoMarket}); using mock`);
+      } else if (autoProv) {
+        console.warn(`[market-data] preferred provider ${(autoProv as MarketDataProvider).code} for market=${market} is ${(autoProv as MarketDataProvider).status()}; using mock`);
+      }
     }
+
+    const preferredProv = preferred ? getProvider(preferred) : undefined;
+    if (isUsable(preferredProv)) return preferredProv;
     return getProvider(DEFAULT_PROVIDER);
   }
+
 
   async searchSymbols(q: SearchQuery): Promise<SymbolMeta[]> {
     const p = this.pickProvider(q.market) ?? getProvider(DEFAULT_PROVIDER)!;
