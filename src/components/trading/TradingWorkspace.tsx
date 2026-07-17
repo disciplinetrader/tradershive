@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import type { ChartHandle } from "@/components/chart/ChartEngine";
 import { motion } from "framer-motion";
 import { Activity, Eye, EyeOff, LineChart as LineChartIcon } from "lucide-react";
 
