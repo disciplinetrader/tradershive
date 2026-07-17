@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      dashboard_layouts: {
+        Row: {
+          created_at: string
+          id: string
+          layout: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          layout?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          layout?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notification_preferences: {
+        Row: {
+          achievements: boolean
+          challenges: boolean
+          created_at: string
+          id: string
+          leaderboard: boolean
+          system: boolean
+          trades: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          achievements?: boolean
+          challenges?: boolean
+          created_at?: string
+          id?: string
+          leaderboard?: boolean
+          system?: boolean
+          trades?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          achievements?: boolean
+          challenges?: boolean
+          created_at?: string
+          id?: string
+          leaderboard?: boolean
+          system?: boolean
+          trades?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           accepted_terms_at: string | null
@@ -110,6 +170,39 @@ export type Database = {
         }
         Relationships: []
       }
+      quick_notes: {
+        Row: {
+          color: string
+          content: string
+          created_at: string
+          id: string
+          pinned: boolean
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          content?: string
+          created_at?: string
+          id?: string
+          pinned?: boolean
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          content?: string
+          created_at?: string
+          id?: string
+          pinned?: boolean
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_preferences: {
         Row: {
           chart_default_interval: string
@@ -201,6 +294,80 @@ export type Database = {
           notify_push?: boolean
           notify_rank_changes?: boolean
           notify_weekly_report?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      watchlist_items: {
+        Row: {
+          created_at: string
+          favorite: boolean
+          id: string
+          market: string
+          sort_order: number
+          symbol: string
+          updated_at: string
+          user_id: string
+          watchlist_id: string
+        }
+        Insert: {
+          created_at?: string
+          favorite?: boolean
+          id?: string
+          market?: string
+          sort_order?: number
+          symbol: string
+          updated_at?: string
+          user_id: string
+          watchlist_id: string
+        }
+        Update: {
+          created_at?: string
+          favorite?: boolean
+          id?: string
+          market?: string
+          sort_order?: number
+          symbol?: string
+          updated_at?: string
+          user_id?: string
+          watchlist_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "watchlist_items_watchlist_id_fkey"
+            columns: ["watchlist_id"]
+            isOneToOne: false
+            referencedRelation: "watchlists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      watchlists: {
+        Row: {
+          created_at: string
+          id: string
+          is_default: boolean
+          market: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          market?: string
+          name?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          market?: string
+          name?: string
           updated_at?: string
           user_id?: string
         }
