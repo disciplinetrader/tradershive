@@ -11,6 +11,8 @@ import { PositionsTable } from "@/components/paper-trading/PositionsTable";
 import { OrdersTable } from "@/components/paper-trading/OrdersTable";
 import { HistoryTable } from "@/components/paper-trading/HistoryTable";
 import { WatchlistPanel } from "@/components/paper-trading/WatchlistPanel";
+import { SymbolSearch } from "@/components/paper-trading/SymbolSearch";
+import { ChevronDown } from "lucide-react";
 
 import { ChartEngine } from "@/components/chart/ChartEngine";
 import { OrderLinesOverlay, type OrderLine } from "@/components/chart/OrderLinesOverlay";
@@ -46,6 +48,7 @@ function TradingWorkspaceInner() {
   const [quote, setQuote] = useState<Quote | null>(null);
   const [adapter, setAdapter] = useState<import("@/lib/chart/adapter").ChartAdapter | null>(null);
   const [tick, setTick] = useState(0);
+  const [symbolSearchOpen, setSymbolSearchOpen] = useState(false);
   const handleReady = useCallback((api: ChartHandle) => {
     setAdapter((prev) => (prev === api.adapter ? prev : api.adapter));
     setTick((t) => t + 1);
@@ -132,10 +135,15 @@ function TradingWorkspaceInner() {
           {/* Chart header */}
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/50 px-3 py-2">
             <div className="flex items-center gap-3">
-              <div className="flex items-baseline gap-2">
+              <button
+                onClick={() => setSymbolSearchOpen(true)}
+                className="group flex items-baseline gap-2 rounded-md border border-transparent px-1.5 py-1 transition hover:border-border/60 hover:bg-background/60"
+                title="Change symbol"
+              >
                 <span className="text-sm font-bold tracking-wide">{symbol}</span>
                 <span className="text-[11px] uppercase text-muted-foreground">{meta?.name}</span>
-              </div>
+                <ChevronDown className="h-3 w-3 text-muted-foreground opacity-60 group-hover:opacity-100" />
+              </button>
               <div className="flex items-baseline gap-3 tabular-nums">
                 <motion.span
                   key={last}
@@ -236,6 +244,8 @@ function TradingWorkspaceInner() {
           <TabsContent value="watchlist" className="p-3"><WatchlistPanel /></TabsContent>
         </Tabs>
       </GlassCard>
+
+      <SymbolSearch open={symbolSearchOpen} onOpenChange={setSymbolSearchOpen} />
     </div>
   );
 }

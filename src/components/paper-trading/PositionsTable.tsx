@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
-import { Pencil, X, Split } from "lucide-react";
+import { Pencil, X, Split, Sliders } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -10,7 +10,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { listTrades, modifyTrade } from "@/lib/paper-trading.functions";
+import { closeTrade, listTrades, modifyTrade } from "@/lib/paper-trading.functions";
 import { findSymbol } from "@/lib/paper-trading/symbols";
 import { pnl as computePnl, formatCurrency, formatNumber } from "@/lib/paper-trading/calculations";
 import { useLiveQuotes } from "@/lib/paper-trading/mock-prices";
@@ -28,6 +28,8 @@ export function PositionsTable() {
   const { accountId, account } = usePaper();
   const quotes = useLiveQuotes();
   const fetch = useServerFn(listTrades);
+  const closeFn = useServerFn(closeTrade);
+  const qc = useQueryClient();
 
   const { data, isLoading } = useQuery({
     queryKey: ["paper", "trades", accountId, "open"],
@@ -38,6 +40,23 @@ export function PositionsTable() {
 
   const [closing, setClosing] = useState<Trade | null>(null);
   const [modifying, setModifying] = useState<Trade | null>(null);
+  const [closingIds, setClosingIds] = useState<Set<string>>(new Set());
+
+  const instantClose = async (t: Trade) => {
+    const sym = findSymbol(t.symbol);
+    const current = quotes[t.symbol]?.price ?? sym?.refPrice ?? Number(t.entry_price);
+    if (!current || current <= 0) { toast.error("No live price available"); return; }
+    setClosingIds((s) => new Set(s).add(t.id));
+    try {
+      await closeFn({ data: { id: t.id, exit_price: current, close_reason: "manual" } });
+      toast.success(`Closed ${t.symbol} @ ${current}`);
+      qc.invalidateQueries({ queryKey: ["paper"] });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setClosingIds((s) => { const n = new Set(s); n.delete(t.id); return n; });
+    }
+  };
 
   const rows = data ?? [];
 
@@ -68,7 +87,7 @@ export function PositionsTable() {
               <TableHead className="text-right">RR (live)</TableHead>
               <TableHead className="text-right">Floating P/L</TableHead>
               <TableHead>Duration</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="sticky right-0 z-10 bg-background/95 text-right shadow-[-8px_0_12px_-8px_rgba(0,0,0,0.4)]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -106,16 +125,28 @@ export function PositionsTable() {
                       {up ? "+" : ""}{formatCurrency(floating, account?.currency)}
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">{duration}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="sticky right-0 z-10 bg-background/95 text-right shadow-[-8px_0_12px_-8px_rgba(0,0,0,0.4)]">
                       <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setModifying(t)} aria-label="Modify">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setModifying(t)} aria-label="Modify SL/TP" title="Modify SL/TP">
                           <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setClosing(t)} aria-label="Close with custom price" title="Close at custom price…">
+                          <Sliders className="h-3.5 w-3.5" />
                         </Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7" disabled title="Partial close (coming soon)">
                           <Split className="h-3.5 w-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-rose-400 hover:text-rose-300" onClick={() => setClosing(t)} aria-label="Close">
-                          <X className="h-4 w-4" />
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="h-7 gap-1 bg-rose-500/90 px-2 text-[11px] font-semibold text-white hover:bg-rose-500"
+                          onClick={() => instantClose(t)}
+                          disabled={closingIds.has(t.id)}
+                          aria-label="Close at market"
+                          title="Close at market (instant)"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                          {closingIds.has(t.id) ? "…" : "Close"}
                         </Button>
                       </div>
                     </TableCell>
