@@ -90,8 +90,8 @@ class MarketDataEngine {
       if (capable) return capable;
       if (autoMarket && !getProvider(autoMarket)) {
         console.warn(`[market-data] no provider registered for market=${market} (auto=${autoMarket}); using mock`);
-      } else if (autoProv && !isUsable(autoProv)) {
-        console.warn(`[market-data] preferred provider ${autoProv.code} for market=${market} is ${autoProv.status()}; using mock`);
+      } else if (autoProv) {
+        console.warn(`[market-data] preferred provider ${(autoProv as MarketDataProvider).code} for market=${market} is ${(autoProv as MarketDataProvider).status()}; using mock`);
       }
     }
 
