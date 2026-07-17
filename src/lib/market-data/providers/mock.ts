@@ -1,4 +1,5 @@
 /**
+import { DESCRIPTORS_BY_CODE } from "../descriptors";
  * Development mock provider — deterministic OHLCV + simulated live ticks.
  *
  * Used everywhere by default so the platform runs without external creds.
