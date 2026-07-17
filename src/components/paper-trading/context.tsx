@@ -1,7 +1,7 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { listAccounts } from "@/lib/paper-trading.functions";
+import { createAccount, listAccounts } from "@/lib/paper-trading.functions";
 import { DEFAULT_MARKET, findSymbol, type PaperMarket, type SymbolMeta } from "@/lib/paper-trading/symbols";
 
 type Account = {
@@ -35,16 +35,47 @@ const STORAGE = {
 };
 
 export function PaperTradingProvider({ children }: { children: ReactNode }) {
+  const qc = useQueryClient();
   const fetchAccounts = useServerFn(listAccounts);
+  const createAcct = useServerFn(createAccount);
   const { data: accounts, isLoading } = useQuery({
     queryKey: ["paper", "accounts"],
     queryFn: () => fetchAccounts() as unknown as Promise<Account[]>,
     staleTime: 30_000,
   });
+  const bootstrappedRef = useRef(false);
+
+  // Auto-create a default demo account on first load so Buy/Sell is usable
+  // immediately without forcing the user to visit the account switcher.
+  useEffect(() => {
+    if (isLoading) return;
+    if (accounts && accounts.length > 0) return;
+    if (bootstrappedRef.current) return;
+    bootstrappedRef.current = true;
+    (async () => {
+      try {
+        await createAcct({
+          data: {
+            name: "Demo Account",
+            currency: "USD",
+            starting_balance: 10000,
+            leverage: 100,
+            max_daily_risk_pct: 5,
+            max_trade_risk_pct: 2,
+          },
+        });
+        qc.invalidateQueries({ queryKey: ["paper", "accounts"] });
+      } catch (e) {
+        console.warn("[paper] auto-create default account failed", e);
+        bootstrappedRef.current = false;
+      }
+    })();
+  }, [accounts, isLoading, createAcct, qc]);
+
 
   const [accountId, setAccountIdState] = useState<string | null>(null);
-  const [symbol, setSymbolState] = useState<string>("EUR/USD");
-  const [market, setMarketState] = useState<PaperMarket>(DEFAULT_MARKET);
+  const [symbol, setSymbolState] = useState<string>("BTC/USDT");
+  const [market, setMarketState] = useState<PaperMarket>("crypto");
   const [timeframe, setTimeframeState] = useState("1H");
 
   useEffect(() => {
