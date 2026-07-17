@@ -18,12 +18,22 @@ export type Profile = {
   display_name: string | null;
   email: string | null;
   avatar_url: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  country: string | null;
+  timezone: string | null;
+  experience: string | null;
+  preferred_market: string | null;
+  trading_style: string | null;
+  preferred_markets: string[] | null;
   level: number;
   xp: number;
   coins: number;
   league: string;
   streak: number;
   rank: number | null;
+  onboarded: boolean;
+  is_premium: boolean;
 };
 
 type AuthContextValue = {
@@ -41,11 +51,14 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+const PROFILE_COLUMNS =
+  "id, username, display_name, email, avatar_url, first_name, last_name, country, timezone, experience, preferred_market, trading_style, preferred_markets, level, xp, coins, league, streak, rank, onboarded, is_premium";
+
 async function loadUserData(userId: string) {
   const [{ data: profile }, { data: roles }] = await Promise.all([
     supabase
       .from("profiles")
-      .select("id, username, display_name, email, avatar_url, level, xp, coins, league, streak, rank")
+      .select(PROFILE_COLUMNS)
       .eq("id", userId)
       .maybeSingle(),
     supabase.from("user_roles").select("role").eq("user_id", userId),
@@ -76,11 +89,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // 1) subscribe first
     const { data: sub } = supabase.auth.onAuthStateChange((event, next) => {
-      // Only react to identity changes; ignore token refreshes / init.
       if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") {
-        // Defer supabase calls to avoid deadlocks in listener
         setTimeout(() => {
           void hydrate(next);
         }, 0);
@@ -92,7 +102,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    // 2) then read existing session
     void supabase.auth.getSession().then(async ({ data }) => {
       await hydrate(data.session);
       setLoading(false);
@@ -126,7 +135,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAdmin: roles.includes("admin"),
       isModerator: roles.includes("moderator") || roles.includes("admin"),
       isPremium:
-        roles.includes("premium") || roles.includes("admin") || roles.includes("moderator"),
+        (profile?.is_premium ?? false) ||
+        roles.includes("premium") ||
+        roles.includes("admin") ||
+        roles.includes("moderator"),
       signOut,
       refresh,
     }),
