@@ -18,6 +18,7 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
 import { Route as AuthenticatedSupportRouteImport } from './routes/_authenticated/support'
 import { Route as AuthenticatedStatisticsRouteImport } from './routes/_authenticated/statistics'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
@@ -30,6 +31,7 @@ import { Route as AuthenticatedChallengesRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAchievementsRouteImport } from './routes/_authenticated/achievements'
 import { Route as AuthenticatedStatisticsIndexRouteImport } from './routes/_authenticated/statistics.index'
+import { Route as AuthenticatedLeaderboardIndexRouteImport } from './routes/_authenticated/leaderboard.index'
 import { Route as JournalShareTokenRouteImport } from './routes/journal.share.$token'
 import { Route as AuthenticatedStatisticsSetupsRouteImport } from './routes/_authenticated/statistics.setups'
 import { Route as AuthenticatedStatisticsSessionsRouteImport } from './routes/_authenticated/statistics.sessions'
@@ -37,6 +39,11 @@ import { Route as AuthenticatedStatisticsRiskRouteImport } from './routes/_authe
 import { Route as AuthenticatedStatisticsReportsRouteImport } from './routes/_authenticated/statistics.reports'
 import { Route as AuthenticatedStatisticsPerformanceRouteImport } from './routes/_authenticated/statistics.performance'
 import { Route as AuthenticatedStatisticsCalendarRouteImport } from './routes/_authenticated/statistics.calendar'
+import { Route as AuthenticatedProfileUsernameRouteImport } from './routes/_authenticated/profile.$username'
+import { Route as AuthenticatedLeaderboardLeagueRouteImport } from './routes/_authenticated/leaderboard.league'
+import { Route as AuthenticatedLeaderboardGlobalRouteImport } from './routes/_authenticated/leaderboard.global'
+import { Route as AuthenticatedLeaderboardFriendsRouteImport } from './routes/_authenticated/leaderboard.friends'
+import { Route as AuthenticatedLeaderboardCountryRouteImport } from './routes/_authenticated/leaderboard.country'
 import { Route as AuthenticatedChallengesRewardsRouteImport } from './routes/_authenticated/challenges/rewards'
 import { Route as AuthenticatedChallengesHistoryRouteImport } from './routes/_authenticated/challenges/history'
 
@@ -83,6 +90,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedUsersRoute = AuthenticatedUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedSupportRoute = AuthenticatedSupportRouteImport.update({
   id: '/support',
@@ -148,6 +160,12 @@ const AuthenticatedStatisticsIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedStatisticsRoute,
   } as any)
+const AuthenticatedLeaderboardIndexRoute =
+  AuthenticatedLeaderboardIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedLeaderboardRoute,
+  } as any)
 const JournalShareTokenRoute = JournalShareTokenRouteImport.update({
   id: '/journal/share/$token',
   path: '/journal/share/$token',
@@ -189,6 +207,36 @@ const AuthenticatedStatisticsCalendarRoute =
     path: '/calendar',
     getParentRoute: () => AuthenticatedStatisticsRoute,
   } as any)
+const AuthenticatedProfileUsernameRoute =
+  AuthenticatedProfileUsernameRouteImport.update({
+    id: '/$username',
+    path: '/$username',
+    getParentRoute: () => AuthenticatedProfileRoute,
+  } as any)
+const AuthenticatedLeaderboardLeagueRoute =
+  AuthenticatedLeaderboardLeagueRouteImport.update({
+    id: '/league',
+    path: '/league',
+    getParentRoute: () => AuthenticatedLeaderboardRoute,
+  } as any)
+const AuthenticatedLeaderboardGlobalRoute =
+  AuthenticatedLeaderboardGlobalRouteImport.update({
+    id: '/global',
+    path: '/global',
+    getParentRoute: () => AuthenticatedLeaderboardRoute,
+  } as any)
+const AuthenticatedLeaderboardFriendsRoute =
+  AuthenticatedLeaderboardFriendsRouteImport.update({
+    id: '/friends',
+    path: '/friends',
+    getParentRoute: () => AuthenticatedLeaderboardRoute,
+  } as any)
+const AuthenticatedLeaderboardCountryRoute =
+  AuthenticatedLeaderboardCountryRouteImport.update({
+    id: '/country',
+    path: '/country',
+    getParentRoute: () => AuthenticatedLeaderboardRoute,
+  } as any)
 const AuthenticatedChallengesRewardsRoute =
   AuthenticatedChallengesRewardsRouteImport.update({
     id: '/rewards',
@@ -216,14 +264,20 @@ export interface FileRoutesByFullPath {
   '/challenges': typeof AuthenticatedChallengesRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/journal': typeof AuthenticatedJournalRoute
-  '/leaderboard': typeof AuthenticatedLeaderboardRoute
+  '/leaderboard': typeof AuthenticatedLeaderboardRouteWithChildren
   '/paper-trading': typeof AuthenticatedPaperTradingRoute
-  '/profile': typeof AuthenticatedProfileRoute
+  '/profile': typeof AuthenticatedProfileRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
   '/statistics': typeof AuthenticatedStatisticsRouteWithChildren
   '/support': typeof AuthenticatedSupportRoute
+  '/users': typeof AuthenticatedUsersRoute
   '/challenges/history': typeof AuthenticatedChallengesHistoryRoute
   '/challenges/rewards': typeof AuthenticatedChallengesRewardsRoute
+  '/leaderboard/country': typeof AuthenticatedLeaderboardCountryRoute
+  '/leaderboard/friends': typeof AuthenticatedLeaderboardFriendsRoute
+  '/leaderboard/global': typeof AuthenticatedLeaderboardGlobalRoute
+  '/leaderboard/league': typeof AuthenticatedLeaderboardLeagueRoute
+  '/profile/$username': typeof AuthenticatedProfileUsernameRoute
   '/statistics/calendar': typeof AuthenticatedStatisticsCalendarRoute
   '/statistics/performance': typeof AuthenticatedStatisticsPerformanceRoute
   '/statistics/reports': typeof AuthenticatedStatisticsReportsRoute
@@ -231,6 +285,7 @@ export interface FileRoutesByFullPath {
   '/statistics/sessions': typeof AuthenticatedStatisticsSessionsRoute
   '/statistics/setups': typeof AuthenticatedStatisticsSetupsRoute
   '/journal/share/$token': typeof JournalShareTokenRoute
+  '/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
   '/statistics/': typeof AuthenticatedStatisticsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -247,13 +302,18 @@ export interface FileRoutesByTo {
   '/challenges': typeof AuthenticatedChallengesRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/journal': typeof AuthenticatedJournalRoute
-  '/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/paper-trading': typeof AuthenticatedPaperTradingRoute
-  '/profile': typeof AuthenticatedProfileRoute
+  '/profile': typeof AuthenticatedProfileRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
   '/support': typeof AuthenticatedSupportRoute
+  '/users': typeof AuthenticatedUsersRoute
   '/challenges/history': typeof AuthenticatedChallengesHistoryRoute
   '/challenges/rewards': typeof AuthenticatedChallengesRewardsRoute
+  '/leaderboard/country': typeof AuthenticatedLeaderboardCountryRoute
+  '/leaderboard/friends': typeof AuthenticatedLeaderboardFriendsRoute
+  '/leaderboard/global': typeof AuthenticatedLeaderboardGlobalRoute
+  '/leaderboard/league': typeof AuthenticatedLeaderboardLeagueRoute
+  '/profile/$username': typeof AuthenticatedProfileUsernameRoute
   '/statistics/calendar': typeof AuthenticatedStatisticsCalendarRoute
   '/statistics/performance': typeof AuthenticatedStatisticsPerformanceRoute
   '/statistics/reports': typeof AuthenticatedStatisticsReportsRoute
@@ -261,6 +321,7 @@ export interface FileRoutesByTo {
   '/statistics/sessions': typeof AuthenticatedStatisticsSessionsRoute
   '/statistics/setups': typeof AuthenticatedStatisticsSetupsRoute
   '/journal/share/$token': typeof JournalShareTokenRoute
+  '/leaderboard': typeof AuthenticatedLeaderboardIndexRoute
   '/statistics': typeof AuthenticatedStatisticsIndexRoute
 }
 export interface FileRoutesById {
@@ -279,14 +340,20 @@ export interface FileRoutesById {
   '/_authenticated/challenges': typeof AuthenticatedChallengesRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/journal': typeof AuthenticatedJournalRoute
-  '/_authenticated/leaderboard': typeof AuthenticatedLeaderboardRoute
+  '/_authenticated/leaderboard': typeof AuthenticatedLeaderboardRouteWithChildren
   '/_authenticated/paper-trading': typeof AuthenticatedPaperTradingRoute
-  '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/profile': typeof AuthenticatedProfileRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/statistics': typeof AuthenticatedStatisticsRouteWithChildren
   '/_authenticated/support': typeof AuthenticatedSupportRoute
+  '/_authenticated/users': typeof AuthenticatedUsersRoute
   '/_authenticated/challenges/history': typeof AuthenticatedChallengesHistoryRoute
   '/_authenticated/challenges/rewards': typeof AuthenticatedChallengesRewardsRoute
+  '/_authenticated/leaderboard/country': typeof AuthenticatedLeaderboardCountryRoute
+  '/_authenticated/leaderboard/friends': typeof AuthenticatedLeaderboardFriendsRoute
+  '/_authenticated/leaderboard/global': typeof AuthenticatedLeaderboardGlobalRoute
+  '/_authenticated/leaderboard/league': typeof AuthenticatedLeaderboardLeagueRoute
+  '/_authenticated/profile/$username': typeof AuthenticatedProfileUsernameRoute
   '/_authenticated/statistics/calendar': typeof AuthenticatedStatisticsCalendarRoute
   '/_authenticated/statistics/performance': typeof AuthenticatedStatisticsPerformanceRoute
   '/_authenticated/statistics/reports': typeof AuthenticatedStatisticsReportsRoute
@@ -294,6 +361,7 @@ export interface FileRoutesById {
   '/_authenticated/statistics/sessions': typeof AuthenticatedStatisticsSessionsRoute
   '/_authenticated/statistics/setups': typeof AuthenticatedStatisticsSetupsRoute
   '/journal/share/$token': typeof JournalShareTokenRoute
+  '/_authenticated/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
   '/_authenticated/statistics/': typeof AuthenticatedStatisticsIndexRoute
 }
 export interface FileRouteTypes {
@@ -318,8 +386,14 @@ export interface FileRouteTypes {
     | '/settings'
     | '/statistics'
     | '/support'
+    | '/users'
     | '/challenges/history'
     | '/challenges/rewards'
+    | '/leaderboard/country'
+    | '/leaderboard/friends'
+    | '/leaderboard/global'
+    | '/leaderboard/league'
+    | '/profile/$username'
     | '/statistics/calendar'
     | '/statistics/performance'
     | '/statistics/reports'
@@ -327,6 +401,7 @@ export interface FileRouteTypes {
     | '/statistics/sessions'
     | '/statistics/setups'
     | '/journal/share/$token'
+    | '/leaderboard/'
     | '/statistics/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -343,13 +418,18 @@ export interface FileRouteTypes {
     | '/challenges'
     | '/dashboard'
     | '/journal'
-    | '/leaderboard'
     | '/paper-trading'
     | '/profile'
     | '/settings'
     | '/support'
+    | '/users'
     | '/challenges/history'
     | '/challenges/rewards'
+    | '/leaderboard/country'
+    | '/leaderboard/friends'
+    | '/leaderboard/global'
+    | '/leaderboard/league'
+    | '/profile/$username'
     | '/statistics/calendar'
     | '/statistics/performance'
     | '/statistics/reports'
@@ -357,6 +437,7 @@ export interface FileRouteTypes {
     | '/statistics/sessions'
     | '/statistics/setups'
     | '/journal/share/$token'
+    | '/leaderboard'
     | '/statistics'
   id:
     | '__root__'
@@ -380,8 +461,14 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/statistics'
     | '/_authenticated/support'
+    | '/_authenticated/users'
     | '/_authenticated/challenges/history'
     | '/_authenticated/challenges/rewards'
+    | '/_authenticated/leaderboard/country'
+    | '/_authenticated/leaderboard/friends'
+    | '/_authenticated/leaderboard/global'
+    | '/_authenticated/leaderboard/league'
+    | '/_authenticated/profile/$username'
     | '/_authenticated/statistics/calendar'
     | '/_authenticated/statistics/performance'
     | '/_authenticated/statistics/reports'
@@ -389,6 +476,7 @@ export interface FileRouteTypes {
     | '/_authenticated/statistics/sessions'
     | '/_authenticated/statistics/setups'
     | '/journal/share/$token'
+    | '/_authenticated/leaderboard/'
     | '/_authenticated/statistics/'
   fileRoutesById: FileRoutesById
 }
@@ -469,6 +557,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/users': {
+      id: '/_authenticated/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof AuthenticatedUsersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/support': {
       id: '/_authenticated/support'
@@ -554,6 +649,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStatisticsIndexRouteImport
       parentRoute: typeof AuthenticatedStatisticsRoute
     }
+    '/_authenticated/leaderboard/': {
+      id: '/_authenticated/leaderboard/'
+      path: '/'
+      fullPath: '/leaderboard/'
+      preLoaderRoute: typeof AuthenticatedLeaderboardIndexRouteImport
+      parentRoute: typeof AuthenticatedLeaderboardRoute
+    }
     '/journal/share/$token': {
       id: '/journal/share/$token'
       path: '/journal/share/$token'
@@ -603,6 +705,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStatisticsCalendarRouteImport
       parentRoute: typeof AuthenticatedStatisticsRoute
     }
+    '/_authenticated/profile/$username': {
+      id: '/_authenticated/profile/$username'
+      path: '/$username'
+      fullPath: '/profile/$username'
+      preLoaderRoute: typeof AuthenticatedProfileUsernameRouteImport
+      parentRoute: typeof AuthenticatedProfileRoute
+    }
+    '/_authenticated/leaderboard/league': {
+      id: '/_authenticated/leaderboard/league'
+      path: '/league'
+      fullPath: '/leaderboard/league'
+      preLoaderRoute: typeof AuthenticatedLeaderboardLeagueRouteImport
+      parentRoute: typeof AuthenticatedLeaderboardRoute
+    }
+    '/_authenticated/leaderboard/global': {
+      id: '/_authenticated/leaderboard/global'
+      path: '/global'
+      fullPath: '/leaderboard/global'
+      preLoaderRoute: typeof AuthenticatedLeaderboardGlobalRouteImport
+      parentRoute: typeof AuthenticatedLeaderboardRoute
+    }
+    '/_authenticated/leaderboard/friends': {
+      id: '/_authenticated/leaderboard/friends'
+      path: '/friends'
+      fullPath: '/leaderboard/friends'
+      preLoaderRoute: typeof AuthenticatedLeaderboardFriendsRouteImport
+      parentRoute: typeof AuthenticatedLeaderboardRoute
+    }
+    '/_authenticated/leaderboard/country': {
+      id: '/_authenticated/leaderboard/country'
+      path: '/country'
+      fullPath: '/leaderboard/country'
+      preLoaderRoute: typeof AuthenticatedLeaderboardCountryRouteImport
+      parentRoute: typeof AuthenticatedLeaderboardRoute
+    }
     '/_authenticated/challenges/rewards': {
       id: '/_authenticated/challenges/rewards'
       path: '/rewards'
@@ -635,6 +772,39 @@ const AuthenticatedChallengesRouteWithChildren =
   AuthenticatedChallengesRoute._addFileChildren(
     AuthenticatedChallengesRouteChildren,
   )
+
+interface AuthenticatedLeaderboardRouteChildren {
+  AuthenticatedLeaderboardCountryRoute: typeof AuthenticatedLeaderboardCountryRoute
+  AuthenticatedLeaderboardFriendsRoute: typeof AuthenticatedLeaderboardFriendsRoute
+  AuthenticatedLeaderboardGlobalRoute: typeof AuthenticatedLeaderboardGlobalRoute
+  AuthenticatedLeaderboardLeagueRoute: typeof AuthenticatedLeaderboardLeagueRoute
+  AuthenticatedLeaderboardIndexRoute: typeof AuthenticatedLeaderboardIndexRoute
+}
+
+const AuthenticatedLeaderboardRouteChildren: AuthenticatedLeaderboardRouteChildren =
+  {
+    AuthenticatedLeaderboardCountryRoute: AuthenticatedLeaderboardCountryRoute,
+    AuthenticatedLeaderboardFriendsRoute: AuthenticatedLeaderboardFriendsRoute,
+    AuthenticatedLeaderboardGlobalRoute: AuthenticatedLeaderboardGlobalRoute,
+    AuthenticatedLeaderboardLeagueRoute: AuthenticatedLeaderboardLeagueRoute,
+    AuthenticatedLeaderboardIndexRoute: AuthenticatedLeaderboardIndexRoute,
+  }
+
+const AuthenticatedLeaderboardRouteWithChildren =
+  AuthenticatedLeaderboardRoute._addFileChildren(
+    AuthenticatedLeaderboardRouteChildren,
+  )
+
+interface AuthenticatedProfileRouteChildren {
+  AuthenticatedProfileUsernameRoute: typeof AuthenticatedProfileUsernameRoute
+}
+
+const AuthenticatedProfileRouteChildren: AuthenticatedProfileRouteChildren = {
+  AuthenticatedProfileUsernameRoute: AuthenticatedProfileUsernameRoute,
+}
+
+const AuthenticatedProfileRouteWithChildren =
+  AuthenticatedProfileRoute._addFileChildren(AuthenticatedProfileRouteChildren)
 
 interface AuthenticatedStatisticsRouteChildren {
   AuthenticatedStatisticsCalendarRoute: typeof AuthenticatedStatisticsCalendarRoute
@@ -669,12 +839,13 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedChallengesRoute: typeof AuthenticatedChallengesRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedJournalRoute: typeof AuthenticatedJournalRoute
-  AuthenticatedLeaderboardRoute: typeof AuthenticatedLeaderboardRoute
+  AuthenticatedLeaderboardRoute: typeof AuthenticatedLeaderboardRouteWithChildren
   AuthenticatedPaperTradingRoute: typeof AuthenticatedPaperTradingRoute
-  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRouteWithChildren
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedStatisticsRoute: typeof AuthenticatedStatisticsRouteWithChildren
   AuthenticatedSupportRoute: typeof AuthenticatedSupportRoute
+  AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -683,12 +854,13 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedChallengesRoute: AuthenticatedChallengesRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedJournalRoute: AuthenticatedJournalRoute,
-  AuthenticatedLeaderboardRoute: AuthenticatedLeaderboardRoute,
+  AuthenticatedLeaderboardRoute: AuthenticatedLeaderboardRouteWithChildren,
   AuthenticatedPaperTradingRoute: AuthenticatedPaperTradingRoute,
-  AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedProfileRoute: AuthenticatedProfileRouteWithChildren,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedStatisticsRoute: AuthenticatedStatisticsRouteWithChildren,
   AuthenticatedSupportRoute: AuthenticatedSupportRoute,
+  AuthenticatedUsersRoute: AuthenticatedUsersRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
