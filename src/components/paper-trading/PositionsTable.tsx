@@ -87,7 +87,7 @@ export function PositionsTable() {
               <TableHead className="text-right">RR (live)</TableHead>
               <TableHead className="text-right">Floating P/L</TableHead>
               <TableHead>Duration</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="sticky right-0 z-10 bg-background/95 text-right shadow-[-8px_0_12px_-8px_rgba(0,0,0,0.4)]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
