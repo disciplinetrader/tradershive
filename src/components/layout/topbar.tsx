@@ -108,9 +108,9 @@ export function Topbar({
         {/* Avatar */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="rounded-full ring-offset-background transition hover:ring-2 hover:ring-primary/50 hover:ring-offset-2">
-              <Avatar className="h-9 w-9 border border-border">
-                <AvatarImage src={profile?.avatar_url ?? undefined} alt={displayName} />
+            <button aria-label="Account menu" className="rounded-full ring-offset-background transition hover:ring-2 hover:ring-primary/50 hover:ring-offset-2">
+              <Avatar className="h-10 w-10 border border-border">
+                <AvatarImage src={profile?.avatar_url ?? undefined} alt="" />
                 <AvatarFallback className="bg-gradient-to-br from-primary to-primary-glow text-primary-foreground text-xs font-semibold">
                   {initials}
                 </AvatarFallback>
