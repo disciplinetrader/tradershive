@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       profiles: {
         Row: {
+          accepted_terms_at: string | null
           avatar_url: string | null
           bio: string | null
           coins: number
@@ -24,13 +25,19 @@ export type Database = {
           display_name: string | null
           email: string | null
           experience: Database["public"]["Enums"]["trading_experience"] | null
+          first_name: string | null
+          goals: string[]
           id: string
+          is_premium: boolean
           last_active_at: string | null
+          last_name: string | null
           league: Database["public"]["Enums"]["league"]
           level: number
+          onboarded: boolean
           preferred_market:
             | Database["public"]["Enums"]["preferred_market"]
             | null
+          preferred_markets: string[]
           rank: number | null
           streak: number
           timezone: string | null
@@ -40,6 +47,7 @@ export type Database = {
           xp: number
         }
         Insert: {
+          accepted_terms_at?: string | null
           avatar_url?: string | null
           bio?: string | null
           coins?: number
@@ -48,13 +56,19 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           experience?: Database["public"]["Enums"]["trading_experience"] | null
+          first_name?: string | null
+          goals?: string[]
           id: string
+          is_premium?: boolean
           last_active_at?: string | null
+          last_name?: string | null
           league?: Database["public"]["Enums"]["league"]
           level?: number
+          onboarded?: boolean
           preferred_market?:
             | Database["public"]["Enums"]["preferred_market"]
             | null
+          preferred_markets?: string[]
           rank?: number | null
           streak?: number
           timezone?: string | null
@@ -64,6 +78,7 @@ export type Database = {
           xp?: number
         }
         Update: {
+          accepted_terms_at?: string | null
           avatar_url?: string | null
           bio?: string | null
           coins?: number
@@ -72,13 +87,19 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           experience?: Database["public"]["Enums"]["trading_experience"] | null
+          first_name?: string | null
+          goals?: string[]
           id?: string
+          is_premium?: boolean
           last_active_at?: string | null
+          last_name?: string | null
           league?: Database["public"]["Enums"]["league"]
           level?: number
+          onboarded?: boolean
           preferred_market?:
             | Database["public"]["Enums"]["preferred_market"]
             | null
+          preferred_markets?: string[]
           rank?: number | null
           streak?: number
           timezone?: string | null
@@ -86,6 +107,42 @@ export type Database = {
           updated_at?: string
           username?: string
           xp?: number
+        }
+        Relationships: []
+      }
+      user_preferences: {
+        Row: {
+          chart_default_interval: string
+          chart_default_symbol: string
+          created_at: string
+          daily_xp_goal: number
+          primary_goal: string | null
+          risk_per_trade_pct: number
+          show_pnl_percent: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          chart_default_interval?: string
+          chart_default_symbol?: string
+          created_at?: string
+          daily_xp_goal?: number
+          primary_goal?: string | null
+          risk_per_trade_pct?: number
+          show_pnl_percent?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          chart_default_interval?: string
+          chart_default_symbol?: string
+          created_at?: string
+          daily_xp_goal?: number
+          primary_goal?: string | null
+          risk_per_trade_pct?: number
+          show_pnl_percent?: boolean
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -106,6 +163,45 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          created_at: string
+          locale: string
+          notify_challenges: boolean
+          notify_email: boolean
+          notify_product_updates: boolean
+          notify_push: boolean
+          notify_rank_changes: boolean
+          notify_weekly_report: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          locale?: string
+          notify_challenges?: boolean
+          notify_email?: boolean
+          notify_product_updates?: boolean
+          notify_push?: boolean
+          notify_rank_changes?: boolean
+          notify_weekly_report?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          locale?: string
+          notify_challenges?: boolean
+          notify_email?: boolean
+          notify_product_updates?: boolean
+          notify_push?: boolean
+          notify_rank_changes?: boolean
+          notify_weekly_report?: boolean
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
