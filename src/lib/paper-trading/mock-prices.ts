@@ -1,10 +1,12 @@
 // Paper Trading price feed.
 //
 // Every symbol subscribes to the central Market Data Engine so live quotes
-// flow from the active provider (Binance for crypto, OANDA for FX/metals/
-// indices). No local deterministic ticker — if a provider is not configured
-// the engine surfaces a clear error in the console and the UI shows the last
-// known price (or the seed refPrice) instead of fabricated ticks.
+// flow from the active provider (Binance for crypto, Twelve Data for forex,
+// metals and indices). No local deterministic ticker — if a provider is not
+// configured the engine surfaces a clear error in the console and the UI
+// shows the last known price (or the seed refPrice) instead of fabricated
+// ticks. Configure TWELVE_DATA_API_KEY to enable forex.
+
 import { useEffect, useState } from "react";
 import { SYMBOL_BY_KEY } from "./symbols";
 import { marketData } from "@/lib/market-data/engine";

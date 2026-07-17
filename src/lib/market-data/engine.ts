@@ -24,15 +24,17 @@ export type EngineSelectionStrategy = {
 };
 
 // Auto-routing when the user has not overridden the preferred provider.
-// Crypto → Binance (public REST + WS, no key). Others fall through to any
-// capable non-disabled provider; mock is the ultimate last-resort fallback.
+// Crypto → Binance (public REST + WS, no key required).
+// Forex / Metals / Indices / Commodities → Twelve Data (needs TWELVE_DATA_API_KEY).
+// Stocks are left unmapped for now — a dedicated provider will slot in here.
 const AUTO_PER_MARKET: Partial<Record<MarketKind, string>> = {
   crypto: "binance",
-  forex: "oanda",
-  metals: "oanda",
-  indices: "oanda",
-  commodities: "oanda",
+  forex: "twelvedata",
+  metals: "twelvedata",
+  indices: "twelvedata",
+  commodities: "twelvedata",
 };
+
 
 class MarketDataEngine {
   private quoteCache = new TTLCache<Quote>(QUOTE_CACHE_MS);
@@ -97,62 +99,63 @@ class MarketDataEngine {
     if (perMarket === DEFAULT_PROVIDER || preferred === DEFAULT_PROVIDER) return getProvider(DEFAULT_PROVIDER);
     const routed = autoProv ?? preferredProv;
     if (routed) {
-      console.error(
-        `[market-data] no ready provider for market=${market ?? "?"} — routed provider "${routed.code}" is ${routed.status()}. ` +
-        `Fix: configure its credentials (e.g. OANDA_API_TOKEN + OANDA_ACCOUNT_ID) or override the market provider in admin.`,
-      );
+      const hint = routed.code === "twelvedata"
+        ? "Forex provider not configured. Set TWELVE_DATA_API_KEY to enable Twelve Data."
+        : `Provider "${routed.code}" is ${routed.status()}. Check credentials or override the market provider in admin.`;
+      console.error(`[market-data] no ready provider for market=${market ?? "?"} — ${hint}`);
       return routed;
     }
-    console.error(`[market-data] no provider registered for market=${market ?? "?"} — returning mock as last resort.`);
-    return getProvider(DEFAULT_PROVIDER);
+    console.error(`[market-data] no provider registered for market=${market ?? "?"}.`);
+    return undefined;
   }
 
+
+
+  private requireProvider(market?: MarketKind): MarketDataProvider {
+    const p = this.pickProvider(market);
+    if (!p) throw new Error(`No market data provider available for ${market ?? "unknown"}.`);
+    return p;
+  }
 
   async searchSymbols(q: SearchQuery): Promise<SymbolMeta[]> {
-    const p = this.pickProvider(q.market) ?? getProvider(DEFAULT_PROVIDER)!;
-    return p.searchSymbols(q);
+    return this.requireProvider(q.market).searchSymbols(q);
   }
   async getSymbols(market?: MarketKind): Promise<SymbolMeta[]> {
-    const p = this.pickProvider(market) ?? getProvider(DEFAULT_PROVIDER)!;
-    return p.getSymbols(market);
+    return this.requireProvider(market).getSymbols(market);
   }
 
   async getQuote(symbol: string, market?: MarketKind): Promise<Quote> {
     const cached = this.quoteCache.get(symbol);
     if (cached) return cached;
-    const p = this.pickProvider(market) ?? getProvider(DEFAULT_PROVIDER)!;
-    try {
-      const q = await p.getQuote(symbol);
-      this.quoteCache.set(symbol, q);
-      return q;
-    } catch {
-      const fallback = getProvider(DEFAULT_PROVIDER)!;
-      const q = await fallback.getQuote(symbol);
-      this.quoteCache.set(symbol, q);
-      return q;
-    }
+    const p = this.requireProvider(market);
+    // No silent mock fallback — propagate the provider error so the UI can
+    // surface an actionable message (e.g. "Forex provider not configured.").
+    const q = await p.getQuote(symbol);
+    this.quoteCache.set(symbol, q);
+    return q;
   }
 
   async getCandles(q: CandleQuery, market?: MarketKind): Promise<Candle[]> {
     const key = `${q.symbol}|${q.timeframe}|${q.from}|${q.to}|${q.limit ?? "*"}`;
     const cached = this.candleCache.get(key);
     if (cached) return cached;
-    const p = this.pickProvider(market) ?? getProvider(DEFAULT_PROVIDER)!;
-    try {
-      const out = await p.getCandles(q);
-      if (out.length) { this.candleCache.set(key, out); return out; }
-    } catch { /* fallthrough */ }
-    const fb = getProvider(DEFAULT_PROVIDER)!;
-    const out = await fb.getCandles(q);
-    this.candleCache.set(key, out);
+    const p = this.requireProvider(market);
+    const out = await p.getCandles(q);
+    if (out.length) this.candleCache.set(key, out);
     return out;
   }
   getHistoricalData(q: CandleQuery, market?: MarketKind) { return this.getCandles(q, market); }
 
+
   subscribe(symbol: string, handler: QuoteHandler, market?: MarketKind): SubscriptionHandle {
     let entry = this.fanout.get(symbol);
     if (!entry) {
-      const p = this.pickProvider(market) ?? getProvider(DEFAULT_PROVIDER)!;
+      const p = this.pickProvider(market);
+      if (!p) {
+        // No provider available — return a no-op handle so callers can still
+        // clean up. The console.error in pickProvider explains what to fix.
+        return { id: `noop-${symbol}`, symbol, unsubscribe: () => {} };
+      }
       void p.connect();
       const upstream = p.subscribe(symbol, (q) => {
         this.quoteCache.set(symbol, q);
@@ -164,7 +167,6 @@ class MarketDataEngine {
       this.fanout.set(symbol, entry);
     }
     entry.handlers.add(handler);
-    // Warm the new subscriber with the cached quote if available.
     const c = this.quoteCache.get(symbol); if (c) try { handler(c); } catch { /* noop */ }
     const id = `fan-${symbol}-${Math.random().toString(36).slice(2, 8)}`;
     const sub: SubscriptionHandle = {
@@ -183,15 +185,17 @@ class MarketDataEngine {
   }
 
   async getMarketStatus(market: MarketKind): Promise<MarketStatusInfo> {
-    const p = this.pickProvider(market) ?? getProvider(DEFAULT_PROVIDER)!;
+    const p = this.pickProvider(market);
+    if (!p) return { market, status: "closed" };
     try { return await p.getMarketStatus(market); }
     catch { return { market, status: "closed" }; }
   }
 
   async getSessions(): Promise<SessionWindow[]> {
-    const p = getProvider(DEFAULT_PROVIDER)!;
-    return p.getSessions();
+    const p = getProvider(DEFAULT_PROVIDER) ?? listProviders()[0];
+    return p ? p.getSessions() : [];
   }
+
 
   activeSessions() { return getActiveSessions(); }
   nextSession() { return getNextSession(); }
