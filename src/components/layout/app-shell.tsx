@@ -1,4 +1,4 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   BarChart3,
   Bell,
@@ -47,14 +47,23 @@ const ADMIN: NavItem[] = [{ to: "/admin", label: "Admin", icon: Shield, admin: t
 export function AppShell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { isAdmin } = useAuth();
+  const { isAdmin, profile, loading } = useAuth();
   const { open, setOpen } = useCommandPalette();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const navigate = useNavigate();
 
   // Close mobile drawer on route change
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
+
+  // Redirect users who haven't completed onboarding
+  useEffect(() => {
+    if (loading) return;
+    if (profile && profile.onboarded === false && pathname !== "/onboarding") {
+      void navigate({ to: "/onboarding", replace: true });
+    }
+  }, [loading, profile, pathname, navigate]);
 
   return (
     <div className="relative flex min-h-screen w-full bg-background">
