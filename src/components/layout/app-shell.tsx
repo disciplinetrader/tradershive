@@ -2,23 +2,22 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   Award,
   BarChart3,
-  Bell,
   BookOpen,
-  Film,
-  FolderKanban,
-  BrainCircuit,
-  ChevronLeft,
-  ChevronRight,
+  GraduationCap,
   Home,
   LifeBuoy,
   LineChart,
   Menu,
   Settings,
   Shield,
+  ShoppingBag,
   Sparkles,
+  Swords,
   Trophy,
   User as UserIcon,
   Users,
+  ChevronLeft,
+  ChevronRight,
   X,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
@@ -33,18 +32,16 @@ type NavItem = { to: string; label: string; icon: typeof Home; admin?: boolean }
 
 const NAV: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: Home },
-  { to: "/charts", label: "Charts", icon: LineChart },
-  { to: "/paper-trading", label: "Paper Trading", icon: LineChart },
+  { to: "/trading", label: "Trading Workspace", icon: LineChart },
   { to: "/journal", label: "Journal", icon: BookOpen },
   { to: "/challenges", label: "Challenges", icon: Sparkles },
-  { to: "/achievements", label: "Achievements", icon: Award },
-  { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
-  { to: "/users", label: "Discover", icon: Users },
   { to: "/statistics", label: "Statistics", icon: BarChart3 },
-  { to: "/ai", label: "AI Coach", icon: BrainCircuit },
-  { to: "/replay", label: "Replay", icon: Film },
-  { to: "/strategies", label: "Strategies", icon: FolderKanban },
-  { to: "/market", label: "Market Data", icon: Bell },
+  { to: "/battle-arena", label: "Battle Arena", icon: Swords },
+  { to: "/guilds", label: "Guilds", icon: Users },
+  { to: "/marketplace", label: "Marketplace", icon: ShoppingBag },
+  { to: "/education", label: "Education", icon: GraduationCap },
+  { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
+  { to: "/achievements", label: "Achievements", icon: Award },
 ];
 
 const SECONDARY: NavItem[] = [
@@ -305,7 +302,7 @@ function MobileBottomNav({
 }) {
   const items: NavItem[] = [
     { to: "/dashboard", label: "Home", icon: Home },
-    { to: "/paper-trading", label: "Trade", icon: LineChart },
+    { to: "/trading", label: "Trade", icon: LineChart },
     { to: "/journal", label: "Journal", icon: BookOpen },
     { to: "/leaderboard", label: "Rank", icon: Trophy },
   ];

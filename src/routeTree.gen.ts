@@ -19,6 +19,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
+import { Route as AuthenticatedTradingRouteImport } from './routes/_authenticated/trading'
 import { Route as AuthenticatedSupportRouteImport } from './routes/_authenticated/support'
 import { Route as AuthenticatedStrategiesRouteImport } from './routes/_authenticated/strategies'
 import { Route as AuthenticatedStatisticsRouteImport } from './routes/_authenticated/statistics'
@@ -26,15 +27,20 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedReplayRouteImport } from './routes/_authenticated/replay'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedPaperTradingRouteImport } from './routes/_authenticated/paper-trading'
+import { Route as AuthenticatedMarketplaceRouteImport } from './routes/_authenticated/marketplace'
 import { Route as AuthenticatedMarketRouteImport } from './routes/_authenticated/market'
 import { Route as AuthenticatedLeaderboardRouteImport } from './routes/_authenticated/leaderboard'
 import { Route as AuthenticatedJournalRouteImport } from './routes/_authenticated/journal'
+import { Route as AuthenticatedGuildsRouteImport } from './routes/_authenticated/guilds'
+import { Route as AuthenticatedEducationRouteImport } from './routes/_authenticated/education'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedChartsRouteImport } from './routes/_authenticated/charts'
 import { Route as AuthenticatedChallengesRouteImport } from './routes/_authenticated/challenges'
+import { Route as AuthenticatedBattleArenaRouteImport } from './routes/_authenticated/battle-arena'
 import { Route as AuthenticatedAiRouteImport } from './routes/_authenticated/ai'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAchievementsRouteImport } from './routes/_authenticated/achievements'
+import { Route as AuthenticatedTradingIndexRouteImport } from './routes/_authenticated/trading.index'
 import { Route as AuthenticatedStrategiesIndexRouteImport } from './routes/_authenticated/strategies.index'
 import { Route as AuthenticatedStatisticsIndexRouteImport } from './routes/_authenticated/statistics.index'
 import { Route as AuthenticatedReplayIndexRouteImport } from './routes/_authenticated/replay.index'
@@ -44,6 +50,7 @@ import { Route as AuthenticatedChartsIndexRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as JournalShareTokenRouteImport } from './routes/journal.share.$token'
 import { Route as ApiAiChatRouteImport } from './routes/api/ai/chat'
+import { Route as AuthenticatedTradingFullscreenRouteImport } from './routes/_authenticated/trading.fullscreen'
 import { Route as AuthenticatedStrategiesTemplatesRouteImport } from './routes/_authenticated/strategies.templates'
 import { Route as AuthenticatedStrategiesSharedRouteImport } from './routes/_authenticated/strategies.shared'
 import { Route as AuthenticatedStrategiesSettingsRouteImport } from './routes/_authenticated/strategies.settings'
@@ -152,6 +159,11 @@ const AuthenticatedUsersRoute = AuthenticatedUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedTradingRoute = AuthenticatedTradingRouteImport.update({
+  id: '/trading',
+  path: '/trading',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedSupportRoute = AuthenticatedSupportRouteImport.update({
   id: '/support',
   path: '/support',
@@ -188,6 +200,12 @@ const AuthenticatedPaperTradingRoute =
     path: '/paper-trading',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedMarketplaceRoute =
+  AuthenticatedMarketplaceRouteImport.update({
+    id: '/marketplace',
+    path: '/marketplace',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedMarketRoute = AuthenticatedMarketRouteImport.update({
   id: '/market',
   path: '/market',
@@ -202,6 +220,16 @@ const AuthenticatedLeaderboardRoute =
 const AuthenticatedJournalRoute = AuthenticatedJournalRouteImport.update({
   id: '/journal',
   path: '/journal',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedGuildsRoute = AuthenticatedGuildsRouteImport.update({
+  id: '/guilds',
+  path: '/guilds',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedEducationRoute = AuthenticatedEducationRouteImport.update({
+  id: '/education',
+  path: '/education',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
@@ -219,6 +247,12 @@ const AuthenticatedChallengesRoute = AuthenticatedChallengesRouteImport.update({
   path: '/challenges',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedBattleArenaRoute =
+  AuthenticatedBattleArenaRouteImport.update({
+    id: '/battle-arena',
+    path: '/battle-arena',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAiRoute = AuthenticatedAiRouteImport.update({
   id: '/ai',
   path: '/ai',
@@ -234,6 +268,12 @@ const AuthenticatedAchievementsRoute =
     id: '/achievements',
     path: '/achievements',
     getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedTradingIndexRoute =
+  AuthenticatedTradingIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedTradingRoute,
   } as any)
 const AuthenticatedStrategiesIndexRoute =
   AuthenticatedStrategiesIndexRouteImport.update({
@@ -286,6 +326,12 @@ const ApiAiChatRoute = ApiAiChatRouteImport.update({
   path: '/api/ai/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedTradingFullscreenRoute =
+  AuthenticatedTradingFullscreenRouteImport.update({
+    id: '/fullscreen',
+    path: '/fullscreen',
+    getParentRoute: () => AuthenticatedTradingRoute,
+  } as any)
 const AuthenticatedStrategiesTemplatesRoute =
   AuthenticatedStrategiesTemplatesRouteImport.update({
     id: '/templates',
@@ -641,12 +687,16 @@ export interface FileRoutesByFullPath {
   '/achievements': typeof AuthenticatedAchievementsRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/ai': typeof AuthenticatedAiRouteWithChildren
+  '/battle-arena': typeof AuthenticatedBattleArenaRoute
   '/challenges': typeof AuthenticatedChallengesRouteWithChildren
   '/charts': typeof AuthenticatedChartsRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/education': typeof AuthenticatedEducationRoute
+  '/guilds': typeof AuthenticatedGuildsRoute
   '/journal': typeof AuthenticatedJournalRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRouteWithChildren
   '/market': typeof AuthenticatedMarketRouteWithChildren
+  '/marketplace': typeof AuthenticatedMarketplaceRoute
   '/paper-trading': typeof AuthenticatedPaperTradingRoute
   '/profile': typeof AuthenticatedProfileRouteWithChildren
   '/replay': typeof AuthenticatedReplayRouteWithChildren
@@ -654,6 +704,7 @@ export interface FileRoutesByFullPath {
   '/statistics': typeof AuthenticatedStatisticsRouteWithChildren
   '/strategies': typeof AuthenticatedStrategiesRouteWithChildren
   '/support': typeof AuthenticatedSupportRoute
+  '/trading': typeof AuthenticatedTradingRouteWithChildren
   '/users': typeof AuthenticatedUsersRoute
   '/admin/achievements': typeof AuthenticatedAdminAchievementsRoute
   '/admin/announcements': typeof AuthenticatedAdminAnnouncementsRoute
@@ -713,6 +764,7 @@ export interface FileRoutesByFullPath {
   '/strategies/settings': typeof AuthenticatedStrategiesSettingsRoute
   '/strategies/shared': typeof AuthenticatedStrategiesSharedRoute
   '/strategies/templates': typeof AuthenticatedStrategiesTemplatesRoute
+  '/trading/fullscreen': typeof AuthenticatedTradingFullscreenRoute
   '/api/ai/chat': typeof ApiAiChatRoute
   '/journal/share/$token': typeof JournalShareTokenRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
@@ -722,6 +774,7 @@ export interface FileRoutesByFullPath {
   '/replay/': typeof AuthenticatedReplayIndexRoute
   '/statistics/': typeof AuthenticatedStatisticsIndexRoute
   '/strategies/': typeof AuthenticatedStrategiesIndexRoute
+  '/trading/': typeof AuthenticatedTradingIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -734,9 +787,13 @@ export interface FileRoutesByTo {
   '/verify-email': typeof VerifyEmailRoute
   '/achievements': typeof AuthenticatedAchievementsRoute
   '/ai': typeof AuthenticatedAiRouteWithChildren
+  '/battle-arena': typeof AuthenticatedBattleArenaRoute
   '/challenges': typeof AuthenticatedChallengesRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/education': typeof AuthenticatedEducationRoute
+  '/guilds': typeof AuthenticatedGuildsRoute
   '/journal': typeof AuthenticatedJournalRoute
+  '/marketplace': typeof AuthenticatedMarketplaceRoute
   '/paper-trading': typeof AuthenticatedPaperTradingRoute
   '/profile': typeof AuthenticatedProfileRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
@@ -800,6 +857,7 @@ export interface FileRoutesByTo {
   '/strategies/settings': typeof AuthenticatedStrategiesSettingsRoute
   '/strategies/shared': typeof AuthenticatedStrategiesSharedRoute
   '/strategies/templates': typeof AuthenticatedStrategiesTemplatesRoute
+  '/trading/fullscreen': typeof AuthenticatedTradingFullscreenRoute
   '/api/ai/chat': typeof ApiAiChatRoute
   '/journal/share/$token': typeof JournalShareTokenRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
@@ -809,6 +867,7 @@ export interface FileRoutesByTo {
   '/replay': typeof AuthenticatedReplayIndexRoute
   '/statistics': typeof AuthenticatedStatisticsIndexRoute
   '/strategies': typeof AuthenticatedStrategiesIndexRoute
+  '/trading': typeof AuthenticatedTradingIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -824,12 +883,16 @@ export interface FileRoutesById {
   '/_authenticated/achievements': typeof AuthenticatedAchievementsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/ai': typeof AuthenticatedAiRouteWithChildren
+  '/_authenticated/battle-arena': typeof AuthenticatedBattleArenaRoute
   '/_authenticated/challenges': typeof AuthenticatedChallengesRouteWithChildren
   '/_authenticated/charts': typeof AuthenticatedChartsRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/education': typeof AuthenticatedEducationRoute
+  '/_authenticated/guilds': typeof AuthenticatedGuildsRoute
   '/_authenticated/journal': typeof AuthenticatedJournalRoute
   '/_authenticated/leaderboard': typeof AuthenticatedLeaderboardRouteWithChildren
   '/_authenticated/market': typeof AuthenticatedMarketRouteWithChildren
+  '/_authenticated/marketplace': typeof AuthenticatedMarketplaceRoute
   '/_authenticated/paper-trading': typeof AuthenticatedPaperTradingRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRouteWithChildren
   '/_authenticated/replay': typeof AuthenticatedReplayRouteWithChildren
@@ -837,6 +900,7 @@ export interface FileRoutesById {
   '/_authenticated/statistics': typeof AuthenticatedStatisticsRouteWithChildren
   '/_authenticated/strategies': typeof AuthenticatedStrategiesRouteWithChildren
   '/_authenticated/support': typeof AuthenticatedSupportRoute
+  '/_authenticated/trading': typeof AuthenticatedTradingRouteWithChildren
   '/_authenticated/users': typeof AuthenticatedUsersRoute
   '/_authenticated/admin/achievements': typeof AuthenticatedAdminAchievementsRoute
   '/_authenticated/admin/announcements': typeof AuthenticatedAdminAnnouncementsRoute
@@ -896,6 +960,7 @@ export interface FileRoutesById {
   '/_authenticated/strategies/settings': typeof AuthenticatedStrategiesSettingsRoute
   '/_authenticated/strategies/shared': typeof AuthenticatedStrategiesSharedRoute
   '/_authenticated/strategies/templates': typeof AuthenticatedStrategiesTemplatesRoute
+  '/_authenticated/trading/fullscreen': typeof AuthenticatedTradingFullscreenRoute
   '/api/ai/chat': typeof ApiAiChatRoute
   '/journal/share/$token': typeof JournalShareTokenRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
@@ -905,6 +970,7 @@ export interface FileRoutesById {
   '/_authenticated/replay/': typeof AuthenticatedReplayIndexRoute
   '/_authenticated/statistics/': typeof AuthenticatedStatisticsIndexRoute
   '/_authenticated/strategies/': typeof AuthenticatedStrategiesIndexRoute
+  '/_authenticated/trading/': typeof AuthenticatedTradingIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -920,12 +986,16 @@ export interface FileRouteTypes {
     | '/achievements'
     | '/admin'
     | '/ai'
+    | '/battle-arena'
     | '/challenges'
     | '/charts'
     | '/dashboard'
+    | '/education'
+    | '/guilds'
     | '/journal'
     | '/leaderboard'
     | '/market'
+    | '/marketplace'
     | '/paper-trading'
     | '/profile'
     | '/replay'
@@ -933,6 +1003,7 @@ export interface FileRouteTypes {
     | '/statistics'
     | '/strategies'
     | '/support'
+    | '/trading'
     | '/users'
     | '/admin/achievements'
     | '/admin/announcements'
@@ -992,6 +1063,7 @@ export interface FileRouteTypes {
     | '/strategies/settings'
     | '/strategies/shared'
     | '/strategies/templates'
+    | '/trading/fullscreen'
     | '/api/ai/chat'
     | '/journal/share/$token'
     | '/admin/'
@@ -1001,6 +1073,7 @@ export interface FileRouteTypes {
     | '/replay/'
     | '/statistics/'
     | '/strategies/'
+    | '/trading/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -1013,9 +1086,13 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/achievements'
     | '/ai'
+    | '/battle-arena'
     | '/challenges'
     | '/dashboard'
+    | '/education'
+    | '/guilds'
     | '/journal'
+    | '/marketplace'
     | '/paper-trading'
     | '/profile'
     | '/settings'
@@ -1079,6 +1156,7 @@ export interface FileRouteTypes {
     | '/strategies/settings'
     | '/strategies/shared'
     | '/strategies/templates'
+    | '/trading/fullscreen'
     | '/api/ai/chat'
     | '/journal/share/$token'
     | '/admin'
@@ -1088,6 +1166,7 @@ export interface FileRouteTypes {
     | '/replay'
     | '/statistics'
     | '/strategies'
+    | '/trading'
   id:
     | '__root__'
     | '/'
@@ -1102,12 +1181,16 @@ export interface FileRouteTypes {
     | '/_authenticated/achievements'
     | '/_authenticated/admin'
     | '/_authenticated/ai'
+    | '/_authenticated/battle-arena'
     | '/_authenticated/challenges'
     | '/_authenticated/charts'
     | '/_authenticated/dashboard'
+    | '/_authenticated/education'
+    | '/_authenticated/guilds'
     | '/_authenticated/journal'
     | '/_authenticated/leaderboard'
     | '/_authenticated/market'
+    | '/_authenticated/marketplace'
     | '/_authenticated/paper-trading'
     | '/_authenticated/profile'
     | '/_authenticated/replay'
@@ -1115,6 +1198,7 @@ export interface FileRouteTypes {
     | '/_authenticated/statistics'
     | '/_authenticated/strategies'
     | '/_authenticated/support'
+    | '/_authenticated/trading'
     | '/_authenticated/users'
     | '/_authenticated/admin/achievements'
     | '/_authenticated/admin/announcements'
@@ -1174,6 +1258,7 @@ export interface FileRouteTypes {
     | '/_authenticated/strategies/settings'
     | '/_authenticated/strategies/shared'
     | '/_authenticated/strategies/templates'
+    | '/_authenticated/trading/fullscreen'
     | '/api/ai/chat'
     | '/journal/share/$token'
     | '/_authenticated/admin/'
@@ -1183,6 +1268,7 @@ export interface FileRouteTypes {
     | '/_authenticated/replay/'
     | '/_authenticated/statistics/'
     | '/_authenticated/strategies/'
+    | '/_authenticated/trading/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1271,6 +1357,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUsersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/trading': {
+      id: '/_authenticated/trading'
+      path: '/trading'
+      fullPath: '/trading'
+      preLoaderRoute: typeof AuthenticatedTradingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/support': {
       id: '/_authenticated/support'
       path: '/support'
@@ -1320,6 +1413,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPaperTradingRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/marketplace': {
+      id: '/_authenticated/marketplace'
+      path: '/marketplace'
+      fullPath: '/marketplace'
+      preLoaderRoute: typeof AuthenticatedMarketplaceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/market': {
       id: '/_authenticated/market'
       path: '/market'
@@ -1339,6 +1439,20 @@ declare module '@tanstack/react-router' {
       path: '/journal'
       fullPath: '/journal'
       preLoaderRoute: typeof AuthenticatedJournalRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/guilds': {
+      id: '/_authenticated/guilds'
+      path: '/guilds'
+      fullPath: '/guilds'
+      preLoaderRoute: typeof AuthenticatedGuildsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/education': {
+      id: '/_authenticated/education'
+      path: '/education'
+      fullPath: '/education'
+      preLoaderRoute: typeof AuthenticatedEducationRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/dashboard': {
@@ -1362,6 +1476,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedChallengesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/battle-arena': {
+      id: '/_authenticated/battle-arena'
+      path: '/battle-arena'
+      fullPath: '/battle-arena'
+      preLoaderRoute: typeof AuthenticatedBattleArenaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/ai': {
       id: '/_authenticated/ai'
       path: '/ai'
@@ -1382,6 +1503,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/achievements'
       preLoaderRoute: typeof AuthenticatedAchievementsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/trading/': {
+      id: '/_authenticated/trading/'
+      path: '/'
+      fullPath: '/trading/'
+      preLoaderRoute: typeof AuthenticatedTradingIndexRouteImport
+      parentRoute: typeof AuthenticatedTradingRoute
     }
     '/_authenticated/strategies/': {
       id: '/_authenticated/strategies/'
@@ -1445,6 +1573,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/ai/chat'
       preLoaderRoute: typeof ApiAiChatRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/trading/fullscreen': {
+      id: '/_authenticated/trading/fullscreen'
+      path: '/fullscreen'
+      fullPath: '/trading/fullscreen'
+      preLoaderRoute: typeof AuthenticatedTradingFullscreenRouteImport
+      parentRoute: typeof AuthenticatedTradingRoute
     }
     '/_authenticated/strategies/templates': {
       id: '/_authenticated/strategies/templates'
@@ -2092,16 +2227,33 @@ const AuthenticatedStrategiesRouteWithChildren =
     AuthenticatedStrategiesRouteChildren,
   )
 
+interface AuthenticatedTradingRouteChildren {
+  AuthenticatedTradingFullscreenRoute: typeof AuthenticatedTradingFullscreenRoute
+  AuthenticatedTradingIndexRoute: typeof AuthenticatedTradingIndexRoute
+}
+
+const AuthenticatedTradingRouteChildren: AuthenticatedTradingRouteChildren = {
+  AuthenticatedTradingFullscreenRoute: AuthenticatedTradingFullscreenRoute,
+  AuthenticatedTradingIndexRoute: AuthenticatedTradingIndexRoute,
+}
+
+const AuthenticatedTradingRouteWithChildren =
+  AuthenticatedTradingRoute._addFileChildren(AuthenticatedTradingRouteChildren)
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAchievementsRoute: typeof AuthenticatedAchievementsRoute
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedAiRoute: typeof AuthenticatedAiRouteWithChildren
+  AuthenticatedBattleArenaRoute: typeof AuthenticatedBattleArenaRoute
   AuthenticatedChallengesRoute: typeof AuthenticatedChallengesRouteWithChildren
   AuthenticatedChartsRoute: typeof AuthenticatedChartsRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedEducationRoute: typeof AuthenticatedEducationRoute
+  AuthenticatedGuildsRoute: typeof AuthenticatedGuildsRoute
   AuthenticatedJournalRoute: typeof AuthenticatedJournalRoute
   AuthenticatedLeaderboardRoute: typeof AuthenticatedLeaderboardRouteWithChildren
   AuthenticatedMarketRoute: typeof AuthenticatedMarketRouteWithChildren
+  AuthenticatedMarketplaceRoute: typeof AuthenticatedMarketplaceRoute
   AuthenticatedPaperTradingRoute: typeof AuthenticatedPaperTradingRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRouteWithChildren
   AuthenticatedReplayRoute: typeof AuthenticatedReplayRouteWithChildren
@@ -2109,6 +2261,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedStatisticsRoute: typeof AuthenticatedStatisticsRouteWithChildren
   AuthenticatedStrategiesRoute: typeof AuthenticatedStrategiesRouteWithChildren
   AuthenticatedSupportRoute: typeof AuthenticatedSupportRoute
+  AuthenticatedTradingRoute: typeof AuthenticatedTradingRouteWithChildren
   AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
 }
 
@@ -2116,12 +2269,16 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAchievementsRoute: AuthenticatedAchievementsRoute,
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedAiRoute: AuthenticatedAiRouteWithChildren,
+  AuthenticatedBattleArenaRoute: AuthenticatedBattleArenaRoute,
   AuthenticatedChallengesRoute: AuthenticatedChallengesRouteWithChildren,
   AuthenticatedChartsRoute: AuthenticatedChartsRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedEducationRoute: AuthenticatedEducationRoute,
+  AuthenticatedGuildsRoute: AuthenticatedGuildsRoute,
   AuthenticatedJournalRoute: AuthenticatedJournalRoute,
   AuthenticatedLeaderboardRoute: AuthenticatedLeaderboardRouteWithChildren,
   AuthenticatedMarketRoute: AuthenticatedMarketRouteWithChildren,
+  AuthenticatedMarketplaceRoute: AuthenticatedMarketplaceRoute,
   AuthenticatedPaperTradingRoute: AuthenticatedPaperTradingRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRouteWithChildren,
   AuthenticatedReplayRoute: AuthenticatedReplayRouteWithChildren,
@@ -2129,6 +2286,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedStatisticsRoute: AuthenticatedStatisticsRouteWithChildren,
   AuthenticatedStrategiesRoute: AuthenticatedStrategiesRouteWithChildren,
   AuthenticatedSupportRoute: AuthenticatedSupportRoute,
+  AuthenticatedTradingRoute: AuthenticatedTradingRouteWithChildren,
   AuthenticatedUsersRoute: AuthenticatedUsersRoute,
 }
 

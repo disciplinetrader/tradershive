@@ -140,7 +140,7 @@ export function ChartWorkspace({ fullscreen, initial }: Props) {
         grid={grid} onGridChange={setGrid}
         activeTool={tool} onToolChange={setTool}
         onScreenshot={handleScreenshot} onSaveLayout={handleSaveLayout}
-        onFullscreen={() => navigate({ to: "/charts/fullscreen" })}
+        onFullscreen={() => navigate({ to: "/trading/fullscreen" })}
         onOpenAlerts={() => setAlertsOpen(true)}
         onOpenReplay={() => navigate({ to: "/replay" })}
       />
@@ -184,8 +184,8 @@ export function ChartWorkspace({ fullscreen, initial }: Props) {
         ) : <div />}
       </div>
       {!fullscreen ? (
-        <div className="h-[210px] shrink-0 border-t border-border/60 bg-card/30">
-          <BottomTabs />
+        <div className="h-[240px] shrink-0 border-t border-border/60 bg-card/30">
+          <BottomTabs symbol={settings.symbol} />
         </div>
       ) : null}
       <AlertsDialog open={alertsOpen} onOpenChange={setAlertsOpen} symbol={settings.symbol} />
