@@ -74,8 +74,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [loading, profile, pathname, navigate]);
 
   return (
-    <div className="relative flex min-h-screen w-full bg-background">
-      <div className="pointer-events-none fixed inset-x-0 top-0 z-0 h-[500px] gradient-radial-glow opacity-40" />
+    <div className="relative flex min-h-dvh w-full bg-background">
+      <a href="#main" className="skip-link">Skip to content</a>
+      <div className="pointer-events-none fixed inset-x-0 top-0 z-0 h-[500px] gradient-radial-glow opacity-40" aria-hidden />
+
 
       {/* Desktop sidebar */}
       <aside
