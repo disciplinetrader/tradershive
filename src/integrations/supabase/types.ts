@@ -94,6 +94,346 @@ export type Database = {
         }
         Relationships: []
       }
+      journal_attachments: {
+        Row: {
+          bucket: string
+          content_type: string | null
+          created_at: string
+          entry_id: string
+          id: string
+          kind: string
+          name: string | null
+          path: string
+          size_bytes: number | null
+          user_id: string
+        }
+        Insert: {
+          bucket: string
+          content_type?: string | null
+          created_at?: string
+          entry_id: string
+          id?: string
+          kind: string
+          name?: string | null
+          path: string
+          size_bytes?: number | null
+          user_id: string
+        }
+        Update: {
+          bucket?: string
+          content_type?: string | null
+          created_at?: string
+          entry_id?: string
+          id?: string
+          kind?: string
+          name?: string | null
+          path?: string
+          size_bytes?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journal_attachments_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journal_entries: {
+        Row: {
+          account_id: string | null
+          ai_mistake_detection: Json | null
+          ai_psychology: Json | null
+          ai_review: Json | null
+          ai_suggestions: Json | null
+          checklist: Json
+          closed_at: string | null
+          commission: number | null
+          created_at: string
+          direction: string | null
+          discipline: number | null
+          duration_seconds: number | null
+          emotions: string[]
+          entry_price: number | null
+          entry_quality: number | null
+          execution: number | null
+          exit_price: number | null
+          exit_quality: number | null
+          grade: Database["public"]["Enums"]["journal_grade"] | null
+          id: string
+          is_favorite: boolean
+          is_public: boolean
+          lot_size: number | null
+          market: string | null
+          mistakes: string[]
+          notes_html: string | null
+          notes_text: string | null
+          opened_at: string | null
+          patience: number | null
+          pnl: number | null
+          reward_pct: number | null
+          risk_mgmt: number | null
+          risk_pct: number | null
+          rr: number | null
+          screenshots: string[]
+          session: Database["public"]["Enums"]["journal_session"] | null
+          setup: string | null
+          share_token: string | null
+          status: Database["public"]["Enums"]["journal_status"]
+          stop_loss: number | null
+          strategy: string | null
+          swap: number | null
+          symbol: string | null
+          take_profit: number | null
+          trade_id: string | null
+          updated_at: string
+          user_id: string
+          word_count: number
+        }
+        Insert: {
+          account_id?: string | null
+          ai_mistake_detection?: Json | null
+          ai_psychology?: Json | null
+          ai_review?: Json | null
+          ai_suggestions?: Json | null
+          checklist?: Json
+          closed_at?: string | null
+          commission?: number | null
+          created_at?: string
+          direction?: string | null
+          discipline?: number | null
+          duration_seconds?: number | null
+          emotions?: string[]
+          entry_price?: number | null
+          entry_quality?: number | null
+          execution?: number | null
+          exit_price?: number | null
+          exit_quality?: number | null
+          grade?: Database["public"]["Enums"]["journal_grade"] | null
+          id?: string
+          is_favorite?: boolean
+          is_public?: boolean
+          lot_size?: number | null
+          market?: string | null
+          mistakes?: string[]
+          notes_html?: string | null
+          notes_text?: string | null
+          opened_at?: string | null
+          patience?: number | null
+          pnl?: number | null
+          reward_pct?: number | null
+          risk_mgmt?: number | null
+          risk_pct?: number | null
+          rr?: number | null
+          screenshots?: string[]
+          session?: Database["public"]["Enums"]["journal_session"] | null
+          setup?: string | null
+          share_token?: string | null
+          status?: Database["public"]["Enums"]["journal_status"]
+          stop_loss?: number | null
+          strategy?: string | null
+          swap?: number | null
+          symbol?: string | null
+          take_profit?: number | null
+          trade_id?: string | null
+          updated_at?: string
+          user_id: string
+          word_count?: number
+        }
+        Update: {
+          account_id?: string | null
+          ai_mistake_detection?: Json | null
+          ai_psychology?: Json | null
+          ai_review?: Json | null
+          ai_suggestions?: Json | null
+          checklist?: Json
+          closed_at?: string | null
+          commission?: number | null
+          created_at?: string
+          direction?: string | null
+          discipline?: number | null
+          duration_seconds?: number | null
+          emotions?: string[]
+          entry_price?: number | null
+          entry_quality?: number | null
+          execution?: number | null
+          exit_price?: number | null
+          exit_quality?: number | null
+          grade?: Database["public"]["Enums"]["journal_grade"] | null
+          id?: string
+          is_favorite?: boolean
+          is_public?: boolean
+          lot_size?: number | null
+          market?: string | null
+          mistakes?: string[]
+          notes_html?: string | null
+          notes_text?: string | null
+          opened_at?: string | null
+          patience?: number | null
+          pnl?: number | null
+          reward_pct?: number | null
+          risk_mgmt?: number | null
+          risk_pct?: number | null
+          rr?: number | null
+          screenshots?: string[]
+          session?: Database["public"]["Enums"]["journal_session"] | null
+          setup?: string | null
+          share_token?: string | null
+          status?: Database["public"]["Enums"]["journal_status"]
+          stop_loss?: number | null
+          strategy?: string | null
+          swap?: number | null
+          symbol?: string | null
+          take_profit?: number | null
+          trade_id?: string | null
+          updated_at?: string
+          user_id?: string
+          word_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journal_entries_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "paper_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_entries_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: false
+            referencedRelation: "paper_trades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journal_entry_tags: {
+        Row: {
+          created_at: string
+          entry_id: string
+          tag_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          entry_id: string
+          tag_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          entry_id?: string
+          tag_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journal_entry_tags_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_entry_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "journal_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journal_history: {
+        Row: {
+          action: string
+          created_at: string
+          entry_id: string
+          id: string
+          snapshot: Json | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          entry_id: string
+          id?: string
+          snapshot?: Json | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          entry_id?: string
+          id?: string
+          snapshot?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journal_history_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journal_tags: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      journal_taxonomy: {
+        Row: {
+          color: string | null
+          created_at: string
+          id: string
+          kind: Database["public"]["Enums"]["journal_taxonomy_kind"]
+          label: string
+          user_id: string
+          value: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          kind: Database["public"]["Enums"]["journal_taxonomy_kind"]
+          label: string
+          user_id: string
+          value: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["journal_taxonomy_kind"]
+          label?: string
+          user_id?: string
+          value?: string
+        }
+        Relationships: []
+      }
       notification_preferences: {
         Row: {
           achievements: boolean
@@ -869,6 +1209,10 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "premium" | "member"
+      journal_grade: "A+" | "A" | "B" | "C" | "D" | "F"
+      journal_session: "london" | "new_york" | "asia" | "sydney" | "custom"
+      journal_status: "draft" | "published" | "archived"
+      journal_taxonomy_kind: "setup" | "emotion" | "mistake"
       league:
         | "bronze"
         | "silver"
@@ -1045,6 +1389,10 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "premium", "member"],
+      journal_grade: ["A+", "A", "B", "C", "D", "F"],
+      journal_session: ["london", "new_york", "asia", "sydney", "custom"],
+      journal_status: ["draft", "published", "archived"],
+      journal_taxonomy_kind: ["setup", "emotion", "mistake"],
       league: [
         "bronze",
         "silver",
