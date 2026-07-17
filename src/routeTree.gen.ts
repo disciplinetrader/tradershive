@@ -29,7 +29,14 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedChallengesRouteImport } from './routes/_authenticated/challenges'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAchievementsRouteImport } from './routes/_authenticated/achievements'
+import { Route as AuthenticatedStatisticsIndexRouteImport } from './routes/_authenticated/statistics.index'
 import { Route as JournalShareTokenRouteImport } from './routes/journal.share.$token'
+import { Route as AuthenticatedStatisticsSetupsRouteImport } from './routes/_authenticated/statistics.setups'
+import { Route as AuthenticatedStatisticsSessionsRouteImport } from './routes/_authenticated/statistics.sessions'
+import { Route as AuthenticatedStatisticsRiskRouteImport } from './routes/_authenticated/statistics.risk'
+import { Route as AuthenticatedStatisticsReportsRouteImport } from './routes/_authenticated/statistics.reports'
+import { Route as AuthenticatedStatisticsPerformanceRouteImport } from './routes/_authenticated/statistics.performance'
+import { Route as AuthenticatedStatisticsCalendarRouteImport } from './routes/_authenticated/statistics.calendar'
 import { Route as AuthenticatedChallengesRewardsRouteImport } from './routes/_authenticated/challenges/rewards'
 import { Route as AuthenticatedChallengesHistoryRouteImport } from './routes/_authenticated/challenges/history'
 
@@ -135,11 +142,53 @@ const AuthenticatedAchievementsRoute =
     path: '/achievements',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedStatisticsIndexRoute =
+  AuthenticatedStatisticsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedStatisticsRoute,
+  } as any)
 const JournalShareTokenRoute = JournalShareTokenRouteImport.update({
   id: '/journal/share/$token',
   path: '/journal/share/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedStatisticsSetupsRoute =
+  AuthenticatedStatisticsSetupsRouteImport.update({
+    id: '/setups',
+    path: '/setups',
+    getParentRoute: () => AuthenticatedStatisticsRoute,
+  } as any)
+const AuthenticatedStatisticsSessionsRoute =
+  AuthenticatedStatisticsSessionsRouteImport.update({
+    id: '/sessions',
+    path: '/sessions',
+    getParentRoute: () => AuthenticatedStatisticsRoute,
+  } as any)
+const AuthenticatedStatisticsRiskRoute =
+  AuthenticatedStatisticsRiskRouteImport.update({
+    id: '/risk',
+    path: '/risk',
+    getParentRoute: () => AuthenticatedStatisticsRoute,
+  } as any)
+const AuthenticatedStatisticsReportsRoute =
+  AuthenticatedStatisticsReportsRouteImport.update({
+    id: '/reports',
+    path: '/reports',
+    getParentRoute: () => AuthenticatedStatisticsRoute,
+  } as any)
+const AuthenticatedStatisticsPerformanceRoute =
+  AuthenticatedStatisticsPerformanceRouteImport.update({
+    id: '/performance',
+    path: '/performance',
+    getParentRoute: () => AuthenticatedStatisticsRoute,
+  } as any)
+const AuthenticatedStatisticsCalendarRoute =
+  AuthenticatedStatisticsCalendarRouteImport.update({
+    id: '/calendar',
+    path: '/calendar',
+    getParentRoute: () => AuthenticatedStatisticsRoute,
+  } as any)
 const AuthenticatedChallengesRewardsRoute =
   AuthenticatedChallengesRewardsRouteImport.update({
     id: '/rewards',
@@ -171,11 +220,18 @@ export interface FileRoutesByFullPath {
   '/paper-trading': typeof AuthenticatedPaperTradingRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/settings': typeof AuthenticatedSettingsRoute
-  '/statistics': typeof AuthenticatedStatisticsRoute
+  '/statistics': typeof AuthenticatedStatisticsRouteWithChildren
   '/support': typeof AuthenticatedSupportRoute
   '/challenges/history': typeof AuthenticatedChallengesHistoryRoute
   '/challenges/rewards': typeof AuthenticatedChallengesRewardsRoute
+  '/statistics/calendar': typeof AuthenticatedStatisticsCalendarRoute
+  '/statistics/performance': typeof AuthenticatedStatisticsPerformanceRoute
+  '/statistics/reports': typeof AuthenticatedStatisticsReportsRoute
+  '/statistics/risk': typeof AuthenticatedStatisticsRiskRoute
+  '/statistics/sessions': typeof AuthenticatedStatisticsSessionsRoute
+  '/statistics/setups': typeof AuthenticatedStatisticsSetupsRoute
   '/journal/share/$token': typeof JournalShareTokenRoute
+  '/statistics/': typeof AuthenticatedStatisticsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -195,11 +251,17 @@ export interface FileRoutesByTo {
   '/paper-trading': typeof AuthenticatedPaperTradingRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/settings': typeof AuthenticatedSettingsRoute
-  '/statistics': typeof AuthenticatedStatisticsRoute
   '/support': typeof AuthenticatedSupportRoute
   '/challenges/history': typeof AuthenticatedChallengesHistoryRoute
   '/challenges/rewards': typeof AuthenticatedChallengesRewardsRoute
+  '/statistics/calendar': typeof AuthenticatedStatisticsCalendarRoute
+  '/statistics/performance': typeof AuthenticatedStatisticsPerformanceRoute
+  '/statistics/reports': typeof AuthenticatedStatisticsReportsRoute
+  '/statistics/risk': typeof AuthenticatedStatisticsRiskRoute
+  '/statistics/sessions': typeof AuthenticatedStatisticsSessionsRoute
+  '/statistics/setups': typeof AuthenticatedStatisticsSetupsRoute
   '/journal/share/$token': typeof JournalShareTokenRoute
+  '/statistics': typeof AuthenticatedStatisticsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -221,11 +283,18 @@ export interface FileRoutesById {
   '/_authenticated/paper-trading': typeof AuthenticatedPaperTradingRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
-  '/_authenticated/statistics': typeof AuthenticatedStatisticsRoute
+  '/_authenticated/statistics': typeof AuthenticatedStatisticsRouteWithChildren
   '/_authenticated/support': typeof AuthenticatedSupportRoute
   '/_authenticated/challenges/history': typeof AuthenticatedChallengesHistoryRoute
   '/_authenticated/challenges/rewards': typeof AuthenticatedChallengesRewardsRoute
+  '/_authenticated/statistics/calendar': typeof AuthenticatedStatisticsCalendarRoute
+  '/_authenticated/statistics/performance': typeof AuthenticatedStatisticsPerformanceRoute
+  '/_authenticated/statistics/reports': typeof AuthenticatedStatisticsReportsRoute
+  '/_authenticated/statistics/risk': typeof AuthenticatedStatisticsRiskRoute
+  '/_authenticated/statistics/sessions': typeof AuthenticatedStatisticsSessionsRoute
+  '/_authenticated/statistics/setups': typeof AuthenticatedStatisticsSetupsRoute
   '/journal/share/$token': typeof JournalShareTokenRoute
+  '/_authenticated/statistics/': typeof AuthenticatedStatisticsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -251,7 +320,14 @@ export interface FileRouteTypes {
     | '/support'
     | '/challenges/history'
     | '/challenges/rewards'
+    | '/statistics/calendar'
+    | '/statistics/performance'
+    | '/statistics/reports'
+    | '/statistics/risk'
+    | '/statistics/sessions'
+    | '/statistics/setups'
     | '/journal/share/$token'
+    | '/statistics/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -271,11 +347,17 @@ export interface FileRouteTypes {
     | '/paper-trading'
     | '/profile'
     | '/settings'
-    | '/statistics'
     | '/support'
     | '/challenges/history'
     | '/challenges/rewards'
+    | '/statistics/calendar'
+    | '/statistics/performance'
+    | '/statistics/reports'
+    | '/statistics/risk'
+    | '/statistics/sessions'
+    | '/statistics/setups'
     | '/journal/share/$token'
+    | '/statistics'
   id:
     | '__root__'
     | '/'
@@ -300,7 +382,14 @@ export interface FileRouteTypes {
     | '/_authenticated/support'
     | '/_authenticated/challenges/history'
     | '/_authenticated/challenges/rewards'
+    | '/_authenticated/statistics/calendar'
+    | '/_authenticated/statistics/performance'
+    | '/_authenticated/statistics/reports'
+    | '/_authenticated/statistics/risk'
+    | '/_authenticated/statistics/sessions'
+    | '/_authenticated/statistics/setups'
     | '/journal/share/$token'
+    | '/_authenticated/statistics/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -458,12 +547,61 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAchievementsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/statistics/': {
+      id: '/_authenticated/statistics/'
+      path: '/'
+      fullPath: '/statistics/'
+      preLoaderRoute: typeof AuthenticatedStatisticsIndexRouteImport
+      parentRoute: typeof AuthenticatedStatisticsRoute
+    }
     '/journal/share/$token': {
       id: '/journal/share/$token'
       path: '/journal/share/$token'
       fullPath: '/journal/share/$token'
       preLoaderRoute: typeof JournalShareTokenRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/statistics/setups': {
+      id: '/_authenticated/statistics/setups'
+      path: '/setups'
+      fullPath: '/statistics/setups'
+      preLoaderRoute: typeof AuthenticatedStatisticsSetupsRouteImport
+      parentRoute: typeof AuthenticatedStatisticsRoute
+    }
+    '/_authenticated/statistics/sessions': {
+      id: '/_authenticated/statistics/sessions'
+      path: '/sessions'
+      fullPath: '/statistics/sessions'
+      preLoaderRoute: typeof AuthenticatedStatisticsSessionsRouteImport
+      parentRoute: typeof AuthenticatedStatisticsRoute
+    }
+    '/_authenticated/statistics/risk': {
+      id: '/_authenticated/statistics/risk'
+      path: '/risk'
+      fullPath: '/statistics/risk'
+      preLoaderRoute: typeof AuthenticatedStatisticsRiskRouteImport
+      parentRoute: typeof AuthenticatedStatisticsRoute
+    }
+    '/_authenticated/statistics/reports': {
+      id: '/_authenticated/statistics/reports'
+      path: '/reports'
+      fullPath: '/statistics/reports'
+      preLoaderRoute: typeof AuthenticatedStatisticsReportsRouteImport
+      parentRoute: typeof AuthenticatedStatisticsRoute
+    }
+    '/_authenticated/statistics/performance': {
+      id: '/_authenticated/statistics/performance'
+      path: '/performance'
+      fullPath: '/statistics/performance'
+      preLoaderRoute: typeof AuthenticatedStatisticsPerformanceRouteImport
+      parentRoute: typeof AuthenticatedStatisticsRoute
+    }
+    '/_authenticated/statistics/calendar': {
+      id: '/_authenticated/statistics/calendar'
+      path: '/calendar'
+      fullPath: '/statistics/calendar'
+      preLoaderRoute: typeof AuthenticatedStatisticsCalendarRouteImport
+      parentRoute: typeof AuthenticatedStatisticsRoute
     }
     '/_authenticated/challenges/rewards': {
       id: '/_authenticated/challenges/rewards'
@@ -498,6 +636,33 @@ const AuthenticatedChallengesRouteWithChildren =
     AuthenticatedChallengesRouteChildren,
   )
 
+interface AuthenticatedStatisticsRouteChildren {
+  AuthenticatedStatisticsCalendarRoute: typeof AuthenticatedStatisticsCalendarRoute
+  AuthenticatedStatisticsPerformanceRoute: typeof AuthenticatedStatisticsPerformanceRoute
+  AuthenticatedStatisticsReportsRoute: typeof AuthenticatedStatisticsReportsRoute
+  AuthenticatedStatisticsRiskRoute: typeof AuthenticatedStatisticsRiskRoute
+  AuthenticatedStatisticsSessionsRoute: typeof AuthenticatedStatisticsSessionsRoute
+  AuthenticatedStatisticsSetupsRoute: typeof AuthenticatedStatisticsSetupsRoute
+  AuthenticatedStatisticsIndexRoute: typeof AuthenticatedStatisticsIndexRoute
+}
+
+const AuthenticatedStatisticsRouteChildren: AuthenticatedStatisticsRouteChildren =
+  {
+    AuthenticatedStatisticsCalendarRoute: AuthenticatedStatisticsCalendarRoute,
+    AuthenticatedStatisticsPerformanceRoute:
+      AuthenticatedStatisticsPerformanceRoute,
+    AuthenticatedStatisticsReportsRoute: AuthenticatedStatisticsReportsRoute,
+    AuthenticatedStatisticsRiskRoute: AuthenticatedStatisticsRiskRoute,
+    AuthenticatedStatisticsSessionsRoute: AuthenticatedStatisticsSessionsRoute,
+    AuthenticatedStatisticsSetupsRoute: AuthenticatedStatisticsSetupsRoute,
+    AuthenticatedStatisticsIndexRoute: AuthenticatedStatisticsIndexRoute,
+  }
+
+const AuthenticatedStatisticsRouteWithChildren =
+  AuthenticatedStatisticsRoute._addFileChildren(
+    AuthenticatedStatisticsRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAchievementsRoute: typeof AuthenticatedAchievementsRoute
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
@@ -508,7 +673,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPaperTradingRoute: typeof AuthenticatedPaperTradingRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
-  AuthenticatedStatisticsRoute: typeof AuthenticatedStatisticsRoute
+  AuthenticatedStatisticsRoute: typeof AuthenticatedStatisticsRouteWithChildren
   AuthenticatedSupportRoute: typeof AuthenticatedSupportRoute
 }
 
@@ -522,7 +687,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPaperTradingRoute: AuthenticatedPaperTradingRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
-  AuthenticatedStatisticsRoute: AuthenticatedStatisticsRoute,
+  AuthenticatedStatisticsRoute: AuthenticatedStatisticsRouteWithChildren,
   AuthenticatedSupportRoute: AuthenticatedSupportRoute,
 }
 
