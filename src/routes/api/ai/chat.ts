@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { convertToModelMessages, streamText, type UIMessage } from "ai";
 import { createClient } from "@supabase/supabase-js";
+import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import {
   createLovableAiGatewayProvider,
@@ -10,6 +11,12 @@ import {
 } from "@/lib/ai-gateway.server";
 import { COACH_SYSTEM_PROMPT } from "@/lib/ai/prompts";
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "@/lib/ai/constants";
+import { Errors, guardRoute } from "@/lib/server-errors";
+
+const chatBodySchema = z.object({
+  messages: z.array(z.any()).min(1).max(200),
+  sessionId: z.string().uuid().optional(),
+});
 
 type ChatBody = {
   messages: UIMessage[];
