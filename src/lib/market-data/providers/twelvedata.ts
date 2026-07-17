@@ -50,6 +50,7 @@ function toTd(engineSym: string): string {
 
 export class TwelveDataProvider implements MarketDataProvider {
   readonly code = "twelvedata";
+  readonly descriptor = DESCRIPTORS_BY_CODE.get("twelvedata")!;
   readonly name = "Twelve Data";
   readonly capabilities: ProviderCapabilities = {
     markets: ["forex", "metals", "indices", "commodities", "stocks"],

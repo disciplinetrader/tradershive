@@ -26,6 +26,7 @@ function toNative(symbol: string): string { return symbol.replace(/[\/\-\.]/g, "
 
 export class BinanceProvider implements MarketDataProvider {
   readonly code = "binance";
+  readonly descriptor = DESCRIPTORS_BY_CODE.get("binance")!;
   readonly name = "Binance";
   readonly capabilities: ProviderCapabilities = {
     markets: ["crypto"], supportsRest: true, supportsWs: true, supportsHistorical: true, supportsStreaming: true,
