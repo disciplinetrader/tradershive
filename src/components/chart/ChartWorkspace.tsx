@@ -4,6 +4,10 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ChartEngine, type ChartHandle } from "@/components/chart/ChartEngine";
 import { ChartToolbar } from "@/components/chart/ChartToolbar";
+import { LeftToolRail } from "@/components/chart/LeftToolRail";
+import { RightIconRail } from "@/components/chart/RightIconRail";
+import { ChartInfoBar } from "@/components/chart/ChartInfoBar";
+import { RangeBar } from "@/components/chart/RangeBar";
 import { Watchlist } from "@/components/chart/Watchlist";
 import { TradePanel } from "@/components/chart/TradePanel";
 import { BottomTabs } from "@/components/chart/BottomTabs";
@@ -12,18 +16,26 @@ import { OrderLinesOverlay, type OrderLine } from "@/components/chart/OrderLines
 import { DEFAULT_CHART_SETTINGS, INDICATORS } from "@/lib/chart/constants";
 import type { ChartSettings, DrawingTool, IndicatorConfig, IndicatorKey } from "@/lib/chart/types";
 import { saveLayout, pushRecentSymbol, uploadChartScreenshot } from "@/lib/chart/storage";
+import { ChevronDown, ChevronUp, Plus, MoreHorizontal, LayoutGrid } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Props {
   fullscreen?: boolean;
   initial?: Partial<ChartSettings>;
 }
 
+type RightTab = "watchlist" | "trade";
+
 /**
- * Professional trading workspace. Layout:
- *   Top Toolbar
- *   Watchlist | Chart Area (grid) | Trade Panel
- *   Bottom Tabs
- * Consumes ONLY MarketDataEngine via <ChartEngine />.
+ * TradingView-style Trading Workspace:
+ *   ┌──────────── top toolbar ────────────┐
+ *   │ left rail │  chart  │ right panel   │ right rail
+ *   │           │  info   │ (watchlist)   │
+ *   │           │  candle │───────────────│
+ *   │           │  ...    │ trade panel   │
+ *   │           │ range bar             │
+ *   ├─────────── bottom tabs (positions / orders / history) ───────────┤
+ * All market data flows through MarketDataEngine via <ChartEngine />.
  */
 export function ChartWorkspace({ fullscreen, initial }: Props) {
   const navigate = useNavigate();
@@ -34,8 +46,11 @@ export function ChartWorkspace({ fullscreen, initial }: Props) {
   const [alertsOpen, setAlertsOpen] = useState(false);
   const [chartApi, setChartApi] = useState<ChartHandle | null>(null);
   const [orderLines, setOrderLines] = useState<OrderLine[]>([]);
+  const [rightOpen, setRightOpen] = useState(true);
+  const [rightTab, setRightTab] = useState<RightTab>("watchlist");
+  const [bottomOpen, setBottomOpen] = useState(true);
 
-  // Load open paper positions for the active symbol → render entry/SL/TP lines
+  // Open positions → SL/TP overlay lines
   useEffect(() => {
     let cancelled = false;
     async function load() {
@@ -44,9 +59,7 @@ export function ChartWorkspace({ fullscreen, initial }: Props) {
       const { data } = await supabase
         .from("paper_trades")
         .select("id,entry_price,stop_loss,take_profit,direction")
-        .eq("user_id", u.user.id)
-        .eq("symbol", settings.symbol)
-        .eq("status", "open");
+        .eq("user_id", u.user.id).eq("symbol", settings.symbol).eq("status", "open");
       if (cancelled || !data) return;
       const lines: OrderLine[] = [];
       for (const t of data) {
@@ -78,14 +91,13 @@ export function ChartWorkspace({ fullscreen, initial }: Props) {
 
   const updateSettings = useCallback((patch: Partial<ChartSettings>) => setSettings((s) => ({ ...s, ...patch })), []);
 
-  // Record recent symbol
+  // Persist recent symbol
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) void pushRecentSymbol(data.user.id, settings.symbol, settings.timeframe);
     });
   }, [settings.symbol, settings.timeframe]);
 
-  // Hotkeys
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
       if (e.key === "Escape") setTool("cursor");
@@ -132,8 +144,10 @@ export function ChartWorkspace({ fullscreen, initial }: Props) {
     return { cols, rows, cells: cols * rows };
   }, [grid]);
 
+  const lastCandle = chartApi?.candles?.[chartApi.candles.length - 1] ?? null;
+
   return (
-    <div className="flex h-full min-h-0 flex-col bg-background">
+    <div className="flex h-full min-h-0 flex-col bg-[hsl(220_18%_6%)] text-foreground">
       <ChartToolbar
         settings={settings} onChange={updateSettings}
         indicators={indicators} onAddIndicator={addIndicator} onRemoveIndicator={removeIndicator}
@@ -143,52 +157,136 @@ export function ChartWorkspace({ fullscreen, initial }: Props) {
         onFullscreen={() => navigate({ to: "/trading/fullscreen" })}
         onOpenAlerts={() => setAlertsOpen(true)}
         onOpenReplay={() => navigate({ to: "/replay" })}
+        onToggleRightPanel={() => setRightOpen((v) => !v)}
+        rightPanelOpen={rightOpen}
       />
-      <div className="grid min-h-0 flex-1 grid-cols-[260px_minmax(0,1fr)_280px]">
-        {!fullscreen ? (
-          <aside className="min-h-0 border-r border-border/60 bg-card/30">
-            <Watchlist symbol={settings.symbol}
-              onPick={(s) => updateSettings({ symbol: s.symbol, market: (s as any).market })} />
-          </aside>
-        ) : <div />}
 
-        <section className="min-h-0">
-          <div className="grid h-full min-h-0" style={{ gridTemplateColumns: `repeat(${gridCells.cols}, minmax(0,1fr))`, gridTemplateRows: `repeat(${gridCells.rows}, minmax(0,1fr))` }}>
-            {Array.from({ length: gridCells.cells }, (_, i) => (
-              <div key={i} className="relative min-h-0 border-r border-b border-border/40 last:border-r-0">
-                {i === 0 ? (
-                  <ChartEngine settings={settings} indicators={indicators} onReady={setChartApi}>
-                    <OrderLinesOverlay
-                      adapter={chartApi?.adapter ?? null}
-                      lines={orderLines}
-                      tick={chartApi?.candles.length ?? 0}
-                      onChange={handleOrderLineChange}
-                      onCommit={handleOrderLineCommit}
-                    />
-                  </ChartEngine>
+      <div className="flex min-h-0 flex-1">
+        {/* Left drawing tool rail */}
+        {!fullscreen ? <LeftToolRail active={tool} onChange={setTool} /> : null}
+
+        {/* Chart + right panel */}
+        <div className="flex min-h-0 flex-1">
+          {/* Chart column */}
+          <section className="relative flex min-h-0 flex-1 flex-col">
+            <div className="relative min-h-0 flex-1">
+              <div className="grid h-full min-h-0"
+                style={{ gridTemplateColumns: `repeat(${gridCells.cols}, minmax(0,1fr))`, gridTemplateRows: `repeat(${gridCells.rows}, minmax(0,1fr))` }}>
+                {Array.from({ length: gridCells.cells }, (_, i) => (
+                  <div key={i} className="relative min-h-0 border-r border-b border-border/40 last:border-r-0">
+                    {i === 0 ? (
+                      <>
+                        <ChartInfoBar
+                          symbol={settings.symbol}
+                          timeframe={settings.timeframe}
+                          market={settings.market}
+                          last={lastCandle}
+                        />
+                        <ChartEngine settings={settings} indicators={indicators} onReady={setChartApi}>
+                          <OrderLinesOverlay
+                            adapter={chartApi?.adapter ?? null}
+                            lines={orderLines}
+                            tick={chartApi?.candles.length ?? 0}
+                            onChange={handleOrderLineChange}
+                            onCommit={handleOrderLineCommit}
+                          />
+                        </ChartEngine>
+                      </>
+                    ) : (
+                      <ChartEngine
+                        settings={{ ...settings, symbol: settings.symbol, timeframe: settings.timeframe }}
+                        indicators={indicators}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+            {!fullscreen ? <RangeBar /> : null}
+          </section>
+
+          {/* Right panel: Watchlist (default) with tab to Trade */}
+          {!fullscreen && rightOpen ? (
+            <aside className="flex min-h-0 w-[260px] shrink-0 flex-col border-l border-border/60 bg-[hsl(220_18%_7%)]">
+              <div className="flex h-9 items-center gap-1 border-b border-border/60 px-2 text-[11px]">
+                <RightTabButton active={rightTab === "watchlist"} onClick={() => setRightTab("watchlist")}>
+                  <span className="mr-1 inline-block h-2 w-2 rounded-full bg-rose-500" />
+                  Red list
+                  <ChevronDown className="ml-1 h-3 w-3 opacity-60" />
+                </RightTabButton>
+                <RightTabButton active={rightTab === "trade"} onClick={() => setRightTab("trade")}>
+                  Trade
+                </RightTabButton>
+                <div className="ml-auto flex items-center gap-0.5 text-muted-foreground">
+                  <button title="Add symbol" className="grid h-6 w-6 place-items-center rounded hover:bg-background/60 hover:text-foreground"><Plus className="h-3.5 w-3.5" /></button>
+                  <button title="Sections" className="grid h-6 w-6 place-items-center rounded hover:bg-background/60 hover:text-foreground"><LayoutGrid className="h-3.5 w-3.5" /></button>
+                  <button title="More" className="grid h-6 w-6 place-items-center rounded hover:bg-background/60 hover:text-foreground"><MoreHorizontal className="h-3.5 w-3.5" /></button>
+                </div>
+              </div>
+              <div className="min-h-0 flex-1 overflow-hidden">
+                {rightTab === "watchlist" ? (
+                  <Watchlist symbol={settings.symbol}
+                    onPick={(s) => updateSettings({ symbol: s.symbol, market: (s as any).market })} />
                 ) : (
-                  <ChartEngine
-                    settings={{ ...settings, symbol: settings.symbol, timeframe: settings.timeframe }}
-                    indicators={indicators}
-                  />
+                  <div className="h-full overflow-y-auto">
+                    <TradePanel symbol={settings.symbol} market={settings.market} />
+                  </div>
                 )}
               </div>
-            ))}
-          </div>
-        </section>
+            </aside>
+          ) : null}
+        </div>
 
+        {/* Right icon rail */}
         {!fullscreen ? (
-          <aside className="min-h-0">
-            <TradePanel symbol={settings.symbol} market={settings.market} />
-          </aside>
-        ) : <div />}
+          <RightIconRail
+            active={rightTab}
+            onSelect={(k) => {
+              if (k === "watchlist") { setRightOpen(true); setRightTab("watchlist"); }
+              else if (k === "alerts") setAlertsOpen(true);
+              else if (k === "ai") navigate({ to: "/ai/chat" });
+              else if (k === "notes") { setRightOpen(true); setRightTab("trade"); }
+            }}
+          />
+        ) : null}
       </div>
+
+      {/* Bottom tabs */}
       {!fullscreen ? (
-        <div className="h-[240px] shrink-0 border-t border-border/60 bg-card/30">
-          <BottomTabs symbol={settings.symbol} />
+        <div className={cn("shrink-0 border-t border-border/60 bg-[hsl(220_18%_7%)]", bottomOpen ? "h-[220px]" : "h-8")}>
+          <div className="flex h-8 items-center gap-2 border-b border-border/60 px-2 text-[11px] text-muted-foreground">
+            <span className="font-semibold uppercase tracking-wider">Trading Panel</span>
+            <button
+              onClick={() => setBottomOpen((v) => !v)}
+              className="ml-auto grid h-6 w-6 place-items-center rounded hover:bg-background/60 hover:text-foreground"
+              title={bottomOpen ? "Collapse" : "Expand"}
+            >
+              {bottomOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
+            </button>
+          </div>
+          {bottomOpen ? (
+            <div className="h-[calc(100%-2rem)] overflow-hidden">
+              <BottomTabs symbol={settings.symbol} />
+            </div>
+          ) : null}
         </div>
       ) : null}
+
       <AlertsDialog open={alertsOpen} onOpenChange={setAlertsOpen} symbol={settings.symbol} />
     </div>
+  );
+}
+
+function RightTabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "flex h-7 items-center rounded px-2 text-[11px] font-semibold transition",
+        active ? "bg-primary/15 text-foreground" : "text-muted-foreground hover:bg-background/60 hover:text-foreground",
+      )}
+    >
+      {children}
+    </button>
   );
 }
