@@ -42,12 +42,14 @@ export function CoachChat({
     () =>
       new DefaultChatTransport({
         api: "/api/ai/chat",
-        prepareSendMessagesRequest: async ({ messages, id }) => {
+        prepareSendMessagesRequest: async ({ messages }) => {
           const { data } = await supabase.auth.getSession();
           const token = data.session?.access_token;
+          const headers: Record<string, string> = {};
+          if (token) headers.Authorization = `Bearer ${token}`;
           return {
             body: { messages, sessionId },
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
+            headers,
           };
         },
       }),
