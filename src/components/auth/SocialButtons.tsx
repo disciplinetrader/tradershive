@@ -46,7 +46,7 @@ export function SocialButtons({ mode = "signin" }: { mode?: "signin" | "signup" 
     setBusy("google");
     try {
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: `${window.location.origin}/auth/callback`,
+        redirect_uri: window.location.origin,
       });
       if (result.error) {
         toast.error(result.error.message ?? "Google sign-in failed");
