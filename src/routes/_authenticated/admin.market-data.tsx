@@ -23,7 +23,11 @@ function AdminMarketDataPage() {
   });
 
   return (
-    <AdminShell title="Market Data" description="Monitor providers, connections, streams and historical downloads.">
+    <AdminShell>
+      <div>
+        <h1 className="text-xl font-bold">Market Data</h1>
+        <p className="text-sm text-muted-foreground">Monitor providers, connections, streams and historical downloads.</p>
+      </div>
       <GlassCard className="p-4"><ProviderStatusStrip /></GlassCard>
 
       <GlassCard className="p-4">
