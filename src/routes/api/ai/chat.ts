@@ -187,7 +187,7 @@ export const Route = createFileRoute("/api/ai/chat")({
         });
 
         return withLovableAiGatewayRunIdHeader(response, gateway);
-      },
+      }),
     },
   },
 });
