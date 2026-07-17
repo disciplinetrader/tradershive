@@ -5,6 +5,7 @@
  * Real providers (Binance, OANDA) implement the same interface.
  */
 
+import { DESCRIPTORS_BY_CODE } from "../descriptors";
 import { TIMEFRAME_SECONDS } from "../constants";
 import { DEFAULT_SESSIONS } from "../sessions";
 import type {

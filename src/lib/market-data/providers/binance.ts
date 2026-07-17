@@ -5,6 +5,7 @@
  * on failure so consumers can degrade to the mock provider.
  */
 
+import { DESCRIPTORS_BY_CODE } from "../descriptors";
 import { TIMEFRAME_SECONDS } from "../constants";
 import { DEFAULT_SESSIONS } from "../sessions";
 import type {

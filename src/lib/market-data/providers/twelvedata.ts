@@ -5,6 +5,7 @@
  *
  * Live quotes: polled through the server proxy at a modest cadence so the
  * free-tier request quota is respected. Historical candles use /time_series.
+import { DESCRIPTORS_BY_CODE } from "../descriptors";
  */
 import { twelveDataCandles, twelveDataQuote, twelveDataStatus } from "../twelvedata.functions";
 import { DEFAULT_SESSIONS } from "../sessions";
