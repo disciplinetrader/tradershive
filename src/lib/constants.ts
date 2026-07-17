@@ -40,10 +40,11 @@ export const MARKETS = [
 export type Market = (typeof MARKETS)[number]["value"];
 
 export const TRADING_STYLES = [
-  { value: "scalping", label: "Scalping", hint: "Minutes" },
-  { value: "intraday", label: "Intraday", hint: "Same-day" },
-  { value: "swing", label: "Swing", hint: "Days to weeks" },
-  { value: "position", label: "Position", hint: "Weeks to months" },
+  { value: "scalper", label: "Scalping", hint: "Minutes" },
+  { value: "day_trader", label: "Intraday", hint: "Same-day" },
+  { value: "swing_trader", label: "Swing", hint: "Days to weeks" },
+  { value: "position_trader", label: "Position", hint: "Weeks to months" },
+  { value: "algo", label: "Algorithmic", hint: "Systematic / automated" },
 ] as const;
 export type TradingStyle = (typeof TRADING_STYLES)[number]["value"];
 
