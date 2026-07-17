@@ -14,6 +14,62 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_statistics: {
+        Row: {
+          account_id: string
+          best_trade: number
+          breakevens: number
+          gross_loss: number
+          gross_profit: number
+          losses: number
+          net_pnl: number
+          total_trades: number
+          updated_at: string
+          user_id: string
+          win_rate: number
+          wins: number
+          worst_trade: number
+        }
+        Insert: {
+          account_id: string
+          best_trade?: number
+          breakevens?: number
+          gross_loss?: number
+          gross_profit?: number
+          losses?: number
+          net_pnl?: number
+          total_trades?: number
+          updated_at?: string
+          user_id: string
+          win_rate?: number
+          wins?: number
+          worst_trade?: number
+        }
+        Update: {
+          account_id?: string
+          best_trade?: number
+          breakevens?: number
+          gross_loss?: number
+          gross_profit?: number
+          losses?: number
+          net_pnl?: number
+          total_trades?: number
+          updated_at?: string
+          user_id?: string
+          win_rate?: number
+          wins?: number
+          worst_trade?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_statistics_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: true
+            referencedRelation: "paper_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dashboard_layouts: {
         Row: {
           created_at: string
@@ -73,6 +129,371 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      paper_accounts: {
+        Row: {
+          balance: number
+          created_at: string
+          currency: string
+          deleted_at: string | null
+          equity: number
+          id: string
+          is_active: boolean
+          is_archived: boolean
+          leverage: number
+          max_daily_risk_pct: number
+          max_trade_risk_pct: number
+          name: string
+          starting_balance: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          currency?: string
+          deleted_at?: string | null
+          equity?: number
+          id?: string
+          is_active?: boolean
+          is_archived?: boolean
+          leverage?: number
+          max_daily_risk_pct?: number
+          max_trade_risk_pct?: number
+          name: string
+          starting_balance?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          currency?: string
+          deleted_at?: string | null
+          equity?: number
+          id?: string
+          is_active?: boolean
+          is_archived?: boolean
+          leverage?: number
+          max_daily_risk_pct?: number
+          max_trade_risk_pct?: number
+          name?: string
+          starting_balance?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      paper_orders: {
+        Row: {
+          account_id: string
+          cancelled_at: string | null
+          created_at: string
+          direction: Database["public"]["Enums"]["paper_direction"]
+          expires_at: string | null
+          filled_at: string | null
+          id: string
+          limit_price: number | null
+          lot_size: number
+          market: Database["public"]["Enums"]["paper_market"]
+          notes: string | null
+          order_type: Database["public"]["Enums"]["paper_order_type"]
+          status: Database["public"]["Enums"]["paper_order_status"]
+          stop_loss: number | null
+          symbol: string
+          take_profit: number | null
+          trade_id: string | null
+          trigger_price: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          cancelled_at?: string | null
+          created_at?: string
+          direction: Database["public"]["Enums"]["paper_direction"]
+          expires_at?: string | null
+          filled_at?: string | null
+          id?: string
+          limit_price?: number | null
+          lot_size: number
+          market: Database["public"]["Enums"]["paper_market"]
+          notes?: string | null
+          order_type: Database["public"]["Enums"]["paper_order_type"]
+          status?: Database["public"]["Enums"]["paper_order_status"]
+          stop_loss?: number | null
+          symbol: string
+          take_profit?: number | null
+          trade_id?: string | null
+          trigger_price: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          cancelled_at?: string | null
+          created_at?: string
+          direction?: Database["public"]["Enums"]["paper_direction"]
+          expires_at?: string | null
+          filled_at?: string | null
+          id?: string
+          limit_price?: number | null
+          lot_size?: number
+          market?: Database["public"]["Enums"]["paper_market"]
+          notes?: string | null
+          order_type?: Database["public"]["Enums"]["paper_order_type"]
+          status?: Database["public"]["Enums"]["paper_order_status"]
+          stop_loss?: number | null
+          symbol?: string
+          take_profit?: number | null
+          trade_id?: string | null
+          trigger_price?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "paper_orders_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "paper_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "paper_orders_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: false
+            referencedRelation: "paper_trades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      paper_trades: {
+        Row: {
+          account_id: string
+          close_reason: Database["public"]["Enums"]["paper_close_reason"] | null
+          closed_at: string | null
+          commission: number
+          created_at: string
+          deleted_at: string | null
+          direction: Database["public"]["Enums"]["paper_direction"]
+          entry_price: number
+          exit_price: number | null
+          id: string
+          lot_size: number
+          market: Database["public"]["Enums"]["paper_market"]
+          notes: string | null
+          opened_at: string
+          order_type: Database["public"]["Enums"]["paper_order_type"]
+          pnl: number | null
+          pnl_pct: number | null
+          reward_amount: number | null
+          risk_amount: number | null
+          rr_planned: number | null
+          rr_realized: number | null
+          screenshot_path: string | null
+          status: Database["public"]["Enums"]["paper_trade_status"]
+          stop_loss: number | null
+          swap: number
+          symbol: string
+          take_profit: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          close_reason?:
+            | Database["public"]["Enums"]["paper_close_reason"]
+            | null
+          closed_at?: string | null
+          commission?: number
+          created_at?: string
+          deleted_at?: string | null
+          direction: Database["public"]["Enums"]["paper_direction"]
+          entry_price: number
+          exit_price?: number | null
+          id?: string
+          lot_size: number
+          market: Database["public"]["Enums"]["paper_market"]
+          notes?: string | null
+          opened_at?: string
+          order_type?: Database["public"]["Enums"]["paper_order_type"]
+          pnl?: number | null
+          pnl_pct?: number | null
+          reward_amount?: number | null
+          risk_amount?: number | null
+          rr_planned?: number | null
+          rr_realized?: number | null
+          screenshot_path?: string | null
+          status?: Database["public"]["Enums"]["paper_trade_status"]
+          stop_loss?: number | null
+          swap?: number
+          symbol: string
+          take_profit?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          close_reason?:
+            | Database["public"]["Enums"]["paper_close_reason"]
+            | null
+          closed_at?: string | null
+          commission?: number
+          created_at?: string
+          deleted_at?: string | null
+          direction?: Database["public"]["Enums"]["paper_direction"]
+          entry_price?: number
+          exit_price?: number | null
+          id?: string
+          lot_size?: number
+          market?: Database["public"]["Enums"]["paper_market"]
+          notes?: string | null
+          opened_at?: string
+          order_type?: Database["public"]["Enums"]["paper_order_type"]
+          pnl?: number | null
+          pnl_pct?: number | null
+          reward_amount?: number | null
+          risk_amount?: number | null
+          rr_planned?: number | null
+          rr_realized?: number | null
+          screenshot_path?: string | null
+          status?: Database["public"]["Enums"]["paper_trade_status"]
+          stop_loss?: number | null
+          swap?: number
+          symbol?: string
+          take_profit?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "paper_trades_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "paper_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      paper_watchlist_symbols: {
+        Row: {
+          created_at: string
+          id: string
+          is_favorite: boolean
+          market: Database["public"]["Enums"]["paper_market"]
+          sort_order: number
+          symbol: string
+          user_id: string
+          watchlist_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_favorite?: boolean
+          market: Database["public"]["Enums"]["paper_market"]
+          sort_order?: number
+          symbol: string
+          user_id: string
+          watchlist_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_favorite?: boolean
+          market?: Database["public"]["Enums"]["paper_market"]
+          sort_order?: number
+          symbol?: string
+          user_id?: string
+          watchlist_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "paper_watchlist_symbols_watchlist_id_fkey"
+            columns: ["watchlist_id"]
+            isOneToOne: false
+            referencedRelation: "paper_watchlists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      paper_watchlists: {
+        Row: {
+          created_at: string
+          id: string
+          is_default: boolean
+          market: Database["public"]["Enums"]["paper_market"] | null
+          name: string
+          sort_order: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          market?: Database["public"]["Enums"]["paper_market"] | null
+          name: string
+          sort_order?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          market?: Database["public"]["Enums"]["paper_market"] | null
+          name?: string
+          sort_order?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      position_history: {
+        Row: {
+          account_id: string
+          created_at: string
+          event: string
+          id: string
+          payload: Json
+          trade_id: string
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          event: string
+          id?: string
+          payload?: Json
+          trade_id: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          event?: string
+          id?: string
+          payload?: Json
+          trade_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "position_history_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "paper_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "position_history_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: false
+            referencedRelation: "paper_trades"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -199,6 +620,66 @@ export type Database = {
           pinned?: boolean
           title?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      trade_tag_relations: {
+        Row: {
+          created_at: string
+          tag_id: string
+          trade_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          tag_id: string
+          trade_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          tag_id?: string
+          trade_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_tag_relations_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "trade_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_tag_relations_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: false
+            referencedRelation: "paper_trades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trade_tags: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
           user_id?: string
         }
         Relationships: []
@@ -396,6 +877,28 @@ export type Database = {
         | "diamond"
         | "master"
         | "grandmaster"
+      paper_close_reason:
+        | "manual"
+        | "stop_loss"
+        | "take_profit"
+        | "liquidation"
+        | "expired"
+      paper_direction: "long" | "short"
+      paper_market:
+        | "forex"
+        | "crypto"
+        | "stocks"
+        | "indices"
+        | "futures"
+        | "metals"
+      paper_order_status:
+        | "pending"
+        | "filled"
+        | "cancelled"
+        | "expired"
+        | "rejected"
+      paper_order_type: "market" | "limit" | "stop" | "stop_limit"
+      paper_trade_status: "open" | "closed" | "cancelled"
       preferred_market:
         | "forex"
         | "crypto"
@@ -551,6 +1054,31 @@ export const Constants = {
         "master",
         "grandmaster",
       ],
+      paper_close_reason: [
+        "manual",
+        "stop_loss",
+        "take_profit",
+        "liquidation",
+        "expired",
+      ],
+      paper_direction: ["long", "short"],
+      paper_market: [
+        "forex",
+        "crypto",
+        "stocks",
+        "indices",
+        "futures",
+        "metals",
+      ],
+      paper_order_status: [
+        "pending",
+        "filled",
+        "cancelled",
+        "expired",
+        "rejected",
+      ],
+      paper_order_type: ["market", "limit", "stop", "stop_limit"],
+      paper_trade_status: ["open", "closed", "cancelled"],
       preferred_market: [
         "forex",
         "crypto",
