@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { convertToModelMessages, streamText, type UIMessage } from "ai";
 import { createClient } from "@supabase/supabase-js";
+import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import {
   createLovableAiGatewayProvider,
@@ -10,6 +11,12 @@ import {
 } from "@/lib/ai-gateway.server";
 import { COACH_SYSTEM_PROMPT } from "@/lib/ai/prompts";
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "@/lib/ai/constants";
+import { Errors, guardRoute } from "@/lib/server-errors";
+
+const chatBodySchema = z.object({
+  messages: z.array(z.any()).min(1).max(200),
+  sessionId: z.string().uuid().optional(),
+});
 
 type ChatBody = {
   messages: UIMessage[];
@@ -69,13 +76,15 @@ Recent journal (10): ${JSON.stringify(journals)}
 export const Route = createFileRoute("/api/ai/chat")({
   server: {
     handlers: {
-      POST: async ({ request }) => {
+      POST: guardRoute("api/ai/chat", async ({ request }) => {
         const authHeader = request.headers.get("authorization") ?? "";
         const token = authHeader.replace(/^Bearer\s+/i, "").trim();
-        if (!token) return new Response("Unauthorized", { status: 401 });
+        if (!token) throw Errors.unauthorized();
 
-        const supabaseUrl = process.env.SUPABASE_URL!;
-        const anonKey = process.env.SUPABASE_PUBLISHABLE_KEY!;
+        const supabaseUrl = process.env.SUPABASE_URL;
+        const anonKey = process.env.SUPABASE_PUBLISHABLE_KEY;
+        if (!supabaseUrl || !anonKey) throw Errors.internal("Auth backend misconfigured.");
+
         const supabase = createClient<Database>(supabaseUrl, anonKey, {
           auth: { persistSession: false, autoRefreshToken: false },
           global: {
@@ -91,15 +100,20 @@ export const Route = createFileRoute("/api/ai/chat")({
           },
         });
 
-        const { data: userRes } = await supabase.auth.getUser(token);
-        if (!userRes.user) return new Response("Unauthorized", { status: 401 });
+        const { data: userRes, error: authErr } = await supabase.auth.getUser(token);
+        if (authErr || !userRes.user) throw Errors.unauthorized();
         const userId = userRes.user.id;
 
-        const body = (await request.json()) as ChatBody;
-        if (!Array.isArray(body.messages)) return new Response("messages required", { status: 400 });
+        let raw: unknown;
+        try {
+          raw = await request.json();
+        } catch {
+          throw Errors.badRequest("Request body must be valid JSON.");
+        }
+        const body = chatBodySchema.parse(raw) as ChatBody;
 
         const key = process.env.LOVABLE_API_KEY;
-        if (!key) return new Response("AI unavailable: LOVABLE_API_KEY missing", { status: 500 });
+        if (!key) throw Errors.upstream("AI service is not configured.");
 
         const context = await loadContext(supabase, userId);
         const initialRunId = getLovableAiGatewayRunId(request);
@@ -173,7 +187,7 @@ export const Route = createFileRoute("/api/ai/chat")({
         });
 
         return withLovableAiGatewayRunIdHeader(response, gateway);
-      },
+      }),
     },
   },
 });
