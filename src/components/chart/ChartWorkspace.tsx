@@ -70,11 +70,13 @@ export function ChartWorkspace({ fullscreen, initial }: Props) {
   const handleOrderLineCommit = useCallback(async (id: string, price: number) => {
     const [tradeId, kind] = id.split(/-(sl|tp|entry)$/);
     if (!tradeId || (kind !== "sl" && kind !== "tp")) return;
-    const column = kind === "sl" ? "stop_loss" : "take_profit";
-    const { error } = await supabase.from("paper_trades").update({ [column]: price }).eq("id", tradeId);
+    const patch = kind === "sl" ? { stop_loss: price } : { take_profit: price };
+    const { error } = await supabase.from("paper_trades").update(patch).eq("id", tradeId);
     if (error) toast.error(`Failed to update ${kind.toUpperCase()}: ${error.message}`);
     else toast.success(`${kind.toUpperCase()} moved to ${price.toFixed(4)}`);
   }, []);
+
+  const updateSettings = useCallback((patch: Partial<ChartSettings>) => setSettings((s) => ({ ...s, ...patch })), []);
 
   // Record recent symbol
   useEffect(() => {
