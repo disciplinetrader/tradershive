@@ -1705,6 +1705,90 @@ export type Database = {
         }
         Relationships: []
       }
+      historical_cache: {
+        Row: {
+          candle_count: number
+          created_at: string
+          expires_at: string | null
+          fetched_at: string
+          id: string
+          provider_code: string
+          range_end: string
+          range_start: string
+          symbol: string
+          timeframe: Database["public"]["Enums"]["timeframe_kind"]
+          updated_at: string
+        }
+        Insert: {
+          candle_count?: number
+          created_at?: string
+          expires_at?: string | null
+          fetched_at?: string
+          id?: string
+          provider_code: string
+          range_end: string
+          range_start: string
+          symbol: string
+          timeframe: Database["public"]["Enums"]["timeframe_kind"]
+          updated_at?: string
+        }
+        Update: {
+          candle_count?: number
+          created_at?: string
+          expires_at?: string | null
+          fetched_at?: string
+          id?: string
+          provider_code?: string
+          range_end?: string
+          range_start?: string
+          symbol?: string
+          timeframe?: Database["public"]["Enums"]["timeframe_kind"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      historical_candles: {
+        Row: {
+          close: number
+          created_at: string
+          high: number
+          id: number
+          low: number
+          open: number
+          provider_code: string
+          symbol: string
+          timeframe: Database["public"]["Enums"]["timeframe_kind"]
+          ts: string
+          volume: number
+        }
+        Insert: {
+          close: number
+          created_at?: string
+          high: number
+          id?: number
+          low: number
+          open: number
+          provider_code?: string
+          symbol: string
+          timeframe: Database["public"]["Enums"]["timeframe_kind"]
+          ts: string
+          volume?: number
+        }
+        Update: {
+          close?: number
+          created_at?: string
+          high?: number
+          id?: number
+          low?: number
+          open?: number
+          provider_code?: string
+          symbol?: string
+          timeframe?: Database["public"]["Enums"]["timeframe_kind"]
+          ts?: string
+          volume?: number
+        }
+        Relationships: []
+      }
       journal_attachments: {
         Row: {
           bucket: string
@@ -2097,6 +2181,60 @@ export type Database = {
         }
         Relationships: []
       }
+      live_quotes: {
+        Row: {
+          ask: number | null
+          bid: number | null
+          change_pct: number | null
+          close: number | null
+          high: number | null
+          id: string
+          last: number | null
+          low: number | null
+          open: number | null
+          provider_code: string
+          spread: number | null
+          symbol: string
+          ts: string
+          updated_at: string
+          volume: number | null
+        }
+        Insert: {
+          ask?: number | null
+          bid?: number | null
+          change_pct?: number | null
+          close?: number | null
+          high?: number | null
+          id?: string
+          last?: number | null
+          low?: number | null
+          open?: number | null
+          provider_code?: string
+          spread?: number | null
+          symbol: string
+          ts?: string
+          updated_at?: string
+          volume?: number | null
+        }
+        Update: {
+          ask?: number | null
+          bid?: number | null
+          change_pct?: number | null
+          close?: number | null
+          high?: number | null
+          id?: string
+          last?: number | null
+          low?: number | null
+          open?: number | null
+          provider_code?: string
+          spread?: number | null
+          symbol?: string
+          ts?: string
+          updated_at?: string
+          volume?: number | null
+        }
+        Relationships: []
+      }
       maintenance_windows: {
         Row: {
           active: boolean
@@ -2127,6 +2265,241 @@ export type Database = {
           message?: string | null
           starts_at?: string
           title?: string
+        }
+        Relationships: []
+      }
+      market_holidays: {
+        Row: {
+          created_at: string
+          holiday_date: string
+          id: string
+          is_full_day: boolean
+          market_id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          holiday_date: string
+          id?: string
+          is_full_day?: boolean
+          market_id: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          holiday_date?: string
+          id?: string
+          is_full_day?: boolean
+          market_id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "market_holidays_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      market_providers: {
+        Row: {
+          code: string
+          config: Json
+          created_at: string
+          description: string | null
+          id: string
+          is_default: boolean
+          is_enabled: boolean
+          markets: Database["public"]["Enums"]["market_kind"][]
+          name: string
+          priority: number
+          supports_historical: boolean
+          supports_rest: boolean
+          supports_streaming: boolean
+          supports_ws: boolean
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          config?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_default?: boolean
+          is_enabled?: boolean
+          markets?: Database["public"]["Enums"]["market_kind"][]
+          name: string
+          priority?: number
+          supports_historical?: boolean
+          supports_rest?: boolean
+          supports_streaming?: boolean
+          supports_ws?: boolean
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          config?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_default?: boolean
+          is_enabled?: boolean
+          markets?: Database["public"]["Enums"]["market_kind"][]
+          name?: string
+          priority?: number
+          supports_historical?: boolean
+          supports_rest?: boolean
+          supports_streaming?: boolean
+          supports_ws?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      market_sessions: {
+        Row: {
+          close_utc_minute: number
+          code: string
+          color: string | null
+          created_at: string
+          id: string
+          market_kind: Database["public"]["Enums"]["market_kind"]
+          name: string
+          open_utc_minute: number
+          sort_order: number
+          updated_at: string
+          weekdays: number[]
+        }
+        Insert: {
+          close_utc_minute: number
+          code: string
+          color?: string | null
+          created_at?: string
+          id?: string
+          market_kind?: Database["public"]["Enums"]["market_kind"]
+          name: string
+          open_utc_minute: number
+          sort_order?: number
+          updated_at?: string
+          weekdays?: number[]
+        }
+        Update: {
+          close_utc_minute?: number
+          code?: string
+          color?: string | null
+          created_at?: string
+          id?: string
+          market_kind?: Database["public"]["Enums"]["market_kind"]
+          name?: string
+          open_utc_minute?: number
+          sort_order?: number
+          updated_at?: string
+          weekdays?: number[]
+        }
+        Relationships: []
+      }
+      market_status: {
+        Row: {
+          id: string
+          market_id: string
+          next_close: string | null
+          next_open: string | null
+          status: Database["public"]["Enums"]["market_status_kind"]
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          market_id: string
+          next_close?: string | null
+          next_open?: string | null
+          status?: Database["public"]["Enums"]["market_status_kind"]
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          market_id?: string
+          next_close?: string | null
+          next_open?: string | null
+          status?: Database["public"]["Enums"]["market_status_kind"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "market_status_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: true
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      market_subscriptions: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          provider_code: string
+          symbol: string
+          timeframe: Database["public"]["Enums"]["timeframe_kind"] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          provider_code: string
+          symbol: string
+          timeframe?: Database["public"]["Enums"]["timeframe_kind"] | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          provider_code?: string
+          symbol?: string
+          timeframe?: Database["public"]["Enums"]["timeframe_kind"] | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      markets: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          is_24_7: boolean
+          kind: Database["public"]["Enums"]["market_kind"]
+          name: string
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          is_24_7?: boolean
+          kind: Database["public"]["Enums"]["market_kind"]
+          name: string
+          timezone?: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          is_24_7?: boolean
+          kind?: Database["public"]["Enums"]["market_kind"]
+          name?: string
+          timezone?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -2618,6 +2991,45 @@ export type Database = {
           },
         ]
       }
+      price_alerts: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          kind: Database["public"]["Enums"]["price_alert_kind"]
+          note: string | null
+          symbol: string
+          target_price: number
+          triggered_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          kind: Database["public"]["Enums"]["price_alert_kind"]
+          note?: string | null
+          symbol: string
+          target_price: number
+          triggered_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          kind?: Database["public"]["Enums"]["price_alert_kind"]
+          note?: string | null
+          symbol?: string
+          target_price?: number
+          triggered_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profile_customization: {
         Row: {
           banner_url: string | null
@@ -2822,6 +3234,107 @@ export type Database = {
         }
         Relationships: []
       }
+      provider_connections: {
+        Row: {
+          connected_at: string | null
+          created_at: string
+          disconnected_at: string | null
+          id: string
+          last_error: string | null
+          last_heartbeat: string | null
+          latency_ms: number | null
+          metadata: Json
+          provider_id: string
+          status: Database["public"]["Enums"]["provider_status"]
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          connected_at?: string | null
+          created_at?: string
+          disconnected_at?: string | null
+          id?: string
+          last_error?: string | null
+          last_heartbeat?: string | null
+          latency_ms?: number | null
+          metadata?: Json
+          provider_id: string
+          status?: Database["public"]["Enums"]["provider_status"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          connected_at?: string | null
+          created_at?: string
+          disconnected_at?: string | null
+          id?: string
+          last_error?: string | null
+          last_heartbeat?: string | null
+          latency_ms?: number | null
+          metadata?: Json
+          provider_id?: string
+          status?: Database["public"]["Enums"]["provider_status"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_connections_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "market_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      provider_symbols: {
+        Row: {
+          created_at: string
+          id: string
+          is_enabled: boolean
+          metadata: Json
+          native_symbol: string
+          provider_id: string
+          symbol_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          metadata?: Json
+          native_symbol: string
+          provider_id: string
+          symbol_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          metadata?: Json
+          native_symbol?: string
+          provider_id?: string
+          symbol_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_symbols_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "market_providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provider_symbols_symbol_id_fkey"
+            columns: ["symbol_id"]
+            isOneToOne: false
+            referencedRelation: "symbols"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quick_notes: {
         Row: {
           color: string
@@ -2852,6 +3365,30 @@ export type Database = {
           title?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      quote_cache: {
+        Row: {
+          cache_key: string
+          created_at: string
+          expires_at: string
+          id: string
+          payload: Json
+        }
+        Insert: {
+          cache_key: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          payload: Json
+        }
+        Update: {
+          cache_key?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          payload?: Json
         }
         Relationships: []
       }
@@ -4135,6 +4672,94 @@ export type Database = {
           },
         ]
       }
+      stream_connections: {
+        Row: {
+          connected_at: string | null
+          created_at: string
+          endpoint: string
+          id: string
+          last_message_at: string | null
+          latency_ms: number | null
+          metadata: Json
+          provider_id: string
+          status: Database["public"]["Enums"]["provider_status"]
+          subscription_count: number
+          updated_at: string
+        }
+        Insert: {
+          connected_at?: string | null
+          created_at?: string
+          endpoint: string
+          id?: string
+          last_message_at?: string | null
+          latency_ms?: number | null
+          metadata?: Json
+          provider_id: string
+          status?: Database["public"]["Enums"]["provider_status"]
+          subscription_count?: number
+          updated_at?: string
+        }
+        Update: {
+          connected_at?: string | null
+          created_at?: string
+          endpoint?: string
+          id?: string
+          last_message_at?: string | null
+          latency_ms?: number | null
+          metadata?: Json
+          provider_id?: string
+          status?: Database["public"]["Enums"]["provider_status"]
+          subscription_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stream_connections_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "market_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stream_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: number
+          message: string | null
+          payload: Json
+          provider_id: string | null
+          severity: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: number
+          message?: string | null
+          payload?: Json
+          provider_id?: string | null
+          severity?: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: number
+          message?: string | null
+          payload?: Json
+          provider_id?: string | null
+          severity?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stream_events_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "market_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       support_tickets: {
         Row: {
           assigned_to: string | null
@@ -4176,6 +4801,101 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      symbol_categories: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          market_kind: Database["public"]["Enums"]["market_kind"] | null
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          market_kind?: Database["public"]["Enums"]["market_kind"] | null
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          market_kind?: Database["public"]["Enums"]["market_kind"] | null
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      symbols: {
+        Row: {
+          base_asset: string | null
+          category_id: string | null
+          contract_size: number
+          created_at: string
+          display_name: string
+          id: string
+          is_enabled: boolean
+          is_popular: boolean
+          is_trending: boolean
+          market_kind: Database["public"]["Enums"]["market_kind"]
+          metadata: Json
+          price_precision: number
+          quote_asset: string | null
+          symbol: string
+          tick_size: number
+          updated_at: string
+        }
+        Insert: {
+          base_asset?: string | null
+          category_id?: string | null
+          contract_size?: number
+          created_at?: string
+          display_name: string
+          id?: string
+          is_enabled?: boolean
+          is_popular?: boolean
+          is_trending?: boolean
+          market_kind: Database["public"]["Enums"]["market_kind"]
+          metadata?: Json
+          price_precision?: number
+          quote_asset?: string | null
+          symbol: string
+          tick_size?: number
+          updated_at?: string
+        }
+        Update: {
+          base_asset?: string | null
+          category_id?: string | null
+          contract_size?: number
+          created_at?: string
+          display_name?: string
+          id?: string
+          is_enabled?: boolean
+          is_popular?: boolean
+          is_trending?: boolean
+          market_kind?: Database["public"]["Enums"]["market_kind"]
+          metadata?: Json
+          price_precision?: number
+          quote_asset?: string | null
+          symbol?: string
+          tick_size?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "symbols_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "symbol_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       system_reports: {
         Row: {
@@ -4435,6 +5155,69 @@ export type Database = {
           },
         ]
       }
+      user_favorite_symbols: {
+        Row: {
+          created_at: string
+          id: string
+          sort_order: number
+          symbol: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          sort_order?: number
+          symbol: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          sort_order?: number
+          symbol?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_market_settings: {
+        Row: {
+          auto_refresh_seconds: number
+          created_at: string
+          default_symbol: string
+          default_timeframe: Database["public"]["Enums"]["timeframe_kind"]
+          preferred_market: Database["public"]["Enums"]["market_kind"]
+          preferred_provider: string | null
+          preferred_timezone: string
+          streaming_quality: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_refresh_seconds?: number
+          created_at?: string
+          default_symbol?: string
+          default_timeframe?: Database["public"]["Enums"]["timeframe_kind"]
+          preferred_market?: Database["public"]["Enums"]["market_kind"]
+          preferred_provider?: string | null
+          preferred_timezone?: string
+          streaming_quality?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_refresh_seconds?: number
+          created_at?: string
+          default_symbol?: string
+          default_timeframe?: Database["public"]["Enums"]["timeframe_kind"]
+          preferred_market?: Database["public"]["Enums"]["market_kind"]
+          preferred_provider?: string | null
+          preferred_timezone?: string
+          streaming_quality?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_moderation: {
         Row: {
           created_at: string
@@ -4501,6 +5284,27 @@ export type Database = {
           show_pnl_percent?: boolean
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_recent_symbols: {
+        Row: {
+          id: string
+          symbol: string
+          user_id: string
+          viewed_at: string
+        }
+        Insert: {
+          id?: string
+          symbol: string
+          user_id: string
+          viewed_at?: string
+        }
+        Update: {
+          id?: string
+          symbol?: string
+          user_id?: string
+          viewed_at?: string
         }
         Relationships: []
       }
@@ -4766,6 +5570,21 @@ export type Database = {
         | "diamond"
         | "master"
         | "grandmaster"
+      market_kind:
+        | "forex"
+        | "crypto"
+        | "indices"
+        | "metals"
+        | "commodities"
+        | "futures"
+        | "stocks"
+      market_status_kind:
+        | "open"
+        | "closed"
+        | "pre_market"
+        | "after_hours"
+        | "holiday"
+        | "maintenance"
       paper_close_reason:
         | "manual"
         | "stop_loss"
@@ -4795,8 +5614,28 @@ export type Database = {
         | "futures"
         | "options"
         | "indices"
+      price_alert_kind: "above" | "below" | "cross_up" | "cross_down"
+      provider_status:
+        | "connected"
+        | "disconnected"
+        | "connecting"
+        | "error"
+        | "disabled"
       strategy_difficulty: "beginner" | "intermediate" | "advanced" | "expert"
       strategy_status: "draft" | "private" | "public" | "archived"
+      timeframe_kind:
+        | "tick"
+        | "1m"
+        | "3m"
+        | "5m"
+        | "15m"
+        | "30m"
+        | "1H"
+        | "2H"
+        | "4H"
+        | "1D"
+        | "1W"
+        | "1M"
       trading_experience:
         | "beginner"
         | "intermediate"
@@ -5015,6 +5854,23 @@ export const Constants = {
         "master",
         "grandmaster",
       ],
+      market_kind: [
+        "forex",
+        "crypto",
+        "indices",
+        "metals",
+        "commodities",
+        "futures",
+        "stocks",
+      ],
+      market_status_kind: [
+        "open",
+        "closed",
+        "pre_market",
+        "after_hours",
+        "holiday",
+        "maintenance",
+      ],
       paper_close_reason: [
         "manual",
         "stop_loss",
@@ -5048,8 +5904,30 @@ export const Constants = {
         "options",
         "indices",
       ],
+      price_alert_kind: ["above", "below", "cross_up", "cross_down"],
+      provider_status: [
+        "connected",
+        "disconnected",
+        "connecting",
+        "error",
+        "disabled",
+      ],
       strategy_difficulty: ["beginner", "intermediate", "advanced", "expert"],
       strategy_status: ["draft", "private", "public", "archived"],
+      timeframe_kind: [
+        "tick",
+        "1m",
+        "3m",
+        "5m",
+        "15m",
+        "30m",
+        "1H",
+        "2H",
+        "4H",
+        "1D",
+        "1W",
+        "1M",
+      ],
       trading_experience: [
         "beginner",
         "intermediate",

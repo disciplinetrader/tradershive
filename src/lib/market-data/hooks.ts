@@ -1,0 +1,45 @@
+import { useEffect, useState } from "react";
+import { marketData } from "./engine";
+import type { Candle, MarketKind, Quote, Timeframe } from "./types";
+
+export function useLiveQuote(symbol: string | null | undefined, market?: MarketKind) {
+  const [quote, setQuote] = useState<Quote | null>(null);
+  useEffect(() => {
+    if (!symbol) return;
+    marketData.init();
+    const sub = marketData.subscribe(symbol, setQuote, market);
+    return () => sub.unsubscribe();
+  }, [symbol, market]);
+  return quote;
+}
+
+export function useCandles(symbol: string | null | undefined, timeframe: Timeframe, opts?: { from?: number; to?: number; limit?: number; market?: MarketKind }) {
+  const [candles, setCandles] = useState<Candle[]>([]);
+  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    if (!symbol) return;
+    let cancelled = false;
+    setLoading(true);
+    marketData.init();
+    const to = opts?.to ?? Date.now();
+    const from = opts?.from ?? to - 1000 * 60 * 60 * 24 * 60;
+    marketData.getCandles({ symbol, timeframe, from, to, limit: opts?.limit }, opts?.market)
+      .then((rows) => { if (!cancelled) setCandles(rows); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [symbol, timeframe, opts?.from, opts?.to, opts?.limit, opts?.market]);
+  return { candles, loading };
+}
+
+export function useMarketStatus(market: MarketKind) {
+  const [status, setStatus] = useState<string>("closed");
+  useEffect(() => {
+    marketData.init();
+    let cancelled = false;
+    const tick = () => marketData.getMarketStatus(market).then((s) => { if (!cancelled) setStatus(s.status); });
+    tick();
+    const t = setInterval(tick, 30_000);
+    return () => { cancelled = true; clearInterval(t); };
+  }, [market]);
+  return status;
+}
