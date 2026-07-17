@@ -127,8 +127,8 @@ function TradingWorkspaceInner() {
       <AccountSummary />
 
       {/* Main grid: chart + order panel */}
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <GlassCard className="relative flex min-h-[420px] flex-col overflow-hidden p-0">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <GlassCard className="relative flex h-[600px] flex-col overflow-hidden p-0">
           {/* Chart header */}
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/50 px-3 py-2">
             <div className="flex items-center gap-3">
