@@ -47,6 +47,7 @@ import { Route as AuthenticatedStrategiesPlaybooksRouteImport } from './routes/_
 import { Route as AuthenticatedStrategiesLibraryRouteImport } from './routes/_authenticated/strategies.library'
 import { Route as AuthenticatedStrategiesCreateRouteImport } from './routes/_authenticated/strategies.create'
 import { Route as AuthenticatedStrategiesBacktestsRouteImport } from './routes/_authenticated/strategies.backtests'
+import { Route as AuthenticatedStrategiesIdRouteImport } from './routes/_authenticated/strategies.$id'
 import { Route as AuthenticatedStatisticsSetupsRouteImport } from './routes/_authenticated/statistics.setups'
 import { Route as AuthenticatedStatisticsSessionsRouteImport } from './routes/_authenticated/statistics.sessions'
 import { Route as AuthenticatedStatisticsRiskRouteImport } from './routes/_authenticated/statistics.risk'
@@ -289,6 +290,12 @@ const AuthenticatedStrategiesBacktestsRoute =
   AuthenticatedStrategiesBacktestsRouteImport.update({
     id: '/backtests',
     path: '/backtests',
+    getParentRoute: () => AuthenticatedStrategiesRoute,
+  } as any)
+const AuthenticatedStrategiesIdRoute =
+  AuthenticatedStrategiesIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
     getParentRoute: () => AuthenticatedStrategiesRoute,
   } as any)
 const AuthenticatedStatisticsSetupsRoute =
@@ -590,6 +597,7 @@ export interface FileRoutesByFullPath {
   '/statistics/risk': typeof AuthenticatedStatisticsRiskRoute
   '/statistics/sessions': typeof AuthenticatedStatisticsSessionsRoute
   '/statistics/setups': typeof AuthenticatedStatisticsSetupsRoute
+  '/strategies/$id': typeof AuthenticatedStrategiesIdRoute
   '/strategies/backtests': typeof AuthenticatedStrategiesBacktestsRoute
   '/strategies/create': typeof AuthenticatedStrategiesCreateRoute
   '/strategies/library': typeof AuthenticatedStrategiesLibraryRoute
@@ -664,6 +672,7 @@ export interface FileRoutesByTo {
   '/statistics/risk': typeof AuthenticatedStatisticsRiskRoute
   '/statistics/sessions': typeof AuthenticatedStatisticsSessionsRoute
   '/statistics/setups': typeof AuthenticatedStatisticsSetupsRoute
+  '/strategies/$id': typeof AuthenticatedStrategiesIdRoute
   '/strategies/backtests': typeof AuthenticatedStrategiesBacktestsRoute
   '/strategies/create': typeof AuthenticatedStrategiesCreateRoute
   '/strategies/library': typeof AuthenticatedStrategiesLibraryRoute
@@ -745,6 +754,7 @@ export interface FileRoutesById {
   '/_authenticated/statistics/risk': typeof AuthenticatedStatisticsRiskRoute
   '/_authenticated/statistics/sessions': typeof AuthenticatedStatisticsSessionsRoute
   '/_authenticated/statistics/setups': typeof AuthenticatedStatisticsSetupsRoute
+  '/_authenticated/strategies/$id': typeof AuthenticatedStrategiesIdRoute
   '/_authenticated/strategies/backtests': typeof AuthenticatedStrategiesBacktestsRoute
   '/_authenticated/strategies/create': typeof AuthenticatedStrategiesCreateRoute
   '/_authenticated/strategies/library': typeof AuthenticatedStrategiesLibraryRoute
@@ -826,6 +836,7 @@ export interface FileRouteTypes {
     | '/statistics/risk'
     | '/statistics/sessions'
     | '/statistics/setups'
+    | '/strategies/$id'
     | '/strategies/backtests'
     | '/strategies/create'
     | '/strategies/library'
@@ -900,6 +911,7 @@ export interface FileRouteTypes {
     | '/statistics/risk'
     | '/statistics/sessions'
     | '/statistics/setups'
+    | '/strategies/$id'
     | '/strategies/backtests'
     | '/strategies/create'
     | '/strategies/library'
@@ -980,6 +992,7 @@ export interface FileRouteTypes {
     | '/_authenticated/statistics/risk'
     | '/_authenticated/statistics/sessions'
     | '/_authenticated/statistics/setups'
+    | '/_authenticated/strategies/$id'
     | '/_authenticated/strategies/backtests'
     | '/_authenticated/strategies/create'
     | '/_authenticated/strategies/library'
@@ -1276,6 +1289,13 @@ declare module '@tanstack/react-router' {
       path: '/backtests'
       fullPath: '/strategies/backtests'
       preLoaderRoute: typeof AuthenticatedStrategiesBacktestsRouteImport
+      parentRoute: typeof AuthenticatedStrategiesRoute
+    }
+    '/_authenticated/strategies/$id': {
+      id: '/_authenticated/strategies/$id'
+      path: '/$id'
+      fullPath: '/strategies/$id'
+      preLoaderRoute: typeof AuthenticatedStrategiesIdRouteImport
       parentRoute: typeof AuthenticatedStrategiesRoute
     }
     '/_authenticated/statistics/setups': {
@@ -1724,6 +1744,7 @@ const AuthenticatedStatisticsRouteWithChildren =
   )
 
 interface AuthenticatedStrategiesRouteChildren {
+  AuthenticatedStrategiesIdRoute: typeof AuthenticatedStrategiesIdRoute
   AuthenticatedStrategiesBacktestsRoute: typeof AuthenticatedStrategiesBacktestsRoute
   AuthenticatedStrategiesCreateRoute: typeof AuthenticatedStrategiesCreateRoute
   AuthenticatedStrategiesLibraryRoute: typeof AuthenticatedStrategiesLibraryRoute
@@ -1736,6 +1757,7 @@ interface AuthenticatedStrategiesRouteChildren {
 
 const AuthenticatedStrategiesRouteChildren: AuthenticatedStrategiesRouteChildren =
   {
+    AuthenticatedStrategiesIdRoute: AuthenticatedStrategiesIdRoute,
     AuthenticatedStrategiesBacktestsRoute:
       AuthenticatedStrategiesBacktestsRoute,
     AuthenticatedStrategiesCreateRoute: AuthenticatedStrategiesCreateRoute,
