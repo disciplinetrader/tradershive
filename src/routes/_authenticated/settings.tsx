@@ -197,12 +197,12 @@ function TradingSection() {
   const [markets, setMarkets] = useState<Market[]>(
     (profile?.preferred_markets as Market[]) ?? [],
   );
-  const [style, setStyle] = useState<string>(profile?.trading_style ?? "intraday");
+  const [style, setStyle] = useState<string>(profile?.trading_style ?? "day_trader");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     setMarkets((profile?.preferred_markets as Market[]) ?? []);
-    setStyle(profile?.trading_style ?? "intraday");
+    setStyle(profile?.trading_style ?? "day_trader");
   }, [profile]);
 
   const save = async () => {

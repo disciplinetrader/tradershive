@@ -60,7 +60,7 @@ function OnboardingPage() {
     (profile?.preferred_markets as Market[]) ?? [],
   );
   const [style, setStyle] = useState<TradingStyle>(
-    ((profile?.trading_style as TradingStyle) ?? "intraday"),
+    ((profile?.trading_style as TradingStyle) ?? "day_trader"),
   );
   const [goals, setGoals] = useState<TradingGoal[]>(
     (profile?.goals as TradingGoal[]) ?? [],
