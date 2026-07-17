@@ -70,6 +70,225 @@ export type Database = {
           },
         ]
       }
+      achievements: {
+        Row: {
+          active: boolean
+          category: Database["public"]["Enums"]["achievement_category"]
+          coin_reward: number
+          created_at: string
+          description: string
+          icon: string | null
+          id: string
+          metric: string
+          secret: boolean
+          slug: string
+          sort_order: number
+          target: number
+          title: string
+          updated_at: string
+          xp_reward: number
+        }
+        Insert: {
+          active?: boolean
+          category?: Database["public"]["Enums"]["achievement_category"]
+          coin_reward?: number
+          created_at?: string
+          description: string
+          icon?: string | null
+          id?: string
+          metric: string
+          secret?: boolean
+          slug: string
+          sort_order?: number
+          target?: number
+          title: string
+          updated_at?: string
+          xp_reward?: number
+        }
+        Update: {
+          active?: boolean
+          category?: Database["public"]["Enums"]["achievement_category"]
+          coin_reward?: number
+          created_at?: string
+          description?: string
+          icon?: string | null
+          id?: string
+          metric?: string
+          secret?: boolean
+          slug?: string
+          sort_order?: number
+          target?: number
+          title?: string
+          updated_at?: string
+          xp_reward?: number
+        }
+        Relationships: []
+      }
+      badges: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          slug: string
+          tier: Database["public"]["Enums"]["badge_tier"]
+          title: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          slug: string
+          tier?: Database["public"]["Enums"]["badge_tier"]
+          title: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          slug?: string
+          tier?: Database["public"]["Enums"]["badge_tier"]
+          title?: string
+        }
+        Relationships: []
+      }
+      challenges: {
+        Row: {
+          active: boolean
+          category: Database["public"]["Enums"]["challenge_category"]
+          coin_reward: number
+          created_at: string
+          criteria: Json
+          description: string
+          difficulty: Database["public"]["Enums"]["challenge_difficulty"]
+          ends_at: string | null
+          estimated_minutes: number | null
+          icon: string | null
+          id: string
+          metric: string
+          scope: Database["public"]["Enums"]["challenge_scope"]
+          slug: string
+          sort_order: number
+          starts_at: string | null
+          target: number
+          title: string
+          updated_at: string
+          xp_reward: number
+        }
+        Insert: {
+          active?: boolean
+          category?: Database["public"]["Enums"]["challenge_category"]
+          coin_reward?: number
+          created_at?: string
+          criteria?: Json
+          description: string
+          difficulty?: Database["public"]["Enums"]["challenge_difficulty"]
+          ends_at?: string | null
+          estimated_minutes?: number | null
+          icon?: string | null
+          id?: string
+          metric: string
+          scope?: Database["public"]["Enums"]["challenge_scope"]
+          slug: string
+          sort_order?: number
+          starts_at?: string | null
+          target?: number
+          title: string
+          updated_at?: string
+          xp_reward?: number
+        }
+        Update: {
+          active?: boolean
+          category?: Database["public"]["Enums"]["challenge_category"]
+          coin_reward?: number
+          created_at?: string
+          criteria?: Json
+          description?: string
+          difficulty?: Database["public"]["Enums"]["challenge_difficulty"]
+          ends_at?: string | null
+          estimated_minutes?: number | null
+          icon?: string | null
+          id?: string
+          metric?: string
+          scope?: Database["public"]["Enums"]["challenge_scope"]
+          slug?: string
+          sort_order?: number
+          starts_at?: string | null
+          target?: number
+          title?: string
+          updated_at?: string
+          xp_reward?: number
+        }
+        Relationships: []
+      }
+      coin_transactions: {
+        Row: {
+          balance_after: number
+          created_at: string
+          delta: number
+          id: string
+          reason: string
+          source: string
+          source_id: string | null
+          user_id: string
+        }
+        Insert: {
+          balance_after?: number
+          created_at?: string
+          delta: number
+          id?: string
+          reason: string
+          source: string
+          source_id?: string | null
+          user_id: string
+        }
+        Update: {
+          balance_after?: number
+          created_at?: string
+          delta?: number
+          id?: string
+          reason?: string
+          source?: string
+          source_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      daily_claims: {
+        Row: {
+          claim_date: string
+          coin_reward: number
+          created_at: string
+          day_index: number
+          id: string
+          user_id: string
+          xp_reward: number
+        }
+        Insert: {
+          claim_date: string
+          coin_reward?: number
+          created_at?: string
+          day_index?: number
+          id?: string
+          user_id: string
+          xp_reward?: number
+        }
+        Update: {
+          claim_date?: string
+          coin_reward?: number
+          created_at?: string
+          day_index?: number
+          id?: string
+          user_id?: string
+          xp_reward?: number
+        }
+        Relationships: []
+      }
       dashboard_layouts: {
         Row: {
           created_at: string
@@ -89,6 +308,48 @@ export type Database = {
           created_at?: string
           id?: string
           layout?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      gamification_stats: {
+        Row: {
+          best_login_streak: number
+          challenge_streak: number
+          journal_streak: number
+          last_journal_date: string | null
+          last_login_date: string | null
+          last_trade_date: string | null
+          login_streak: number
+          total_challenges_completed: number
+          trading_streak: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          best_login_streak?: number
+          challenge_streak?: number
+          journal_streak?: number
+          last_journal_date?: string | null
+          last_login_date?: string | null
+          last_trade_date?: string | null
+          login_streak?: number
+          total_challenges_completed?: number
+          trading_streak?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          best_login_streak?: number
+          challenge_streak?: number
+          journal_streak?: number
+          last_journal_date?: string | null
+          last_login_date?: string | null
+          last_trade_date?: string | null
+          login_streak?: number
+          total_challenges_completed?: number
+          trading_streak?: number
           updated_at?: string
           user_id?: string
         }
@@ -1024,6 +1285,123 @@ export type Database = {
         }
         Relationships: []
       }
+      user_achievements: {
+        Row: {
+          achievement_id: string
+          created_at: string
+          id: string
+          progress: number
+          unlocked_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          achievement_id: string
+          created_at?: string
+          id?: string
+          progress?: number
+          unlocked_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          achievement_id?: string
+          created_at?: string
+          id?: string
+          progress?: number
+          unlocked_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_achievements_achievement_id_fkey"
+            columns: ["achievement_id"]
+            isOneToOne: false
+            referencedRelation: "achievements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_badges: {
+        Row: {
+          badge_id: string
+          earned_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          badge_id: string
+          earned_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          badge_id?: string
+          earned_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_challenges: {
+        Row: {
+          challenge_id: string
+          claimed_at: string | null
+          completed_at: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          period_key: string
+          progress: number
+          status: Database["public"]["Enums"]["challenge_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          challenge_id: string
+          claimed_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          period_key: string
+          progress?: number
+          status?: Database["public"]["Enums"]["challenge_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          challenge_id?: string
+          claimed_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          period_key?: string
+          progress?: number
+          status?: Database["public"]["Enums"]["challenge_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_challenges_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_preferences: {
         Row: {
           chart_default_interval: string
@@ -1194,6 +1572,42 @@ export type Database = {
         }
         Relationships: []
       }
+      xp_transactions: {
+        Row: {
+          balance_after: number
+          created_at: string
+          delta: number
+          id: string
+          level_after: number
+          reason: string
+          source: string
+          source_id: string | null
+          user_id: string
+        }
+        Insert: {
+          balance_after?: number
+          created_at?: string
+          delta: number
+          id?: string
+          level_after?: number
+          reason: string
+          source: string
+          source_id?: string | null
+          user_id: string
+        }
+        Update: {
+          balance_after?: number
+          created_at?: string
+          delta?: number
+          id?: string
+          level_after?: number
+          reason?: string
+          source?: string
+          source_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -1208,7 +1622,29 @@ export type Database = {
       }
     }
     Enums: {
+      achievement_category:
+        | "trading"
+        | "journal"
+        | "challenges"
+        | "consistency"
+        | "levels"
+        | "community"
+        | "events"
+        | "secret"
       app_role: "admin" | "moderator" | "premium" | "member"
+      badge_tier: "bronze" | "silver" | "gold" | "diamond" | "legend"
+      challenge_category:
+        | "learning"
+        | "discipline"
+        | "risk"
+        | "consistency"
+        | "psychology"
+        | "skills"
+        | "community"
+        | "general"
+      challenge_difficulty: "easy" | "medium" | "hard" | "elite"
+      challenge_scope: "daily" | "weekly" | "monthly" | "special" | "event"
+      challenge_status: "active" | "completed" | "claimed" | "expired"
       journal_grade: "A+" | "A" | "B" | "C" | "D" | "F"
       journal_session: "london" | "new_york" | "asia" | "sydney" | "custom"
       journal_status: "draft" | "published" | "archived"
@@ -1388,7 +1824,31 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      achievement_category: [
+        "trading",
+        "journal",
+        "challenges",
+        "consistency",
+        "levels",
+        "community",
+        "events",
+        "secret",
+      ],
       app_role: ["admin", "moderator", "premium", "member"],
+      badge_tier: ["bronze", "silver", "gold", "diamond", "legend"],
+      challenge_category: [
+        "learning",
+        "discipline",
+        "risk",
+        "consistency",
+        "psychology",
+        "skills",
+        "community",
+        "general",
+      ],
+      challenge_difficulty: ["easy", "medium", "hard", "elite"],
+      challenge_scope: ["daily", "weekly", "monthly", "special", "event"],
+      challenge_status: ["active", "completed", "claimed", "expired"],
       journal_grade: ["A+", "A", "B", "C", "D", "F"],
       journal_session: ["london", "new_york", "asia", "sydney", "custom"],
       journal_status: ["draft", "published", "archived"],
