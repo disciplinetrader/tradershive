@@ -14,16 +14,143 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          coins: number
+          country: string | null
+          created_at: string
+          display_name: string | null
+          email: string | null
+          experience: Database["public"]["Enums"]["trading_experience"] | null
+          id: string
+          last_active_at: string | null
+          league: Database["public"]["Enums"]["league"]
+          level: number
+          preferred_market:
+            | Database["public"]["Enums"]["preferred_market"]
+            | null
+          rank: number | null
+          streak: number
+          timezone: string | null
+          trading_style: Database["public"]["Enums"]["trading_style"] | null
+          updated_at: string
+          username: string
+          xp: number
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          coins?: number
+          country?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          experience?: Database["public"]["Enums"]["trading_experience"] | null
+          id: string
+          last_active_at?: string | null
+          league?: Database["public"]["Enums"]["league"]
+          level?: number
+          preferred_market?:
+            | Database["public"]["Enums"]["preferred_market"]
+            | null
+          rank?: number | null
+          streak?: number
+          timezone?: string | null
+          trading_style?: Database["public"]["Enums"]["trading_style"] | null
+          updated_at?: string
+          username: string
+          xp?: number
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          coins?: number
+          country?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          experience?: Database["public"]["Enums"]["trading_experience"] | null
+          id?: string
+          last_active_at?: string | null
+          league?: Database["public"]["Enums"]["league"]
+          level?: number
+          preferred_market?:
+            | Database["public"]["Enums"]["preferred_market"]
+            | null
+          rank?: number | null
+          streak?: number
+          timezone?: string | null
+          trading_style?: Database["public"]["Enums"]["trading_style"] | null
+          updated_at?: string
+          username?: string
+          xp?: number
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "premium" | "member"
+      league:
+        | "bronze"
+        | "silver"
+        | "gold"
+        | "platinum"
+        | "diamond"
+        | "master"
+        | "grandmaster"
+      preferred_market:
+        | "forex"
+        | "crypto"
+        | "stocks"
+        | "futures"
+        | "options"
+        | "indices"
+      trading_experience:
+        | "beginner"
+        | "intermediate"
+        | "advanced"
+        | "professional"
+      trading_style:
+        | "scalper"
+        | "day_trader"
+        | "swing_trader"
+        | "position_trader"
+        | "algo"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +277,38 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "premium", "member"],
+      league: [
+        "bronze",
+        "silver",
+        "gold",
+        "platinum",
+        "diamond",
+        "master",
+        "grandmaster",
+      ],
+      preferred_market: [
+        "forex",
+        "crypto",
+        "stocks",
+        "futures",
+        "options",
+        "indices",
+      ],
+      trading_experience: [
+        "beginner",
+        "intermediate",
+        "advanced",
+        "professional",
+      ],
+      trading_style: [
+        "scalper",
+        "day_trader",
+        "swing_trader",
+        "position_trader",
+        "algo",
+      ],
+    },
   },
 } as const
