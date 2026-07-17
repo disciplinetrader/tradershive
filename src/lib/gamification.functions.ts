@@ -166,7 +166,7 @@ export const listChallenges = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     await syncChallengesInternal(context.supabase, context.userId);
     let q = context.supabase.from("challenges").select("*").eq("active", true);
-    if (data.scope) q = q.eq("scope", data.scope);
+    if (data.scope) q = q.eq("scope", data.scope as any);
     const { data: challenges } = await q.order("sort_order");
     const { data: userProgress } = await context.supabase
       .from("user_challenges").select("*").eq("user_id", context.userId);
