@@ -26,6 +26,7 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedReplayRouteImport } from './routes/_authenticated/replay'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedPaperTradingRouteImport } from './routes/_authenticated/paper-trading'
+import { Route as AuthenticatedMarketRouteImport } from './routes/_authenticated/market'
 import { Route as AuthenticatedLeaderboardRouteImport } from './routes/_authenticated/leaderboard'
 import { Route as AuthenticatedJournalRouteImport } from './routes/_authenticated/journal'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -36,6 +37,7 @@ import { Route as AuthenticatedAchievementsRouteImport } from './routes/_authent
 import { Route as AuthenticatedStrategiesIndexRouteImport } from './routes/_authenticated/strategies.index'
 import { Route as AuthenticatedStatisticsIndexRouteImport } from './routes/_authenticated/statistics.index'
 import { Route as AuthenticatedReplayIndexRouteImport } from './routes/_authenticated/replay.index'
+import { Route as AuthenticatedMarketIndexRouteImport } from './routes/_authenticated/market.index'
 import { Route as AuthenticatedLeaderboardIndexRouteImport } from './routes/_authenticated/leaderboard.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as JournalShareTokenRouteImport } from './routes/journal.share.$token'
@@ -59,6 +61,11 @@ import { Route as AuthenticatedReplaySettingsRouteImport } from './routes/_authe
 import { Route as AuthenticatedReplaySessionRouteImport } from './routes/_authenticated/replay.session'
 import { Route as AuthenticatedReplayLibraryRouteImport } from './routes/_authenticated/replay.library'
 import { Route as AuthenticatedProfileUsernameRouteImport } from './routes/_authenticated/profile.$username'
+import { Route as AuthenticatedMarketSymbolsRouteImport } from './routes/_authenticated/market.symbols'
+import { Route as AuthenticatedMarketSettingsRouteImport } from './routes/_authenticated/market.settings'
+import { Route as AuthenticatedMarketSessionsRouteImport } from './routes/_authenticated/market.sessions'
+import { Route as AuthenticatedMarketProvidersRouteImport } from './routes/_authenticated/market.providers'
+import { Route as AuthenticatedMarketAlertsRouteImport } from './routes/_authenticated/market.alerts'
 import { Route as AuthenticatedLeaderboardLeagueRouteImport } from './routes/_authenticated/leaderboard.league'
 import { Route as AuthenticatedLeaderboardGlobalRouteImport } from './routes/_authenticated/leaderboard.global'
 import { Route as AuthenticatedLeaderboardFriendsRouteImport } from './routes/_authenticated/leaderboard.friends'
@@ -79,6 +86,7 @@ import { Route as AuthenticatedAdminStorageRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin.settings'
 import { Route as AuthenticatedAdminRolesRouteImport } from './routes/_authenticated/admin.roles'
 import { Route as AuthenticatedAdminReportsRouteImport } from './routes/_authenticated/admin.reports'
+import { Route as AuthenticatedAdminMarketDataRouteImport } from './routes/_authenticated/admin.market-data'
 import { Route as AuthenticatedAdminLogsRouteImport } from './routes/_authenticated/admin.logs'
 import { Route as AuthenticatedAdminLeaderboardsRouteImport } from './routes/_authenticated/admin.leaderboards'
 import { Route as AuthenticatedAdminJournalRouteImport } from './routes/_authenticated/admin.journal'
@@ -174,6 +182,11 @@ const AuthenticatedPaperTradingRoute =
     path: '/paper-trading',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedMarketRoute = AuthenticatedMarketRouteImport.update({
+  id: '/market',
+  path: '/market',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedLeaderboardRoute =
   AuthenticatedLeaderboardRouteImport.update({
     id: '/leaderboard',
@@ -228,6 +241,12 @@ const AuthenticatedReplayIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedReplayRoute,
+  } as any)
+const AuthenticatedMarketIndexRoute =
+  AuthenticatedMarketIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedMarketRoute,
   } as any)
 const AuthenticatedLeaderboardIndexRoute =
   AuthenticatedLeaderboardIndexRouteImport.update({
@@ -364,6 +383,36 @@ const AuthenticatedProfileUsernameRoute =
     path: '/$username',
     getParentRoute: () => AuthenticatedProfileRoute,
   } as any)
+const AuthenticatedMarketSymbolsRoute =
+  AuthenticatedMarketSymbolsRouteImport.update({
+    id: '/symbols',
+    path: '/symbols',
+    getParentRoute: () => AuthenticatedMarketRoute,
+  } as any)
+const AuthenticatedMarketSettingsRoute =
+  AuthenticatedMarketSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuthenticatedMarketRoute,
+  } as any)
+const AuthenticatedMarketSessionsRoute =
+  AuthenticatedMarketSessionsRouteImport.update({
+    id: '/sessions',
+    path: '/sessions',
+    getParentRoute: () => AuthenticatedMarketRoute,
+  } as any)
+const AuthenticatedMarketProvidersRoute =
+  AuthenticatedMarketProvidersRouteImport.update({
+    id: '/providers',
+    path: '/providers',
+    getParentRoute: () => AuthenticatedMarketRoute,
+  } as any)
+const AuthenticatedMarketAlertsRoute =
+  AuthenticatedMarketAlertsRouteImport.update({
+    id: '/alerts',
+    path: '/alerts',
+    getParentRoute: () => AuthenticatedMarketRoute,
+  } as any)
 const AuthenticatedLeaderboardLeagueRoute =
   AuthenticatedLeaderboardLeagueRouteImport.update({
     id: '/league',
@@ -479,6 +528,12 @@ const AuthenticatedAdminReportsRoute =
     path: '/reports',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminMarketDataRoute =
+  AuthenticatedAdminMarketDataRouteImport.update({
+    id: '/market-data',
+    path: '/market-data',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminLogsRoute = AuthenticatedAdminLogsRouteImport.update({
   id: '/logs',
   path: '/logs',
@@ -549,6 +604,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/journal': typeof AuthenticatedJournalRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRouteWithChildren
+  '/market': typeof AuthenticatedMarketRouteWithChildren
   '/paper-trading': typeof AuthenticatedPaperTradingRoute
   '/profile': typeof AuthenticatedProfileRouteWithChildren
   '/replay': typeof AuthenticatedReplayRouteWithChildren
@@ -566,6 +622,7 @@ export interface FileRoutesByFullPath {
   '/admin/journal': typeof AuthenticatedAdminJournalRoute
   '/admin/leaderboards': typeof AuthenticatedAdminLeaderboardsRoute
   '/admin/logs': typeof AuthenticatedAdminLogsRoute
+  '/admin/market-data': typeof AuthenticatedAdminMarketDataRoute
   '/admin/reports': typeof AuthenticatedAdminReportsRoute
   '/admin/roles': typeof AuthenticatedAdminRolesRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
@@ -586,6 +643,11 @@ export interface FileRoutesByFullPath {
   '/leaderboard/friends': typeof AuthenticatedLeaderboardFriendsRoute
   '/leaderboard/global': typeof AuthenticatedLeaderboardGlobalRoute
   '/leaderboard/league': typeof AuthenticatedLeaderboardLeagueRoute
+  '/market/alerts': typeof AuthenticatedMarketAlertsRoute
+  '/market/providers': typeof AuthenticatedMarketProvidersRoute
+  '/market/sessions': typeof AuthenticatedMarketSessionsRoute
+  '/market/settings': typeof AuthenticatedMarketSettingsRoute
+  '/market/symbols': typeof AuthenticatedMarketSymbolsRoute
   '/profile/$username': typeof AuthenticatedProfileUsernameRoute
   '/replay/library': typeof AuthenticatedReplayLibraryRoute
   '/replay/session': typeof AuthenticatedReplaySessionRoute
@@ -609,6 +671,7 @@ export interface FileRoutesByFullPath {
   '/journal/share/$token': typeof JournalShareTokenRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
+  '/market/': typeof AuthenticatedMarketIndexRoute
   '/replay/': typeof AuthenticatedReplayIndexRoute
   '/statistics/': typeof AuthenticatedStatisticsIndexRoute
   '/strategies/': typeof AuthenticatedStrategiesIndexRoute
@@ -641,6 +704,7 @@ export interface FileRoutesByTo {
   '/admin/journal': typeof AuthenticatedAdminJournalRoute
   '/admin/leaderboards': typeof AuthenticatedAdminLeaderboardsRoute
   '/admin/logs': typeof AuthenticatedAdminLogsRoute
+  '/admin/market-data': typeof AuthenticatedAdminMarketDataRoute
   '/admin/reports': typeof AuthenticatedAdminReportsRoute
   '/admin/roles': typeof AuthenticatedAdminRolesRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
@@ -661,6 +725,11 @@ export interface FileRoutesByTo {
   '/leaderboard/friends': typeof AuthenticatedLeaderboardFriendsRoute
   '/leaderboard/global': typeof AuthenticatedLeaderboardGlobalRoute
   '/leaderboard/league': typeof AuthenticatedLeaderboardLeagueRoute
+  '/market/alerts': typeof AuthenticatedMarketAlertsRoute
+  '/market/providers': typeof AuthenticatedMarketProvidersRoute
+  '/market/sessions': typeof AuthenticatedMarketSessionsRoute
+  '/market/settings': typeof AuthenticatedMarketSettingsRoute
+  '/market/symbols': typeof AuthenticatedMarketSymbolsRoute
   '/profile/$username': typeof AuthenticatedProfileUsernameRoute
   '/replay/library': typeof AuthenticatedReplayLibraryRoute
   '/replay/session': typeof AuthenticatedReplaySessionRoute
@@ -684,6 +753,7 @@ export interface FileRoutesByTo {
   '/journal/share/$token': typeof JournalShareTokenRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/leaderboard': typeof AuthenticatedLeaderboardIndexRoute
+  '/market': typeof AuthenticatedMarketIndexRoute
   '/replay': typeof AuthenticatedReplayIndexRoute
   '/statistics': typeof AuthenticatedStatisticsIndexRoute
   '/strategies': typeof AuthenticatedStrategiesIndexRoute
@@ -706,6 +776,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/journal': typeof AuthenticatedJournalRoute
   '/_authenticated/leaderboard': typeof AuthenticatedLeaderboardRouteWithChildren
+  '/_authenticated/market': typeof AuthenticatedMarketRouteWithChildren
   '/_authenticated/paper-trading': typeof AuthenticatedPaperTradingRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRouteWithChildren
   '/_authenticated/replay': typeof AuthenticatedReplayRouteWithChildren
@@ -723,6 +794,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/journal': typeof AuthenticatedAdminJournalRoute
   '/_authenticated/admin/leaderboards': typeof AuthenticatedAdminLeaderboardsRoute
   '/_authenticated/admin/logs': typeof AuthenticatedAdminLogsRoute
+  '/_authenticated/admin/market-data': typeof AuthenticatedAdminMarketDataRoute
   '/_authenticated/admin/reports': typeof AuthenticatedAdminReportsRoute
   '/_authenticated/admin/roles': typeof AuthenticatedAdminRolesRoute
   '/_authenticated/admin/settings': typeof AuthenticatedAdminSettingsRoute
@@ -743,6 +815,11 @@ export interface FileRoutesById {
   '/_authenticated/leaderboard/friends': typeof AuthenticatedLeaderboardFriendsRoute
   '/_authenticated/leaderboard/global': typeof AuthenticatedLeaderboardGlobalRoute
   '/_authenticated/leaderboard/league': typeof AuthenticatedLeaderboardLeagueRoute
+  '/_authenticated/market/alerts': typeof AuthenticatedMarketAlertsRoute
+  '/_authenticated/market/providers': typeof AuthenticatedMarketProvidersRoute
+  '/_authenticated/market/sessions': typeof AuthenticatedMarketSessionsRoute
+  '/_authenticated/market/settings': typeof AuthenticatedMarketSettingsRoute
+  '/_authenticated/market/symbols': typeof AuthenticatedMarketSymbolsRoute
   '/_authenticated/profile/$username': typeof AuthenticatedProfileUsernameRoute
   '/_authenticated/replay/library': typeof AuthenticatedReplayLibraryRoute
   '/_authenticated/replay/session': typeof AuthenticatedReplaySessionRoute
@@ -766,6 +843,7 @@ export interface FileRoutesById {
   '/journal/share/$token': typeof JournalShareTokenRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
+  '/_authenticated/market/': typeof AuthenticatedMarketIndexRoute
   '/_authenticated/replay/': typeof AuthenticatedReplayIndexRoute
   '/_authenticated/statistics/': typeof AuthenticatedStatisticsIndexRoute
   '/_authenticated/strategies/': typeof AuthenticatedStrategiesIndexRoute
@@ -788,6 +866,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/journal'
     | '/leaderboard'
+    | '/market'
     | '/paper-trading'
     | '/profile'
     | '/replay'
@@ -805,6 +884,7 @@ export interface FileRouteTypes {
     | '/admin/journal'
     | '/admin/leaderboards'
     | '/admin/logs'
+    | '/admin/market-data'
     | '/admin/reports'
     | '/admin/roles'
     | '/admin/settings'
@@ -825,6 +905,11 @@ export interface FileRouteTypes {
     | '/leaderboard/friends'
     | '/leaderboard/global'
     | '/leaderboard/league'
+    | '/market/alerts'
+    | '/market/providers'
+    | '/market/sessions'
+    | '/market/settings'
+    | '/market/symbols'
     | '/profile/$username'
     | '/replay/library'
     | '/replay/session'
@@ -848,6 +933,7 @@ export interface FileRouteTypes {
     | '/journal/share/$token'
     | '/admin/'
     | '/leaderboard/'
+    | '/market/'
     | '/replay/'
     | '/statistics/'
     | '/strategies/'
@@ -880,6 +966,7 @@ export interface FileRouteTypes {
     | '/admin/journal'
     | '/admin/leaderboards'
     | '/admin/logs'
+    | '/admin/market-data'
     | '/admin/reports'
     | '/admin/roles'
     | '/admin/settings'
@@ -900,6 +987,11 @@ export interface FileRouteTypes {
     | '/leaderboard/friends'
     | '/leaderboard/global'
     | '/leaderboard/league'
+    | '/market/alerts'
+    | '/market/providers'
+    | '/market/sessions'
+    | '/market/settings'
+    | '/market/symbols'
     | '/profile/$username'
     | '/replay/library'
     | '/replay/session'
@@ -923,6 +1015,7 @@ export interface FileRouteTypes {
     | '/journal/share/$token'
     | '/admin'
     | '/leaderboard'
+    | '/market'
     | '/replay'
     | '/statistics'
     | '/strategies'
@@ -944,6 +1037,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/journal'
     | '/_authenticated/leaderboard'
+    | '/_authenticated/market'
     | '/_authenticated/paper-trading'
     | '/_authenticated/profile'
     | '/_authenticated/replay'
@@ -961,6 +1055,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/journal'
     | '/_authenticated/admin/leaderboards'
     | '/_authenticated/admin/logs'
+    | '/_authenticated/admin/market-data'
     | '/_authenticated/admin/reports'
     | '/_authenticated/admin/roles'
     | '/_authenticated/admin/settings'
@@ -981,6 +1076,11 @@ export interface FileRouteTypes {
     | '/_authenticated/leaderboard/friends'
     | '/_authenticated/leaderboard/global'
     | '/_authenticated/leaderboard/league'
+    | '/_authenticated/market/alerts'
+    | '/_authenticated/market/providers'
+    | '/_authenticated/market/sessions'
+    | '/_authenticated/market/settings'
+    | '/_authenticated/market/symbols'
     | '/_authenticated/profile/$username'
     | '/_authenticated/replay/library'
     | '/_authenticated/replay/session'
@@ -1004,6 +1104,7 @@ export interface FileRouteTypes {
     | '/journal/share/$token'
     | '/_authenticated/admin/'
     | '/_authenticated/leaderboard/'
+    | '/_authenticated/market/'
     | '/_authenticated/replay/'
     | '/_authenticated/statistics/'
     | '/_authenticated/strategies/'
@@ -1144,6 +1245,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPaperTradingRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/market': {
+      id: '/_authenticated/market'
+      path: '/market'
+      fullPath: '/market'
+      preLoaderRoute: typeof AuthenticatedMarketRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/leaderboard': {
       id: '/_authenticated/leaderboard'
       path: '/leaderboard'
@@ -1213,6 +1321,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/replay/'
       preLoaderRoute: typeof AuthenticatedReplayIndexRouteImport
       parentRoute: typeof AuthenticatedReplayRoute
+    }
+    '/_authenticated/market/': {
+      id: '/_authenticated/market/'
+      path: '/'
+      fullPath: '/market/'
+      preLoaderRoute: typeof AuthenticatedMarketIndexRouteImport
+      parentRoute: typeof AuthenticatedMarketRoute
     }
     '/_authenticated/leaderboard/': {
       id: '/_authenticated/leaderboard/'
@@ -1375,6 +1490,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProfileUsernameRouteImport
       parentRoute: typeof AuthenticatedProfileRoute
     }
+    '/_authenticated/market/symbols': {
+      id: '/_authenticated/market/symbols'
+      path: '/symbols'
+      fullPath: '/market/symbols'
+      preLoaderRoute: typeof AuthenticatedMarketSymbolsRouteImport
+      parentRoute: typeof AuthenticatedMarketRoute
+    }
+    '/_authenticated/market/settings': {
+      id: '/_authenticated/market/settings'
+      path: '/settings'
+      fullPath: '/market/settings'
+      preLoaderRoute: typeof AuthenticatedMarketSettingsRouteImport
+      parentRoute: typeof AuthenticatedMarketRoute
+    }
+    '/_authenticated/market/sessions': {
+      id: '/_authenticated/market/sessions'
+      path: '/sessions'
+      fullPath: '/market/sessions'
+      preLoaderRoute: typeof AuthenticatedMarketSessionsRouteImport
+      parentRoute: typeof AuthenticatedMarketRoute
+    }
+    '/_authenticated/market/providers': {
+      id: '/_authenticated/market/providers'
+      path: '/providers'
+      fullPath: '/market/providers'
+      preLoaderRoute: typeof AuthenticatedMarketProvidersRouteImport
+      parentRoute: typeof AuthenticatedMarketRoute
+    }
+    '/_authenticated/market/alerts': {
+      id: '/_authenticated/market/alerts'
+      path: '/alerts'
+      fullPath: '/market/alerts'
+      preLoaderRoute: typeof AuthenticatedMarketAlertsRouteImport
+      parentRoute: typeof AuthenticatedMarketRoute
+    }
     '/_authenticated/leaderboard/league': {
       id: '/_authenticated/leaderboard/league'
       path: '/league'
@@ -1515,6 +1665,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminReportsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/market-data': {
+      id: '/_authenticated/admin/market-data'
+      path: '/market-data'
+      fullPath: '/admin/market-data'
+      preLoaderRoute: typeof AuthenticatedAdminMarketDataRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/logs': {
       id: '/_authenticated/admin/logs'
       path: '/logs'
@@ -1591,6 +1748,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminJournalRoute: typeof AuthenticatedAdminJournalRoute
   AuthenticatedAdminLeaderboardsRoute: typeof AuthenticatedAdminLeaderboardsRoute
   AuthenticatedAdminLogsRoute: typeof AuthenticatedAdminLogsRoute
+  AuthenticatedAdminMarketDataRoute: typeof AuthenticatedAdminMarketDataRoute
   AuthenticatedAdminReportsRoute: typeof AuthenticatedAdminReportsRoute
   AuthenticatedAdminRolesRoute: typeof AuthenticatedAdminRolesRoute
   AuthenticatedAdminSettingsRoute: typeof AuthenticatedAdminSettingsRoute
@@ -1610,6 +1768,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminJournalRoute: AuthenticatedAdminJournalRoute,
   AuthenticatedAdminLeaderboardsRoute: AuthenticatedAdminLeaderboardsRoute,
   AuthenticatedAdminLogsRoute: AuthenticatedAdminLogsRoute,
+  AuthenticatedAdminMarketDataRoute: AuthenticatedAdminMarketDataRoute,
   AuthenticatedAdminReportsRoute: AuthenticatedAdminReportsRoute,
   AuthenticatedAdminRolesRoute: AuthenticatedAdminRolesRoute,
   AuthenticatedAdminSettingsRoute: AuthenticatedAdminSettingsRoute,
@@ -1685,6 +1844,27 @@ const AuthenticatedLeaderboardRouteWithChildren =
   AuthenticatedLeaderboardRoute._addFileChildren(
     AuthenticatedLeaderboardRouteChildren,
   )
+
+interface AuthenticatedMarketRouteChildren {
+  AuthenticatedMarketAlertsRoute: typeof AuthenticatedMarketAlertsRoute
+  AuthenticatedMarketProvidersRoute: typeof AuthenticatedMarketProvidersRoute
+  AuthenticatedMarketSessionsRoute: typeof AuthenticatedMarketSessionsRoute
+  AuthenticatedMarketSettingsRoute: typeof AuthenticatedMarketSettingsRoute
+  AuthenticatedMarketSymbolsRoute: typeof AuthenticatedMarketSymbolsRoute
+  AuthenticatedMarketIndexRoute: typeof AuthenticatedMarketIndexRoute
+}
+
+const AuthenticatedMarketRouteChildren: AuthenticatedMarketRouteChildren = {
+  AuthenticatedMarketAlertsRoute: AuthenticatedMarketAlertsRoute,
+  AuthenticatedMarketProvidersRoute: AuthenticatedMarketProvidersRoute,
+  AuthenticatedMarketSessionsRoute: AuthenticatedMarketSessionsRoute,
+  AuthenticatedMarketSettingsRoute: AuthenticatedMarketSettingsRoute,
+  AuthenticatedMarketSymbolsRoute: AuthenticatedMarketSymbolsRoute,
+  AuthenticatedMarketIndexRoute: AuthenticatedMarketIndexRoute,
+}
+
+const AuthenticatedMarketRouteWithChildren =
+  AuthenticatedMarketRoute._addFileChildren(AuthenticatedMarketRouteChildren)
 
 interface AuthenticatedProfileRouteChildren {
   AuthenticatedProfileUsernameRoute: typeof AuthenticatedProfileUsernameRoute
@@ -1784,6 +1964,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedJournalRoute: typeof AuthenticatedJournalRoute
   AuthenticatedLeaderboardRoute: typeof AuthenticatedLeaderboardRouteWithChildren
+  AuthenticatedMarketRoute: typeof AuthenticatedMarketRouteWithChildren
   AuthenticatedPaperTradingRoute: typeof AuthenticatedPaperTradingRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRouteWithChildren
   AuthenticatedReplayRoute: typeof AuthenticatedReplayRouteWithChildren
@@ -1802,6 +1983,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedJournalRoute: AuthenticatedJournalRoute,
   AuthenticatedLeaderboardRoute: AuthenticatedLeaderboardRouteWithChildren,
+  AuthenticatedMarketRoute: AuthenticatedMarketRouteWithChildren,
   AuthenticatedPaperTradingRoute: AuthenticatedPaperTradingRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRouteWithChildren,
   AuthenticatedReplayRoute: AuthenticatedReplayRouteWithChildren,
