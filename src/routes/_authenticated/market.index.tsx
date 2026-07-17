@@ -30,8 +30,7 @@ function MarketDashboard() {
   const { data: favs = [] } = useQuery({ queryKey: ["market", "favs"], queryFn: () => favsFn() });
   const { data: recent = [] } = useQuery({ queryKey: ["market", "recent"], queryFn: () => recentFn() });
 
-  const stats = useMemo(() => marketData.cacheStats(), []);
-  const [tick, setTick] = useState(0);
+  const [, setTick] = useState(0);
   useEffect(() => { const t = setInterval(() => setTick((n) => n + 1), 2000); return () => clearInterval(t); }, []);
   const live = marketData.cacheStats();
 
