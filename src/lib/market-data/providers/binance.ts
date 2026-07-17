@@ -64,17 +64,23 @@ export class BinanceProvider implements MarketDataProvider {
     try {
       this.ws = new WebSocket(url);
     } catch (e) {
+      console.error("[binance] WebSocket construction failed:", e);
       this.scheduleReconnect(); return;
     }
     this.ws.onopen = () => {
       this.reconnectAttempt = 0;
       this.setStatus("connected");
+      console.info(`[binance] WS connected (${this.subs.size} symbols)`);
       if (this.heartbeat) clearInterval(this.heartbeat);
       this.heartbeat = setInterval(() => { try { this.ws?.send("{}"); } catch { /* noop */ } }, 15_000);
     };
     this.ws.onmessage = (ev) => this.handleMessage(ev.data);
-    this.ws.onerror = () => this.setStatus("error");
-    this.ws.onclose = () => { this.setStatus("disconnected"); this.scheduleReconnect(); };
+    this.ws.onerror = (e) => { console.warn("[binance] WS error:", e); this.setStatus("error"); };
+    this.ws.onclose = (ev) => {
+      this.setStatus("disconnected");
+      if (!ev.wasClean) console.warn(`[binance] WS closed unexpectedly (code=${ev.code}); scheduling reconnect`);
+      this.scheduleReconnect();
+    };
   }
 
   private scheduleReconnect() {
