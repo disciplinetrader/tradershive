@@ -302,7 +302,7 @@ function MobileBottomNav({
 }) {
   const items: NavItem[] = [
     { to: "/dashboard", label: "Home", icon: Home },
-    { to: "/paper-trading", label: "Trade", icon: LineChart },
+    { to: "/trading", label: "Trade", icon: LineChart },
     { to: "/journal", label: "Journal", icon: BookOpen },
     { to: "/leaderboard", label: "Rank", icon: Trophy },
   ];
