@@ -1,11 +1,12 @@
 // Paper Trading price feed.
 //
-// Every symbol is subscribed to the central Market Data Engine so quotes flow
-// from the active provider (Binance for crypto, OANDA for forex, Mock as
-// fallback). A deterministic local ticker keeps the UI moving even when no
-// provider is connected yet (e.g. first paint, offline dev).
+// Every symbol subscribes to the central Market Data Engine so live quotes
+// flow from the active provider (Binance for crypto, OANDA for FX/metals/
+// indices). No local deterministic ticker — if a provider is not configured
+// the engine surfaces a clear error in the console and the UI shows the last
+// known price (or the seed refPrice) instead of fabricated ticks.
 import { useEffect, useState } from "react";
-import { SYMBOL_BY_KEY, type SymbolMeta } from "./symbols";
+import { SYMBOL_BY_KEY } from "./symbols";
 import { marketData } from "@/lib/market-data/engine";
 import type { SubscriptionHandle } from "@/lib/market-data/types";
 
