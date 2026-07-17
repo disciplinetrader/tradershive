@@ -13,7 +13,7 @@ import { useLiveQuotes } from "@/lib/paper-trading/mock-prices";
 import { usePaper } from "./context";
 
 export function AccountSummary() {
-  const { account, accountId } = usePaper();
+  const { account, accountId, loading } = usePaper();
   const quotes = useLiveQuotes();
   const fetchOpen = useServerFn(listTrades);
   const fetchStats = useServerFn(getAccountStats);
