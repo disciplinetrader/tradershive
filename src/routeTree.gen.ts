@@ -22,6 +22,7 @@ import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedSupportRouteImport } from './routes/_authenticated/support'
 import { Route as AuthenticatedStatisticsRouteImport } from './routes/_authenticated/statistics'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedReplayRouteImport } from './routes/_authenticated/replay'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedPaperTradingRouteImport } from './routes/_authenticated/paper-trading'
 import { Route as AuthenticatedLeaderboardRouteImport } from './routes/_authenticated/leaderboard'
@@ -32,6 +33,7 @@ import { Route as AuthenticatedAiRouteImport } from './routes/_authenticated/ai'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAchievementsRouteImport } from './routes/_authenticated/achievements'
 import { Route as AuthenticatedStatisticsIndexRouteImport } from './routes/_authenticated/statistics.index'
+import { Route as AuthenticatedReplayIndexRouteImport } from './routes/_authenticated/replay.index'
 import { Route as AuthenticatedLeaderboardIndexRouteImport } from './routes/_authenticated/leaderboard.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as JournalShareTokenRouteImport } from './routes/journal.share.$token'
@@ -42,6 +44,10 @@ import { Route as AuthenticatedStatisticsRiskRouteImport } from './routes/_authe
 import { Route as AuthenticatedStatisticsReportsRouteImport } from './routes/_authenticated/statistics.reports'
 import { Route as AuthenticatedStatisticsPerformanceRouteImport } from './routes/_authenticated/statistics.performance'
 import { Route as AuthenticatedStatisticsCalendarRouteImport } from './routes/_authenticated/statistics.calendar'
+import { Route as AuthenticatedReplayTradesRouteImport } from './routes/_authenticated/replay.trades'
+import { Route as AuthenticatedReplaySettingsRouteImport } from './routes/_authenticated/replay.settings'
+import { Route as AuthenticatedReplaySessionRouteImport } from './routes/_authenticated/replay.session'
+import { Route as AuthenticatedReplayLibraryRouteImport } from './routes/_authenticated/replay.library'
 import { Route as AuthenticatedProfileUsernameRouteImport } from './routes/_authenticated/profile.$username'
 import { Route as AuthenticatedLeaderboardLeagueRouteImport } from './routes/_authenticated/leaderboard.league'
 import { Route as AuthenticatedLeaderboardGlobalRouteImport } from './routes/_authenticated/leaderboard.global'
@@ -137,6 +143,11 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedReplayRoute = AuthenticatedReplayRouteImport.update({
+  id: '/replay',
+  path: '/replay',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -190,6 +201,12 @@ const AuthenticatedStatisticsIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedStatisticsRoute,
+  } as any)
+const AuthenticatedReplayIndexRoute =
+  AuthenticatedReplayIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedReplayRoute,
   } as any)
 const AuthenticatedLeaderboardIndexRoute =
   AuthenticatedLeaderboardIndexRouteImport.update({
@@ -247,6 +264,30 @@ const AuthenticatedStatisticsCalendarRoute =
     id: '/calendar',
     path: '/calendar',
     getParentRoute: () => AuthenticatedStatisticsRoute,
+  } as any)
+const AuthenticatedReplayTradesRoute =
+  AuthenticatedReplayTradesRouteImport.update({
+    id: '/trades',
+    path: '/trades',
+    getParentRoute: () => AuthenticatedReplayRoute,
+  } as any)
+const AuthenticatedReplaySettingsRoute =
+  AuthenticatedReplaySettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuthenticatedReplayRoute,
+  } as any)
+const AuthenticatedReplaySessionRoute =
+  AuthenticatedReplaySessionRouteImport.update({
+    id: '/session',
+    path: '/session',
+    getParentRoute: () => AuthenticatedReplayRoute,
+  } as any)
+const AuthenticatedReplayLibraryRoute =
+  AuthenticatedReplayLibraryRouteImport.update({
+    id: '/library',
+    path: '/library',
+    getParentRoute: () => AuthenticatedReplayRoute,
   } as any)
 const AuthenticatedProfileUsernameRoute =
   AuthenticatedProfileUsernameRouteImport.update({
@@ -441,6 +482,7 @@ export interface FileRoutesByFullPath {
   '/leaderboard': typeof AuthenticatedLeaderboardRouteWithChildren
   '/paper-trading': typeof AuthenticatedPaperTradingRoute
   '/profile': typeof AuthenticatedProfileRouteWithChildren
+  '/replay': typeof AuthenticatedReplayRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
   '/statistics': typeof AuthenticatedStatisticsRouteWithChildren
   '/support': typeof AuthenticatedSupportRoute
@@ -475,6 +517,10 @@ export interface FileRoutesByFullPath {
   '/leaderboard/global': typeof AuthenticatedLeaderboardGlobalRoute
   '/leaderboard/league': typeof AuthenticatedLeaderboardLeagueRoute
   '/profile/$username': typeof AuthenticatedProfileUsernameRoute
+  '/replay/library': typeof AuthenticatedReplayLibraryRoute
+  '/replay/session': typeof AuthenticatedReplaySessionRoute
+  '/replay/settings': typeof AuthenticatedReplaySettingsRoute
+  '/replay/trades': typeof AuthenticatedReplayTradesRoute
   '/statistics/calendar': typeof AuthenticatedStatisticsCalendarRoute
   '/statistics/performance': typeof AuthenticatedStatisticsPerformanceRoute
   '/statistics/reports': typeof AuthenticatedStatisticsReportsRoute
@@ -485,6 +531,7 @@ export interface FileRoutesByFullPath {
   '/journal/share/$token': typeof JournalShareTokenRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
+  '/replay/': typeof AuthenticatedReplayIndexRoute
   '/statistics/': typeof AuthenticatedStatisticsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -536,6 +583,10 @@ export interface FileRoutesByTo {
   '/leaderboard/global': typeof AuthenticatedLeaderboardGlobalRoute
   '/leaderboard/league': typeof AuthenticatedLeaderboardLeagueRoute
   '/profile/$username': typeof AuthenticatedProfileUsernameRoute
+  '/replay/library': typeof AuthenticatedReplayLibraryRoute
+  '/replay/session': typeof AuthenticatedReplaySessionRoute
+  '/replay/settings': typeof AuthenticatedReplaySettingsRoute
+  '/replay/trades': typeof AuthenticatedReplayTradesRoute
   '/statistics/calendar': typeof AuthenticatedStatisticsCalendarRoute
   '/statistics/performance': typeof AuthenticatedStatisticsPerformanceRoute
   '/statistics/reports': typeof AuthenticatedStatisticsReportsRoute
@@ -546,6 +597,7 @@ export interface FileRoutesByTo {
   '/journal/share/$token': typeof JournalShareTokenRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/leaderboard': typeof AuthenticatedLeaderboardIndexRoute
+  '/replay': typeof AuthenticatedReplayIndexRoute
   '/statistics': typeof AuthenticatedStatisticsIndexRoute
 }
 export interface FileRoutesById {
@@ -568,6 +620,7 @@ export interface FileRoutesById {
   '/_authenticated/leaderboard': typeof AuthenticatedLeaderboardRouteWithChildren
   '/_authenticated/paper-trading': typeof AuthenticatedPaperTradingRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRouteWithChildren
+  '/_authenticated/replay': typeof AuthenticatedReplayRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/statistics': typeof AuthenticatedStatisticsRouteWithChildren
   '/_authenticated/support': typeof AuthenticatedSupportRoute
@@ -602,6 +655,10 @@ export interface FileRoutesById {
   '/_authenticated/leaderboard/global': typeof AuthenticatedLeaderboardGlobalRoute
   '/_authenticated/leaderboard/league': typeof AuthenticatedLeaderboardLeagueRoute
   '/_authenticated/profile/$username': typeof AuthenticatedProfileUsernameRoute
+  '/_authenticated/replay/library': typeof AuthenticatedReplayLibraryRoute
+  '/_authenticated/replay/session': typeof AuthenticatedReplaySessionRoute
+  '/_authenticated/replay/settings': typeof AuthenticatedReplaySettingsRoute
+  '/_authenticated/replay/trades': typeof AuthenticatedReplayTradesRoute
   '/_authenticated/statistics/calendar': typeof AuthenticatedStatisticsCalendarRoute
   '/_authenticated/statistics/performance': typeof AuthenticatedStatisticsPerformanceRoute
   '/_authenticated/statistics/reports': typeof AuthenticatedStatisticsReportsRoute
@@ -612,6 +669,7 @@ export interface FileRoutesById {
   '/journal/share/$token': typeof JournalShareTokenRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
+  '/_authenticated/replay/': typeof AuthenticatedReplayIndexRoute
   '/_authenticated/statistics/': typeof AuthenticatedStatisticsIndexRoute
 }
 export interface FileRouteTypes {
@@ -634,6 +692,7 @@ export interface FileRouteTypes {
     | '/leaderboard'
     | '/paper-trading'
     | '/profile'
+    | '/replay'
     | '/settings'
     | '/statistics'
     | '/support'
@@ -668,6 +727,10 @@ export interface FileRouteTypes {
     | '/leaderboard/global'
     | '/leaderboard/league'
     | '/profile/$username'
+    | '/replay/library'
+    | '/replay/session'
+    | '/replay/settings'
+    | '/replay/trades'
     | '/statistics/calendar'
     | '/statistics/performance'
     | '/statistics/reports'
@@ -678,6 +741,7 @@ export interface FileRouteTypes {
     | '/journal/share/$token'
     | '/admin/'
     | '/leaderboard/'
+    | '/replay/'
     | '/statistics/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -729,6 +793,10 @@ export interface FileRouteTypes {
     | '/leaderboard/global'
     | '/leaderboard/league'
     | '/profile/$username'
+    | '/replay/library'
+    | '/replay/session'
+    | '/replay/settings'
+    | '/replay/trades'
     | '/statistics/calendar'
     | '/statistics/performance'
     | '/statistics/reports'
@@ -739,6 +807,7 @@ export interface FileRouteTypes {
     | '/journal/share/$token'
     | '/admin'
     | '/leaderboard'
+    | '/replay'
     | '/statistics'
   id:
     | '__root__'
@@ -760,6 +829,7 @@ export interface FileRouteTypes {
     | '/_authenticated/leaderboard'
     | '/_authenticated/paper-trading'
     | '/_authenticated/profile'
+    | '/_authenticated/replay'
     | '/_authenticated/settings'
     | '/_authenticated/statistics'
     | '/_authenticated/support'
@@ -794,6 +864,10 @@ export interface FileRouteTypes {
     | '/_authenticated/leaderboard/global'
     | '/_authenticated/leaderboard/league'
     | '/_authenticated/profile/$username'
+    | '/_authenticated/replay/library'
+    | '/_authenticated/replay/session'
+    | '/_authenticated/replay/settings'
+    | '/_authenticated/replay/trades'
     | '/_authenticated/statistics/calendar'
     | '/_authenticated/statistics/performance'
     | '/_authenticated/statistics/reports'
@@ -804,6 +878,7 @@ export interface FileRouteTypes {
     | '/journal/share/$token'
     | '/_authenticated/admin/'
     | '/_authenticated/leaderboard/'
+    | '/_authenticated/replay/'
     | '/_authenticated/statistics/'
   fileRoutesById: FileRoutesById
 }
@@ -914,6 +989,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/replay': {
+      id: '/_authenticated/replay'
+      path: '/replay'
+      fullPath: '/replay'
+      preLoaderRoute: typeof AuthenticatedReplayRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/profile': {
       id: '/_authenticated/profile'
       path: '/profile'
@@ -984,6 +1066,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStatisticsIndexRouteImport
       parentRoute: typeof AuthenticatedStatisticsRoute
     }
+    '/_authenticated/replay/': {
+      id: '/_authenticated/replay/'
+      path: '/'
+      fullPath: '/replay/'
+      preLoaderRoute: typeof AuthenticatedReplayIndexRouteImport
+      parentRoute: typeof AuthenticatedReplayRoute
+    }
     '/_authenticated/leaderboard/': {
       id: '/_authenticated/leaderboard/'
       path: '/'
@@ -1053,6 +1142,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/statistics/calendar'
       preLoaderRoute: typeof AuthenticatedStatisticsCalendarRouteImport
       parentRoute: typeof AuthenticatedStatisticsRoute
+    }
+    '/_authenticated/replay/trades': {
+      id: '/_authenticated/replay/trades'
+      path: '/trades'
+      fullPath: '/replay/trades'
+      preLoaderRoute: typeof AuthenticatedReplayTradesRouteImport
+      parentRoute: typeof AuthenticatedReplayRoute
+    }
+    '/_authenticated/replay/settings': {
+      id: '/_authenticated/replay/settings'
+      path: '/settings'
+      fullPath: '/replay/settings'
+      preLoaderRoute: typeof AuthenticatedReplaySettingsRouteImport
+      parentRoute: typeof AuthenticatedReplayRoute
+    }
+    '/_authenticated/replay/session': {
+      id: '/_authenticated/replay/session'
+      path: '/session'
+      fullPath: '/replay/session'
+      preLoaderRoute: typeof AuthenticatedReplaySessionRouteImport
+      parentRoute: typeof AuthenticatedReplayRoute
+    }
+    '/_authenticated/replay/library': {
+      id: '/_authenticated/replay/library'
+      path: '/library'
+      fullPath: '/replay/library'
+      preLoaderRoute: typeof AuthenticatedReplayLibraryRouteImport
+      parentRoute: typeof AuthenticatedReplayRoute
     }
     '/_authenticated/profile/$username': {
       id: '/_authenticated/profile/$username'
@@ -1383,6 +1500,25 @@ const AuthenticatedProfileRouteChildren: AuthenticatedProfileRouteChildren = {
 const AuthenticatedProfileRouteWithChildren =
   AuthenticatedProfileRoute._addFileChildren(AuthenticatedProfileRouteChildren)
 
+interface AuthenticatedReplayRouteChildren {
+  AuthenticatedReplayLibraryRoute: typeof AuthenticatedReplayLibraryRoute
+  AuthenticatedReplaySessionRoute: typeof AuthenticatedReplaySessionRoute
+  AuthenticatedReplaySettingsRoute: typeof AuthenticatedReplaySettingsRoute
+  AuthenticatedReplayTradesRoute: typeof AuthenticatedReplayTradesRoute
+  AuthenticatedReplayIndexRoute: typeof AuthenticatedReplayIndexRoute
+}
+
+const AuthenticatedReplayRouteChildren: AuthenticatedReplayRouteChildren = {
+  AuthenticatedReplayLibraryRoute: AuthenticatedReplayLibraryRoute,
+  AuthenticatedReplaySessionRoute: AuthenticatedReplaySessionRoute,
+  AuthenticatedReplaySettingsRoute: AuthenticatedReplaySettingsRoute,
+  AuthenticatedReplayTradesRoute: AuthenticatedReplayTradesRoute,
+  AuthenticatedReplayIndexRoute: AuthenticatedReplayIndexRoute,
+}
+
+const AuthenticatedReplayRouteWithChildren =
+  AuthenticatedReplayRoute._addFileChildren(AuthenticatedReplayRouteChildren)
+
 interface AuthenticatedStatisticsRouteChildren {
   AuthenticatedStatisticsCalendarRoute: typeof AuthenticatedStatisticsCalendarRoute
   AuthenticatedStatisticsPerformanceRoute: typeof AuthenticatedStatisticsPerformanceRoute
@@ -1420,6 +1556,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedLeaderboardRoute: typeof AuthenticatedLeaderboardRouteWithChildren
   AuthenticatedPaperTradingRoute: typeof AuthenticatedPaperTradingRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRouteWithChildren
+  AuthenticatedReplayRoute: typeof AuthenticatedReplayRouteWithChildren
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedStatisticsRoute: typeof AuthenticatedStatisticsRouteWithChildren
   AuthenticatedSupportRoute: typeof AuthenticatedSupportRoute
@@ -1436,6 +1573,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedLeaderboardRoute: AuthenticatedLeaderboardRouteWithChildren,
   AuthenticatedPaperTradingRoute: AuthenticatedPaperTradingRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRouteWithChildren,
+  AuthenticatedReplayRoute: AuthenticatedReplayRouteWithChildren,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedStatisticsRoute: AuthenticatedStatisticsRouteWithChildren,
   AuthenticatedSupportRoute: AuthenticatedSupportRoute,

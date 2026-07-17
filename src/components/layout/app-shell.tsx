@@ -39,6 +39,7 @@ const NAV: NavItem[] = [
   { to: "/users", label: "Discover", icon: Users },
   { to: "/statistics", label: "Statistics", icon: BarChart3 },
   { to: "/ai", label: "AI Coach", icon: BrainCircuit },
+  { to: "/replay", label: "Replay", icon: Film },
 ];
 
 const SECONDARY: NavItem[] = [
