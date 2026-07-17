@@ -50,7 +50,7 @@ export const Route = createFileRoute("/")({
       {
         property: "og:description",
         content:
-          "Practice risk-free, journal every setup, complete challenges, climb leagues. Join thousands of traders leveling up in the arena.",
+          "The gamified arena for serious traders. Risk-free paper trading, an automated journal, daily challenges, XP, leagues and global leaderboards — everything you need to become consistently profitable.",
       },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "/" },
@@ -59,7 +59,7 @@ export const Route = createFileRoute("/")({
       {
         name: "twitter:description",
         content:
-          "Paper trade, journal, complete challenges and climb leagues. The arena for serious traders.",
+          "The gamified arena for serious traders. Risk-free paper trading, an automated journal, daily challenges, XP, leagues and global leaderboards — everything you need to become consistently profitable.",
       },
     ],
     links: [{ rel: "canonical", href: "/" }],
