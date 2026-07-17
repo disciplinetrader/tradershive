@@ -4,7 +4,7 @@ import { SCORE_CATEGORIES } from "@/lib/ai/constants";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-type ScoreShape = Record<string, number | string | null | undefined>;
+type ScoreShape = Record<string, unknown>;
 
 function scoreColor(v: number) {
   if (v >= 80) return "text-emerald-400";
