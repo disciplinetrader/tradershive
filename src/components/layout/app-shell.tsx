@@ -1,5 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
+  Award,
   BarChart3,
   Bell,
   BookOpen,
@@ -32,6 +33,7 @@ const NAV: NavItem[] = [
   { to: "/paper-trading", label: "Paper Trading", icon: LineChart },
   { to: "/journal", label: "Journal", icon: BookOpen },
   { to: "/challenges", label: "Challenges", icon: Sparkles },
+  { to: "/achievements", label: "Achievements", icon: Award },
   { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
   { to: "/statistics", label: "Statistics", icon: BarChart3 },
 ];
