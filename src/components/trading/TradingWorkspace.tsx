@@ -46,6 +46,10 @@ function TradingWorkspaceInner() {
   const [quote, setQuote] = useState<Quote | null>(null);
   const [adapter, setAdapter] = useState<import("@/lib/chart/adapter").ChartAdapter | null>(null);
   const [tick, setTick] = useState(0);
+  const handleReady = useCallback((api: ChartHandle) => {
+    setAdapter((prev) => (prev === api.adapter ? prev : api.adapter));
+    setTick((t) => t + 1);
+  }, []);
 
   const activeTf: Timeframe = (CHART_TIMEFRAMES as string[]).includes(timeframe)
     ? (timeframe as Timeframe)
