@@ -82,9 +82,10 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* Desktop sidebar */}
       <aside
         className={cn(
-          "sticky top-0 z-30 hidden h-screen shrink-0 border-r border-border/60 bg-sidebar/80 backdrop-blur-xl transition-[width] duration-300 md:block",
+          "sticky top-0 z-30 hidden h-dvh shrink-0 border-r border-border/60 bg-sidebar/80 backdrop-blur-xl transition-[width] duration-300 md:block",
           collapsed ? "w-[76px]" : "w-[248px]",
         )}
+        aria-label="Primary"
       >
         <SidebarInner
           collapsed={collapsed}
