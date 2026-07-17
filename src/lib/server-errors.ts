@@ -172,15 +172,12 @@ export function guardRoute<Params = unknown>(
  * Register once in `src/start.ts` under `functionMiddleware`. Existing per-fn
  * `.middleware([...])` chains keep working — this runs around all of them.
  */
-export const errorGuardMiddleware = createMiddleware().server(async ({ next }) => {
+export const errorGuardMiddleware = createMiddleware({ type: "function" }).server(async ({ next }) => {
   try {
     return await next();
   } catch (err) {
-    // Preserve Response throws (used by TanStack redirect/notFound / auth 401s).
     if (err instanceof Response) throw err;
     const { body } = toClientError(err, "server-fn");
-    // Rethrow as a plain Error whose message is the sanitized JSON so both
-    // legacy string consumers and JSON.parse consumers work.
     const safe = new Error(body.message);
     (safe as Error & { code?: string; details?: unknown }).code = body.code;
     (safe as Error & { code?: string; details?: unknown }).details = body.details;
