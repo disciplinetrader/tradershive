@@ -1,7 +1,9 @@
 import type { MarketDataProvider } from "../types";
+import { PROVIDER_DESCRIPTORS } from "../descriptors";
 import { MockMarketDataProvider } from "./mock";
 import { BinanceProvider } from "./binance";
 import { TwelveDataProvider } from "./twelvedata";
+import { PlaceholderProvider } from "./placeholder";
 
 // Client-side registry — dependency-injected in the engine.
 const registry = new Map<string, MarketDataProvider>();
@@ -14,9 +16,16 @@ let bootstrapped = false;
 export function bootstrapProviders() {
   if (bootstrapped) return;
   bootstrapped = true;
-  // Mock is registered so admin tooling can still inspect it, but the engine
-  // never routes to it automatically — real providers are the only defaults.
+  // Mock is registered so admin tooling can still inspect it; the engine
+  // never routes to it automatically.
   registerProvider(new MockMarketDataProvider());
-  registerProvider(new BinanceProvider());   // Crypto — public REST + WS, no key.
-  registerProvider(new TwelveDataProvider()); // Forex / Metals / Indices — TWELVE_DATA_API_KEY.
+  registerProvider(new BinanceProvider());
+  registerProvider(new TwelveDataProvider());
+  // Every other descriptor gets a placeholder so it shows up in the Admin
+  // Panel with a configuration form and health tile. Real adapters can be
+  // dropped in by replacing the registration below.
+  for (const d of PROVIDER_DESCRIPTORS) {
+    if (registry.has(d.code)) continue;
+    registerProvider(new PlaceholderProvider(d.code));
+  }
 }
