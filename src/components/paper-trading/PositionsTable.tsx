@@ -28,6 +28,8 @@ export function PositionsTable() {
   const { accountId, account } = usePaper();
   const quotes = useLiveQuotes();
   const fetch = useServerFn(listTrades);
+  const closeFn = useServerFn(closeTrade);
+  const qc = useQueryClient();
 
   const { data, isLoading } = useQuery({
     queryKey: ["paper", "trades", accountId, "open"],
@@ -38,6 +40,23 @@ export function PositionsTable() {
 
   const [closing, setClosing] = useState<Trade | null>(null);
   const [modifying, setModifying] = useState<Trade | null>(null);
+  const [closingIds, setClosingIds] = useState<Set<string>>(new Set());
+
+  const instantClose = async (t: Trade) => {
+    const sym = findSymbol(t.symbol);
+    const current = quotes[t.symbol]?.price ?? sym?.refPrice ?? Number(t.entry_price);
+    if (!current || current <= 0) { toast.error("No live price available"); return; }
+    setClosingIds((s) => new Set(s).add(t.id));
+    try {
+      await closeFn({ data: { id: t.id, exit_price: current, close_reason: "manual" } });
+      toast.success(`Closed ${t.symbol} @ ${current}`);
+      qc.invalidateQueries({ queryKey: ["paper"] });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setClosingIds((s) => { const n = new Set(s); n.delete(t.id); return n; });
+    }
+  };
 
   const rows = data ?? [];
 
