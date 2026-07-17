@@ -64,39 +64,46 @@ class MarketDataEngine {
   listProviders(): MarketDataProvider[] { return listProviders(); }
 
   pickProvider(market?: MarketKind): MarketDataProvider | undefined {
-    // Priority: explicit per-market override → auto per-market (crypto→binance,
-    // fx→oanda, …) → preferred (unless it's mock and a real provider exists) →
-    // any capable non-disabled provider → mock.
+    // Strict routing — no silent mock fallback. Priority:
+    //   1. explicit per-market override (from admin panel)
+    //   2. auto per-market map (crypto→binance, fx→oanda, …)
+    //   3. preferredProvider
+    //   4. any capable, non-mock, non-disabled provider
+    // If none of the above resolve we return the routed (possibly disabled)
+    // provider so consumers surface a real error — never mock — unless the
+    // caller explicitly asks for `mock` via preferredProvider/perMarket.
     const perMarket = market ? this.selection.perMarket?.[market] : undefined;
     const autoMarket = market ? AUTO_PER_MARKET[market] : undefined;
     const preferred = this.selection.preferredProvider;
 
-    const isUsable = (p?: MarketDataProvider): p is MarketDataProvider =>
-      !!p && p.status() !== "disabled" && (!market || p.capabilities.markets.includes(market));
+    const isReady = (p?: MarketDataProvider): p is MarketDataProvider =>
+      !!p && p.status() !== "disabled" && p.status() !== "error"
+        && (!market || p.capabilities.markets.includes(market));
 
     const perMarketProv = perMarket ? getProvider(perMarket) : undefined;
-    if (isUsable(perMarketProv)) return perMarketProv;
+    if (isReady(perMarketProv)) return perMarketProv;
 
     const autoProv = autoMarket ? getProvider(autoMarket) : undefined;
-    if (isUsable(autoProv)) return autoProv;
-
-    if (preferred && preferred !== DEFAULT_PROVIDER) {
-      const preferredProv = getProvider(preferred);
-      if (isUsable(preferredProv)) return preferredProv;
-    }
-
-    if (market) {
-      const capable = listProviders().find((p) => p.code !== DEFAULT_PROVIDER && isUsable(p));
-      if (capable) return capable;
-      if (autoMarket && !getProvider(autoMarket)) {
-        console.warn(`[market-data] no provider registered for market=${market} (auto=${autoMarket}); using mock`);
-      } else if (autoProv) {
-        console.warn(`[market-data] preferred provider ${(autoProv as MarketDataProvider).code} for market=${market} is ${(autoProv as MarketDataProvider).status()}; using mock`);
-      }
-    }
+    if (isReady(autoProv)) return autoProv;
 
     const preferredProv = preferred ? getProvider(preferred) : undefined;
-    if (isUsable(preferredProv)) return preferredProv;
+    if (preferred && preferred !== DEFAULT_PROVIDER && isReady(preferredProv)) return preferredProv;
+
+    if (market) {
+      const capable = listProviders().find((p) => p.code !== DEFAULT_PROVIDER && isReady(p));
+      if (capable) return capable;
+    }
+
+    if (perMarket === DEFAULT_PROVIDER || preferred === DEFAULT_PROVIDER) return getProvider(DEFAULT_PROVIDER);
+    const routed = autoProv ?? preferredProv;
+    if (routed) {
+      console.error(
+        `[market-data] no ready provider for market=${market ?? "?"} — routed provider "${routed.code}" is ${routed.status()}. ` +
+        `Fix: configure its credentials (e.g. OANDA_API_TOKEN + OANDA_ACCOUNT_ID) or override the market provider in admin.`,
+      );
+      return routed;
+    }
+    console.error(`[market-data] no provider registered for market=${market ?? "?"} — returning mock as last resort.`);
     return getProvider(DEFAULT_PROVIDER);
   }
 
