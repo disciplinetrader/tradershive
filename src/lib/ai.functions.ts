@@ -870,7 +870,7 @@ export const updateRecommendationStatus = createServerFn({ method: "POST" })
     if (data.status === "dismissed") patch.dismissed_at = new Date().toISOString();
     await context.supabase
       .from("ai_recommendations")
-      .update(patch)
+      .update(patch as any)
       .eq("id", data.id)
       .eq("user_id", context.userId);
     return { ok: true };
