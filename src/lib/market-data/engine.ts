@@ -81,29 +81,32 @@ class MarketDataEngine {
 
   listProviders(): MarketDataProvider[] { return listProviders(); }
 
-  pickProvider(market?: MarketKind): MarketDataProvider {
-    if (!market) {
-      // Return any configured provider as a best-effort fallback.
-      const any = listProviders().find((p) => p.status() === "connected" || p.status() === "disconnected");
+  pickProvider(market?: MarketKind, symbol?: string): MarketDataProvider {
+    const effective = market ?? inferMarketFromSymbol(symbol);
+    if (!effective) {
+      // Best-effort: any non-disabled provider (connecting/connected/disconnected all OK).
+      const any = listProviders().find((p) => p.status() !== "disabled");
       if (any) return any;
       throw new MarketProviderUnavailableError({ reason: "not_assigned" });
     }
-    const a = this.assignments.get(market);
-    if (!a) throw new MarketProviderUnavailableError({ market, reason: "not_assigned" });
+    const a = this.assignments.get(effective);
+    if (!a) throw new MarketProviderUnavailableError({ market: effective, reason: "not_assigned" });
 
+    // A provider that is "connecting" or "error" is still routable — it will
+    // deliver data as soon as its socket comes up. Only "disabled" is fatal.
     const readable = (p?: MarketDataProvider): p is MarketDataProvider =>
-      !!p && p.status() !== "disabled" && p.capabilities.markets.includes(market);
+      !!p && p.status() !== "disabled" && p.capabilities.markets.includes(effective);
 
     const primary = getProvider(a.primary);
     if (readable(primary)) return primary;
 
     const fallback = a.fallback ? getProvider(a.fallback) : undefined;
     if (readable(fallback)) {
-      console.warn(`[market-data] ${market}: primary "${a.primary}" unavailable, using fallback "${a.fallback}".`);
+      console.warn(`[market-data] ${effective}: primary "${a.primary}" unavailable, using fallback "${a.fallback}".`);
       return fallback;
     }
     throw new MarketProviderUnavailableError({
-      market, reason: primary ? "not_configured" : "not_assigned",
+      market: effective, reason: primary ? "not_configured" : "not_assigned",
       providerCode: a.primary,
     });
   }
@@ -114,7 +117,7 @@ class MarketDataEngine {
   async getQuote(symbol: string, market?: MarketKind): Promise<Quote> {
     const cached = this.quoteCache.get(symbol);
     if (cached) return cached;
-    const q = await this.pickProvider(market).getQuote(symbol);
+    const q = await this.pickProvider(market, symbol).getQuote(symbol);
     this.quoteCache.set(symbol, q);
     return q;
   }
@@ -123,7 +126,7 @@ class MarketDataEngine {
     const key = `${q.symbol}|${q.timeframe}|${q.from}|${q.to}|${q.limit ?? "*"}`;
     const cached = this.candleCache.get(key);
     if (cached) return cached;
-    const out = await this.pickProvider(market).getCandles(q);
+    const out = await this.pickProvider(market, q.symbol).getCandles(q);
     if (out.length) this.candleCache.set(key, out);
     return out;
   }
@@ -133,7 +136,7 @@ class MarketDataEngine {
     let entry = this.fanout.get(symbol);
     if (!entry) {
       let p: MarketDataProvider;
-      try { p = this.pickProvider(market); }
+      try { p = this.pickProvider(market, symbol); }
       catch (e) {
         console.error(`[market-data] subscribe(${symbol}): ${(e as Error).message}`);
         return { id: `noop-${symbol}`, symbol, unsubscribe: () => {} };
@@ -187,6 +190,27 @@ class MarketDataEngine {
 
   /** Legacy accessor kept for old callers — no-op. */
   setStrategy(_: unknown) { /* deprecated; use Admin Panel */ }
+}
+
+/**
+ * Best-effort market inference from a symbol. Used when a caller subscribes
+ * without specifying `market` (e.g. the chart engine reading a saved symbol).
+ * Prevents falling into the "no market → no provider" branch for obvious
+ * crypto/forex/metal tickers.
+ */
+function inferMarketFromSymbol(symbol?: string): MarketKind | undefined {
+  if (!symbol) return undefined;
+  const s = symbol.toUpperCase().replace(/[\/\-_:]/g, "");
+  // Crypto quote assets
+  if (/(USDT|USDC|BUSD|DAI|BTC|ETH|BNB)$/.test(s) && !/^(EUR|GBP|USD|JPY|CHF|CAD|AUD|NZD)/.test(s.slice(0, 3))) return "crypto";
+  if (/^(BTC|ETH|SOL|XRP|BNB|DOGE|ADA|MATIC|LTC|LINK|DOT|AVAX|TRX|SHIB|TON|APT|ARB|OP|NEAR|ATOM|FIL|ICP|SUI)/.test(s)) return "crypto";
+  // Metals
+  if (/^(XAU|XAG|XPT|XPD)/.test(s)) return "metals";
+  // Forex majors — 6-letter FX code
+  if (/^(EUR|GBP|USD|JPY|CHF|CAD|AUD|NZD|SEK|NOK|SGD|HKD|CNH|MXN|ZAR|TRY|PLN)/.test(s.slice(0, 3)) && s.length === 6) return "forex";
+  // Common index tickers
+  if (/^(SPX|NAS|NDX|US30|GER|DAX|UK100|FTSE|JP225|NIKKEI|HK50)/.test(s)) return "indices";
+  return undefined;
 }
 
 export const marketData = new MarketDataEngine();
