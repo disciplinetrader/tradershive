@@ -74,23 +74,27 @@ function TradingWorkspaceInner() {
 
   // Order lines from open positions on this symbol
   const fetchOpen = useServerFn(listTrades);
-  const { data: openTrades } = useQuery({
-    queryKey: ["paper", "trades", accountId, "open", symbol],
+  type OpenTrade = {
+    id: string;
+    symbol: string;
+    entry_price: number;
+    stop_loss: number | null;
+    take_profit: number | null;
+    direction: "long" | "short";
+  };
+  const { data: openTradesAll } = useQuery({
+    queryKey: ["paper", "trades", accountId, "open"],
     queryFn: () =>
-      fetchOpen({ data: { account_id: accountId!, status: "open", symbol } }) as unknown as Promise<
-        Array<{
-          id: string;
-          entry_price: number;
-          stop_loss: number | null;
-          take_profit: number | null;
-          direction: "long" | "short";
-        }>
-      >,
+      fetchOpen({ data: { account_id: accountId!, status: "open" } }) as unknown as Promise<OpenTrade[]>,
     enabled: !!accountId,
     refetchInterval: 4000,
   });
+  const openTrades = useMemo(
+    () => (openTradesAll ?? []).filter((t) => t.symbol === symbol),
+    [openTradesAll, symbol],
+  );
 
-  const qc = useQueryClient();
+  const _qc = useQueryClient();
   const orderLines: OrderLine[] = useMemo(() => {
     if (!openTrades) return [];
     const out: OrderLine[] = [];
