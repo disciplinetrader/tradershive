@@ -265,6 +265,8 @@ function SidebarLink({
     <li>
       <Link
         to={item.to}
+        aria-current={active ? "page" : undefined}
+        title={collapsed ? item.label : undefined}
         className={cn(
           "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
           active
