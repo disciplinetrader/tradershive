@@ -4,6 +4,7 @@ import {
   BarChart3,
   Bell,
   BookOpen,
+  BrainCircuit,
   ChevronLeft,
   ChevronRight,
   Home,
