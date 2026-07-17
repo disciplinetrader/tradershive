@@ -244,6 +244,8 @@ function TradingWorkspaceInner() {
           <TabsContent value="watchlist" className="p-3"><WatchlistPanel /></TabsContent>
         </Tabs>
       </GlassCard>
+
+      <SymbolSearch open={symbolSearchOpen} onOpenChange={setSymbolSearchOpen} />
     </div>
   );
 }
