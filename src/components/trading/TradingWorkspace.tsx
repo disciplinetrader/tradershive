@@ -48,6 +48,7 @@ function TradingWorkspaceInner() {
   const [quote, setQuote] = useState<Quote | null>(null);
   const [adapter, setAdapter] = useState<import("@/lib/chart/adapter").ChartAdapter | null>(null);
   const [tick, setTick] = useState(0);
+  const [symbolSearchOpen, setSymbolSearchOpen] = useState(false);
   const handleReady = useCallback((api: ChartHandle) => {
     setAdapter((prev) => (prev === api.adapter ? prev : api.adapter));
     setTick((t) => t + 1);
