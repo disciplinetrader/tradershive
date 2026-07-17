@@ -216,7 +216,6 @@ export const claimChallengeReward = createServerFn({ method: "POST" })
       .eq("id", uc.id);
 
     // bump total completed
-    await context.supabase.rpc("noop"); // placeholder if we had rpc
     const { data: stats } = await context.supabase
       .from("gamification_stats").select("total_challenges_completed")
       .eq("user_id", context.userId).maybeSingle();
