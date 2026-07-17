@@ -14,34 +14,21 @@ export type MarketKind =
   | "futures"
   | "stocks";
 
+export const MARKET_KINDS: MarketKind[] = [
+  "crypto", "forex", "indices", "metals", "commodities", "futures", "stocks",
+];
+
 export type Timeframe =
   | "tick"
-  | "1m"
-  | "3m"
-  | "5m"
-  | "15m"
-  | "30m"
-  | "1H"
-  | "2H"
-  | "4H"
-  | "1D"
-  | "1W"
-  | "1M";
+  | "1m" | "3m" | "5m" | "15m" | "30m"
+  | "1H" | "2H" | "4H"
+  | "1D" | "1W" | "1M";
 
 export type MarketStatusKind =
-  | "open"
-  | "closed"
-  | "pre_market"
-  | "after_hours"
-  | "holiday"
-  | "maintenance";
+  | "open" | "closed" | "pre_market" | "after_hours" | "holiday" | "maintenance";
 
 export type ProviderStatus =
-  | "connected"
-  | "disconnected"
-  | "connecting"
-  | "error"
-  | "disabled";
+  | "connected" | "disconnected" | "connecting" | "error" | "disabled";
 
 export interface SymbolMeta {
   symbol: string;
@@ -68,12 +55,12 @@ export interface Quote {
   close?: number;
   volume?: number;
   changePct?: number;
-  ts: number; // epoch ms
+  ts: number;
   providerCode: string;
 }
 
 export interface Candle {
-  time: number; // epoch ms
+  time: number;
   open: number;
   high: number;
   low: number;
@@ -129,11 +116,43 @@ export interface ProviderCapabilities {
   supportsWs: boolean;
   supportsHistorical: boolean;
   supportsStreaming: boolean;
+  supportsOrderbook?: boolean;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Provider descriptor — drives registry + admin UI + setup wizard.          */
+/* -------------------------------------------------------------------------- */
+
+export type CredentialFieldType = "text" | "password" | "select" | "textarea";
+
+export interface CredentialField {
+  key: string;
+  label: string;
+  type: CredentialFieldType;
+  required: boolean;
+  placeholder?: string;
+  help?: string;
+  options?: { value: string; label: string }[];
+}
+
+export interface ProviderDescriptor {
+  code: string;
+  name: string;
+  description: string;
+  website?: string;
+  markets: MarketKind[];
+  capabilities: ProviderCapabilities;
+  credentials: CredentialField[];
+  /** True when zero credentials are needed to serve public market data. */
+  publicByDefault: boolean;
+  /** Marks an adapter that only ships its descriptor for now. */
+  comingSoon?: boolean;
 }
 
 export interface MarketDataProvider {
   readonly code: string;
   readonly name: string;
+  readonly descriptor: ProviderDescriptor;
   readonly capabilities: ProviderCapabilities;
 
   connect(): Promise<void>;
@@ -153,4 +172,7 @@ export interface MarketDataProvider {
 
   getMarketStatus(market: MarketKind): Promise<MarketStatusInfo>;
   getSessions(): Promise<SessionWindow[]>;
+
+  /** Optional: probe credentials + reachability; returns { ok, latencyMs, error? }. */
+  testConnection?(): Promise<{ ok: boolean; latencyMs?: number; error?: string }>;
 }
