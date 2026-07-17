@@ -157,8 +157,15 @@ export function ChartWorkspace({ fullscreen, initial }: Props) {
             {Array.from({ length: gridCells.cells }, (_, i) => (
               <div key={i} className="relative min-h-0 border-r border-b border-border/40 last:border-r-0">
                 {i === 0 ? (
-                  <ChartEngine settings={settings} indicators={indicators}
-                    onReady={setChartApi} />
+                  <ChartEngine settings={settings} indicators={indicators} onReady={setChartApi}>
+                    <OrderLinesOverlay
+                      adapter={chartApi?.adapter ?? null}
+                      lines={orderLines}
+                      tick={chartApi?.candles.length ?? 0}
+                      onChange={handleOrderLineChange}
+                      onCommit={handleOrderLineCommit}
+                    />
+                  </ChartEngine>
                 ) : (
                   <ChartEngine
                     settings={{ ...settings, symbol: settings.symbol, timeframe: settings.timeframe }}
