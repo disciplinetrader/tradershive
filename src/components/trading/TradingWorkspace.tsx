@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import type { ChartHandle } from "@/components/chart/ChartEngine";
 import { motion } from "framer-motion";
 import { Activity, Eye, EyeOff, LineChart as LineChartIcon } from "lucide-react";
 
@@ -45,6 +46,10 @@ function TradingWorkspaceInner() {
   const [quote, setQuote] = useState<Quote | null>(null);
   const [adapter, setAdapter] = useState<import("@/lib/chart/adapter").ChartAdapter | null>(null);
   const [tick, setTick] = useState(0);
+  const handleReady = useCallback((api: ChartHandle) => {
+    setAdapter((prev) => (prev === api.adapter ? prev : api.adapter));
+    setTick((t) => t + 1);
+  }, []);
 
   const activeTf: Timeframe = (CHART_TIMEFRAMES as string[]).includes(timeframe)
     ? (timeframe as Timeframe)
@@ -196,10 +201,7 @@ function TradingWorkspaceInner() {
               settings={chartSettings}
               indicators={indicators}
               onQuote={setQuote}
-              onReady={(api) => {
-                setAdapter(api.adapter);
-                setTick((t) => t + 1);
-              }}
+              onReady={handleReady}
               className="absolute inset-0"
             >
               <OrderLinesOverlay
