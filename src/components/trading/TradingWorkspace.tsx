@@ -135,10 +135,15 @@ function TradingWorkspaceInner() {
           {/* Chart header */}
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/50 px-3 py-2">
             <div className="flex items-center gap-3">
-              <div className="flex items-baseline gap-2">
+              <button
+                onClick={() => setSymbolSearchOpen(true)}
+                className="group flex items-baseline gap-2 rounded-md border border-transparent px-1.5 py-1 transition hover:border-border/60 hover:bg-background/60"
+                title="Change symbol"
+              >
                 <span className="text-sm font-bold tracking-wide">{symbol}</span>
                 <span className="text-[11px] uppercase text-muted-foreground">{meta?.name}</span>
-              </div>
+                <ChevronDown className="h-3 w-3 text-muted-foreground opacity-60 group-hover:opacity-100" />
+              </button>
               <div className="flex items-baseline gap-3 tabular-nums">
                 <motion.span
                   key={last}
