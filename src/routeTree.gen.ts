@@ -28,12 +28,14 @@ import { Route as AuthenticatedLeaderboardRouteImport } from './routes/_authenti
 import { Route as AuthenticatedJournalRouteImport } from './routes/_authenticated/journal'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedChallengesRouteImport } from './routes/_authenticated/challenges'
+import { Route as AuthenticatedAiRouteImport } from './routes/_authenticated/ai'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAchievementsRouteImport } from './routes/_authenticated/achievements'
 import { Route as AuthenticatedStatisticsIndexRouteImport } from './routes/_authenticated/statistics.index'
 import { Route as AuthenticatedLeaderboardIndexRouteImport } from './routes/_authenticated/leaderboard.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as JournalShareTokenRouteImport } from './routes/journal.share.$token'
+import { Route as ApiAiChatRouteImport } from './routes/api/ai/chat'
 import { Route as AuthenticatedStatisticsSetupsRouteImport } from './routes/_authenticated/statistics.setups'
 import { Route as AuthenticatedStatisticsSessionsRouteImport } from './routes/_authenticated/statistics.sessions'
 import { Route as AuthenticatedStatisticsRiskRouteImport } from './routes/_authenticated/statistics.risk'
@@ -47,6 +49,14 @@ import { Route as AuthenticatedLeaderboardFriendsRouteImport } from './routes/_a
 import { Route as AuthenticatedLeaderboardCountryRouteImport } from './routes/_authenticated/leaderboard.country'
 import { Route as AuthenticatedChallengesRewardsRouteImport } from './routes/_authenticated/challenges/rewards'
 import { Route as AuthenticatedChallengesHistoryRouteImport } from './routes/_authenticated/challenges/history'
+import { Route as AuthenticatedAiTradeReviewRouteImport } from './routes/_authenticated/ai.trade-review'
+import { Route as AuthenticatedAiSettingsRouteImport } from './routes/_authenticated/ai.settings'
+import { Route as AuthenticatedAiPsychologyRouteImport } from './routes/_authenticated/ai.psychology'
+import { Route as AuthenticatedAiPlaybooksRouteImport } from './routes/_authenticated/ai.playbooks'
+import { Route as AuthenticatedAiPerformanceRouteImport } from './routes/_authenticated/ai.performance'
+import { Route as AuthenticatedAiHistoryRouteImport } from './routes/_authenticated/ai.history'
+import { Route as AuthenticatedAiDashboardRouteImport } from './routes/_authenticated/ai.dashboard'
+import { Route as AuthenticatedAiChatRouteImport } from './routes/_authenticated/ai.chat'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin.users'
 import { Route as AuthenticatedAdminTradesRouteImport } from './routes/_authenticated/admin.trades'
 import { Route as AuthenticatedAdminStorageRouteImport } from './routes/_authenticated/admin.storage'
@@ -159,6 +169,11 @@ const AuthenticatedChallengesRoute = AuthenticatedChallengesRouteImport.update({
   path: '/challenges',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAiRoute = AuthenticatedAiRouteImport.update({
+  id: '/ai',
+  path: '/ai',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -190,6 +205,11 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
 const JournalShareTokenRoute = JournalShareTokenRouteImport.update({
   id: '/journal/share/$token',
   path: '/journal/share/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAiChatRoute = ApiAiChatRouteImport.update({
+  id: '/api/ai/chat',
+  path: '/api/ai/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedStatisticsSetupsRoute =
@@ -270,6 +290,51 @@ const AuthenticatedChallengesHistoryRoute =
     path: '/history',
     getParentRoute: () => AuthenticatedChallengesRoute,
   } as any)
+const AuthenticatedAiTradeReviewRoute =
+  AuthenticatedAiTradeReviewRouteImport.update({
+    id: '/trade-review',
+    path: '/trade-review',
+    getParentRoute: () => AuthenticatedAiRoute,
+  } as any)
+const AuthenticatedAiSettingsRoute = AuthenticatedAiSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthenticatedAiRoute,
+} as any)
+const AuthenticatedAiPsychologyRoute =
+  AuthenticatedAiPsychologyRouteImport.update({
+    id: '/psychology',
+    path: '/psychology',
+    getParentRoute: () => AuthenticatedAiRoute,
+  } as any)
+const AuthenticatedAiPlaybooksRoute =
+  AuthenticatedAiPlaybooksRouteImport.update({
+    id: '/playbooks',
+    path: '/playbooks',
+    getParentRoute: () => AuthenticatedAiRoute,
+  } as any)
+const AuthenticatedAiPerformanceRoute =
+  AuthenticatedAiPerformanceRouteImport.update({
+    id: '/performance',
+    path: '/performance',
+    getParentRoute: () => AuthenticatedAiRoute,
+  } as any)
+const AuthenticatedAiHistoryRoute = AuthenticatedAiHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => AuthenticatedAiRoute,
+} as any)
+const AuthenticatedAiDashboardRoute =
+  AuthenticatedAiDashboardRouteImport.update({
+    id: '/dashboard',
+    path: '/dashboard',
+    getParentRoute: () => AuthenticatedAiRoute,
+  } as any)
+const AuthenticatedAiChatRoute = AuthenticatedAiChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
+  getParentRoute: () => AuthenticatedAiRoute,
+} as any)
 const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -369,6 +434,7 @@ export interface FileRoutesByFullPath {
   '/verify-email': typeof VerifyEmailRoute
   '/achievements': typeof AuthenticatedAchievementsRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/ai': typeof AuthenticatedAiRouteWithChildren
   '/challenges': typeof AuthenticatedChallengesRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/journal': typeof AuthenticatedJournalRoute
@@ -394,6 +460,14 @@ export interface FileRoutesByFullPath {
   '/admin/storage': typeof AuthenticatedAdminStorageRoute
   '/admin/trades': typeof AuthenticatedAdminTradesRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/ai/chat': typeof AuthenticatedAiChatRoute
+  '/ai/dashboard': typeof AuthenticatedAiDashboardRoute
+  '/ai/history': typeof AuthenticatedAiHistoryRoute
+  '/ai/performance': typeof AuthenticatedAiPerformanceRoute
+  '/ai/playbooks': typeof AuthenticatedAiPlaybooksRoute
+  '/ai/psychology': typeof AuthenticatedAiPsychologyRoute
+  '/ai/settings': typeof AuthenticatedAiSettingsRoute
+  '/ai/trade-review': typeof AuthenticatedAiTradeReviewRoute
   '/challenges/history': typeof AuthenticatedChallengesHistoryRoute
   '/challenges/rewards': typeof AuthenticatedChallengesRewardsRoute
   '/leaderboard/country': typeof AuthenticatedLeaderboardCountryRoute
@@ -407,6 +481,7 @@ export interface FileRoutesByFullPath {
   '/statistics/risk': typeof AuthenticatedStatisticsRiskRoute
   '/statistics/sessions': typeof AuthenticatedStatisticsSessionsRoute
   '/statistics/setups': typeof AuthenticatedStatisticsSetupsRoute
+  '/api/ai/chat': typeof ApiAiChatRoute
   '/journal/share/$token': typeof JournalShareTokenRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
@@ -422,6 +497,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/verify-email': typeof VerifyEmailRoute
   '/achievements': typeof AuthenticatedAchievementsRoute
+  '/ai': typeof AuthenticatedAiRouteWithChildren
   '/challenges': typeof AuthenticatedChallengesRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/journal': typeof AuthenticatedJournalRoute
@@ -445,6 +521,14 @@ export interface FileRoutesByTo {
   '/admin/storage': typeof AuthenticatedAdminStorageRoute
   '/admin/trades': typeof AuthenticatedAdminTradesRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/ai/chat': typeof AuthenticatedAiChatRoute
+  '/ai/dashboard': typeof AuthenticatedAiDashboardRoute
+  '/ai/history': typeof AuthenticatedAiHistoryRoute
+  '/ai/performance': typeof AuthenticatedAiPerformanceRoute
+  '/ai/playbooks': typeof AuthenticatedAiPlaybooksRoute
+  '/ai/psychology': typeof AuthenticatedAiPsychologyRoute
+  '/ai/settings': typeof AuthenticatedAiSettingsRoute
+  '/ai/trade-review': typeof AuthenticatedAiTradeReviewRoute
   '/challenges/history': typeof AuthenticatedChallengesHistoryRoute
   '/challenges/rewards': typeof AuthenticatedChallengesRewardsRoute
   '/leaderboard/country': typeof AuthenticatedLeaderboardCountryRoute
@@ -458,6 +542,7 @@ export interface FileRoutesByTo {
   '/statistics/risk': typeof AuthenticatedStatisticsRiskRoute
   '/statistics/sessions': typeof AuthenticatedStatisticsSessionsRoute
   '/statistics/setups': typeof AuthenticatedStatisticsSetupsRoute
+  '/api/ai/chat': typeof ApiAiChatRoute
   '/journal/share/$token': typeof JournalShareTokenRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/leaderboard': typeof AuthenticatedLeaderboardIndexRoute
@@ -476,6 +561,7 @@ export interface FileRoutesById {
   '/verify-email': typeof VerifyEmailRoute
   '/_authenticated/achievements': typeof AuthenticatedAchievementsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/_authenticated/ai': typeof AuthenticatedAiRouteWithChildren
   '/_authenticated/challenges': typeof AuthenticatedChallengesRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/journal': typeof AuthenticatedJournalRoute
@@ -501,6 +587,14 @@ export interface FileRoutesById {
   '/_authenticated/admin/storage': typeof AuthenticatedAdminStorageRoute
   '/_authenticated/admin/trades': typeof AuthenticatedAdminTradesRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/_authenticated/ai/chat': typeof AuthenticatedAiChatRoute
+  '/_authenticated/ai/dashboard': typeof AuthenticatedAiDashboardRoute
+  '/_authenticated/ai/history': typeof AuthenticatedAiHistoryRoute
+  '/_authenticated/ai/performance': typeof AuthenticatedAiPerformanceRoute
+  '/_authenticated/ai/playbooks': typeof AuthenticatedAiPlaybooksRoute
+  '/_authenticated/ai/psychology': typeof AuthenticatedAiPsychologyRoute
+  '/_authenticated/ai/settings': typeof AuthenticatedAiSettingsRoute
+  '/_authenticated/ai/trade-review': typeof AuthenticatedAiTradeReviewRoute
   '/_authenticated/challenges/history': typeof AuthenticatedChallengesHistoryRoute
   '/_authenticated/challenges/rewards': typeof AuthenticatedChallengesRewardsRoute
   '/_authenticated/leaderboard/country': typeof AuthenticatedLeaderboardCountryRoute
@@ -514,6 +608,7 @@ export interface FileRoutesById {
   '/_authenticated/statistics/risk': typeof AuthenticatedStatisticsRiskRoute
   '/_authenticated/statistics/sessions': typeof AuthenticatedStatisticsSessionsRoute
   '/_authenticated/statistics/setups': typeof AuthenticatedStatisticsSetupsRoute
+  '/api/ai/chat': typeof ApiAiChatRoute
   '/journal/share/$token': typeof JournalShareTokenRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
@@ -532,6 +627,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/achievements'
     | '/admin'
+    | '/ai'
     | '/challenges'
     | '/dashboard'
     | '/journal'
@@ -557,6 +653,14 @@ export interface FileRouteTypes {
     | '/admin/storage'
     | '/admin/trades'
     | '/admin/users'
+    | '/ai/chat'
+    | '/ai/dashboard'
+    | '/ai/history'
+    | '/ai/performance'
+    | '/ai/playbooks'
+    | '/ai/psychology'
+    | '/ai/settings'
+    | '/ai/trade-review'
     | '/challenges/history'
     | '/challenges/rewards'
     | '/leaderboard/country'
@@ -570,6 +674,7 @@ export interface FileRouteTypes {
     | '/statistics/risk'
     | '/statistics/sessions'
     | '/statistics/setups'
+    | '/api/ai/chat'
     | '/journal/share/$token'
     | '/admin/'
     | '/leaderboard/'
@@ -585,6 +690,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/verify-email'
     | '/achievements'
+    | '/ai'
     | '/challenges'
     | '/dashboard'
     | '/journal'
@@ -608,6 +714,14 @@ export interface FileRouteTypes {
     | '/admin/storage'
     | '/admin/trades'
     | '/admin/users'
+    | '/ai/chat'
+    | '/ai/dashboard'
+    | '/ai/history'
+    | '/ai/performance'
+    | '/ai/playbooks'
+    | '/ai/psychology'
+    | '/ai/settings'
+    | '/ai/trade-review'
     | '/challenges/history'
     | '/challenges/rewards'
     | '/leaderboard/country'
@@ -621,6 +735,7 @@ export interface FileRouteTypes {
     | '/statistics/risk'
     | '/statistics/sessions'
     | '/statistics/setups'
+    | '/api/ai/chat'
     | '/journal/share/$token'
     | '/admin'
     | '/leaderboard'
@@ -638,6 +753,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/_authenticated/achievements'
     | '/_authenticated/admin'
+    | '/_authenticated/ai'
     | '/_authenticated/challenges'
     | '/_authenticated/dashboard'
     | '/_authenticated/journal'
@@ -663,6 +779,14 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/storage'
     | '/_authenticated/admin/trades'
     | '/_authenticated/admin/users'
+    | '/_authenticated/ai/chat'
+    | '/_authenticated/ai/dashboard'
+    | '/_authenticated/ai/history'
+    | '/_authenticated/ai/performance'
+    | '/_authenticated/ai/playbooks'
+    | '/_authenticated/ai/psychology'
+    | '/_authenticated/ai/settings'
+    | '/_authenticated/ai/trade-review'
     | '/_authenticated/challenges/history'
     | '/_authenticated/challenges/rewards'
     | '/_authenticated/leaderboard/country'
@@ -676,6 +800,7 @@ export interface FileRouteTypes {
     | '/_authenticated/statistics/risk'
     | '/_authenticated/statistics/sessions'
     | '/_authenticated/statistics/setups'
+    | '/api/ai/chat'
     | '/journal/share/$token'
     | '/_authenticated/admin/'
     | '/_authenticated/leaderboard/'
@@ -692,6 +817,7 @@ export interface RootRouteChildren {
   RegisterRoute: typeof RegisterRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
+  ApiAiChatRoute: typeof ApiAiChatRoute
   JournalShareTokenRoute: typeof JournalShareTokenRoute
 }
 
@@ -830,6 +956,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedChallengesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/ai': {
+      id: '/_authenticated/ai'
+      path: '/ai'
+      fullPath: '/ai'
+      preLoaderRoute: typeof AuthenticatedAiRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin': {
       id: '/_authenticated/admin'
       path: '/admin'
@@ -870,6 +1003,13 @@ declare module '@tanstack/react-router' {
       path: '/journal/share/$token'
       fullPath: '/journal/share/$token'
       preLoaderRoute: typeof JournalShareTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ai/chat': {
+      id: '/api/ai/chat'
+      path: '/api/ai/chat'
+      fullPath: '/api/ai/chat'
+      preLoaderRoute: typeof ApiAiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/statistics/setups': {
@@ -962,6 +1102,62 @@ declare module '@tanstack/react-router' {
       fullPath: '/challenges/history'
       preLoaderRoute: typeof AuthenticatedChallengesHistoryRouteImport
       parentRoute: typeof AuthenticatedChallengesRoute
+    }
+    '/_authenticated/ai/trade-review': {
+      id: '/_authenticated/ai/trade-review'
+      path: '/trade-review'
+      fullPath: '/ai/trade-review'
+      preLoaderRoute: typeof AuthenticatedAiTradeReviewRouteImport
+      parentRoute: typeof AuthenticatedAiRoute
+    }
+    '/_authenticated/ai/settings': {
+      id: '/_authenticated/ai/settings'
+      path: '/settings'
+      fullPath: '/ai/settings'
+      preLoaderRoute: typeof AuthenticatedAiSettingsRouteImport
+      parentRoute: typeof AuthenticatedAiRoute
+    }
+    '/_authenticated/ai/psychology': {
+      id: '/_authenticated/ai/psychology'
+      path: '/psychology'
+      fullPath: '/ai/psychology'
+      preLoaderRoute: typeof AuthenticatedAiPsychologyRouteImport
+      parentRoute: typeof AuthenticatedAiRoute
+    }
+    '/_authenticated/ai/playbooks': {
+      id: '/_authenticated/ai/playbooks'
+      path: '/playbooks'
+      fullPath: '/ai/playbooks'
+      preLoaderRoute: typeof AuthenticatedAiPlaybooksRouteImport
+      parentRoute: typeof AuthenticatedAiRoute
+    }
+    '/_authenticated/ai/performance': {
+      id: '/_authenticated/ai/performance'
+      path: '/performance'
+      fullPath: '/ai/performance'
+      preLoaderRoute: typeof AuthenticatedAiPerformanceRouteImport
+      parentRoute: typeof AuthenticatedAiRoute
+    }
+    '/_authenticated/ai/history': {
+      id: '/_authenticated/ai/history'
+      path: '/history'
+      fullPath: '/ai/history'
+      preLoaderRoute: typeof AuthenticatedAiHistoryRouteImport
+      parentRoute: typeof AuthenticatedAiRoute
+    }
+    '/_authenticated/ai/dashboard': {
+      id: '/_authenticated/ai/dashboard'
+      path: '/dashboard'
+      fullPath: '/ai/dashboard'
+      preLoaderRoute: typeof AuthenticatedAiDashboardRouteImport
+      parentRoute: typeof AuthenticatedAiRoute
+    }
+    '/_authenticated/ai/chat': {
+      id: '/_authenticated/ai/chat'
+      path: '/chat'
+      fullPath: '/ai/chat'
+      preLoaderRoute: typeof AuthenticatedAiChatRouteImport
+      parentRoute: typeof AuthenticatedAiRoute
     }
     '/_authenticated/admin/users': {
       id: '/_authenticated/admin/users'
@@ -1112,6 +1308,32 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
 const AuthenticatedAdminRouteWithChildren =
   AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
 
+interface AuthenticatedAiRouteChildren {
+  AuthenticatedAiChatRoute: typeof AuthenticatedAiChatRoute
+  AuthenticatedAiDashboardRoute: typeof AuthenticatedAiDashboardRoute
+  AuthenticatedAiHistoryRoute: typeof AuthenticatedAiHistoryRoute
+  AuthenticatedAiPerformanceRoute: typeof AuthenticatedAiPerformanceRoute
+  AuthenticatedAiPlaybooksRoute: typeof AuthenticatedAiPlaybooksRoute
+  AuthenticatedAiPsychologyRoute: typeof AuthenticatedAiPsychologyRoute
+  AuthenticatedAiSettingsRoute: typeof AuthenticatedAiSettingsRoute
+  AuthenticatedAiTradeReviewRoute: typeof AuthenticatedAiTradeReviewRoute
+}
+
+const AuthenticatedAiRouteChildren: AuthenticatedAiRouteChildren = {
+  AuthenticatedAiChatRoute: AuthenticatedAiChatRoute,
+  AuthenticatedAiDashboardRoute: AuthenticatedAiDashboardRoute,
+  AuthenticatedAiHistoryRoute: AuthenticatedAiHistoryRoute,
+  AuthenticatedAiPerformanceRoute: AuthenticatedAiPerformanceRoute,
+  AuthenticatedAiPlaybooksRoute: AuthenticatedAiPlaybooksRoute,
+  AuthenticatedAiPsychologyRoute: AuthenticatedAiPsychologyRoute,
+  AuthenticatedAiSettingsRoute: AuthenticatedAiSettingsRoute,
+  AuthenticatedAiTradeReviewRoute: AuthenticatedAiTradeReviewRoute,
+}
+
+const AuthenticatedAiRouteWithChildren = AuthenticatedAiRoute._addFileChildren(
+  AuthenticatedAiRouteChildren,
+)
+
 interface AuthenticatedChallengesRouteChildren {
   AuthenticatedChallengesHistoryRoute: typeof AuthenticatedChallengesHistoryRoute
   AuthenticatedChallengesRewardsRoute: typeof AuthenticatedChallengesRewardsRoute
@@ -1191,6 +1413,7 @@ const AuthenticatedStatisticsRouteWithChildren =
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAchievementsRoute: typeof AuthenticatedAchievementsRoute
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
+  AuthenticatedAiRoute: typeof AuthenticatedAiRouteWithChildren
   AuthenticatedChallengesRoute: typeof AuthenticatedChallengesRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedJournalRoute: typeof AuthenticatedJournalRoute
@@ -1206,6 +1429,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAchievementsRoute: AuthenticatedAchievementsRoute,
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
+  AuthenticatedAiRoute: AuthenticatedAiRouteWithChildren,
   AuthenticatedChallengesRoute: AuthenticatedChallengesRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedJournalRoute: AuthenticatedJournalRoute,
@@ -1231,6 +1455,7 @@ const rootRouteChildren: RootRouteChildren = {
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   VerifyEmailRoute: VerifyEmailRoute,
+  ApiAiChatRoute: ApiAiChatRoute,
   JournalShareTokenRoute: JournalShareTokenRoute,
 }
 export const routeTree = rootRouteImport
