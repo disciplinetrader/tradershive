@@ -310,8 +310,8 @@ function MobileBottomNav({
     { to: "/leaderboard", label: "Rank", icon: Trophy },
   ];
   return (
-    <div className="sticky bottom-0 z-30 border-t border-border/60 bg-background/85 backdrop-blur-xl md:hidden">
-      <div className="mx-auto grid max-w-md grid-cols-5 items-center px-2 py-2">
+    <nav aria-label="Primary mobile" className="sticky bottom-0 z-30 border-t border-border/60 bg-background/85 backdrop-blur-xl safe-bottom md:hidden">
+      <div className="mx-auto grid max-w-md grid-cols-5 items-center px-2 pt-1.5">
         {items.map((item) => {
           const Icon = item.icon;
           const active = isActive(currentPath, item.to);
@@ -319,24 +319,26 @@ function MobileBottomNav({
             <Link
               key={item.to}
               to={item.to}
+              aria-current={active ? "page" : undefined}
               className={cn(
-                "flex flex-col items-center gap-1 rounded-xl py-1.5 text-[10px] font-medium transition",
-                active ? "text-primary" : "text-muted-foreground",
+                "flex min-h-11 flex-col items-center justify-center gap-1 rounded-xl py-1.5 text-[10px] font-medium transition",
+                active ? "text-primary" : "text-muted-foreground hover:text-foreground",
               )}
             >
-              <Icon className="h-5 w-5" />
+              <Icon className="h-5 w-5" aria-hidden />
               {item.label}
             </Link>
           );
         })}
         <button
           onClick={onMenuClick}
-          className="flex flex-col items-center gap-1 rounded-xl py-1.5 text-[10px] font-medium text-muted-foreground"
+          aria-label="Open menu"
+          className="flex min-h-11 flex-col items-center justify-center gap-1 rounded-xl py-1.5 text-[10px] font-medium text-muted-foreground hover:text-foreground"
         >
-          <Menu className="h-5 w-5" />
+          <Menu className="h-5 w-5" aria-hidden />
           More
         </button>
       </div>
-    </div>
+    </nav>
   );
 }
