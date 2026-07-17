@@ -20,6 +20,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
 import { Route as AuthenticatedSupportRouteImport } from './routes/_authenticated/support'
+import { Route as AuthenticatedStrategiesRouteImport } from './routes/_authenticated/strategies'
 import { Route as AuthenticatedStatisticsRouteImport } from './routes/_authenticated/statistics'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedReplayRouteImport } from './routes/_authenticated/replay'
@@ -32,12 +33,21 @@ import { Route as AuthenticatedChallengesRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAiRouteImport } from './routes/_authenticated/ai'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAchievementsRouteImport } from './routes/_authenticated/achievements'
+import { Route as AuthenticatedStrategiesIndexRouteImport } from './routes/_authenticated/strategies.index'
 import { Route as AuthenticatedStatisticsIndexRouteImport } from './routes/_authenticated/statistics.index'
 import { Route as AuthenticatedReplayIndexRouteImport } from './routes/_authenticated/replay.index'
 import { Route as AuthenticatedLeaderboardIndexRouteImport } from './routes/_authenticated/leaderboard.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as JournalShareTokenRouteImport } from './routes/journal.share.$token'
 import { Route as ApiAiChatRouteImport } from './routes/api/ai/chat'
+import { Route as AuthenticatedStrategiesTemplatesRouteImport } from './routes/_authenticated/strategies.templates'
+import { Route as AuthenticatedStrategiesSharedRouteImport } from './routes/_authenticated/strategies.shared'
+import { Route as AuthenticatedStrategiesSettingsRouteImport } from './routes/_authenticated/strategies.settings'
+import { Route as AuthenticatedStrategiesPlaybooksRouteImport } from './routes/_authenticated/strategies.playbooks'
+import { Route as AuthenticatedStrategiesLibraryRouteImport } from './routes/_authenticated/strategies.library'
+import { Route as AuthenticatedStrategiesCreateRouteImport } from './routes/_authenticated/strategies.create'
+import { Route as AuthenticatedStrategiesBacktestsRouteImport } from './routes/_authenticated/strategies.backtests'
+import { Route as AuthenticatedStrategiesIdRouteImport } from './routes/_authenticated/strategies.$id'
 import { Route as AuthenticatedStatisticsSetupsRouteImport } from './routes/_authenticated/statistics.setups'
 import { Route as AuthenticatedStatisticsSessionsRouteImport } from './routes/_authenticated/statistics.sessions'
 import { Route as AuthenticatedStatisticsRiskRouteImport } from './routes/_authenticated/statistics.risk'
@@ -133,6 +143,11 @@ const AuthenticatedSupportRoute = AuthenticatedSupportRouteImport.update({
   path: '/support',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedStrategiesRoute = AuthenticatedStrategiesRouteImport.update({
+  id: '/strategies',
+  path: '/strategies',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedStatisticsRoute = AuthenticatedStatisticsRouteImport.update({
   id: '/statistics',
   path: '/statistics',
@@ -196,6 +211,12 @@ const AuthenticatedAchievementsRoute =
     path: '/achievements',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedStrategiesIndexRoute =
+  AuthenticatedStrategiesIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedStrategiesRoute,
+  } as any)
 const AuthenticatedStatisticsIndexRoute =
   AuthenticatedStatisticsIndexRouteImport.update({
     id: '/',
@@ -229,6 +250,54 @@ const ApiAiChatRoute = ApiAiChatRouteImport.update({
   path: '/api/ai/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedStrategiesTemplatesRoute =
+  AuthenticatedStrategiesTemplatesRouteImport.update({
+    id: '/templates',
+    path: '/templates',
+    getParentRoute: () => AuthenticatedStrategiesRoute,
+  } as any)
+const AuthenticatedStrategiesSharedRoute =
+  AuthenticatedStrategiesSharedRouteImport.update({
+    id: '/shared',
+    path: '/shared',
+    getParentRoute: () => AuthenticatedStrategiesRoute,
+  } as any)
+const AuthenticatedStrategiesSettingsRoute =
+  AuthenticatedStrategiesSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuthenticatedStrategiesRoute,
+  } as any)
+const AuthenticatedStrategiesPlaybooksRoute =
+  AuthenticatedStrategiesPlaybooksRouteImport.update({
+    id: '/playbooks',
+    path: '/playbooks',
+    getParentRoute: () => AuthenticatedStrategiesRoute,
+  } as any)
+const AuthenticatedStrategiesLibraryRoute =
+  AuthenticatedStrategiesLibraryRouteImport.update({
+    id: '/library',
+    path: '/library',
+    getParentRoute: () => AuthenticatedStrategiesRoute,
+  } as any)
+const AuthenticatedStrategiesCreateRoute =
+  AuthenticatedStrategiesCreateRouteImport.update({
+    id: '/create',
+    path: '/create',
+    getParentRoute: () => AuthenticatedStrategiesRoute,
+  } as any)
+const AuthenticatedStrategiesBacktestsRoute =
+  AuthenticatedStrategiesBacktestsRouteImport.update({
+    id: '/backtests',
+    path: '/backtests',
+    getParentRoute: () => AuthenticatedStrategiesRoute,
+  } as any)
+const AuthenticatedStrategiesIdRoute =
+  AuthenticatedStrategiesIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => AuthenticatedStrategiesRoute,
+  } as any)
 const AuthenticatedStatisticsSetupsRoute =
   AuthenticatedStatisticsSetupsRouteImport.update({
     id: '/setups',
@@ -485,6 +554,7 @@ export interface FileRoutesByFullPath {
   '/replay': typeof AuthenticatedReplayRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
   '/statistics': typeof AuthenticatedStatisticsRouteWithChildren
+  '/strategies': typeof AuthenticatedStrategiesRouteWithChildren
   '/support': typeof AuthenticatedSupportRoute
   '/users': typeof AuthenticatedUsersRoute
   '/admin/achievements': typeof AuthenticatedAdminAchievementsRoute
@@ -527,12 +597,21 @@ export interface FileRoutesByFullPath {
   '/statistics/risk': typeof AuthenticatedStatisticsRiskRoute
   '/statistics/sessions': typeof AuthenticatedStatisticsSessionsRoute
   '/statistics/setups': typeof AuthenticatedStatisticsSetupsRoute
+  '/strategies/$id': typeof AuthenticatedStrategiesIdRoute
+  '/strategies/backtests': typeof AuthenticatedStrategiesBacktestsRoute
+  '/strategies/create': typeof AuthenticatedStrategiesCreateRoute
+  '/strategies/library': typeof AuthenticatedStrategiesLibraryRoute
+  '/strategies/playbooks': typeof AuthenticatedStrategiesPlaybooksRoute
+  '/strategies/settings': typeof AuthenticatedStrategiesSettingsRoute
+  '/strategies/shared': typeof AuthenticatedStrategiesSharedRoute
+  '/strategies/templates': typeof AuthenticatedStrategiesTemplatesRoute
   '/api/ai/chat': typeof ApiAiChatRoute
   '/journal/share/$token': typeof JournalShareTokenRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
   '/replay/': typeof AuthenticatedReplayIndexRoute
   '/statistics/': typeof AuthenticatedStatisticsIndexRoute
+  '/strategies/': typeof AuthenticatedStrategiesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -593,12 +672,21 @@ export interface FileRoutesByTo {
   '/statistics/risk': typeof AuthenticatedStatisticsRiskRoute
   '/statistics/sessions': typeof AuthenticatedStatisticsSessionsRoute
   '/statistics/setups': typeof AuthenticatedStatisticsSetupsRoute
+  '/strategies/$id': typeof AuthenticatedStrategiesIdRoute
+  '/strategies/backtests': typeof AuthenticatedStrategiesBacktestsRoute
+  '/strategies/create': typeof AuthenticatedStrategiesCreateRoute
+  '/strategies/library': typeof AuthenticatedStrategiesLibraryRoute
+  '/strategies/playbooks': typeof AuthenticatedStrategiesPlaybooksRoute
+  '/strategies/settings': typeof AuthenticatedStrategiesSettingsRoute
+  '/strategies/shared': typeof AuthenticatedStrategiesSharedRoute
+  '/strategies/templates': typeof AuthenticatedStrategiesTemplatesRoute
   '/api/ai/chat': typeof ApiAiChatRoute
   '/journal/share/$token': typeof JournalShareTokenRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/leaderboard': typeof AuthenticatedLeaderboardIndexRoute
   '/replay': typeof AuthenticatedReplayIndexRoute
   '/statistics': typeof AuthenticatedStatisticsIndexRoute
+  '/strategies': typeof AuthenticatedStrategiesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -623,6 +711,7 @@ export interface FileRoutesById {
   '/_authenticated/replay': typeof AuthenticatedReplayRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/statistics': typeof AuthenticatedStatisticsRouteWithChildren
+  '/_authenticated/strategies': typeof AuthenticatedStrategiesRouteWithChildren
   '/_authenticated/support': typeof AuthenticatedSupportRoute
   '/_authenticated/users': typeof AuthenticatedUsersRoute
   '/_authenticated/admin/achievements': typeof AuthenticatedAdminAchievementsRoute
@@ -665,12 +754,21 @@ export interface FileRoutesById {
   '/_authenticated/statistics/risk': typeof AuthenticatedStatisticsRiskRoute
   '/_authenticated/statistics/sessions': typeof AuthenticatedStatisticsSessionsRoute
   '/_authenticated/statistics/setups': typeof AuthenticatedStatisticsSetupsRoute
+  '/_authenticated/strategies/$id': typeof AuthenticatedStrategiesIdRoute
+  '/_authenticated/strategies/backtests': typeof AuthenticatedStrategiesBacktestsRoute
+  '/_authenticated/strategies/create': typeof AuthenticatedStrategiesCreateRoute
+  '/_authenticated/strategies/library': typeof AuthenticatedStrategiesLibraryRoute
+  '/_authenticated/strategies/playbooks': typeof AuthenticatedStrategiesPlaybooksRoute
+  '/_authenticated/strategies/settings': typeof AuthenticatedStrategiesSettingsRoute
+  '/_authenticated/strategies/shared': typeof AuthenticatedStrategiesSharedRoute
+  '/_authenticated/strategies/templates': typeof AuthenticatedStrategiesTemplatesRoute
   '/api/ai/chat': typeof ApiAiChatRoute
   '/journal/share/$token': typeof JournalShareTokenRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
   '/_authenticated/replay/': typeof AuthenticatedReplayIndexRoute
   '/_authenticated/statistics/': typeof AuthenticatedStatisticsIndexRoute
+  '/_authenticated/strategies/': typeof AuthenticatedStrategiesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -695,6 +793,7 @@ export interface FileRouteTypes {
     | '/replay'
     | '/settings'
     | '/statistics'
+    | '/strategies'
     | '/support'
     | '/users'
     | '/admin/achievements'
@@ -737,12 +836,21 @@ export interface FileRouteTypes {
     | '/statistics/risk'
     | '/statistics/sessions'
     | '/statistics/setups'
+    | '/strategies/$id'
+    | '/strategies/backtests'
+    | '/strategies/create'
+    | '/strategies/library'
+    | '/strategies/playbooks'
+    | '/strategies/settings'
+    | '/strategies/shared'
+    | '/strategies/templates'
     | '/api/ai/chat'
     | '/journal/share/$token'
     | '/admin/'
     | '/leaderboard/'
     | '/replay/'
     | '/statistics/'
+    | '/strategies/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -803,12 +911,21 @@ export interface FileRouteTypes {
     | '/statistics/risk'
     | '/statistics/sessions'
     | '/statistics/setups'
+    | '/strategies/$id'
+    | '/strategies/backtests'
+    | '/strategies/create'
+    | '/strategies/library'
+    | '/strategies/playbooks'
+    | '/strategies/settings'
+    | '/strategies/shared'
+    | '/strategies/templates'
     | '/api/ai/chat'
     | '/journal/share/$token'
     | '/admin'
     | '/leaderboard'
     | '/replay'
     | '/statistics'
+    | '/strategies'
   id:
     | '__root__'
     | '/'
@@ -832,6 +949,7 @@ export interface FileRouteTypes {
     | '/_authenticated/replay'
     | '/_authenticated/settings'
     | '/_authenticated/statistics'
+    | '/_authenticated/strategies'
     | '/_authenticated/support'
     | '/_authenticated/users'
     | '/_authenticated/admin/achievements'
@@ -874,12 +992,21 @@ export interface FileRouteTypes {
     | '/_authenticated/statistics/risk'
     | '/_authenticated/statistics/sessions'
     | '/_authenticated/statistics/setups'
+    | '/_authenticated/strategies/$id'
+    | '/_authenticated/strategies/backtests'
+    | '/_authenticated/strategies/create'
+    | '/_authenticated/strategies/library'
+    | '/_authenticated/strategies/playbooks'
+    | '/_authenticated/strategies/settings'
+    | '/_authenticated/strategies/shared'
+    | '/_authenticated/strategies/templates'
     | '/api/ai/chat'
     | '/journal/share/$token'
     | '/_authenticated/admin/'
     | '/_authenticated/leaderboard/'
     | '/_authenticated/replay/'
     | '/_authenticated/statistics/'
+    | '/_authenticated/strategies/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -975,6 +1102,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSupportRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/strategies': {
+      id: '/_authenticated/strategies'
+      path: '/strategies'
+      fullPath: '/strategies'
+      preLoaderRoute: typeof AuthenticatedStrategiesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/statistics': {
       id: '/_authenticated/statistics'
       path: '/statistics'
@@ -1059,6 +1193,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAchievementsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/strategies/': {
+      id: '/_authenticated/strategies/'
+      path: '/'
+      fullPath: '/strategies/'
+      preLoaderRoute: typeof AuthenticatedStrategiesIndexRouteImport
+      parentRoute: typeof AuthenticatedStrategiesRoute
+    }
     '/_authenticated/statistics/': {
       id: '/_authenticated/statistics/'
       path: '/'
@@ -1100,6 +1241,62 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/ai/chat'
       preLoaderRoute: typeof ApiAiChatRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/strategies/templates': {
+      id: '/_authenticated/strategies/templates'
+      path: '/templates'
+      fullPath: '/strategies/templates'
+      preLoaderRoute: typeof AuthenticatedStrategiesTemplatesRouteImport
+      parentRoute: typeof AuthenticatedStrategiesRoute
+    }
+    '/_authenticated/strategies/shared': {
+      id: '/_authenticated/strategies/shared'
+      path: '/shared'
+      fullPath: '/strategies/shared'
+      preLoaderRoute: typeof AuthenticatedStrategiesSharedRouteImport
+      parentRoute: typeof AuthenticatedStrategiesRoute
+    }
+    '/_authenticated/strategies/settings': {
+      id: '/_authenticated/strategies/settings'
+      path: '/settings'
+      fullPath: '/strategies/settings'
+      preLoaderRoute: typeof AuthenticatedStrategiesSettingsRouteImport
+      parentRoute: typeof AuthenticatedStrategiesRoute
+    }
+    '/_authenticated/strategies/playbooks': {
+      id: '/_authenticated/strategies/playbooks'
+      path: '/playbooks'
+      fullPath: '/strategies/playbooks'
+      preLoaderRoute: typeof AuthenticatedStrategiesPlaybooksRouteImport
+      parentRoute: typeof AuthenticatedStrategiesRoute
+    }
+    '/_authenticated/strategies/library': {
+      id: '/_authenticated/strategies/library'
+      path: '/library'
+      fullPath: '/strategies/library'
+      preLoaderRoute: typeof AuthenticatedStrategiesLibraryRouteImport
+      parentRoute: typeof AuthenticatedStrategiesRoute
+    }
+    '/_authenticated/strategies/create': {
+      id: '/_authenticated/strategies/create'
+      path: '/create'
+      fullPath: '/strategies/create'
+      preLoaderRoute: typeof AuthenticatedStrategiesCreateRouteImport
+      parentRoute: typeof AuthenticatedStrategiesRoute
+    }
+    '/_authenticated/strategies/backtests': {
+      id: '/_authenticated/strategies/backtests'
+      path: '/backtests'
+      fullPath: '/strategies/backtests'
+      preLoaderRoute: typeof AuthenticatedStrategiesBacktestsRouteImport
+      parentRoute: typeof AuthenticatedStrategiesRoute
+    }
+    '/_authenticated/strategies/$id': {
+      id: '/_authenticated/strategies/$id'
+      path: '/$id'
+      fullPath: '/strategies/$id'
+      preLoaderRoute: typeof AuthenticatedStrategiesIdRouteImport
+      parentRoute: typeof AuthenticatedStrategiesRoute
     }
     '/_authenticated/statistics/setups': {
       id: '/_authenticated/statistics/setups'
@@ -1546,6 +1743,39 @@ const AuthenticatedStatisticsRouteWithChildren =
     AuthenticatedStatisticsRouteChildren,
   )
 
+interface AuthenticatedStrategiesRouteChildren {
+  AuthenticatedStrategiesIdRoute: typeof AuthenticatedStrategiesIdRoute
+  AuthenticatedStrategiesBacktestsRoute: typeof AuthenticatedStrategiesBacktestsRoute
+  AuthenticatedStrategiesCreateRoute: typeof AuthenticatedStrategiesCreateRoute
+  AuthenticatedStrategiesLibraryRoute: typeof AuthenticatedStrategiesLibraryRoute
+  AuthenticatedStrategiesPlaybooksRoute: typeof AuthenticatedStrategiesPlaybooksRoute
+  AuthenticatedStrategiesSettingsRoute: typeof AuthenticatedStrategiesSettingsRoute
+  AuthenticatedStrategiesSharedRoute: typeof AuthenticatedStrategiesSharedRoute
+  AuthenticatedStrategiesTemplatesRoute: typeof AuthenticatedStrategiesTemplatesRoute
+  AuthenticatedStrategiesIndexRoute: typeof AuthenticatedStrategiesIndexRoute
+}
+
+const AuthenticatedStrategiesRouteChildren: AuthenticatedStrategiesRouteChildren =
+  {
+    AuthenticatedStrategiesIdRoute: AuthenticatedStrategiesIdRoute,
+    AuthenticatedStrategiesBacktestsRoute:
+      AuthenticatedStrategiesBacktestsRoute,
+    AuthenticatedStrategiesCreateRoute: AuthenticatedStrategiesCreateRoute,
+    AuthenticatedStrategiesLibraryRoute: AuthenticatedStrategiesLibraryRoute,
+    AuthenticatedStrategiesPlaybooksRoute:
+      AuthenticatedStrategiesPlaybooksRoute,
+    AuthenticatedStrategiesSettingsRoute: AuthenticatedStrategiesSettingsRoute,
+    AuthenticatedStrategiesSharedRoute: AuthenticatedStrategiesSharedRoute,
+    AuthenticatedStrategiesTemplatesRoute:
+      AuthenticatedStrategiesTemplatesRoute,
+    AuthenticatedStrategiesIndexRoute: AuthenticatedStrategiesIndexRoute,
+  }
+
+const AuthenticatedStrategiesRouteWithChildren =
+  AuthenticatedStrategiesRoute._addFileChildren(
+    AuthenticatedStrategiesRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAchievementsRoute: typeof AuthenticatedAchievementsRoute
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
@@ -1559,6 +1789,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedReplayRoute: typeof AuthenticatedReplayRouteWithChildren
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedStatisticsRoute: typeof AuthenticatedStatisticsRouteWithChildren
+  AuthenticatedStrategiesRoute: typeof AuthenticatedStrategiesRouteWithChildren
   AuthenticatedSupportRoute: typeof AuthenticatedSupportRoute
   AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
 }
@@ -1576,6 +1807,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedReplayRoute: AuthenticatedReplayRouteWithChildren,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedStatisticsRoute: AuthenticatedStatisticsRouteWithChildren,
+  AuthenticatedStrategiesRoute: AuthenticatedStrategiesRouteWithChildren,
   AuthenticatedSupportRoute: AuthenticatedSupportRoute,
   AuthenticatedUsersRoute: AuthenticatedUsersRoute,
 }

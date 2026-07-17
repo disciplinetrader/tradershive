@@ -1797,6 +1797,7 @@ export type Database = {
           status: Database["public"]["Enums"]["journal_status"]
           stop_loss: number | null
           strategy: string | null
+          strategy_id: string | null
           swap: number | null
           symbol: string | null
           take_profit: number | null
@@ -1849,6 +1850,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["journal_status"]
           stop_loss?: number | null
           strategy?: string | null
+          strategy_id?: string | null
           swap?: number | null
           symbol?: string | null
           take_profit?: number | null
@@ -1901,6 +1903,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["journal_status"]
           stop_loss?: number | null
           strategy?: string | null
+          strategy_id?: string | null
           swap?: number | null
           symbol?: string | null
           take_profit?: number | null
@@ -1915,6 +1918,13 @@ export type Database = {
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "paper_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_entries_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "strategies"
             referencedColumns: ["id"]
           },
           {
@@ -2397,6 +2407,7 @@ export type Database = {
           screenshot_path: string | null
           status: Database["public"]["Enums"]["paper_trade_status"]
           stop_loss: number | null
+          strategy_id: string | null
           swap: number
           symbol: string
           take_profit: number | null
@@ -2430,6 +2441,7 @@ export type Database = {
           screenshot_path?: string | null
           status?: Database["public"]["Enums"]["paper_trade_status"]
           stop_loss?: number | null
+          strategy_id?: string | null
           swap?: number
           symbol: string
           take_profit?: number | null
@@ -2463,6 +2475,7 @@ export type Database = {
           screenshot_path?: string | null
           status?: Database["public"]["Enums"]["paper_trade_status"]
           stop_loss?: number | null
+          strategy_id?: string | null
           swap?: number
           symbol?: string
           take_profit?: number | null
@@ -2475,6 +2488,13 @@ export type Database = {
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "paper_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "paper_trades_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "strategies"
             referencedColumns: ["id"]
           },
         ]
@@ -3498,6 +3518,623 @@ export type Database = {
         }
         Relationships: []
       }
+      strategies: {
+        Row: {
+          archived_at: string | null
+          category: string | null
+          color: string | null
+          cover_url: string | null
+          created_at: string
+          description: string | null
+          difficulty: Database["public"]["Enums"]["strategy_difficulty"]
+          entry_rules: Json | null
+          estimated_timeframe: string | null
+          exit_rules: Json | null
+          icon: string | null
+          id: string
+          is_active: boolean
+          is_favorite: boolean
+          is_template: boolean
+          market: string | null
+          market_conditions: string[] | null
+          markets: string[] | null
+          name: string
+          notes: string | null
+          position_sizing: Json | null
+          published_at: string | null
+          risk_rules: Json | null
+          slug: string | null
+          status: Database["public"]["Enums"]["strategy_status"]
+          symbols: string[] | null
+          tags: string[] | null
+          template_source: string | null
+          timeframes: string[] | null
+          trade_management: Json | null
+          updated_at: string
+          user_id: string
+          version: number
+        }
+        Insert: {
+          archived_at?: string | null
+          category?: string | null
+          color?: string | null
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          difficulty?: Database["public"]["Enums"]["strategy_difficulty"]
+          entry_rules?: Json | null
+          estimated_timeframe?: string | null
+          exit_rules?: Json | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          is_favorite?: boolean
+          is_template?: boolean
+          market?: string | null
+          market_conditions?: string[] | null
+          markets?: string[] | null
+          name: string
+          notes?: string | null
+          position_sizing?: Json | null
+          published_at?: string | null
+          risk_rules?: Json | null
+          slug?: string | null
+          status?: Database["public"]["Enums"]["strategy_status"]
+          symbols?: string[] | null
+          tags?: string[] | null
+          template_source?: string | null
+          timeframes?: string[] | null
+          trade_management?: Json | null
+          updated_at?: string
+          user_id: string
+          version?: number
+        }
+        Update: {
+          archived_at?: string | null
+          category?: string | null
+          color?: string | null
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          difficulty?: Database["public"]["Enums"]["strategy_difficulty"]
+          entry_rules?: Json | null
+          estimated_timeframe?: string | null
+          exit_rules?: Json | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          is_favorite?: boolean
+          is_template?: boolean
+          market?: string | null
+          market_conditions?: string[] | null
+          markets?: string[] | null
+          name?: string
+          notes?: string | null
+          position_sizing?: Json | null
+          published_at?: string | null
+          risk_rules?: Json | null
+          slug?: string | null
+          status?: Database["public"]["Enums"]["strategy_status"]
+          symbols?: string[] | null
+          tags?: string[] | null
+          template_source?: string | null
+          timeframes?: string[] | null
+          trade_management?: Json | null
+          updated_at?: string
+          user_id?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      strategy_attachments: {
+        Row: {
+          bucket: string
+          created_at: string
+          filename: string | null
+          id: string
+          kind: string | null
+          mime_type: string | null
+          path: string
+          size_bytes: number | null
+          strategy_id: string
+          user_id: string
+        }
+        Insert: {
+          bucket: string
+          created_at?: string
+          filename?: string | null
+          id?: string
+          kind?: string | null
+          mime_type?: string | null
+          path: string
+          size_bytes?: number | null
+          strategy_id: string
+          user_id: string
+        }
+        Update: {
+          bucket?: string
+          created_at?: string
+          filename?: string | null
+          id?: string
+          kind?: string | null
+          mime_type?: string | null
+          path?: string
+          size_bytes?: number | null
+          strategy_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategy_attachments_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "strategies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      strategy_checklist_items: {
+        Row: {
+          checklist_id: string
+          created_at: string
+          id: string
+          label: string
+          required: boolean
+          sort_order: number
+          user_id: string
+        }
+        Insert: {
+          checklist_id: string
+          created_at?: string
+          id?: string
+          label: string
+          required?: boolean
+          sort_order?: number
+          user_id: string
+        }
+        Update: {
+          checklist_id?: string
+          created_at?: string
+          id?: string
+          label?: string
+          required?: boolean
+          sort_order?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategy_checklist_items_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "strategy_checklists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      strategy_checklists: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          sort_order: number
+          strategy_id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          sort_order?: number
+          strategy_id: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          sort_order?: number
+          strategy_id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategy_checklists_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "strategies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      strategy_comments: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          parent_id: string | null
+          strategy_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          strategy_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          strategy_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategy_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "strategy_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategy_comments_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "strategies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      strategy_examples: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          metadata: Json | null
+          ref_id: string | null
+          ref_type: string
+          sort_order: number
+          strategy_id: string
+          title: string | null
+          url: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          ref_id?: string | null
+          ref_type: string
+          sort_order?: number
+          strategy_id: string
+          title?: string | null
+          url?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          ref_id?: string | null
+          ref_type?: string
+          sort_order?: number
+          strategy_id?: string
+          title?: string | null
+          url?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategy_examples_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "strategies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      strategy_flow_edges: {
+        Row: {
+          created_at: string
+          id: string
+          label: string | null
+          source_id: string
+          strategy_id: string
+          target_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          source_id: string
+          strategy_id: string
+          target_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          source_id?: string
+          strategy_id?: string
+          target_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategy_flow_edges_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "strategy_flow_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategy_flow_edges_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "strategies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategy_flow_edges_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "strategy_flow_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      strategy_flow_nodes: {
+        Row: {
+          created_at: string
+          data: Json | null
+          id: string
+          label: string | null
+          node_type: string
+          pos_x: number
+          pos_y: number
+          strategy_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          id?: string
+          label?: string | null
+          node_type: string
+          pos_x?: number
+          pos_y?: number
+          strategy_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          id?: string
+          label?: string | null
+          node_type?: string
+          pos_x?: number
+          pos_y?: number
+          strategy_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategy_flow_nodes_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "strategies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      strategy_history: {
+        Row: {
+          action: string
+          created_at: string
+          detail: Json | null
+          id: string
+          strategy_id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          detail?: Json | null
+          id?: string
+          strategy_id: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          detail?: Json | null
+          id?: string
+          strategy_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategy_history_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "strategies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      strategy_playbooks: {
+        Row: {
+          checklist: Json | null
+          color: string | null
+          cover_url: string | null
+          created_at: string
+          examples: Json | null
+          icon: string | null
+          id: string
+          is_favorite: boolean
+          mistakes: Json | null
+          name: string
+          overview: string | null
+          rules: Json | null
+          strategy_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          checklist?: Json | null
+          color?: string | null
+          cover_url?: string | null
+          created_at?: string
+          examples?: Json | null
+          icon?: string | null
+          id?: string
+          is_favorite?: boolean
+          mistakes?: Json | null
+          name: string
+          overview?: string | null
+          rules?: Json | null
+          strategy_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          checklist?: Json | null
+          color?: string | null
+          cover_url?: string | null
+          created_at?: string
+          examples?: Json | null
+          icon?: string | null
+          id?: string
+          is_favorite?: boolean
+          mistakes?: Json | null
+          name?: string
+          overview?: string | null
+          rules?: Json | null
+          strategy_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategy_playbooks_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "strategies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      strategy_templates: {
+        Row: {
+          category: string | null
+          color: string | null
+          created_at: string
+          data: Json
+          description: string | null
+          difficulty: Database["public"]["Enums"]["strategy_difficulty"]
+          icon: string | null
+          id: string
+          is_official: boolean
+          markets: string[] | null
+          name: string
+          slug: string
+          tags: string[] | null
+          timeframes: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          color?: string | null
+          created_at?: string
+          data?: Json
+          description?: string | null
+          difficulty?: Database["public"]["Enums"]["strategy_difficulty"]
+          icon?: string | null
+          id?: string
+          is_official?: boolean
+          markets?: string[] | null
+          name: string
+          slug: string
+          tags?: string[] | null
+          timeframes?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          color?: string | null
+          created_at?: string
+          data?: Json
+          description?: string | null
+          difficulty?: Database["public"]["Enums"]["strategy_difficulty"]
+          icon?: string | null
+          id?: string
+          is_official?: boolean
+          markets?: string[] | null
+          name?: string
+          slug?: string
+          tags?: string[] | null
+          timeframes?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      strategy_versions: {
+        Row: {
+          change_notes: string | null
+          created_at: string
+          id: string
+          snapshot: Json
+          strategy_id: string
+          user_id: string
+          version: number
+        }
+        Insert: {
+          change_notes?: string | null
+          created_at?: string
+          id?: string
+          snapshot: Json
+          strategy_id: string
+          user_id: string
+          version: number
+        }
+        Update: {
+          change_notes?: string | null
+          created_at?: string
+          id?: string
+          snapshot?: Json
+          strategy_id?: string
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategy_versions_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "strategies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       support_tickets: {
         Row: {
           assigned_to: string | null
@@ -4158,6 +4795,8 @@ export type Database = {
         | "futures"
         | "options"
         | "indices"
+      strategy_difficulty: "beginner" | "intermediate" | "advanced" | "expert"
+      strategy_status: "draft" | "private" | "public" | "archived"
       trading_experience:
         | "beginner"
         | "intermediate"
@@ -4409,6 +5048,8 @@ export const Constants = {
         "options",
         "indices",
       ],
+      strategy_difficulty: ["beginner", "intermediate", "advanced", "expert"],
+      strategy_status: ["draft", "private", "public", "archived"],
       trading_experience: [
         "beginner",
         "intermediate",

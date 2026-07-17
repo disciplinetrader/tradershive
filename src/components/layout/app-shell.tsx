@@ -5,6 +5,7 @@ import {
   Bell,
   BookOpen,
   Film,
+  FolderKanban,
   BrainCircuit,
   ChevronLeft,
   ChevronRight,
@@ -41,6 +42,7 @@ const NAV: NavItem[] = [
   { to: "/statistics", label: "Statistics", icon: BarChart3 },
   { to: "/ai", label: "AI Coach", icon: BrainCircuit },
   { to: "/replay", label: "Replay", icon: Film },
+  { to: "/strategies", label: "Strategies", icon: FolderKanban },
 ];
 
 const SECONDARY: NavItem[] = [
