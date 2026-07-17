@@ -28,7 +28,10 @@ import { Route as AuthenticatedJournalRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedChallengesRouteImport } from './routes/_authenticated/challenges'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedAchievementsRouteImport } from './routes/_authenticated/achievements'
 import { Route as JournalShareTokenRouteImport } from './routes/journal.share.$token'
+import { Route as AuthenticatedChallengesRewardsRouteImport } from './routes/_authenticated/challenges/rewards'
+import { Route as AuthenticatedChallengesHistoryRouteImport } from './routes/_authenticated/challenges/history'
 
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
   id: '/verify-email',
@@ -126,11 +129,29 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAchievementsRoute =
+  AuthenticatedAchievementsRouteImport.update({
+    id: '/achievements',
+    path: '/achievements',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const JournalShareTokenRoute = JournalShareTokenRouteImport.update({
   id: '/journal/share/$token',
   path: '/journal/share/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedChallengesRewardsRoute =
+  AuthenticatedChallengesRewardsRouteImport.update({
+    id: '/rewards',
+    path: '/rewards',
+    getParentRoute: () => AuthenticatedChallengesRoute,
+  } as any)
+const AuthenticatedChallengesHistoryRoute =
+  AuthenticatedChallengesHistoryRouteImport.update({
+    id: '/history',
+    path: '/history',
+    getParentRoute: () => AuthenticatedChallengesRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -141,8 +162,9 @@ export interface FileRoutesByFullPath {
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/achievements': typeof AuthenticatedAchievementsRoute
   '/admin': typeof AuthenticatedAdminRoute
-  '/challenges': typeof AuthenticatedChallengesRoute
+  '/challenges': typeof AuthenticatedChallengesRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/journal': typeof AuthenticatedJournalRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
@@ -151,6 +173,8 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/statistics': typeof AuthenticatedStatisticsRoute
   '/support': typeof AuthenticatedSupportRoute
+  '/challenges/history': typeof AuthenticatedChallengesHistoryRoute
+  '/challenges/rewards': typeof AuthenticatedChallengesRewardsRoute
   '/journal/share/$token': typeof JournalShareTokenRoute
 }
 export interface FileRoutesByTo {
@@ -162,8 +186,9 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/achievements': typeof AuthenticatedAchievementsRoute
   '/admin': typeof AuthenticatedAdminRoute
-  '/challenges': typeof AuthenticatedChallengesRoute
+  '/challenges': typeof AuthenticatedChallengesRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/journal': typeof AuthenticatedJournalRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
@@ -172,6 +197,8 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/statistics': typeof AuthenticatedStatisticsRoute
   '/support': typeof AuthenticatedSupportRoute
+  '/challenges/history': typeof AuthenticatedChallengesHistoryRoute
+  '/challenges/rewards': typeof AuthenticatedChallengesRewardsRoute
   '/journal/share/$token': typeof JournalShareTokenRoute
 }
 export interface FileRoutesById {
@@ -185,8 +212,9 @@ export interface FileRoutesById {
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/_authenticated/achievements': typeof AuthenticatedAchievementsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
-  '/_authenticated/challenges': typeof AuthenticatedChallengesRoute
+  '/_authenticated/challenges': typeof AuthenticatedChallengesRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/journal': typeof AuthenticatedJournalRoute
   '/_authenticated/leaderboard': typeof AuthenticatedLeaderboardRoute
@@ -195,6 +223,8 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/statistics': typeof AuthenticatedStatisticsRoute
   '/_authenticated/support': typeof AuthenticatedSupportRoute
+  '/_authenticated/challenges/history': typeof AuthenticatedChallengesHistoryRoute
+  '/_authenticated/challenges/rewards': typeof AuthenticatedChallengesRewardsRoute
   '/journal/share/$token': typeof JournalShareTokenRoute
 }
 export interface FileRouteTypes {
@@ -208,6 +238,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/reset-password'
     | '/verify-email'
+    | '/achievements'
     | '/admin'
     | '/challenges'
     | '/dashboard'
@@ -218,6 +249,8 @@ export interface FileRouteTypes {
     | '/settings'
     | '/statistics'
     | '/support'
+    | '/challenges/history'
+    | '/challenges/rewards'
     | '/journal/share/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -229,6 +262,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/reset-password'
     | '/verify-email'
+    | '/achievements'
     | '/admin'
     | '/challenges'
     | '/dashboard'
@@ -239,6 +273,8 @@ export interface FileRouteTypes {
     | '/settings'
     | '/statistics'
     | '/support'
+    | '/challenges/history'
+    | '/challenges/rewards'
     | '/journal/share/$token'
   id:
     | '__root__'
@@ -251,6 +287,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/reset-password'
     | '/verify-email'
+    | '/_authenticated/achievements'
     | '/_authenticated/admin'
     | '/_authenticated/challenges'
     | '/_authenticated/dashboard'
@@ -261,6 +298,8 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/statistics'
     | '/_authenticated/support'
+    | '/_authenticated/challenges/history'
+    | '/_authenticated/challenges/rewards'
     | '/journal/share/$token'
   fileRoutesById: FileRoutesById
 }
@@ -412,6 +451,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/achievements': {
+      id: '/_authenticated/achievements'
+      path: '/achievements'
+      fullPath: '/achievements'
+      preLoaderRoute: typeof AuthenticatedAchievementsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/journal/share/$token': {
       id: '/journal/share/$token'
       path: '/journal/share/$token'
@@ -419,12 +465,43 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JournalShareTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/challenges/rewards': {
+      id: '/_authenticated/challenges/rewards'
+      path: '/rewards'
+      fullPath: '/challenges/rewards'
+      preLoaderRoute: typeof AuthenticatedChallengesRewardsRouteImport
+      parentRoute: typeof AuthenticatedChallengesRoute
+    }
+    '/_authenticated/challenges/history': {
+      id: '/_authenticated/challenges/history'
+      path: '/history'
+      fullPath: '/challenges/history'
+      preLoaderRoute: typeof AuthenticatedChallengesHistoryRouteImport
+      parentRoute: typeof AuthenticatedChallengesRoute
+    }
   }
 }
 
+interface AuthenticatedChallengesRouteChildren {
+  AuthenticatedChallengesHistoryRoute: typeof AuthenticatedChallengesHistoryRoute
+  AuthenticatedChallengesRewardsRoute: typeof AuthenticatedChallengesRewardsRoute
+}
+
+const AuthenticatedChallengesRouteChildren: AuthenticatedChallengesRouteChildren =
+  {
+    AuthenticatedChallengesHistoryRoute: AuthenticatedChallengesHistoryRoute,
+    AuthenticatedChallengesRewardsRoute: AuthenticatedChallengesRewardsRoute,
+  }
+
+const AuthenticatedChallengesRouteWithChildren =
+  AuthenticatedChallengesRoute._addFileChildren(
+    AuthenticatedChallengesRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAchievementsRoute: typeof AuthenticatedAchievementsRoute
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
-  AuthenticatedChallengesRoute: typeof AuthenticatedChallengesRoute
+  AuthenticatedChallengesRoute: typeof AuthenticatedChallengesRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedJournalRoute: typeof AuthenticatedJournalRoute
   AuthenticatedLeaderboardRoute: typeof AuthenticatedLeaderboardRoute
@@ -436,8 +513,9 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAchievementsRoute: AuthenticatedAchievementsRoute,
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
-  AuthenticatedChallengesRoute: AuthenticatedChallengesRoute,
+  AuthenticatedChallengesRoute: AuthenticatedChallengesRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedJournalRoute: AuthenticatedJournalRoute,
   AuthenticatedLeaderboardRoute: AuthenticatedLeaderboardRoute,

@@ -23,7 +23,7 @@ function Rewards() {
   return (
     <div className="space-y-6">
       <PageHeader title="Reward Ledger" description="Every XP and coin change with source and reason.">
-        <Link to="/challenges" className="text-xs text-primary hover:underline">← Back to challenges</Link>
+        
       </PageHeader>
 
       <Tabs defaultValue="xp">

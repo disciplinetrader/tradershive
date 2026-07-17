@@ -23,8 +23,8 @@ function History() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Challenge History" description="Every challenge you've attempted, completed, and claimed.">
-        <Link to="/challenges" className="text-xs text-primary hover:underline">← Back to challenges</Link>
+      <PageHeader title="Challenge History" description="Every challenge you&apos;ve attempted, completed, and claimed.">
+        
       </PageHeader>
 
       {isLoading ? (
