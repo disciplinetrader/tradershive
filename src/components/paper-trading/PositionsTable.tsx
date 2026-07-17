@@ -1,0 +1,173 @@
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { motion, AnimatePresence } from "framer-motion";
+import { Pencil, X, Split } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { listTrades, modifyTrade } from "@/lib/paper-trading.functions";
+import { findSymbol } from "@/lib/paper-trading/symbols";
+import { pnl as computePnl, formatCurrency, formatNumber } from "@/lib/paper-trading/calculations";
+import { useLiveQuotes } from "@/lib/paper-trading/mock-prices";
+import { usePaper } from "./context";
+import { ClosePositionDialog } from "./ClosePositionDialog";
+import { cn } from "@/lib/utils";
+
+type Trade = {
+  id: string; symbol: string; direction: "long"|"short"; entry_price: number;
+  lot_size: number; stop_loss: number|null; take_profit: number|null;
+  opened_at: string; commission: number; swap: number; account_id: string; notes: string|null;
+};
+
+export function PositionsTable() {
+  const { accountId, account } = usePaper();
+  const quotes = useLiveQuotes();
+  const fetch = useServerFn(listTrades);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["paper", "trades", accountId, "open"],
+    queryFn: () => fetch({ data: { account_id: accountId!, status: "open" } }) as unknown as Promise<Trade[]>,
+    enabled: !!accountId,
+    refetchInterval: 5000,
+  });
+
+  const [closing, setClosing] = useState<Trade | null>(null);
+  const [modifying, setModifying] = useState<Trade | null>(null);
+
+  const rows = data ?? [];
+
+  if (isLoading) return <div className="p-6 text-sm text-muted-foreground">Loading positions…</div>;
+  if (!rows.length) {
+    return (
+      <EmptyState
+        className="py-10"
+        title="No open positions"
+        description="Place your first paper trade from the order panel to see it here."
+      />
+    );
+  }
+
+  return (
+    <>
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Pair</TableHead>
+              <TableHead>Side</TableHead>
+              <TableHead className="text-right">Entry</TableHead>
+              <TableHead className="text-right">Current</TableHead>
+              <TableHead className="text-right">Lot</TableHead>
+              <TableHead className="text-right">SL</TableHead>
+              <TableHead className="text-right">TP</TableHead>
+              <TableHead className="text-right">RR (live)</TableHead>
+              <TableHead className="text-right">Floating P/L</TableHead>
+              <TableHead>Duration</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <AnimatePresence initial={false}>
+              {rows.map((t) => {
+                const sym = findSymbol(t.symbol);
+                const current = quotes[t.symbol]?.price ?? sym?.refPrice ?? Number(t.entry_price);
+                const floating = sym ? computePnl(sym, t.direction, Number(t.entry_price), current, Number(t.lot_size)) : 0;
+                const risk = sym && t.stop_loss ? Math.abs(computePnl(sym, t.direction, Number(t.entry_price), Number(t.stop_loss), Number(t.lot_size))) : 0;
+                const rr = risk > 0 ? floating / risk : 0;
+                const duration = formatDuration(new Date(t.opened_at));
+                const up = floating >= 0;
+                return (
+                  <motion.tr
+                    key={t.id}
+                    layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    className="border-b border-border/50"
+                  >
+                    <TableCell className="font-semibold">{t.symbol}</TableCell>
+                    <TableCell>
+                      <span className={cn("rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase",
+                        t.direction === "long" ? "bg-emerald-500/15 text-emerald-300" : "bg-rose-500/15 text-rose-300")}>
+                        {t.direction}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right font-mono">{formatNumber(Number(t.entry_price), sym?.decimals ?? 2)}</TableCell>
+                    <TableCell className="text-right font-mono">{formatNumber(current, sym?.decimals ?? 2)}</TableCell>
+                    <TableCell className="text-right font-mono">{Number(t.lot_size).toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-mono text-muted-foreground">{t.stop_loss ? formatNumber(Number(t.stop_loss), sym?.decimals ?? 2) : "—"}</TableCell>
+                    <TableCell className="text-right font-mono text-muted-foreground">{t.take_profit ? formatNumber(Number(t.take_profit), sym?.decimals ?? 2) : "—"}</TableCell>
+                    <TableCell className={cn("text-right font-mono tabular-nums", rr >= 0 ? "text-emerald-400" : "text-rose-400")}>
+                      {rr ? `${rr.toFixed(2)}R` : "—"}
+                    </TableCell>
+                    <TableCell className={cn("text-right font-mono tabular-nums font-semibold", up ? "text-emerald-400" : "text-rose-400")}>
+                      {up ? "+" : ""}{formatCurrency(floating, account?.currency)}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{duration}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setModifying(t)} aria-label="Modify">
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" disabled title="Partial close (coming soon)">
+                          <Split className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-rose-400 hover:text-rose-300" onClick={() => setClosing(t)} aria-label="Close">
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </motion.tr>
+                );
+              })}
+            </AnimatePresence>
+          </TableBody>
+        </Table>
+      </div>
+
+      {closing && <ClosePositionDialog trade={closing} onClose={() => setClosing(null)} />}
+      {modifying && <ModifyDialog trade={modifying} onClose={() => setModifying(null)} />}
+    </>
+  );
+}
+
+function ModifyDialog({ trade, onClose }: { trade: Trade; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [sl, setSl] = useState(trade.stop_loss ? String(trade.stop_loss) : "");
+  const [tp, setTp] = useState(trade.take_profit ? String(trade.take_profit) : "");
+  const modify = useServerFn(modifyTrade);
+  const mut = useMutation({
+    mutationFn: () => modify({ data: { id: trade.id, stop_loss: sl ? Number(sl) : null, take_profit: tp ? Number(tp) : null } }),
+    onSuccess: () => { toast.success("Trade updated"); qc.invalidateQueries({ queryKey: ["paper"] }); onClose(); },
+    onError: (e) => toast.error((e as Error).message),
+  });
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Modify {trade.symbol}</DialogTitle></DialogHeader>
+        <div className="grid grid-cols-2 gap-3">
+          <div><Label>Stop loss</Label><Input value={sl} onChange={(e) => setSl(e.target.value)} className="font-mono" /></div>
+          <div><Label>Take profit</Label><Input value={tp} onChange={(e) => setTp(e.target.value)} className="font-mono" /></div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button onClick={() => mut.mutate()} disabled={mut.isPending}>Save</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function formatDuration(start: Date): string {
+  const s = Math.max(0, Math.floor((Date.now() - start.getTime()) / 1000));
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  const rm = m % 60;
+  if (h < 24) return `${h}h ${rm}m`;
+  const d = Math.floor(h / 24);
+  return `${d}d ${h % 24}h`;
+}
