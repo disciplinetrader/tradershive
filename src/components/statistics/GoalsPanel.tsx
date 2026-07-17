@@ -36,7 +36,7 @@ export function GoalsPanel() {
 
   const goals = useQuery({ queryKey: ["stats", "goals"], queryFn: () => listFn() });
   const create = useMutation({
-    mutationFn: (input: Parameters<typeof createFn>[0]["data"]) => createFn({ data: input }),
+    mutationFn: (input: { name: string; kind: string; target_value: number; period: string }) => createFn({ data: input as any }),
     onSuccess: () => { toast.success("Goal created"); qc.invalidateQueries({ queryKey: ["stats", "goals"] }); },
   });
   const del = useMutation({
