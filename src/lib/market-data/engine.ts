@@ -150,7 +150,12 @@ class MarketDataEngine {
   subscribe(symbol: string, handler: QuoteHandler, market?: MarketKind): SubscriptionHandle {
     let entry = this.fanout.get(symbol);
     if (!entry) {
-      const p = this.pickProvider(market) ?? getProvider(DEFAULT_PROVIDER)!;
+      const p = this.pickProvider(market);
+      if (!p) {
+        // No provider available — return a no-op handle so callers can still
+        // clean up. The console.error in pickProvider explains what to fix.
+        return { id: `noop-${symbol}`, symbol, unsubscribe: () => {} };
+      }
       void p.connect();
       const upstream = p.subscribe(symbol, (q) => {
         this.quoteCache.set(symbol, q);
@@ -162,7 +167,6 @@ class MarketDataEngine {
       this.fanout.set(symbol, entry);
     }
     entry.handlers.add(handler);
-    // Warm the new subscriber with the cached quote if available.
     const c = this.quoteCache.get(symbol); if (c) try { handler(c); } catch { /* noop */ }
     const id = `fan-${symbol}-${Math.random().toString(36).slice(2, 8)}`;
     const sub: SubscriptionHandle = {
@@ -181,15 +185,17 @@ class MarketDataEngine {
   }
 
   async getMarketStatus(market: MarketKind): Promise<MarketStatusInfo> {
-    const p = this.pickProvider(market) ?? getProvider(DEFAULT_PROVIDER)!;
+    const p = this.pickProvider(market);
+    if (!p) return { market, status: "closed" };
     try { return await p.getMarketStatus(market); }
     catch { return { market, status: "closed" }; }
   }
 
   async getSessions(): Promise<SessionWindow[]> {
-    const p = getProvider(DEFAULT_PROVIDER)!;
-    return p.getSessions();
+    const p = getProvider(DEFAULT_PROVIDER) ?? listProviders()[0];
+    return p ? p.getSessions() : [];
   }
+
 
   activeSessions() { return getActiveSessions(); }
   nextSession() { return getNextSession(); }
