@@ -24,15 +24,17 @@ export type EngineSelectionStrategy = {
 };
 
 // Auto-routing when the user has not overridden the preferred provider.
-// Crypto → Binance (public REST + WS, no key). Others fall through to any
-// capable non-disabled provider; mock is the ultimate last-resort fallback.
+// Crypto → Binance (public REST + WS, no key required).
+// Forex / Metals / Indices / Commodities → Twelve Data (needs TWELVE_DATA_API_KEY).
+// Stocks are left unmapped for now — a dedicated provider will slot in here.
 const AUTO_PER_MARKET: Partial<Record<MarketKind, string>> = {
   crypto: "binance",
-  forex: "oanda",
-  metals: "oanda",
-  indices: "oanda",
-  commodities: "oanda",
+  forex: "twelvedata",
+  metals: "twelvedata",
+  indices: "twelvedata",
+  commodities: "twelvedata",
 };
+
 
 class MarketDataEngine {
   private quoteCache = new TTLCache<Quote>(QUOTE_CACHE_MS);
@@ -97,15 +99,16 @@ class MarketDataEngine {
     if (perMarket === DEFAULT_PROVIDER || preferred === DEFAULT_PROVIDER) return getProvider(DEFAULT_PROVIDER);
     const routed = autoProv ?? preferredProv;
     if (routed) {
-      console.error(
-        `[market-data] no ready provider for market=${market ?? "?"} — routed provider "${routed.code}" is ${routed.status()}. ` +
-        `Fix: configure its credentials (e.g. OANDA_API_TOKEN + OANDA_ACCOUNT_ID) or override the market provider in admin.`,
-      );
+      const hint = routed.code === "twelvedata"
+        ? "Forex provider not configured. Set TWELVE_DATA_API_KEY to enable Twelve Data."
+        : `Provider "${routed.code}" is ${routed.status()}. Check credentials or override the market provider in admin.`;
+      console.error(`[market-data] no ready provider for market=${market ?? "?"} — ${hint}`);
       return routed;
     }
-    console.error(`[market-data] no provider registered for market=${market ?? "?"} — returning mock as last resort.`);
-    return getProvider(DEFAULT_PROVIDER);
+    console.error(`[market-data] no provider registered for market=${market ?? "?"}.`);
+    return undefined;
   }
+
 
 
   async searchSymbols(q: SearchQuery): Promise<SymbolMeta[]> {
