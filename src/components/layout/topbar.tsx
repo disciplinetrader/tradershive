@@ -85,11 +85,11 @@ export function Topbar({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
-              className="relative grid h-9 w-9 place-items-center rounded-xl border border-border bg-surface/60 text-muted-foreground transition hover:text-foreground"
+              className="relative grid h-11 w-11 place-items-center rounded-xl border border-border bg-surface/60 text-muted-foreground transition hover:text-foreground"
               aria-label="Notifications"
             >
-              <Bell className="h-4 w-4" />
-              <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-primary" />
+              <Bell className="h-4 w-4" aria-hidden />
+              <span className="absolute right-2.5 top-2.5 h-1.5 w-1.5 rounded-full bg-primary" aria-hidden />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-80 glass-strong">
