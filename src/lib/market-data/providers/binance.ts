@@ -150,12 +150,21 @@ export class BinanceProvider implements MarketDataProvider {
   }
   getHistoricalData(q: CandleQuery) { return this.getCandles(q); }
 
+  private resubTimer: ReturnType<typeof setTimeout> | null = null;
+  private scheduleResub() {
+    if (this.resubTimer) return;
+    this.resubTimer = setTimeout(() => {
+      this.resubTimer = null;
+      if (this._status === "connected" && this.ws) { try { this.ws.close(); } catch { /* noop */ } }
+      else this.openWs();
+    }, 200);
+  }
   subscribe(symbol: string, handler: QuoteHandler): SubscriptionHandle {
-    if (!this.subs.has(symbol)) this.subs.set(symbol, new Set());
+    const isNew = !this.subs.has(symbol);
+    if (isNew) this.subs.set(symbol, new Set());
     this.subs.get(symbol)!.add(handler);
-    // Re-open WS with updated stream set (simplest reliable approach)
-    if (this._status === "connected" && this.ws) { try { this.ws.close(); } catch { /* noop */ } }
-    else this.connect();
+    if (isNew) this.scheduleResub();
+    else if (this._status !== "connected" && this._status !== "connecting") this.connect();
     const sub: SubscriptionHandle = { id: `${symbol}-${Math.random().toString(36).slice(2, 8)}`, symbol, unsubscribe: () => this.unsubscribe(sub) };
     (sub as unknown as { _handler: QuoteHandler })._handler = handler;
     return sub;
