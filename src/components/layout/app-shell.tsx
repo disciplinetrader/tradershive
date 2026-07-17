@@ -74,15 +74,18 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [loading, profile, pathname, navigate]);
 
   return (
-    <div className="relative flex min-h-screen w-full bg-background">
-      <div className="pointer-events-none fixed inset-x-0 top-0 z-0 h-[500px] gradient-radial-glow opacity-40" />
+    <div className="relative flex min-h-dvh w-full bg-background">
+      <a href="#main" className="skip-link">Skip to content</a>
+      <div className="pointer-events-none fixed inset-x-0 top-0 z-0 h-[500px] gradient-radial-glow opacity-40" aria-hidden />
+
 
       {/* Desktop sidebar */}
       <aside
         className={cn(
-          "sticky top-0 z-30 hidden h-screen shrink-0 border-r border-border/60 bg-sidebar/80 backdrop-blur-xl transition-[width] duration-300 md:block",
+          "sticky top-0 z-30 hidden h-dvh shrink-0 border-r border-border/60 bg-sidebar/80 backdrop-blur-xl transition-[width] duration-300 md:block",
           collapsed ? "w-[76px]" : "w-[248px]",
         )}
+        aria-label="Primary"
       >
         <SidebarInner
           collapsed={collapsed}
@@ -110,10 +113,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           >
             <button
               onClick={() => setMobileOpen(false)}
-              className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-lg text-muted-foreground transition hover:bg-sidebar-accent hover:text-foreground"
+              className="absolute right-3 top-3 grid h-11 w-11 place-items-center rounded-lg text-muted-foreground transition hover:bg-sidebar-accent hover:text-foreground"
               aria-label="Close menu"
             >
-              <X className="h-4 w-4" />
+              <X className="h-4 w-4" aria-hidden />
             </button>
             <SidebarInner
               collapsed={false}
@@ -132,7 +135,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           onMenuClick={() => setMobileOpen(true)}
           onSearchClick={() => setOpen(true)}
         />
-        <main className="flex-1 px-4 pb-24 pt-6 sm:px-6 md:pb-10 md:pt-8">
+        <main id="main" className="flex-1 px-4 pb-28 pt-6 sm:px-6 md:pb-10 md:pt-8">
           <div className="mx-auto w-full max-w-7xl">{children}</div>
         </main>
         {/* Mobile bottom nav */}
@@ -262,6 +265,8 @@ function SidebarLink({
     <li>
       <Link
         to={item.to}
+        aria-current={active ? "page" : undefined}
+        title={collapsed ? item.label : undefined}
         className={cn(
           "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
           active
@@ -307,8 +312,8 @@ function MobileBottomNav({
     { to: "/leaderboard", label: "Rank", icon: Trophy },
   ];
   return (
-    <div className="sticky bottom-0 z-30 border-t border-border/60 bg-background/85 backdrop-blur-xl md:hidden">
-      <div className="mx-auto grid max-w-md grid-cols-5 items-center px-2 py-2">
+    <nav aria-label="Primary mobile" className="sticky bottom-0 z-30 border-t border-border/60 bg-background/85 backdrop-blur-xl safe-bottom md:hidden">
+      <div className="mx-auto grid max-w-md grid-cols-5 items-center px-2 pt-1.5">
         {items.map((item) => {
           const Icon = item.icon;
           const active = isActive(currentPath, item.to);
@@ -316,24 +321,26 @@ function MobileBottomNav({
             <Link
               key={item.to}
               to={item.to}
+              aria-current={active ? "page" : undefined}
               className={cn(
-                "flex flex-col items-center gap-1 rounded-xl py-1.5 text-[10px] font-medium transition",
-                active ? "text-primary" : "text-muted-foreground",
+                "flex min-h-11 flex-col items-center justify-center gap-1 rounded-xl py-1.5 text-[10px] font-medium transition",
+                active ? "text-primary" : "text-muted-foreground hover:text-foreground",
               )}
             >
-              <Icon className="h-5 w-5" />
+              <Icon className="h-5 w-5" aria-hidden />
               {item.label}
             </Link>
           );
         })}
         <button
           onClick={onMenuClick}
-          className="flex flex-col items-center gap-1 rounded-xl py-1.5 text-[10px] font-medium text-muted-foreground"
+          aria-label="Open menu"
+          className="flex min-h-11 flex-col items-center justify-center gap-1 rounded-xl py-1.5 text-[10px] font-medium text-muted-foreground hover:text-foreground"
         >
-          <Menu className="h-5 w-5" />
+          <Menu className="h-5 w-5" aria-hidden />
           More
         </button>
       </div>
-    </div>
+    </nav>
   );
 }
