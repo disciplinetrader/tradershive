@@ -109,7 +109,7 @@ function ChallengesPage() {
                 <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
                   <MiniStat icon={<Zap className="h-3.5 w-3.5 text-primary" />} value={`+${today.xp_reward} XP`} />
                   <MiniStat icon={<Coins className="h-3.5 w-3.5 text-warning" />} value={`+${today.coin_reward}`} />
-                  <MiniStat icon={<Flame className="h-3.5 w-3.5 text-orange-400" />} value={`${overview?.stats?.login_streak ?? 0}d streak`} />
+                  <MiniStat icon={<Flame className="h-3.5 w-3.5 text-orange-400" />} value={`${(overview?.stats as any)?.login_streak ?? 0}d streak`} />
                 </div>
               )}
               {today?.user.status === "completed" && today.user.id && (
