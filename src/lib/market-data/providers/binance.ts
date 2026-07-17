@@ -1,5 +1,4 @@
 /**
-import { DESCRIPTORS_BY_CODE } from "../descriptors";
  * Binance provider — REST + WebSocket for crypto.
  *
  * No API key required for public market data. Falls back gracefully

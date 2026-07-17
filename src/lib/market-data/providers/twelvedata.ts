@@ -1,5 +1,4 @@
 /**
-import { DESCRIPTORS_BY_CODE } from "../descriptors";
  * Twelve Data provider — REST-based feed for Forex, Metals and Indices
  * (and, in the future, Stocks). No user account required beyond a single
  * TWELVE_DATA_API_KEY server secret.
