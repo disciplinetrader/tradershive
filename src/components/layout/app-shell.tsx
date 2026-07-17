@@ -43,6 +43,7 @@ const NAV: NavItem[] = [
   { to: "/ai", label: "AI Coach", icon: BrainCircuit },
   { to: "/replay", label: "Replay", icon: Film },
   { to: "/strategies", label: "Strategies", icon: FolderKanban },
+  { to: "/market", label: "Market Data", icon: Bell },
 ];
 
 const SECONDARY: NavItem[] = [
