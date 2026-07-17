@@ -90,7 +90,7 @@ export function ReplayProvider({ id, children }: { id: string; children: ReactNo
     queryFn: () => getSess({ data: { id } }),
   });
 
-  const session = query.data?.session ?? null;
+  const session = (query.data?.session ?? null) as ReplaySession | null;
   const stepSec = session ? TIMEFRAME_SECONDS[(session.timeframe as Timeframe) ?? "5m"] : 300;
 
   // Load candles: a broad window around the session date
