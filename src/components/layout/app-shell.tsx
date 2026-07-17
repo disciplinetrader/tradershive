@@ -113,10 +113,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           >
             <button
               onClick={() => setMobileOpen(false)}
-              className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-lg text-muted-foreground transition hover:bg-sidebar-accent hover:text-foreground"
+              className="absolute right-3 top-3 grid h-11 w-11 place-items-center rounded-lg text-muted-foreground transition hover:bg-sidebar-accent hover:text-foreground"
               aria-label="Close menu"
             >
-              <X className="h-4 w-4" />
+              <X className="h-4 w-4" aria-hidden />
             </button>
             <SidebarInner
               collapsed={false}
