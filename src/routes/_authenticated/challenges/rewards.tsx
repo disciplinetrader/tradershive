@@ -22,9 +22,7 @@ function Rewards() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Reward Ledger" description="Every XP and coin change with source and reason.">
-        
-      </PageHeader>
+      <PageHeader title="Reward Ledger" description="Every XP and coin change with source and reason." />
 
       <Tabs defaultValue="xp">
         <TabsList className="glass">

@@ -23,9 +23,7 @@ function History() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Challenge History" description="Every challenge you&apos;ve attempted, completed, and claimed.">
-        
-      </PageHeader>
+      <PageHeader title="Challenge History" description="Every challenge you attempted, completed, and claimed." />
 
       {isLoading ? (
         <div className="space-y-2">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-14 rounded-xl" />)}</div>
