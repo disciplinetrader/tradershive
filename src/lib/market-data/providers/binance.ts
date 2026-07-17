@@ -174,7 +174,7 @@ export class BinanceProvider implements MarketDataProvider {
     const set = this.subs.get(handle.symbol);
     if (!set || !h) return;
     set.delete(h);
-    if (set.size === 0) this.subs.delete(handle.symbol);
+    if (set.size === 0) { this.subs.delete(handle.symbol); this.scheduleResub(); }
     if (this._status === "connected" && this.ws) { try { this.ws.close(); } catch { /* noop */ } }
   }
 
