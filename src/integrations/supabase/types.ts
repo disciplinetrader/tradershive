@@ -737,6 +737,42 @@ export type Database = {
         }
         Relationships: []
       }
+      leaderboard_snapshots: {
+        Row: {
+          category: string
+          id: string
+          period: string
+          period_key: string
+          rank: number
+          scope: string
+          taken_at: string
+          user_id: string
+          value: number
+        }
+        Insert: {
+          category: string
+          id?: string
+          period: string
+          period_key: string
+          rank: number
+          scope?: string
+          taken_at?: string
+          user_id: string
+          value?: number
+        }
+        Update: {
+          category?: string
+          id?: string
+          period?: string
+          period_key?: string
+          rank?: number
+          scope?: string
+          taken_at?: string
+          user_id?: string
+          value?: number
+        }
+        Relationships: []
+      }
       notification_preferences: {
         Row: {
           achievements: boolean
@@ -1138,6 +1174,108 @@ export type Database = {
           },
         ]
       }
+      profile_customization: {
+        Row: {
+          banner_url: string | null
+          created_at: string
+          discord_handle: string | null
+          favorite_pair: string | null
+          headline: string | null
+          telegram_handle: string | null
+          updated_at: string
+          user_id: string
+          website: string | null
+          x_handle: string | null
+          youtube_url: string | null
+        }
+        Insert: {
+          banner_url?: string | null
+          created_at?: string
+          discord_handle?: string | null
+          favorite_pair?: string | null
+          headline?: string | null
+          telegram_handle?: string | null
+          updated_at?: string
+          user_id: string
+          website?: string | null
+          x_handle?: string | null
+          youtube_url?: string | null
+        }
+        Update: {
+          banner_url?: string | null
+          created_at?: string
+          discord_handle?: string | null
+          favorite_pair?: string | null
+          headline?: string | null
+          telegram_handle?: string | null
+          updated_at?: string
+          user_id?: string
+          website?: string | null
+          x_handle?: string | null
+          youtube_url?: string | null
+        }
+        Relationships: []
+      }
+      profile_privacy: {
+        Row: {
+          created_at: string
+          eligible_for_leaderboard: boolean
+          hide_activity: boolean
+          hide_journal: boolean
+          hide_profile: boolean
+          hide_stats: boolean
+          show_country: boolean
+          show_league: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          eligible_for_leaderboard?: boolean
+          hide_activity?: boolean
+          hide_journal?: boolean
+          hide_profile?: boolean
+          hide_stats?: boolean
+          show_country?: boolean
+          show_league?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          eligible_for_leaderboard?: boolean
+          hide_activity?: boolean
+          hide_journal?: boolean
+          hide_profile?: boolean
+          hide_stats?: boolean
+          show_country?: boolean
+          show_league?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profile_views: {
+        Row: {
+          id: string
+          profile_id: string
+          viewed_at: string
+          viewer_id: string | null
+        }
+        Insert: {
+          id?: string
+          profile_id: string
+          viewed_at?: string
+          viewer_id?: string | null
+        }
+        Update: {
+          id?: string
+          profile_id?: string
+          viewed_at?: string
+          viewer_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           accepted_terms_at: string | null
@@ -1264,6 +1402,27 @@ export type Database = {
           title?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      social_follows: {
+        Row: {
+          created_at: string
+          follower_id: string
+          following_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          following_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          following_id?: string
+          id?: string
         }
         Relationships: []
       }
