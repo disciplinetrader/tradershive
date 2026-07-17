@@ -111,46 +111,41 @@ class MarketDataEngine {
 
 
 
+  private requireProvider(market?: MarketKind): MarketDataProvider {
+    const p = this.pickProvider(market);
+    if (!p) throw new Error(`No market data provider available for ${market ?? "unknown"}.`);
+    return p;
+  }
+
   async searchSymbols(q: SearchQuery): Promise<SymbolMeta[]> {
-    const p = this.pickProvider(q.market) ?? getProvider(DEFAULT_PROVIDER)!;
-    return p.searchSymbols(q);
+    return this.requireProvider(q.market).searchSymbols(q);
   }
   async getSymbols(market?: MarketKind): Promise<SymbolMeta[]> {
-    const p = this.pickProvider(market) ?? getProvider(DEFAULT_PROVIDER)!;
-    return p.getSymbols(market);
+    return this.requireProvider(market).getSymbols(market);
   }
 
   async getQuote(symbol: string, market?: MarketKind): Promise<Quote> {
     const cached = this.quoteCache.get(symbol);
     if (cached) return cached;
-    const p = this.pickProvider(market) ?? getProvider(DEFAULT_PROVIDER)!;
-    try {
-      const q = await p.getQuote(symbol);
-      this.quoteCache.set(symbol, q);
-      return q;
-    } catch {
-      const fallback = getProvider(DEFAULT_PROVIDER)!;
-      const q = await fallback.getQuote(symbol);
-      this.quoteCache.set(symbol, q);
-      return q;
-    }
+    const p = this.requireProvider(market);
+    // No silent mock fallback — propagate the provider error so the UI can
+    // surface an actionable message (e.g. "Forex provider not configured.").
+    const q = await p.getQuote(symbol);
+    this.quoteCache.set(symbol, q);
+    return q;
   }
 
   async getCandles(q: CandleQuery, market?: MarketKind): Promise<Candle[]> {
     const key = `${q.symbol}|${q.timeframe}|${q.from}|${q.to}|${q.limit ?? "*"}`;
     const cached = this.candleCache.get(key);
     if (cached) return cached;
-    const p = this.pickProvider(market) ?? getProvider(DEFAULT_PROVIDER)!;
-    try {
-      const out = await p.getCandles(q);
-      if (out.length) { this.candleCache.set(key, out); return out; }
-    } catch { /* fallthrough */ }
-    const fb = getProvider(DEFAULT_PROVIDER)!;
-    const out = await fb.getCandles(q);
-    this.candleCache.set(key, out);
+    const p = this.requireProvider(market);
+    const out = await p.getCandles(q);
+    if (out.length) this.candleCache.set(key, out);
     return out;
   }
   getHistoricalData(q: CandleQuery, market?: MarketKind) { return this.getCandles(q, market); }
+
 
   subscribe(symbol: string, handler: QuoteHandler, market?: MarketKind): SubscriptionHandle {
     let entry = this.fanout.get(symbol);
