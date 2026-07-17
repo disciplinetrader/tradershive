@@ -60,6 +60,7 @@
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.42.2",
     "input-otp": "^1.4.2",
+    "lightweight-charts": "^5.2.0",
     "lucide-react": "^0.575.0",
     "motion": "^12.42.2",
     "nanoid": "^6.0.0",

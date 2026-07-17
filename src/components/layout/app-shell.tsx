@@ -33,6 +33,7 @@ type NavItem = { to: string; label: string; icon: typeof Home; admin?: boolean }
 
 const NAV: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: Home },
+  { to: "/charts", label: "Charts", icon: LineChart },
   { to: "/paper-trading", label: "Paper Trading", icon: LineChart },
   { to: "/journal", label: "Journal", icon: BookOpen },
   { to: "/challenges", label: "Challenges", icon: Sparkles },

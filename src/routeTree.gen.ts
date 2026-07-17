@@ -30,6 +30,7 @@ import { Route as AuthenticatedMarketRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedLeaderboardRouteImport } from './routes/_authenticated/leaderboard'
 import { Route as AuthenticatedJournalRouteImport } from './routes/_authenticated/journal'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedChartsRouteImport } from './routes/_authenticated/charts'
 import { Route as AuthenticatedChallengesRouteImport } from './routes/_authenticated/challenges'
 import { Route as AuthenticatedAiRouteImport } from './routes/_authenticated/ai'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
@@ -39,6 +40,7 @@ import { Route as AuthenticatedStatisticsIndexRouteImport } from './routes/_auth
 import { Route as AuthenticatedReplayIndexRouteImport } from './routes/_authenticated/replay.index'
 import { Route as AuthenticatedMarketIndexRouteImport } from './routes/_authenticated/market.index'
 import { Route as AuthenticatedLeaderboardIndexRouteImport } from './routes/_authenticated/leaderboard.index'
+import { Route as AuthenticatedChartsIndexRouteImport } from './routes/_authenticated/charts.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as JournalShareTokenRouteImport } from './routes/journal.share.$token'
 import { Route as ApiAiChatRouteImport } from './routes/api/ai/chat'
@@ -70,6 +72,10 @@ import { Route as AuthenticatedLeaderboardLeagueRouteImport } from './routes/_au
 import { Route as AuthenticatedLeaderboardGlobalRouteImport } from './routes/_authenticated/leaderboard.global'
 import { Route as AuthenticatedLeaderboardFriendsRouteImport } from './routes/_authenticated/leaderboard.friends'
 import { Route as AuthenticatedLeaderboardCountryRouteImport } from './routes/_authenticated/leaderboard.country'
+import { Route as AuthenticatedChartsWatchlistsRouteImport } from './routes/_authenticated/charts.watchlists'
+import { Route as AuthenticatedChartsSettingsRouteImport } from './routes/_authenticated/charts.settings'
+import { Route as AuthenticatedChartsLayoutsRouteImport } from './routes/_authenticated/charts.layouts'
+import { Route as AuthenticatedChartsFullscreenRouteImport } from './routes/_authenticated/charts.fullscreen'
 import { Route as AuthenticatedChallengesRewardsRouteImport } from './routes/_authenticated/challenges/rewards'
 import { Route as AuthenticatedChallengesHistoryRouteImport } from './routes/_authenticated/challenges/history'
 import { Route as AuthenticatedAiTradeReviewRouteImport } from './routes/_authenticated/ai.trade-review'
@@ -203,6 +209,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedChartsRoute = AuthenticatedChartsRouteImport.update({
+  id: '/charts',
+  path: '/charts',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedChallengesRoute = AuthenticatedChallengesRouteImport.update({
   id: '/challenges',
   path: '/challenges',
@@ -253,6 +264,12 @@ const AuthenticatedLeaderboardIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedLeaderboardRoute,
+  } as any)
+const AuthenticatedChartsIndexRoute =
+  AuthenticatedChartsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedChartsRoute,
   } as any)
 const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   id: '/',
@@ -437,6 +454,30 @@ const AuthenticatedLeaderboardCountryRoute =
     path: '/country',
     getParentRoute: () => AuthenticatedLeaderboardRoute,
   } as any)
+const AuthenticatedChartsWatchlistsRoute =
+  AuthenticatedChartsWatchlistsRouteImport.update({
+    id: '/watchlists',
+    path: '/watchlists',
+    getParentRoute: () => AuthenticatedChartsRoute,
+  } as any)
+const AuthenticatedChartsSettingsRoute =
+  AuthenticatedChartsSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuthenticatedChartsRoute,
+  } as any)
+const AuthenticatedChartsLayoutsRoute =
+  AuthenticatedChartsLayoutsRouteImport.update({
+    id: '/layouts',
+    path: '/layouts',
+    getParentRoute: () => AuthenticatedChartsRoute,
+  } as any)
+const AuthenticatedChartsFullscreenRoute =
+  AuthenticatedChartsFullscreenRouteImport.update({
+    id: '/fullscreen',
+    path: '/fullscreen',
+    getParentRoute: () => AuthenticatedChartsRoute,
+  } as any)
 const AuthenticatedChallengesRewardsRoute =
   AuthenticatedChallengesRewardsRouteImport.update({
     id: '/rewards',
@@ -601,6 +642,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/ai': typeof AuthenticatedAiRouteWithChildren
   '/challenges': typeof AuthenticatedChallengesRouteWithChildren
+  '/charts': typeof AuthenticatedChartsRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/journal': typeof AuthenticatedJournalRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRouteWithChildren
@@ -639,6 +681,10 @@ export interface FileRoutesByFullPath {
   '/ai/trade-review': typeof AuthenticatedAiTradeReviewRoute
   '/challenges/history': typeof AuthenticatedChallengesHistoryRoute
   '/challenges/rewards': typeof AuthenticatedChallengesRewardsRoute
+  '/charts/fullscreen': typeof AuthenticatedChartsFullscreenRoute
+  '/charts/layouts': typeof AuthenticatedChartsLayoutsRoute
+  '/charts/settings': typeof AuthenticatedChartsSettingsRoute
+  '/charts/watchlists': typeof AuthenticatedChartsWatchlistsRoute
   '/leaderboard/country': typeof AuthenticatedLeaderboardCountryRoute
   '/leaderboard/friends': typeof AuthenticatedLeaderboardFriendsRoute
   '/leaderboard/global': typeof AuthenticatedLeaderboardGlobalRoute
@@ -670,6 +716,7 @@ export interface FileRoutesByFullPath {
   '/api/ai/chat': typeof ApiAiChatRoute
   '/journal/share/$token': typeof JournalShareTokenRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
+  '/charts/': typeof AuthenticatedChartsIndexRoute
   '/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
   '/market/': typeof AuthenticatedMarketIndexRoute
   '/replay/': typeof AuthenticatedReplayIndexRoute
@@ -721,6 +768,10 @@ export interface FileRoutesByTo {
   '/ai/trade-review': typeof AuthenticatedAiTradeReviewRoute
   '/challenges/history': typeof AuthenticatedChallengesHistoryRoute
   '/challenges/rewards': typeof AuthenticatedChallengesRewardsRoute
+  '/charts/fullscreen': typeof AuthenticatedChartsFullscreenRoute
+  '/charts/layouts': typeof AuthenticatedChartsLayoutsRoute
+  '/charts/settings': typeof AuthenticatedChartsSettingsRoute
+  '/charts/watchlists': typeof AuthenticatedChartsWatchlistsRoute
   '/leaderboard/country': typeof AuthenticatedLeaderboardCountryRoute
   '/leaderboard/friends': typeof AuthenticatedLeaderboardFriendsRoute
   '/leaderboard/global': typeof AuthenticatedLeaderboardGlobalRoute
@@ -752,6 +803,7 @@ export interface FileRoutesByTo {
   '/api/ai/chat': typeof ApiAiChatRoute
   '/journal/share/$token': typeof JournalShareTokenRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
+  '/charts': typeof AuthenticatedChartsIndexRoute
   '/leaderboard': typeof AuthenticatedLeaderboardIndexRoute
   '/market': typeof AuthenticatedMarketIndexRoute
   '/replay': typeof AuthenticatedReplayIndexRoute
@@ -773,6 +825,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/ai': typeof AuthenticatedAiRouteWithChildren
   '/_authenticated/challenges': typeof AuthenticatedChallengesRouteWithChildren
+  '/_authenticated/charts': typeof AuthenticatedChartsRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/journal': typeof AuthenticatedJournalRoute
   '/_authenticated/leaderboard': typeof AuthenticatedLeaderboardRouteWithChildren
@@ -811,6 +864,10 @@ export interface FileRoutesById {
   '/_authenticated/ai/trade-review': typeof AuthenticatedAiTradeReviewRoute
   '/_authenticated/challenges/history': typeof AuthenticatedChallengesHistoryRoute
   '/_authenticated/challenges/rewards': typeof AuthenticatedChallengesRewardsRoute
+  '/_authenticated/charts/fullscreen': typeof AuthenticatedChartsFullscreenRoute
+  '/_authenticated/charts/layouts': typeof AuthenticatedChartsLayoutsRoute
+  '/_authenticated/charts/settings': typeof AuthenticatedChartsSettingsRoute
+  '/_authenticated/charts/watchlists': typeof AuthenticatedChartsWatchlistsRoute
   '/_authenticated/leaderboard/country': typeof AuthenticatedLeaderboardCountryRoute
   '/_authenticated/leaderboard/friends': typeof AuthenticatedLeaderboardFriendsRoute
   '/_authenticated/leaderboard/global': typeof AuthenticatedLeaderboardGlobalRoute
@@ -842,6 +899,7 @@ export interface FileRoutesById {
   '/api/ai/chat': typeof ApiAiChatRoute
   '/journal/share/$token': typeof JournalShareTokenRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
+  '/_authenticated/charts/': typeof AuthenticatedChartsIndexRoute
   '/_authenticated/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
   '/_authenticated/market/': typeof AuthenticatedMarketIndexRoute
   '/_authenticated/replay/': typeof AuthenticatedReplayIndexRoute
@@ -863,6 +921,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/ai'
     | '/challenges'
+    | '/charts'
     | '/dashboard'
     | '/journal'
     | '/leaderboard'
@@ -901,6 +960,10 @@ export interface FileRouteTypes {
     | '/ai/trade-review'
     | '/challenges/history'
     | '/challenges/rewards'
+    | '/charts/fullscreen'
+    | '/charts/layouts'
+    | '/charts/settings'
+    | '/charts/watchlists'
     | '/leaderboard/country'
     | '/leaderboard/friends'
     | '/leaderboard/global'
@@ -932,6 +995,7 @@ export interface FileRouteTypes {
     | '/api/ai/chat'
     | '/journal/share/$token'
     | '/admin/'
+    | '/charts/'
     | '/leaderboard/'
     | '/market/'
     | '/replay/'
@@ -983,6 +1047,10 @@ export interface FileRouteTypes {
     | '/ai/trade-review'
     | '/challenges/history'
     | '/challenges/rewards'
+    | '/charts/fullscreen'
+    | '/charts/layouts'
+    | '/charts/settings'
+    | '/charts/watchlists'
     | '/leaderboard/country'
     | '/leaderboard/friends'
     | '/leaderboard/global'
@@ -1014,6 +1082,7 @@ export interface FileRouteTypes {
     | '/api/ai/chat'
     | '/journal/share/$token'
     | '/admin'
+    | '/charts'
     | '/leaderboard'
     | '/market'
     | '/replay'
@@ -1034,6 +1103,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/ai'
     | '/_authenticated/challenges'
+    | '/_authenticated/charts'
     | '/_authenticated/dashboard'
     | '/_authenticated/journal'
     | '/_authenticated/leaderboard'
@@ -1072,6 +1142,10 @@ export interface FileRouteTypes {
     | '/_authenticated/ai/trade-review'
     | '/_authenticated/challenges/history'
     | '/_authenticated/challenges/rewards'
+    | '/_authenticated/charts/fullscreen'
+    | '/_authenticated/charts/layouts'
+    | '/_authenticated/charts/settings'
+    | '/_authenticated/charts/watchlists'
     | '/_authenticated/leaderboard/country'
     | '/_authenticated/leaderboard/friends'
     | '/_authenticated/leaderboard/global'
@@ -1103,6 +1177,7 @@ export interface FileRouteTypes {
     | '/api/ai/chat'
     | '/journal/share/$token'
     | '/_authenticated/admin/'
+    | '/_authenticated/charts/'
     | '/_authenticated/leaderboard/'
     | '/_authenticated/market/'
     | '/_authenticated/replay/'
@@ -1273,6 +1348,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/charts': {
+      id: '/_authenticated/charts'
+      path: '/charts'
+      fullPath: '/charts'
+      preLoaderRoute: typeof AuthenticatedChartsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/challenges': {
       id: '/_authenticated/challenges'
       path: '/challenges'
@@ -1335,6 +1417,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/leaderboard/'
       preLoaderRoute: typeof AuthenticatedLeaderboardIndexRouteImport
       parentRoute: typeof AuthenticatedLeaderboardRoute
+    }
+    '/_authenticated/charts/': {
+      id: '/_authenticated/charts/'
+      path: '/'
+      fullPath: '/charts/'
+      preLoaderRoute: typeof AuthenticatedChartsIndexRouteImport
+      parentRoute: typeof AuthenticatedChartsRoute
     }
     '/_authenticated/admin/': {
       id: '/_authenticated/admin/'
@@ -1552,6 +1641,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/leaderboard/country'
       preLoaderRoute: typeof AuthenticatedLeaderboardCountryRouteImport
       parentRoute: typeof AuthenticatedLeaderboardRoute
+    }
+    '/_authenticated/charts/watchlists': {
+      id: '/_authenticated/charts/watchlists'
+      path: '/watchlists'
+      fullPath: '/charts/watchlists'
+      preLoaderRoute: typeof AuthenticatedChartsWatchlistsRouteImport
+      parentRoute: typeof AuthenticatedChartsRoute
+    }
+    '/_authenticated/charts/settings': {
+      id: '/_authenticated/charts/settings'
+      path: '/settings'
+      fullPath: '/charts/settings'
+      preLoaderRoute: typeof AuthenticatedChartsSettingsRouteImport
+      parentRoute: typeof AuthenticatedChartsRoute
+    }
+    '/_authenticated/charts/layouts': {
+      id: '/_authenticated/charts/layouts'
+      path: '/layouts'
+      fullPath: '/charts/layouts'
+      preLoaderRoute: typeof AuthenticatedChartsLayoutsRouteImport
+      parentRoute: typeof AuthenticatedChartsRoute
+    }
+    '/_authenticated/charts/fullscreen': {
+      id: '/_authenticated/charts/fullscreen'
+      path: '/fullscreen'
+      fullPath: '/charts/fullscreen'
+      preLoaderRoute: typeof AuthenticatedChartsFullscreenRouteImport
+      parentRoute: typeof AuthenticatedChartsRoute
     }
     '/_authenticated/challenges/rewards': {
       id: '/_authenticated/challenges/rewards'
@@ -1823,6 +1940,25 @@ const AuthenticatedChallengesRouteWithChildren =
     AuthenticatedChallengesRouteChildren,
   )
 
+interface AuthenticatedChartsRouteChildren {
+  AuthenticatedChartsFullscreenRoute: typeof AuthenticatedChartsFullscreenRoute
+  AuthenticatedChartsLayoutsRoute: typeof AuthenticatedChartsLayoutsRoute
+  AuthenticatedChartsSettingsRoute: typeof AuthenticatedChartsSettingsRoute
+  AuthenticatedChartsWatchlistsRoute: typeof AuthenticatedChartsWatchlistsRoute
+  AuthenticatedChartsIndexRoute: typeof AuthenticatedChartsIndexRoute
+}
+
+const AuthenticatedChartsRouteChildren: AuthenticatedChartsRouteChildren = {
+  AuthenticatedChartsFullscreenRoute: AuthenticatedChartsFullscreenRoute,
+  AuthenticatedChartsLayoutsRoute: AuthenticatedChartsLayoutsRoute,
+  AuthenticatedChartsSettingsRoute: AuthenticatedChartsSettingsRoute,
+  AuthenticatedChartsWatchlistsRoute: AuthenticatedChartsWatchlistsRoute,
+  AuthenticatedChartsIndexRoute: AuthenticatedChartsIndexRoute,
+}
+
+const AuthenticatedChartsRouteWithChildren =
+  AuthenticatedChartsRoute._addFileChildren(AuthenticatedChartsRouteChildren)
+
 interface AuthenticatedLeaderboardRouteChildren {
   AuthenticatedLeaderboardCountryRoute: typeof AuthenticatedLeaderboardCountryRoute
   AuthenticatedLeaderboardFriendsRoute: typeof AuthenticatedLeaderboardFriendsRoute
@@ -1961,6 +2097,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedAiRoute: typeof AuthenticatedAiRouteWithChildren
   AuthenticatedChallengesRoute: typeof AuthenticatedChallengesRouteWithChildren
+  AuthenticatedChartsRoute: typeof AuthenticatedChartsRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedJournalRoute: typeof AuthenticatedJournalRoute
   AuthenticatedLeaderboardRoute: typeof AuthenticatedLeaderboardRouteWithChildren
@@ -1980,6 +2117,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedAiRoute: AuthenticatedAiRouteWithChildren,
   AuthenticatedChallengesRoute: AuthenticatedChallengesRouteWithChildren,
+  AuthenticatedChartsRoute: AuthenticatedChartsRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedJournalRoute: AuthenticatedJournalRoute,
   AuthenticatedLeaderboardRoute: AuthenticatedLeaderboardRouteWithChildren,
