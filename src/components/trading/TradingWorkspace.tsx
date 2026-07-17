@@ -119,7 +119,7 @@ function TradingWorkspaceInner() {
   const spread = quote?.spread ?? Math.max(0, ask - bid);
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3 p-3">
+    <div className="flex min-h-0 flex-col gap-3 p-3">
       {/* Toolbar */}
       <TopToolbar />
 
