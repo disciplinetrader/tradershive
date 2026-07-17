@@ -111,7 +111,7 @@ export const Route = createFileRoute("/api/ai/chat")({
         const result = streamText({
           model,
           system: systemPrompt,
-          messages: convertToModelMessages(body.messages),
+          messages: await convertToModelMessages(body.messages),
           onFinish: async ({ text, usage }) => {
             if (!body.sessionId) return;
             try {

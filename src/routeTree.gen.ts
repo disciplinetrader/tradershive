@@ -34,6 +34,7 @@ import { Route as AuthenticatedStatisticsIndexRouteImport } from './routes/_auth
 import { Route as AuthenticatedLeaderboardIndexRouteImport } from './routes/_authenticated/leaderboard.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as JournalShareTokenRouteImport } from './routes/journal.share.$token'
+import { Route as ApiAiChatRouteImport } from './routes/api/ai/chat'
 import { Route as AuthenticatedStatisticsSetupsRouteImport } from './routes/_authenticated/statistics.setups'
 import { Route as AuthenticatedStatisticsSessionsRouteImport } from './routes/_authenticated/statistics.sessions'
 import { Route as AuthenticatedStatisticsRiskRouteImport } from './routes/_authenticated/statistics.risk'
@@ -190,6 +191,11 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
 const JournalShareTokenRoute = JournalShareTokenRouteImport.update({
   id: '/journal/share/$token',
   path: '/journal/share/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAiChatRoute = ApiAiChatRouteImport.update({
+  id: '/api/ai/chat',
+  path: '/api/ai/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedStatisticsSetupsRoute =
@@ -407,6 +413,7 @@ export interface FileRoutesByFullPath {
   '/statistics/risk': typeof AuthenticatedStatisticsRiskRoute
   '/statistics/sessions': typeof AuthenticatedStatisticsSessionsRoute
   '/statistics/setups': typeof AuthenticatedStatisticsSetupsRoute
+  '/api/ai/chat': typeof ApiAiChatRoute
   '/journal/share/$token': typeof JournalShareTokenRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
@@ -458,6 +465,7 @@ export interface FileRoutesByTo {
   '/statistics/risk': typeof AuthenticatedStatisticsRiskRoute
   '/statistics/sessions': typeof AuthenticatedStatisticsSessionsRoute
   '/statistics/setups': typeof AuthenticatedStatisticsSetupsRoute
+  '/api/ai/chat': typeof ApiAiChatRoute
   '/journal/share/$token': typeof JournalShareTokenRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/leaderboard': typeof AuthenticatedLeaderboardIndexRoute
@@ -514,6 +522,7 @@ export interface FileRoutesById {
   '/_authenticated/statistics/risk': typeof AuthenticatedStatisticsRiskRoute
   '/_authenticated/statistics/sessions': typeof AuthenticatedStatisticsSessionsRoute
   '/_authenticated/statistics/setups': typeof AuthenticatedStatisticsSetupsRoute
+  '/api/ai/chat': typeof ApiAiChatRoute
   '/journal/share/$token': typeof JournalShareTokenRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
@@ -570,6 +579,7 @@ export interface FileRouteTypes {
     | '/statistics/risk'
     | '/statistics/sessions'
     | '/statistics/setups'
+    | '/api/ai/chat'
     | '/journal/share/$token'
     | '/admin/'
     | '/leaderboard/'
@@ -621,6 +631,7 @@ export interface FileRouteTypes {
     | '/statistics/risk'
     | '/statistics/sessions'
     | '/statistics/setups'
+    | '/api/ai/chat'
     | '/journal/share/$token'
     | '/admin'
     | '/leaderboard'
@@ -676,6 +687,7 @@ export interface FileRouteTypes {
     | '/_authenticated/statistics/risk'
     | '/_authenticated/statistics/sessions'
     | '/_authenticated/statistics/setups'
+    | '/api/ai/chat'
     | '/journal/share/$token'
     | '/_authenticated/admin/'
     | '/_authenticated/leaderboard/'
@@ -692,6 +704,7 @@ export interface RootRouteChildren {
   RegisterRoute: typeof RegisterRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
+  ApiAiChatRoute: typeof ApiAiChatRoute
   JournalShareTokenRoute: typeof JournalShareTokenRoute
 }
 
@@ -870,6 +883,13 @@ declare module '@tanstack/react-router' {
       path: '/journal/share/$token'
       fullPath: '/journal/share/$token'
       preLoaderRoute: typeof JournalShareTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ai/chat': {
+      id: '/api/ai/chat'
+      path: '/api/ai/chat'
+      fullPath: '/api/ai/chat'
+      preLoaderRoute: typeof ApiAiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/statistics/setups': {
@@ -1231,6 +1251,7 @@ const rootRouteChildren: RootRouteChildren = {
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   VerifyEmailRoute: VerifyEmailRoute,
+  ApiAiChatRoute: ApiAiChatRoute,
   JournalShareTokenRoute: JournalShareTokenRoute,
 }
 export const routeTree = rootRouteImport
