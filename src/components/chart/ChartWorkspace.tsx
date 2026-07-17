@@ -140,7 +140,7 @@ export function ChartWorkspace({ fullscreen, initial }: Props) {
         grid={grid} onGridChange={setGrid}
         activeTool={tool} onToolChange={setTool}
         onScreenshot={handleScreenshot} onSaveLayout={handleSaveLayout}
-        onFullscreen={() => navigate({ to: "/charts/fullscreen" })}
+        onFullscreen={() => navigate({ to: "/trading/fullscreen" })}
         onOpenAlerts={() => setAlertsOpen(true)}
         onOpenReplay={() => navigate({ to: "/replay" })}
       />
