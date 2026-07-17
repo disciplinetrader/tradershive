@@ -2,7 +2,7 @@
  * Binance provider — REST + WebSocket for crypto.
  *
  * No API key required for public market data. Falls back gracefully
- * on failure so consumers can degrade to the mock provider.
+ * On failure the engine surfaces MarketProviderUnavailableError — no silent mock fallback.
  */
 
 import { DESCRIPTORS_BY_CODE } from "../descriptors";
