@@ -117,7 +117,7 @@ class MarketDataEngine {
   async getQuote(symbol: string, market?: MarketKind): Promise<Quote> {
     const cached = this.quoteCache.get(symbol);
     if (cached) return cached;
-    const q = await this.pickProvider(market).getQuote(symbol);
+    const q = await this.pickProvider(market, symbol).getQuote(symbol);
     this.quoteCache.set(symbol, q);
     return q;
   }
@@ -126,7 +126,7 @@ class MarketDataEngine {
     const key = `${q.symbol}|${q.timeframe}|${q.from}|${q.to}|${q.limit ?? "*"}`;
     const cached = this.candleCache.get(key);
     if (cached) return cached;
-    const out = await this.pickProvider(market).getCandles(q);
+    const out = await this.pickProvider(market, q.symbol).getCandles(q);
     if (out.length) this.candleCache.set(key, out);
     return out;
   }
@@ -136,7 +136,7 @@ class MarketDataEngine {
     let entry = this.fanout.get(symbol);
     if (!entry) {
       let p: MarketDataProvider;
-      try { p = this.pickProvider(market); }
+      try { p = this.pickProvider(market, symbol); }
       catch (e) {
         console.error(`[market-data] subscribe(${symbol}): ${(e as Error).message}`);
         return { id: `noop-${symbol}`, symbol, unsubscribe: () => {} };
