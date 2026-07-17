@@ -26,6 +26,7 @@ export type Profile = {
   preferred_market: string | null;
   trading_style: string | null;
   preferred_markets: string[] | null;
+  goals: string[] | null;
   level: number;
   xp: number;
   coins: number;
@@ -52,7 +53,7 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 const PROFILE_COLUMNS =
-  "id, username, display_name, email, avatar_url, first_name, last_name, country, timezone, experience, preferred_market, trading_style, preferred_markets, level, xp, coins, league, streak, rank, onboarded, is_premium";
+  "id, username, display_name, email, avatar_url, first_name, last_name, country, timezone, experience, preferred_market, trading_style, preferred_markets, goals, level, xp, coins, league, streak, rank, onboarded, is_premium";
 
 async function loadUserData(userId: string) {
   const [{ data: profile }, { data: roles }] = await Promise.all([

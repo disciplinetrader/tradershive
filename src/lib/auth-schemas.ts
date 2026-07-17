@@ -45,7 +45,7 @@ export const timezoneSchema = z.enum(TIMEZONES as unknown as [string, ...string[
 export const loginSchema = z.object({
   email: emailSchema,
   password: z.string().min(1, "Password is required").max(72),
-  remember: z.boolean().optional().default(true),
+  remember: z.boolean().optional(),
 });
 export type LoginValues = z.infer<typeof loginSchema>;
 
