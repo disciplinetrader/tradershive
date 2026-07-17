@@ -51,7 +51,7 @@ function PlaybooksPage() {
       {editing ? (
         <PlaybookEditor
           initial={editing}
-          strategies={(strategies.data ?? []) as Strategy[]}
+          strategies={(strategies.data ?? []) as unknown as Strategy[]}
           onCancel={() => setEditing(null)}
           onSave={(p) => saveMut.mutate(p)}
           saving={saveMut.isPending}

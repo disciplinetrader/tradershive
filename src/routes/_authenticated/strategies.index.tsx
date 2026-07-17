@@ -23,7 +23,7 @@ function StrategiesDashboard() {
   const strategies = useQuery({ queryKey: ["strategies"], queryFn: () => list() });
   const ov = useQuery({ queryKey: ["strategies", "overview"], queryFn: () => overview() });
 
-  const recent = useMemo(() => ((strategies.data ?? []) as Strategy[]).slice(0, 8), [strategies.data]);
+  const recent = useMemo(() => ((strategies.data ?? []) as unknown as Strategy[]).slice(0, 8), [strategies.data]);
 
   const kpis = [
     { label: "Total Strategies", value: ov.data?.total ?? 0, icon: FolderKanban },

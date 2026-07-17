@@ -36,7 +36,7 @@ function BacktestsPage() {
         <GlassCard className="p-4 space-y-3">
           <div className="flex items-center gap-2 text-sm font-semibold"><Play className="h-4 w-4 text-primary" />Your Strategies</div>
           <ul className="divide-y divide-border/40">
-            {((strategies.data ?? []) as Strategy[]).map((s) => (
+            {((strategies.data ?? []) as unknown as Strategy[]).map((s) => (
               <li key={s.id} className="py-2 flex items-center justify-between">
                 <Link to="/strategies/$id" params={{ id: s.id }} className="text-sm hover:text-primary">{s.name}</Link>
                 <Button size="sm" variant="ghost" asChild><Link to="/replay">Open Replay →</Link></Button>

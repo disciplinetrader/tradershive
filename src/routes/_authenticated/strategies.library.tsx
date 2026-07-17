@@ -21,7 +21,7 @@ function LibraryPage() {
   const [f, setF] = useState<FilterState>(DEFAULT);
 
   const items = useMemo(() => {
-    const data = (q.data ?? []) as Strategy[];
+    const data = (q.data ?? []) as unknown as Strategy[];
     let out = data.filter((s) => {
       if (f.q && !`${s.name} ${s.description ?? ""} ${(s.tags ?? []).join(" ")}`.toLowerCase().includes(f.q.toLowerCase())) return false;
       if (f.category && s.category !== f.category) return false;
