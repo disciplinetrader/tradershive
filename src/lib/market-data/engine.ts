@@ -192,6 +192,27 @@ class MarketDataEngine {
   setStrategy(_: unknown) { /* deprecated; use Admin Panel */ }
 }
 
+/**
+ * Best-effort market inference from a symbol. Used when a caller subscribes
+ * without specifying `market` (e.g. the chart engine reading a saved symbol).
+ * Prevents falling into the "no market → no provider" branch for obvious
+ * crypto/forex/metal tickers.
+ */
+function inferMarketFromSymbol(symbol?: string): MarketKind | undefined {
+  if (!symbol) return undefined;
+  const s = symbol.toUpperCase().replace(/[\/\-_:]/g, "");
+  // Crypto quote assets
+  if (/(USDT|USDC|BUSD|DAI|BTC|ETH|BNB)$/.test(s) && !/^(EUR|GBP|USD|JPY|CHF|CAD|AUD|NZD)/.test(s.slice(0, 3))) return "crypto";
+  if (/^(BTC|ETH|SOL|XRP|BNB|DOGE|ADA|MATIC|LTC|LINK|DOT|AVAX|TRX|SHIB|TON|APT|ARB|OP|NEAR|ATOM|FIL|ICP|SUI)/.test(s)) return "crypto";
+  // Metals
+  if (/^(XAU|XAG|XPT|XPD)/.test(s)) return "metals";
+  // Forex majors — 6-letter FX code
+  if (/^(EUR|GBP|USD|JPY|CHF|CAD|AUD|NZD|SEK|NOK|SGD|HKD|CNH|MXN|ZAR|TRY|PLN)/.test(s.slice(0, 3)) && s.length === 6) return "forex";
+  // Common index tickers
+  if (/^(SPX|NAS|NDX|US30|GER|DAX|UK100|FTSE|JP225|NIKKEI|HK50)/.test(s)) return "indices";
+  return undefined;
+}
+
 export const marketData = new MarketDataEngine();
 
 export type { Candle, CandleQuery, Quote, SymbolMeta, Timeframe, MarketKind } from "./types";
