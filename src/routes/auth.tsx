@@ -313,7 +313,7 @@ function RegisterForm() {
       timezone: tzDefault as any,
       experience: "beginner",
       preferred_markets: [],
-      trading_style: "intraday",
+      trading_style: "day_trader",
       accept_terms: undefined as unknown as true,
     },
   });
