@@ -51,7 +51,7 @@ export function Watchlist() {
     );
   }, [items, tab, q]);
 
-  const priceFor = (sym: string) => MOCK_MARKETS.find((m) => m.symbol === sym);
+  
 
   const addMut = useMutation({
     mutationFn: (v: { symbol: string; market: string }) =>
