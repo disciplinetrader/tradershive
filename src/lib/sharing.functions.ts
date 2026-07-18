@@ -25,7 +25,7 @@ export const previewShare = createServerFn({ method: "POST" })
       data.source_type as ShareSourceType,
       data.source_id ?? null, data.source_ref ?? null,
     );
-    return snap;
+    return snap as any;
   });
 
 /* ---------- Publish: create community post + shared_content row ---------- */

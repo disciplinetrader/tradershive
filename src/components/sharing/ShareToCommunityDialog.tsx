@@ -43,14 +43,14 @@ export function ShareToCommunityDialog({
 
   useEffect(() => {
     if (q.data) {
-      setTitle(q.data.title ?? "");
-      setTags((q.data.tags ?? []).map((t) => `#${t}`).join(" "));
+      setTitle((q.data as any).title ?? "");
+      setTags(((q.data as any).tags ?? []).map((t: string) => `#${t}`).join(" "));
     }
   }, [q.data]);
 
   const preview_share = useMemo(() => q.data ? {
-    source_type: sourceType, title, summary: q.data.summary, snapshot: q.data.snapshot,
-    cover_url: q.data.cover, source_id: sourceId ?? null,
+    source_type: sourceType, title, summary: (q.data as any).summary, snapshot: (q.data as any).snapshot,
+    cover_url: (q.data as any).cover, source_id: sourceId ?? null,
   } : null, [q.data, title, sourceType, sourceId]);
 
   const mut = useMutation({
