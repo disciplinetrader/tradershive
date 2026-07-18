@@ -88,6 +88,7 @@ function Workspace() {
           <TradePanel />
           <ChecklistPanel />
           <ScoreCard />
+          {session ? <AiReviewPanel sessionId={session.id} /> : null}
         </div>
       </div>
     </div>
