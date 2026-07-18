@@ -149,3 +149,49 @@ export function Watchlist() {
     </div>
   );
 }
+
+function WatchlistRow({
+  symbol,
+  market,
+  favorite,
+  onFav,
+  onRemove,
+}: {
+  symbol: string;
+  market: MarketKind;
+  favorite: boolean;
+  onFav: () => void;
+  onRemove: () => void;
+}) {
+  const q = useLiveQuote(symbol, market);
+  const change = q?.changePct ?? 0;
+  const up = change >= 0;
+  return (
+    <div className="group flex items-center justify-between rounded-xl border border-transparent px-3 py-2 transition hover:border-border/60 hover:bg-surface/60">
+      <div className="flex min-w-0 items-center gap-2">
+        <button onClick={onFav} className="text-muted-foreground transition hover:text-warning" aria-label={favorite ? "Unfavorite" : "Favorite"}>
+          {favorite ? <Star className="h-3.5 w-3.5 fill-warning text-warning" /> : <StarOff className="h-3.5 w-3.5" />}
+        </button>
+        <div className="min-w-0">
+          <div className="truncate text-sm font-medium">{symbol}</div>
+          <div className="truncate text-[10px] uppercase tracking-wider text-muted-foreground">{market}</div>
+        </div>
+      </div>
+      <div className="flex items-center gap-3">
+        {q?.price != null ? (
+          <div className="text-right">
+            <div className="font-mono text-sm tabular-nums">{q.price.toLocaleString()}</div>
+            <div className={cn("text-xs font-medium", up ? "text-primary" : "text-danger")}>
+              {up ? "+" : ""}{change.toFixed(2)}%
+            </div>
+          </div>
+        ) : (
+          <span className="text-xs text-muted-foreground">…</span>
+        )}
+        <Button size="icon" variant="ghost" className="h-7 w-7 opacity-0 transition group-hover:opacity-100" onClick={onRemove} aria-label="Remove">
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    </div>
+  );
+}
