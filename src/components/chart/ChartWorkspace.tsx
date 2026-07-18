@@ -147,7 +147,7 @@ export function ChartWorkspace({ fullscreen, initial }: Props) {
   const lastCandle = chartApi?.candles?.[chartApi.candles.length - 1] ?? null;
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-[hsl(220_18%_6%)] text-foreground">
+    <div className="flex h-full min-h-0 flex-col bg-background text-foreground">
       <ChartToolbar
         settings={settings} onChange={updateSettings}
         indicators={indicators} onAddIndicator={addIndicator} onRemoveIndicator={removeIndicator}
@@ -207,7 +207,7 @@ export function ChartWorkspace({ fullscreen, initial }: Props) {
 
           {/* Right panel: Watchlist (default) with tab to Trade */}
           {!fullscreen && rightOpen ? (
-            <aside className="flex min-h-0 w-[260px] shrink-0 flex-col border-l border-border/60 bg-[hsl(220_18%_7%)]">
+            <aside className="flex min-h-0 w-[260px] shrink-0 flex-col border-l border-border/60 bg-surface">
               <div className="flex h-9 items-center gap-1 border-b border-border/60 px-2 text-[11px]">
                 <RightTabButton active={rightTab === "watchlist"} onClick={() => setRightTab("watchlist")}>
                   <span className="mr-1 inline-block h-2 w-2 rounded-full bg-rose-500" />
@@ -253,7 +253,7 @@ export function ChartWorkspace({ fullscreen, initial }: Props) {
 
       {/* Bottom tabs */}
       {!fullscreen ? (
-        <div className={cn("shrink-0 border-t border-border/60 bg-[hsl(220_18%_7%)]", bottomOpen ? "h-[220px]" : "h-8")}>
+        <div className={cn("shrink-0 border-t border-border/60 bg-surface", bottomOpen ? "h-[220px]" : "h-8")}>
           <div className="flex h-8 items-center gap-2 border-b border-border/60 px-2 text-[11px] text-muted-foreground">
             <span className="font-semibold uppercase tracking-wider">Trading Panel</span>
             <button

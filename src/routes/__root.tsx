@@ -84,7 +84,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { name: "theme-color", content: "#070B14" },
+      { name: "theme-color", content: "#F7F8FA" },
       { title: `${APP_NAME} — Train. Trade. Compete.` },
       { name: "description", content: APP_DESCRIPTION },
       { property: "og:title", content: `${APP_NAME} — Train. Trade. Compete.` },
@@ -121,11 +121,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en">
       <head>
         <HeadContent />
       </head>
-      <body className="dark bg-background text-foreground">
+      <body className="bg-background text-foreground antialiased">
         {children}
         <Scripts />
       </body>
@@ -143,12 +143,12 @@ function RootComponent() {
           <Outlet />
           <Toaster
             position="top-right"
-            theme="dark"
+            theme="light"
             richColors
             closeButton
             toastOptions={{
               classNames: {
-                toast: "glass !border-border !text-foreground",
+                toast: "!bg-card !border-border !text-foreground shadow-elegant",
               },
             }}
           />

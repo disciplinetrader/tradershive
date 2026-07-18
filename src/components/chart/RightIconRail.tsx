@@ -24,7 +24,7 @@ const ITEMS = [
 
 export function RightIconRail({ active = "watchlist", onSelect }: Props) {
   return (
-    <aside className="flex h-full w-10 shrink-0 flex-col items-center gap-0.5 border-l border-border/60 bg-[hsl(220_18%_8%)] py-1">
+    <aside className="flex h-full w-10 shrink-0 flex-col items-center gap-0.5 border-l border-border/60 bg-surface-2 py-1">
       {ITEMS.map(({ key, icon: Icon, title }) => (
         <button
           key={key}
