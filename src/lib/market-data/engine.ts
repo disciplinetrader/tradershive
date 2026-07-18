@@ -132,13 +132,18 @@ class MarketDataEngine {
   }
   getHistoricalData(q: CandleQuery, market?: MarketKind) { return this.getCandles(q, market); }
 
+  private warnedMarkets = new Set<string>();
   subscribe(symbol: string, handler: QuoteHandler, market?: MarketKind): SubscriptionHandle {
     let entry = this.fanout.get(symbol);
     if (!entry) {
       let p: MarketDataProvider;
       try { p = this.pickProvider(market, symbol); }
       catch (e) {
-        console.error(`[market-data] subscribe(${symbol}): ${(e as Error).message}`);
+        const key = market ?? inferMarketFromSymbol(symbol) ?? "unknown";
+        if (!this.warnedMarkets.has(key)) {
+          this.warnedMarkets.add(key);
+          console.warn(`[market-data] ${key} provider unavailable — assign one in Admin → Market Data. (${(e as Error).message})`);
+        }
         return { id: `noop-${symbol}`, symbol, unsubscribe: () => {} };
       }
       void p.connect();
