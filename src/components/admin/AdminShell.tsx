@@ -36,6 +36,7 @@ const GROUPS: { label: string; items: Item[] }[] = [
       { to: "/admin/challenges", label: "Challenges", icon: Sparkles },
       { to: "/admin/achievements", label: "Achievements", icon: Award },
       { to: "/admin/leaderboards", label: "Leaderboards", icon: Trophy },
+      { to: "/admin/championships", label: "Championships", icon: Trophy },
       { to: "/admin/announcements", label: "Announcements", icon: Megaphone },
       { to: "/admin/content", label: "Content", icon: FileText },
     ],
