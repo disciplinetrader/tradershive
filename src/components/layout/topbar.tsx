@@ -1,4 +1,4 @@
-import { Bell, Command, Flame, Menu, Search, Sparkles } from "lucide-react";
+import { Bell, Command, Flame, Menu, Moon, Search, Sparkles, Sun } from "lucide-react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
   DropdownMenu,
@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
+import { useTheme } from "@/hooks/use-theme";
 import { useEffect, useState } from "react";
 import { xpForLevel } from "@/lib/constants";
 import { XPBar } from "@/components/ui/xp-bar";
