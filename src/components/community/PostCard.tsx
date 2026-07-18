@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { toggleBookmark, toggleReaction, reportContent } from "@/lib/community.functions";
 import { POST_TYPES } from "@/lib/community/constants";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { SharedContentCard } from "@/components/sharing/SharedContentCard";
 
 const POST_TYPE_META = Object.fromEntries(POST_TYPES.map((p) => [p.value, p]));
 
@@ -115,6 +116,10 @@ export function PostCard({ post }: { post: any }) {
           <p className="mt-1.5 text-sm text-foreground/90">{post.excerpt}</p>
         ) : null}
       </Link>
+
+      {Array.isArray(post.shared_content) && post.shared_content.length > 0 ? (
+        <SharedContentCard share={post.shared_content[0]} />
+      ) : null}
 
       {Array.isArray(post.hashtags) && post.hashtags.length ? (
         <div className="mt-2 flex flex-wrap gap-1">
