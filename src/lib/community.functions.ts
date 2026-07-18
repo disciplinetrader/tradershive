@@ -113,7 +113,7 @@ export const getPost = createServerFn({ method: "POST" })
     const { data: post, error } = await supabase.from("community_posts").select(POST_SELECT).eq("id", data.id).maybeSingle();
     if (error) throw error;
     if (!post) return { post: null };
-    await supabase.rpc("community_recompute_trending", { _post_id: data.id }).catch(() => {});
+    await supabase.rpc("community_recompute_trending" as any, { _post_id: data.id } as any).then(() => {}, () => {});
     await supabase.from("community_posts").update({ view_count: (post.view_count ?? 0) + 1 }).eq("id", data.id);
     const [withState] = await attachViewerState(supabase, userId, [post]);
     return { post: withState };
@@ -198,7 +198,7 @@ export const createPost = createServerFn({ method: "POST" })
     for (const tag of hashtags) {
       await supabase.from("community_tags").upsert({ slug: tag, name: tag, post_count: 1 }, { onConflict: "slug", ignoreDuplicates: true });
     }
-    await supabase.rpc("community_recompute_trending", { _post_id: inserted.id }).catch(() => {});
+    await supabase.rpc("community_recompute_trending" as any, { _post_id: inserted.id } as any).then(() => {}, () => {});
     return { id: inserted.id };
   });
 
