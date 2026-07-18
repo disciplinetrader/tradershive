@@ -138,12 +138,38 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
+  // Forward uncaught browser errors and unhandled rejections to Lovable
+  // reporting so React-boundary escapes and async throws still get captured.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onError = (event: ErrorEvent) => {
+      reportLovableError(event.error ?? new Error(event.message), {
+        source: "window.onerror",
+        filename: event.filename,
+        lineno: event.lineno,
+      });
+    };
+    const onRejection = (event: PromiseRejectionEvent) => {
+      reportLovableError(event.reason ?? new Error("Unhandled promise rejection"), {
+        source: "unhandledrejection",
+      });
+    };
+    window.addEventListener("error", onError);
+    window.addEventListener("unhandledrejection", onRejection);
+    return () => {
+      window.removeEventListener("error", onError);
+      window.removeEventListener("unhandledrejection", onRejection);
+    };
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
           <TooltipProvider delayDuration={100}>
-            <Outlet />
+            <ErrorBoundary name="root_outlet">
+              <Outlet />
+            </ErrorBoundary>
             <Toaster
               position="top-right"
               richColors
