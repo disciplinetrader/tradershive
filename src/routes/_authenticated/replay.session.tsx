@@ -11,6 +11,7 @@ import { NotesPanel } from "@/components/replay/NotesPanel";
 import { BookmarksPanel } from "@/components/replay/BookmarksPanel";
 import { ChecklistPanel } from "@/components/replay/ChecklistPanel";
 import { ScoreCard } from "@/components/replay/ScoreCard";
+import { AiReviewPanel } from "@/components/replay/AiReviewPanel";
 
 const searchSchema = z.object({ id: z.string().optional() });
 
