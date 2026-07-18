@@ -178,9 +178,9 @@ function WatchlistRow({
         </div>
       </div>
       <div className="flex items-center gap-3">
-        {q?.price != null ? (
+        {q?.last != null ? (
           <div className="text-right">
-            <div className="font-mono text-sm tabular-nums">{q.price.toLocaleString()}</div>
+            <div className="font-mono text-sm tabular-nums">{q.last.toLocaleString()}</div>
             <div className={cn("text-xs font-medium", up ? "text-primary" : "text-danger")}>
               {up ? "+" : ""}{change.toFixed(2)}%
             </div>
