@@ -97,6 +97,7 @@ export function HistoryTable() {
                 <TableHead className="text-right">Exit</TableHead>
                 <TableHead className="text-right">RR</TableHead>
                 <TableHead className="text-right">P/L</TableHead>
+                <TableHead className="w-[60px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -122,6 +123,9 @@ export function HistoryTable() {
                     </TableCell>
                     <TableCell className={cn("text-right font-mono font-semibold", pnl >= 0 ? "text-emerald-400" : "text-rose-400")}>
                       {pnl >= 0 ? "+" : ""}{formatCurrency(pnl, account?.currency)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <ShareToCommunityButton sourceType="trading_workspace" sourceId={r.id} iconOnly variant="ghost" size="sm" />
                     </TableCell>
                   </TableRow>
                 );
