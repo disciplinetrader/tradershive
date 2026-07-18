@@ -35,12 +35,13 @@ const NAV: NavItem[] = [
   { to: "/trading", label: "Trading Workspace", icon: LineChart },
   { to: "/journal", label: "Journal", icon: BookOpen },
   { to: "/challenges", label: "Challenges", icon: Sparkles },
+  { to: "/battle-arena", label: "Battle Arena", icon: Swords },
   { to: "/statistics", label: "Statistics", icon: BarChart3 },
   { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
   { to: "/achievements", label: "Achievements", icon: Award },
 ];
 // Not yet implemented — kept as routes for direct URLs but hidden from primary nav.
-void Swords; void Users; void ShoppingBag; void GraduationCap;
+void Users; void ShoppingBag; void GraduationCap;
 
 const SECONDARY: NavItem[] = [
   { to: "/profile", label: "Profile", icon: UserIcon },
