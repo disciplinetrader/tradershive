@@ -5731,6 +5731,227 @@ export type Database = {
         }
         Relationships: []
       }
+      share_events: {
+        Row: {
+          content_id: string | null
+          created_at: string
+          event_type: Database["public"]["Enums"]["share_event_type"]
+          id: string
+          metadata: Json
+          post_id: string | null
+          source_type: Database["public"]["Enums"]["share_source_type"] | null
+          user_id: string | null
+        }
+        Insert: {
+          content_id?: string | null
+          created_at?: string
+          event_type: Database["public"]["Enums"]["share_event_type"]
+          id?: string
+          metadata?: Json
+          post_id?: string | null
+          source_type?: Database["public"]["Enums"]["share_source_type"] | null
+          user_id?: string | null
+        }
+        Update: {
+          content_id?: string | null
+          created_at?: string
+          event_type?: Database["public"]["Enums"]["share_event_type"]
+          id?: string
+          metadata?: Json
+          post_id?: string | null
+          source_type?: Database["public"]["Enums"]["share_source_type"] | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "share_events_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "shared_content"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "share_events_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "community_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shared_content: {
+        Row: {
+          cover_url: string | null
+          created_at: string
+          id: string
+          is_removed: boolean
+          post_id: string | null
+          snapshot: Json
+          source_id: string | null
+          source_ref: string | null
+          source_type: Database["public"]["Enums"]["share_source_type"]
+          summary: string | null
+          title: string | null
+          updated_at: string
+          user_id: string
+          visibility: string
+        }
+        Insert: {
+          cover_url?: string | null
+          created_at?: string
+          id?: string
+          is_removed?: boolean
+          post_id?: string | null
+          snapshot?: Json
+          source_id?: string | null
+          source_ref?: string | null
+          source_type: Database["public"]["Enums"]["share_source_type"]
+          summary?: string | null
+          title?: string | null
+          updated_at?: string
+          user_id: string
+          visibility?: string
+        }
+        Update: {
+          cover_url?: string | null
+          created_at?: string
+          id?: string
+          is_removed?: boolean
+          post_id?: string | null
+          snapshot?: Json
+          source_id?: string | null
+          source_ref?: string | null
+          source_type?: Database["public"]["Enums"]["share_source_type"]
+          summary?: string | null
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_content_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "community_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shared_content_assets: {
+        Row: {
+          caption: string | null
+          content_id: string
+          created_at: string
+          height: number | null
+          id: string
+          kind: string
+          sort_order: number
+          url: string
+          width: number | null
+        }
+        Insert: {
+          caption?: string | null
+          content_id: string
+          created_at?: string
+          height?: number | null
+          id?: string
+          kind: string
+          sort_order?: number
+          url: string
+          width?: number | null
+        }
+        Update: {
+          caption?: string | null
+          content_id?: string
+          created_at?: string
+          height?: number | null
+          id?: string
+          kind?: string
+          sort_order?: number
+          url?: string
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_content_assets_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "shared_content"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shared_content_links: {
+        Row: {
+          content_id: string
+          created_at: string
+          id: string
+          label: string | null
+          target_id: string | null
+          target_ref: string | null
+          target_type: Database["public"]["Enums"]["share_source_type"]
+        }
+        Insert: {
+          content_id: string
+          created_at?: string
+          id?: string
+          label?: string | null
+          target_id?: string | null
+          target_ref?: string | null
+          target_type: Database["public"]["Enums"]["share_source_type"]
+        }
+        Update: {
+          content_id?: string
+          created_at?: string
+          id?: string
+          label?: string | null
+          target_id?: string | null
+          target_ref?: string | null
+          target_type?: Database["public"]["Enums"]["share_source_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_content_links_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "shared_content"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shared_content_metadata: {
+        Row: {
+          content_id: string
+          created_at: string
+          id: string
+          key: string
+          value: Json | null
+        }
+        Insert: {
+          content_id: string
+          created_at?: string
+          id?: string
+          key: string
+          value?: Json | null
+        }
+        Update: {
+          content_id?: string
+          created_at?: string
+          id?: string
+          key?: string
+          value?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_content_metadata_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "shared_content"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       social_follows: {
         Row: {
           created_at: string
@@ -7473,6 +7694,27 @@ export type Database = {
         | "connecting"
         | "error"
         | "disabled"
+      share_event_type:
+        | "created"
+        | "viewed"
+        | "clicked"
+        | "liked"
+        | "bookmarked"
+        | "reshared"
+        | "removed"
+      share_source_type:
+        | "trading_workspace"
+        | "journal"
+        | "battle"
+        | "championship"
+        | "replay"
+        | "strategy"
+        | "statistics"
+        | "ai_review"
+        | "achievement"
+        | "challenge"
+        | "profile"
+        | "custom"
       strategy_difficulty: "beginner" | "intermediate" | "advanced" | "expert"
       strategy_status: "draft" | "private" | "public" | "archived"
       timeframe_kind:
@@ -7846,6 +8088,29 @@ export const Constants = {
         "connecting",
         "error",
         "disabled",
+      ],
+      share_event_type: [
+        "created",
+        "viewed",
+        "clicked",
+        "liked",
+        "bookmarked",
+        "reshared",
+        "removed",
+      ],
+      share_source_type: [
+        "trading_workspace",
+        "journal",
+        "battle",
+        "championship",
+        "replay",
+        "strategy",
+        "statistics",
+        "ai_review",
+        "achievement",
+        "challenge",
+        "profile",
+        "custom",
       ],
       strategy_difficulty: ["beginner", "intermediate", "advanced", "expert"],
       strategy_status: ["draft", "private", "public", "archived"],
