@@ -36,6 +36,7 @@ const NAV: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: Home },
   { to: "/trading", label: "Trading Workspace", icon: LineChart },
   { to: "/journal", label: "Journal", icon: BookOpen },
+  { to: "/replay", label: "Replay Studio", icon: Film },
   { to: "/challenges", label: "Challenges", icon: Sparkles },
   { to: "/battle-arena", label: "Battle Arena", icon: Swords },
   { to: "/statistics", label: "Statistics", icon: BarChart3 },
