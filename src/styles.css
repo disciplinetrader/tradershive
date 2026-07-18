@@ -5,7 +5,10 @@
 @custom-variant dark (&:is(.dark *));
 
 /* =========================================================
- * TradersHIVE Arena — Dark-only premium fintech design system
+ * TradersHIVE Arena — Light professional design system
+ * Inspired by Linear, Stripe Dashboard, Notion, GitHub.
+ * Neutral canvas, minimal borders, generous whitespace,
+ * confident typography, restrained color.
  * =======================================================*/
 
 @theme inline {
@@ -63,60 +66,64 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
-:root,
+:root {
+  --radius: 0.625rem;
+
+  /* Neutral canvas — very light gray page, pure white cards */
+  --background: oklch(0.985 0.002 250);          /* #F7F8FA */
+  --foreground: oklch(0.18 0.02 260);            /* near-black #0F172A */
+  --surface: oklch(1 0 0);                       /* #FFFFFF */
+  --surface-2: oklch(0.975 0.003 250);           /* #F1F3F6 */
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.02 260);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.02 260);
+
+  /* Brand — restrained blue accent (Linear/Stripe register) */
+  --primary: oklch(0.58 0.18 258);               /* #3B5BFF-ish */
+  --primary-foreground: oklch(0.99 0 0);
+  --primary-glow: oklch(0.68 0.16 258);
+
+  --secondary: oklch(0.965 0.004 250);
+  --secondary-foreground: oklch(0.24 0.02 260);
+  --muted: oklch(0.965 0.004 250);
+  --muted-foreground: oklch(0.52 0.014 260);     /* #64748B */
+  --accent: oklch(0.965 0.004 250);
+  --accent-foreground: oklch(0.22 0.02 260);
+
+  /* Semantic — restrained saturation */
+  --success: oklch(0.62 0.16 152);               /* emerald */
+  --warning: oklch(0.75 0.14 75);                /* amber */
+  --info: oklch(0.62 0.16 250);                  /* blue */
+  --danger: oklch(0.58 0.22 25);                 /* red */
+  --destructive: oklch(0.58 0.22 25);
+  --destructive-foreground: oklch(0.99 0 0);
+
+  --border: oklch(0.18 0.02 260 / 0.08);         /* hairline */
+  --input: oklch(0.18 0.02 260 / 0.12);
+  --ring: oklch(0.58 0.18 258 / 0.35);
+
+  --chart-1: oklch(0.58 0.18 258);
+  --chart-2: oklch(0.62 0.16 152);
+  --chart-3: oklch(0.75 0.14 75);
+  --chart-4: oklch(0.58 0.22 25);
+  --chart-5: oklch(0.62 0.18 300);
+
+  /* Sidebar — softly recessed neutral */
+  --sidebar: oklch(0.978 0.003 250);
+  --sidebar-foreground: oklch(0.24 0.02 260);
+  --sidebar-primary: oklch(0.58 0.18 258);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.955 0.005 250);
+  --sidebar-accent-foreground: oklch(0.18 0.02 260);
+  --sidebar-border: oklch(0.18 0.02 260 / 0.07);
+  --sidebar-ring: oklch(0.58 0.18 258 / 0.35);
+}
+
+/* Keep .dark selector working (some legacy code toggles it) — mirror light for now */
 .dark {
-  --radius: 0.875rem;
-
-  /* Core surfaces (dark only) */
-  --background: oklch(0.14 0.03 260);            /* #070B14 */
-  --foreground: oklch(0.98 0.005 250);           /* #F8FAFC */
-  --surface: oklch(0.19 0.04 262);               /* #0E1628 */
-  --surface-2: oklch(0.23 0.04 262);
-
-  --card: oklch(0.21 0.04 262);
-  --card-foreground: oklch(0.98 0.005 250);
-  --popover: oklch(0.19 0.04 262);
-  --popover-foreground: oklch(0.98 0.005 250);
-
-  /* Brand — emerald primary */
-  --primary: oklch(0.72 0.17 162);               /* #10B981 */
-  --primary-foreground: oklch(0.14 0.03 260);
-  --primary-glow: oklch(0.82 0.18 162);
-
-  --secondary: oklch(0.24 0.04 262);
-  --secondary-foreground: oklch(0.98 0.005 250);
-  --muted: oklch(0.24 0.03 262);
-  --muted-foreground: oklch(0.72 0.03 250);      /* #94A3B8 */
-  --accent: oklch(0.27 0.05 262);
-  --accent-foreground: oklch(0.98 0.005 250);
-
-  /* Semantic */
-  --success: oklch(0.72 0.17 162);
-  --warning: oklch(0.77 0.16 70);                /* #F59E0B */
-  --info: oklch(0.66 0.19 250);                  /* #3B82F6 */
-  --danger: oklch(0.65 0.24 25);                 /* #EF4444 */
-  --destructive: oklch(0.65 0.24 25);
-  --destructive-foreground: oklch(0.98 0.005 250);
-
-  --border: oklch(0.98 0.005 250 / 0.08);
-  --input: oklch(0.98 0.005 250 / 0.1);
-  --ring: oklch(0.72 0.17 162 / 0.6);
-
-  --chart-1: oklch(0.72 0.17 162);
-  --chart-2: oklch(0.66 0.19 250);
-  --chart-3: oklch(0.77 0.16 70);
-  --chart-4: oklch(0.65 0.24 25);
-  --chart-5: oklch(0.7 0.2 310);
-
-  /* Sidebar */
-  --sidebar: oklch(0.16 0.03 260);
-  --sidebar-foreground: oklch(0.92 0.01 250);
-  --sidebar-primary: oklch(0.72 0.17 162);
-  --sidebar-primary-foreground: oklch(0.14 0.03 260);
-  --sidebar-accent: oklch(0.23 0.04 262);
-  --sidebar-accent-foreground: oklch(0.98 0.005 250);
-  --sidebar-border: oklch(0.98 0.005 250 / 0.06);
-  --sidebar-ring: oklch(0.72 0.17 162 / 0.5);
+  color-scheme: light;
 }
 
 @layer base {
@@ -124,7 +131,7 @@
     border-color: var(--border);
   }
   html {
-    color-scheme: dark;
+    color-scheme: light;
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -134,27 +141,32 @@
     background: var(--background);
     color: var(--foreground);
     font-family: var(--font-sans);
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
     min-height: 100dvh;
+    font-size: 14px;
+    line-height: 1.55;
   }
   h1, h2, h3, h4, h5 {
     font-family: var(--font-display);
     letter-spacing: -0.02em;
-    font-weight: 700;
+    font-weight: 600;
+    color: var(--foreground);
     text-wrap: balance;
   }
+  h1 { font-size: clamp(1.75rem, 2.2vw, 2.25rem); line-height: 1.15; letter-spacing: -0.025em; font-weight: 700; }
+  h2 { font-size: 1.375rem; line-height: 1.2; }
+  h3 { font-size: 1.125rem; line-height: 1.25; }
   p { text-wrap: pretty; }
+  small { font-size: 0.8125rem; color: var(--muted-foreground); }
   ::selection {
-    background: color-mix(in oklab, var(--primary) 40%, transparent);
+    background: color-mix(in oklab, var(--primary) 22%, transparent);
     color: var(--foreground);
   }
-  /* Accessible focus ring for keyboard users on all interactive controls */
   :where(a, button, [role="button"], input, select, textarea, summary, [tabindex]):focus-visible {
-    outline: 2px solid color-mix(in oklab, var(--primary) 80%, transparent);
+    outline: 2px solid color-mix(in oklab, var(--primary) 65%, transparent);
     outline-offset: 2px;
     border-radius: 8px;
   }
-  /* Respect reduced motion */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: 0.001ms !important;
@@ -163,36 +175,45 @@
       scroll-behavior: auto !important;
     }
   }
-  /* Custom scrollbar */
+  /* Slim, quiet scrollbars */
   ::-webkit-scrollbar { width: 10px; height: 10px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
-    background: color-mix(in oklab, var(--foreground) 8%, transparent);
+    background: color-mix(in oklab, var(--foreground) 12%, transparent);
     border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: color-mix(in oklab, var(--primary) 40%, transparent);
+    background: color-mix(in oklab, var(--foreground) 22%, transparent);
+    background-clip: padding-box;
+    border: 2px solid transparent;
+  }
+
+  /* Tables — comfortable, readable */
+  table { border-collapse: separate; border-spacing: 0; }
+  th {
+    font-weight: 500;
+    color: var(--muted-foreground);
+    text-transform: none;
+    letter-spacing: 0;
   }
 }
 
-/* Skip-to-content link — appears on keyboard focus */
 @utility skip-link {
   position: fixed;
   top: 0.75rem;
   left: 0.75rem;
   z-index: 100;
   padding: 0.5rem 0.875rem;
-  border-radius: 0.75rem;
-  background: var(--primary);
-  color: var(--primary-foreground);
+  border-radius: 0.625rem;
+  background: var(--foreground);
+  color: var(--background);
   font-weight: 600;
   font-size: 0.875rem;
-  box-shadow: 0 10px 30px -10px color-mix(in oklab, var(--primary) 40%, transparent);
   transform: translateY(-200%);
   transition: transform 200ms ease;
-  &:focus-visible {
-    transform: translateY(0);
-  }
+  &:focus-visible { transform: translateY(0); }
 }
 
 @utility safe-bottom {
@@ -200,18 +221,18 @@
 }
 
 /* =========================================================
- * Utilities
+ * Utilities — quiet, flat, elegant
  * =======================================================*/
 
 @utility glass {
-  background: color-mix(in oklab, var(--surface) 70%, transparent);
-  backdrop-filter: blur(20px) saturate(160%);
+  background: color-mix(in oklab, var(--surface) 92%, transparent);
+  backdrop-filter: blur(14px) saturate(140%);
   border: 1px solid var(--border);
 }
 
 @utility glass-strong {
-  background: color-mix(in oklab, var(--surface) 88%, transparent);
-  backdrop-filter: blur(28px) saturate(180%);
+  background: var(--surface);
+  backdrop-filter: blur(20px) saturate(160%);
   border: 1px solid var(--border);
 }
 
@@ -219,7 +240,7 @@
   background-image:
     linear-gradient(to right, color-mix(in oklab, var(--foreground) 4%, transparent) 1px, transparent 1px),
     linear-gradient(to bottom, color-mix(in oklab, var(--foreground) 4%, transparent) 1px, transparent 1px);
-  background-size: 48px 48px;
+  background-size: 56px 56px;
 }
 
 @utility gradient-primary {
@@ -228,32 +249,41 @@
 
 @utility gradient-radial-glow {
   background: radial-gradient(
-    60% 60% at 50% 0%,
-    color-mix(in oklab, var(--primary) 25%, transparent) 0%,
+    50% 40% at 50% 0%,
+    color-mix(in oklab, var(--primary) 10%, transparent) 0%,
     transparent 100%
   );
 }
 
 @utility shadow-elegant {
   box-shadow:
-    0 1px 0 0 color-mix(in oklab, white 5%, transparent) inset,
-    0 20px 40px -20px color-mix(in oklab, var(--primary) 25%, transparent);
+    0 1px 2px 0 color-mix(in oklab, var(--foreground) 5%, transparent),
+    0 8px 24px -12px color-mix(in oklab, var(--foreground) 12%, transparent);
+}
+
+@utility shadow-card {
+  box-shadow:
+    0 1px 0 0 color-mix(in oklab, var(--foreground) 3%, transparent),
+    0 1px 3px 0 color-mix(in oklab, var(--foreground) 6%, transparent);
 }
 
 @utility text-gradient {
-  background-image: linear-gradient(135deg, var(--foreground), color-mix(in oklab, var(--primary-glow) 80%, var(--foreground)));
+  background-image: linear-gradient(135deg, var(--foreground), color-mix(in oklab, var(--primary) 65%, var(--foreground)));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
 @utility hover-lift {
-  transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 300ms cubic-bezier(0.22, 1, 0.36, 1),
-    border-color 300ms ease;
+  transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 200ms ease;
   &:hover {
-    transform: translateY(-2px);
-    border-color: color-mix(in oklab, var(--primary) 40%, var(--border));
+    transform: translateY(-1px);
+    box-shadow:
+      0 1px 2px 0 color-mix(in oklab, var(--foreground) 6%, transparent),
+      0 12px 28px -14px color-mix(in oklab, var(--foreground) 18%, transparent);
+    border-color: color-mix(in oklab, var(--foreground) 14%, var(--border));
   }
 }
 
@@ -262,7 +292,6 @@
   &::-webkit-scrollbar { display: none; }
 }
 
-/* Animated shine sweep for hero CTA */
 @keyframes shine {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
@@ -271,15 +300,15 @@
   background: linear-gradient(
     110deg,
     transparent 40%,
-    color-mix(in oklab, white 25%, transparent) 50%,
+    color-mix(in oklab, white 60%, transparent) 50%,
     transparent 60%
   ) 0 0 / 200% 100%;
   animation: shine 3s linear infinite;
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--primary) 40%, transparent); }
-  50% { box-shadow: 0 0 0 12px transparent; }
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--primary) 25%, transparent); }
+  50% { box-shadow: 0 0 0 10px transparent; }
 }
 @utility animate-pulse-glow {
   animation: pulse-glow 2.4s ease-in-out infinite;
@@ -287,7 +316,7 @@
 
 @keyframes float {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
+  50% { transform: translateY(-6px); }
 }
 @utility animate-float {
   animation: float 6s ease-in-out infinite;
