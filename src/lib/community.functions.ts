@@ -191,7 +191,7 @@ export const createPost = createServerFn({ method: "POST" })
       visibility: data.visibility,
       published_at: data.is_draft ? null : new Date().toISOString(),
     };
-    const { data: inserted, error } = await supabase.from("community_posts").insert(row).select("id").single();
+    const { data: inserted, error } = await supabase.from("community_posts").insert(row as any).select("id").single();
     if (error) throw error;
 
     // Upsert hashtags
@@ -257,14 +257,14 @@ export const toggleReaction = createServerFn({ method: "POST" })
       .from("community_reactions")
       .select("id")
       .eq("user_id", userId)
-      .eq("kind", data.kind)
+      .eq("kind", data.kind as any)
       .match(target)
       .maybeSingle();
     if (existing) {
       await supabase.from("community_reactions").delete().eq("id", existing.id);
       return { active: false };
     }
-    await supabase.from("community_reactions").insert({ user_id: userId, kind: data.kind, ...target });
+    await supabase.from("community_reactions").insert({ user_id: userId, kind: data.kind, ...target } as any);
     return { active: true };
   });
 
