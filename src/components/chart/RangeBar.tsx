@@ -23,7 +23,7 @@ export function RangeBar({ onSelect }: Props) {
   }, []);
 
   return (
-    <div className="flex h-8 items-center gap-1 border-t border-border/60 bg-[hsl(220_18%_8%)] px-2 text-[11px]">
+    <div className="flex h-8 items-center gap-1 border-t border-border/60 bg-surface-2 px-2 text-[11px]">
       <div className="flex items-center gap-0.5">
         {RANGES.map((r) => (
           <button
