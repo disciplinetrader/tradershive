@@ -910,6 +910,36 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_rate_limits: {
+        Row: {
+          bucket: string
+          count: number
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          bucket: string
+          count?: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          window_start?: string
+        }
+        Update: {
+          bucket?: string
+          count?: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       ai_recommendations: {
         Row: {
           category: string | null
@@ -5971,6 +6001,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      bump_ai_rate_limit: {
+        Args: {
+          _bucket: string
+          _limit: number
+          _user_id: string
+          _window_start: string
+        }
+        Returns: {
+          allowed: boolean
+          current_count: number
+          remaining: number
+        }[]
+      }
       has_permission: {
         Args: { _permission: string; _user_id: string }
         Returns: boolean
