@@ -1,139 +1,107 @@
-# Provider-Agnostic Market Data System
+# Battle Arena Foundation
 
-Turn the Market Data Engine from "OANDA/Twelve Data/Binance are hardcoded" into a runtime-configurable system driven by the Admin Panel. No module (Charts, Paper Trading, Replay, AI Coach, Statistics, Strategy Builder) changes — they keep calling `marketData.getQuote/getCandles/subscribe`; the engine resolves the provider from the database at call time.
+Build a competitive paper-trading module reusing existing Paper Trading, Market Data Engine, XP, Notifications, and Admin systems.
 
-## What already exists (reused, not rebuilt)
+## 1. Database (single migration)
 
-- `MarketDataProvider` interface + registry (`src/lib/market-data/providers/registry.ts`)
-- Provider adapters: `binance`, `twelvedata`, `mock`
-- Engine (`src/lib/market-data/engine.ts`) with quote/candle caches, subscription fan-out, per-market routing
-- DB tables: `market_providers`, `provider_symbols`, `provider_connections`, `user_market_settings`
-- Admin shell + RBAC (`is_platform_admin`, `has_permission`)
-- Encryption helper pattern (AES-256-GCM, `APP_USER_CONNECTION_KEY_SECRET`)
+New tables in `public.` (all with GRANTs + RLS + `updated_at` trigger where relevant):
 
-## What we're adding
+- **battle_templates** — reusable rule presets (admin + user).
+  `id, owner_id, name, description, battle_type, market, allowed_symbols[], starting_balance, max_risk_pct, max_daily_loss_pct, max_drawdown_pct, max_trades, win_condition, duration_minutes, is_public, is_official, created_at, updated_at`
+- **battles** — one row per battle.
+  `id, host_id, name, description, visibility ('public'|'private'), invite_code, battle_type ('1v1'|'2v2'|'ffa5'|'ffa10'), market, allowed_symbols[], starting_balance, max_risk_pct, max_daily_loss_pct, max_drawdown_pct, max_trades, win_condition, target_value (nullable, for +5R or profit target), start_at, end_at, timezone, status ('draft'|'upcoming'|'live'|'completed'|'cancelled'), max_participants, featured boolean, winner_user_id nullable, created_at, updated_at`
+- **battle_participants** — join table.
+  `id, battle_id, user_id, team ('A'|'B'|null), paper_account_id (auto-provisioned battle account), joined_at, left_at, status ('joined'|'active'|'disqualified'|'finished'), UNIQUE(battle_id, user_id)`
+- **battle_rankings** — live snapshot; recomputed on trade close & on demand.
+  `id, battle_id, user_id, rank, pnl, r_multiple, win_rate, trades_count, max_drawdown, score, updated_at, UNIQUE(battle_id, user_id)`
+- **battle_results** — final immutable outcome.
+  `id, battle_id, user_id, final_rank, pnl, r_multiple, win_rate, trades_count, max_drawdown, xp_awarded, coins_awarded, created_at, UNIQUE(battle_id, user_id)`
+- **battle_logs** — rule violations & lifecycle events.
+  `id, battle_id, user_id nullable, event_type, message, metadata jsonb, created_at`
+- **battle_notifications** — per-user battle notifications.
+  `id, battle_id, user_id, kind, title, body, read_at, created_at`
 
-### 1. Provider descriptor (developer-facing)
+Extend `public.paper_trades` semantics without altering: add nullable `battle_id uuid references battles(id)` column to `paper_trades` and `paper_accounts`. Trades placed under a battle-scoped account are tagged and validated by trigger.
 
-Every provider exports a static `descriptor` describing itself. Registration + admin UI are driven from this — no other code changes to add a new provider.
+**Trigger `enforce_battle_rules_on_trade`** (BEFORE INSERT on paper_trades): if `battle_id` set → check symbol allowlist, risk %, trading window, battle status. On violation → log to `battle_logs` and RAISE.
 
-```text
-ProviderDescriptor {
-  code, name, description, website
-  markets: MarketKind[]           // what it can serve
-  capabilities: { rest, ws, historical, streaming, orderbook }
-  credentials: CredentialField[]  // [{ key, label, type: 'text'|'password'|'select', required, placeholder, help, options? }]
-  publicByDefault: boolean        // true = works with zero credentials (Binance public, Coinbase public)
-}
-```
+**Trigger `update_battle_ranking_on_close`** (AFTER UPDATE of status on paper_trades where new.status='closed' and battle_id not null): recompute rankings for that battle+user; upsert `battle_rankings`.
 
-New adapters stubbed with descriptor + REST/WS shells (they light up as soon as an admin adds keys): `finnhub`, `polygon`, `alphavantage`, `coinbase`, `kraken`, `bybit`, `okx`, `alpaca`. OANDA descriptor kept in the registry (no longer hardcoded as default) so anyone who wants it can still enable it. `mt` and `ibkr` are declared as descriptors only, marked `comingSoon: true`.
+**Function `finalize_battle(_battle_id)`**: sets status='completed', ranks participants by win_condition, writes `battle_results`, awards XP (100 winner / 25 finish) and coins via `xp_transactions` + `coin_transactions`, sets `winner_user_id`.
 
-### 2. Database
+**Realtime**: `ALTER PUBLICATION supabase_realtime ADD TABLE battles, battle_participants, battle_rankings, battle_notifications;`
 
-```text
-provider_credentials (server-only, service_role reads)
-  id, provider_code, field_key, ciphertext, updated_by, updated_at
-  UNIQUE (provider_code, field_key)
+RLS:
+- battles: anyone reads public+upcoming/live/completed; hosts read own drafts; private battles require participant membership OR invite lookup by code (SECURITY DEFINER `join_battle_by_code`).
+- battle_participants/rankings/results: readable if user is participant OR battle is public.
+- write access via SECURITY DEFINER server functions only.
 
-provider_market_assignments
-  market_kind PK, primary_code, fallback_code, updated_by, updated_at
+## 2. Server functions (`src/lib/battle-arena.functions.ts`)
 
-provider_health_checks
-  id, provider_code, checked_at, ok, latency_ms, error_code, error_message
+All under `requireSupabaseAuth`:
+- `listBattles({ scope: 'featured'|'live'|'upcoming'|'mine'|'history', limit })`
+- `getBattle({ id })` → battle + participants + rankings + rules
+- `createBattle({ ...form })` — validates, generates invite_code for private
+- `joinBattle({ battleId })` / `joinByInviteCode({ code })` — auto-provisions battle-scoped paper account (starting balance from rules)
+- `leaveBattle({ battleId })` (only pre-start)
+- `cancelBattle({ battleId })` (host only, pre-start)
+- `startBattleNow({ battleId })` (host, if start_at ≤ now)
+- `finalizeBattle({ battleId })` — RPC wrapper
+- `listMyBattleStats()` — wins/losses/avg finish
+- `getBattleHistory({ battleId })` — results + trade list + equity curve
+- Admin variants under `src/lib/admin/battles.functions.ts` (feature/delete/edit any)
 
-Update market_providers: add is_configured (derived), last_health_at, last_health_ok
-```
+Client-side background: an interval in Arena home calls a lightweight `tickBattles()` server fn that transitions `upcoming→live` and `live→completed` (calls `finalize_battle`). Also triggerable by pg cron later.
 
-RLS: `provider_credentials` — service_role only. `provider_market_assignments` — read for `authenticated`, write for admins via server fn. `provider_health_checks` — read for admins, write via server fn.
+## 3. Routes
 
-### 3. Server layer
+Replace stub `src/routes/_authenticated/battle-arena.tsx` (currently ComingSoon) with a layout + children:
+- `battle-arena.tsx` → tabs layout with `<Outlet/>`
+- `battle-arena.index.tsx` → Arena home dashboard
+- `battle-arena.create.tsx` → Create wizard (5 steps: basics → market/symbols → risk → schedule → review)
+- `battle-arena.history.tsx` → completed battles list + personal stats
+- `battle-arena.$battleId.tsx` → battle detail (lobby / live / results based on status)
 
-- `src/lib/market-data/credentials.server.ts` — `getCredential(code, key)` / `setCredential` using existing AES-GCM crypto pattern (reuses `APP_USER_CONNECTION_KEY_SECRET`, or provisions `MARKET_PROVIDER_KEY_SECRET` via `generate_secret`).
-- `src/lib/market-data/admin.functions.ts` — `listProviderConfig`, `saveProviderCredentials`, `saveMarketAssignments`, `testProviderConnection`, `runHealthChecks`. All gated by `has_role(admin/super_admin)`; credential writes verify role via `context.supabase` before loading `supabaseAdmin`.
-- Provider adapters gain `getCredentials()` that reads from `provider_credentials` (server-side) rather than `process.env`. Client-side code never sees a credential.
+Unhide "Battle Arena" in `src/components/layout/app-shell.tsx` navigation.
 
-### 4. Engine changes
+## 4. Components (`src/components/battle-arena/`)
 
-`pickProvider(market)` becomes async and reads from `provider_market_assignments` (cached 60s per instance):
+- `ArenaHero.tsx` — featured battle carousel
+- `BattleCard.tsx` — used in lists
+- `BattleStatusBadge.tsx`
+- `CountdownTimer.tsx`
+- `LiveLeaderboard.tsx` — realtime subscription to `battle_rankings`
+- `ParticipantsList.tsx`
+- `RulesPanel.tsx`
+- `CreateBattleWizard.tsx`
+- `JoinBattleDialog.tsx` (invite code)
+- `MyBattleStats.tsx`
+- `BattleResultsView.tsx` — podium + trades + equity curve (reuse Recharts)
+- `BattleTradeGate.tsx` — small wrapper for the trading workspace when trading inside a battle account
 
-```text
-1. Look up assignment for market
-2. Try primary → if unhealthy/unconfigured, try fallback
-3. Neither available → throw MarketProviderUnavailableError { market, reason }
-4. Never fall back to mock silently
-```
+## 5. Integration points (minimal, no behavior change to existing modules)
 
-Errors bubble to callers so UI can show "Forex provider not configured." Failover logs to `provider_health_checks` and emits an admin notification (existing `notification_campaigns` infrastructure).
+- **Paper Trading context**: when active `paper_account.battle_id` is set, show a `BattleBadge` in `TopToolbar` and pass `battle_id` through to `paper_trades` insert (already inherits from account default via trigger `set_trade_battle_id_from_account`).
+- **Statistics/Journal**: no changes — battle trades are regular paper trades tagged by `battle_id`; journal already links via `create_journal_draft_from_trade`.
+- **XP**: reuse `xp_transactions` insert on `finalize_battle`.
+- **Leaderboards / Social**: not modified — future work.
+- **Notifications**: use existing `notification_recipients` pipeline where possible; battle-specific stream stays in `battle_notifications` for the widget.
+- **Admin Panel**: new tab under `/admin` for Battles (list, feature, cancel, delete). Uses `is_platform_admin`.
 
-### 5. Admin UI
+## 6. Realtime UX
 
-Under `/admin/market-data`:
+- Battle detail page subscribes to `battle_rankings` + `battle_participants` filtered by `battle_id`.
+- Arena home subscribes to `battles` (status changes).
+- Cleanup channels on unmount.
 
-- `providers` — list card per registered provider (name, status pill, health, latency, supported markets, Enable/Disable toggle, "Configure" and "Test connection" buttons)
-- `providers.$code` — dynamic form rendered from `descriptor.credentials`; Test Connection button hits `testProviderConnection`
-- `assignments` — per-market Primary/Fallback selects (only providers whose descriptor advertises the market)
-- `health` — recent `provider_health_checks` rows, filterable
+## 7. Out of scope (explicitly)
 
-### 6. First-run wizard
+Guild wars, tournaments, brackets, prize pools, real money, broker integrations, seasons.
 
-`/admin/market-data/setup` — shown when 0 market assignments exist or triggered from a dashboard banner. 5 steps as specified: choose crypto → choose forex → enter keys (only for providers that require them) → test → finish.
+## 8. Delivery order
 
-### 7. Removal / cleanup
-
-- Delete `AUTO_PER_MARKET` map and hardcoded `preferredProvider` in engine — replaced by DB assignments.
-- Remove any lingering OANDA references from settings dropdowns and copy.
-- Remove `.env` requirements for `TWELVE_DATA_API_KEY` — credentials live in DB now (env var kept as an optional bootstrap read only).
-
-## Non-goals for this pass
-
-- Actual Interactive Brokers / MetaTrader adapters (descriptors only, marked `comingSoon`).
-- Order book streams (interface stub only).
-- Per-user provider overrides (`user_market_settings` stays untouched; admin assignments are platform-wide).
-
-## Files (new)
-
-```
-src/lib/market-data/
-  descriptors.ts                 // all provider descriptors in one place
-  credentials.server.ts
-  admin.functions.ts
-  errors.ts                      // MarketProviderUnavailableError, etc.
-  providers/
-    finnhub.ts, polygon.ts, alphavantage.ts, coinbase.ts,
-    kraken.ts, bybit.ts, okx.ts, alpaca.ts, oanda.ts (restored, opt-in)
-src/components/admin/market-data/
-  ProviderCard.tsx, CredentialForm.tsx, AssignmentMatrix.tsx,
-  HealthTable.tsx, SetupWizard.tsx
-src/routes/_authenticated/
-  admin.market-data.tsx (layout)
-  admin.market-data.providers.tsx
-  admin.market-data.providers.$code.tsx
-  admin.market-data.assignments.tsx
-  admin.market-data.health.tsx
-  admin.market-data.setup.tsx
-```
-
-## Files (modified)
-
-- `src/lib/market-data/engine.ts` — async `pickProvider`, DB-backed assignments, no mock fallback
-- `src/lib/market-data/providers/registry.ts` — auto-register every descriptor
-- `src/lib/market-data/types.ts` — `ProviderDescriptor`, `CredentialField`
-- `src/routes/_authenticated/admin.tsx` — add "Market Data" nav item
-- `src/routes/_authenticated/market.settings.tsx` — remove hardcoded dropdown, link to admin panel
-- Migration: add `provider_credentials`, `provider_market_assignments`, `provider_health_checks`; add `last_health_*` cols
-
-## Untouched
-
-Authentication, Paper Trading UI, Journal, Statistics, Challenges, Replay, AI Coach, Strategy Builder, Charts. All keep calling the engine unchanged.
-
-## Order of work
-
-1. Migration (new tables + columns).
-2. Descriptors + provider stubs + registry.
-3. `credentials.server.ts` + `admin.functions.ts` + `errors.ts`.
-4. Engine rewrite (async `pickProvider`, failover, no mock).
-5. Admin UI routes + components.
-6. Setup wizard + first-run banner.
-7. Remove OANDA/Twelve Data assumptions from settings + docs.
-8. Smoke test: Binance quote (public) + gated forex error path via `stack_modern--invoke-server-function`.
+1. Migration (one call).
+2. Server functions + admin server functions.
+3. Routes + components.
+4. Nav unhide + small `TopToolbar` battle badge.
+5. Typecheck; smoke via Playwright on `/battle-arena`.

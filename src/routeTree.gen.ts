@@ -46,6 +46,7 @@ import { Route as AuthenticatedStatisticsIndexRouteImport } from './routes/_auth
 import { Route as AuthenticatedReplayIndexRouteImport } from './routes/_authenticated/replay.index'
 import { Route as AuthenticatedMarketIndexRouteImport } from './routes/_authenticated/market.index'
 import { Route as AuthenticatedLeaderboardIndexRouteImport } from './routes/_authenticated/leaderboard.index'
+import { Route as AuthenticatedBattleArenaIndexRouteImport } from './routes/_authenticated/battle-arena.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as JournalShareTokenRouteImport } from './routes/journal.share.$token'
 import { Route as ApiAiChatRouteImport } from './routes/api/ai/chat'
@@ -80,6 +81,9 @@ import { Route as AuthenticatedLeaderboardFriendsRouteImport } from './routes/_a
 import { Route as AuthenticatedLeaderboardCountryRouteImport } from './routes/_authenticated/leaderboard.country'
 import { Route as AuthenticatedChallengesRewardsRouteImport } from './routes/_authenticated/challenges/rewards'
 import { Route as AuthenticatedChallengesHistoryRouteImport } from './routes/_authenticated/challenges/history'
+import { Route as AuthenticatedBattleArenaHistoryRouteImport } from './routes/_authenticated/battle-arena.history'
+import { Route as AuthenticatedBattleArenaCreateRouteImport } from './routes/_authenticated/battle-arena.create'
+import { Route as AuthenticatedBattleArenaBattleIdRouteImport } from './routes/_authenticated/battle-arena.$battleId'
 import { Route as AuthenticatedAiTradeReviewRouteImport } from './routes/_authenticated/ai.trade-review'
 import { Route as AuthenticatedAiSettingsRouteImport } from './routes/_authenticated/ai.settings'
 import { Route as AuthenticatedAiPsychologyRouteImport } from './routes/_authenticated/ai.psychology'
@@ -300,6 +304,12 @@ const AuthenticatedLeaderboardIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedLeaderboardRoute,
   } as any)
+const AuthenticatedBattleArenaIndexRoute =
+  AuthenticatedBattleArenaIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedBattleArenaRoute,
+  } as any)
 const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -501,6 +511,24 @@ const AuthenticatedChallengesHistoryRoute =
     path: '/history',
     getParentRoute: () => AuthenticatedChallengesRoute,
   } as any)
+const AuthenticatedBattleArenaHistoryRoute =
+  AuthenticatedBattleArenaHistoryRouteImport.update({
+    id: '/history',
+    path: '/history',
+    getParentRoute: () => AuthenticatedBattleArenaRoute,
+  } as any)
+const AuthenticatedBattleArenaCreateRoute =
+  AuthenticatedBattleArenaCreateRouteImport.update({
+    id: '/create',
+    path: '/create',
+    getParentRoute: () => AuthenticatedBattleArenaRoute,
+  } as any)
+const AuthenticatedBattleArenaBattleIdRoute =
+  AuthenticatedBattleArenaBattleIdRouteImport.update({
+    id: '/$battleId',
+    path: '/$battleId',
+    getParentRoute: () => AuthenticatedBattleArenaRoute,
+  } as any)
 const AuthenticatedAiTradeReviewRoute =
   AuthenticatedAiTradeReviewRouteImport.update({
     id: '/trade-review',
@@ -652,7 +680,7 @@ export interface FileRoutesByFullPath {
   '/achievements': typeof AuthenticatedAchievementsRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/ai': typeof AuthenticatedAiRouteWithChildren
-  '/battle-arena': typeof AuthenticatedBattleArenaRoute
+  '/battle-arena': typeof AuthenticatedBattleArenaRouteWithChildren
   '/challenges': typeof AuthenticatedChallengesRouteWithChildren
   '/charts': typeof AuthenticatedChartsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -695,6 +723,9 @@ export interface FileRoutesByFullPath {
   '/ai/psychology': typeof AuthenticatedAiPsychologyRoute
   '/ai/settings': typeof AuthenticatedAiSettingsRoute
   '/ai/trade-review': typeof AuthenticatedAiTradeReviewRoute
+  '/battle-arena/$battleId': typeof AuthenticatedBattleArenaBattleIdRoute
+  '/battle-arena/create': typeof AuthenticatedBattleArenaCreateRoute
+  '/battle-arena/history': typeof AuthenticatedBattleArenaHistoryRoute
   '/challenges/history': typeof AuthenticatedChallengesHistoryRoute
   '/challenges/rewards': typeof AuthenticatedChallengesRewardsRoute
   '/leaderboard/country': typeof AuthenticatedLeaderboardCountryRoute
@@ -729,6 +760,7 @@ export interface FileRoutesByFullPath {
   '/api/ai/chat': typeof ApiAiChatRoute
   '/journal/share/$token': typeof JournalShareTokenRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
+  '/battle-arena/': typeof AuthenticatedBattleArenaIndexRoute
   '/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
   '/market/': typeof AuthenticatedMarketIndexRoute
   '/replay/': typeof AuthenticatedReplayIndexRoute
@@ -747,7 +779,6 @@ export interface FileRoutesByTo {
   '/verify-email': typeof VerifyEmailRoute
   '/achievements': typeof AuthenticatedAchievementsRoute
   '/ai': typeof AuthenticatedAiRouteWithChildren
-  '/battle-arena': typeof AuthenticatedBattleArenaRoute
   '/challenges': typeof AuthenticatedChallengesRouteWithChildren
   '/charts': typeof AuthenticatedChartsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -784,6 +815,9 @@ export interface FileRoutesByTo {
   '/ai/psychology': typeof AuthenticatedAiPsychologyRoute
   '/ai/settings': typeof AuthenticatedAiSettingsRoute
   '/ai/trade-review': typeof AuthenticatedAiTradeReviewRoute
+  '/battle-arena/$battleId': typeof AuthenticatedBattleArenaBattleIdRoute
+  '/battle-arena/create': typeof AuthenticatedBattleArenaCreateRoute
+  '/battle-arena/history': typeof AuthenticatedBattleArenaHistoryRoute
   '/challenges/history': typeof AuthenticatedChallengesHistoryRoute
   '/challenges/rewards': typeof AuthenticatedChallengesRewardsRoute
   '/leaderboard/country': typeof AuthenticatedLeaderboardCountryRoute
@@ -818,6 +852,7 @@ export interface FileRoutesByTo {
   '/api/ai/chat': typeof ApiAiChatRoute
   '/journal/share/$token': typeof JournalShareTokenRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
+  '/battle-arena': typeof AuthenticatedBattleArenaIndexRoute
   '/leaderboard': typeof AuthenticatedLeaderboardIndexRoute
   '/market': typeof AuthenticatedMarketIndexRoute
   '/replay': typeof AuthenticatedReplayIndexRoute
@@ -839,7 +874,7 @@ export interface FileRoutesById {
   '/_authenticated/achievements': typeof AuthenticatedAchievementsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/ai': typeof AuthenticatedAiRouteWithChildren
-  '/_authenticated/battle-arena': typeof AuthenticatedBattleArenaRoute
+  '/_authenticated/battle-arena': typeof AuthenticatedBattleArenaRouteWithChildren
   '/_authenticated/challenges': typeof AuthenticatedChallengesRouteWithChildren
   '/_authenticated/charts': typeof AuthenticatedChartsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -882,6 +917,9 @@ export interface FileRoutesById {
   '/_authenticated/ai/psychology': typeof AuthenticatedAiPsychologyRoute
   '/_authenticated/ai/settings': typeof AuthenticatedAiSettingsRoute
   '/_authenticated/ai/trade-review': typeof AuthenticatedAiTradeReviewRoute
+  '/_authenticated/battle-arena/$battleId': typeof AuthenticatedBattleArenaBattleIdRoute
+  '/_authenticated/battle-arena/create': typeof AuthenticatedBattleArenaCreateRoute
+  '/_authenticated/battle-arena/history': typeof AuthenticatedBattleArenaHistoryRoute
   '/_authenticated/challenges/history': typeof AuthenticatedChallengesHistoryRoute
   '/_authenticated/challenges/rewards': typeof AuthenticatedChallengesRewardsRoute
   '/_authenticated/leaderboard/country': typeof AuthenticatedLeaderboardCountryRoute
@@ -916,6 +954,7 @@ export interface FileRoutesById {
   '/api/ai/chat': typeof ApiAiChatRoute
   '/journal/share/$token': typeof JournalShareTokenRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
+  '/_authenticated/battle-arena/': typeof AuthenticatedBattleArenaIndexRoute
   '/_authenticated/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
   '/_authenticated/market/': typeof AuthenticatedMarketIndexRoute
   '/_authenticated/replay/': typeof AuthenticatedReplayIndexRoute
@@ -980,6 +1019,9 @@ export interface FileRouteTypes {
     | '/ai/psychology'
     | '/ai/settings'
     | '/ai/trade-review'
+    | '/battle-arena/$battleId'
+    | '/battle-arena/create'
+    | '/battle-arena/history'
     | '/challenges/history'
     | '/challenges/rewards'
     | '/leaderboard/country'
@@ -1014,6 +1056,7 @@ export interface FileRouteTypes {
     | '/api/ai/chat'
     | '/journal/share/$token'
     | '/admin/'
+    | '/battle-arena/'
     | '/leaderboard/'
     | '/market/'
     | '/replay/'
@@ -1032,7 +1075,6 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/achievements'
     | '/ai'
-    | '/battle-arena'
     | '/challenges'
     | '/charts'
     | '/dashboard'
@@ -1069,6 +1111,9 @@ export interface FileRouteTypes {
     | '/ai/psychology'
     | '/ai/settings'
     | '/ai/trade-review'
+    | '/battle-arena/$battleId'
+    | '/battle-arena/create'
+    | '/battle-arena/history'
     | '/challenges/history'
     | '/challenges/rewards'
     | '/leaderboard/country'
@@ -1103,6 +1148,7 @@ export interface FileRouteTypes {
     | '/api/ai/chat'
     | '/journal/share/$token'
     | '/admin'
+    | '/battle-arena'
     | '/leaderboard'
     | '/market'
     | '/replay'
@@ -1166,6 +1212,9 @@ export interface FileRouteTypes {
     | '/_authenticated/ai/psychology'
     | '/_authenticated/ai/settings'
     | '/_authenticated/ai/trade-review'
+    | '/_authenticated/battle-arena/$battleId'
+    | '/_authenticated/battle-arena/create'
+    | '/_authenticated/battle-arena/history'
     | '/_authenticated/challenges/history'
     | '/_authenticated/challenges/rewards'
     | '/_authenticated/leaderboard/country'
@@ -1200,6 +1249,7 @@ export interface FileRouteTypes {
     | '/api/ai/chat'
     | '/journal/share/$token'
     | '/_authenticated/admin/'
+    | '/_authenticated/battle-arena/'
     | '/_authenticated/leaderboard/'
     | '/_authenticated/market/'
     | '/_authenticated/replay/'
@@ -1483,6 +1533,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLeaderboardIndexRouteImport
       parentRoute: typeof AuthenticatedLeaderboardRoute
     }
+    '/_authenticated/battle-arena/': {
+      id: '/_authenticated/battle-arena/'
+      path: '/'
+      fullPath: '/battle-arena/'
+      preLoaderRoute: typeof AuthenticatedBattleArenaIndexRouteImport
+      parentRoute: typeof AuthenticatedBattleArenaRoute
+    }
     '/_authenticated/admin/': {
       id: '/_authenticated/admin/'
       path: '/'
@@ -1720,6 +1777,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/challenges/history'
       preLoaderRoute: typeof AuthenticatedChallengesHistoryRouteImport
       parentRoute: typeof AuthenticatedChallengesRoute
+    }
+    '/_authenticated/battle-arena/history': {
+      id: '/_authenticated/battle-arena/history'
+      path: '/history'
+      fullPath: '/battle-arena/history'
+      preLoaderRoute: typeof AuthenticatedBattleArenaHistoryRouteImport
+      parentRoute: typeof AuthenticatedBattleArenaRoute
+    }
+    '/_authenticated/battle-arena/create': {
+      id: '/_authenticated/battle-arena/create'
+      path: '/create'
+      fullPath: '/battle-arena/create'
+      preLoaderRoute: typeof AuthenticatedBattleArenaCreateRouteImport
+      parentRoute: typeof AuthenticatedBattleArenaRoute
+    }
+    '/_authenticated/battle-arena/$battleId': {
+      id: '/_authenticated/battle-arena/$battleId'
+      path: '/$battleId'
+      fullPath: '/battle-arena/$battleId'
+      preLoaderRoute: typeof AuthenticatedBattleArenaBattleIdRouteImport
+      parentRoute: typeof AuthenticatedBattleArenaRoute
     }
     '/_authenticated/ai/trade-review': {
       id: '/_authenticated/ai/trade-review'
@@ -1961,6 +2039,27 @@ const AuthenticatedAiRouteWithChildren = AuthenticatedAiRoute._addFileChildren(
   AuthenticatedAiRouteChildren,
 )
 
+interface AuthenticatedBattleArenaRouteChildren {
+  AuthenticatedBattleArenaBattleIdRoute: typeof AuthenticatedBattleArenaBattleIdRoute
+  AuthenticatedBattleArenaCreateRoute: typeof AuthenticatedBattleArenaCreateRoute
+  AuthenticatedBattleArenaHistoryRoute: typeof AuthenticatedBattleArenaHistoryRoute
+  AuthenticatedBattleArenaIndexRoute: typeof AuthenticatedBattleArenaIndexRoute
+}
+
+const AuthenticatedBattleArenaRouteChildren: AuthenticatedBattleArenaRouteChildren =
+  {
+    AuthenticatedBattleArenaBattleIdRoute:
+      AuthenticatedBattleArenaBattleIdRoute,
+    AuthenticatedBattleArenaCreateRoute: AuthenticatedBattleArenaCreateRoute,
+    AuthenticatedBattleArenaHistoryRoute: AuthenticatedBattleArenaHistoryRoute,
+    AuthenticatedBattleArenaIndexRoute: AuthenticatedBattleArenaIndexRoute,
+  }
+
+const AuthenticatedBattleArenaRouteWithChildren =
+  AuthenticatedBattleArenaRoute._addFileChildren(
+    AuthenticatedBattleArenaRouteChildren,
+  )
+
 interface AuthenticatedChallengesRouteChildren {
   AuthenticatedChallengesHistoryRoute: typeof AuthenticatedChallengesHistoryRoute
   AuthenticatedChallengesRewardsRoute: typeof AuthenticatedChallengesRewardsRoute
@@ -2127,7 +2226,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAchievementsRoute: typeof AuthenticatedAchievementsRoute
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedAiRoute: typeof AuthenticatedAiRouteWithChildren
-  AuthenticatedBattleArenaRoute: typeof AuthenticatedBattleArenaRoute
+  AuthenticatedBattleArenaRoute: typeof AuthenticatedBattleArenaRouteWithChildren
   AuthenticatedChallengesRoute: typeof AuthenticatedChallengesRouteWithChildren
   AuthenticatedChartsRoute: typeof AuthenticatedChartsRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
@@ -2152,7 +2251,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAchievementsRoute: AuthenticatedAchievementsRoute,
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedAiRoute: AuthenticatedAiRouteWithChildren,
-  AuthenticatedBattleArenaRoute: AuthenticatedBattleArenaRoute,
+  AuthenticatedBattleArenaRoute: AuthenticatedBattleArenaRouteWithChildren,
   AuthenticatedChallengesRoute: AuthenticatedChallengesRouteWithChildren,
   AuthenticatedChartsRoute: AuthenticatedChartsRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
