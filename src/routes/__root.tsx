@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider } from "@/hooks/use-auth";
+import { ThemeProvider } from "@/hooks/use-theme";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { APP_DESCRIPTION, APP_NAME } from "@/lib/constants";
@@ -138,22 +139,23 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider delayDuration={100}>
-          <Outlet />
-          <Toaster
-            position="top-right"
-            theme="light"
-            richColors
-            closeButton
-            toastOptions={{
-              classNames: {
-                toast: "!bg-card !border-border !text-foreground shadow-elegant",
-              },
-            }}
-          />
-        </TooltipProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <TooltipProvider delayDuration={100}>
+            <Outlet />
+            <Toaster
+              position="top-right"
+              richColors
+              closeButton
+              toastOptions={{
+                classNames: {
+                  toast: "!bg-card !border-border !text-foreground shadow-elegant",
+                },
+              }}
+            />
+          </TooltipProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

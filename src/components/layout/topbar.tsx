@@ -1,4 +1,4 @@
-import { Bell, Command, Flame, Menu, Search, Sparkles } from "lucide-react";
+import { Bell, Command, Flame, Menu, Moon, Search, Sparkles, Sun } from "lucide-react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
   DropdownMenu,
@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
+import { useTheme } from "@/hooks/use-theme";
 import { useEffect, useState } from "react";
 import { xpForLevel } from "@/lib/constants";
 import { XPBar } from "@/components/ui/xp-bar";
@@ -23,6 +24,7 @@ export function Topbar({
   onSearchClick: () => void;
 }) {
   const { profile, user, signOut } = useAuth();
+  const { theme, toggle } = useTheme();
   const navigate = useNavigate();
   const [isMac, setIsMac] = useState(false);
 
@@ -80,6 +82,16 @@ export function Topbar({
             <span className="text-muted-foreground">day streak</span>
           </div>
         </div>
+
+        {/* Theme toggle */}
+        <button
+          onClick={toggle}
+          className="grid h-11 w-11 place-items-center rounded-xl border border-border bg-surface/60 text-muted-foreground transition hover:text-foreground"
+          aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+          title={theme === "dark" ? "Light mode" : "Dark mode"}
+        >
+          {theme === "dark" ? <Sun className="h-4 w-4" aria-hidden /> : <Moon className="h-4 w-4" aria-hidden />}
+        </button>
 
         {/* Notifications */}
         <DropdownMenu>
