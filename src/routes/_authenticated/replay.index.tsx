@@ -1,15 +1,16 @@
 import { useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { Clock, Film, Flame, Play, Sparkles, Star } from "lucide-react";
+import { Clock, Dices, Film, Flame, Play, Sparkles, Star, Target } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { CreatorWizard } from "@/components/replay/CreatorWizard";
 import { LibraryCard } from "@/components/replay/LibraryCard";
 import { getReplayStatistics, listReplaySessions } from "@/lib/replay.functions";
+import { createRandomReplaySession } from "@/lib/replay-studio.functions";
 import type { ReplaySession } from "@/lib/replay/types";
 
 export const Route = createFileRoute("/_authenticated/replay/")({
@@ -18,10 +19,16 @@ export const Route = createFileRoute("/_authenticated/replay/")({
 
 function ReplayDashboard() {
   const [wiz, setWiz] = useState(false);
+  const navigate = useNavigate();
   const list = useServerFn(listReplaySessions);
   const stats = useServerFn(getReplayStatistics);
+  const rand = useServerFn(createRandomReplaySession);
   const sessions = useQuery({ queryKey: ["replay", "sessions"], queryFn: () => list() });
   const stat = useQuery({ queryKey: ["replay", "statistics"], queryFn: () => stats() });
+  const randomM = useMutation({
+    mutationFn: () => rand(),
+    onSuccess: (row: any) => navigate({ to: "/replay/session", search: { id: row.id } as any }),
+  });
 
   const recents = (sessions.data ?? []).slice(0, 8) as ReplaySession[];
   const active = recents.find((s) => s.status === "active" || s.status === "paused");
@@ -48,6 +55,12 @@ function ReplayDashboard() {
                 </Link>
               </Button>
             ) : null}
+            <Button asChild variant="secondary">
+              <Link to="/replay/challenges"><Target className="mr-2 h-4 w-4" />Challenges</Link>
+            </Button>
+            <Button variant="secondary" onClick={() => randomM.mutate()} disabled={randomM.isPending}>
+              <Dices className="mr-2 h-4 w-4" />{randomM.isPending ? "Rolling…" : "Surprise Me"}
+            </Button>
             <Button onClick={() => setWiz(true)}>
               <Sparkles className="mr-2 h-4 w-4" />New Replay
             </Button>
