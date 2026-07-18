@@ -2466,6 +2466,582 @@ export type Database = {
         }
         Relationships: []
       }
+      community_bookmarks: {
+        Row: {
+          created_at: string
+          id: string
+          note: string | null
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_bookmarks_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "community_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_categories: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean
+          name: string
+          post_count: number
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          post_count?: number
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          post_count?: number
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      community_comments: {
+        Row: {
+          author_id: string
+          body_html: string | null
+          body_md: string
+          created_at: string
+          edited_at: string | null
+          id: string
+          is_deleted: boolean
+          is_edited: boolean
+          like_count: number
+          mentions: string[]
+          parent_id: string | null
+          post_id: string
+          reply_count: number
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          body_html?: string | null
+          body_md: string
+          created_at?: string
+          edited_at?: string | null
+          id?: string
+          is_deleted?: boolean
+          is_edited?: boolean
+          like_count?: number
+          mentions?: string[]
+          parent_id?: string | null
+          post_id: string
+          reply_count?: number
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          body_html?: string | null
+          body_md?: string
+          created_at?: string
+          edited_at?: string | null
+          id?: string
+          is_deleted?: boolean
+          is_edited?: boolean
+          like_count?: number
+          mentions?: string[]
+          parent_id?: string | null
+          post_id?: string
+          reply_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "community_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "community_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_followers: {
+        Row: {
+          created_at: string
+          follower_id: string
+          following_id: string
+          id: string
+          is_blocked: boolean
+          is_muted: boolean
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          following_id: string
+          id?: string
+          is_blocked?: boolean
+          is_muted?: boolean
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          following_id?: string
+          id?: string
+          is_blocked?: boolean
+          is_muted?: boolean
+        }
+        Relationships: []
+      }
+      community_notifications: {
+        Row: {
+          actor_id: string | null
+          comment_id: string | null
+          created_at: string
+          id: string
+          is_read: boolean
+          kind: Database["public"]["Enums"]["community_notification_kind"]
+          message: string | null
+          post_id: string | null
+          user_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          comment_id?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          kind: Database["public"]["Enums"]["community_notification_kind"]
+          message?: string | null
+          post_id?: string | null
+          user_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          comment_id?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          kind?: Database["public"]["Enums"]["community_notification_kind"]
+          message?: string | null
+          post_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_notifications_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "community_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_notifications_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "community_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_posts: {
+        Row: {
+          attachments: Json
+          author_id: string
+          body_html: string | null
+          body_md: string | null
+          bookmark_count: number
+          category_id: string | null
+          comment_count: number
+          created_at: string
+          direction: string | null
+          edited_at: string | null
+          excerpt: string | null
+          hashtags: string[]
+          helpful_count: number
+          id: string
+          is_deleted: boolean
+          is_draft: boolean
+          is_featured: boolean
+          is_locked: boolean
+          is_pinned: boolean
+          is_published: boolean
+          like_count: number
+          linked_battle_id: string | null
+          linked_journal_id: string | null
+          linked_replay_id: string | null
+          linked_strategy_id: string | null
+          linked_trade_id: string | null
+          market: string | null
+          media: Json
+          mentions: string[]
+          poll: Json | null
+          post_type: Database["public"]["Enums"]["community_post_type"]
+          published_at: string | null
+          share_count: number
+          symbol: string | null
+          title: string | null
+          trending_score: number
+          updated_at: string
+          view_count: number
+          visibility: string
+        }
+        Insert: {
+          attachments?: Json
+          author_id: string
+          body_html?: string | null
+          body_md?: string | null
+          bookmark_count?: number
+          category_id?: string | null
+          comment_count?: number
+          created_at?: string
+          direction?: string | null
+          edited_at?: string | null
+          excerpt?: string | null
+          hashtags?: string[]
+          helpful_count?: number
+          id?: string
+          is_deleted?: boolean
+          is_draft?: boolean
+          is_featured?: boolean
+          is_locked?: boolean
+          is_pinned?: boolean
+          is_published?: boolean
+          like_count?: number
+          linked_battle_id?: string | null
+          linked_journal_id?: string | null
+          linked_replay_id?: string | null
+          linked_strategy_id?: string | null
+          linked_trade_id?: string | null
+          market?: string | null
+          media?: Json
+          mentions?: string[]
+          poll?: Json | null
+          post_type?: Database["public"]["Enums"]["community_post_type"]
+          published_at?: string | null
+          share_count?: number
+          symbol?: string | null
+          title?: string | null
+          trending_score?: number
+          updated_at?: string
+          view_count?: number
+          visibility?: string
+        }
+        Update: {
+          attachments?: Json
+          author_id?: string
+          body_html?: string | null
+          body_md?: string | null
+          bookmark_count?: number
+          category_id?: string | null
+          comment_count?: number
+          created_at?: string
+          direction?: string | null
+          edited_at?: string | null
+          excerpt?: string | null
+          hashtags?: string[]
+          helpful_count?: number
+          id?: string
+          is_deleted?: boolean
+          is_draft?: boolean
+          is_featured?: boolean
+          is_locked?: boolean
+          is_pinned?: boolean
+          is_published?: boolean
+          like_count?: number
+          linked_battle_id?: string | null
+          linked_journal_id?: string | null
+          linked_replay_id?: string | null
+          linked_strategy_id?: string | null
+          linked_trade_id?: string | null
+          market?: string | null
+          media?: Json
+          mentions?: string[]
+          poll?: Json | null
+          post_type?: Database["public"]["Enums"]["community_post_type"]
+          published_at?: string | null
+          share_count?: number
+          symbol?: string | null
+          title?: string | null
+          trending_score?: number
+          updated_at?: string
+          view_count?: number
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_posts_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "community_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_posts_linked_battle_id_fkey"
+            columns: ["linked_battle_id"]
+            isOneToOne: false
+            referencedRelation: "battles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_posts_linked_journal_id_fkey"
+            columns: ["linked_journal_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_posts_linked_replay_id_fkey"
+            columns: ["linked_replay_id"]
+            isOneToOne: false
+            referencedRelation: "replay_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_posts_linked_strategy_id_fkey"
+            columns: ["linked_strategy_id"]
+            isOneToOne: false
+            referencedRelation: "strategies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_posts_linked_trade_id_fkey"
+            columns: ["linked_trade_id"]
+            isOneToOne: false
+            referencedRelation: "paper_trades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_reactions: {
+        Row: {
+          comment_id: string | null
+          created_at: string
+          id: string
+          kind: Database["public"]["Enums"]["community_reaction_kind"]
+          post_id: string | null
+          user_id: string
+        }
+        Insert: {
+          comment_id?: string | null
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["community_reaction_kind"]
+          post_id?: string | null
+          user_id: string
+        }
+        Update: {
+          comment_id?: string | null
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["community_reaction_kind"]
+          post_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_reactions_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "community_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_reactions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "community_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_reports: {
+        Row: {
+          comment_id: string | null
+          created_at: string
+          details: string | null
+          id: string
+          post_id: string | null
+          reason: string
+          reporter_id: string
+          resolution: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["community_report_status"]
+          target_user_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          comment_id?: string | null
+          created_at?: string
+          details?: string | null
+          id?: string
+          post_id?: string | null
+          reason: string
+          reporter_id: string
+          resolution?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["community_report_status"]
+          target_user_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          comment_id?: string | null
+          created_at?: string
+          details?: string | null
+          id?: string
+          post_id?: string | null
+          reason?: string
+          reporter_id?: string
+          resolution?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["community_report_status"]
+          target_user_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_reports_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "community_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_reports_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "community_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_reputation: {
+        Row: {
+          comments_count: number
+          helpful_received: number
+          insightful_received: number
+          is_battle_champion: boolean
+          is_educator: boolean
+          is_mentor: boolean
+          is_monthly_champion: boolean
+          is_top_contributor: boolean
+          is_verified: boolean
+          likes_received: number
+          posts_count: number
+          reputation_score: number
+          strategies_shared: number
+          tags: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          comments_count?: number
+          helpful_received?: number
+          insightful_received?: number
+          is_battle_champion?: boolean
+          is_educator?: boolean
+          is_mentor?: boolean
+          is_monthly_champion?: boolean
+          is_top_contributor?: boolean
+          is_verified?: boolean
+          likes_received?: number
+          posts_count?: number
+          reputation_score?: number
+          strategies_shared?: number
+          tags?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          comments_count?: number
+          helpful_received?: number
+          insightful_received?: number
+          is_battle_champion?: boolean
+          is_educator?: boolean
+          is_mentor?: boolean
+          is_monthly_champion?: boolean
+          is_top_contributor?: boolean
+          is_verified?: boolean
+          likes_received?: number
+          posts_count?: number
+          reputation_score?: number
+          strategies_shared?: number
+          tags?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      community_tags: {
+        Row: {
+          created_at: string
+          id: string
+          is_trending: boolean
+          name: string
+          post_count: number
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_trending?: boolean
+          name: string
+          post_count?: number
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_trending?: boolean
+          name?: string
+          post_count?: number
+          slug?: string
+        }
+        Relationships: []
+      }
       content_pages: {
         Row: {
           body: string | null
@@ -6644,6 +7220,14 @@ export type Database = {
           remaining: number
         }[]
       }
+      community_recompute_reputation: {
+        Args: { _user_id: string }
+        Returns: undefined
+      }
+      community_recompute_trending: {
+        Args: { _post_id: string }
+        Returns: undefined
+      }
       emit_battle_event: {
         Args: {
           _battle_id: string
@@ -6791,6 +7375,41 @@ export type Database = {
       challenge_difficulty: "easy" | "medium" | "hard" | "elite"
       challenge_scope: "daily" | "weekly" | "monthly" | "special" | "event"
       challenge_status: "active" | "completed" | "claimed" | "expired"
+      community_notification_kind:
+        | "follow"
+        | "comment"
+        | "reply"
+        | "like"
+        | "mention"
+        | "share"
+        | "post_featured"
+        | "post_pinned"
+        | "report_resolved"
+      community_post_type:
+        | "text"
+        | "chart"
+        | "trade_idea"
+        | "journal"
+        | "battle_result"
+        | "tournament_result"
+        | "replay"
+        | "strategy"
+        | "question"
+        | "poll"
+        | "image"
+        | "video"
+        | "pdf"
+        | "announcement"
+      community_reaction_kind:
+        | "like"
+        | "helpful"
+        | "insightful"
+        | "bullish"
+        | "bearish"
+        | "fire"
+        | "laugh"
+        | "clap"
+      community_report_status: "open" | "reviewing" | "resolved" | "dismissed"
       journal_grade: "A+" | "A" | "B" | "C" | "D" | "F"
       journal_session: "london" | "new_york" | "asia" | "sydney" | "custom"
       journal_status: "draft" | "published" | "archived"
@@ -7119,6 +7738,44 @@ export const Constants = {
       challenge_difficulty: ["easy", "medium", "hard", "elite"],
       challenge_scope: ["daily", "weekly", "monthly", "special", "event"],
       challenge_status: ["active", "completed", "claimed", "expired"],
+      community_notification_kind: [
+        "follow",
+        "comment",
+        "reply",
+        "like",
+        "mention",
+        "share",
+        "post_featured",
+        "post_pinned",
+        "report_resolved",
+      ],
+      community_post_type: [
+        "text",
+        "chart",
+        "trade_idea",
+        "journal",
+        "battle_result",
+        "tournament_result",
+        "replay",
+        "strategy",
+        "question",
+        "poll",
+        "image",
+        "video",
+        "pdf",
+        "announcement",
+      ],
+      community_reaction_kind: [
+        "like",
+        "helpful",
+        "insightful",
+        "bullish",
+        "bearish",
+        "fire",
+        "laugh",
+        "clap",
+      ],
+      community_report_status: ["open", "reviewing", "resolved", "dismissed"],
       journal_grade: ["A+", "A", "B", "C", "D", "F"],
       journal_session: ["london", "new_york", "asia", "sydney", "custom"],
       journal_status: ["draft", "published", "archived"],

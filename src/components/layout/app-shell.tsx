@@ -8,6 +8,7 @@ import {
   LifeBuoy,
   LineChart,
   Menu,
+  MessageSquare,
   Settings,
   Shield,
   ShoppingBag,
@@ -38,6 +39,7 @@ const NAV: NavItem[] = [
   { to: "/battle-arena", label: "Battle Arena", icon: Swords },
   { to: "/statistics", label: "Statistics", icon: BarChart3 },
   { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
+  { to: "/community", label: "Community", icon: MessageSquare },
   { to: "/achievements", label: "Achievements", icon: Award },
 ];
 // Not yet implemented — kept as routes for direct URLs but hidden from primary nav.
