@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MOCK_MARKETS } from "@/lib/dashboard-mock";
 import { addWatchlistItem, listWatchlist, removeWatchlistItem, toggleWatchlistFavorite } from "@/lib/dashboard.functions";
+import { useLiveQuote } from "@/lib/market-data/hooks";
+import type { MarketKind } from "@/lib/market-data/types";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -50,7 +51,7 @@ export function Watchlist() {
     );
   }, [items, tab, q]);
 
-  const priceFor = (sym: string) => MOCK_MARKETS.find((m) => m.symbol === sym);
+  
 
   const addMut = useMutation({
     mutationFn: (v: { symbol: string; market: string }) =>
@@ -133,57 +134,63 @@ export function Watchlist() {
         ) : filtered.length === 0 ? (
           <EmptyState icon={Star} title="Empty watchlist" description="Add a symbol above to start tracking." className="py-8" />
         ) : (
-          filtered.map((it) => {
-            const q = priceFor(it.symbol);
-            const up = (q?.change ?? 0) >= 0;
-            return (
-              <div
-                key={it.id}
-                className="group flex items-center justify-between rounded-xl border border-transparent px-3 py-2 transition hover:border-border/60 hover:bg-surface/60"
-              >
-                <div className="flex min-w-0 items-center gap-2">
-                  <button
-                    onClick={() => favMut.mutate({ id: it.id, favorite: !it.favorite })}
-                    className="text-muted-foreground transition hover:text-warning"
-                    aria-label={it.favorite ? "Unfavorite" : "Favorite"}
-                  >
-                    {it.favorite ? (
-                      <Star className="h-3.5 w-3.5 fill-warning text-warning" />
-                    ) : (
-                      <StarOff className="h-3.5 w-3.5" />
-                    )}
-                  </button>
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-medium">{it.symbol}</div>
-                    <div className="truncate text-[10px] uppercase tracking-wider text-muted-foreground">{it.market}</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  {q ? (
-                    <div className="text-right">
-                      <div className="font-mono text-sm tabular-nums">{q.price.toLocaleString()}</div>
-                      <div className={cn("text-xs font-medium", up ? "text-primary" : "text-danger")}>
-                        {up ? "+" : ""}
-                        {q.change.toFixed(2)}%
-                      </div>
-                    </div>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">demo</span>
-                  )}
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-7 w-7 opacity-0 transition group-hover:opacity-100"
-                    onClick={() => removeMut.mutate(it.id)}
-                    aria-label="Remove"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
-            );
-          })
+          filtered.map((it) => (
+            <WatchlistRow
+              key={it.id}
+              symbol={it.symbol}
+              market={it.market as MarketKind}
+              favorite={!!it.favorite}
+              onFav={() => favMut.mutate({ id: it.id, favorite: !it.favorite })}
+              onRemove={() => removeMut.mutate(it.id)}
+            />
+          ))
         )}
+      </div>
+    </div>
+  );
+}
+
+function WatchlistRow({
+  symbol,
+  market,
+  favorite,
+  onFav,
+  onRemove,
+}: {
+  symbol: string;
+  market: MarketKind;
+  favorite: boolean;
+  onFav: () => void;
+  onRemove: () => void;
+}) {
+  const q = useLiveQuote(symbol, market);
+  const change = q?.changePct ?? 0;
+  const up = change >= 0;
+  return (
+    <div className="group flex items-center justify-between rounded-xl border border-transparent px-3 py-2 transition hover:border-border/60 hover:bg-surface/60">
+      <div className="flex min-w-0 items-center gap-2">
+        <button onClick={onFav} className="text-muted-foreground transition hover:text-warning" aria-label={favorite ? "Unfavorite" : "Favorite"}>
+          {favorite ? <Star className="h-3.5 w-3.5 fill-warning text-warning" /> : <StarOff className="h-3.5 w-3.5" />}
+        </button>
+        <div className="min-w-0">
+          <div className="truncate text-sm font-medium">{symbol}</div>
+          <div className="truncate text-[10px] uppercase tracking-wider text-muted-foreground">{market}</div>
+        </div>
+      </div>
+      <div className="flex items-center gap-3">
+        {q?.last != null ? (
+          <div className="text-right">
+            <div className="font-mono text-sm tabular-nums">{q.last.toLocaleString()}</div>
+            <div className={cn("text-xs font-medium", up ? "text-primary" : "text-danger")}>
+              {up ? "+" : ""}{change.toFixed(2)}%
+            </div>
+          </div>
+        ) : (
+          <span className="text-xs text-muted-foreground">…</span>
+        )}
+        <Button size="icon" variant="ghost" className="h-7 w-7 opacity-0 transition group-hover:opacity-100" onClick={onRemove} aria-label="Remove">
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
       </div>
     </div>
   );
