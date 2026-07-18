@@ -24,6 +24,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { ShareToCommunityButton } from "@/components/sharing/ShareToCommunityButton";
 import {
   Sheet,
   SheetContent,
