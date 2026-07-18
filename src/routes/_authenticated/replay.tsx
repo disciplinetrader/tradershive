@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, redirect, useRouterState } from "@tanstack/react-router";
-import { Film, LayoutGrid, Library, Play, Settings2 } from "lucide-react";
+import { Film, LayoutGrid, Library, Play, Settings2, Target } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { cn } from "@/lib/utils";
 
@@ -8,6 +8,7 @@ const TABS = [
   { to: "/replay/session", label: "Workspace", icon: Play },
   { to: "/replay/trades", label: "Trades", icon: Film },
   { to: "/replay/library", label: "Library", icon: Library },
+  { to: "/replay/challenges", label: "Challenges", icon: Target },
   { to: "/replay/settings", label: "Settings", icon: Settings2 },
 ];
 
