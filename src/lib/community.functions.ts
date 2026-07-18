@@ -11,7 +11,8 @@ const POST_SELECT = `
   like_count, comment_count, bookmark_count, share_count, view_count, helpful_count,
   trending_score, published_at, edited_at, created_at,
   author:profiles!community_posts_author_id_fkey(id, username, display_name, avatar_url, country, level, league),
-  category:community_categories(id, slug, name, color, icon)
+  category:community_categories(id, slug, name, color, icon),
+  shared_content(id, source_type, source_id, source_ref, title, summary, snapshot, cover_url, visibility)
 `;
 
 async function attachViewerState(
