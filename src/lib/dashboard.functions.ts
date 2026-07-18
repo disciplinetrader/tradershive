@@ -376,7 +376,7 @@ export const listMyNotifications = createServerFn({ method: "GET" })
       id: r.id,
       title: r.notification_campaigns?.title ?? "Notification",
       description: r.notification_campaigns?.body ?? "",
-      type: (r.notification_campaigns?.category ?? "system") as string,
+      type: (r.notification_campaigns?.channel ?? "system") as string,
       read: !!r.read_at,
       createdAt: r.created_at,
     }));
