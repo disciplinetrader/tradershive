@@ -73,6 +73,7 @@ import { Route as AuthenticatedReplayTradesRouteImport } from './routes/_authent
 import { Route as AuthenticatedReplaySettingsRouteImport } from './routes/_authenticated/replay.settings'
 import { Route as AuthenticatedReplaySessionRouteImport } from './routes/_authenticated/replay.session'
 import { Route as AuthenticatedReplayLibraryRouteImport } from './routes/_authenticated/replay.library'
+import { Route as AuthenticatedReplayChallengesRouteImport } from './routes/_authenticated/replay.challenges'
 import { Route as AuthenticatedProfileUsernameRouteImport } from './routes/_authenticated/profile.$username'
 import { Route as AuthenticatedMarketSymbolsRouteImport } from './routes/_authenticated/market.symbols'
 import { Route as AuthenticatedMarketSettingsRouteImport } from './routes/_authenticated/market.settings'
@@ -475,6 +476,12 @@ const AuthenticatedReplayLibraryRoute =
     path: '/library',
     getParentRoute: () => AuthenticatedReplayRoute,
   } as any)
+const AuthenticatedReplayChallengesRoute =
+  AuthenticatedReplayChallengesRouteImport.update({
+    id: '/challenges',
+    path: '/challenges',
+    getParentRoute: () => AuthenticatedReplayRoute,
+  } as any)
 const AuthenticatedProfileUsernameRoute =
   AuthenticatedProfileUsernameRouteImport.update({
     id: '/$username',
@@ -837,6 +844,7 @@ export interface FileRoutesByFullPath {
   '/market/settings': typeof AuthenticatedMarketSettingsRoute
   '/market/symbols': typeof AuthenticatedMarketSymbolsRoute
   '/profile/$username': typeof AuthenticatedProfileUsernameRoute
+  '/replay/challenges': typeof AuthenticatedReplayChallengesRoute
   '/replay/library': typeof AuthenticatedReplayLibraryRoute
   '/replay/session': typeof AuthenticatedReplaySessionRoute
   '/replay/settings': typeof AuthenticatedReplaySettingsRoute
@@ -940,6 +948,7 @@ export interface FileRoutesByTo {
   '/market/settings': typeof AuthenticatedMarketSettingsRoute
   '/market/symbols': typeof AuthenticatedMarketSymbolsRoute
   '/profile/$username': typeof AuthenticatedProfileUsernameRoute
+  '/replay/challenges': typeof AuthenticatedReplayChallengesRoute
   '/replay/library': typeof AuthenticatedReplayLibraryRoute
   '/replay/session': typeof AuthenticatedReplaySessionRoute
   '/replay/settings': typeof AuthenticatedReplaySettingsRoute
@@ -1055,6 +1064,7 @@ export interface FileRoutesById {
   '/_authenticated/market/settings': typeof AuthenticatedMarketSettingsRoute
   '/_authenticated/market/symbols': typeof AuthenticatedMarketSymbolsRoute
   '/_authenticated/profile/$username': typeof AuthenticatedProfileUsernameRoute
+  '/_authenticated/replay/challenges': typeof AuthenticatedReplayChallengesRoute
   '/_authenticated/replay/library': typeof AuthenticatedReplayLibraryRoute
   '/_authenticated/replay/session': typeof AuthenticatedReplaySessionRoute
   '/_authenticated/replay/settings': typeof AuthenticatedReplaySettingsRoute
@@ -1170,6 +1180,7 @@ export interface FileRouteTypes {
     | '/market/settings'
     | '/market/symbols'
     | '/profile/$username'
+    | '/replay/challenges'
     | '/replay/library'
     | '/replay/session'
     | '/replay/settings'
@@ -1273,6 +1284,7 @@ export interface FileRouteTypes {
     | '/market/settings'
     | '/market/symbols'
     | '/profile/$username'
+    | '/replay/challenges'
     | '/replay/library'
     | '/replay/session'
     | '/replay/settings'
@@ -1387,6 +1399,7 @@ export interface FileRouteTypes {
     | '/_authenticated/market/settings'
     | '/_authenticated/market/symbols'
     | '/_authenticated/profile/$username'
+    | '/_authenticated/replay/challenges'
     | '/_authenticated/replay/library'
     | '/_authenticated/replay/session'
     | '/_authenticated/replay/settings'
@@ -1884,6 +1897,13 @@ declare module '@tanstack/react-router' {
       path: '/library'
       fullPath: '/replay/library'
       preLoaderRoute: typeof AuthenticatedReplayLibraryRouteImport
+      parentRoute: typeof AuthenticatedReplayRoute
+    }
+    '/_authenticated/replay/challenges': {
+      id: '/_authenticated/replay/challenges'
+      path: '/challenges'
+      fullPath: '/replay/challenges'
+      preLoaderRoute: typeof AuthenticatedReplayChallengesRouteImport
       parentRoute: typeof AuthenticatedReplayRoute
     }
     '/_authenticated/profile/$username': {
@@ -2434,6 +2454,7 @@ const AuthenticatedProfileRouteWithChildren =
   AuthenticatedProfileRoute._addFileChildren(AuthenticatedProfileRouteChildren)
 
 interface AuthenticatedReplayRouteChildren {
+  AuthenticatedReplayChallengesRoute: typeof AuthenticatedReplayChallengesRoute
   AuthenticatedReplayLibraryRoute: typeof AuthenticatedReplayLibraryRoute
   AuthenticatedReplaySessionRoute: typeof AuthenticatedReplaySessionRoute
   AuthenticatedReplaySettingsRoute: typeof AuthenticatedReplaySettingsRoute
@@ -2442,6 +2463,7 @@ interface AuthenticatedReplayRouteChildren {
 }
 
 const AuthenticatedReplayRouteChildren: AuthenticatedReplayRouteChildren = {
+  AuthenticatedReplayChallengesRoute: AuthenticatedReplayChallengesRoute,
   AuthenticatedReplayLibraryRoute: AuthenticatedReplayLibraryRoute,
   AuthenticatedReplaySessionRoute: AuthenticatedReplaySessionRoute,
   AuthenticatedReplaySettingsRoute: AuthenticatedReplaySettingsRoute,
