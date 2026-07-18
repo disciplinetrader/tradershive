@@ -5678,6 +5678,68 @@ export type Database = {
         }
         Relationships: []
       }
+      replay_ai_reviews: {
+        Row: {
+          consistency: string | null
+          created_at: string
+          entry_analysis: string | null
+          exit_analysis: string | null
+          id: string
+          missed_opportunities: string | null
+          model: string
+          overall_rating: number | null
+          psychology: string | null
+          raw: Json | null
+          risk_analysis: string | null
+          session_id: string
+          suggestions: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          consistency?: string | null
+          created_at?: string
+          entry_analysis?: string | null
+          exit_analysis?: string | null
+          id?: string
+          missed_opportunities?: string | null
+          model?: string
+          overall_rating?: number | null
+          psychology?: string | null
+          raw?: Json | null
+          risk_analysis?: string | null
+          session_id: string
+          suggestions?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          consistency?: string | null
+          created_at?: string
+          entry_analysis?: string | null
+          exit_analysis?: string | null
+          id?: string
+          missed_opportunities?: string | null
+          model?: string
+          overall_rating?: number | null
+          psychology?: string | null
+          raw?: Json | null
+          risk_analysis?: string | null
+          session_id?: string
+          suggestions?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "replay_ai_reviews_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "replay_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       replay_bookmarks: {
         Row: {
           bookmark_ts: string
@@ -5721,6 +5783,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      replay_challenges: {
+        Row: {
+          active: boolean
+          category: string
+          coin_reward: number
+          created_at: string
+          description: string | null
+          difficulty: string
+          icon: string | null
+          id: string
+          is_featured: boolean
+          rules: Json
+          slug: string
+          sort_order: number
+          target_metric: string | null
+          target_value: number | null
+          title: string
+          updated_at: string
+          xp_reward: number
+        }
+        Insert: {
+          active?: boolean
+          category?: string
+          coin_reward?: number
+          created_at?: string
+          description?: string | null
+          difficulty?: string
+          icon?: string | null
+          id?: string
+          is_featured?: boolean
+          rules?: Json
+          slug: string
+          sort_order?: number
+          target_metric?: string | null
+          target_value?: number | null
+          title: string
+          updated_at?: string
+          xp_reward?: number
+        }
+        Update: {
+          active?: boolean
+          category?: string
+          coin_reward?: number
+          created_at?: string
+          description?: string | null
+          difficulty?: string
+          icon?: string | null
+          id?: string
+          is_featured?: boolean
+          rules?: Json
+          slug?: string
+          sort_order?: number
+          target_metric?: string | null
+          target_value?: number | null
+          title?: string
+          updated_at?: string
+          xp_reward?: number
+        }
+        Relationships: []
       }
       replay_checklists: {
         Row: {
@@ -6054,13 +6176,17 @@ export type Database = {
       }
       replay_sessions: {
         Row: {
+          challenge_id: string | null
           completion_pct: number
           created_at: string
           cursor_ts: string | null
           deleted_at: string | null
           duration_seconds: number
+          hide_future: boolean
           id: string
+          initial_balance: number | null
           is_favorite: boolean
+          is_random: boolean
           last_opened_at: string | null
           market: string
           mode: string
@@ -6073,6 +6199,7 @@ export type Database = {
           source_journal_id: string | null
           source_trade_id: string | null
           status: string
+          strategy_id: string | null
           symbol: string
           tags: string[]
           timeframe: string
@@ -6081,13 +6208,17 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          challenge_id?: string | null
           completion_pct?: number
           created_at?: string
           cursor_ts?: string | null
           deleted_at?: string | null
           duration_seconds?: number
+          hide_future?: boolean
           id?: string
+          initial_balance?: number | null
           is_favorite?: boolean
+          is_random?: boolean
           last_opened_at?: string | null
           market: string
           mode?: string
@@ -6100,6 +6231,7 @@ export type Database = {
           source_journal_id?: string | null
           source_trade_id?: string | null
           status?: string
+          strategy_id?: string | null
           symbol: string
           tags?: string[]
           timeframe?: string
@@ -6108,13 +6240,17 @@ export type Database = {
           user_id: string
         }
         Update: {
+          challenge_id?: string | null
           completion_pct?: number
           created_at?: string
           cursor_ts?: string | null
           deleted_at?: string | null
           duration_seconds?: number
+          hide_future?: boolean
           id?: string
+          initial_balance?: number | null
           is_favorite?: boolean
+          is_random?: boolean
           last_opened_at?: string | null
           market?: string
           mode?: string
@@ -6127,6 +6263,7 @@ export type Database = {
           source_journal_id?: string | null
           source_trade_id?: string | null
           status?: string
+          strategy_id?: string | null
           symbol?: string
           tags?: string[]
           timeframe?: string
@@ -7841,6 +7978,60 @@ export type Database = {
           viewed_at?: string
         }
         Relationships: []
+      }
+      user_replay_challenges: {
+        Row: {
+          challenge_id: string
+          completed_at: string | null
+          created_at: string
+          id: string
+          progress: number
+          score: number | null
+          session_id: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          challenge_id: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          progress?: number
+          score?: number | null
+          session_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          challenge_id?: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          progress?: number
+          score?: number | null
+          session_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_replay_challenges_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "replay_challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_replay_challenges_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "replay_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
