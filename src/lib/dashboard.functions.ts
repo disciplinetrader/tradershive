@@ -367,7 +367,7 @@ export const listMyNotifications = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("notification_recipients")
-      .select("id, read_at, created_at, notification_campaigns(id, title, body, category, published_at)")
+      .select("id, read_at, created_at, notification_campaigns(id, title, body, channel, sent_at)")
       .eq("user_id", context.userId)
       .order("created_at", { ascending: false })
       .limit(20);
