@@ -204,6 +204,7 @@ export function JournalDrawer({
                   <SelectItem value="archived">Archived</SelectItem>
                 </SelectContent>
               </Select>
+              <ShareToCommunityButton sourceType="journal" sourceId={entry.id} iconOnly variant="ghost" size="sm" />
             </div>
           </div>
         </SheetHeader>
