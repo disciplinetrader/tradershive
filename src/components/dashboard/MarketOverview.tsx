@@ -10,7 +10,7 @@ const MARKETS: { symbol: string; market: MarketKind }[] = [
   { symbol: "BTC/USDT", market: "crypto" },
   { symbol: "ETH/USDT", market: "crypto" },
   { symbol: "SOL/USDT", market: "crypto" },
-  { symbol: "XAU/USD", market: "metal" },
+  { symbol: "XAU/USD", market: "metals" },
   { symbol: "NAS100", market: "indices" },
   { symbol: "SPX500", market: "indices" },
 ];
