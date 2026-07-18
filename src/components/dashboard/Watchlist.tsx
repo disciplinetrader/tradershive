@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MOCK_MARKETS } from "@/lib/dashboard-mock";
 import { addWatchlistItem, listWatchlist, removeWatchlistItem, toggleWatchlistFavorite } from "@/lib/dashboard.functions";
+import { useLiveQuote } from "@/lib/market-data/hooks";
+import type { MarketKind } from "@/lib/market-data/types";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
