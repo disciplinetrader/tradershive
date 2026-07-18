@@ -184,7 +184,7 @@ function BattleDetail() {
           <div className="ml-auto flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-1 text-xs">
             <span className="text-muted-foreground">Invite:</span>
             <code className="rounded bg-background px-2 py-0.5 font-mono">{battle!.invite_code}</code>
-            <Button size="sm" variant="ghost" onClick={() => { navigator.clipboard.writeText(battle!.invite_code); toast.success("Copied"); }}><Copy className="h-3 w-3" /></Button>
+            <Button size="sm" variant="ghost" onClick={() => { navigator.clipboard.writeText(battle!.invite_code ?? ""); toast.success("Copied"); }}><Copy className="h-3 w-3" /></Button>
           </div>
         )}
       </div>
