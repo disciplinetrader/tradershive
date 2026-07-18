@@ -14,6 +14,7 @@ import {
   ShoppingBag,
   Sparkles,
   Swords,
+  Film,
   Trophy,
   User as UserIcon,
   Users,
