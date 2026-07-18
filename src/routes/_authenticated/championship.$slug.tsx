@@ -117,7 +117,7 @@ function ChampionshipDetail() {
       <EmptyState
         title="Championship not found"
         description="Return to the championship home page."
-        action={<Button onClick={() => nav({ to: "/championship" })}>Back to championships</Button>}
+        action={{ label: "Back to championships", onClick: () => nav({ to: "/championship" }) }}
       />
     );
 
