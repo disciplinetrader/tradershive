@@ -1,19 +1,47 @@
-import { useState } from "react";
 import { Award, Bell, LineChart, Sparkles } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MOCK_NOTIFICATIONS, type DashboardNotification } from "@/lib/dashboard-mock";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { listMyNotifications, markAllNotificationsRead } from "@/lib/dashboard.functions";
 import { cn } from "@/lib/utils";
 
-const ICON: Record<DashboardNotification["type"], typeof Bell> = {
+const ICON: Record<string, typeof Bell> = {
   challenge: Sparkles,
   trade: LineChart,
   achievement: Award,
   system: Bell,
 };
 
+function timeAgo(iso: string): string {
+  const s = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
+  if (s < 60) return `${s}s`;
+  if (s < 3600) return `${Math.floor(s / 60)}m`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h`;
+  return `${Math.floor(s / 86400)}d`;
+}
+
 export function NotificationsWidget() {
-  const [items, setItems] = useState(MOCK_NOTIFICATIONS);
+  const qc = useQueryClient();
+  const list = useServerFn(listMyNotifications);
+  const markAll = useServerFn(markAllNotificationsRead);
+  const { data, isLoading } = useQuery({
+    queryKey: ["my_notifications"],
+    queryFn: () => list(),
+    staleTime: 30_000,
+  });
+  const mut = useMutation({
+    mutationFn: () => markAll(),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["my_notifications"] }),
+  });
+
+  if (isLoading) return <Skeleton className="h-40 w-full rounded-2xl" />;
+  const items = data ?? [];
+  if (items.length === 0) {
+    return <EmptyState icon={Bell} title="All caught up" description="No new notifications right now." />;
+  }
   const unread = items.filter((i) => !i.read).length;
 
   return (
@@ -22,13 +50,13 @@ export function NotificationsWidget() {
         <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary">
           {unread} unread
         </Badge>
-        <Button size="sm" variant="ghost" onClick={() => setItems((xs) => xs.map((x) => ({ ...x, read: true })))}>
+        <Button size="sm" variant="ghost" onClick={() => mut.mutate()} disabled={mut.isPending || unread === 0}>
           Mark all read
         </Button>
       </div>
       <ul className="space-y-1.5">
         {items.map((n) => {
-          const Icon = ICON[n.type];
+          const Icon = ICON[n.type] ?? Bell;
           return (
             <li
               key={n.id}
@@ -43,20 +71,15 @@ export function NotificationsWidget() {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
                   <span className="truncate text-sm font-medium">{n.title}</span>
-                  <span className="shrink-0 text-[10px] text-muted-foreground">{n.time}</span>
+                  <span className="shrink-0 text-[10px] text-muted-foreground">{timeAgo(n.createdAt)}</span>
                 </div>
                 <p className="line-clamp-2 text-xs text-muted-foreground">{n.description}</p>
               </div>
-              {!n.read ? (
-                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" aria-label="Unread" />
-              ) : null}
+              {!n.read ? <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" aria-label="Unread" /> : null}
             </li>
           );
         })}
       </ul>
-      <div className="mt-3 text-right">
-        <Button size="sm" variant="outline">View all</Button>
-      </div>
     </div>
   );
 }
