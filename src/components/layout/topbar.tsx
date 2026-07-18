@@ -24,6 +24,7 @@ export function Topbar({
   onSearchClick: () => void;
 }) {
   const { profile, user, signOut } = useAuth();
+  const { theme, toggle } = useTheme();
   const navigate = useNavigate();
   const [isMac, setIsMac] = useState(false);
 
