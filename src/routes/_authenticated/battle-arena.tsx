@@ -7,5 +7,9 @@ export const Route = createFileRoute("/_authenticated/battle-arena")({
       { name: "description", content: "Head-to-head paper trading battles with real-time market data, live leaderboards and XP rewards." },
     ],
   }),
-  component: () => <Outlet />,
+  component: () => (
+    <div className="mx-auto w-full max-w-[1600px] p-4 md:p-6">
+      <Outlet />
+    </div>
+  ),
 });
