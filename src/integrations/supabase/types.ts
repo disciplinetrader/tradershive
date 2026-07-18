@@ -1417,6 +1417,383 @@ export type Database = {
         }
         Relationships: []
       }
+      battle_logs: {
+        Row: {
+          battle_id: string
+          created_at: string
+          event_type: string
+          id: string
+          message: string | null
+          metadata: Json
+          user_id: string | null
+        }
+        Insert: {
+          battle_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          message?: string | null
+          metadata?: Json
+          user_id?: string | null
+        }
+        Update: {
+          battle_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          message?: string | null
+          metadata?: Json
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "battle_logs_battle_id_fkey"
+            columns: ["battle_id"]
+            isOneToOne: false
+            referencedRelation: "battles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      battle_notifications: {
+        Row: {
+          battle_id: string
+          body: string | null
+          created_at: string
+          id: string
+          kind: string
+          read_at: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          battle_id: string
+          body?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          read_at?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          battle_id?: string
+          body?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          read_at?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "battle_notifications_battle_id_fkey"
+            columns: ["battle_id"]
+            isOneToOne: false
+            referencedRelation: "battles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      battle_participants: {
+        Row: {
+          battle_id: string
+          id: string
+          joined_at: string
+          left_at: string | null
+          paper_account_id: string | null
+          status: Database["public"]["Enums"]["battle_participant_status"]
+          team: string | null
+          user_id: string
+        }
+        Insert: {
+          battle_id: string
+          id?: string
+          joined_at?: string
+          left_at?: string | null
+          paper_account_id?: string | null
+          status?: Database["public"]["Enums"]["battle_participant_status"]
+          team?: string | null
+          user_id: string
+        }
+        Update: {
+          battle_id?: string
+          id?: string
+          joined_at?: string
+          left_at?: string | null
+          paper_account_id?: string | null
+          status?: Database["public"]["Enums"]["battle_participant_status"]
+          team?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "battle_participants_battle_id_fkey"
+            columns: ["battle_id"]
+            isOneToOne: false
+            referencedRelation: "battles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "battle_participants_paper_account_id_fkey"
+            columns: ["paper_account_id"]
+            isOneToOne: false
+            referencedRelation: "paper_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      battle_rankings: {
+        Row: {
+          battle_id: string
+          id: string
+          max_drawdown: number
+          pnl: number
+          r_multiple: number
+          rank: number
+          score: number
+          trades_count: number
+          updated_at: string
+          user_id: string
+          win_rate: number
+        }
+        Insert: {
+          battle_id: string
+          id?: string
+          max_drawdown?: number
+          pnl?: number
+          r_multiple?: number
+          rank?: number
+          score?: number
+          trades_count?: number
+          updated_at?: string
+          user_id: string
+          win_rate?: number
+        }
+        Update: {
+          battle_id?: string
+          id?: string
+          max_drawdown?: number
+          pnl?: number
+          r_multiple?: number
+          rank?: number
+          score?: number
+          trades_count?: number
+          updated_at?: string
+          user_id?: string
+          win_rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "battle_rankings_battle_id_fkey"
+            columns: ["battle_id"]
+            isOneToOne: false
+            referencedRelation: "battles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      battle_results: {
+        Row: {
+          battle_id: string
+          coins_awarded: number
+          created_at: string
+          final_rank: number
+          id: string
+          max_drawdown: number
+          pnl: number
+          r_multiple: number
+          trades_count: number
+          user_id: string
+          win_rate: number
+          xp_awarded: number
+        }
+        Insert: {
+          battle_id: string
+          coins_awarded?: number
+          created_at?: string
+          final_rank: number
+          id?: string
+          max_drawdown?: number
+          pnl?: number
+          r_multiple?: number
+          trades_count?: number
+          user_id: string
+          win_rate?: number
+          xp_awarded?: number
+        }
+        Update: {
+          battle_id?: string
+          coins_awarded?: number
+          created_at?: string
+          final_rank?: number
+          id?: string
+          max_drawdown?: number
+          pnl?: number
+          r_multiple?: number
+          trades_count?: number
+          user_id?: string
+          win_rate?: number
+          xp_awarded?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "battle_results_battle_id_fkey"
+            columns: ["battle_id"]
+            isOneToOne: false
+            referencedRelation: "battles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      battle_templates: {
+        Row: {
+          allowed_symbols: string[]
+          battle_type: Database["public"]["Enums"]["battle_type_kind"]
+          created_at: string
+          description: string | null
+          duration_minutes: number
+          id: string
+          is_official: boolean
+          is_public: boolean
+          market: Database["public"]["Enums"]["battle_market"]
+          max_daily_loss_pct: number
+          max_drawdown_pct: number
+          max_risk_pct: number
+          max_trades: number | null
+          name: string
+          owner_id: string | null
+          starting_balance: number
+          updated_at: string
+          win_condition: Database["public"]["Enums"]["battle_win_condition"]
+        }
+        Insert: {
+          allowed_symbols?: string[]
+          battle_type?: Database["public"]["Enums"]["battle_type_kind"]
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number
+          id?: string
+          is_official?: boolean
+          is_public?: boolean
+          market?: Database["public"]["Enums"]["battle_market"]
+          max_daily_loss_pct?: number
+          max_drawdown_pct?: number
+          max_risk_pct?: number
+          max_trades?: number | null
+          name: string
+          owner_id?: string | null
+          starting_balance?: number
+          updated_at?: string
+          win_condition?: Database["public"]["Enums"]["battle_win_condition"]
+        }
+        Update: {
+          allowed_symbols?: string[]
+          battle_type?: Database["public"]["Enums"]["battle_type_kind"]
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number
+          id?: string
+          is_official?: boolean
+          is_public?: boolean
+          market?: Database["public"]["Enums"]["battle_market"]
+          max_daily_loss_pct?: number
+          max_drawdown_pct?: number
+          max_risk_pct?: number
+          max_trades?: number | null
+          name?: string
+          owner_id?: string | null
+          starting_balance?: number
+          updated_at?: string
+          win_condition?: Database["public"]["Enums"]["battle_win_condition"]
+        }
+        Relationships: []
+      }
+      battles: {
+        Row: {
+          allowed_symbols: string[]
+          battle_type: Database["public"]["Enums"]["battle_type_kind"]
+          created_at: string
+          description: string | null
+          end_at: string
+          featured: boolean
+          host_id: string
+          id: string
+          invite_code: string | null
+          market: Database["public"]["Enums"]["battle_market"]
+          max_daily_loss_pct: number
+          max_drawdown_pct: number
+          max_participants: number
+          max_risk_pct: number
+          max_trades: number | null
+          name: string
+          start_at: string
+          starting_balance: number
+          status: Database["public"]["Enums"]["battle_status"]
+          target_value: number | null
+          timezone: string
+          updated_at: string
+          visibility: Database["public"]["Enums"]["battle_visibility"]
+          win_condition: Database["public"]["Enums"]["battle_win_condition"]
+          winner_user_id: string | null
+        }
+        Insert: {
+          allowed_symbols?: string[]
+          battle_type?: Database["public"]["Enums"]["battle_type_kind"]
+          created_at?: string
+          description?: string | null
+          end_at: string
+          featured?: boolean
+          host_id: string
+          id?: string
+          invite_code?: string | null
+          market?: Database["public"]["Enums"]["battle_market"]
+          max_daily_loss_pct?: number
+          max_drawdown_pct?: number
+          max_participants?: number
+          max_risk_pct?: number
+          max_trades?: number | null
+          name: string
+          start_at: string
+          starting_balance?: number
+          status?: Database["public"]["Enums"]["battle_status"]
+          target_value?: number | null
+          timezone?: string
+          updated_at?: string
+          visibility?: Database["public"]["Enums"]["battle_visibility"]
+          win_condition?: Database["public"]["Enums"]["battle_win_condition"]
+          winner_user_id?: string | null
+        }
+        Update: {
+          allowed_symbols?: string[]
+          battle_type?: Database["public"]["Enums"]["battle_type_kind"]
+          created_at?: string
+          description?: string | null
+          end_at?: string
+          featured?: boolean
+          host_id?: string
+          id?: string
+          invite_code?: string | null
+          market?: Database["public"]["Enums"]["battle_market"]
+          max_daily_loss_pct?: number
+          max_drawdown_pct?: number
+          max_participants?: number
+          max_risk_pct?: number
+          max_trades?: number | null
+          name?: string
+          start_at?: string
+          starting_balance?: number
+          status?: Database["public"]["Enums"]["battle_status"]
+          target_value?: number | null
+          timezone?: string
+          updated_at?: string
+          visibility?: Database["public"]["Enums"]["battle_visibility"]
+          win_condition?: Database["public"]["Enums"]["battle_win_condition"]
+          winner_user_id?: string | null
+        }
+        Relationships: []
+      }
       challenges: {
         Row: {
           active: boolean
@@ -3017,6 +3394,7 @@ export type Database = {
       paper_accounts: {
         Row: {
           balance: number
+          battle_id: string | null
           created_at: string
           currency: string
           deleted_at: string | null
@@ -3034,6 +3412,7 @@ export type Database = {
         }
         Insert: {
           balance?: number
+          battle_id?: string | null
           created_at?: string
           currency?: string
           deleted_at?: string | null
@@ -3051,6 +3430,7 @@ export type Database = {
         }
         Update: {
           balance?: number
+          battle_id?: string | null
           created_at?: string
           currency?: string
           deleted_at?: string | null
@@ -3066,7 +3446,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "paper_accounts_battle_id_fkey"
+            columns: ["battle_id"]
+            isOneToOne: false
+            referencedRelation: "battles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       paper_orders: {
         Row: {
@@ -3155,6 +3543,7 @@ export type Database = {
       paper_trades: {
         Row: {
           account_id: string
+          battle_id: string | null
           close_reason: Database["public"]["Enums"]["paper_close_reason"] | null
           closed_at: string | null
           commission: number
@@ -3187,6 +3576,7 @@ export type Database = {
         }
         Insert: {
           account_id: string
+          battle_id?: string | null
           close_reason?:
             | Database["public"]["Enums"]["paper_close_reason"]
             | null
@@ -3221,6 +3611,7 @@ export type Database = {
         }
         Update: {
           account_id?: string
+          battle_id?: string | null
           close_reason?:
             | Database["public"]["Enums"]["paper_close_reason"]
             | null
@@ -3259,6 +3650,13 @@ export type Database = {
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "paper_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "paper_trades_battle_id_fkey"
+            columns: ["battle_id"]
+            isOneToOne: false
+            referencedRelation: "battles"
             referencedColumns: ["id"]
           },
           {
@@ -6014,6 +6412,7 @@ export type Database = {
           remaining: number
         }[]
       }
+      finalize_battle: { Args: { _battle_id: string }; Returns: undefined }
       has_permission: {
         Args: { _permission: string; _user_id: string }
         Returns: boolean
@@ -6025,7 +6424,22 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_battle_host: {
+        Args: { _battle_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_battle_participant: {
+        Args: { _battle_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_platform_admin: { Args: { _user_id: string }; Returns: boolean }
+      join_battle: { Args: { _battle_id: string }; Returns: string }
+      join_battle_by_code: { Args: { _code: string }; Returns: string }
+      recompute_battle_ranking: {
+        Args: { _battle_id: string; _user_id: string }
+        Returns: undefined
+      }
+      tick_battles: { Args: never; Returns: undefined }
     }
     Enums: {
       achievement_category:
@@ -6077,6 +6491,23 @@ export type Database = {
         | "developer"
         | "analyst"
       badge_tier: "bronze" | "silver" | "gold" | "diamond" | "legend"
+      battle_market: "crypto" | "forex" | "indices" | "metals" | "mixed"
+      battle_participant_status:
+        | "joined"
+        | "active"
+        | "disqualified"
+        | "finished"
+      battle_status: "draft" | "upcoming" | "live" | "completed" | "cancelled"
+      battle_type_kind: "1v1" | "2v2" | "ffa5" | "ffa10"
+      battle_visibility: "public" | "private"
+      battle_win_condition:
+        | "highest_pnl"
+        | "highest_r"
+        | "highest_winrate"
+        | "lowest_dd"
+        | "first_to_5r"
+        | "first_to_target"
+        | "consistency"
       challenge_category:
         | "learning"
         | "discipline"
@@ -6359,6 +6790,25 @@ export const Constants = {
         "analyst",
       ],
       badge_tier: ["bronze", "silver", "gold", "diamond", "legend"],
+      battle_market: ["crypto", "forex", "indices", "metals", "mixed"],
+      battle_participant_status: [
+        "joined",
+        "active",
+        "disqualified",
+        "finished",
+      ],
+      battle_status: ["draft", "upcoming", "live", "completed", "cancelled"],
+      battle_type_kind: ["1v1", "2v2", "ffa5", "ffa10"],
+      battle_visibility: ["public", "private"],
+      battle_win_condition: [
+        "highest_pnl",
+        "highest_r",
+        "highest_winrate",
+        "lowest_dd",
+        "first_to_5r",
+        "first_to_target",
+        "consistency",
+      ],
       challenge_category: [
         "learning",
         "discipline",
