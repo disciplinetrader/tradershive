@@ -39,6 +39,7 @@ const NAV: NavItem[] = [
   { to: "/battle-arena", label: "Battle Arena", icon: Swords },
   { to: "/statistics", label: "Statistics", icon: BarChart3 },
   { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
+  { to: "/championship", label: "Championship", icon: Trophy },
   { to: "/community", label: "Community", icon: MessageSquare },
   { to: "/achievements", label: "Achievements", icon: Award },
 ];

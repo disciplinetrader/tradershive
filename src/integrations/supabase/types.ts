@@ -2095,6 +2095,575 @@ export type Database = {
         }
         Relationships: []
       }
+      championship_activity: {
+        Row: {
+          championship_id: string
+          created_at: string
+          id: string
+          kind: Database["public"]["Enums"]["championship_activity_kind"]
+          message: string
+          metadata: Json
+          severity: string
+          user_id: string | null
+        }
+        Insert: {
+          championship_id: string
+          created_at?: string
+          id?: string
+          kind: Database["public"]["Enums"]["championship_activity_kind"]
+          message: string
+          metadata?: Json
+          severity?: string
+          user_id?: string | null
+        }
+        Update: {
+          championship_id?: string
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["championship_activity_kind"]
+          message?: string
+          metadata?: Json
+          severity?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "championship_activity_championship_id_fkey"
+            columns: ["championship_id"]
+            isOneToOne: false
+            referencedRelation: "championships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      championship_hall_of_fame: {
+        Row: {
+          champion_user_id: string | null
+          championship_id: string
+          finalized_at: string
+          id: string
+          runner_up_user_id: string | null
+          strategy_summary: string | null
+          third_user_id: string | null
+          top10_user_ids: string[]
+          winning_stats: Json
+        }
+        Insert: {
+          champion_user_id?: string | null
+          championship_id: string
+          finalized_at?: string
+          id?: string
+          runner_up_user_id?: string | null
+          strategy_summary?: string | null
+          third_user_id?: string | null
+          top10_user_ids?: string[]
+          winning_stats?: Json
+        }
+        Update: {
+          champion_user_id?: string | null
+          championship_id?: string
+          finalized_at?: string
+          id?: string
+          runner_up_user_id?: string | null
+          strategy_summary?: string | null
+          third_user_id?: string | null
+          top10_user_ids?: string[]
+          winning_stats?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "championship_hall_of_fame_championship_id_fkey"
+            columns: ["championship_id"]
+            isOneToOne: true
+            referencedRelation: "championships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      championship_participants: {
+        Row: {
+          championship_id: string
+          created_at: string
+          disqualified_at: string | null
+          disqualified_reason: string | null
+          flag_reason: string | null
+          flagged: boolean
+          id: string
+          paper_account_id: string | null
+          status: Database["public"]["Enums"]["championship_participant_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          championship_id: string
+          created_at?: string
+          disqualified_at?: string | null
+          disqualified_reason?: string | null
+          flag_reason?: string | null
+          flagged?: boolean
+          id?: string
+          paper_account_id?: string | null
+          status?: Database["public"]["Enums"]["championship_participant_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          championship_id?: string
+          created_at?: string
+          disqualified_at?: string | null
+          disqualified_reason?: string | null
+          flag_reason?: string | null
+          flagged?: boolean
+          id?: string
+          paper_account_id?: string | null
+          status?: Database["public"]["Enums"]["championship_participant_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "championship_participants_championship_id_fkey"
+            columns: ["championship_id"]
+            isOneToOne: false
+            referencedRelation: "championships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "championship_participants_paper_account_id_fkey"
+            columns: ["paper_account_id"]
+            isOneToOne: false
+            referencedRelation: "paper_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      championship_rankings: {
+        Row: {
+          avg_rr: number
+          championship_id: string
+          consistency_score: number
+          current_streak: number
+          eligible: boolean
+          id: string
+          last_trade_at: string | null
+          max_drawdown: number
+          net_profit: number
+          pnl: number
+          previous_rank: number | null
+          profit_factor: number
+          r_multiple: number
+          rank: number | null
+          score: number
+          total_trades: number
+          updated_at: string
+          user_id: string
+          win_rate: number
+        }
+        Insert: {
+          avg_rr?: number
+          championship_id: string
+          consistency_score?: number
+          current_streak?: number
+          eligible?: boolean
+          id?: string
+          last_trade_at?: string | null
+          max_drawdown?: number
+          net_profit?: number
+          pnl?: number
+          previous_rank?: number | null
+          profit_factor?: number
+          r_multiple?: number
+          rank?: number | null
+          score?: number
+          total_trades?: number
+          updated_at?: string
+          user_id: string
+          win_rate?: number
+        }
+        Update: {
+          avg_rr?: number
+          championship_id?: string
+          consistency_score?: number
+          current_streak?: number
+          eligible?: boolean
+          id?: string
+          last_trade_at?: string | null
+          max_drawdown?: number
+          net_profit?: number
+          pnl?: number
+          previous_rank?: number | null
+          profit_factor?: number
+          r_multiple?: number
+          rank?: number | null
+          score?: number
+          total_trades?: number
+          updated_at?: string
+          user_id?: string
+          win_rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "championship_rankings_championship_id_fkey"
+            columns: ["championship_id"]
+            isOneToOne: false
+            referencedRelation: "championships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      championship_rating: {
+        Row: {
+          avg_rank: number | null
+          best_finish: number | null
+          championships_joined: number
+          championships_won: number
+          highest_profit: number
+          lifetime_xp: number
+          rating: number
+          sportsmanship_score: number
+          top10_finishes: number
+          top100_finishes: number
+          top3_finishes: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avg_rank?: number | null
+          best_finish?: number | null
+          championships_joined?: number
+          championships_won?: number
+          highest_profit?: number
+          lifetime_xp?: number
+          rating?: number
+          sportsmanship_score?: number
+          top10_finishes?: number
+          top100_finishes?: number
+          top3_finishes?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avg_rank?: number | null
+          best_finish?: number | null
+          championships_joined?: number
+          championships_won?: number
+          highest_profit?: number
+          lifetime_xp?: number
+          rating?: number
+          sportsmanship_score?: number
+          top10_finishes?: number
+          top100_finishes?: number
+          top3_finishes?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      championship_registrations: {
+        Row: {
+          accepted_rules_at: string
+          cancelled_at: string | null
+          championship_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          accepted_rules_at?: string
+          cancelled_at?: string | null
+          championship_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          accepted_rules_at?: string
+          cancelled_at?: string | null
+          championship_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "championship_registrations_championship_id_fkey"
+            columns: ["championship_id"]
+            isOneToOne: false
+            referencedRelation: "championships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      championship_results: {
+        Row: {
+          championship_id: string
+          coins_awarded: number
+          consistency_score: number
+          created_at: string
+          final_rank: number
+          id: string
+          max_drawdown: number
+          pnl: number
+          profit_factor: number
+          r_multiple: number
+          score: number
+          title_awarded: string | null
+          total_trades: number
+          user_id: string
+          win_rate: number
+          xp_awarded: number
+        }
+        Insert: {
+          championship_id: string
+          coins_awarded?: number
+          consistency_score?: number
+          created_at?: string
+          final_rank: number
+          id?: string
+          max_drawdown?: number
+          pnl?: number
+          profit_factor?: number
+          r_multiple?: number
+          score?: number
+          title_awarded?: string | null
+          total_trades?: number
+          user_id: string
+          win_rate?: number
+          xp_awarded?: number
+        }
+        Update: {
+          championship_id?: string
+          coins_awarded?: number
+          consistency_score?: number
+          created_at?: string
+          final_rank?: number
+          id?: string
+          max_drawdown?: number
+          pnl?: number
+          profit_factor?: number
+          r_multiple?: number
+          score?: number
+          title_awarded?: string | null
+          total_trades?: number
+          user_id?: string
+          win_rate?: number
+          xp_awarded?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "championship_results_championship_id_fkey"
+            columns: ["championship_id"]
+            isOneToOne: false
+            referencedRelation: "championships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      championship_rewards: {
+        Row: {
+          championship_id: string
+          coins: number
+          created_at: string
+          id: string
+          kind: string
+          label: string
+          metadata: Json
+          user_id: string
+          xp: number
+        }
+        Insert: {
+          championship_id: string
+          coins?: number
+          created_at?: string
+          id?: string
+          kind: string
+          label: string
+          metadata?: Json
+          user_id: string
+          xp?: number
+        }
+        Update: {
+          championship_id?: string
+          coins?: number
+          created_at?: string
+          id?: string
+          kind?: string
+          label?: string
+          metadata?: Json
+          user_id?: string
+          xp?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "championship_rewards_championship_id_fkey"
+            columns: ["championship_id"]
+            isOneToOne: false
+            referencedRelation: "championships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      championship_templates: {
+        Row: {
+          allowed_markets: string[]
+          allowed_sessions: string[]
+          allowed_symbols: string[]
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_default: boolean
+          max_daily_loss_pct: number
+          max_drawdown_pct: number
+          max_risk_per_trade_pct: number
+          min_trades: number
+          name: string
+          prize_info: Json
+          starting_balance: number
+          updated_at: string
+          win_condition: Database["public"]["Enums"]["championship_win_condition"]
+        }
+        Insert: {
+          allowed_markets?: string[]
+          allowed_sessions?: string[]
+          allowed_symbols?: string[]
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_default?: boolean
+          max_daily_loss_pct?: number
+          max_drawdown_pct?: number
+          max_risk_per_trade_pct?: number
+          min_trades?: number
+          name: string
+          prize_info?: Json
+          starting_balance?: number
+          updated_at?: string
+          win_condition?: Database["public"]["Enums"]["championship_win_condition"]
+        }
+        Update: {
+          allowed_markets?: string[]
+          allowed_sessions?: string[]
+          allowed_symbols?: string[]
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_default?: boolean
+          max_daily_loss_pct?: number
+          max_drawdown_pct?: number
+          max_risk_per_trade_pct?: number
+          min_trades?: number
+          name?: string
+          prize_info?: Json
+          starting_balance?: number
+          updated_at?: string
+          win_condition?: Database["public"]["Enums"]["championship_win_condition"]
+        }
+        Relationships: []
+      }
+      championships: {
+        Row: {
+          allowed_markets: string[]
+          allowed_sessions: string[]
+          allowed_symbols: string[]
+          banner_url: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          end_at: string
+          id: string
+          is_featured: boolean
+          max_daily_loss_pct: number
+          max_drawdown_pct: number
+          max_risk_per_trade_pct: number
+          min_trades: number
+          name: string
+          prize_info: Json
+          registration_closes_at: string
+          registration_opens_at: string
+          season_month: number
+          season_year: number
+          slug: string
+          start_at: string
+          starting_balance: number
+          status: Database["public"]["Enums"]["championship_status"]
+          template_id: string | null
+          updated_at: string
+          win_condition: Database["public"]["Enums"]["championship_win_condition"]
+          winner_user_id: string | null
+        }
+        Insert: {
+          allowed_markets?: string[]
+          allowed_sessions?: string[]
+          allowed_symbols?: string[]
+          banner_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_at: string
+          id?: string
+          is_featured?: boolean
+          max_daily_loss_pct?: number
+          max_drawdown_pct?: number
+          max_risk_per_trade_pct?: number
+          min_trades?: number
+          name: string
+          prize_info?: Json
+          registration_closes_at: string
+          registration_opens_at: string
+          season_month: number
+          season_year: number
+          slug: string
+          start_at: string
+          starting_balance?: number
+          status?: Database["public"]["Enums"]["championship_status"]
+          template_id?: string | null
+          updated_at?: string
+          win_condition?: Database["public"]["Enums"]["championship_win_condition"]
+          winner_user_id?: string | null
+        }
+        Update: {
+          allowed_markets?: string[]
+          allowed_sessions?: string[]
+          allowed_symbols?: string[]
+          banner_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_at?: string
+          id?: string
+          is_featured?: boolean
+          max_daily_loss_pct?: number
+          max_drawdown_pct?: number
+          max_risk_per_trade_pct?: number
+          min_trades?: number
+          name?: string
+          prize_info?: Json
+          registration_closes_at?: string
+          registration_opens_at?: string
+          season_month?: number
+          season_year?: number
+          slug?: string
+          start_at?: string
+          starting_balance?: number
+          status?: Database["public"]["Enums"]["championship_status"]
+          template_id?: string | null
+          updated_at?: string
+          win_condition?: Database["public"]["Enums"]["championship_win_condition"]
+          winner_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "championships_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "championship_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chart_alerts: {
         Row: {
           alert_type: string
@@ -4203,6 +4772,7 @@ export type Database = {
         Row: {
           balance: number
           battle_id: string | null
+          championship_id: string | null
           created_at: string
           currency: string
           deleted_at: string | null
@@ -4221,6 +4791,7 @@ export type Database = {
         Insert: {
           balance?: number
           battle_id?: string | null
+          championship_id?: string | null
           created_at?: string
           currency?: string
           deleted_at?: string | null
@@ -4239,6 +4810,7 @@ export type Database = {
         Update: {
           balance?: number
           battle_id?: string | null
+          championship_id?: string | null
           created_at?: string
           currency?: string
           deleted_at?: string | null
@@ -4260,6 +4832,13 @@ export type Database = {
             columns: ["battle_id"]
             isOneToOne: false
             referencedRelation: "battles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "paper_accounts_championship_id_fkey"
+            columns: ["championship_id"]
+            isOneToOne: false
+            referencedRelation: "championships"
             referencedColumns: ["id"]
           },
         ]
@@ -4352,6 +4931,7 @@ export type Database = {
         Row: {
           account_id: string
           battle_id: string | null
+          championship_id: string | null
           close_reason: Database["public"]["Enums"]["paper_close_reason"] | null
           closed_at: string | null
           commission: number
@@ -4385,6 +4965,7 @@ export type Database = {
         Insert: {
           account_id: string
           battle_id?: string | null
+          championship_id?: string | null
           close_reason?:
             | Database["public"]["Enums"]["paper_close_reason"]
             | null
@@ -4420,6 +5001,7 @@ export type Database = {
         Update: {
           account_id?: string
           battle_id?: string | null
+          championship_id?: string | null
           close_reason?:
             | Database["public"]["Enums"]["paper_close_reason"]
             | null
@@ -4465,6 +5047,13 @@ export type Database = {
             columns: ["battle_id"]
             isOneToOne: false
             referencedRelation: "battles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "paper_trades_championship_id_fkey"
+            columns: ["championship_id"]
+            isOneToOne: false
+            referencedRelation: "championships"
             referencedColumns: ["id"]
           },
           {
@@ -7441,6 +8030,10 @@ export type Database = {
           remaining: number
         }[]
       }
+      cancel_championship_registration: {
+        Args: { _champ: string }
+        Returns: undefined
+      }
       community_recompute_reputation: {
         Args: { _user_id: string }
         Returns: undefined
@@ -7460,7 +8053,19 @@ export type Database = {
         }
         Returns: undefined
       }
+      emit_championship_activity: {
+        Args: {
+          _champ: string
+          _kind: Database["public"]["Enums"]["championship_activity_kind"]
+          _meta?: Json
+          _msg: string
+          _sev?: string
+          _user: string
+        }
+        Returns: undefined
+      }
       finalize_battle: { Args: { _battle_id: string }; Returns: undefined }
+      finalize_championship: { Args: { _champ: string }; Returns: undefined }
       has_permission: {
         Args: { _permission: string; _user_id: string }
         Returns: boolean
@@ -7491,7 +8096,14 @@ export type Database = {
         Args: { _battle_id: string; _user_id: string }
         Returns: undefined
       }
+      recompute_championship_ranking: {
+        Args: { _champ: string; _user: string }
+        Returns: undefined
+      }
+      register_for_championship: { Args: { _champ: string }; Returns: string }
+      start_championship: { Args: { _champ: string }; Returns: undefined }
       tick_battles: { Args: never; Returns: undefined }
+      tick_championships: { Args: never; Returns: undefined }
     }
     Enums: {
       achievement_category:
@@ -7596,6 +8208,42 @@ export type Database = {
       challenge_difficulty: "easy" | "medium" | "hard" | "elite"
       challenge_scope: "daily" | "weekly" | "monthly" | "special" | "event"
       challenge_status: "active" | "completed" | "claimed" | "expired"
+      championship_activity_kind:
+        | "registration"
+        | "start"
+        | "end"
+        | "rank_up"
+        | "rank_down"
+        | "top10"
+        | "top3"
+        | "new_leader"
+        | "milestone"
+        | "achievement"
+        | "rule_violation"
+        | "disqualified"
+        | "reward"
+      championship_participant_status:
+        | "registered"
+        | "active"
+        | "disqualified"
+        | "withdrawn"
+        | "completed"
+      championship_status:
+        | "draft"
+        | "registration"
+        | "upcoming"
+        | "live"
+        | "grading"
+        | "completed"
+        | "cancelled"
+      championship_win_condition:
+        | "highest_pnl"
+        | "highest_r"
+        | "highest_winrate"
+        | "lowest_dd"
+        | "profit_factor"
+        | "consistency"
+        | "composite"
       community_notification_kind:
         | "follow"
         | "comment"
@@ -7980,6 +8628,46 @@ export const Constants = {
       challenge_difficulty: ["easy", "medium", "hard", "elite"],
       challenge_scope: ["daily", "weekly", "monthly", "special", "event"],
       challenge_status: ["active", "completed", "claimed", "expired"],
+      championship_activity_kind: [
+        "registration",
+        "start",
+        "end",
+        "rank_up",
+        "rank_down",
+        "top10",
+        "top3",
+        "new_leader",
+        "milestone",
+        "achievement",
+        "rule_violation",
+        "disqualified",
+        "reward",
+      ],
+      championship_participant_status: [
+        "registered",
+        "active",
+        "disqualified",
+        "withdrawn",
+        "completed",
+      ],
+      championship_status: [
+        "draft",
+        "registration",
+        "upcoming",
+        "live",
+        "grading",
+        "completed",
+        "cancelled",
+      ],
+      championship_win_condition: [
+        "highest_pnl",
+        "highest_r",
+        "highest_winrate",
+        "lowest_dd",
+        "profit_factor",
+        "consistency",
+        "composite",
+      ],
       community_notification_kind: [
         "follow",
         "comment",
