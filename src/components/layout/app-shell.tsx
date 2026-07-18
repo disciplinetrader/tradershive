@@ -8,6 +8,7 @@ import {
   LifeBuoy,
   LineChart,
   Menu,
+  MessageSquare,
   Settings,
   Shield,
   ShoppingBag,

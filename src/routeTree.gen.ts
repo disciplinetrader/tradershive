@@ -34,6 +34,7 @@ import { Route as AuthenticatedJournalRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedGuildsRouteImport } from './routes/_authenticated/guilds'
 import { Route as AuthenticatedEducationRouteImport } from './routes/_authenticated/education'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedCommunityRouteImport } from './routes/_authenticated/community'
 import { Route as AuthenticatedChartsRouteImport } from './routes/_authenticated/charts'
 import { Route as AuthenticatedChallengesRouteImport } from './routes/_authenticated/challenges'
 import { Route as AuthenticatedBattleArenaRouteImport } from './routes/_authenticated/battle-arena'
@@ -46,6 +47,7 @@ import { Route as AuthenticatedStatisticsIndexRouteImport } from './routes/_auth
 import { Route as AuthenticatedReplayIndexRouteImport } from './routes/_authenticated/replay.index'
 import { Route as AuthenticatedMarketIndexRouteImport } from './routes/_authenticated/market.index'
 import { Route as AuthenticatedLeaderboardIndexRouteImport } from './routes/_authenticated/leaderboard.index'
+import { Route as AuthenticatedCommunityIndexRouteImport } from './routes/_authenticated/community.index'
 import { Route as AuthenticatedBattleArenaIndexRouteImport } from './routes/_authenticated/battle-arena.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as JournalShareTokenRouteImport } from './routes/journal.share.$token'
@@ -79,6 +81,10 @@ import { Route as AuthenticatedLeaderboardLeagueRouteImport } from './routes/_au
 import { Route as AuthenticatedLeaderboardGlobalRouteImport } from './routes/_authenticated/leaderboard.global'
 import { Route as AuthenticatedLeaderboardFriendsRouteImport } from './routes/_authenticated/leaderboard.friends'
 import { Route as AuthenticatedLeaderboardCountryRouteImport } from './routes/_authenticated/leaderboard.country'
+import { Route as AuthenticatedCommunityTrendingRouteImport } from './routes/_authenticated/community.trending'
+import { Route as AuthenticatedCommunityFollowingRouteImport } from './routes/_authenticated/community.following'
+import { Route as AuthenticatedCommunityExploreRouteImport } from './routes/_authenticated/community.explore'
+import { Route as AuthenticatedCommunityBookmarksRouteImport } from './routes/_authenticated/community.bookmarks'
 import { Route as AuthenticatedChallengesRewardsRouteImport } from './routes/_authenticated/challenges/rewards'
 import { Route as AuthenticatedChallengesHistoryRouteImport } from './routes/_authenticated/challenges/history'
 import { Route as AuthenticatedBattleArenaHistoryRouteImport } from './routes/_authenticated/battle-arena.history'
@@ -108,6 +114,8 @@ import { Route as AuthenticatedAdminContentRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminChallengesRouteImport } from './routes/_authenticated/admin.challenges'
 import { Route as AuthenticatedAdminAnnouncementsRouteImport } from './routes/_authenticated/admin.announcements'
 import { Route as AuthenticatedAdminAchievementsRouteImport } from './routes/_authenticated/admin.achievements'
+import { Route as AuthenticatedCommunityProfileUsernameRouteImport } from './routes/_authenticated/community.profile.$username'
+import { Route as AuthenticatedCommunityPostIdRouteImport } from './routes/_authenticated/community.post.$id'
 
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
   id: '/verify-email',
@@ -236,6 +244,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedCommunityRoute = AuthenticatedCommunityRouteImport.update({
+  id: '/community',
+  path: '/community',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedChartsRoute = AuthenticatedChartsRouteImport.update({
   id: '/charts',
   path: '/charts',
@@ -303,6 +316,12 @@ const AuthenticatedLeaderboardIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedLeaderboardRoute,
+  } as any)
+const AuthenticatedCommunityIndexRoute =
+  AuthenticatedCommunityIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedCommunityRoute,
   } as any)
 const AuthenticatedBattleArenaIndexRoute =
   AuthenticatedBattleArenaIndexRouteImport.update({
@@ -499,6 +518,30 @@ const AuthenticatedLeaderboardCountryRoute =
     path: '/country',
     getParentRoute: () => AuthenticatedLeaderboardRoute,
   } as any)
+const AuthenticatedCommunityTrendingRoute =
+  AuthenticatedCommunityTrendingRouteImport.update({
+    id: '/trending',
+    path: '/trending',
+    getParentRoute: () => AuthenticatedCommunityRoute,
+  } as any)
+const AuthenticatedCommunityFollowingRoute =
+  AuthenticatedCommunityFollowingRouteImport.update({
+    id: '/following',
+    path: '/following',
+    getParentRoute: () => AuthenticatedCommunityRoute,
+  } as any)
+const AuthenticatedCommunityExploreRoute =
+  AuthenticatedCommunityExploreRouteImport.update({
+    id: '/explore',
+    path: '/explore',
+    getParentRoute: () => AuthenticatedCommunityRoute,
+  } as any)
+const AuthenticatedCommunityBookmarksRoute =
+  AuthenticatedCommunityBookmarksRouteImport.update({
+    id: '/bookmarks',
+    path: '/bookmarks',
+    getParentRoute: () => AuthenticatedCommunityRoute,
+  } as any)
 const AuthenticatedChallengesRewardsRoute =
   AuthenticatedChallengesRewardsRouteImport.update({
     id: '/rewards',
@@ -667,6 +710,18 @@ const AuthenticatedAdminAchievementsRoute =
     path: '/achievements',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedCommunityProfileUsernameRoute =
+  AuthenticatedCommunityProfileUsernameRouteImport.update({
+    id: '/profile/$username',
+    path: '/profile/$username',
+    getParentRoute: () => AuthenticatedCommunityRoute,
+  } as any)
+const AuthenticatedCommunityPostIdRoute =
+  AuthenticatedCommunityPostIdRouteImport.update({
+    id: '/post/$id',
+    path: '/post/$id',
+    getParentRoute: () => AuthenticatedCommunityRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -683,6 +738,7 @@ export interface FileRoutesByFullPath {
   '/battle-arena': typeof AuthenticatedBattleArenaRouteWithChildren
   '/challenges': typeof AuthenticatedChallengesRouteWithChildren
   '/charts': typeof AuthenticatedChartsRoute
+  '/community': typeof AuthenticatedCommunityRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/education': typeof AuthenticatedEducationRoute
   '/guilds': typeof AuthenticatedGuildsRoute
@@ -728,6 +784,10 @@ export interface FileRoutesByFullPath {
   '/battle-arena/history': typeof AuthenticatedBattleArenaHistoryRoute
   '/challenges/history': typeof AuthenticatedChallengesHistoryRoute
   '/challenges/rewards': typeof AuthenticatedChallengesRewardsRoute
+  '/community/bookmarks': typeof AuthenticatedCommunityBookmarksRoute
+  '/community/explore': typeof AuthenticatedCommunityExploreRoute
+  '/community/following': typeof AuthenticatedCommunityFollowingRoute
+  '/community/trending': typeof AuthenticatedCommunityTrendingRoute
   '/leaderboard/country': typeof AuthenticatedLeaderboardCountryRoute
   '/leaderboard/friends': typeof AuthenticatedLeaderboardFriendsRoute
   '/leaderboard/global': typeof AuthenticatedLeaderboardGlobalRoute
@@ -761,12 +821,15 @@ export interface FileRoutesByFullPath {
   '/journal/share/$token': typeof JournalShareTokenRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/battle-arena/': typeof AuthenticatedBattleArenaIndexRoute
+  '/community/': typeof AuthenticatedCommunityIndexRoute
   '/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
   '/market/': typeof AuthenticatedMarketIndexRoute
   '/replay/': typeof AuthenticatedReplayIndexRoute
   '/statistics/': typeof AuthenticatedStatisticsIndexRoute
   '/strategies/': typeof AuthenticatedStrategiesIndexRoute
   '/trading/': typeof AuthenticatedTradingIndexRoute
+  '/community/post/$id': typeof AuthenticatedCommunityPostIdRoute
+  '/community/profile/$username': typeof AuthenticatedCommunityProfileUsernameRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -820,6 +883,10 @@ export interface FileRoutesByTo {
   '/battle-arena/history': typeof AuthenticatedBattleArenaHistoryRoute
   '/challenges/history': typeof AuthenticatedChallengesHistoryRoute
   '/challenges/rewards': typeof AuthenticatedChallengesRewardsRoute
+  '/community/bookmarks': typeof AuthenticatedCommunityBookmarksRoute
+  '/community/explore': typeof AuthenticatedCommunityExploreRoute
+  '/community/following': typeof AuthenticatedCommunityFollowingRoute
+  '/community/trending': typeof AuthenticatedCommunityTrendingRoute
   '/leaderboard/country': typeof AuthenticatedLeaderboardCountryRoute
   '/leaderboard/friends': typeof AuthenticatedLeaderboardFriendsRoute
   '/leaderboard/global': typeof AuthenticatedLeaderboardGlobalRoute
@@ -853,12 +920,15 @@ export interface FileRoutesByTo {
   '/journal/share/$token': typeof JournalShareTokenRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/battle-arena': typeof AuthenticatedBattleArenaIndexRoute
+  '/community': typeof AuthenticatedCommunityIndexRoute
   '/leaderboard': typeof AuthenticatedLeaderboardIndexRoute
   '/market': typeof AuthenticatedMarketIndexRoute
   '/replay': typeof AuthenticatedReplayIndexRoute
   '/statistics': typeof AuthenticatedStatisticsIndexRoute
   '/strategies': typeof AuthenticatedStrategiesIndexRoute
   '/trading': typeof AuthenticatedTradingIndexRoute
+  '/community/post/$id': typeof AuthenticatedCommunityPostIdRoute
+  '/community/profile/$username': typeof AuthenticatedCommunityProfileUsernameRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -877,6 +947,7 @@ export interface FileRoutesById {
   '/_authenticated/battle-arena': typeof AuthenticatedBattleArenaRouteWithChildren
   '/_authenticated/challenges': typeof AuthenticatedChallengesRouteWithChildren
   '/_authenticated/charts': typeof AuthenticatedChartsRoute
+  '/_authenticated/community': typeof AuthenticatedCommunityRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/education': typeof AuthenticatedEducationRoute
   '/_authenticated/guilds': typeof AuthenticatedGuildsRoute
@@ -922,6 +993,10 @@ export interface FileRoutesById {
   '/_authenticated/battle-arena/history': typeof AuthenticatedBattleArenaHistoryRoute
   '/_authenticated/challenges/history': typeof AuthenticatedChallengesHistoryRoute
   '/_authenticated/challenges/rewards': typeof AuthenticatedChallengesRewardsRoute
+  '/_authenticated/community/bookmarks': typeof AuthenticatedCommunityBookmarksRoute
+  '/_authenticated/community/explore': typeof AuthenticatedCommunityExploreRoute
+  '/_authenticated/community/following': typeof AuthenticatedCommunityFollowingRoute
+  '/_authenticated/community/trending': typeof AuthenticatedCommunityTrendingRoute
   '/_authenticated/leaderboard/country': typeof AuthenticatedLeaderboardCountryRoute
   '/_authenticated/leaderboard/friends': typeof AuthenticatedLeaderboardFriendsRoute
   '/_authenticated/leaderboard/global': typeof AuthenticatedLeaderboardGlobalRoute
@@ -955,12 +1030,15 @@ export interface FileRoutesById {
   '/journal/share/$token': typeof JournalShareTokenRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/battle-arena/': typeof AuthenticatedBattleArenaIndexRoute
+  '/_authenticated/community/': typeof AuthenticatedCommunityIndexRoute
   '/_authenticated/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
   '/_authenticated/market/': typeof AuthenticatedMarketIndexRoute
   '/_authenticated/replay/': typeof AuthenticatedReplayIndexRoute
   '/_authenticated/statistics/': typeof AuthenticatedStatisticsIndexRoute
   '/_authenticated/strategies/': typeof AuthenticatedStrategiesIndexRoute
   '/_authenticated/trading/': typeof AuthenticatedTradingIndexRoute
+  '/_authenticated/community/post/$id': typeof AuthenticatedCommunityPostIdRoute
+  '/_authenticated/community/profile/$username': typeof AuthenticatedCommunityProfileUsernameRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -979,6 +1057,7 @@ export interface FileRouteTypes {
     | '/battle-arena'
     | '/challenges'
     | '/charts'
+    | '/community'
     | '/dashboard'
     | '/education'
     | '/guilds'
@@ -1024,6 +1103,10 @@ export interface FileRouteTypes {
     | '/battle-arena/history'
     | '/challenges/history'
     | '/challenges/rewards'
+    | '/community/bookmarks'
+    | '/community/explore'
+    | '/community/following'
+    | '/community/trending'
     | '/leaderboard/country'
     | '/leaderboard/friends'
     | '/leaderboard/global'
@@ -1057,12 +1140,15 @@ export interface FileRouteTypes {
     | '/journal/share/$token'
     | '/admin/'
     | '/battle-arena/'
+    | '/community/'
     | '/leaderboard/'
     | '/market/'
     | '/replay/'
     | '/statistics/'
     | '/strategies/'
     | '/trading/'
+    | '/community/post/$id'
+    | '/community/profile/$username'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -1116,6 +1202,10 @@ export interface FileRouteTypes {
     | '/battle-arena/history'
     | '/challenges/history'
     | '/challenges/rewards'
+    | '/community/bookmarks'
+    | '/community/explore'
+    | '/community/following'
+    | '/community/trending'
     | '/leaderboard/country'
     | '/leaderboard/friends'
     | '/leaderboard/global'
@@ -1149,12 +1239,15 @@ export interface FileRouteTypes {
     | '/journal/share/$token'
     | '/admin'
     | '/battle-arena'
+    | '/community'
     | '/leaderboard'
     | '/market'
     | '/replay'
     | '/statistics'
     | '/strategies'
     | '/trading'
+    | '/community/post/$id'
+    | '/community/profile/$username'
   id:
     | '__root__'
     | '/'
@@ -1172,6 +1265,7 @@ export interface FileRouteTypes {
     | '/_authenticated/battle-arena'
     | '/_authenticated/challenges'
     | '/_authenticated/charts'
+    | '/_authenticated/community'
     | '/_authenticated/dashboard'
     | '/_authenticated/education'
     | '/_authenticated/guilds'
@@ -1217,6 +1311,10 @@ export interface FileRouteTypes {
     | '/_authenticated/battle-arena/history'
     | '/_authenticated/challenges/history'
     | '/_authenticated/challenges/rewards'
+    | '/_authenticated/community/bookmarks'
+    | '/_authenticated/community/explore'
+    | '/_authenticated/community/following'
+    | '/_authenticated/community/trending'
     | '/_authenticated/leaderboard/country'
     | '/_authenticated/leaderboard/friends'
     | '/_authenticated/leaderboard/global'
@@ -1250,12 +1348,15 @@ export interface FileRouteTypes {
     | '/journal/share/$token'
     | '/_authenticated/admin/'
     | '/_authenticated/battle-arena/'
+    | '/_authenticated/community/'
     | '/_authenticated/leaderboard/'
     | '/_authenticated/market/'
     | '/_authenticated/replay/'
     | '/_authenticated/statistics/'
     | '/_authenticated/strategies/'
     | '/_authenticated/trading/'
+    | '/_authenticated/community/post/$id'
+    | '/_authenticated/community/profile/$username'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1449,6 +1550,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/community': {
+      id: '/_authenticated/community'
+      path: '/community'
+      fullPath: '/community'
+      preLoaderRoute: typeof AuthenticatedCommunityRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/charts': {
       id: '/_authenticated/charts'
       path: '/charts'
@@ -1532,6 +1640,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/leaderboard/'
       preLoaderRoute: typeof AuthenticatedLeaderboardIndexRouteImport
       parentRoute: typeof AuthenticatedLeaderboardRoute
+    }
+    '/_authenticated/community/': {
+      id: '/_authenticated/community/'
+      path: '/'
+      fullPath: '/community/'
+      preLoaderRoute: typeof AuthenticatedCommunityIndexRouteImport
+      parentRoute: typeof AuthenticatedCommunityRoute
     }
     '/_authenticated/battle-arena/': {
       id: '/_authenticated/battle-arena/'
@@ -1764,6 +1879,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLeaderboardCountryRouteImport
       parentRoute: typeof AuthenticatedLeaderboardRoute
     }
+    '/_authenticated/community/trending': {
+      id: '/_authenticated/community/trending'
+      path: '/trending'
+      fullPath: '/community/trending'
+      preLoaderRoute: typeof AuthenticatedCommunityTrendingRouteImport
+      parentRoute: typeof AuthenticatedCommunityRoute
+    }
+    '/_authenticated/community/following': {
+      id: '/_authenticated/community/following'
+      path: '/following'
+      fullPath: '/community/following'
+      preLoaderRoute: typeof AuthenticatedCommunityFollowingRouteImport
+      parentRoute: typeof AuthenticatedCommunityRoute
+    }
+    '/_authenticated/community/explore': {
+      id: '/_authenticated/community/explore'
+      path: '/explore'
+      fullPath: '/community/explore'
+      preLoaderRoute: typeof AuthenticatedCommunityExploreRouteImport
+      parentRoute: typeof AuthenticatedCommunityRoute
+    }
+    '/_authenticated/community/bookmarks': {
+      id: '/_authenticated/community/bookmarks'
+      path: '/bookmarks'
+      fullPath: '/community/bookmarks'
+      preLoaderRoute: typeof AuthenticatedCommunityBookmarksRouteImport
+      parentRoute: typeof AuthenticatedCommunityRoute
+    }
     '/_authenticated/challenges/rewards': {
       id: '/_authenticated/challenges/rewards'
       path: '/rewards'
@@ -1967,6 +2110,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAchievementsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/community/profile/$username': {
+      id: '/_authenticated/community/profile/$username'
+      path: '/profile/$username'
+      fullPath: '/community/profile/$username'
+      preLoaderRoute: typeof AuthenticatedCommunityProfileUsernameRouteImport
+      parentRoute: typeof AuthenticatedCommunityRoute
+    }
+    '/_authenticated/community/post/$id': {
+      id: '/_authenticated/community/post/$id'
+      path: '/post/$id'
+      fullPath: '/community/post/$id'
+      preLoaderRoute: typeof AuthenticatedCommunityPostIdRouteImport
+      parentRoute: typeof AuthenticatedCommunityRoute
+    }
   }
 }
 
@@ -2074,6 +2231,33 @@ const AuthenticatedChallengesRouteChildren: AuthenticatedChallengesRouteChildren
 const AuthenticatedChallengesRouteWithChildren =
   AuthenticatedChallengesRoute._addFileChildren(
     AuthenticatedChallengesRouteChildren,
+  )
+
+interface AuthenticatedCommunityRouteChildren {
+  AuthenticatedCommunityBookmarksRoute: typeof AuthenticatedCommunityBookmarksRoute
+  AuthenticatedCommunityExploreRoute: typeof AuthenticatedCommunityExploreRoute
+  AuthenticatedCommunityFollowingRoute: typeof AuthenticatedCommunityFollowingRoute
+  AuthenticatedCommunityTrendingRoute: typeof AuthenticatedCommunityTrendingRoute
+  AuthenticatedCommunityIndexRoute: typeof AuthenticatedCommunityIndexRoute
+  AuthenticatedCommunityPostIdRoute: typeof AuthenticatedCommunityPostIdRoute
+  AuthenticatedCommunityProfileUsernameRoute: typeof AuthenticatedCommunityProfileUsernameRoute
+}
+
+const AuthenticatedCommunityRouteChildren: AuthenticatedCommunityRouteChildren =
+  {
+    AuthenticatedCommunityBookmarksRoute: AuthenticatedCommunityBookmarksRoute,
+    AuthenticatedCommunityExploreRoute: AuthenticatedCommunityExploreRoute,
+    AuthenticatedCommunityFollowingRoute: AuthenticatedCommunityFollowingRoute,
+    AuthenticatedCommunityTrendingRoute: AuthenticatedCommunityTrendingRoute,
+    AuthenticatedCommunityIndexRoute: AuthenticatedCommunityIndexRoute,
+    AuthenticatedCommunityPostIdRoute: AuthenticatedCommunityPostIdRoute,
+    AuthenticatedCommunityProfileUsernameRoute:
+      AuthenticatedCommunityProfileUsernameRoute,
+  }
+
+const AuthenticatedCommunityRouteWithChildren =
+  AuthenticatedCommunityRoute._addFileChildren(
+    AuthenticatedCommunityRouteChildren,
   )
 
 interface AuthenticatedLeaderboardRouteChildren {
@@ -2229,6 +2413,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedBattleArenaRoute: typeof AuthenticatedBattleArenaRouteWithChildren
   AuthenticatedChallengesRoute: typeof AuthenticatedChallengesRouteWithChildren
   AuthenticatedChartsRoute: typeof AuthenticatedChartsRoute
+  AuthenticatedCommunityRoute: typeof AuthenticatedCommunityRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEducationRoute: typeof AuthenticatedEducationRoute
   AuthenticatedGuildsRoute: typeof AuthenticatedGuildsRoute
@@ -2254,6 +2439,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBattleArenaRoute: AuthenticatedBattleArenaRouteWithChildren,
   AuthenticatedChallengesRoute: AuthenticatedChallengesRouteWithChildren,
   AuthenticatedChartsRoute: AuthenticatedChartsRoute,
+  AuthenticatedCommunityRoute: AuthenticatedCommunityRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEducationRoute: AuthenticatedEducationRoute,
   AuthenticatedGuildsRoute: AuthenticatedGuildsRoute,
