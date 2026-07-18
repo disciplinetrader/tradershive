@@ -1,14 +1,18 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Trophy, Sparkles, Coins } from "lucide-react";
+import { ShareToCommunityButton } from "@/components/sharing/ShareToCommunityButton";
+import { useAuth } from "@/hooks/use-auth";
 
 type Result = { user_id: string; final_rank: number; pnl: number; r_multiple: number; win_rate: number; trades_count: number; xp_awarded: number; coins_awarded: number };
 type Profile = { id: string; username: string | null; display_name: string | null; avatar_url: string | null };
 
 export function BattleResultsView({ battle, results, profiles }: { battle: any; results: Result[]; profiles: Profile[] }) {
+  const { user } = useAuth();
   const byId = new Map(profiles.map((p) => [p.id, p]));
   const podium = results.filter((r) => r.final_rank <= 3).sort((a, b) => a.final_rank - b.final_rank);
   const rest = results.filter((r) => r.final_rank > 3);
   const winner = byId.get(battle.winner_user_id);
+  const myResult = results.find((r) => r.user_id === user?.id);
 
   return (
     <div className="space-y-4">
@@ -16,6 +20,15 @@ export function BattleResultsView({ battle, results, profiles }: { battle: any; 
         <Trophy className="mx-auto h-8 w-8 text-amber-500" />
         <div className="mt-2 text-xs uppercase tracking-wide text-muted-foreground">Winner</div>
         <div className="mt-1 text-2xl font-bold">{winner?.display_name ?? winner?.username ?? "—"}</div>
+        {myResult ? (
+          <div className="mt-4 flex justify-center">
+            <ShareToCommunityButton
+              sourceType="battle" sourceId={battle.id}
+              label={myResult.final_rank === 1 ? "Share victory to Community" : "Share result to Community"}
+              variant="default"
+            />
+          </div>
+        ) : null}
       </div>
 
       {podium.length > 0 && (
