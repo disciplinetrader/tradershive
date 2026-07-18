@@ -40,12 +40,18 @@ export function RecentTrades() {
 
   if (trades.length === 0) {
     return (
-      <EmptyState
-        icon={LineChart}
-        title="No trades yet"
-        description="Open the paper trading terminal to execute your first trade."
-        action={{ label: "Start trading", to: "/trading" }}
-      />
+      <div className="space-y-3">
+        <EmptyState
+          icon={LineChart}
+          title="No trades yet"
+          description="Open the paper trading terminal to execute your first trade."
+        />
+        <div className="flex justify-center">
+          <Button asChild className="gradient-primary text-primary-foreground">
+            <Link to="/trading">Start trading</Link>
+          </Button>
+        </div>
+      </div>
     );
   }
 
