@@ -55,6 +55,12 @@ function ReplayDashboard() {
                 </Link>
               </Button>
             ) : null}
+            <Button asChild variant="secondary">
+              <Link to="/replay/challenges"><Target className="mr-2 h-4 w-4" />Challenges</Link>
+            </Button>
+            <Button variant="secondary" onClick={() => randomM.mutate()} disabled={randomM.isPending}>
+              <Dices className="mr-2 h-4 w-4" />{randomM.isPending ? "Rolling…" : "Surprise Me"}
+            </Button>
             <Button onClick={() => setWiz(true)}>
               <Sparkles className="mr-2 h-4 w-4" />New Replay
             </Button>
