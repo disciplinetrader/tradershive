@@ -12,6 +12,7 @@ import { formatCurrency, formatNumber } from "@/lib/paper-trading/calculations";
 import { findSymbol } from "@/lib/paper-trading/symbols";
 import { usePaper } from "./context";
 import { cn } from "@/lib/utils";
+import { ShareToCommunityButton } from "@/components/sharing/ShareToCommunityButton";
 
 type Closed = {
   id: string; symbol: string; market: string; direction: "long"|"short";
