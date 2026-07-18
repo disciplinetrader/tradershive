@@ -112,6 +112,15 @@ export const Route = createFileRoute("/api/ai/chat")({
         }
         const body = chatBodySchema.parse(raw) as ChatBody;
 
+        const rl = await enforceAiRateLimit(supabase, userId, ["chat_per_hour", "chat_per_day"]);
+        if (!rl.ok) {
+          const res = new Response(
+            JSON.stringify({ ok: false, code: "rate_limited", message: `AI chat limit reached (${rl.used}/${rl.limit}). Try again shortly.` }),
+            { status: 429, headers: { "content-type": "application/json", "retry-after": String(rl.retryAfterSec) } },
+          );
+          return res;
+        }
+
         const key = process.env.LOVABLE_API_KEY;
         if (!key) throw Errors.upstream("AI service is not configured.");
 
