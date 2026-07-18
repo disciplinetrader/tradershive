@@ -4,6 +4,7 @@ import { Progress } from "@/components/ui/progress";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { ShareToCommunityButton } from "@/components/sharing/ShareToCommunityButton";
 
 export function AchievementCard({ a }: { a: any }) {
   const pct = Math.min(100, Math.round((Number(a.progress ?? 0) / Math.max(1, Number(a.target))) * 100));
@@ -38,6 +39,11 @@ export function AchievementCard({ a }: { a: any }) {
           <div className="mt-2 flex items-center justify-center gap-2 text-[10px] text-muted-foreground">
             <span>+{a.xp_reward} XP</span> · <span>+{a.coin_reward} 🪙</span>
           </div>
+          {unlocked && a.user_achievement_id ? (
+            <div className="mt-3 flex justify-center">
+              <ShareToCommunityButton sourceType="achievement" sourceId={a.user_achievement_id} label="Share" size="sm" variant="outline" />
+            </div>
+          ) : null}
         </div>
       </GlassCard>
     </motion.div>

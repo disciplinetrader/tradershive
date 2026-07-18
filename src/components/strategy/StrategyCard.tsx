@@ -5,6 +5,7 @@ import { Star } from "lucide-react";
 import type { Strategy } from "@/lib/strategy/types";
 import { GlassCard } from "@/components/ui/glass-card";
 import { cn } from "@/lib/utils";
+import { ShareToCommunityButton } from "@/components/sharing/ShareToCommunityButton";
 
 export function StrategyCard({ strategy }: { strategy: Strategy }) {
   const Icon = ((icons as any)[strategy.icon] ?? icons.Sparkles) as React.ComponentType<{ className?: string }>;
@@ -48,6 +49,9 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
           </div>
         </GlassCard>
       </Link>
+      <div className="mt-2 flex justify-end">
+        <ShareToCommunityButton sourceType="strategy" sourceId={strategy.id} variant="ghost" size="sm" />
+      </div>
     </motion.div>
   );
 }
