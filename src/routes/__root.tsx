@@ -139,22 +139,23 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider delayDuration={100}>
-          <Outlet />
-          <Toaster
-            position="top-right"
-            theme="light"
-            richColors
-            closeButton
-            toastOptions={{
-              classNames: {
-                toast: "!bg-card !border-border !text-foreground shadow-elegant",
-              },
-            }}
-          />
-        </TooltipProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <TooltipProvider delayDuration={100}>
+            <Outlet />
+            <Toaster
+              position="top-right"
+              richColors
+              closeButton
+              toastOptions={{
+                classNames: {
+                  toast: "!bg-card !border-border !text-foreground shadow-elegant",
+                },
+              }}
+            />
+          </TooltipProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
