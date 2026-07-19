@@ -8257,6 +8257,48 @@ export type Database = {
       }
       finalize_battle: { Args: { _battle_id: string }; Returns: undefined }
       finalize_championship: { Args: { _champ: string }; Returns: undefined }
+      get_my_profile: {
+        Args: never
+        Returns: {
+          accepted_terms_at: string | null
+          admin_notes: string | null
+          avatar_url: string | null
+          bio: string | null
+          coins: number
+          country: string | null
+          created_at: string
+          deleted_at: string | null
+          display_name: string | null
+          email: string | null
+          experience: Database["public"]["Enums"]["trading_experience"] | null
+          first_name: string | null
+          goals: string[]
+          id: string
+          is_premium: boolean
+          last_active_at: string | null
+          last_name: string | null
+          league: Database["public"]["Enums"]["league"]
+          level: number
+          onboarded: boolean
+          preferred_market:
+            | Database["public"]["Enums"]["preferred_market"]
+            | null
+          preferred_markets: string[]
+          rank: number | null
+          streak: number
+          timezone: string | null
+          trading_style: Database["public"]["Enums"]["trading_style"] | null
+          updated_at: string
+          username: string
+          xp: number
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       has_permission: {
         Args: { _permission: string; _user_id: string }
         Returns: boolean
