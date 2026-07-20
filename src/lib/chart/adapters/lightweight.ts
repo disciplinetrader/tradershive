@@ -346,15 +346,7 @@ function computeOverlay(cfg: IndicatorConfig, candles: Candle[], closes: number[
       map.set("support", s.support);
       break;
     }
-    // sessions: handled separately in syncOverlayIndicators as bottom histograms.
-    case "smc": {
-      const s = smc(candles, p.pivot ?? 3);
-      map.set("swing_high", s.swing_high);
-      map.set("swing_low", s.swing_low);
-      map.set("bos", s.bos);
-      map.set("fvg", s.fvg);
-      break;
-    }
+    // sessions + smc: handled separately in syncOverlayIndicators.
     default: break;
   }
   return map;
