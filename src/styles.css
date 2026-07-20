@@ -21,12 +21,12 @@
  * =======================================================*/
 
 @theme inline {
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 3px;
+  --radius-xl: 4px;
+  --radius-2xl: 4px;
+  --radius-3xl: 6px;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -77,7 +77,7 @@
 
 /* =============== LIGHT (default) — Milkinside cloud ============ */
 :root {
-  --radius: 0.875rem; /* 14px — softer, Milkinside-style rounding */
+  --radius: 3px; /* Minimalist — sharp 3px corners across the app */
 
   /* Canvas: near-white with a whisper of warmth, pure white cards */
   --background: oklch(0.985 0.003 280);          /* #F6F6F8-ish cloud */
@@ -233,7 +233,7 @@
   :where(a, button, [role="button"], input, select, textarea, summary, [tabindex]):focus-visible {
     outline: 2px solid color-mix(in oklab, var(--primary) 65%, transparent);
     outline-offset: 2px;
-    border-radius: 10px;
+    border-radius: 3px;
   }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
@@ -247,7 +247,7 @@
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
     background: color-mix(in oklab, var(--foreground) 14%, transparent);
-    border-radius: 999px;
+    border-radius: 3px;
     border: 2px solid transparent;
     background-clip: padding-box;
   }
@@ -271,7 +271,7 @@
   left: 0.75rem;
   z-index: 100;
   padding: 0.5rem 0.875rem;
-  border-radius: 0.75rem;
+  border-radius: 3px;
   background: var(--foreground);
   color: var(--background);
   font-weight: 600;
@@ -317,7 +317,7 @@
 @utility soft-card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: calc(var(--radius) + 8px);
+  border-radius: 3px;
   box-shadow:
     0 1px 0 0 color-mix(in oklab, var(--foreground) 3%, transparent),
     0 12px 32px -18px color-mix(in oklab, var(--foreground) 20%, transparent);
