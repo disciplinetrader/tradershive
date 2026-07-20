@@ -59,6 +59,3 @@ export const getRouter = () => {
   return router;
 };
 
-// Keep Link import referenced for future default components; also silences
-// tree-shakers that might drop it from bundles that only render fallbacks.
-void Link;
