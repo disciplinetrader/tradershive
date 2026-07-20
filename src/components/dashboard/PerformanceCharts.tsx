@@ -54,7 +54,7 @@ export function PerformanceCharts() {
             <Tooltip contentStyle={tooltipStyle} />
             <Bar dataKey="pnl" radius={[6, 6, 0, 0]}>
               {weekly.map((d, i) => (
-                <Cell key={i} fill={d.pnl >= 0 ? "var(--primary)" : "var(--danger)"} />
+                <Cell key={i} fill={d.pnl >= 0 ? "var(--success)" : "var(--danger)"} />
               ))}
             </Bar>
           </BarChart>
@@ -68,7 +68,7 @@ export function PerformanceCharts() {
             <Tooltip contentStyle={tooltipStyle} />
             <Bar dataKey="pnl" radius={[6, 6, 0, 0]}>
               {monthly.map((d, i) => (
-                <Cell key={i} fill={d.pnl >= 0 ? "var(--primary)" : "var(--danger)"} />
+                <Cell key={i} fill={d.pnl >= 0 ? "var(--success)" : "var(--danger)"} />
               ))}
             </Bar>
           </BarChart>
