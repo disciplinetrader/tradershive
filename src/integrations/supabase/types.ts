@@ -5261,10 +5261,13 @@ export type Database = {
           is_active: boolean
           is_archived: boolean
           leverage: number
+          margin_call_level: number
           max_daily_risk_pct: number
           max_trade_risk_pct: number
           name: string
+          negative_balance_protection: boolean
           starting_balance: number
+          stop_out_level: number
           updated_at: string
           user_id: string
         }
@@ -5280,10 +5283,13 @@ export type Database = {
           is_active?: boolean
           is_archived?: boolean
           leverage?: number
+          margin_call_level?: number
           max_daily_risk_pct?: number
           max_trade_risk_pct?: number
           name: string
+          negative_balance_protection?: boolean
           starting_balance?: number
+          stop_out_level?: number
           updated_at?: string
           user_id: string
         }
@@ -5299,10 +5305,13 @@ export type Database = {
           is_active?: boolean
           is_archived?: boolean
           leverage?: number
+          margin_call_level?: number
           max_daily_risk_pct?: number
           max_trade_risk_pct?: number
           name?: string
+          negative_balance_protection?: boolean
           starting_balance?: number
+          stop_out_level?: number
           updated_at?: string
           user_id?: string
         }
@@ -9048,6 +9057,7 @@ export type Database = {
         | "take_profit"
         | "liquidation"
         | "expired"
+        | "stop_out"
       paper_direction: "long" | "short"
       paper_market:
         | "forex"
@@ -9478,6 +9488,7 @@ export const Constants = {
         "take_profit",
         "liquidation",
         "expired",
+        "stop_out",
       ],
       paper_direction: ["long", "short"],
       paper_market: [
