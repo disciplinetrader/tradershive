@@ -28,6 +28,7 @@ import { TradePlanner } from "@/components/trading/chart/TradePlanner";
 import { ChartContextMenu } from "@/components/trading/chart/ChartContextMenu";
 import { PositionLinesLive, type OpenTradeLine } from "@/components/trading/chart/PositionLinesLive";
 import { TodayPnLWidget } from "@/components/trading/TodayPnLWidget";
+import { MultiChartStrip, type MultiChartPane } from "@/components/trading/MultiChartStrip";
 import { useTradingShortcuts } from "@/hooks/useTradingShortcuts";
 import { emitTradeIntent } from "@/lib/trading/trade-intent";
 
