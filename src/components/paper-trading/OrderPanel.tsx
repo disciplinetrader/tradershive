@@ -15,6 +15,7 @@ import { openTrade, placeOrder, listTradeTags, createTradeTag } from "@/lib/pape
 import { COMMON_TAGS } from "@/lib/paper-trading/symbols";
 import { lotForRisk, tradeCalculation, validateStops, formatCurrency } from "@/lib/paper-trading/calculations";
 import { useLivePrice } from "@/lib/paper-trading/mock-prices";
+import { onTradeIntent } from "@/lib/trading/trade-intent";
 import { cn } from "@/lib/utils";
 import { usePaper } from "./context";
 
@@ -126,6 +127,22 @@ export function OrderPanel() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
+  }, [openMut]);
+
+  // Listen for chart-side intents (right-click menu, planner "Send")
+  useEffect(() => {
+    const unsub = onTradeIntent((i) => {
+      if (i.kind === "focus_side") { setSide(i.side); return; }
+      const isSubmit = i.kind === "submit";
+      setSide(i.side);
+      setOrderType(i.orderType);
+      if (i.price != null) setEntry(String(i.price));
+      if (i.sl != null) setSl(String(i.sl));
+      if (i.tp != null) setTp(String(i.tp));
+      if (i.lot != null) setLot(String(i.lot));
+      if (isSubmit) setTimeout(() => openMut.mutate(), 0);
+    });
+    return () => { unsub(); };
   }, [openMut]);
 
   const filteredTags = (tags ?? []).filter((t) => t.name.toLowerCase().includes(tagQuery.toLowerCase()));
