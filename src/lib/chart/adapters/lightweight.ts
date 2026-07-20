@@ -170,7 +170,10 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
               );
             }
             // FVG / OB boxes: render each as top+bottom line segments (chart box).
-            s.boxes.forEach((box, bi) => {
+            const visibleBoxes = s.boxes.filter((b) =>
+              b.kind.startsWith("fvg") ? showFvg : b.kind.startsWith("ob") ? showOb : true,
+            );
+            visibleBoxes.forEach((box, bi) => {
               const color = SMC_BOX_COLORS[box.kind];
               const dashed = box.kind.startsWith("ob");
               (["top", "bottom"] as const).forEach((edge) => {
@@ -192,13 +195,19 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
               });
             });
             // Swing + BOS markers via the plugin.
-            const markers: SeriesMarker<UTCTimestamp>[] = s.markers.map((m) => ({
-              time: (m.time / 1000) as UTCTimestamp,
-              position: m.position,
-              shape: m.shape,
-              color: m.color,
-              text: m.text,
-            }));
+            const markers: SeriesMarker<UTCTimestamp>[] = s.markers
+              .filter((m) => {
+                const isBos = /BOS|CHoCH/i.test(m.text ?? "");
+                if (isBos) return showBos;
+                return showSwings;
+              })
+              .map((m) => ({
+                time: (m.time / 1000) as UTCTimestamp,
+                position: m.position,
+                shape: m.shape,
+                color: m.color,
+                text: m.text,
+              }));
             if (!smcMarkers) smcMarkers = createSeriesMarkers(priceSeries, markers) as any;
             else smcMarkers.setMarkers(markers);
             return;
