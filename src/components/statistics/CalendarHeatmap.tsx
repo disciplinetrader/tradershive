@@ -79,7 +79,7 @@ export function CalendarHeatmap() {
                   style={inline}
                   className={cn(
                     "aspect-square rounded-lg text-[10px] font-medium relative group border border-border/30 transition hover:scale-105",
-                    !entry && bg,
+                    !entry && "bg-muted/20",
                     entry && pnl === 0 && "bg-muted/30",
                   )}
                 >
