@@ -60,16 +60,18 @@ export function CalendarHeatmap() {
           const entry = map.get(monthKey(c));
           const pnl = entry?.pnl ?? 0;
           const intensity = Math.min(1, Math.abs(pnl) / maxAbs);
-          const bg = !entry
-            ? "bg-muted/20"
-            : pnl > 0
-              ? `bg-emerald-500/[${Math.max(0.15, intensity).toFixed(2)}]`
-              : pnl < 0
-                ? `bg-rose-500/[${Math.max(0.15, intensity).toFixed(2)}]`
-                : "bg-muted/30";
+          const alpha = 0.12 + intensity * 0.55;
           const inline = entry
-            ? { backgroundColor: pnl > 0 ? `rgba(16, 185, 129, ${0.15 + intensity * 0.55})` : pnl < 0 ? `rgba(244, 63, 94, ${0.15 + intensity * 0.55})` : undefined }
+            ? {
+                backgroundColor:
+                  pnl > 0
+                    ? `color-mix(in oklab, var(--success) ${Math.round(alpha * 100)}%, transparent)`
+                    : pnl < 0
+                      ? `color-mix(in oklab, var(--danger) ${Math.round(alpha * 100)}%, transparent)`
+                      : undefined,
+              }
             : {};
+
           return (
             <Popover key={i}>
               <PopoverTrigger asChild>
