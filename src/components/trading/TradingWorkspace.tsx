@@ -16,7 +16,12 @@ import { SymbolSearch } from "@/components/paper-trading/SymbolSearch";
 
 import { ChartEngine } from "@/components/chart/ChartEngine";
 import { DEFAULT_CHART_SETTINGS } from "@/lib/chart/constants";
-import type { ChartSettings, IndicatorConfig, IndicatorKey } from "@/lib/chart/types";
+import type { ChartSettings, ChartType, IndicatorConfig, IndicatorKey } from "@/lib/chart/types";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator,
+  DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent,
+} from "@/components/ui/dropdown-menu";
 import type { Quote, Timeframe } from "@/lib/market-data/types";
 
 import { TradePlanner } from "@/components/trading/chart/TradePlanner";
