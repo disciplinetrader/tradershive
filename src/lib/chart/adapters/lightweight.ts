@@ -152,7 +152,7 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
               ...(showSwings ? { swing_high: { data: s.swing_high, color: "#22c55e" }, swing_low: { data: s.swing_low, color: "#ef4444" } } : {}),
               ...(showBos ? { bos: { data: s.bos, color: "#60a5fa", dash: true } } : {}),
             } as any;
-            void _showFvg_showOb_used_later;
+            
             for (const [key, { data, color: c, dash }] of Object.entries(lineBuckets)) {
               const id = `${cfg.id}:${key}`;
               active.add(id);
