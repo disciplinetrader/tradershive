@@ -97,6 +97,17 @@ function ChampionshipDetail() {
     onError: (e: any) => toast.error(e?.message ?? "Failed"),
   });
 
+  const joinLive = useMutation({
+    mutationFn: () => joinLiveFn({ data: { championship_id: id! } }),
+    onSuccess: () => {
+      toast.success("You're in! $" + Number(champ?.starting_balance ?? 10000).toLocaleString() + " paper account created.");
+      qc.invalidateQueries({ queryKey: ["champ-detail", id] });
+      // Send them straight to the trading workspace to start trading.
+      setTimeout(() => nav({ to: "/trading" }), 800);
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Failed to join tournament"),
+  });
+
   const d = detail.data;
   const champ = d?.championship;
   const profileMap = useMemo(() => {
