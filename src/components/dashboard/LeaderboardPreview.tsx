@@ -11,9 +11,9 @@ import { getLeaderboard } from "@/lib/social.functions";
 import { cn } from "@/lib/utils";
 
 const RANK_COLORS: Record<number, string> = {
-  1: "text-amber-400",
-  2: "text-slate-300",
-  3: "text-orange-400",
+  1: "text-warning",
+  2: "text-muted-foreground",
+  3: "text-danger",
 };
 
 export function LeaderboardPreview() {
