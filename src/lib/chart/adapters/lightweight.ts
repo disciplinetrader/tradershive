@@ -195,7 +195,7 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
               color: m.color,
               text: m.text,
             }));
-            if (!smcMarkers) smcMarkers = createSeriesMarkers(priceSeries, markers);
+            if (!smcMarkers) smcMarkers = createSeriesMarkers(priceSeries, markers) as any;
             else smcMarkers.setMarkers(markers);
             return;
           }
