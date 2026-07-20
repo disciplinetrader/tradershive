@@ -117,7 +117,12 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
       chart.removeSeries(priceSeries);
       priceSeries = buildPriceSeries(chart, type);
       currentType = type;
+      // Marker plugins were bound to the old series — drop them so callers
+      // re-attach on the next sync.
+      smcMarkers = null;
+      externalMarkers = null;
     },
+
     syncOverlayIndicators(indicators, candles) {
       if (!candles.length) return;
       const closes = candles.map((c) => c.close);
