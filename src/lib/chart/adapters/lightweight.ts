@@ -43,6 +43,7 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
   let priceSeries: ISeriesApi<any> = buildPriceSeries(chart, settings.chartType);
   let currentType: ChartType = settings.chartType;
   const overlays = new Map<string, ISeriesApi<"Line">>();
+  const subPanes = new Map<string, { series: ISeriesApi<any>; paneIndex: number }>();
   const sessionSeries = new Map<string, ISeriesApi<"Histogram">>();
   const smcBoxSeries = new Map<string, ISeriesApi<"Line">>();
   let smcMarkers: ISeriesMarkersPluginApi<UTCTimestamp> | null = null;
