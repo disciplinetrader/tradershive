@@ -198,7 +198,7 @@ export const modifyTrade = createServerFn({ method: "POST" })
 const closeTradeSchema = z.object({
   id: z.string().uuid(),
   exit_price: z.number().positive(),
-  close_reason: z.enum(["manual","stop_loss","take_profit","liquidation","expired"]).default("manual"),
+  close_reason: z.enum(["manual","stop_loss","take_profit","liquidation","stop_out","expired"]).default("manual"),
 });
 
 export const closeTrade = createServerFn({ method: "POST" })
