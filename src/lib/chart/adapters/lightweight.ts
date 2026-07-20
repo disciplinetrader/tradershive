@@ -424,7 +424,7 @@ function computeSub(cfg: IndicatorConfig, candles: Candle[], closes: number[]): 
     case "macd": {
       const m = macd(closes, p.fast ?? 12, p.slow ?? 26, p.signal ?? 9);
       return {
-        macd: { data: m.macd, color: "#22d3ee", type: "line" },
+        macd: { data: m.macdLine, color: "#22d3ee", type: "line" },
         signal: { data: m.signal, color: "#f59e0b", type: "line" },
         hist: { data: m.hist, color: "#64748b", type: "histogram" },
       };
