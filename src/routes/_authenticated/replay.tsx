@@ -1,6 +1,5 @@
-import { createFileRoute, Link, Outlet, redirect, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { Film, LayoutGrid, Library, Play, Settings2, Target } from "lucide-react";
-import { AppShell } from "@/components/layout/app-shell";
 import { cn } from "@/lib/utils";
 
 const TABS = [
