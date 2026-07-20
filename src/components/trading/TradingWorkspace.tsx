@@ -44,24 +44,47 @@ import { closeTrade, listTrades } from "@/lib/paper-trading.functions";
 
 const CHART_TIMEFRAMES: Timeframe[] = ["1m", "5m", "15m", "30m", "1H", "4H", "1D", "1W"];
 
-const INDICATOR_TOGGLES: { key: IndicatorKey; label: string; params: Record<string, number>; pane: "price" | "sub" }[] = [
-  { key: "ema", label: "EMA 20", params: { length: 20 }, pane: "price" },
-  { key: "sma", label: "SMA 50", params: { length: 50 }, pane: "price" },
-  { key: "bollinger", label: "Bollinger", params: { length: 20, stddev: 2 }, pane: "price" },
-  { key: "vwap", label: "VWAP", params: {}, pane: "price" },
-  { key: "volume", label: "Volume", params: {}, pane: "sub" },
-  { key: "rsi", label: "RSI", params: { length: 14 }, pane: "sub" },
-  { key: "macd", label: "MACD", params: { fast: 12, slow: 26, signal: 9 }, pane: "sub" },
-  { key: "smc", label: "Smart Money (SMC/ICT)", params: { pivot: 3 }, pane: "price" },
-  { key: "sessions", label: "Sessions (Asia/London/NY)", params: {}, pane: "price" },
-  { key: "fib", label: "Fibonacci", params: { length: 120 }, pane: "price" },
-  { key: "sr", label: "Support / Resistance", params: { left: 5, right: 5, levels: 6 }, pane: "price" },
+const CHART_TYPE_OPTIONS: { key: ChartType; label: string }[] = [
+  { key: "candles", label: "Candles" },
+  { key: "hollow_candles", label: "Hollow Candles" },
+  { key: "heikin_ashi", label: "Heikin Ashi" },
+  { key: "bars", label: "Bars" },
+  { key: "line", label: "Line" },
+  { key: "area", label: "Area" },
+  { key: "baseline", label: "Baseline" },
+];
+
+type IndicatorDef = { key: IndicatorKey; label: string; params: Record<string, number>; pane: "price" | "sub"; group: string };
+
+const INDICATOR_TOGGLES: IndicatorDef[] = [
+  { key: "ema", label: "EMA 20", params: { length: 20 }, pane: "price", group: "Overlays" },
+  { key: "sma", label: "SMA 50", params: { length: 50 }, pane: "price", group: "Overlays" },
+  { key: "bollinger", label: "Bollinger Bands", params: { length: 20, stddev: 2 }, pane: "price", group: "Overlays" },
+  { key: "vwap", label: "VWAP", params: {}, pane: "price", group: "Overlays" },
+  { key: "volume", label: "Volume", params: {}, pane: "sub", group: "Oscillators" },
+  { key: "rsi", label: "RSI (14)", params: { length: 14 }, pane: "sub", group: "Oscillators" },
+  { key: "macd", label: "MACD", params: { fast: 12, slow: 26, signal: 9 }, pane: "sub", group: "Oscillators" },
+  { key: "sessions", label: "Sessions (Asia / London / NY)", params: {}, pane: "price", group: "Sessions & Levels" },
+  { key: "fib", label: "Fibonacci", params: { length: 120 }, pane: "price", group: "Sessions & Levels" },
+  { key: "sr", label: "Support / Resistance", params: { left: 5, right: 5, levels: 6 }, pane: "price", group: "Sessions & Levels" },
+];
+
+const SMC_SUB_OPTIONS: { key: "show_swings" | "show_bos" | "show_fvg" | "show_ob"; label: string; desc: string }[] = [
+  { key: "show_swings", label: "Swing Highs / Lows", desc: "Pivot structure (SH / SL)" },
+  { key: "show_bos", label: "BOS / CHoCH", desc: "Break of Structure & Change of Character" },
+  { key: "show_fvg", label: "Fair Value Gaps (FVG)", desc: "Bullish / bearish imbalance zones" },
+  { key: "show_ob", label: "Order Blocks (OB)", desc: "Last opposing candle before displacement" },
 ];
 
 function TradingWorkspaceInner() {
   const qc = useQueryClient();
   const { symbol, symbolMeta, market, timeframe, setTimeframe, accountId, account } = usePaper();
   const [enabled, setEnabled] = useState<Record<string, boolean>>({ ema: true, volume: true });
+  const [chartType, setChartType] = useState<ChartType>("candles");
+  const [smcOn, setSmcOn] = useState(false);
+  const [smcParts, setSmcParts] = useState<Record<string, boolean>>({
+    show_swings: true, show_bos: true, show_fvg: true, show_ob: true,
+  });
   const [quote, setQuote] = useState<Quote | null>(null);
   const [adapter, setAdapter] = useState<import("@/lib/chart/adapter").ChartAdapter | null>(null);
   const chartApi = useRef<ChartHandle | null>(null);
@@ -80,16 +103,32 @@ function TradingWorkspaceInner() {
   const activeTf: Timeframe = (CHART_TIMEFRAMES as string[]).includes(timeframe) ? (timeframe as Timeframe) : "1H";
 
   const chartSettings: ChartSettings = useMemo(
-    () => ({ ...DEFAULT_CHART_SETTINGS, symbol, market, timeframe: activeTf }),
-    [symbol, market, activeTf],
+    () => ({ ...DEFAULT_CHART_SETTINGS, symbol, market, timeframe: activeTf, chartType }),
+    [symbol, market, activeTf, chartType],
   );
 
-  const indicators: IndicatorConfig[] = useMemo(
-    () => INDICATOR_TOGGLES.filter((i) => enabled[i.key]).map((i) => ({
+  const indicators: IndicatorConfig[] = useMemo(() => {
+    const base: IndicatorConfig[] = INDICATOR_TOGGLES.filter((i) => enabled[i.key]).map((i) => ({
       id: i.key, key: i.key, params: i.params, pane: i.pane, visible: true,
-    })),
-    [enabled],
-  );
+    }));
+    if (smcOn) {
+      base.push({
+        id: "smc", key: "smc", pane: "price", visible: true,
+        params: {
+          pivot: 3,
+          show_swings: smcParts.show_swings ? 1 : 0,
+          show_bos: smcParts.show_bos ? 1 : 0,
+          show_fvg: smcParts.show_fvg ? 1 : 0,
+          show_ob: smcParts.show_ob ? 1 : 0,
+        },
+      });
+    }
+    return base;
+  }, [enabled, smcOn, smcParts]);
+
+  const activeIndicatorCount = Object.values(enabled).filter(Boolean).length + (smcOn ? 1 : 0);
+  const activeChartTypeLabel = CHART_TYPE_OPTIONS.find((c) => c.key === chartType)?.label ?? "Candles";
+
 
   // Open positions for this account (all symbols — filter for this symbol only in overlay)
   const fetchOpen = useServerFn(listTrades);
