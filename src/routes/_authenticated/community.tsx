@@ -1,5 +1,4 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { AppShell } from "@/components/layout/app-shell";
 import { cn } from "@/lib/utils";
 import { Bookmark, Compass, Flame, Home, Users } from "lucide-react";
 
