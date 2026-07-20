@@ -77,12 +77,12 @@ export function TradePanel() {
               >
                 <div>
                   <div className="font-medium">
-                    <span className={cn("mr-1", t.direction === "long" ? "text-emerald-400" : "text-rose-400")}>
+                    <span className={cn("mr-1", t.direction === "long" ? "text-success" : "text-danger")}>
                       {t.direction === "long" ? "▲" : "▼"}
                     </span>
                     {t.lot_size} @ {t.entry_price.toFixed(t.entry_price < 10 ? 5 : 2)}
                   </div>
-                  <div className={cn("tabular-nums", upnl >= 0 ? "text-emerald-400" : "text-rose-400")}>
+                  <div className={cn("tabular-nums", upnl >= 0 ? "text-success" : "text-danger")}>
                     {upnl >= 0 ? "+" : ""}{upnl.toFixed(2)}
                   </div>
                 </div>

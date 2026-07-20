@@ -124,7 +124,7 @@ function CommentNode({
             </button>
           ) : null}
           {currentUserId === comment.author_id ? (
-            <button className="inline-flex items-center gap-1 hover:text-rose-500" onClick={() => onDelete(comment.id)}>
+            <button className="inline-flex items-center gap-1 hover:text-danger" onClick={() => onDelete(comment.id)}>
               <Trash2 className="h-3.5 w-3.5" /> Delete
             </button>
           ) : null}

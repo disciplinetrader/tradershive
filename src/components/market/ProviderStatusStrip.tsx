@@ -8,8 +8,8 @@ const ICONS: Record<ProviderStatus, typeof Wifi> = {
   connected: Wifi, disconnected: WifiOff, connecting: Loader2, error: AlertCircle, disabled: MinusCircle,
 };
 const COLORS: Record<ProviderStatus, string> = {
-  connected: "text-emerald-400", disconnected: "text-muted-foreground",
-  connecting: "text-amber-400", error: "text-rose-400", disabled: "text-muted-foreground/60",
+  connected: "text-success", disconnected: "text-muted-foreground",
+  connecting: "text-warning", error: "text-danger", disabled: "text-muted-foreground/60",
 };
 
 export function ProviderStatusStrip({ className }: { className?: string }) {

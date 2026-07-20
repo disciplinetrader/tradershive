@@ -79,12 +79,12 @@ export function ChartContextMenu({ adapter, sym, livePrice, onIntent }: Props) {
             <div className="border-b border-border/50 px-3 py-2 text-[10px] uppercase text-muted-foreground">
               At <span className="font-mono font-semibold text-foreground">{fmtPrice(sym, state.price)}</span>
             </div>
-            <Row icon={<TrendingUp className="h-3.5 w-3.5 text-emerald-500" />} label="Buy Market" onClick={() => emit({ kind: "buy_market" })} />
-            <Row icon={<TrendingDown className="h-3.5 w-3.5 text-rose-500" />} label="Sell Market" onClick={() => emit({ kind: "sell_market" })} />
+            <Row icon={<TrendingUp className="h-3.5 w-3.5 text-success" />} label="Buy Market" onClick={() => emit({ kind: "buy_market" })} />
+            <Row icon={<TrendingDown className="h-3.5 w-3.5 text-danger" />} label="Sell Market" onClick={() => emit({ kind: "sell_market" })} />
             <Divider />
             {/* Show Limit vs Stop based on whether click is above/below live */}
-            <Row icon={<ArrowDownRight className="h-3.5 w-3.5 text-emerald-500" />} label={isBuyLimit ? "Buy Limit" : "Buy Stop"} onClick={() => emit({ kind: isBuyLimit ? "buy_limit" : "buy_stop", price: state.price })} />
-            <Row icon={<ArrowUpRight className="h-3.5 w-3.5 text-rose-500" />} label={isBuyLimit ? "Sell Stop" : "Sell Limit"} onClick={() => emit({ kind: isBuyLimit ? "sell_stop" : "sell_limit", price: state.price })} />
+            <Row icon={<ArrowDownRight className="h-3.5 w-3.5 text-success" />} label={isBuyLimit ? "Buy Limit" : "Buy Stop"} onClick={() => emit({ kind: isBuyLimit ? "buy_limit" : "buy_stop", price: state.price })} />
+            <Row icon={<ArrowUpRight className="h-3.5 w-3.5 text-danger" />} label={isBuyLimit ? "Sell Stop" : "Sell Limit"} onClick={() => emit({ kind: isBuyLimit ? "sell_stop" : "sell_limit", price: state.price })} />
             <Divider />
             <Row icon={<Bell className="h-3.5 w-3.5" />} label="Set Alert" onClick={() => emit({ kind: "alert", price: state.price })} />
             <Row icon={<Pencil className="h-3.5 w-3.5" />} label="Create Drawing" onClick={() => emit({ kind: "drawing", price: state.price })} />

@@ -105,7 +105,7 @@ function HighlightCard({ title, strategy, metric }: { title: string; strategy: a
       {strategy ? (
         <>
           <Link to="/strategies/$id" params={{ id: strategy.id }} className="text-base font-bold hover:text-primary">{strategy.name}</Link>
-          <div className="text-sm text-emerald-400 tabular-nums">{metric(strategy)}</div>
+          <div className="text-sm text-success tabular-nums">{metric(strategy)}</div>
         </>
       ) : (
         <div className="text-xs text-muted-foreground">Log some trades to see highlights.</div>

@@ -48,9 +48,9 @@ function HallOfFame() {
                 key={e.id}
                 to="/championship/$slug"
                 params={{ slug: meta?.slug }}
-                className="group relative overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-primary/5 to-background p-5 shadow-sm transition hover:border-amber-500 hover:shadow-elegant"
+                className="group relative overflow-hidden rounded-2xl border border-warning/30 bg-gradient-to-br from-amber-500/10 via-primary/5 to-background p-5 shadow-sm transition hover:border-amber-500 hover:shadow-elegant"
               >
-                <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-amber-500">
+                <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-warning">
                   <Trophy className="h-3.5 w-3.5" /> Champion
                 </div>
                 <div className="mt-1 text-xs text-muted-foreground">{meta?.name}</div>

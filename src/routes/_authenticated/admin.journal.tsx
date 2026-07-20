@@ -77,13 +77,13 @@ function AdminJournal() {
                     <tr key={r.id} className="border-b border-border/40 hover:bg-surface/50">
                       <td className="p-3 text-xs">{r.profiles?.username ?? "—"}</td>
                       <td className="p-3 font-semibold">{r.symbol}</td>
-                      <td className={"p-3 text-right font-mono " + ((r.pnl ?? 0) >= 0 ? "text-emerald-400" : "text-rose-400")}>
+                      <td className={"p-3 text-right font-mono " + ((r.pnl ?? 0) >= 0 ? "text-success" : "text-danger")}>
                         {(r.pnl ?? 0).toFixed(2)}
                       </td>
                       <td className="p-3 text-right font-mono">{r.rr?.toFixed?.(2) ?? "—"}</td>
                       <td className="p-3">
                         {r.deleted_at ? <Badge variant="destructive">Deleted</Badge> :
-                         r.moderation_status === "hidden" ? <Badge className="bg-amber-500/10 text-amber-400">Hidden</Badge> :
+                         r.moderation_status === "hidden" ? <Badge className="bg-warning/10 text-warning">Hidden</Badge> :
                          <Badge variant="outline">{r.status}</Badge>}
                       </td>
                       <td className="p-3 text-xs text-muted-foreground">{r.opened_at ? new Date(r.opened_at).toLocaleDateString() : "—"}</td>

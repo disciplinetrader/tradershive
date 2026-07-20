@@ -78,7 +78,7 @@ function Row({ k, v, tone }: { k: string; v: string; tone?: "up" | "down" }) {
   return (
     <div className="flex justify-between text-sm">
       <span className="text-muted-foreground">{k}</span>
-      <span className={cn("font-bold tabular-nums", tone === "up" && "text-emerald-400", tone === "down" && "text-rose-400")}>{v}</span>
+      <span className={cn("font-bold tabular-nums", tone === "up" && "text-success", tone === "down" && "text-danger")}>{v}</span>
     </div>
   );
 }
@@ -105,7 +105,7 @@ export function AccountComparison() {
             <div key={account.id} className="rounded-xl border border-border/40 bg-background/40 p-3">
               <div className="flex items-center justify-between">
                 <div className="font-medium text-sm truncate">{account.name}</div>
-                <span className={cn("text-xs tabular-nums", k.netProfit >= 0 ? "text-emerald-400" : "text-rose-400")}>{fmtCurrency(k.netProfit)}</span>
+                <span className={cn("text-xs tabular-nums", k.netProfit >= 0 ? "text-success" : "text-danger")}>{fmtCurrency(k.netProfit)}</span>
               </div>
               <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
                 <Mini k="Balance" v={fmtCurrency(Number(account.balance))} />

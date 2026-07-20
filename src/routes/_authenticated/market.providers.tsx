@@ -35,7 +35,7 @@ function ProvidersPage() {
                   <td>{p.supports_historical ? "✓" : "—"}</td>
                   <td>{p.supports_streaming ? "✓" : "—"}</td>
                   <td>{p.priority}</td>
-                  <td>{p.is_enabled ? <span className="text-emerald-400">On</span> : <span className="text-rose-400">Off</span>}</td>
+                  <td>{p.is_enabled ? <span className="text-success">On</span> : <span className="text-danger">Off</span>}</td>
                 </tr>
               ))}
             </tbody>

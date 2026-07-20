@@ -178,7 +178,7 @@ function ChampionshipDetail() {
               Cancel registration
             </Button>
           ) : null}
-          {isRegistered ? <Badge className="bg-emerald-500/15 text-emerald-500">✓ Registered</Badge> : null}
+          {isRegistered ? <Badge className="bg-success/15 text-success">✓ Registered</Badge> : null}
           {isParticipant && myRank ? (
             <Badge className="bg-primary/15 text-primary text-sm">Your rank: #{myRank.rank ?? "—"}</Badge>
           ) : null}
@@ -217,7 +217,7 @@ function ChampionshipDetail() {
                         <tr key={r.id} className={cn("border-t transition hover:bg-muted/40", isMe && "bg-primary/5")}>
                           <td className="px-3 py-2 font-mono font-semibold">
                             {r.rank ? `#${r.rank}` : "—"}
-                            {trend > 0 ? <TrendingUp className="ml-1 inline h-3 w-3 text-emerald-500" /> : trend < 0 ? <TrendingDown className="ml-1 inline h-3 w-3 text-rose-500" /> : null}
+                            {trend > 0 ? <TrendingUp className="ml-1 inline h-3 w-3 text-success" /> : trend < 0 ? <TrendingDown className="ml-1 inline h-3 w-3 text-danger" /> : null}
                           </td>
                           <td className="px-3 py-2">
                             <div className="flex items-center gap-2">
@@ -232,7 +232,7 @@ function ChampionshipDetail() {
                               </div>
                             </div>
                           </td>
-                          <td className={cn("px-3 py-2 text-right font-mono font-semibold", r.pnl >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                          <td className={cn("px-3 py-2 text-right font-mono font-semibold", r.pnl >= 0 ? "text-success" : "text-danger")}>
                             {r.pnl >= 0 ? "+" : ""}${Number(r.pnl).toFixed(0)}
                           </td>
                           <td className="px-3 py-2 text-right font-mono">{Number(r.r_multiple).toFixed(2)}R</td>
@@ -269,7 +269,7 @@ function ChampionshipDetail() {
 
           <div className="rounded-2xl border bg-card p-5 shadow-sm">
             <h3 className="flex items-center gap-2 text-sm font-semibold">
-              <Zap className="h-3.5 w-3.5 text-amber-500" /> Activity
+              <Zap className="h-3.5 w-3.5 text-warning" /> Activity
             </h3>
             <ul className="mt-3 max-h-96 space-y-2 overflow-y-auto text-xs">
               {d?.activity?.length ? (
@@ -297,8 +297,8 @@ function ChampionshipDetail() {
           </div>
 
           {d?.hall_of_fame ? (
-            <div className="rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-background p-5 shadow-sm">
-              <h3 className="flex items-center gap-2 text-sm font-semibold text-amber-500">
+            <div className="rounded-2xl border border-warning/30 bg-gradient-to-br from-amber-500/10 to-background p-5 shadow-sm">
+              <h3 className="flex items-center gap-2 text-sm font-semibold text-warning">
                 <Trophy className="h-3.5 w-3.5" /> Hall of Fame
               </h3>
               <div className="mt-3 text-lg font-bold">

@@ -28,7 +28,7 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
                 </div>
               </div>
             </div>
-            {strategy.is_favorite ? <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" /> : null}
+            {strategy.is_favorite ? <Star className="h-3.5 w-3.5 text-warning fill-warning" /> : null}
           </div>
           {strategy.description ? (
             <p className="line-clamp-2 text-xs text-muted-foreground">{strategy.description}</p>
@@ -42,7 +42,7 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
           </div>
           <div className="flex items-center justify-between text-[10px] text-muted-foreground">
             <span className={cn("uppercase tracking-wider",
-              strategy.status === "public" ? "text-emerald-400" :
+              strategy.status === "public" ? "text-success" :
               strategy.status === "archived" ? "text-muted-foreground" : "text-primary",
             )}>{strategy.status}</span>
             <span>{strategy.timeframes.slice(0, 3).join(", ")}</span>

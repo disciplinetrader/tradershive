@@ -13,19 +13,19 @@ type Profile = { id: string; username: string | null; display_name: string | nul
 
 const ICONS: Record<string, { icon: any; tone: string }> = {
   trade_opened:       { icon: TrendingUp, tone: "text-blue-600" },
-  trade_closed:       { icon: TrendingDown, tone: "text-emerald-600" },
-  rank_up:            { icon: Trophy, tone: "text-amber-500" },
-  rank_down:          { icon: TrendingDown, tone: "text-rose-500" },
-  new_leader:         { icon: Crown, tone: "text-amber-500" },
+  trade_closed:       { icon: TrendingDown, tone: "text-success" },
+  rank_up:            { icon: Trophy, tone: "text-warning" },
+  rank_down:          { icon: TrendingDown, tone: "text-danger" },
+  new_leader:         { icon: Crown, tone: "text-warning" },
   milestone:          { icon: Zap, tone: "text-purple-500" },
-  rule_violation:     { icon: ShieldAlert, tone: "text-rose-600" },
+  rule_violation:     { icon: ShieldAlert, tone: "text-danger" },
   player_joined:      { icon: LogIn, tone: "text-blue-600" },
   player_left:        { icon: LogOut, tone: "text-slate-500" },
-  player_disconnected:{ icon: LogOut, tone: "text-amber-500" },
-  player_returned:    { icon: LogIn, tone: "text-emerald-600" },
-  battle_started:     { icon: Play, tone: "text-emerald-600" },
+  player_disconnected:{ icon: LogOut, tone: "text-warning" },
+  player_returned:    { icon: LogIn, tone: "text-success" },
+  battle_started:     { icon: Play, tone: "text-success" },
   battle_ended:       { icon: Flag, tone: "text-purple-600" },
-  battle_cancelled:   { icon: XCircle, tone: "text-rose-600" },
+  battle_cancelled:   { icon: XCircle, tone: "text-danger" },
   battle_created:     { icon: Activity, tone: "text-blue-600" },
   system:             { icon: Activity, tone: "text-muted-foreground" },
 };
@@ -61,7 +61,7 @@ export function LiveActivityFeed({ events, profiles, height = "h-[520px]" }: { e
                       <span className="truncate text-sm">
                         {p && <span className="font-medium">{p.display_name ?? p.username ?? "Trader"}</span>}
                         {p ? " · " : ""}
-                        <span className={e.severity === "error" ? "text-rose-600" : e.severity === "warning" ? "text-amber-600" : ""}>{e.message}</span>
+                        <span className={e.severity === "error" ? "text-danger" : e.severity === "warning" ? "text-warning" : ""}>{e.message}</span>
                       </span>
                     </div>
                     <div className="text-[10px] text-muted-foreground">{formatDistanceToNow(new Date(e.created_at), { addSuffix: true })}</div>

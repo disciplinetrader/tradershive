@@ -143,7 +143,7 @@ export function LeaderboardTable({
                   </TableCell>
                   <TableCell className={cn(
                     "hidden text-right font-mono text-xs lg:table-cell",
-                    r.stats.netR > 0 ? "text-emerald-400" : r.stats.netR < 0 ? "text-rose-400" : "",
+                    r.stats.netR > 0 ? "text-success" : r.stats.netR < 0 ? "text-danger" : "",
                   )}>
                     {r.stats.netR.toFixed(1)}R
                   </TableCell>

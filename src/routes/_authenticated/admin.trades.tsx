@@ -88,9 +88,9 @@ function AdminTrades() {
                       <td className="p-3 text-xs">{t.profiles?.username ?? "—"}</td>
                       <td className="p-3 font-semibold">{t.symbol}</td>
                       <td className="p-3">
-                        <Badge variant="outline" className={t.direction === "long" ? "text-emerald-400" : "text-rose-400"}>{t.direction}</Badge>
+                        <Badge variant="outline" className={t.direction === "long" ? "text-success" : "text-danger"}>{t.direction}</Badge>
                       </td>
-                      <td className={"p-3 text-right font-mono " + ((t.pnl ?? 0) >= 0 ? "text-emerald-400" : "text-rose-400")}>
+                      <td className={"p-3 text-right font-mono " + ((t.pnl ?? 0) >= 0 ? "text-success" : "text-danger")}>
                         {(t.pnl ?? 0).toFixed(2)}
                       </td>
                       <td className="p-3 text-right font-mono">{t.rr?.toFixed?.(2) ?? "—"}</td>

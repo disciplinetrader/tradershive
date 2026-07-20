@@ -15,9 +15,9 @@ export function KpiCard({
 }) {
   const toneClass = {
     default: "text-foreground",
-    positive: "text-emerald-400",
-    negative: "text-rose-400",
-    warning: "text-amber-400",
+    positive: "text-success",
+    negative: "text-danger",
+    warning: "text-warning",
   }[tone];
 
   return (

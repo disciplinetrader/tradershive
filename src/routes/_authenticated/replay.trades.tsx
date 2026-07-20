@@ -42,12 +42,12 @@ function TradesPage() {
                   </Link>
                 </td>
                 <td className="px-3 py-2">{t.symbol}</td>
-                <td className={cn("px-3 py-2 uppercase", t.direction === "long" ? "text-emerald-400" : "text-rose-400")}>{t.direction}</td>
+                <td className={cn("px-3 py-2 uppercase", t.direction === "long" ? "text-success" : "text-danger")}>{t.direction}</td>
                 <td className="px-3 py-2 text-right tabular-nums">{Number(t.entry_price).toFixed(4)}</td>
                 <td className="px-3 py-2 text-right tabular-nums">{t.exit_price != null ? Number(t.exit_price).toFixed(4) : "—"}</td>
                 <td className="px-3 py-2 text-right tabular-nums">{t.lot_size}</td>
                 <td className="px-3 py-2 text-right tabular-nums">{t.rr_realized != null ? Number(t.rr_realized).toFixed(2) : "—"}</td>
-                <td className={cn("px-3 py-2 text-right tabular-nums", (t.pnl ?? 0) >= 0 ? "text-emerald-400" : "text-rose-400")}>
+                <td className={cn("px-3 py-2 text-right tabular-nums", (t.pnl ?? 0) >= 0 ? "text-success" : "text-danger")}>
                   {t.pnl != null ? Number(t.pnl).toFixed(2) : "—"}
                 </td>
                 <td className="px-3 py-2 capitalize text-muted-foreground">{t.status}</td>

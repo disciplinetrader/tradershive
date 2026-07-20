@@ -107,7 +107,7 @@ function StrategyDetail() {
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
           <Button size="sm" variant="ghost" onClick={() => favMut.mutate(!strategy.is_favorite)}>
-            <Star className={cn("mr-1 h-4 w-4", strategy.is_favorite && "fill-amber-400 text-amber-400")} />Favorite
+            <Star className={cn("mr-1 h-4 w-4", strategy.is_favorite && "fill-warning text-warning")} />Favorite
           </Button>
           <select value={strategy.status} onChange={(e) => statusMut.mutate(e.target.value)} className="h-8 rounded-md border border-border/60 bg-background/40 px-2 text-xs">
             {STRATEGY_STATUS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}

@@ -123,8 +123,8 @@ function ProvidersTab() {
 }
 
 function StatusPill({ configured, publicByDefault, lastOk }: { configured: boolean; publicByDefault: boolean; lastOk: boolean | null }) {
-  if (lastOk === true) return <Badge className="bg-emerald-500/15 text-emerald-400"><CheckCircle2 className="mr-1 h-3 w-3" />Connected</Badge>;
-  if (lastOk === false) return <Badge className="bg-rose-500/15 text-rose-400"><AlertCircle className="mr-1 h-3 w-3" />Error</Badge>;
+  if (lastOk === true) return <Badge className="bg-success/15 text-success"><CheckCircle2 className="mr-1 h-3 w-3" />Connected</Badge>;
+  if (lastOk === false) return <Badge className="bg-danger/15 text-danger"><AlertCircle className="mr-1 h-3 w-3" />Error</Badge>;
   if (configured || publicByDefault) return <Badge className="bg-primary/15 text-primary"><Zap className="mr-1 h-3 w-3" />Ready</Badge>;
   return <Badge variant="outline">Not configured</Badge>;
 }
@@ -155,7 +155,7 @@ function ConfigureDialog({ providerCode, descriptor, onClose }: { providerCode: 
           )}
           {descriptor.credentials.map((f: any) => (
             <div key={f.key} className="space-y-1">
-              <Label className="text-xs">{f.label}{f.required && <span className="text-rose-400"> *</span>}</Label>
+              <Label className="text-xs">{f.label}{f.required && <span className="text-danger"> *</span>}</Label>
               {f.type === "select" ? (
                 <Select value={values[f.key] ?? ""} onValueChange={(v) => setValues({ ...values, [f.key]: v })}>
                   <SelectTrigger><SelectValue placeholder="Choose…" /></SelectTrigger>
@@ -287,7 +287,7 @@ function HealthTab() {
                 <tr key={h.id} className="[&>td]:py-2 [&>td]:pr-4">
                   <td className="text-xs text-muted-foreground">{new Date(h.checked_at).toLocaleString()}</td>
                   <td className="font-semibold">{h.provider_code}</td>
-                  <td>{h.ok ? <span className="text-emerald-400">OK</span> : <span className="text-rose-400">Failed</span>}</td>
+                  <td>{h.ok ? <span className="text-success">OK</span> : <span className="text-danger">Failed</span>}</td>
                   <td className="text-xs">{h.latency_ms ?? "—"} ms</td>
                   <td className="text-xs text-muted-foreground">{h.error_message ?? "—"}</td>
                 </tr>

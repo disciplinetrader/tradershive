@@ -118,7 +118,7 @@ export function ChartToolbar({
                 {indicators.map((cfg) => (
                   <div key={cfg.id} className="flex items-center justify-between rounded px-2 py-1 text-xs">
                     <span>{cfg.key.toUpperCase()}</span>
-                    <button onClick={() => onRemoveIndicator(cfg.id)} className="text-[10px] text-rose-400 hover:underline">Remove</button>
+                    <button onClick={() => onRemoveIndicator(cfg.id)} className="text-[10px] text-danger hover:underline">Remove</button>
                   </div>
                 ))}
               </div>

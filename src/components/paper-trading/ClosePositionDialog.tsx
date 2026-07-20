@@ -69,7 +69,7 @@ export function ClosePositionDialog({ trade, onClose }: { trade: Trade; onClose:
           <Button
             onClick={() => mut.mutate()}
             disabled={mut.isPending || exitNum <= 0}
-            className={cn(pnl >= 0 ? "bg-emerald-500 hover:bg-emerald-500/90" : "bg-rose-500 hover:bg-rose-500/90", "text-white")}
+            className={cn(pnl >= 0 ? "bg-emerald-500 hover:bg-success/90" : "bg-rose-500 hover:bg-danger/90", "text-white")}
           >
             Confirm close
           </Button>
@@ -84,8 +84,8 @@ function Row({ label, value, accent }: { label: string; value: React.ReactNode; 
     <>
       <span className="text-muted-foreground">{label}</span>
       <span className={cn("text-right font-mono tabular-nums",
-        accent === "emerald" && "text-emerald-400",
-        accent === "rose" && "text-rose-400")}>{value}</span>
+        accent === "emerald" && "text-success",
+        accent === "rose" && "text-danger")}>{value}</span>
     </>
   );
 }

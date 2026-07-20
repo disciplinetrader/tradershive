@@ -184,8 +184,8 @@ export function JournalStats({ entries }: { entries: JournalEntry[] }) {
               <div
                 className={cn(
                   "grid h-8 w-8 place-items-center rounded-xl",
-                  c.tone === "up" && "bg-emerald-500/10 text-emerald-400",
-                  c.tone === "down" && "bg-rose-500/10 text-rose-400",
+                  c.tone === "up" && "bg-success/10 text-success",
+                  c.tone === "down" && "bg-danger/10 text-danger",
                   c.tone === "info" && "bg-primary/10 text-primary",
                   c.tone === "flat" && "bg-muted/40 text-muted-foreground",
                 )}

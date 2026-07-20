@@ -51,7 +51,7 @@ export function NotesPanel() {
                 </div>
                 <div>{n.body}</div>
               </div>
-              <button onClick={() => removeNote(n.id)} className="opacity-0 group-hover:opacity-100 text-rose-400" aria-label="Delete note">
+              <button onClick={() => removeNote(n.id)} className="opacity-0 group-hover:opacity-100 text-danger" aria-label="Delete note">
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
             </motion.div>

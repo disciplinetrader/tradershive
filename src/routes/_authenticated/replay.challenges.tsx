@@ -17,9 +17,9 @@ export const Route = createFileRoute("/_authenticated/replay/challenges")({
 });
 
 const DIFF_COLOR: Record<string, string> = {
-  beginner: "bg-emerald-500/15 text-emerald-500",
-  intermediate: "bg-amber-500/15 text-amber-500",
-  advanced: "bg-rose-500/15 text-rose-500",
+  beginner: "bg-success/15 text-success",
+  intermediate: "bg-warning/15 text-warning",
+  advanced: "bg-danger/15 text-danger",
 };
 
 function ChallengesPage() {

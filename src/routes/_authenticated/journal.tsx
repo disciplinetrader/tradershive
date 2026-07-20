@@ -60,7 +60,7 @@ export const Route = createFileRoute("/_authenticated/journal")({
   }),
   component: JournalPage,
   errorComponent: ({ error }) => (
-    <div role="alert" className="p-6 text-sm text-rose-300">Failed to load Journal: {(error as Error).message}</div>
+    <div role="alert" className="p-6 text-sm text-danger">Failed to load Journal: {(error as Error).message}</div>
   ),
 });
 

@@ -28,11 +28,11 @@ function money(n: number) {
 export function LiveScoreboard({ stats, profiles }: { stats: Stats; profiles: Profile[] }) {
   const leader = stats?.leader_user_id ? profiles.find((p) => p.id === stats.leader_user_id) : null;
   const tiles = [
-    { icon: TrendingUp, label: "Highest Profit", value: money(stats?.highest_pnl ?? 0), tone: "text-emerald-600" },
+    { icon: TrendingUp, label: "Highest Profit", value: money(stats?.highest_pnl ?? 0), tone: "text-success" },
     { icon: Target,     label: "Highest R",      value: `${Number(stats?.highest_r ?? 0).toFixed(2)}R`, tone: "text-blue-600" },
     { icon: Percent,    label: "Best Win Rate",  value: `${Number(stats?.best_win_rate ?? 0).toFixed(1)}%`, tone: "text-indigo-600" },
-    { icon: ShieldAlert,label: "Lowest DD",      value: `$${Number(stats?.lowest_drawdown ?? 0).toFixed(0)}`, tone: "text-rose-600" },
-    { icon: Activity,   label: "Most Trades",    value: String(stats?.most_trades ?? 0), tone: "text-amber-600" },
+    { icon: ShieldAlert,label: "Lowest DD",      value: `$${Number(stats?.lowest_drawdown ?? 0).toFixed(0)}`, tone: "text-danger" },
+    { icon: Activity,   label: "Most Trades",    value: String(stats?.most_trades ?? 0), tone: "text-warning" },
     { icon: Trophy,     label: "Best Avg RR",    value: `${Number(stats?.best_avg_rr ?? 0).toFixed(2)}`, tone: "text-purple-600" },
   ];
   return (
@@ -40,11 +40,11 @@ export function LiveScoreboard({ stats, profiles }: { stats: Stats; profiles: Pr
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-sm font-semibold">Live scoreboard</h3>
         {leader && (
-          <div className="flex items-center gap-2 rounded-full bg-amber-500/10 px-2.5 py-1 text-xs">
-            <Crown className="h-3.5 w-3.5 text-amber-500" />
+          <div className="flex items-center gap-2 rounded-full bg-warning/10 px-2.5 py-1 text-xs">
+            <Crown className="h-3.5 w-3.5 text-warning" />
             <Avatar className="h-5 w-5"><AvatarImage src={leader.avatar_url ?? undefined} /><AvatarFallback>{(leader.display_name ?? leader.username ?? "?").slice(0, 1)}</AvatarFallback></Avatar>
             <span className="font-medium">{leader.display_name ?? leader.username ?? "Leader"}</span>
-            <span className="text-emerald-600 tabular-nums">{money(stats?.leader_pnl ?? 0)}</span>
+            <span className="text-success tabular-nums">{money(stats?.leader_pnl ?? 0)}</span>
           </div>
         )}
       </div>

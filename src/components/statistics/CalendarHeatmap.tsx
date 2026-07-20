@@ -83,7 +83,7 @@ export function CalendarHeatmap() {
                 >
                   <span className="absolute top-1 left-1 text-muted-foreground">{c.getDate()}</span>
                   {entry ? (
-                    <span className={cn("absolute bottom-1 right-1 tabular-nums text-[9px]", pnl > 0 ? "text-emerald-200" : pnl < 0 ? "text-rose-200" : "")}>
+                    <span className={cn("absolute bottom-1 right-1 tabular-nums text-[9px]", pnl > 0 ? "text-success" : pnl < 0 ? "text-danger" : "")}>
                       {pnl >= 0 ? "+" : ""}{Math.round(pnl)}
                     </span>
                   ) : null}
@@ -108,8 +108,8 @@ export function CalendarHeatmap() {
       </div>
 
       <div className="mt-4 flex items-center gap-3 text-[10px] text-muted-foreground">
-        <span className="inline-flex items-center gap-1"><span className="h-3 w-3 rounded bg-emerald-500/60" /> Winning day</span>
-        <span className="inline-flex items-center gap-1"><span className="h-3 w-3 rounded bg-rose-500/60" /> Losing day</span>
+        <span className="inline-flex items-center gap-1"><span className="h-3 w-3 rounded bg-success/60" /> Winning day</span>
+        <span className="inline-flex items-center gap-1"><span className="h-3 w-3 rounded bg-danger/60" /> Losing day</span>
         <span className="inline-flex items-center gap-1"><span className="h-3 w-3 rounded bg-muted/40 border border-border/40" /> No trades</span>
       </div>
     </GlassCard>
@@ -120,7 +120,7 @@ function Row({ k, v, tone }: { k: string; v: string; tone?: "up" | "down" }) {
   return (
     <div className="flex justify-between">
       <span className="text-muted-foreground">{k}</span>
-      <span className={cn("font-semibold tabular-nums", tone === "up" && "text-emerald-400", tone === "down" && "text-rose-400")}>{v}</span>
+      <span className={cn("font-semibold tabular-nums", tone === "up" && "text-success", tone === "down" && "text-danger")}>{v}</span>
     </div>
   );
 }

@@ -59,7 +59,7 @@ export function SymbolSearch({ open, onOpenChange }: { open: boolean; onOpenChan
               <CommandGroup heading="Recent">
                 {recents.map((s) => (
                   <CommandItem key={s} value={s} onSelect={() => choose(s)}>
-                    <Star className="mr-2 h-3.5 w-3.5 text-amber-400" /> {s}
+                    <Star className="mr-2 h-3.5 w-3.5 text-warning" /> {s}
                   </CommandItem>
                 ))}
               </CommandGroup>

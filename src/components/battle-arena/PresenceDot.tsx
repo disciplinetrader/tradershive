@@ -14,7 +14,7 @@ export function PresenceDot({ status, showLabel = false, className }: { status?:
   const s = styles[(status ?? "disconnected") as PresenceStatus] ?? styles.disconnected;
   return (
     <span className={cn("inline-flex items-center gap-1.5", className)}>
-      <span className={cn("inline-block h-2 w-2 rounded-full", s.color, s.pulse && "animate-pulse ring-2 ring-emerald-500/25")} />
+      <span className={cn("inline-block h-2 w-2 rounded-full", s.color, s.pulse && "animate-pulse ring-2 ring-success/25")} />
       {showLabel && <span className="text-[11px] font-medium text-muted-foreground">{s.label}</span>}
     </span>
   );

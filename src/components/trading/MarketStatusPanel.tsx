@@ -6,10 +6,10 @@ import type { ProviderStatus } from "@/lib/market-data/types";
 type Row = { code: string; name: string; status: ProviderStatus };
 
 const COLORS: Record<ProviderStatus, string> = {
-  connected: "text-emerald-400",
-  connecting: "text-amber-400",
+  connected: "text-success",
+  connecting: "text-warning",
   disconnected: "text-muted-foreground",
-  error: "text-rose-400",
+  error: "text-danger",
   disabled: "text-muted-foreground/60",
 };
 

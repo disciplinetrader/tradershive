@@ -72,7 +72,7 @@ export function AccountSummary() {
         <Stat label="Balance" value={formatCurrency(Number(account.balance), account.currency)} />
         <Stat label="Equity" value={formatCurrency(equity, account.currency)} accent />
         <Stat label="Floating P/L" value={
-          <span className={floating >= 0 ? "text-emerald-400" : "text-rose-400"}>
+          <span className={floating >= 0 ? "text-success" : "text-danger"}>
             {floating >= 0 ? "+" : ""}{formatCurrency(floating, account.currency)}
           </span>
         } icon={floating >= 0 ? <TrendingUp className="h-3.5 w-3.5"/> : <TrendingDown className="h-3.5 w-3.5"/>} />
@@ -80,7 +80,7 @@ export function AccountSummary() {
         <Stat label="Win rate" value={`${Number(stats?.win_rate ?? 0).toFixed(1)}%`} />
         <Stat label="Total trades" value={<AnimatedCounter value={Number(stats?.total_trades ?? 0)} />} />
         <Stat label="Net P/L" value={
-          <span className={Number(stats?.net_pnl ?? 0) >= 0 ? "text-emerald-400" : "text-rose-400"}>
+          <span className={Number(stats?.net_pnl ?? 0) >= 0 ? "text-success" : "text-danger"}>
             {formatCurrency(Number(stats?.net_pnl ?? 0), account.currency)}
           </span>
         } />

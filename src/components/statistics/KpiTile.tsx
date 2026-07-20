@@ -27,8 +27,8 @@ export function KpiTile({
           <div
             className={cn(
               "grid h-8 w-8 place-items-center rounded-xl",
-              tone === "up" && "bg-emerald-500/10 text-emerald-400",
-              tone === "down" && "bg-rose-500/10 text-rose-400",
+              tone === "up" && "bg-success/10 text-success",
+              tone === "down" && "bg-danger/10 text-danger",
               tone === "info" && "bg-primary/10 text-primary",
               tone === "flat" && "bg-muted/40 text-muted-foreground",
             )}

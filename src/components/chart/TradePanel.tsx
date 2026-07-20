@@ -86,7 +86,7 @@ export function TradePanel({ symbol, market }: Props) {
       </div>
 
       {!accountId ? (
-        <p className="text-[11px] text-amber-400">No paper account selected.</p>
+        <p className="text-[11px] text-warning">No paper account selected.</p>
       ) : null}
 
       <div className="mt-auto grid grid-cols-2 gap-2">

@@ -84,7 +84,7 @@ export function ChallengeCard({
 
         <div className="relative mt-4 flex items-center justify-between">
           {isClaimed ? (
-            <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-400">
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-success">
               <CheckCircle2 className="h-3.5 w-3.5" /> Claimed
             </span>
           ) : isCompleted ? (

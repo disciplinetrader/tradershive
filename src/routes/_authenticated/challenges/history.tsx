@@ -33,9 +33,9 @@ function History() {
         <GlassCard className="divide-y divide-border/40">
           {data!.map((row) => {
             const ch = row.challenges ?? {};
-            const icon = row.status === "claimed" ? <CheckCircle2 className="h-4 w-4 text-emerald-400" /> :
+            const icon = row.status === "claimed" ? <CheckCircle2 className="h-4 w-4 text-success" /> :
                          row.status === "completed" ? <Clock className="h-4 w-4 text-primary" /> :
-                         row.status === "expired" ? <XCircle className="h-4 w-4 text-rose-400" /> :
+                         row.status === "expired" ? <XCircle className="h-4 w-4 text-danger" /> :
                          <Clock className="h-4 w-4 text-muted-foreground" />;
             const diff = DIFFICULTY_STYLES[ch.difficulty] ?? DIFFICULTY_STYLES.easy;
             return (

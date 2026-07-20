@@ -120,7 +120,7 @@ export function WatchlistPanel() {
                 <Button size="sm" onClick={() => newList.trim() && createWlMut.mutate(newList.trim())}>Add</Button>
               </div>
               {active && !active.is_default && (
-                <Button variant="ghost" size="sm" className="w-full text-rose-400"
+                <Button variant="ghost" size="sm" className="w-full text-danger"
                   onClick={() => deleteWlMut.mutate(active.id)}>
                   <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Delete "{active.name}"
                 </Button>
@@ -174,8 +174,8 @@ export function WatchlistPanel() {
                   selected && "border-primary/40 bg-primary/5",
                 )}
               >
-                <button onClick={() => favMut.mutate(r)} className="shrink-0 text-muted-foreground hover:text-amber-400" aria-label="Toggle favorite">
-                  {r.is_favorite ? <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" /> : <StarOff className="h-3.5 w-3.5" />}
+                <button onClick={() => favMut.mutate(r)} className="shrink-0 text-muted-foreground hover:text-warning" aria-label="Toggle favorite">
+                  {r.is_favorite ? <Star className="h-3.5 w-3.5 fill-warning text-warning" /> : <StarOff className="h-3.5 w-3.5" />}
                 </button>
                 <button
                   onClick={() => setSymbol(r.symbol)}
@@ -187,7 +187,7 @@ export function WatchlistPanel() {
                   </div>
                   <div className="text-right">
                     <p className="font-mono text-xs tabular-nums">{q ? q.price.toFixed(meta?.decimals ?? 2) : "—"}</p>
-                    <p className={cn("font-mono text-[10px] tabular-nums", up ? "text-emerald-400" : "text-rose-400")}>
+                    <p className={cn("font-mono text-[10px] tabular-nums", up ? "text-success" : "text-danger")}>
                       {q ? `${up ? "+" : ""}${q.change.toFixed(2)}%` : "—"}
                     </p>
                   </div>
@@ -196,7 +196,7 @@ export function WatchlistPanel() {
                   onClick={() => removeMut.mutate(r.id)}
                   className="opacity-0 transition group-hover:opacity-100" aria-label="Remove"
                 >
-                  <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-rose-400" />
+                  <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-danger" />
                 </button>
               </motion.li>
             );

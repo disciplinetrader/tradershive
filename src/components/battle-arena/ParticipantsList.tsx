@@ -24,7 +24,7 @@ export function ParticipantsList({ participants, profiles, hostId }: { participa
                   <div>
                     <div className="flex items-center gap-1.5">
                       <span className="font-medium">{pr?.display_name ?? pr?.username ?? "Trader"}</span>
-                      {p.user_id === hostId && <Crown className="h-3.5 w-3.5 text-amber-500" />}
+                      {p.user_id === hostId && <Crown className="h-3.5 w-3.5 text-warning" />}
                     </div>
                     <div className="text-[11px] text-muted-foreground">Joined {new Date(p.joined_at).toLocaleDateString()}</div>
                   </div>

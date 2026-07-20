@@ -146,12 +146,12 @@ function ReviewSection({ title, body }: { title: string; body: string | null }) 
 function ReviewGrid({ strengths, mistakes }: { strengths: string[]; mistakes: string[] }) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
-      <Card className="bg-card/60 backdrop-blur-md border-emerald-500/30">
-        <CardHeader className="pb-2"><CardTitle className="text-sm text-emerald-400">Strengths</CardTitle></CardHeader>
+      <Card className="bg-card/60 backdrop-blur-md border-success/30">
+        <CardHeader className="pb-2"><CardTitle className="text-sm text-success">Strengths</CardTitle></CardHeader>
         <CardContent><ul className="list-disc pl-5 space-y-1 text-sm">{(strengths ?? []).map((s, i) => <li key={i}>{s}</li>)}</ul></CardContent>
       </Card>
-      <Card className="bg-card/60 backdrop-blur-md border-red-500/30">
-        <CardHeader className="pb-2"><CardTitle className="text-sm text-red-400">Mistakes</CardTitle></CardHeader>
+      <Card className="bg-card/60 backdrop-blur-md border-danger/30">
+        <CardHeader className="pb-2"><CardTitle className="text-sm text-danger">Mistakes</CardTitle></CardHeader>
         <CardContent><ul className="list-disc pl-5 space-y-1 text-sm">{(mistakes ?? []).map((s, i) => <li key={i}>{s}</li>)}</ul></CardContent>
       </Card>
     </div>

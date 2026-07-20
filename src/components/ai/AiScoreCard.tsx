@@ -7,10 +7,10 @@ import { cn } from "@/lib/utils";
 type ScoreShape = Record<string, unknown>;
 
 function scoreColor(v: number) {
-  if (v >= 80) return "text-emerald-400";
+  if (v >= 80) return "text-success";
   if (v >= 60) return "text-sky-400";
-  if (v >= 40) return "text-amber-400";
-  return "text-red-400";
+  if (v >= 40) return "text-warning";
+  return "text-danger";
 }
 
 export function AiScoreCard({ score }: { score: ScoreShape | null | undefined }) {

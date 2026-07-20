@@ -79,7 +79,7 @@ export function CompareDialog({ initialUsername, children }: { initialUsername?:
                   <div key={row.label + "l"} className="text-muted-foreground">{row.label}</div>
                   {values.map((v: any, i: number) => (
                     <div key={row.label + i} className={cn("text-center font-mono font-semibold",
-                      values.length === 2 && v === values[i] && String(v) > String(values[1 - i]) && "text-emerald-400",
+                      values.length === 2 && v === values[i] && String(v) > String(values[1 - i]) && "text-success",
                     )}>{v}</div>
                   ))}
                 </>

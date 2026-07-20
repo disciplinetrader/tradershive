@@ -122,7 +122,7 @@ export function FlowEditor({ strategyId }: { strategyId: string }) {
             >
               <div className="flex items-center justify-between text-[10px] uppercase tracking-wider" style={{ color }}>
                 {n.node_type}
-                <button onClick={(e) => { e.stopPropagation(); removeNode(n.id); }} className="text-muted-foreground hover:text-rose-400"><Trash2 className="h-3 w-3" /></button>
+                <button onClick={(e) => { e.stopPropagation(); removeNode(n.id); }} className="text-muted-foreground hover:text-danger"><Trash2 className="h-3 w-3" /></button>
               </div>
               <input value={n.label ?? ""} onChange={(e) => setNodes((p) => p.map((x) => x.id === n.id ? { ...x, label: e.target.value } : x))}
                 onMouseDown={(e) => e.stopPropagation()}

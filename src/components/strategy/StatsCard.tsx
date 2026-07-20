@@ -25,7 +25,7 @@ export function StatsCard({ stats }: { stats: StrategyStats | null }) {
               <div>
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{it.label}</div>
                 <div className={cn("text-lg font-bold tabular-nums",
-                  it.pnl != null ? (it.pnl >= 0 ? "text-emerald-400" : "text-rose-400") : "")}>{it.value as any}</div>
+                  it.pnl != null ? (it.pnl >= 0 ? "text-success" : "text-danger") : "")}>{it.value as any}</div>
               </div>
             </div>
           </GlassCard>

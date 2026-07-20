@@ -14,7 +14,7 @@ export function RankTrend({ delta, className }: { delta: number | null | undefin
   }
   const up = delta > 0;
   return (
-    <span className={cn("inline-flex items-center gap-0.5 text-[11px] font-mono font-semibold", up ? "text-emerald-400" : "text-rose-400", className)}>
+    <span className={cn("inline-flex items-center gap-0.5 text-[11px] font-mono font-semibold", up ? "text-success" : "text-danger", className)}>
       {up ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />} {Math.abs(delta)}
     </span>
   );

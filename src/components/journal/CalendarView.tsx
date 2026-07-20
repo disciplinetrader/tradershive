@@ -112,7 +112,7 @@ export function CalendarView({
               <span className={cn("text-[11px] font-semibold", bucket ? "text-foreground" : "text-muted-foreground")}>{day}</span>
               {bucket ? (
                 <div className="mt-1 space-y-0.5">
-                  <p className={cn("truncate font-mono text-[10px] tabular-nums", win ? "text-emerald-400" : loss ? "text-rose-400" : "text-muted-foreground")}>
+                  <p className={cn("truncate font-mono text-[10px] tabular-nums", win ? "text-success" : loss ? "text-danger" : "text-muted-foreground")}>
                     {formatCurrency(bucket.pnl)}
                   </p>
                   <p className="truncate text-[9px] text-muted-foreground">

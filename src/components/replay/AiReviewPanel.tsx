@@ -31,7 +31,7 @@ export function AiReviewPanel({ sessionId }: { sessionId: string }) {
           <Sparkles className="mr-2 h-4 w-4" />
           {m.isPending ? "Analyzing…" : "Generate AI Review"}
         </Button>
-        {m.isError ? <div className="text-[11px] text-rose-400">Review failed. Try again.</div> : null}
+        {m.isError ? <div className="text-[11px] text-danger">Review failed. Try again.</div> : null}
       </GlassCard>
     );
   }

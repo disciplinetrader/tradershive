@@ -53,7 +53,7 @@ function Ledger({ rows, isLoading, unit }: { rows: any[] | undefined; isLoading:
               {r.source} · {new Date(r.created_at).toLocaleString()}
             </div>
           </div>
-          <div className={"tabular-nums font-semibold " + (r.delta >= 0 ? "text-emerald-400" : "text-rose-400")}>
+          <div className={"tabular-nums font-semibold " + (r.delta >= 0 ? "text-success" : "text-danger")}>
             {r.delta >= 0 ? "+" : ""}{r.delta} {unit}
           </div>
         </div>

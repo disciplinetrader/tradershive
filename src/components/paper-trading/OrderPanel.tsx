@@ -154,8 +154,8 @@ export function OrderPanel() {
     <div className="flex flex-col gap-3">
       <Tabs value={side} onValueChange={(v) => setSide(v as Side)}>
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="long" className="data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300">Buy</TabsTrigger>
-          <TabsTrigger value="short" className="data-[state=active]:bg-rose-500/20 data-[state=active]:text-rose-300">Sell</TabsTrigger>
+          <TabsTrigger value="long" className="data-[state=active]:bg-success/20 data-[state=active]:text-success">Buy</TabsTrigger>
+          <TabsTrigger value="short" className="data-[state=active]:bg-danger/20 data-[state=active]:text-danger">Sell</TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -209,7 +209,7 @@ export function OrderPanel() {
             <Row label="Margin" value={formatCurrency(calc.margin, account?.currency)} />
           </div>
           {riskWarn && (
-            <p className="mt-2 flex items-center gap-1.5 rounded-md bg-rose-500/10 px-2 py-1 text-rose-300">
+            <p className="mt-2 flex items-center gap-1.5 rounded-md bg-danger/10 px-2 py-1 text-danger">
               <AlertTriangle className="h-3.5 w-3.5" /> Exceeds per-trade risk limit ({account?.max_trade_risk_pct}%)
             </p>
           )}
@@ -281,8 +281,8 @@ export function OrderPanel() {
           disabled={openMut.isPending || !accountId || !symbolMeta}
           className={cn("flex-1 shadow-elegant",
             side === "long"
-              ? "bg-emerald-500 text-white hover:bg-emerald-500/90"
-              : "bg-rose-500 text-white hover:bg-rose-500/90")}
+              ? "bg-emerald-500 text-white hover:bg-success/90"
+              : "bg-rose-500 text-white hover:bg-danger/90")}
         >
           <Send className="mr-1.5 h-4 w-4" />
           {orderType === "market" ? (side === "long" ? "Buy market" : "Sell market") : "Place order"}
@@ -306,8 +306,8 @@ function Row({ label, value, accent }: { label: string; value: React.ReactNode; 
     <>
       <span className="text-muted-foreground">{label}</span>
       <span className={cn("text-right font-mono tabular-nums",
-        accent === "emerald" && "text-emerald-400",
-        accent === "rose" && "text-rose-400")}>{value}</span>
+        accent === "emerald" && "text-success",
+        accent === "rose" && "text-danger")}>{value}</span>
     </>
   );
 }

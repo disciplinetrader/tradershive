@@ -63,7 +63,7 @@ export function OrdersTable() {
                 <TableCell className="font-semibold">{r.symbol}</TableCell>
                 <TableCell>
                   <span className={cn("rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase",
-                    r.direction === "long" ? "bg-emerald-500/15 text-emerald-300" : "bg-rose-500/15 text-rose-300")}>
+                    r.direction === "long" ? "bg-success/15 text-success" : "bg-danger/15 text-danger")}>
                     {r.direction}
                   </span>
                 </TableCell>
@@ -72,14 +72,14 @@ export function OrdersTable() {
                 <TableCell className="text-right font-mono">{Number(r.lot_size).toFixed(2)}</TableCell>
                 <TableCell>
                   <span className={cn("rounded px-1.5 py-0.5 text-[10px] uppercase",
-                    r.status === "pending" && "bg-amber-500/15 text-amber-300",
-                    r.status === "filled" && "bg-emerald-500/15 text-emerald-300",
+                    r.status === "pending" && "bg-warning/15 text-warning",
+                    r.status === "filled" && "bg-success/15 text-success",
                     r.status === "cancelled" && "bg-muted text-muted-foreground",
                   )}>{r.status}</span>
                 </TableCell>
                 <TableCell className="text-right">
                   {r.status === "pending" && (
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-rose-400" onClick={() => cancelMut.mutate(r.id)} aria-label="Cancel">
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-danger" onClick={() => cancelMut.mutate(r.id)} aria-label="Cancel">
                       <X className="h-4 w-4" />
                     </Button>
                   )}
