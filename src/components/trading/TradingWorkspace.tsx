@@ -129,7 +129,7 @@ function TradingWorkspaceInner() {
 
   const screenshot = useCallback(async () => {
     try {
-      const blob = await chartApi.current?.adapter.screenshot();
+      const blob = await chartApi.current?.adapter?.screenshot();
       if (!blob) throw new Error("Screenshot unavailable");
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
