@@ -4029,17 +4029,26 @@ export type Database = {
       }
       historical_import_jobs: {
         Row: {
+          cancelled_at: string | null
           candles_fetched: number
           candles_inserted: number
           candles_skipped: number
           created_at: string
+          duration_ms: number | null
           error_message: string | null
           finished_at: string | null
           gaps_detected: number
           id: string
+          max_retries: number
           metadata: Json
+          paused_at: string | null
+          phase: string | null
+          priority: number
+          progress: number
+          provider_response_ms: number | null
           range_from: string
           range_to: string
+          retry_count: number
           source_code: string
           started_at: string | null
           status: string
@@ -4048,19 +4057,29 @@ export type Database = {
           timeframe: string
           triggered_by: string
           updated_at: string
+          warning_count: number
         }
         Insert: {
+          cancelled_at?: string | null
           candles_fetched?: number
           candles_inserted?: number
           candles_skipped?: number
           created_at?: string
+          duration_ms?: number | null
           error_message?: string | null
           finished_at?: string | null
           gaps_detected?: number
           id?: string
+          max_retries?: number
           metadata?: Json
+          paused_at?: string | null
+          phase?: string | null
+          priority?: number
+          progress?: number
+          provider_response_ms?: number | null
           range_from: string
           range_to: string
+          retry_count?: number
           source_code: string
           started_at?: string | null
           status?: string
@@ -4069,19 +4088,29 @@ export type Database = {
           timeframe: string
           triggered_by?: string
           updated_at?: string
+          warning_count?: number
         }
         Update: {
+          cancelled_at?: string | null
           candles_fetched?: number
           candles_inserted?: number
           candles_skipped?: number
           created_at?: string
+          duration_ms?: number | null
           error_message?: string | null
           finished_at?: string | null
           gaps_detected?: number
           id?: string
+          max_retries?: number
           metadata?: Json
+          paused_at?: string | null
+          phase?: string | null
+          priority?: number
+          progress?: number
+          provider_response_ms?: number | null
           range_from?: string
           range_to?: string
+          retry_count?: number
           source_code?: string
           started_at?: string | null
           status?: string
@@ -4090,8 +4119,16 @@ export type Database = {
           timeframe?: string
           triggered_by?: string
           updated_at?: string
+          warning_count?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "historical_import_jobs_symbol_id_fkey"
+            columns: ["symbol_id"]
+            isOneToOne: false
+            referencedRelation: "historical_coverage"
+            referencedColumns: ["symbol_id"]
+          },
           {
             foreignKeyName: "historical_import_jobs_symbol_id_fkey"
             columns: ["symbol_id"]
@@ -4101,59 +4138,200 @@ export type Database = {
           },
         ]
       }
+      historical_notifications: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          message: string | null
+          metadata: Json
+          read_at: string | null
+          severity: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          message?: string | null
+          metadata?: Json
+          read_at?: string | null
+          severity?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          message?: string | null
+          metadata?: Json
+          read_at?: string | null
+          severity?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      historical_sessions: {
+        Row: {
+          close_utc: string
+          code: string
+          color: string | null
+          created_at: string
+          days_of_week: number[]
+          id: string
+          is_enabled: boolean
+          label: string
+          market: string
+          open_utc: string
+          sort_order: number
+          timezone: string
+        }
+        Insert: {
+          close_utc: string
+          code: string
+          color?: string | null
+          created_at?: string
+          days_of_week?: number[]
+          id?: string
+          is_enabled?: boolean
+          label: string
+          market: string
+          open_utc: string
+          sort_order?: number
+          timezone?: string
+        }
+        Update: {
+          close_utc?: string
+          code?: string
+          color?: string | null
+          created_at?: string
+          days_of_week?: number[]
+          id?: string
+          is_enabled?: boolean
+          label?: string
+          market?: string
+          open_utc?: string
+          sort_order?: number
+          timezone?: string
+        }
+        Relationships: []
+      }
+      historical_snapshots: {
+        Row: {
+          candle_index: number
+          created_at: string
+          id: string
+          metadata: Json
+          price: number
+          symbol: string
+          timeframe: string
+          ts: string
+        }
+        Insert: {
+          candle_index: number
+          created_at?: string
+          id?: string
+          metadata?: Json
+          price: number
+          symbol: string
+          timeframe: string
+          ts: string
+        }
+        Update: {
+          candle_index?: number
+          created_at?: string
+          id?: string
+          metadata?: Json
+          price?: number
+          symbol?: string
+          timeframe?: string
+          ts?: string
+        }
+        Relationships: []
+      }
       historical_symbols: {
         Row: {
+          base_currency: string | null
           base_timeframe: string
           created_at: string
           display_name: string | null
           earliest_available: string | null
+          exchange: string | null
           id: string
+          instrument_type: string | null
           is_enabled: boolean
           latest_imported: string | null
+          lot_size: number | null
           market: string
           metadata: Json
           native_symbol: string
+          pip_value: number | null
+          price_precision: number | null
           priority: number
+          quote_currency: string | null
           source_code: string
           source_id: string | null
           symbol: string
+          tick_size: number | null
           timeframes: string[]
+          timezone: string | null
+          trading_hours: Json | null
           updated_at: string
         }
         Insert: {
+          base_currency?: string | null
           base_timeframe?: string
           created_at?: string
           display_name?: string | null
           earliest_available?: string | null
+          exchange?: string | null
           id?: string
+          instrument_type?: string | null
           is_enabled?: boolean
           latest_imported?: string | null
+          lot_size?: number | null
           market: string
           metadata?: Json
           native_symbol: string
+          pip_value?: number | null
+          price_precision?: number | null
           priority?: number
+          quote_currency?: string | null
           source_code: string
           source_id?: string | null
           symbol: string
+          tick_size?: number | null
           timeframes?: string[]
+          timezone?: string | null
+          trading_hours?: Json | null
           updated_at?: string
         }
         Update: {
+          base_currency?: string | null
           base_timeframe?: string
           created_at?: string
           display_name?: string | null
           earliest_available?: string | null
+          exchange?: string | null
           id?: string
+          instrument_type?: string | null
           is_enabled?: boolean
           latest_imported?: string | null
+          lot_size?: number | null
           market?: string
           metadata?: Json
           native_symbol?: string
+          pip_value?: number | null
+          price_precision?: number | null
           priority?: number
+          quote_currency?: string | null
           source_code?: string
           source_id?: string | null
           symbol?: string
+          tick_size?: number | null
           timeframes?: string[]
+          timezone?: string | null
+          trading_hours?: Json | null
           updated_at?: string
         }
         Relationships: [
@@ -8507,7 +8685,22 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      historical_coverage: {
+        Row: {
+          candles: number | null
+          earliest_available: string | null
+          first_ts: string | null
+          is_enabled: boolean | null
+          last_ts: string | null
+          latest_imported: string | null
+          market: string | null
+          source_code: string | null
+          symbol: string | null
+          symbol_id: string | null
+          timeframe: Database["public"]["Enums"]["timeframe_kind"] | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       bump_ai_rate_limit: {
