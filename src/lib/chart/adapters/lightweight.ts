@@ -240,6 +240,52 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
       }
       if (!smcHandled && smcMarkers) { smcMarkers.setMarkers([]); }
     },
+    syncSubPaneIndicators(indicators, candles) {
+      if (!candles.length) return;
+      const closes = candles.map((c) => c.close);
+      const active = new Set<string>();
+      // Assign each configured sub indicator a dedicated pane index (1, 2, 3…).
+      // Volume stays in the overlay margin; not handled here.
+      const oscillators = indicators.filter(
+        (i) => i.pane === "sub" && i.visible !== false && i.key !== "volume",
+      );
+      oscillators.forEach((cfg, i) => {
+        const paneIndex = i + 1;
+        const series = computeSub(cfg, candles, closes);
+        for (const [key, { data, color, type, extra }] of Object.entries(series)) {
+          const id = `${cfg.id}:${key}`;
+          active.add(id);
+          let entry = subPanes.get(id);
+          if (!entry || entry.paneIndex !== paneIndex) {
+            if (entry) chart.removeSeries(entry.series);
+            const s = type === "histogram"
+              ? chart.addSeries(HistogramSeries, { color, priceLineVisible: false, lastValueVisible: false, ...extra }, paneIndex)
+              : chart.addSeries(LineSeries, { color, lineWidth: 2, priceLineVisible: false, lastValueVisible: false, ...extra }, paneIndex);
+            entry = { series: s, paneIndex };
+            subPanes.set(id, entry);
+          }
+          entry.series.setData(
+            data
+              .map((v, idx) => ({ time: (candles[idx].time / 1000) as UTCTimestamp, value: v }))
+              .filter((p) => Number.isFinite(p.value)) as any,
+          );
+        }
+      });
+      for (const [id, entry] of subPanes) {
+        if (!active.has(id)) { try { chart.removeSeries(entry.series); } catch { /* removed with pane */ } subPanes.delete(id); }
+      }
+      // Compact pane heights so oscillators get ~120px each.
+      try {
+        const panes = chart.panes();
+        const container = chart.chartElement();
+        const totalH = container.clientHeight || 600;
+        const oscPaneCount = panes.length - 1;
+        if (oscPaneCount > 0) {
+          const oscH = Math.min(140, Math.max(90, (totalH * 0.28) / oscPaneCount));
+          panes.slice(1).forEach((p) => p.setHeight(oscH));
+        }
+      } catch { /* older builds */ }
+    },
     setVolumeVisible(visible, candles) {
       if (visible && !volSeries) {
         volSeries = chart.addSeries(HistogramSeries, { priceFormat: { type: "volume" }, priceScaleId: "vol" });
