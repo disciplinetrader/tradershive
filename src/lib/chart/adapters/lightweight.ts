@@ -140,16 +140,76 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
             return;
           }
 
+          // SMC/ICT renders swing lines + BOS/CHoCH markers + FVG/OB boxes.
+          if (cfg.key === "smc") {
+            smcHandled = true;
+            const s = smc(candles, (cfg.params.pivot as number) ?? 3);
+            const lineBuckets: Record<string, { data: number[]; color: string; dash?: boolean }> = {
+              swing_high: { data: s.swing_high, color: "#22c55e" },
+              swing_low: { data: s.swing_low, color: "#ef4444" },
+              bos: { data: s.bos, color: "#60a5fa", dash: true },
+            };
+            for (const [key, { data, color: c, dash }] of Object.entries(lineBuckets)) {
+              const id = `${cfg.id}:${key}`;
+              active.add(id);
+              let ln = overlays.get(id);
+              if (!ln) {
+                ln = chart.addSeries(LineSeries, {
+                  color: c, lineWidth: 2, priceLineVisible: false, lastValueVisible: false,
+                  lineStyle: dash ? 2 : 0,
+                });
+                overlays.set(id, ln);
+              }
+              ln.setData(
+                data.map((v, i) => ({ time: (candles[i].time / 1000) as UTCTimestamp, value: v }))
+                  .filter((p) => Number.isFinite(p.value)) as any,
+              );
+            }
+            // FVG / OB boxes: render each as top+bottom line segments (chart box).
+            s.boxes.forEach((box, bi) => {
+              const color = SMC_BOX_COLORS[box.kind];
+              const dashed = box.kind.startsWith("ob");
+              (["top", "bottom"] as const).forEach((edge) => {
+                const id = `${cfg.id}:box${bi}:${edge}`;
+                activeSmcBoxes.add(id);
+                let ln = smcBoxSeries.get(id);
+                if (!ln) {
+                  ln = chart.addSeries(LineSeries, {
+                    color, lineWidth: 1, lineStyle: dashed ? 2 : 0,
+                    priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false,
+                  });
+                  smcBoxSeries.set(id, ln);
+                }
+                const v = edge === "top" ? box.top : box.bottom;
+                ln.setData([
+                  { time: (box.time / 1000) as UTCTimestamp, value: v },
+                  { time: (box.endTime / 1000) as UTCTimestamp, value: v },
+                ] as any);
+              });
+            });
+            // Swing + BOS markers via the plugin.
+            const markers: SeriesMarker<UTCTimestamp>[] = s.markers.map((m) => ({
+              time: (m.time / 1000) as UTCTimestamp,
+              position: m.position,
+              shape: m.shape,
+              color: m.color,
+              text: m.text,
+            }));
+            if (!smcMarkers) smcMarkers = createSeriesMarkers(priceSeries, markers);
+            else smcMarkers.setMarkers(markers);
+            return;
+          }
+
           const buckets = computeOverlay(cfg, candles, closes);
           buckets.forEach((series, key) => {
             const id = `${cfg.id}:${key}`;
             active.add(id);
-            let s = overlays.get(id);
-            if (!s) {
-              s = chart.addSeries(LineSeries, { color, lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
-              overlays.set(id, s);
+            let ln = overlays.get(id);
+            if (!ln) {
+              ln = chart.addSeries(LineSeries, { color, lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
+              overlays.set(id, ln);
             }
-            s.setData(
+            ln.setData(
               series.map((v, i) => ({ time: (candles[i].time / 1000) as UTCTimestamp, value: v }))
                 .filter((p) => Number.isFinite(p.value)) as any,
             );
@@ -161,6 +221,10 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
       for (const [id, s] of sessionSeries) {
         if (!activeSessions.has(id)) { chart.removeSeries(s); sessionSeries.delete(id); }
       }
+      for (const [id, s] of smcBoxSeries) {
+        if (!activeSmcBoxes.has(id)) { chart.removeSeries(s); smcBoxSeries.delete(id); }
+      }
+      if (!smcHandled && smcMarkers) { smcMarkers.setMarkers([]); }
     },
     setVolumeVisible(visible, candles) {
       if (visible && !volSeries) {
