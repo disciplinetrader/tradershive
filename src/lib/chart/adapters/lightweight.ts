@@ -332,9 +332,45 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
     },
     fitContent() { chart.timeScale().fitContent(); },
     resetPriceScale() { chart.priceScale("right").applyOptions({ autoScale: true }); },
-    destroy() { chart.remove(); overlays.clear(); subPanes.clear(); sessionSeries.clear(); smcBoxSeries.clear(); smcMarkers = null; volSeries = null; },
+    addPriceLine(opts) {
+      const line = priceSeries.createPriceLine({
+        price: opts.price,
+        color: resolveColor(opts.color, "#60a5fa"),
+        title: opts.title ?? "",
+        lineStyle: (opts.lineStyle ?? 2) as any,
+        lineWidth: (opts.lineWidth ?? 1) as any,
+        axisLabelVisible: opts.axisLabelVisible ?? true,
+      });
+      return {
+        remove: () => { try { priceSeries.removePriceLine(line); } catch { /* series torn down */ } },
+        applyOptions: (o) => {
+          const patch: any = { ...o };
+          if (o.color) patch.color = resolveColor(o.color, "#60a5fa");
+          if (o.lineStyle != null) patch.lineStyle = o.lineStyle;
+          if (o.lineWidth != null) patch.lineWidth = o.lineWidth;
+          line.applyOptions(patch);
+        },
+      };
+    },
+    setExternalMarkers(markers) {
+      const mapped: SeriesMarker<UTCTimestamp>[] = markers.map((m) => ({
+        time: (m.timeMs / 1000) as UTCTimestamp,
+        position: m.position,
+        shape: m.shape,
+        color: resolveColor(m.color, "#a855f7"),
+        text: m.text,
+      }));
+      if (!externalMarkers) externalMarkers = createSeriesMarkers(priceSeries, mapped) as any;
+      else externalMarkers.setMarkers(mapped);
+    },
+    destroy() {
+      chart.remove();
+      overlays.clear(); subPanes.clear(); sessionSeries.clear(); smcBoxSeries.clear();
+      smcMarkers = null; externalMarkers = null; volSeries = null;
+    },
   } satisfies ChartAdapter;
 };
+
 
 function priceMode(s: ChartSettings) {
   return s.priceScale === "log" ? 1 : s.priceScale === "percentage" ? 2 : 0;
