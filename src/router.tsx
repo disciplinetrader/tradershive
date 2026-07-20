@@ -1,7 +1,24 @@
 import { QueryClient } from "@tanstack/react-query";
 import { createRouter } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
+import { Compass } from "lucide-react";
 import { routeTree } from "./routeTree.gen";
 import { reportLovableError } from "./lib/lovable-error-reporting";
+import { RouteError } from "./components/common/RouteError";
+import { EmptyState } from "./components/ui/empty-state";
+
+function DefaultNotFound() {
+  return (
+    <div className="flex w-full items-center justify-center px-4 py-16">
+      <EmptyState
+        icon={Compass}
+        title="We couldn't find that"
+        description="The resource you're looking for was moved, closed, or never existed."
+        action={{ label: "Back to home", href: "/" }}
+      />
+    </div>
+  );
+}
 
 export const getRouter = () => {
   const queryClient = new QueryClient({
@@ -33,8 +50,15 @@ export const getRouter = () => {
     context: { queryClient },
     scrollRestoration: true,
     defaultPreloadStaleTime: 0,
+    defaultErrorComponent: ({ error, reset }) => (
+      <RouteError error={error} reset={reset} boundary="router_default_error" />
+    ),
+    defaultNotFoundComponent: DefaultNotFound,
   });
 
   return router;
 };
 
+// Keep Link import referenced for future default components; also silences
+// tree-shakers that might drop it from bundles that only render fallbacks.
+void Link;
