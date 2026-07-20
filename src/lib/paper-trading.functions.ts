@@ -69,6 +69,9 @@ export const updateAccount = createServerFn({ method: "POST" })
         leverage: z.number().int().min(1).max(500).optional(),
         max_daily_risk_pct: z.number().min(0.1).max(50).optional(),
         max_trade_risk_pct: z.number().min(0.1).max(50).optional(),
+        margin_call_level: z.number().min(0).max(1000).optional(),
+        stop_out_level: z.number().min(0).max(1000).optional(),
+        negative_balance_protection: z.boolean().optional(),
         is_archived: z.boolean().optional(),
       })
       .parse(d),
