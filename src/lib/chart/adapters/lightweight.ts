@@ -20,17 +20,30 @@ const INDICATOR_COLORS = ["#22d3ee", "#a78bfa", "#f472b6", "#f59e0b", "#34d399",
 
 export const createLightweightAdapter: ChartAdapterFactory = ({ container, settings, onCrosshair }) => {
   // lightweight-charts' color parser doesn't accept oklch()/color-mix(). Resolve any
-  // CSS color string to a concrete rgb()/rgba() via the browser before passing it in.
+  // CSS color to a concrete rgb()/rgba() via a canvas — getComputedStyle keeps
+  // oklch() in its serialized form on modern Chromium, but canvas fillStyle
+  // always normalises to `rgba(r, g, b, a)` (or `#rrggbb`).
   const resolveColor = (value: string, fallback: string): string => {
-    if (typeof window === "undefined") return fallback;
-    const el = document.createElement("div");
-    el.style.color = "";
-    el.style.color = value;
-    document.body.appendChild(el);
-    const resolved = getComputedStyle(el).color;
-    document.body.removeChild(el);
-    return resolved && resolved !== "" ? resolved : fallback;
+    if (typeof document === "undefined") return fallback;
+    try {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return fallback;
+      ctx.fillStyle = "#000"; // reset baseline
+      ctx.fillStyle = value;
+      const resolved = ctx.fillStyle as string;
+      if (!resolved) return fallback;
+      // Some engines still hand back oklch — fall back to painting a pixel
+      // and reading it out.
+      if (/oklch|oklab|color\(|color-mix/i.test(resolved)) {
+        ctx.fillRect(0, 0, 1, 1);
+        const [r, g, b, a] = ctx.getImageData(0, 0, 1, 1).data;
+        return `rgba(${r}, ${g}, ${b}, ${(a / 255).toFixed(3)})`;
+      }
+      return resolved;
+    } catch { return fallback; }
   };
+
   const cs = typeof window !== "undefined" ? getComputedStyle(document.documentElement) : null;
   const cssVar = (name: string, fallback: string) => (cs?.getPropertyValue(name).trim() || fallback);
   const textColor = resolveColor(cssVar("--muted-foreground", "#94a3b8"), "#94a3b8");
