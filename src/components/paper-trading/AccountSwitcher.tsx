@@ -27,6 +27,9 @@ export function AccountSwitcher() {
   const [name, setName] = useState("");
   const [balance, setBalance] = useState<number>(10000);
   const [leverage, setLeverage] = useState<number>(100);
+  const [marginCall, setMarginCall] = useState<number>(100);
+  const [stopOut, setStopOut] = useState<number>(50);
+  const [nbp, setNbp] = useState<boolean>(true);
 
   const createFn = useServerFn(createAccount);
   const resetFn = useServerFn(resetAccount);
@@ -34,7 +37,7 @@ export function AccountSwitcher() {
   const updateFn = useServerFn(updateAccount);
 
   const createMut = useMutation({
-    mutationFn: (input: { name: string; starting_balance: number; leverage: number }) =>
+    mutationFn: (input: { name: string; starting_balance: number; leverage: number; margin_call_level: number; stop_out_level: number; negative_balance_protection: boolean }) =>
       createFn({ data: { ...input, currency: "USD", max_daily_risk_pct: 5, max_trade_risk_pct: 2 } }),
     onSuccess: () => {
       toast.success("Account created");
