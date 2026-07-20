@@ -314,7 +314,7 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
     },
     fitContent() { chart.timeScale().fitContent(); },
     resetPriceScale() { chart.priceScale("right").applyOptions({ autoScale: true }); },
-    destroy() { chart.remove(); overlays.clear(); sessionSeries.clear(); smcBoxSeries.clear(); smcMarkers = null; volSeries = null; },
+    destroy() { chart.remove(); overlays.clear(); subPanes.clear(); sessionSeries.clear(); smcBoxSeries.clear(); smcMarkers = null; volSeries = null; },
   } satisfies ChartAdapter;
 };
 
