@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils";
 import { Topbar } from "./topbar";
 import { CommandPalette, useCommandPalette } from "@/components/command-palette";
 import { APP_NAME } from "@/lib/constants";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 type NavItem = { to: string; label: string; icon: typeof Home; admin?: boolean };
 
@@ -87,8 +88,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* Desktop sidebar */}
       <aside
         className={cn(
-          "sticky top-0 z-30 hidden h-dvh shrink-0 border-r border-border/60 bg-sidebar/80 backdrop-blur-xl transition-[width] duration-300 md:block",
-          collapsed ? "w-[76px]" : "w-[248px]",
+          "sticky top-0 z-30 hidden h-dvh shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-300 md:block",
+          collapsed ? "w-[72px]" : "w-[248px]",
         )}
         aria-label="Primary"
       >
@@ -114,7 +115,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             initial={{ x: -280 }}
             animate={{ x: 0 }}
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute inset-y-0 left-0 w-[280px] border-r border-border/60 bg-sidebar shadow-2xl"
+            className="absolute inset-y-0 left-0 w-[280px] border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-2xl"
           >
             <button
               onClick={() => setMobileOpen(false)}
