@@ -228,11 +228,14 @@ export const closeTrade = createServerFn({ method: "POST" })
     }).eq("id", data.id).eq("user_id", context.userId);
     if (upErr) throw upErr;
 
-    // Update account balance
+    // Update account balance. Honour negative-balance-protection: if the
+    // account has NBP on, floor the post-close balance at $0 so a runaway
+    // move can never leave the trader owing money.
     const { data: acct } = await context.supabase.from("paper_accounts")
-      .select("balance").eq("id", trade.account_id).single();
+      .select("balance, negative_balance_protection").eq("id", trade.account_id).single();
     if (acct) {
-      const newBal = Number(acct.balance) + pnl;
+      const raw = Number(acct.balance) + pnl;
+      const newBal = acct.negative_balance_protection ? Math.max(0, raw) : raw;
       await context.supabase.from("paper_accounts").update({ balance: newBal, equity: newBal })
         .eq("id", trade.account_id).eq("user_id", context.userId);
     }
