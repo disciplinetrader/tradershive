@@ -266,35 +266,142 @@ function TradingWorkspaceInner() {
                   </TooltipTrigger>
                   <TooltipContent>Keyboard shortcuts</TooltipContent>
                 </Tooltip>
-                <Tabs value={activeTf} onValueChange={(v) => setTimeframe(v)}>
-                  <TabsList className="h-7 bg-background/60">
-                    {CHART_TIMEFRAMES.map((tf) => (
-                      <TabsTrigger key={tf} value={tf} className="h-6 px-2 text-[11px]">{tf}</TabsTrigger>
+                {/* Timeframe */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-7 gap-1.5 px-2.5 text-[11px] font-semibold">
+                      <Clock className="h-3.5 w-3.5" /> {activeTf}
+                      <ChevronDown className="h-3 w-3 opacity-60" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-40">
+                    <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Timeframe</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <div className="grid grid-cols-4 gap-1 p-1">
+                      {CHART_TIMEFRAMES.map((tf) => (
+                        <button
+                          key={tf}
+                          onClick={() => setTimeframe(tf)}
+                          className={cn(
+                            "rounded-md px-2 py-1 text-[11px] font-medium transition",
+                            activeTf === tf ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+                          )}
+                        >{tf}</button>
+                      ))}
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {/* Chart type */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-7 gap-1.5 px-2.5 text-[11px]">
+                      <CandlestickChart className="h-3.5 w-3.5" /> {activeChartTypeLabel}
+                      <ChevronDown className="h-3 w-3 opacity-60" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Chart Type</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {CHART_TYPE_OPTIONS.map((c) => (
+                      <DropdownMenuItem key={c.key} onSelect={() => setChartType(c.key)} className="text-xs">
+                        <span className="flex-1">{c.label}</span>
+                        {chartType === c.key && <Check className="h-3.5 w-3.5 text-primary" />}
+                      </DropdownMenuItem>
                     ))}
-                  </TabsList>
-                </Tabs>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {/* Indicators */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-7 gap-1.5 px-2.5 text-[11px]">
+                      <BarChart3 className="h-3.5 w-3.5" /> Indicators
+                      {activeIndicatorCount > 0 && (
+                        <Badge variant="secondary" className="h-4 px-1 text-[10px]">{activeIndicatorCount}</Badge>
+                      )}
+                      <ChevronDown className="h-3 w-3 opacity-60" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-72">
+                    <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Indicators & Studies
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {["Overlays", "Oscillators", "Sessions & Levels"].map((group) => (
+                      <div key={group}>
+                        <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{group}</div>
+                        {INDICATOR_TOGGLES.filter((i) => i.group === group).map((i) => (
+                          <DropdownMenuCheckboxItem
+                            key={i.key}
+                            checked={!!enabled[i.key]}
+                            onCheckedChange={(v) => setEnabled((s) => ({ ...s, [i.key]: !!v }))}
+                            onSelect={(e) => e.preventDefault()}
+                            className="text-xs"
+                          >
+                            {i.label}
+                          </DropdownMenuCheckboxItem>
+                        ))}
+                      </div>
+                    ))}
+                    <DropdownMenuSeparator />
+                    <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Smart Money Concepts
+                    </div>
+                    <DropdownMenuCheckboxItem
+                      checked={smcOn}
+                      onCheckedChange={(v) => setSmcOn(!!v)}
+                      onSelect={(e) => e.preventDefault()}
+                      className="text-xs font-medium"
+                    >
+                      SMC / ICT Toolkit
+                    </DropdownMenuCheckboxItem>
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger className="text-xs" disabled={!smcOn}>
+                        <span className="flex-1 pl-6">Configure setups…</span>
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent className="w-64">
+                        <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                          SMC / ICT Setups
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {SMC_SUB_OPTIONS.map((p) => (
+                          <DropdownMenuCheckboxItem
+                            key={p.key}
+                            checked={!!smcParts[p.key]}
+                            onCheckedChange={(v) => setSmcParts((s) => ({ ...s, [p.key]: !!v }))}
+                            onSelect={(e) => e.preventDefault()}
+                            className="items-start gap-2 py-2 text-xs"
+                          >
+                            <div className="flex flex-col">
+                              <span className="font-medium">{p.label}</span>
+                              <span className="text-[10px] text-muted-foreground">{p.desc}</span>
+                            </div>
+                          </DropdownMenuCheckboxItem>
+                        ))}
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
 
-            {/* Indicator toggle strip */}
-            <div className="flex flex-wrap items-center gap-1 border-b border-border/50 px-3 py-1.5">
-              <LineChartIcon className="mr-1 h-3.5 w-3.5 text-muted-foreground" />
-              {INDICATOR_TOGGLES.map((i) => {
-                const on = !!enabled[i.key];
-                return (
-                  <Button
-                    key={i.key} variant={on ? "default" : "ghost"} size="sm"
-                    className="h-6 gap-1 px-2 text-[11px]"
-                    onClick={() => setEnabled((s) => ({ ...s, [i.key]: !on }))}
-                  >
-                    {on ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}{i.label}
-                  </Button>
-                );
-              })}
-              <div className="ml-auto flex items-center gap-1 text-[11px] text-muted-foreground">
+            {/* Live indicator strip */}
+            <div className="flex items-center gap-2 border-b border-border/50 px-3 py-1.5 text-[11px] text-muted-foreground">
+              <LineChartIcon className="h-3.5 w-3.5" />
+              <span className="truncate">
+                {activeIndicatorCount === 0 ? "No indicators — open the Indicators menu to add studies" : (
+                  <>
+                    {INDICATOR_TOGGLES.filter((i) => enabled[i.key]).map((i) => i.label).join(" · ")}
+                    {smcOn && (activeIndicatorCount > 1 ? " · " : "") + "SMC/ICT"}
+                  </>
+                )}
+              </span>
+              <div className="ml-auto flex items-center gap-1">
                 <Activity className="h-3 w-3 text-success animate-pulse" /> live
               </div>
             </div>
+
 
             {/* Chart canvas + overlays */}
             <div className="relative min-h-0 flex-1">
