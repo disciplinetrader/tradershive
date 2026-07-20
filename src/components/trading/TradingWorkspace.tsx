@@ -47,6 +47,10 @@ const INDICATOR_TOGGLES: { key: IndicatorKey; label: string; params: Record<stri
   { key: "volume", label: "Volume", params: {}, pane: "sub" },
   { key: "rsi", label: "RSI", params: { length: 14 }, pane: "sub" },
   { key: "macd", label: "MACD", params: { fast: 12, slow: 26, signal: 9 }, pane: "sub" },
+  { key: "smc", label: "Smart Money (SMC/ICT)", params: { pivot: 3 }, pane: "price" },
+  { key: "sessions", label: "Sessions (Asia/London/NY)", params: {}, pane: "price" },
+  { key: "fib", label: "Fibonacci", params: { length: 120 }, pane: "price" },
+  { key: "sr", label: "Support / Resistance", params: { left: 5, right: 5, levels: 6 }, pane: "price" },
 ];
 
 function TradingWorkspaceInner() {

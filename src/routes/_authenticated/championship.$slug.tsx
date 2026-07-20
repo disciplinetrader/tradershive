@@ -14,6 +14,7 @@ import {
   getChampionship,
   registerChampionship,
   cancelChampionshipRegistration,
+  joinChampionshipLive,
 } from "@/lib/championship.functions";
 import { ShareToCommunityButton } from "@/components/sharing/ShareToCommunityButton";
 
@@ -40,6 +41,7 @@ function ChampionshipDetail() {
   const getFn = useServerFn(getChampionship);
   const regFn = useServerFn(registerChampionship);
   const cancelFn = useServerFn(cancelChampionshipRegistration);
+  const joinLiveFn = useServerFn(joinChampionshipLive);
 
   // fetch by slug via first list then id
   const idQuery = useQuery({
@@ -93,6 +95,17 @@ function ChampionshipDetail() {
       qc.invalidateQueries({ queryKey: ["champ-detail", id] });
     },
     onError: (e: any) => toast.error(e?.message ?? "Failed"),
+  });
+
+  const joinLive = useMutation({
+    mutationFn: () => joinLiveFn({ data: { championship_id: id! } }),
+    onSuccess: () => {
+      toast.success("You're in! $" + Number(champ?.starting_balance ?? 10000).toLocaleString() + " paper account created.");
+      qc.invalidateQueries({ queryKey: ["champ-detail", id] });
+      // Send them straight to the trading workspace to start trading.
+      setTimeout(() => nav({ to: "/trading" }), 800);
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Failed to join tournament"),
   });
 
   const d = detail.data;
@@ -168,17 +181,28 @@ function ChampionshipDetail() {
 
         {/* CTA */}
         <div className="mt-6 flex flex-wrap items-center gap-3">
-          {registeredOpen && !isRegistered ? (
+          {champ.status === "live" && !isParticipant ? (
+            <Button size="lg" onClick={() => joinLive.mutate()} disabled={joinLive.isPending} className="bg-success hover:bg-success/90 text-success-foreground">
+              <Zap className="mr-2 h-4 w-4" /> Join Live Tournament · ${Number(champ.starting_balance ?? 10000).toLocaleString()} account
+            </Button>
+          ) : null}
+          {registeredOpen && !isRegistered && champ.status !== "live" ? (
             <Button size="lg" onClick={() => register.mutate()} disabled={register.isPending}>
               <Trophy className="mr-2 h-4 w-4" /> Register now
             </Button>
           ) : null}
-          {registeredOpen && isRegistered ? (
+          {registeredOpen && isRegistered && !isParticipant ? (
             <Button size="lg" variant="outline" onClick={() => cancel.mutate()} disabled={cancel.isPending}>
               Cancel registration
             </Button>
           ) : null}
-          {isRegistered ? <Badge className="bg-success/15 text-success">✓ Registered</Badge> : null}
+          {isParticipant ? (
+            <Button size="lg" variant="outline" onClick={() => nav({ to: "/trading" })}>
+              <TrendingUp className="mr-2 h-4 w-4" /> Open trading workspace
+            </Button>
+          ) : null}
+          {isRegistered && !isParticipant ? <Badge className="bg-success/15 text-success">✓ Registered</Badge> : null}
+          {isParticipant ? <Badge className="bg-success/15 text-success">✓ Trading live</Badge> : null}
           {isParticipant && myRank ? (
             <Badge className="bg-primary/15 text-primary text-sm">Your rank: #{myRank.rank ?? "—"}</Badge>
           ) : null}
