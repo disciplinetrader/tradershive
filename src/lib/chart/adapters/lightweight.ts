@@ -416,10 +416,12 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
       else externalMarkers.setMarkers(mapped);
     },
     destroy() {
+      themeObserver?.disconnect();
       chart.remove();
       overlays.clear(); subPanes.clear(); sessionSeries.clear(); smcBoxSeries.clear();
       smcMarkers = null; externalMarkers = null; volSeries = null;
     },
+
   } satisfies ChartAdapter;
 };
 
