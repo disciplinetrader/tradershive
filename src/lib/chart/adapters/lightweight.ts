@@ -37,13 +37,17 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
   const fg = cssVar("--foreground", "#94a3b8");
   const gridColor = resolveColor(`color-mix(in oklab, ${fg} 8%, transparent)`, "rgba(148,163,184,0.08)");
   const borderColor = resolveColor(`color-mix(in oklab, ${fg} 15%, transparent)`, "rgba(148,163,184,0.15)");
+  // Resolve a concrete background — lightweight-charts' attribution-logo widget
+  // parses this to pick a light/dark variant and its parser rejects oklch().
+  const bgColor = resolveColor(cssVar("--card", "#0f172a"), "#0f172a");
   const chart = createChart(container, {
     autoSize: true,
     layout: {
-      background: { type: ColorType.Solid, color: "transparent" },
+      background: { type: ColorType.Solid, color: bgColor },
       textColor,
       fontFamily: "ui-sans-serif, system-ui",
     },
+
     grid: {
       vertLines: { color: gridColor, visible: settings.showGrid },
       horzLines: { color: gridColor, visible: settings.showGrid },
