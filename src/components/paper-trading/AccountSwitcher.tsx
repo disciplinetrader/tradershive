@@ -159,12 +159,33 @@ export function AccountSwitcher() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Margin call %</Label>
+                <Input type="number" min={0} step="1" value={marginCall} onChange={(e) => setMarginCall(Number(e.target.value))} />
+                <p className="mt-1 text-[11px] text-muted-foreground">Banner threshold — no auto-close.</p>
+              </div>
+              <div>
+                <Label>Stop-out %</Label>
+                <Input type="number" min={0} step="1" value={stopOut} onChange={(e) => setStopOut(Number(e.target.value))} />
+                <p className="mt-1 text-[11px] text-muted-foreground">Auto-close biggest loser first.</p>
+              </div>
+            </div>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={nbp} onChange={(e) => setNbp(e.target.checked)} className="h-4 w-4 rounded border-border" />
+              Negative balance protection — floor balance at $0
+            </label>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setOpenCreate(false)}>Cancel</Button>
             <Button
-              onClick={() => createMut.mutate({ name: name.trim() || `Account ${accounts.length + 1}`, starting_balance: balance, leverage })}
-              disabled={createMut.isPending || balance <= 0}
+              onClick={() => createMut.mutate({
+                name: name.trim() || `Account ${accounts.length + 1}`,
+                starting_balance: balance, leverage,
+                margin_call_level: marginCall, stop_out_level: stopOut,
+                negative_balance_protection: nbp,
+              })}
+              disabled={createMut.isPending || balance <= 0 || marginCall < stopOut}
               className="gradient-primary text-primary-foreground"
             >
               <Check className="mr-1.5 h-4 w-4" /> Create
