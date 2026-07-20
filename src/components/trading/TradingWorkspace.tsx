@@ -497,6 +497,8 @@ function TradingWorkspaceInner() {
           </div>
         </div>
 
+        <MultiChartStrip panes={multiPanes} onChange={setMultiPanes} primarySymbol={symbol} />
+
         <GlassCard className="min-h-[240px] p-0">
           <Tabs defaultValue="positions" className="w-full">
             <div className="border-b border-border/50 px-3 pt-2">
