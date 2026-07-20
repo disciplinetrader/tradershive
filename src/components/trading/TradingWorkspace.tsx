@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { ChartHandle } from "@/components/chart/ChartEngine";
 import { motion } from "framer-motion";
-import { Activity, Camera, ChevronDown, Eye, EyeOff, Keyboard, LineChart as LineChartIcon, Target } from "lucide-react";
+import { Activity, BarChart3, Camera, CandlestickChart, Check, ChevronDown, Clock, Keyboard, LineChart as LineChartIcon, Target } from "lucide-react";
 import { toast } from "sonner";
 
 import { PaperTradingProvider, usePaper } from "@/components/paper-trading/context";
@@ -16,7 +16,12 @@ import { SymbolSearch } from "@/components/paper-trading/SymbolSearch";
 
 import { ChartEngine } from "@/components/chart/ChartEngine";
 import { DEFAULT_CHART_SETTINGS } from "@/lib/chart/constants";
-import type { ChartSettings, IndicatorConfig, IndicatorKey } from "@/lib/chart/types";
+import type { ChartSettings, ChartType, IndicatorConfig, IndicatorKey } from "@/lib/chart/types";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator,
+  DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent,
+} from "@/components/ui/dropdown-menu";
 import type { Quote, Timeframe } from "@/lib/market-data/types";
 
 import { TradePlanner } from "@/components/trading/chart/TradePlanner";
@@ -39,24 +44,47 @@ import { closeTrade, listTrades } from "@/lib/paper-trading.functions";
 
 const CHART_TIMEFRAMES: Timeframe[] = ["1m", "5m", "15m", "30m", "1H", "4H", "1D", "1W"];
 
-const INDICATOR_TOGGLES: { key: IndicatorKey; label: string; params: Record<string, number>; pane: "price" | "sub" }[] = [
-  { key: "ema", label: "EMA 20", params: { length: 20 }, pane: "price" },
-  { key: "sma", label: "SMA 50", params: { length: 50 }, pane: "price" },
-  { key: "bollinger", label: "Bollinger", params: { length: 20, stddev: 2 }, pane: "price" },
-  { key: "vwap", label: "VWAP", params: {}, pane: "price" },
-  { key: "volume", label: "Volume", params: {}, pane: "sub" },
-  { key: "rsi", label: "RSI", params: { length: 14 }, pane: "sub" },
-  { key: "macd", label: "MACD", params: { fast: 12, slow: 26, signal: 9 }, pane: "sub" },
-  { key: "smc", label: "Smart Money (SMC/ICT)", params: { pivot: 3 }, pane: "price" },
-  { key: "sessions", label: "Sessions (Asia/London/NY)", params: {}, pane: "price" },
-  { key: "fib", label: "Fibonacci", params: { length: 120 }, pane: "price" },
-  { key: "sr", label: "Support / Resistance", params: { left: 5, right: 5, levels: 6 }, pane: "price" },
+const CHART_TYPE_OPTIONS: { key: ChartType; label: string }[] = [
+  { key: "candles", label: "Candles" },
+  { key: "hollow_candles", label: "Hollow Candles" },
+  { key: "heikin_ashi", label: "Heikin Ashi" },
+  { key: "bars", label: "Bars" },
+  { key: "line", label: "Line" },
+  { key: "area", label: "Area" },
+  { key: "baseline", label: "Baseline" },
+];
+
+type IndicatorDef = { key: IndicatorKey; label: string; params: Record<string, number>; pane: "price" | "sub"; group: string };
+
+const INDICATOR_TOGGLES: IndicatorDef[] = [
+  { key: "ema", label: "EMA 20", params: { length: 20 }, pane: "price", group: "Overlays" },
+  { key: "sma", label: "SMA 50", params: { length: 50 }, pane: "price", group: "Overlays" },
+  { key: "bollinger", label: "Bollinger Bands", params: { length: 20, stddev: 2 }, pane: "price", group: "Overlays" },
+  { key: "vwap", label: "VWAP", params: {}, pane: "price", group: "Overlays" },
+  { key: "volume", label: "Volume", params: {}, pane: "sub", group: "Oscillators" },
+  { key: "rsi", label: "RSI (14)", params: { length: 14 }, pane: "sub", group: "Oscillators" },
+  { key: "macd", label: "MACD", params: { fast: 12, slow: 26, signal: 9 }, pane: "sub", group: "Oscillators" },
+  { key: "sessions", label: "Sessions (Asia / London / NY)", params: {}, pane: "price", group: "Sessions & Levels" },
+  { key: "fib", label: "Fibonacci", params: { length: 120 }, pane: "price", group: "Sessions & Levels" },
+  { key: "sr", label: "Support / Resistance", params: { left: 5, right: 5, levels: 6 }, pane: "price", group: "Sessions & Levels" },
+];
+
+const SMC_SUB_OPTIONS: { key: "show_swings" | "show_bos" | "show_fvg" | "show_ob"; label: string; desc: string }[] = [
+  { key: "show_swings", label: "Swing Highs / Lows", desc: "Pivot structure (SH / SL)" },
+  { key: "show_bos", label: "BOS / CHoCH", desc: "Break of Structure & Change of Character" },
+  { key: "show_fvg", label: "Fair Value Gaps (FVG)", desc: "Bullish / bearish imbalance zones" },
+  { key: "show_ob", label: "Order Blocks (OB)", desc: "Last opposing candle before displacement" },
 ];
 
 function TradingWorkspaceInner() {
   const qc = useQueryClient();
   const { symbol, symbolMeta, market, timeframe, setTimeframe, accountId, account } = usePaper();
   const [enabled, setEnabled] = useState<Record<string, boolean>>({ ema: true, volume: true });
+  const [chartType, setChartType] = useState<ChartType>("candles");
+  const [smcOn, setSmcOn] = useState(false);
+  const [smcParts, setSmcParts] = useState<Record<string, boolean>>({
+    show_swings: true, show_bos: true, show_fvg: true, show_ob: true,
+  });
   const [quote, setQuote] = useState<Quote | null>(null);
   const [adapter, setAdapter] = useState<import("@/lib/chart/adapter").ChartAdapter | null>(null);
   const chartApi = useRef<ChartHandle | null>(null);
@@ -75,16 +103,32 @@ function TradingWorkspaceInner() {
   const activeTf: Timeframe = (CHART_TIMEFRAMES as string[]).includes(timeframe) ? (timeframe as Timeframe) : "1H";
 
   const chartSettings: ChartSettings = useMemo(
-    () => ({ ...DEFAULT_CHART_SETTINGS, symbol, market, timeframe: activeTf }),
-    [symbol, market, activeTf],
+    () => ({ ...DEFAULT_CHART_SETTINGS, symbol, market, timeframe: activeTf, chartType }),
+    [symbol, market, activeTf, chartType],
   );
 
-  const indicators: IndicatorConfig[] = useMemo(
-    () => INDICATOR_TOGGLES.filter((i) => enabled[i.key]).map((i) => ({
+  const indicators: IndicatorConfig[] = useMemo(() => {
+    const base: IndicatorConfig[] = INDICATOR_TOGGLES.filter((i) => enabled[i.key]).map((i) => ({
       id: i.key, key: i.key, params: i.params, pane: i.pane, visible: true,
-    })),
-    [enabled],
-  );
+    }));
+    if (smcOn) {
+      base.push({
+        id: "smc", key: "smc", pane: "price", visible: true,
+        params: {
+          pivot: 3,
+          show_swings: smcParts.show_swings ? 1 : 0,
+          show_bos: smcParts.show_bos ? 1 : 0,
+          show_fvg: smcParts.show_fvg ? 1 : 0,
+          show_ob: smcParts.show_ob ? 1 : 0,
+        },
+      });
+    }
+    return base;
+  }, [enabled, smcOn, smcParts]);
+
+  const activeIndicatorCount = Object.values(enabled).filter(Boolean).length + (smcOn ? 1 : 0);
+  const activeChartTypeLabel = CHART_TYPE_OPTIONS.find((c) => c.key === chartType)?.label ?? "Candles";
+
 
   // Open positions for this account (all symbols — filter for this symbol only in overlay)
   const fetchOpen = useServerFn(listTrades);
@@ -222,35 +266,142 @@ function TradingWorkspaceInner() {
                   </TooltipTrigger>
                   <TooltipContent>Keyboard shortcuts</TooltipContent>
                 </Tooltip>
-                <Tabs value={activeTf} onValueChange={(v) => setTimeframe(v)}>
-                  <TabsList className="h-7 bg-background/60">
-                    {CHART_TIMEFRAMES.map((tf) => (
-                      <TabsTrigger key={tf} value={tf} className="h-6 px-2 text-[11px]">{tf}</TabsTrigger>
+                {/* Timeframe */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-7 gap-1.5 px-2.5 text-[11px] font-semibold">
+                      <Clock className="h-3.5 w-3.5" /> {activeTf}
+                      <ChevronDown className="h-3 w-3 opacity-60" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-40">
+                    <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Timeframe</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <div className="grid grid-cols-4 gap-1 p-1">
+                      {CHART_TIMEFRAMES.map((tf) => (
+                        <button
+                          key={tf}
+                          onClick={() => setTimeframe(tf)}
+                          className={cn(
+                            "rounded-md px-2 py-1 text-[11px] font-medium transition",
+                            activeTf === tf ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+                          )}
+                        >{tf}</button>
+                      ))}
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {/* Chart type */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-7 gap-1.5 px-2.5 text-[11px]">
+                      <CandlestickChart className="h-3.5 w-3.5" /> {activeChartTypeLabel}
+                      <ChevronDown className="h-3 w-3 opacity-60" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Chart Type</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {CHART_TYPE_OPTIONS.map((c) => (
+                      <DropdownMenuItem key={c.key} onSelect={() => setChartType(c.key)} className="text-xs">
+                        <span className="flex-1">{c.label}</span>
+                        {chartType === c.key && <Check className="h-3.5 w-3.5 text-primary" />}
+                      </DropdownMenuItem>
                     ))}
-                  </TabsList>
-                </Tabs>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {/* Indicators */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-7 gap-1.5 px-2.5 text-[11px]">
+                      <BarChart3 className="h-3.5 w-3.5" /> Indicators
+                      {activeIndicatorCount > 0 && (
+                        <Badge variant="secondary" className="h-4 px-1 text-[10px]">{activeIndicatorCount}</Badge>
+                      )}
+                      <ChevronDown className="h-3 w-3 opacity-60" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-72">
+                    <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Indicators & Studies
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {["Overlays", "Oscillators", "Sessions & Levels"].map((group) => (
+                      <div key={group}>
+                        <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{group}</div>
+                        {INDICATOR_TOGGLES.filter((i) => i.group === group).map((i) => (
+                          <DropdownMenuCheckboxItem
+                            key={i.key}
+                            checked={!!enabled[i.key]}
+                            onCheckedChange={(v) => setEnabled((s) => ({ ...s, [i.key]: !!v }))}
+                            onSelect={(e) => e.preventDefault()}
+                            className="text-xs"
+                          >
+                            {i.label}
+                          </DropdownMenuCheckboxItem>
+                        ))}
+                      </div>
+                    ))}
+                    <DropdownMenuSeparator />
+                    <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Smart Money Concepts
+                    </div>
+                    <DropdownMenuCheckboxItem
+                      checked={smcOn}
+                      onCheckedChange={(v) => setSmcOn(!!v)}
+                      onSelect={(e) => e.preventDefault()}
+                      className="text-xs font-medium"
+                    >
+                      SMC / ICT Toolkit
+                    </DropdownMenuCheckboxItem>
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger className="text-xs" disabled={!smcOn}>
+                        <span className="flex-1 pl-6">Configure setups…</span>
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent className="w-64">
+                        <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                          SMC / ICT Setups
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {SMC_SUB_OPTIONS.map((p) => (
+                          <DropdownMenuCheckboxItem
+                            key={p.key}
+                            checked={!!smcParts[p.key]}
+                            onCheckedChange={(v) => setSmcParts((s) => ({ ...s, [p.key]: !!v }))}
+                            onSelect={(e) => e.preventDefault()}
+                            className="items-start gap-2 py-2 text-xs"
+                          >
+                            <div className="flex flex-col">
+                              <span className="font-medium">{p.label}</span>
+                              <span className="text-[10px] text-muted-foreground">{p.desc}</span>
+                            </div>
+                          </DropdownMenuCheckboxItem>
+                        ))}
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
 
-            {/* Indicator toggle strip */}
-            <div className="flex flex-wrap items-center gap-1 border-b border-border/50 px-3 py-1.5">
-              <LineChartIcon className="mr-1 h-3.5 w-3.5 text-muted-foreground" />
-              {INDICATOR_TOGGLES.map((i) => {
-                const on = !!enabled[i.key];
-                return (
-                  <Button
-                    key={i.key} variant={on ? "default" : "ghost"} size="sm"
-                    className="h-6 gap-1 px-2 text-[11px]"
-                    onClick={() => setEnabled((s) => ({ ...s, [i.key]: !on }))}
-                  >
-                    {on ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}{i.label}
-                  </Button>
-                );
-              })}
-              <div className="ml-auto flex items-center gap-1 text-[11px] text-muted-foreground">
+            {/* Live indicator strip */}
+            <div className="flex items-center gap-2 border-b border-border/50 px-3 py-1.5 text-[11px] text-muted-foreground">
+              <LineChartIcon className="h-3.5 w-3.5" />
+              <span className="truncate">
+                {activeIndicatorCount === 0 ? "No indicators — open the Indicators menu to add studies" : (
+                  <>
+                    {INDICATOR_TOGGLES.filter((i) => enabled[i.key]).map((i) => i.label).join(" · ")}
+                    {smcOn && (activeIndicatorCount > 1 ? " · " : "") + "SMC/ICT"}
+                  </>
+                )}
+              </span>
+              <div className="ml-auto flex items-center gap-1">
                 <Activity className="h-3 w-3 text-success animate-pulse" /> live
               </div>
             </div>
+
 
             {/* Chart canvas + overlays */}
             <div className="relative min-h-0 flex-1">
