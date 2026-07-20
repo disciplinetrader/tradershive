@@ -13,8 +13,8 @@ import { fmtCurrency, fmtNumber, fmtPercent } from "@/lib/statistics/format";
 import { SESSION_LABEL } from "@/lib/statistics/session";
 
 const tooltipStyle = {
-  background: "hsl(var(--popover))",
-  border: "1px solid hsl(var(--border))",
+  background: "var(--popover)",
+  border: "1px solid var(--border)",
   borderRadius: 12,
   fontSize: 12,
 };
@@ -67,20 +67,20 @@ export function EquityCurveCard() {
           <AreaChart data={data} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
             <defs>
               <linearGradient id="equityFillStats" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.4} />
-                <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.4} />
+                <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-            <XAxis dataKey="date" tickFormatter={(v) => new Date(v).toLocaleDateString(undefined, { month: "short", day: "numeric" })} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={64} tickFormatter={(v) => `$${Number(v).toLocaleString()}`} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
+            <XAxis dataKey="date" tickFormatter={(v) => new Date(v).toLocaleDateString(undefined, { month: "short", day: "numeric" })} tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} width={64} tickFormatter={(v) => `$${Number(v).toLocaleString()}`} />
             <Tooltip
               contentStyle={tooltipStyle}
               labelFormatter={(v) => new Date(v).toLocaleString()}
               formatter={(v: number, name: string) => [`$${Number(v).toLocaleString()}`, name === "equity" ? "Equity" : "Drawdown"]}
             />
-            <Area type="monotone" dataKey="equity" stroke="hsl(var(--primary))" strokeWidth={2} fill="url(#equityFillStats)" isAnimationActive animationDuration={600} />
-            <Brush dataKey="date" height={20} stroke="hsl(var(--primary))" travellerWidth={8} tickFormatter={() => ""} />
+            <Area type="monotone" dataKey="equity" stroke="var(--primary)" strokeWidth={2} fill="url(#equityFillStats)" isAnimationActive animationDuration={600} />
+            <Brush dataKey="date" height={20} stroke="var(--primary)" travellerWidth={8} tickFormatter={() => ""} />
           </AreaChart>
         </ResponsiveContainer>
       )}
@@ -103,13 +103,13 @@ export function DrawdownCard() {
           <AreaChart data={data} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
             <defs>
               <linearGradient id="ddFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="hsl(var(--danger, 0 84% 60%))" stopOpacity={0.6} />
-                <stop offset="100%" stopColor="hsl(var(--danger, 0 84% 60%))" stopOpacity={0} />
+                <stop offset="0%" stopColor="var(--danger)" stopOpacity={0.6} />
+                <stop offset="100%" stopColor="var(--danger)" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-            <XAxis dataKey="date" tickFormatter={(v) => new Date(v).toLocaleDateString(undefined, { month: "short", day: "numeric" })} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={64} tickFormatter={(v) => `$${Number(v).toLocaleString()}`} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
+            <XAxis dataKey="date" tickFormatter={(v) => new Date(v).toLocaleDateString(undefined, { month: "short", day: "numeric" })} tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} width={64} tickFormatter={(v) => `$${Number(v).toLocaleString()}`} />
             <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [`$${Math.abs(Number(v)).toLocaleString()}`, "Drawdown"]} />
             <Area type="monotone" dataKey="drawdown" stroke="rgb(244 63 94)" strokeWidth={2} fill="url(#ddFill)" isAnimationActive />
           </AreaChart>
@@ -138,13 +138,13 @@ export function MonthlyPerformanceCard() {
       {data.length === 0 ? <EmptyMsg /> : (
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-            <XAxis dataKey="month" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={48} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
+            <XAxis dataKey="month" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} width={48} />
             <Tooltip contentStyle={tooltipStyle} />
             <Bar dataKey={metric} radius={[6,6,0,0]}>
               {data.map((d, i) => (
-                <Cell key={i} fill={metric === "pnl" ? (d.pnl >= 0 ? "hsl(var(--primary))" : "rgb(244 63 94)") : "hsl(var(--primary))"} />
+                <Cell key={i} fill={metric === "pnl" ? (d.pnl >= 0 ? "var(--primary)" : "rgb(244 63 94)") : "var(--primary)"} />
               ))}
             </Bar>
           </BarChart>
@@ -162,12 +162,12 @@ export function DailyPerformanceCard() {
       {data.length === 0 ? <EmptyMsg /> : (
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-            <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={(v) => v.slice(5)} />
-            <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={48} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
+            <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} tickFormatter={(v) => v.slice(5)} />
+            <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} width={48} />
             <Tooltip contentStyle={tooltipStyle} />
             <Legend wrapperStyle={{ fontSize: 11 }} />
-            <Line type="monotone" dataKey="pnl" name="Daily P&L" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="pnl" name="Daily P&L" stroke="var(--primary)" strokeWidth={2} dot={false} />
             <Line type="monotone" dataKey="avgRR" name="Avg RR" stroke="rgb(56 189 248)" strokeWidth={2} dot={false} />
           </LineChart>
         </ResponsiveContainer>
@@ -185,9 +185,9 @@ export function WinRateBreakdownCard() {
   const bySession = useMemo(() => groupBy(filtered, (t) => t.session), [filtered]);
   const byMarket = useMemo(() => groupBy(filtered, (t) => t.market), [filtered]);
   const pie = [
-    { name: "Wins", value: k.wins, color: "hsl(var(--primary))" },
+    { name: "Wins", value: k.wins, color: "var(--primary)" },
     { name: "Losses", value: k.losses, color: "rgb(244 63 94)" },
-    { name: "BE", value: k.breakevens, color: "hsl(var(--muted-foreground))" },
+    { name: "BE", value: k.breakevens, color: "var(--muted-foreground)" },
   ];
 
   return (
@@ -308,12 +308,12 @@ export function RMultipleCard() {
       {data.every((d) => d.count === 0) ? <EmptyMsg /> : (
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-            <XAxis dataKey="bucket" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={32} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
+            <XAxis dataKey="bucket" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} width={32} />
             <Tooltip contentStyle={tooltipStyle} />
             <Bar dataKey="count" radius={[6,6,0,0]}>
-              {data.map((d, i) => <Cell key={i} fill={d.bucket.startsWith("-") ? "rgb(244 63 94)" : d.bucket === "0R" ? "hsl(var(--muted-foreground))" : "hsl(var(--primary))"} />)}
+              {data.map((d, i) => <Cell key={i} fill={d.bucket.startsWith("-") ? "rgb(244 63 94)" : d.bucket === "0R" ? "var(--muted-foreground)" : "var(--primary)"} />)}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
@@ -331,12 +331,12 @@ export function TimeOfDayCard() {
       <ChartCard title="Trades by hour" height={220}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={hours} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-            <XAxis dataKey="hour" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={32} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
+            <XAxis dataKey="hour" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} width={32} />
             <Tooltip contentStyle={tooltipStyle} />
             <Bar dataKey="pnl" radius={[6,6,0,0]}>
-              {hours.map((d, i) => <Cell key={i} fill={d.pnl >= 0 ? "hsl(var(--primary))" : "rgb(244 63 94)"} />)}
+              {hours.map((d, i) => <Cell key={i} fill={d.pnl >= 0 ? "var(--primary)" : "rgb(244 63 94)"} />)}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
@@ -344,12 +344,12 @@ export function TimeOfDayCard() {
       <ChartCard title="Trades by weekday" height={220}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={days} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-            <XAxis dataKey="day" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={32} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
+            <XAxis dataKey="day" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} width={32} />
             <Tooltip contentStyle={tooltipStyle} />
             <Bar dataKey="pnl" radius={[6,6,0,0]}>
-              {days.map((d, i) => <Cell key={i} fill={d.pnl >= 0 ? "hsl(var(--primary))" : "rgb(244 63 94)"} />)}
+              {days.map((d, i) => <Cell key={i} fill={d.pnl >= 0 ? "var(--primary)" : "rgb(244 63 94)"} />)}
             </Bar>
           </BarChart>
         </ResponsiveContainer>

@@ -15,8 +15,8 @@ function ChartCard({ title, children }: { title: string; children: React.ReactNo
 }
 
 const tooltipStyle = {
-  background: "hsl(var(--popover))",
-  border: "1px solid hsl(var(--border))",
+  background: "var(--popover)",
+  border: "1px solid var(--border)",
   borderRadius: 12,
   fontSize: 12,
 };
@@ -39,9 +39,9 @@ export function PerformanceCharts() {
 
   const { weekly, monthly, sessions, rrDistribution, winsLosses } = data;
   const winsLossesData = [
-    { name: "Wins", value: winsLosses.wins, color: "hsl(var(--primary))" },
-    { name: "Losses", value: winsLosses.losses, color: "hsl(var(--danger))" },
-    { name: "BE", value: winsLosses.be, color: "hsl(var(--muted-foreground))" },
+    { name: "Wins", value: winsLosses.wins, color: "var(--primary)" },
+    { name: "Losses", value: winsLosses.losses, color: "var(--danger)" },
+    { name: "BE", value: winsLosses.be, color: "var(--muted-foreground)" },
   ];
 
   return (
@@ -49,12 +49,12 @@ export function PerformanceCharts() {
       <ChartCard title="Weekly performance">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={weekly} margin={{ left: -20, right: 0, top: 8, bottom: 0 }}>
-            <XAxis dataKey="day" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+            <XAxis dataKey="day" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
             <Tooltip contentStyle={tooltipStyle} />
             <Bar dataKey="pnl" radius={[6, 6, 0, 0]}>
               {weekly.map((d, i) => (
-                <Cell key={i} fill={d.pnl >= 0 ? "hsl(var(--primary))" : "hsl(var(--danger))"} />
+                <Cell key={i} fill={d.pnl >= 0 ? "var(--primary)" : "var(--danger)"} />
               ))}
             </Bar>
           </BarChart>
@@ -63,12 +63,12 @@ export function PerformanceCharts() {
       <ChartCard title="Monthly performance">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={monthly} margin={{ left: -20, right: 0, top: 8, bottom: 0 }}>
-            <XAxis dataKey="week" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+            <XAxis dataKey="week" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
             <Tooltip contentStyle={tooltipStyle} />
             <Bar dataKey="pnl" radius={[6, 6, 0, 0]}>
               {monthly.map((d, i) => (
-                <Cell key={i} fill={d.pnl >= 0 ? "hsl(var(--primary))" : "hsl(var(--danger))"} />
+                <Cell key={i} fill={d.pnl >= 0 ? "var(--primary)" : "var(--danger)"} />
               ))}
             </Bar>
           </BarChart>
@@ -87,20 +87,20 @@ export function PerformanceCharts() {
       <ChartCard title="Sessions">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={sessions} layout="vertical" margin={{ left: 12, right: 8, top: 8, bottom: 0 }}>
-            <XAxis type="number" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-            <YAxis dataKey="session" type="category" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={60} />
+            <XAxis type="number" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
+            <YAxis dataKey="session" type="category" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} width={60} />
             <Tooltip contentStyle={tooltipStyle} />
-            <Bar dataKey="pnl" radius={[0, 6, 6, 0]} fill="hsl(var(--primary))" />
+            <Bar dataKey="pnl" radius={[0, 6, 6, 0]} fill="var(--primary)" />
           </BarChart>
         </ResponsiveContainer>
       </ChartCard>
       <ChartCard title="R distribution">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={rrDistribution} margin={{ left: -20, right: 0, top: 8, bottom: 0 }}>
-            <XAxis dataKey="bucket" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+            <XAxis dataKey="bucket" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
             <Tooltip contentStyle={tooltipStyle} />
-            <Bar dataKey="count" radius={[6, 6, 0, 0]} fill="hsl(var(--primary))" />
+            <Bar dataKey="count" radius={[6, 6, 0, 0]} fill="var(--primary)" />
           </BarChart>
         </ResponsiveContainer>
       </ChartCard>

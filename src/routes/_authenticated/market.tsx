@@ -33,7 +33,7 @@ function MarketLayout() {
             <Link key={t.to} to={t.to}
               className={cn(
                 "inline-flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-sm font-medium transition",
-                active ? "bg-primary/15 text-primary shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.3)]"
+                active ? "bg-primary/15 text-primary shadow-[inset_0_0_0_1px_color-mix(in oklab, var(--primary) 30%, transparent)]"
                   : "text-muted-foreground hover:bg-background/40 hover:text-foreground",
               )}>
               <Icon className="h-4 w-4" />{t.label}

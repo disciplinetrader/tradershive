@@ -4,7 +4,7 @@ import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis
 import { useStatistics } from "./context";
 import { fmtCurrency, fmtPercent } from "@/lib/statistics/format";
 
-const tooltipStyle = { background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 12, fontSize: 12 };
+const tooltipStyle = { background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 12, fontSize: 12 };
 
 export function EmotionAnalysis() {
   const { filtered } = useStatistics();
@@ -35,12 +35,12 @@ export function EmotionAnalysis() {
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data} layout="vertical" margin={{ left: 12, right: 8, top: 4, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                <XAxis type="number" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                <YAxis type="category" dataKey="emotion" width={90} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
+                <XAxis type="number" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
+                <YAxis type="category" dataKey="emotion" width={90} tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
                 <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => fmtCurrency(v)} />
                 <Bar dataKey="pnl" radius={[0,6,6,0]}>
-                  {data.map((d, i) => <Cell key={i} fill={d.pnl >= 0 ? "hsl(var(--primary))" : "rgb(244 63 94)"} />)}
+                  {data.map((d, i) => <Cell key={i} fill={d.pnl >= 0 ? "var(--primary)" : "rgb(244 63 94)"} />)}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>

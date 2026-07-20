@@ -156,7 +156,7 @@ function AiDashboardPage() {
 
 function StatTile({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
-    <div className={"rounded-lg border border-border/60 bg-background/60 p-3 " + (highlight ? "border-primary/40 shadow-[0_0_20px_-8px_hsl(var(--primary)/0.6)]" : "")}>
+    <div className={"rounded-lg border border-border/60 bg-background/60 p-3 " + (highlight ? "border-primary/40 shadow-[0_0_20px_-8px_color-mix(in oklab, var(--primary) 60%, transparent)]" : "")}>
       <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
       <div className="text-2xl font-black tabular-nums">{value}</div>
     </div>
