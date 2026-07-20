@@ -180,7 +180,7 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
     },
     fitContent() { chart.timeScale().fitContent(); },
     resetPriceScale() { chart.priceScale("right").applyOptions({ autoScale: true }); },
-    destroy() { chart.remove(); overlays.clear(); volSeries = null; },
+    destroy() { chart.remove(); overlays.clear(); sessionSeries.clear(); volSeries = null; },
   } satisfies ChartAdapter;
 };
 
