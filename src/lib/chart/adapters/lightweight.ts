@@ -411,3 +411,67 @@ function computeOverlay(cfg: IndicatorConfig, candles: Candle[], closes: number[
   }
   return map;
 }
+
+type SubSeriesSpec = { data: number[]; color: string; type: "line" | "histogram"; extra?: Record<string, unknown> };
+
+function computeSub(cfg: IndicatorConfig, candles: Candle[], closes: number[]): Record<string, SubSeriesSpec> {
+  const p = cfg.params;
+  switch (cfg.key) {
+    case "rsi": {
+      const v = rsi(closes, p.length ?? 14);
+      return { rsi: { data: v, color: "#a78bfa", type: "line" } };
+    }
+    case "macd": {
+      const m = macd(closes, p.fast ?? 12, p.slow ?? 26, p.signal ?? 9);
+      return {
+        macd: { data: m.macd, color: "#22d3ee", type: "line" },
+        signal: { data: m.signal, color: "#f59e0b", type: "line" },
+        hist: { data: m.hist, color: "#64748b", type: "histogram" },
+      };
+    }
+    case "atr": {
+      const v = atr(candles, p.length ?? 14);
+      return { atr: { data: v, color: "#34d399", type: "line" } };
+    }
+    case "stochastic": {
+      const k = p.k ?? 14;
+      const dLen = p.d ?? 3;
+      const kv: number[] = [];
+      for (let i = 0; i < candles.length; i++) {
+        const s = Math.max(0, i - k + 1);
+        const slice = candles.slice(s, i + 1);
+        const hi = Math.max(...slice.map((c) => c.high));
+        const lo = Math.min(...slice.map((c) => c.low));
+        kv.push(hi === lo ? 50 : ((candles[i].close - lo) / (hi - lo)) * 100);
+      }
+      return {
+        k: { data: kv, color: "#22d3ee", type: "line" },
+        d: { data: sma(kv, dLen), color: "#f59e0b", type: "line" },
+      };
+    }
+    case "cci": {
+      const length = p.length ?? 20;
+      const tp = candles.map((c) => (c.high + c.low + c.close) / 3);
+      const out: number[] = [];
+      for (let i = 0; i < tp.length; i++) {
+        const s = Math.max(0, i - length + 1);
+        const slice = tp.slice(s, i + 1);
+        const mean = slice.reduce((a, b) => a + b, 0) / slice.length;
+        const md = slice.reduce((a, b) => a + Math.abs(b - mean), 0) / slice.length;
+        out.push(md === 0 ? 0 : (tp[i] - mean) / (0.015 * md));
+      }
+      return { cci: { data: out, color: "#a78bfa", type: "line" } };
+    }
+    case "obv": {
+      const out: number[] = [0];
+      for (let i = 1; i < candles.length; i++) {
+        const prev = out[i - 1];
+        out.push(candles[i].close > candles[i - 1].close ? prev + candles[i].volume : candles[i].close < candles[i - 1].close ? prev - candles[i].volume : prev);
+      }
+      return { obv: { data: out, color: "#22d3ee", type: "line" } };
+    }
+    default:
+      return {};
+  }
+}
+
