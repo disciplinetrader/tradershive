@@ -25,6 +25,11 @@ const createAccountSchema = z.object({
   leverage: z.number().int().min(1).max(500).default(100),
   max_daily_risk_pct: z.number().min(0.1).max(50).default(5),
   max_trade_risk_pct: z.number().min(0.1).max(50).default(2),
+  margin_call_level: z.number().min(0).max(1000).default(100),
+  stop_out_level: z.number().min(0).max(1000).default(50),
+  negative_balance_protection: z.boolean().default(true),
+}).refine((v) => v.margin_call_level >= v.stop_out_level, {
+  message: "margin_call_level must be ≥ stop_out_level",
 });
 
 export const createAccount = createServerFn({ method: "POST" })
@@ -43,6 +48,9 @@ export const createAccount = createServerFn({ method: "POST" })
         leverage: data.leverage,
         max_daily_risk_pct: data.max_daily_risk_pct,
         max_trade_risk_pct: data.max_trade_risk_pct,
+        margin_call_level: data.margin_call_level,
+        stop_out_level: data.stop_out_level,
+        negative_balance_protection: data.negative_balance_protection,
       })
       .select()
       .single();
@@ -61,6 +69,9 @@ export const updateAccount = createServerFn({ method: "POST" })
         leverage: z.number().int().min(1).max(500).optional(),
         max_daily_risk_pct: z.number().min(0.1).max(50).optional(),
         max_trade_risk_pct: z.number().min(0.1).max(50).optional(),
+        margin_call_level: z.number().min(0).max(1000).optional(),
+        stop_out_level: z.number().min(0).max(1000).optional(),
+        negative_balance_protection: z.boolean().optional(),
         is_archived: z.boolean().optional(),
       })
       .parse(d),
@@ -187,7 +198,7 @@ export const modifyTrade = createServerFn({ method: "POST" })
 const closeTradeSchema = z.object({
   id: z.string().uuid(),
   exit_price: z.number().positive(),
-  close_reason: z.enum(["manual","stop_loss","take_profit","liquidation","expired"]).default("manual"),
+  close_reason: z.enum(["manual","stop_loss","take_profit","liquidation","stop_out","expired"]).default("manual"),
 });
 
 export const closeTrade = createServerFn({ method: "POST" })
@@ -217,11 +228,14 @@ export const closeTrade = createServerFn({ method: "POST" })
     }).eq("id", data.id).eq("user_id", context.userId);
     if (upErr) throw upErr;
 
-    // Update account balance
+    // Update account balance. Honour negative-balance-protection: if the
+    // account has NBP on, floor the post-close balance at $0 so a runaway
+    // move can never leave the trader owing money.
     const { data: acct } = await context.supabase.from("paper_accounts")
-      .select("balance").eq("id", trade.account_id).single();
+      .select("balance, negative_balance_protection").eq("id", trade.account_id).single();
     if (acct) {
-      const newBal = Number(acct.balance) + pnl;
+      const raw = Number(acct.balance) + pnl;
+      const newBal = acct.negative_balance_protection ? Math.max(0, raw) : raw;
       await context.supabase.from("paper_accounts").update({ balance: newBal, equity: newBal })
         .eq("id", trade.account_id).eq("user_id", context.userId);
     }

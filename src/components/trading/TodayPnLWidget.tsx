@@ -9,7 +9,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { TrendingDown, TrendingUp, Target, ShieldAlert } from "lucide-react";
 import { listTrades } from "@/lib/paper-trading.functions";
 import { usePaper } from "@/components/paper-trading/context";
-import { useLivePrice } from "@/lib/paper-trading/mock-prices";
+import { useLiveQuotes } from "@/lib/paper-trading/mock-prices";
 import { floatingPnl } from "@/lib/trading/plan-math";
 import { findSymbol } from "@/lib/paper-trading/symbols";
 import { cn } from "@/lib/utils";
@@ -26,9 +26,9 @@ interface Props {
 }
 
 export function TodayPnLWidget({ dailyTargetPct = 5, dailyLossLimitPct = 5 }: Props) {
-  const { accountId, account, symbol } = usePaper();
+  const { accountId, account } = usePaper();
   const fetchTrades = useServerFn(listTrades);
-  const live = useLivePrice(symbol);
+  const quotes = useLiveQuotes();
 
   const { data: trades } = useQuery({
     queryKey: ["paper", "trades", accountId, "today"],
@@ -50,13 +50,17 @@ export function TodayPnLWidget({ dailyTargetPct = 5, dailyLossLimitPct = 5 }: Pr
       } else if (t.status === "open") {
         const sym = findSymbol(t.symbol);
         if (sym) {
-          const px = t.symbol === symbol ? live ?? sym.refPrice : sym.refPrice;
+          // Fall back to the trade's own entry price when we have no live
+          // quote yet — using the static catalog refPrice invents huge
+          // phantom P/L (this was the source of the −$36M display bug).
+          const live = quotes[t.symbol]?.price;
+          const px = live != null && Number.isFinite(live) && live > 0 ? live : Number(t.entry_price);
           open += floatingPnl(sym, t.direction, Number(t.entry_price), px, Number(t.lot_size));
         }
       }
     }
     return { profit, loss, open, net: profit - loss + open, count };
-  }, [trades, symbol, live]);
+  }, [trades, quotes]);
 
   const balance = account?.starting_balance ?? 10000;
   const target = (balance * dailyTargetPct) / 100;

@@ -8,6 +8,7 @@ type Account = {
   id: string; name: string; currency: string; balance: number; equity: number;
   starting_balance: number; leverage: number; max_daily_risk_pct: number;
   max_trade_risk_pct: number; is_archived: boolean;
+  margin_call_level: number; stop_out_level: number; negative_balance_protection: boolean;
 };
 
 type Ctx = {
