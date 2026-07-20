@@ -25,6 +25,11 @@ const createAccountSchema = z.object({
   leverage: z.number().int().min(1).max(500).default(100),
   max_daily_risk_pct: z.number().min(0.1).max(50).default(5),
   max_trade_risk_pct: z.number().min(0.1).max(50).default(2),
+  margin_call_level: z.number().min(0).max(1000).default(100),
+  stop_out_level: z.number().min(0).max(1000).default(50),
+  negative_balance_protection: z.boolean().default(true),
+}).refine((v) => v.margin_call_level >= v.stop_out_level, {
+  message: "margin_call_level must be ≥ stop_out_level",
 });
 
 export const createAccount = createServerFn({ method: "POST" })
