@@ -166,7 +166,6 @@ function SidebarInner({
   currentPath: string;
   hideToggle?: boolean;
 }) {
-  void items;
   return (
     <TooltipProvider delayDuration={120} skipDelayDuration={80}>
       <div className="flex h-full flex-col">
