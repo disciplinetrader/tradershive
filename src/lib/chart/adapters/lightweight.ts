@@ -44,36 +44,56 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
     } catch { return fallback; }
   };
 
-  const cs = typeof window !== "undefined" ? getComputedStyle(document.documentElement) : null;
-  const cssVar = (name: string, fallback: string) => (cs?.getPropertyValue(name).trim() || fallback);
-  const textColor = resolveColor(cssVar("--muted-foreground", "#94a3b8"), "#94a3b8");
-  const fg = cssVar("--foreground", "#94a3b8");
-  const gridColor = resolveColor(`color-mix(in oklab, ${fg} 8%, transparent)`, "rgba(148,163,184,0.08)");
-  const borderColor = resolveColor(`color-mix(in oklab, ${fg} 15%, transparent)`, "rgba(148,163,184,0.15)");
-  // Resolve a concrete background — lightweight-charts' attribution-logo widget
-  // parses this to pick a light/dark variant and its parser rejects oklch().
-  const bgColor = resolveColor(cssVar("--card", "#0f172a"), "#0f172a");
+  const readThemeColors = () => {
+    const cs = typeof window !== "undefined" ? getComputedStyle(document.documentElement) : null;
+    const cssVar = (name: string, fallback: string) => (cs?.getPropertyValue(name).trim() || fallback);
+    const textColor = resolveColor(cssVar("--muted-foreground", "#94a3b8"), "#94a3b8");
+    const fg = cssVar("--foreground", "#94a3b8");
+    const gridColor = resolveColor(`color-mix(in oklab, ${fg} 8%, transparent)`, "rgba(148,163,184,0.08)");
+    const borderColor = resolveColor(`color-mix(in oklab, ${fg} 15%, transparent)`, "rgba(148,163,184,0.15)");
+    const bgColor = resolveColor(cssVar("--card", "#0f172a"), "#0f172a");
+    return { textColor, gridColor, borderColor, bgColor };
+  };
+  let themeColors = readThemeColors();
   const chart = createChart(container, {
     autoSize: true,
     layout: {
-      background: { type: ColorType.Solid, color: bgColor },
-      textColor,
+      background: { type: ColorType.Solid, color: themeColors.bgColor },
+      textColor: themeColors.textColor,
       fontFamily: "ui-sans-serif, system-ui",
     },
 
     grid: {
-      vertLines: { color: gridColor, visible: settings.showGrid },
-      horzLines: { color: gridColor, visible: settings.showGrid },
+      vertLines: { color: themeColors.gridColor, visible: settings.showGrid },
+      horzLines: { color: themeColors.gridColor, visible: settings.showGrid },
     },
     rightPriceScale: {
-      borderColor,
+      borderColor: themeColors.borderColor,
       mode: priceMode(settings),
       autoScale: settings.autoScale,
       invertScale: settings.priceScale === "inverted",
     },
-    timeScale: { borderColor, timeVisible: true, secondsVisible: false },
+    timeScale: { borderColor: themeColors.borderColor, timeVisible: true, secondsVisible: false },
     crosshair: { mode: crosshairMode(settings) },
   });
+
+  // React to light/dark theme changes without remounting the chart. The theme
+  // provider toggles the `dark` class on <html>; watch it and re-apply layout
+  // colors resolved from the new CSS variables.
+  const applyThemeColors = () => {
+    themeColors = readThemeColors();
+    chart.applyOptions({
+      layout: { background: { type: ColorType.Solid, color: themeColors.bgColor }, textColor: themeColors.textColor },
+      grid: { vertLines: { color: themeColors.gridColor }, horzLines: { color: themeColors.gridColor } },
+      rightPriceScale: { borderColor: themeColors.borderColor },
+      timeScale: { borderColor: themeColors.borderColor },
+    });
+  };
+  const themeObserver = typeof MutationObserver !== "undefined"
+    ? new MutationObserver(() => applyThemeColors())
+    : null;
+  themeObserver?.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style"] });
+
 
   let priceSeries: ISeriesApi<any> = buildPriceSeries(chart, settings.chartType);
   let currentType: ChartType = settings.chartType;
@@ -106,12 +126,20 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
     });
   }
 
+  let didInitialFit = false;
   return {
     kind: "lightweight-charts",
     setCandles(candles) {
       applyCandles(priceSeries, currentType, candles);
-      chart.timeScale().fitContent();
+      // Only fit on the very first data push. Later updates must preserve
+      // the user's zoom/pan — otherwise every tick or indicator toggle
+      // snaps the range back to fit-all.
+      if (!didInitialFit && candles.length) {
+        chart.timeScale().fitContent();
+        didInitialFit = true;
+      }
     },
+
     updateLastCandle(candle) {
       try { updateLast(priceSeries, currentType, [candle]); } catch { /* series torn down */ }
     },
@@ -388,10 +416,12 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
       else externalMarkers.setMarkers(mapped);
     },
     destroy() {
+      themeObserver?.disconnect();
       chart.remove();
       overlays.clear(); subPanes.clear(); sessionSeries.clear(); smcBoxSeries.clear();
       smcMarkers = null; externalMarkers = null; volSeries = null;
     },
+
   } satisfies ChartAdapter;
 };
 
