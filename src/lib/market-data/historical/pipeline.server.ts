@@ -25,8 +25,8 @@ async function log(
   metadata: Record<string, unknown> = {},
 ) {
   await admin.from("historical_sync_logs").insert({
-    job_id: jobId, symbol, source_code: sourceCode, level, message, metadata,
-  });
+    job_id: jobId, symbol, source_code: sourceCode, level, message, metadata: metadata as any,
+  } as any);
 }
 
 /** Reject bad candles: NaN, non-positive prices, OHLC inconsistency. */
@@ -95,18 +95,17 @@ async function upsertCandles(
 ): Promise<{ inserted: number; skipped: number }> {
   if (candles.length === 0) return { inserted: 0, skipped: 0 };
   const rows = candles.map((c) => ({
-    symbol, timeframe, source_code: sourceCode,
+    symbol, timeframe, provider_code: sourceCode,
     ts: new Date(c.ts).toISOString(),
     open: c.open, high: c.high, low: c.low, close: c.close, volume: c.volume,
   }));
   let inserted = 0;
-  // Chunk to keep payloads small
   const CHUNK = 500;
   for (let i = 0; i < rows.length; i += CHUNK) {
     const slice = rows.slice(i, i + CHUNK);
     const { error, count } = await admin
       .from("historical_candles")
-      .upsert(slice, { onConflict: "symbol,timeframe,ts", ignoreDuplicates: true, count: "exact" });
+      .upsert(slice as any, { onConflict: "symbol,timeframe,provider_code,ts", ignoreDuplicates: true, count: "exact" });
     if (error) throw error;
     inserted += count ?? 0;
   }
