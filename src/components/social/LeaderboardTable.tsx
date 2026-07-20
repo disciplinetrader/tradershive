@@ -96,9 +96,9 @@ export function LeaderboardTable({
                     {r.rank <= 3 ? (
                       <span className={cn(
                         "font-black",
-                        r.rank === 1 && "text-yellow-400",
-                        r.rank === 2 && "text-slate-300",
-                        r.rank === 3 && "text-orange-400",
+                        r.rank === 1 && "text-warning",
+                        r.rank === 2 && "text-muted-foreground",
+                        r.rank === 3 && "text-danger",
                       )}>#{r.rank}</span>
                     ) : (
                       <span className="text-muted-foreground">#{r.rank}</span>
