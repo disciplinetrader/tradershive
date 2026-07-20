@@ -38,16 +38,16 @@ export function AiScoreCard({ score }: { score: ScoreShape | null | undefined })
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart data={radarData} outerRadius="80%">
-              <PolarGrid stroke="hsl(var(--border))" />
+              <PolarGrid stroke="var(--border)" />
               <PolarAngleAxis
                 dataKey="category"
-                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
               />
               <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
               <Radar
                 dataKey="value"
-                stroke="hsl(var(--primary))"
-                fill="hsl(var(--primary))"
+                stroke="var(--primary)"
+                fill="var(--primary)"
                 fillOpacity={0.35}
                 animationDuration={800}
               />

@@ -53,10 +53,10 @@ function PsychologyPage() {
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={emotionsData}>
-                <XAxis dataKey="emotion" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
-                <YAxis domain={[0, 100]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
-                <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
-                <Bar dataKey="value" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
+                <XAxis dataKey="emotion" tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} />
+                <YAxis domain={[0, 100]} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} />
+                <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)" }} />
+                <Bar dataKey="value" fill="var(--primary)" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}

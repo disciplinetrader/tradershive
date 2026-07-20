@@ -24,7 +24,7 @@ export function AiAvatar({
         className="absolute inset-0 rounded-full"
         style={{
           background:
-            "conic-gradient(from 90deg, hsl(var(--primary)/0.9), hsl(var(--accent)/0.7), hsl(var(--primary)/0.9))",
+            "conic-gradient(from 90deg, color-mix(in oklab, var(--primary) 90%, transparent), color-mix(in oklab, var(--accent) 70%, transparent), color-mix(in oklab, var(--primary) 90%, transparent))",
           filter: `blur(${glow / 6}px)`,
         }}
         animate={{ rotate: 360 }}
@@ -38,7 +38,7 @@ export function AiAvatar({
         transition={{ repeat: Infinity, duration: 2.4, ease: "easeInOut" }}
       />
       <div
-        className="relative flex items-center justify-center rounded-full bg-background/80 backdrop-blur-md border border-primary/40 shadow-[0_0_40px_-10px_hsl(var(--primary)/0.6)]"
+        className="relative flex items-center justify-center rounded-full bg-background/80 backdrop-blur-md border border-primary/40 shadow-[0_0_40px_-10px_color-mix(in oklab, var(--primary) 60%, transparent)]"
         style={{ width: size - 8, height: size - 8 }}
       >
         <Sparkles className="text-primary" style={{ width: size * 0.4, height: size * 0.4 }} />

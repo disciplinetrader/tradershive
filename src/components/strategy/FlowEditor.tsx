@@ -102,11 +102,11 @@ export function FlowEditor({ strategyId }: { strategyId: string }) {
             if (!s || !t) return null;
             const x1 = s.pos_x + 80, y1 = s.pos_y + 24;
             const x2 = t.pos_x, y2 = t.pos_y + 24;
-            return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="hsl(var(--primary))" strokeWidth={2} strokeOpacity={0.6} markerEnd="url(#arr)" />;
+            return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--primary)" strokeWidth={2} strokeOpacity={0.6} markerEnd="url(#arr)" />;
           })}
           <defs>
             <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="hsl(var(--primary))" />
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--primary)" />
             </marker>
           </defs>
         </svg>

@@ -31,7 +31,7 @@ export function ProfileHero({ profile, customization, privacy, followers, follow
         style={{
           background: customization?.banner_url
             ? `url(${customization.banner_url}) center/cover`
-            : "linear-gradient(135deg, hsl(var(--primary)/0.25), hsl(var(--accent)/0.15))",
+            : "linear-gradient(135deg, color-mix(in oklab, var(--primary) 25%, transparent), color-mix(in oklab, var(--accent) 15%, transparent))",
         }}
       >
         <div className="h-full w-full bg-gradient-to-t from-background/95 via-background/40 to-transparent" />
