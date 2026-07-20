@@ -22,7 +22,7 @@ export function MarketStatusBadge({ market, className }: { market: MarketKind; c
     <span className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
       TONE[status] ?? TONE.closed, className)}>
       <span className={cn("h-1.5 w-1.5 rounded-full",
-        status === "open" ? "bg-emerald-400 animate-pulse" : "bg-current opacity-60")} />
+        status === "open" ? "bg-success animate-pulse" : "bg-current opacity-60")} />
       {LABEL[status] ?? status}
     </span>
   );
