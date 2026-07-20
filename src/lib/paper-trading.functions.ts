@@ -48,6 +48,9 @@ export const createAccount = createServerFn({ method: "POST" })
         leverage: data.leverage,
         max_daily_risk_pct: data.max_daily_risk_pct,
         max_trade_risk_pct: data.max_trade_risk_pct,
+        margin_call_level: data.margin_call_level,
+        stop_out_level: data.stop_out_level,
+        negative_balance_protection: data.negative_balance_protection,
       })
       .select()
       .single();
