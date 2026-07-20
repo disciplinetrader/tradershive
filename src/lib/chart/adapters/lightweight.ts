@@ -102,6 +102,8 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
       const closes = candles.map((c) => c.close);
       const active = new Set<string>();
       const activeSessions = new Set<string>();
+      const activeSmcBoxes = new Set<string>();
+      let smcHandled = false;
       indicators
         .filter((i) => i.pane !== "sub" && i.visible !== false)
         .forEach((cfg, idx) => {
