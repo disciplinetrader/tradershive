@@ -247,7 +247,7 @@
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
     background: color-mix(in oklab, var(--foreground) 14%, transparent);
-    border-radius: 999px;
+    border-radius: 3px;
     border: 2px solid transparent;
     background-clip: padding-box;
   }
