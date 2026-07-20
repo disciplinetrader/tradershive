@@ -272,11 +272,7 @@ function computeOverlay(cfg: IndicatorConfig, candles: Candle[], closes: number[
       map.set("support", s.support);
       break;
     }
-    case "sessions": {
-      const s = sessions(candles);
-      map.set("asia", s.asia); map.set("london", s.london); map.set("ny", s.ny);
-      break;
-    }
+    // sessions: handled separately in syncOverlayIndicators as bottom histograms.
     case "smc": {
       const s = smc(candles, p.pivot ?? 3);
       map.set("swing_high", s.swing_high);
