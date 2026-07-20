@@ -50,6 +50,7 @@ import { TimelineView } from "@/components/journal/TimelineView";
 import { JournalDrawer } from "@/components/journal/JournalDrawer";
 import { ManualEntryDialog } from "@/components/journal/ManualEntryDialog";
 import { cn } from "@/lib/utils";
+import { RouteError } from "@/components/common/RouteError";
 
 export const Route = createFileRoute("/_authenticated/journal")({
   head: () => ({
@@ -59,8 +60,13 @@ export const Route = createFileRoute("/_authenticated/journal")({
     ],
   }),
   component: JournalPage,
-  errorComponent: ({ error }) => (
-    <div role="alert" className="p-6 text-sm text-danger">Failed to load Journal: {(error as Error).message}</div>
+  errorComponent: ({ error, reset }) => (
+    <RouteError
+      error={error}
+      reset={reset}
+      title="Journal failed to load"
+      boundary="journal_route"
+    />
   ),
 });
 
