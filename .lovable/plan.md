@@ -1,107 +1,50 @@
-# Battle Arena Foundation
+# Trading Workspace Pro Upgrade
 
-Build a competitive paper-trading module reusing existing Paper Trading, Market Data Engine, XP, Notifications, and Admin systems.
+Enhancing the existing Trading Workspace, Paper Trading, Journal, and Replay Studio without rebuilding them. Keeps TradingView Charting Library as the primary chart.
 
-## 1. Database (single migration)
+## Scope & Phasing
 
-New tables in `public.` (all with GRANTs + RLS + `updated_at` trigger where relevant):
+Given the size, I'll ship this in **4 sequential phases** in one turn each, but I need your go-ahead first because the total work is large (~40 files, 3 migrations). Each phase is independently useful:
 
-- **battle_templates** — reusable rule presets (admin + user).
-  `id, owner_id, name, description, battle_type, market, allowed_symbols[], starting_balance, max_risk_pct, max_daily_loss_pct, max_drawdown_pct, max_trades, win_condition, duration_minutes, is_public, is_official, created_at, updated_at`
-- **battles** — one row per battle.
-  `id, host_id, name, description, visibility ('public'|'private'), invite_code, battle_type ('1v1'|'2v2'|'ffa5'|'ffa10'), market, allowed_symbols[], starting_balance, max_risk_pct, max_daily_loss_pct, max_drawdown_pct, max_trades, win_condition, target_value (nullable, for +5R or profit target), start_at, end_at, timezone, status ('draft'|'upcoming'|'live'|'completed'|'cancelled'), max_participants, featured boolean, winner_user_id nullable, created_at, updated_at`
-- **battle_participants** — join table.
-  `id, battle_id, user_id, team ('A'|'B'|null), paper_account_id (auto-provisioned battle account), joined_at, left_at, status ('joined'|'active'|'disqualified'|'finished'), UNIQUE(battle_id, user_id)`
-- **battle_rankings** — live snapshot; recomputed on trade close & on demand.
-  `id, battle_id, user_id, rank, pnl, r_multiple, win_rate, trades_count, max_drawdown, score, updated_at, UNIQUE(battle_id, user_id)`
-- **battle_results** — final immutable outcome.
-  `id, battle_id, user_id, final_rank, pnl, r_multiple, win_rate, trades_count, max_drawdown, xp_awarded, coins_awarded, created_at, UNIQUE(battle_id, user_id)`
-- **battle_logs** — rule violations & lifecycle events.
-  `id, battle_id, user_id nullable, event_type, message, metadata jsonb, created_at`
-- **battle_notifications** — per-user battle notifications.
-  `id, battle_id, user_id, kind, title, body, read_at, created_at`
+### Phase 1 — Chart Trading Layer (on top of TradingView)
+- Target/RR tool: click to place Entry → drag SL/TP → live overlay showing RR, Risk $, Reward $, pips, position size, lot size, % risk
+- Right-click chart context menu: Buy/Sell Market, Buy/Sell Limit, Buy/Sell Stop, Set Alert, Copy Price, Create Drawing (uses clicked price)
+- Draggable Entry/SL/TP lines for open positions and pending orders, with live floating PnL, profit/loss zones, direction arrow
+- Chart-native price alerts
 
-Extend `public.paper_trades` semantics without altering: add nullable `battle_id uuid references battles(id)` column to `paper_trades` and `paper_accounts`. Trades placed under a battle-scoped account are tagged and validated by trigger.
+Files: `src/components/trading/chart/ChartOverlay.tsx`, `TargetTool.tsx`, `ChartContextMenu.tsx`, `PositionLines.tsx`, `useChartPriceMath.ts`
 
-**Trigger `enforce_battle_rules_on_trade`** (BEFORE INSERT on paper_trades): if `battle_id` set → check symbol allowlist, risk %, trading window, battle status. On violation → log to `battle_logs` and RAISE.
+### Phase 2 — Prop-Firm Risk Rules
+- Migration: `risk_rule_profiles`, `risk_rule_violations`, `daily_risk_snapshots` tables
+- Presets: FTMO, 5%ers, Funding Pips, FundedNext, MyFundedFX, TradersHIVE Default + Custom
+- Rule fields: max daily loss, max overall loss, profit target, max DD, max risk/trade, min trading days, max positions, max lot, news restriction, weekend holding, max daily trades, session restriction
+- Live Risk Dashboard widget (daily loss remaining, DD, target %, violations, warnings)
+- Server-side enforcement in `paper-trading.functions.ts` — reject trades that violate active profile
+- Today's PnL topbar widget (today profit/loss, open PnL, closed PnL, current DD, target %)
 
-**Trigger `update_battle_ranking_on_close`** (AFTER UPDATE of status on paper_trades where new.status='closed' and battle_id not null): recompute rankings for that battle+user; upsert `battle_rankings`.
+Files: migration + `src/lib/risk-rules/` + `src/components/trading/RiskDashboard.tsx`, `TodayPnLWidget.tsx`, `/settings/risk-rules` route
 
-**Function `finalize_battle(_battle_id)`**: sets status='completed', ranks participants by win_condition, writes `battle_results`, awards XP (100 winner / 25 finish) and coins via `xp_transactions` + `coin_transactions`, sets `winner_user_id`.
+### Phase 3 — Order & Position Management + Journal Screenshots
+- Partial close, break-even, trailing stop, modify/cancel pending, close all, reverse position (server fns + UI buttons in position panel)
+- Position panel columns: swap, commission, risk, RR, current pips, floating PnL
+- Journal enhancements: open/close time, duration, holding time (computed)
+- Screenshots: storage bucket `trade-screenshots`, before/after entries auto-captured from TradingView, manual upload/replace, gallery in journal entry
+- Trade metadata: entry reason, exit reason, mistakes, lessons, emotion, market conditions, setup, strategy, tags (extend `journal_entries` where fields missing)
+- Keyboard shortcuts: Buy (B), Sell (S), Close (X), Cancel orders (C), Toggle replay (R), Screenshot (P), Hide drawings (H)
 
-**Realtime**: `ALTER PUBLICATION supabase_realtime ADD TABLE battles, battle_participants, battle_rankings, battle_notifications;`
+Files: migration + `useKeyboardShortcuts.ts`, `PositionActions.tsx`, `TradeScreenshotGallery.tsx`, extend Journal entry form
 
-RLS:
-- battles: anyone reads public+upcoming/live/completed; hosts read own drafts; private battles require participant membership OR invite lookup by code (SECURITY DEFINER `join_battle_by_code`).
-- battle_participants/rankings/results: readable if user is participant OR battle is public.
-- write access via SECURITY DEFINER server functions only.
+### Phase 4 — Replay Studio + Stats + Dark Mode Polish
+- Replay: FX-Replay-style timeline scrubber, better playback controls (speed presets, step forward/back N candles), session sidebar, trade history panel, bookmarks strip
+- Stats: today / weekly / current-session widgets, avg holding time, avg RR, avg trade duration (server fn + dashboard cards)
+- Dark mode audit: fix low-contrast tokens for charts/tables/heatmaps/bars/icons in `src/styles.css`; ensure semantic tokens used everywhere in workspace
+- Responsive pass: workspace collapses tool rails and stacks panels on tablet/mobile
 
-## 2. Server functions (`src/lib/battle-arena.functions.ts`)
+## Technical Notes
+- All price math shared via `src/lib/trading/price-math.ts` (pips, position size, PnL, RR)
+- TradingView integration via `widget.activeChart().createOrderLine()` / `createPositionLine()` / `subscribe('mouse_down')` for right-click coords
+- Realtime updates via existing Market Data Engine subscriptions; drag handlers debounced via rAF, no re-render storms
+- Server enforcement of risk rules is authoritative — client UI is just a preview
 
-All under `requireSupabaseAuth`:
-- `listBattles({ scope: 'featured'|'live'|'upcoming'|'mine'|'history', limit })`
-- `getBattle({ id })` → battle + participants + rankings + rules
-- `createBattle({ ...form })` — validates, generates invite_code for private
-- `joinBattle({ battleId })` / `joinByInviteCode({ code })` — auto-provisions battle-scoped paper account (starting balance from rules)
-- `leaveBattle({ battleId })` (only pre-start)
-- `cancelBattle({ battleId })` (host only, pre-start)
-- `startBattleNow({ battleId })` (host, if start_at ≤ now)
-- `finalizeBattle({ battleId })` — RPC wrapper
-- `listMyBattleStats()` — wins/losses/avg finish
-- `getBattleHistory({ battleId })` — results + trade list + equity curve
-- Admin variants under `src/lib/admin/battles.functions.ts` (feature/delete/edit any)
-
-Client-side background: an interval in Arena home calls a lightweight `tickBattles()` server fn that transitions `upcoming→live` and `live→completed` (calls `finalize_battle`). Also triggerable by pg cron later.
-
-## 3. Routes
-
-Replace stub `src/routes/_authenticated/battle-arena.tsx` (currently ComingSoon) with a layout + children:
-- `battle-arena.tsx` → tabs layout with `<Outlet/>`
-- `battle-arena.index.tsx` → Arena home dashboard
-- `battle-arena.create.tsx` → Create wizard (5 steps: basics → market/symbols → risk → schedule → review)
-- `battle-arena.history.tsx` → completed battles list + personal stats
-- `battle-arena.$battleId.tsx` → battle detail (lobby / live / results based on status)
-
-Unhide "Battle Arena" in `src/components/layout/app-shell.tsx` navigation.
-
-## 4. Components (`src/components/battle-arena/`)
-
-- `ArenaHero.tsx` — featured battle carousel
-- `BattleCard.tsx` — used in lists
-- `BattleStatusBadge.tsx`
-- `CountdownTimer.tsx`
-- `LiveLeaderboard.tsx` — realtime subscription to `battle_rankings`
-- `ParticipantsList.tsx`
-- `RulesPanel.tsx`
-- `CreateBattleWizard.tsx`
-- `JoinBattleDialog.tsx` (invite code)
-- `MyBattleStats.tsx`
-- `BattleResultsView.tsx` — podium + trades + equity curve (reuse Recharts)
-- `BattleTradeGate.tsx` — small wrapper for the trading workspace when trading inside a battle account
-
-## 5. Integration points (minimal, no behavior change to existing modules)
-
-- **Paper Trading context**: when active `paper_account.battle_id` is set, show a `BattleBadge` in `TopToolbar` and pass `battle_id` through to `paper_trades` insert (already inherits from account default via trigger `set_trade_battle_id_from_account`).
-- **Statistics/Journal**: no changes — battle trades are regular paper trades tagged by `battle_id`; journal already links via `create_journal_draft_from_trade`.
-- **XP**: reuse `xp_transactions` insert on `finalize_battle`.
-- **Leaderboards / Social**: not modified — future work.
-- **Notifications**: use existing `notification_recipients` pipeline where possible; battle-specific stream stays in `battle_notifications` for the widget.
-- **Admin Panel**: new tab under `/admin` for Battles (list, feature, cancel, delete). Uses `is_platform_admin`.
-
-## 6. Realtime UX
-
-- Battle detail page subscribes to `battle_rankings` + `battle_participants` filtered by `battle_id`.
-- Arena home subscribes to `battles` (status changes).
-- Cleanup channels on unmount.
-
-## 7. Out of scope (explicitly)
-
-Guild wars, tournaments, brackets, prize pools, real money, broker integrations, seasons.
-
-## 8. Delivery order
-
-1. Migration (one call).
-2. Server functions + admin server functions.
-3. Routes + components.
-4. Nav unhide + small `TopToolbar` battle badge.
-5. Typecheck; smoke via Playwright on `/battle-arena`.
+## Confirm to proceed
+Reply **"go phase 1"** (or "go all") and I'll ship Phase 1 immediately, then continue sequentially. Each phase = one message with all files + migration in parallel.
