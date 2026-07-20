@@ -14,6 +14,7 @@ import {
   getChampionship,
   registerChampionship,
   cancelChampionshipRegistration,
+  joinChampionshipLive,
 } from "@/lib/championship.functions";
 import { ShareToCommunityButton } from "@/components/sharing/ShareToCommunityButton";
 
