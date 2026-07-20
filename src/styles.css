@@ -122,13 +122,13 @@
   --chart-4: oklch(0.6 0.22 22);     /* coral */
   --chart-5: oklch(0.68 0.14 220);   /* sky */
 
-  --sidebar: oklch(0.98 0.004 280);
+  --sidebar: oklch(0.965 0.005 280);
   --sidebar-foreground: oklch(0.24 0.02 265);
   --sidebar-primary: oklch(0.58 0.19 285);
   --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.955 0.007 285);
+  --sidebar-accent: oklch(0.93 0.012 285);
   --sidebar-accent-foreground: oklch(0.17 0.02 265);
-  --sidebar-border: oklch(0.17 0.02 265 / 0.06);
+  --sidebar-border: oklch(0.17 0.02 265 / 0.08);
   --sidebar-ring: oklch(0.58 0.19 285 / 0.35);
 
   /* Ambient pastel wash — used by .app-aurora backdrop */
@@ -180,13 +180,13 @@
   --chart-4: oklch(0.7 0.2 22);      /* coral */
   --chart-5: oklch(0.75 0.14 230);   /* sky */
 
-  --sidebar: oklch(0.18 0.015 220);
+  --sidebar: oklch(0.14 0.014 220);
   --sidebar-foreground: oklch(0.9 0.01 200);
   --sidebar-primary: oklch(0.78 0.15 170);
   --sidebar-primary-foreground: oklch(0.15 0.02 220);
-  --sidebar-accent: oklch(0.24 0.017 220);
-  --sidebar-accent-foreground: oklch(0.96 0.008 200);
-  --sidebar-border: oklch(0.96 0.008 200 / 0.07);
+  --sidebar-accent: oklch(0.26 0.02 220);
+  --sidebar-accent-foreground: oklch(0.98 0.006 200);
+  --sidebar-border: oklch(0.96 0.008 200 / 0.08);
   --sidebar-ring: oklch(0.78 0.15 170 / 0.4);
 
   --aurora-a: oklch(0.5 0.15 170 / 0.28);        /* mint pool */
