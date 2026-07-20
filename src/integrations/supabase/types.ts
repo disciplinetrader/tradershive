@@ -3932,6 +3932,308 @@ export type Database = {
         }
         Relationships: []
       }
+      historical_data_sources: {
+        Row: {
+          base_url: string | null
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          is_enabled: boolean
+          markets: string[]
+          metadata: Json
+          name: string
+          priority: number
+          rate_limit_per_min: number | null
+          requires_key: boolean
+          updated_at: string
+        }
+        Insert: {
+          base_url?: string | null
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_enabled?: boolean
+          markets?: string[]
+          metadata?: Json
+          name: string
+          priority?: number
+          rate_limit_per_min?: number | null
+          requires_key?: boolean
+          updated_at?: string
+        }
+        Update: {
+          base_url?: string | null
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_enabled?: boolean
+          markets?: string[]
+          metadata?: Json
+          name?: string
+          priority?: number
+          rate_limit_per_min?: number | null
+          requires_key?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      historical_gaps: {
+        Row: {
+          created_at: string
+          filled_at: string | null
+          filled_by: string | null
+          gap_from: string
+          gap_to: string
+          id: string
+          missing_candles: number
+          status: string
+          symbol: string
+          timeframe: string
+        }
+        Insert: {
+          created_at?: string
+          filled_at?: string | null
+          filled_by?: string | null
+          gap_from: string
+          gap_to: string
+          id?: string
+          missing_candles?: number
+          status?: string
+          symbol: string
+          timeframe: string
+        }
+        Update: {
+          created_at?: string
+          filled_at?: string | null
+          filled_by?: string | null
+          gap_from?: string
+          gap_to?: string
+          id?: string
+          missing_candles?: number
+          status?: string
+          symbol?: string
+          timeframe?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historical_gaps_filled_by_fkey"
+            columns: ["filled_by"]
+            isOneToOne: false
+            referencedRelation: "historical_import_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      historical_import_jobs: {
+        Row: {
+          candles_fetched: number
+          candles_inserted: number
+          candles_skipped: number
+          created_at: string
+          error_message: string | null
+          finished_at: string | null
+          gaps_detected: number
+          id: string
+          metadata: Json
+          range_from: string
+          range_to: string
+          source_code: string
+          started_at: string | null
+          status: string
+          symbol: string
+          symbol_id: string | null
+          timeframe: string
+          triggered_by: string
+          updated_at: string
+        }
+        Insert: {
+          candles_fetched?: number
+          candles_inserted?: number
+          candles_skipped?: number
+          created_at?: string
+          error_message?: string | null
+          finished_at?: string | null
+          gaps_detected?: number
+          id?: string
+          metadata?: Json
+          range_from: string
+          range_to: string
+          source_code: string
+          started_at?: string | null
+          status?: string
+          symbol: string
+          symbol_id?: string | null
+          timeframe: string
+          triggered_by?: string
+          updated_at?: string
+        }
+        Update: {
+          candles_fetched?: number
+          candles_inserted?: number
+          candles_skipped?: number
+          created_at?: string
+          error_message?: string | null
+          finished_at?: string | null
+          gaps_detected?: number
+          id?: string
+          metadata?: Json
+          range_from?: string
+          range_to?: string
+          source_code?: string
+          started_at?: string | null
+          status?: string
+          symbol?: string
+          symbol_id?: string | null
+          timeframe?: string
+          triggered_by?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historical_import_jobs_symbol_id_fkey"
+            columns: ["symbol_id"]
+            isOneToOne: false
+            referencedRelation: "historical_symbols"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      historical_symbols: {
+        Row: {
+          base_timeframe: string
+          created_at: string
+          display_name: string | null
+          earliest_available: string | null
+          id: string
+          is_enabled: boolean
+          latest_imported: string | null
+          market: string
+          metadata: Json
+          native_symbol: string
+          priority: number
+          source_code: string
+          source_id: string | null
+          symbol: string
+          timeframes: string[]
+          updated_at: string
+        }
+        Insert: {
+          base_timeframe?: string
+          created_at?: string
+          display_name?: string | null
+          earliest_available?: string | null
+          id?: string
+          is_enabled?: boolean
+          latest_imported?: string | null
+          market: string
+          metadata?: Json
+          native_symbol: string
+          priority?: number
+          source_code: string
+          source_id?: string | null
+          symbol: string
+          timeframes?: string[]
+          updated_at?: string
+        }
+        Update: {
+          base_timeframe?: string
+          created_at?: string
+          display_name?: string | null
+          earliest_available?: string | null
+          id?: string
+          is_enabled?: boolean
+          latest_imported?: string | null
+          market?: string
+          metadata?: Json
+          native_symbol?: string
+          priority?: number
+          source_code?: string
+          source_id?: string | null
+          symbol?: string
+          timeframes?: string[]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historical_symbols_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "historical_data_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      historical_sync_logs: {
+        Row: {
+          created_at: string
+          id: string
+          job_id: string | null
+          level: string
+          message: string
+          metadata: Json
+          source_code: string | null
+          symbol: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          job_id?: string | null
+          level?: string
+          message: string
+          metadata?: Json
+          source_code?: string | null
+          symbol?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          job_id?: string | null
+          level?: string
+          message?: string
+          metadata?: Json
+          source_code?: string | null
+          symbol?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historical_sync_logs_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "historical_import_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      historical_timeframes: {
+        Row: {
+          aggregate_from: string | null
+          code: string
+          is_base: boolean
+          label: string
+          seconds: number
+          sort_order: number
+        }
+        Insert: {
+          aggregate_from?: string | null
+          code: string
+          is_base?: boolean
+          label: string
+          seconds: number
+          sort_order?: number
+        }
+        Update: {
+          aggregate_from?: string | null
+          code?: string
+          is_base?: boolean
+          label?: string
+          seconds?: number
+          sort_order?: number
+        }
+        Relationships: []
+      }
       journal_attachments: {
         Row: {
           bucket: string

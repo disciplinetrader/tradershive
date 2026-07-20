@@ -48,6 +48,7 @@ const GROUPS: { label: string; items: Item[] }[] = [
       { to: "/admin/logs", label: "Audit Logs", icon: Activity },
       { to: "/admin/storage", label: "Storage", icon: Boxes },
       { to: "/admin/market-data", label: "Market Data", icon: Database },
+      { to: "/admin/historical", label: "Historical Data", icon: Database },
     ],
   },
   {

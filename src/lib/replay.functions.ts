@@ -474,7 +474,28 @@ export const getReplayCandles = createServerFn({ method: "POST" })
       provider: z.string().optional(),
     }).parse(d),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    // 1) Prefer stored historical candles (independent of any third-party API).
+    const { data: rows } = await context.supabase
+      .from("historical_candles")
+      .select("ts, open, high, low, close, volume")
+      .eq("symbol", data.symbol)
+      .eq("timeframe", data.timeframe)
+      .gte("ts", new Date(data.from).toISOString())
+      .lte("ts", new Date(data.to).toISOString())
+      .order("ts", { ascending: true })
+      .limit(5000);
+    if (rows && rows.length > 0) {
+      const candles = rows.map((r: any) => ({
+        time: new Date(r.ts as string).getTime(),
+        open: Number(r.open), high: Number(r.high),
+        low: Number(r.low), close: Number(r.close),
+        volume: Number(r.volume ?? 0),
+      }));
+      return { candles, providerId: "historical", providerLabel: "Historical Data Engine",
+        stepSec: TIMEFRAME_SECONDS[data.timeframe as Timeframe] };
+    }
+    // 2) Fallback: legacy synthetic provider.
     const provider = getProvider(data.provider);
     const candles = await provider.getCandles({
       symbol: data.symbol,

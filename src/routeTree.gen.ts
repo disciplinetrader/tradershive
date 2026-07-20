@@ -113,6 +113,7 @@ import { Route as AuthenticatedAdminMarketDataRouteImport } from './routes/_auth
 import { Route as AuthenticatedAdminLogsRouteImport } from './routes/_authenticated/admin.logs'
 import { Route as AuthenticatedAdminLeaderboardsRouteImport } from './routes/_authenticated/admin.leaderboards'
 import { Route as AuthenticatedAdminJournalRouteImport } from './routes/_authenticated/admin.journal'
+import { Route as AuthenticatedAdminHistoricalRouteImport } from './routes/_authenticated/admin.historical'
 import { Route as AuthenticatedAdminFeatureFlagsRouteImport } from './routes/_authenticated/admin.feature-flags'
 import { Route as AuthenticatedAdminDashboardRouteImport } from './routes/_authenticated/admin.dashboard'
 import { Route as AuthenticatedAdminContentRouteImport } from './routes/_authenticated/admin.content'
@@ -120,6 +121,7 @@ import { Route as AuthenticatedAdminChampionshipsRouteImport } from './routes/_a
 import { Route as AuthenticatedAdminChallengesRouteImport } from './routes/_authenticated/admin.challenges'
 import { Route as AuthenticatedAdminAnnouncementsRouteImport } from './routes/_authenticated/admin.announcements'
 import { Route as AuthenticatedAdminAchievementsRouteImport } from './routes/_authenticated/admin.achievements'
+import { Route as ApiPublicHooksHistoricalSyncRouteImport } from './routes/api/public/hooks/historical-sync'
 import { Route as AuthenticatedCommunityProfileUsernameRouteImport } from './routes/_authenticated/community.profile.$username'
 import { Route as AuthenticatedCommunityPostIdRouteImport } from './routes/_authenticated/community.post.$id'
 
@@ -710,6 +712,12 @@ const AuthenticatedAdminJournalRoute =
     path: '/journal',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminHistoricalRoute =
+  AuthenticatedAdminHistoricalRouteImport.update({
+    id: '/historical',
+    path: '/historical',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminFeatureFlagsRoute =
   AuthenticatedAdminFeatureFlagsRouteImport.update({
     id: '/feature-flags',
@@ -751,6 +759,12 @@ const AuthenticatedAdminAchievementsRoute =
     id: '/achievements',
     path: '/achievements',
     getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const ApiPublicHooksHistoricalSyncRoute =
+  ApiPublicHooksHistoricalSyncRouteImport.update({
+    id: '/api/public/hooks/historical-sync',
+    path: '/api/public/hooks/historical-sync',
+    getParentRoute: () => rootRouteImport,
   } as any)
 const AuthenticatedCommunityProfileUsernameRoute =
   AuthenticatedCommunityProfileUsernameRouteImport.update({
@@ -805,6 +819,7 @@ export interface FileRoutesByFullPath {
   '/admin/content': typeof AuthenticatedAdminContentRoute
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/admin/feature-flags': typeof AuthenticatedAdminFeatureFlagsRoute
+  '/admin/historical': typeof AuthenticatedAdminHistoricalRoute
   '/admin/journal': typeof AuthenticatedAdminJournalRoute
   '/admin/leaderboards': typeof AuthenticatedAdminLeaderboardsRoute
   '/admin/logs': typeof AuthenticatedAdminLogsRoute
@@ -878,6 +893,7 @@ export interface FileRoutesByFullPath {
   '/trading/': typeof AuthenticatedTradingIndexRoute
   '/community/post/$id': typeof AuthenticatedCommunityPostIdRoute
   '/community/profile/$username': typeof AuthenticatedCommunityProfileUsernameRoute
+  '/api/public/hooks/historical-sync': typeof ApiPublicHooksHistoricalSyncRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -909,6 +925,7 @@ export interface FileRoutesByTo {
   '/admin/content': typeof AuthenticatedAdminContentRoute
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/admin/feature-flags': typeof AuthenticatedAdminFeatureFlagsRoute
+  '/admin/historical': typeof AuthenticatedAdminHistoricalRoute
   '/admin/journal': typeof AuthenticatedAdminJournalRoute
   '/admin/leaderboards': typeof AuthenticatedAdminLeaderboardsRoute
   '/admin/logs': typeof AuthenticatedAdminLogsRoute
@@ -982,6 +999,7 @@ export interface FileRoutesByTo {
   '/trading': typeof AuthenticatedTradingIndexRoute
   '/community/post/$id': typeof AuthenticatedCommunityPostIdRoute
   '/community/profile/$username': typeof AuthenticatedCommunityProfileUsernameRoute
+  '/api/public/hooks/historical-sync': typeof ApiPublicHooksHistoricalSyncRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -1025,6 +1043,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/content': typeof AuthenticatedAdminContentRoute
   '/_authenticated/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/_authenticated/admin/feature-flags': typeof AuthenticatedAdminFeatureFlagsRoute
+  '/_authenticated/admin/historical': typeof AuthenticatedAdminHistoricalRoute
   '/_authenticated/admin/journal': typeof AuthenticatedAdminJournalRoute
   '/_authenticated/admin/leaderboards': typeof AuthenticatedAdminLeaderboardsRoute
   '/_authenticated/admin/logs': typeof AuthenticatedAdminLogsRoute
@@ -1098,6 +1117,7 @@ export interface FileRoutesById {
   '/_authenticated/trading/': typeof AuthenticatedTradingIndexRoute
   '/_authenticated/community/post/$id': typeof AuthenticatedCommunityPostIdRoute
   '/_authenticated/community/profile/$username': typeof AuthenticatedCommunityProfileUsernameRoute
+  '/api/public/hooks/historical-sync': typeof ApiPublicHooksHistoricalSyncRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -1141,6 +1161,7 @@ export interface FileRouteTypes {
     | '/admin/content'
     | '/admin/dashboard'
     | '/admin/feature-flags'
+    | '/admin/historical'
     | '/admin/journal'
     | '/admin/leaderboards'
     | '/admin/logs'
@@ -1214,6 +1235,7 @@ export interface FileRouteTypes {
     | '/trading/'
     | '/community/post/$id'
     | '/community/profile/$username'
+    | '/api/public/hooks/historical-sync'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -1245,6 +1267,7 @@ export interface FileRouteTypes {
     | '/admin/content'
     | '/admin/dashboard'
     | '/admin/feature-flags'
+    | '/admin/historical'
     | '/admin/journal'
     | '/admin/leaderboards'
     | '/admin/logs'
@@ -1318,6 +1341,7 @@ export interface FileRouteTypes {
     | '/trading'
     | '/community/post/$id'
     | '/community/profile/$username'
+    | '/api/public/hooks/historical-sync'
   id:
     | '__root__'
     | '/'
@@ -1360,6 +1384,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/content'
     | '/_authenticated/admin/dashboard'
     | '/_authenticated/admin/feature-flags'
+    | '/_authenticated/admin/historical'
     | '/_authenticated/admin/journal'
     | '/_authenticated/admin/leaderboards'
     | '/_authenticated/admin/logs'
@@ -1433,6 +1458,7 @@ export interface FileRouteTypes {
     | '/_authenticated/trading/'
     | '/_authenticated/community/post/$id'
     | '/_authenticated/community/profile/$username'
+    | '/api/public/hooks/historical-sync'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1447,6 +1473,7 @@ export interface RootRouteChildren {
   VerifyEmailRoute: typeof VerifyEmailRoute
   ApiAiChatRoute: typeof ApiAiChatRoute
   JournalShareTokenRoute: typeof JournalShareTokenRoute
+  ApiPublicHooksHistoricalSyncRoute: typeof ApiPublicHooksHistoricalSyncRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -2179,6 +2206,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminJournalRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/historical': {
+      id: '/_authenticated/admin/historical'
+      path: '/historical'
+      fullPath: '/admin/historical'
+      preLoaderRoute: typeof AuthenticatedAdminHistoricalRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/feature-flags': {
       id: '/_authenticated/admin/feature-flags'
       path: '/feature-flags'
@@ -2228,6 +2262,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAchievementsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/api/public/hooks/historical-sync': {
+      id: '/api/public/hooks/historical-sync'
+      path: '/api/public/hooks/historical-sync'
+      fullPath: '/api/public/hooks/historical-sync'
+      preLoaderRoute: typeof ApiPublicHooksHistoricalSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/community/profile/$username': {
       id: '/_authenticated/community/profile/$username'
       path: '/profile/$username'
@@ -2253,6 +2294,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminContentRoute: typeof AuthenticatedAdminContentRoute
   AuthenticatedAdminDashboardRoute: typeof AuthenticatedAdminDashboardRoute
   AuthenticatedAdminFeatureFlagsRoute: typeof AuthenticatedAdminFeatureFlagsRoute
+  AuthenticatedAdminHistoricalRoute: typeof AuthenticatedAdminHistoricalRoute
   AuthenticatedAdminJournalRoute: typeof AuthenticatedAdminJournalRoute
   AuthenticatedAdminLeaderboardsRoute: typeof AuthenticatedAdminLeaderboardsRoute
   AuthenticatedAdminLogsRoute: typeof AuthenticatedAdminLogsRoute
@@ -2274,6 +2316,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminContentRoute: AuthenticatedAdminContentRoute,
   AuthenticatedAdminDashboardRoute: AuthenticatedAdminDashboardRoute,
   AuthenticatedAdminFeatureFlagsRoute: AuthenticatedAdminFeatureFlagsRoute,
+  AuthenticatedAdminHistoricalRoute: AuthenticatedAdminHistoricalRoute,
   AuthenticatedAdminJournalRoute: AuthenticatedAdminJournalRoute,
   AuthenticatedAdminLeaderboardsRoute: AuthenticatedAdminLeaderboardsRoute,
   AuthenticatedAdminLogsRoute: AuthenticatedAdminLogsRoute,
@@ -2616,6 +2659,7 @@ const rootRouteChildren: RootRouteChildren = {
   VerifyEmailRoute: VerifyEmailRoute,
   ApiAiChatRoute: ApiAiChatRoute,
   JournalShareTokenRoute: JournalShareTokenRoute,
+  ApiPublicHooksHistoricalSyncRoute: ApiPublicHooksHistoricalSyncRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
