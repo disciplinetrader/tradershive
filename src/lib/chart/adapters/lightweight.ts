@@ -144,9 +144,16 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
           if (cfg.key === "smc") {
             smcHandled = true;
             const s = smc(candles, (cfg.params.pivot as number) ?? 3);
+            const showSwings = (cfg.params.show_swings ?? 1) !== 0;
+            const showBos = (cfg.params.show_bos ?? 1) !== 0;
+            const showFvg = (cfg.params.show_fvg ?? 1) !== 0;
+            const showOb = (cfg.params.show_ob ?? 1) !== 0;
             const lineBuckets: Record<string, { data: number[]; color: string; dash?: boolean }> = {
-              swing_high: { data: s.swing_high, color: "#22c55e" },
-              swing_low: { data: s.swing_low, color: "#ef4444" },
+              ...(showSwings ? { swing_high: { data: s.swing_high, color: "#22c55e" }, swing_low: { data: s.swing_low, color: "#ef4444" } } : {}),
+              ...(showBos ? { bos: { data: s.bos, color: "#60a5fa", dash: true } } : {}),
+            } as any;
+            // strip original lines that came in via literal below
+            const _drop = ["swing_high","swing_low","bos"];
               bos: { data: s.bos, color: "#60a5fa", dash: true },
             };
             for (const [key, { data, color: c, dash }] of Object.entries(lineBuckets)) {
