@@ -103,8 +103,8 @@ export function DrawdownCard() {
           <AreaChart data={data} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
             <defs>
               <linearGradient id="ddFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="hsl(var(--danger, 0 84% 60%))" stopOpacity={0.6} />
-                <stop offset="100%" stopColor="hsl(var(--danger, 0 84% 60%))" stopOpacity={0} />
+                <stop offset="0%" stopColor="var(--danger)" stopOpacity={0.6} />
+                <stop offset="100%" stopColor="var(--danger)" stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
