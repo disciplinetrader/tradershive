@@ -1,5 +1,4 @@
 import { createFileRoute, Outlet, Link, useRouterState, redirect } from "@tanstack/react-router";
-import { AppShell } from "@/components/layout/app-shell";
 import { AiAvatar } from "@/components/ai/AiAvatar";
 import { cn } from "@/lib/utils";
 import { BookMarked, BrainCog, Gauge, History, MessageSquare, PlaySquare, Settings2, Sparkles } from "lucide-react";

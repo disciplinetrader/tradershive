@@ -1,6 +1,5 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { Activity, Bell, LayoutGrid, Radio, Search, Settings2 } from "lucide-react";
-import { AppShell } from "@/components/layout/app-shell";
 import { cn } from "@/lib/utils";
 
 const TABS = [

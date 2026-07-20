@@ -1,6 +1,5 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { BookMarked, FolderKanban, LayoutGrid, Library, Rocket, Settings2, Share2, Sparkles, Zap } from "lucide-react";
-import { AppShell } from "@/components/layout/app-shell";
 import { cn } from "@/lib/utils";
 
 const TABS = [
