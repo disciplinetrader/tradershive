@@ -283,6 +283,16 @@
   padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
 }
 
+/* Semantic P/L tokens — auto-adapt to light/dark via --success/--danger */
+@utility text-profit { color: var(--success); }
+@utility text-loss { color: var(--danger); }
+@utility bg-profit { background-color: var(--success); }
+@utility bg-loss { background-color: var(--danger); }
+@utility border-profit { border-color: var(--success); }
+@utility border-loss { border-color: var(--danger); }
+@utility bg-profit-soft { background-color: color-mix(in oklab, var(--success) 14%, transparent); }
+@utility bg-loss-soft { background-color: color-mix(in oklab, var(--danger) 14%, transparent); }
+
 /* =========================================================
  * Utilities — Milkinside soft cards, ambient pastel wash,
  *             quiet Fuselab surfaces.
