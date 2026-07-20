@@ -19,11 +19,24 @@ import { ema, sma, bollinger, vwap, atr, donchian, heikinAshi, fibonacci, suppor
 const INDICATOR_COLORS = ["#22d3ee", "#a78bfa", "#f472b6", "#f59e0b", "#34d399", "#f87171", "#60a5fa"];
 
 export const createLightweightAdapter: ChartAdapterFactory = ({ container, settings, onCrosshair }) => {
+  // lightweight-charts' color parser doesn't accept oklch()/color-mix(). Resolve any
+  // CSS color string to a concrete rgb()/rgba() via the browser before passing it in.
+  const resolveColor = (value: string, fallback: string): string => {
+    if (typeof window === "undefined") return fallback;
+    const el = document.createElement("div");
+    el.style.color = "";
+    el.style.color = value;
+    document.body.appendChild(el);
+    const resolved = getComputedStyle(el).color;
+    document.body.removeChild(el);
+    return resolved && resolved !== "" ? resolved : fallback;
+  };
   const cs = typeof window !== "undefined" ? getComputedStyle(document.documentElement) : null;
   const cssVar = (name: string, fallback: string) => (cs?.getPropertyValue(name).trim() || fallback);
-  const textColor = cssVar("--muted-foreground", "#94a3b8");
-  const gridColor = "color-mix(in oklab, " + cssVar("--foreground", "#94a3b8") + " 8%, transparent)";
-  const borderColor = "color-mix(in oklab, " + cssVar("--foreground", "#94a3b8") + " 15%, transparent)";
+  const textColor = resolveColor(cssVar("--muted-foreground", "#94a3b8"), "#94a3b8");
+  const fg = cssVar("--foreground", "#94a3b8");
+  const gridColor = resolveColor(`color-mix(in oklab, ${fg} 8%, transparent)`, "rgba(148,163,184,0.08)");
+  const borderColor = resolveColor(`color-mix(in oklab, ${fg} 15%, transparent)`, "rgba(148,163,184,0.15)");
   const chart = createChart(container, {
     autoSize: true,
     layout: {
