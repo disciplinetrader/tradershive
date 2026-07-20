@@ -39,7 +39,7 @@ export function PerformanceCharts() {
 
   const { weekly, monthly, sessions, rrDistribution, winsLosses } = data;
   const winsLossesData = [
-    { name: "Wins", value: winsLosses.wins, color: "var(--primary)" },
+    { name: "Wins", value: winsLosses.wins, color: "var(--success)" },
     { name: "Losses", value: winsLosses.losses, color: "var(--danger)" },
     { name: "BE", value: winsLosses.be, color: "var(--muted-foreground)" },
   ];
