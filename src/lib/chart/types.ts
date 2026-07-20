@@ -47,7 +47,8 @@ export type DrawingTool =
 export type IndicatorKey =
   | "ema" | "sma" | "vwap" | "volume" | "atr" | "rsi" | "macd"
   | "bollinger" | "adx" | "supertrend" | "ichimoku" | "stochastic"
-  | "donchian" | "cci" | "obv";
+  | "donchian" | "cci" | "obv"
+  | "fib" | "sr" | "sessions" | "smc";
 
 export interface IndicatorConfig {
   id: string;
