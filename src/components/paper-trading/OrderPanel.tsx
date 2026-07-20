@@ -15,6 +15,7 @@ import { openTrade, placeOrder, listTradeTags, createTradeTag } from "@/lib/pape
 import { COMMON_TAGS } from "@/lib/paper-trading/symbols";
 import { lotForRisk, tradeCalculation, validateStops, formatCurrency } from "@/lib/paper-trading/calculations";
 import { useLivePrice } from "@/lib/paper-trading/mock-prices";
+import { onTradeIntent } from "@/lib/trading/trade-intent";
 import { cn } from "@/lib/utils";
 import { usePaper } from "./context";
 
