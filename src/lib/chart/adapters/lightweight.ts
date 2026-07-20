@@ -93,10 +93,43 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
       if (!candles.length) return;
       const closes = candles.map((c) => c.close);
       const active = new Set<string>();
+      const activeSessions = new Set<string>();
       indicators
         .filter((i) => i.pane !== "sub" && i.visible !== false)
         .forEach((cfg, idx) => {
           const color = cfg.color ?? INDICATOR_COLORS[idx % INDICATOR_COLORS.length];
+
+          // Sessions render as colored bars pinned to the bottom of the pane.
+          if (cfg.key === "sessions") {
+            const s = sessions(candles);
+            const buckets: Record<string, number[]> = { asia: s.asia, london: s.london, ny: s.ny };
+            for (const [name, arr] of Object.entries(buckets)) {
+              const id = `${cfg.id}:${name}`;
+              activeSessions.add(id);
+              let hs = sessionSeries.get(id);
+              if (!hs) {
+                hs = chart.addSeries(HistogramSeries, {
+                  priceScaleId: `sess_${name}`,
+                  color: SESSION_COLORS[name],
+                  priceLineVisible: false,
+                  lastValueVisible: false,
+                  base: 0,
+                });
+                chart.priceScale(`sess_${name}`).applyOptions({
+                  scaleMargins: { top: 0.97, bottom: 0 },
+                  visible: false,
+                });
+                sessionSeries.set(id, hs);
+              }
+              hs.setData(
+                candles
+                  .map((c, i) => ({ time: (c.time / 1000) as UTCTimestamp, value: Number.isFinite(arr[i]) ? 1 : 0, color: SESSION_COLORS[name] }))
+                  .filter((p) => p.value > 0) as any,
+              );
+            }
+            return;
+          }
+
           const buckets = computeOverlay(cfg, candles, closes);
           buckets.forEach((series, key) => {
             const id = `${cfg.id}:${key}`;
@@ -114,6 +147,9 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
         });
       for (const [id, s] of overlays) {
         if (!active.has(id)) { chart.removeSeries(s); overlays.delete(id); }
+      }
+      for (const [id, s] of sessionSeries) {
+        if (!activeSessions.has(id)) { chart.removeSeries(s); sessionSeries.delete(id); }
       }
     },
     setVolumeVisible(visible, candles) {
