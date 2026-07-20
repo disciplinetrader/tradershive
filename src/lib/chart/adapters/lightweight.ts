@@ -14,7 +14,7 @@ import {
 import type { Candle } from "@/lib/market-data/types";
 import type { ChartAdapter, ChartAdapterFactory } from "../adapter";
 import type { ChartSettings, ChartType, IndicatorConfig } from "../types";
-import { ema, sma, bollinger, vwap, atr, donchian, heikinAshi, fibonacci, supportResistance, sessions, smc } from "../indicators";
+import { ema, sma, bollinger, vwap, atr, donchian, heikinAshi, fibonacci, supportResistance, sessions, smc, rsi, macd } from "../indicators";
 
 const INDICATOR_COLORS = ["#22d3ee", "#a78bfa", "#f472b6", "#f59e0b", "#34d399", "#f87171", "#60a5fa"];
 
