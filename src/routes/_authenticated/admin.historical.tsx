@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
@@ -548,7 +548,7 @@ function SymbolMetadataDialog({
   const [instrumentType, setInstrumentType] = useState<string>("");
 
   // Sync when a different symbol is opened
-  useMemo(() => {
+  useEffect(() => {
     if (!symbol) return;
     setTickSize(symbol.tick_size?.toString() ?? "");
     setPipValue(symbol.pip_value?.toString() ?? "");
@@ -557,13 +557,16 @@ function SymbolMetadataDialog({
     setExchange(symbol.exchange ?? "");
     setTimezone(symbol.timezone ?? "");
     setInstrumentType(symbol.instrument_type ?? "");
-  }, [symbol?.id]);
+  }, [symbol?.id, symbol]);
 
   return (
     <Dialog open={!!symbol} onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Edit metadata · {symbol?.symbol}</DialogTitle>
+          <DialogDescription>
+            Update instrument specifications used by charts, position sizing and session logic.
+          </DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1"><Label>Tick Size</Label><Input value={tickSize} onChange={(e) => setTickSize(e.target.value)} placeholder="0.01" /></div>
