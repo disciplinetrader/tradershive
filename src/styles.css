@@ -265,6 +265,9 @@
   }
 }
 
+/* Globally hide the Lovable badge */
+#lovable-badge { display: none !important; }
+
 @utility skip-link {
   position: fixed;
   top: 0.75rem;
