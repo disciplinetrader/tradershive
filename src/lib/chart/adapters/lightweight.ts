@@ -43,6 +43,12 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
   let priceSeries: ISeriesApi<any> = buildPriceSeries(chart, settings.chartType);
   let currentType: ChartType = settings.chartType;
   const overlays = new Map<string, ISeriesApi<"Line">>();
+  const sessionSeries = new Map<string, ISeriesApi<"Histogram">>();
+  const SESSION_COLORS: Record<string, string> = {
+    asia: "#a78bfa",   // purple
+    london: "#60a5fa", // blue
+    ny: "#fb923c",     // orange
+  };
   let volSeries: ISeriesApi<"Histogram"> | null = null;
 
   if (onCrosshair) {
