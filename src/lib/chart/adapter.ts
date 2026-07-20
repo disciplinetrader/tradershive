@@ -53,8 +53,45 @@ export interface ChartAdapter {
   fitContent(): void;
   resetPriceScale(): void;
 
+  /**
+   * Add a horizontal price line pinned to the price series (entry, SL, TP,
+   * bookmark levels…). Returns a handle for later removal / mutation.
+   */
+  addPriceLine(opts: PriceLineOptions): PriceLineHandle;
+
+  /**
+   * Replace the "external" marker set attached to the price series — used
+   * for things like Replay bookmarks. Kept separate from the SMC / indicator
+   * marker plugins so callers don't stomp on each other.
+   */
+  setExternalMarkers(markers: ExternalMarker[]): void;
+
   /** Tear down and release GPU/canvas resources. */
   destroy(): void;
 }
+
+export interface PriceLineOptions {
+  price: number;
+  color: string;
+  title?: string;
+  /** 0 solid, 1 dotted, 2 dashed, 3 large dashed, 4 sparse dotted */
+  lineStyle?: number;
+  lineWidth?: 1 | 2 | 3 | 4;
+  axisLabelVisible?: boolean;
+}
+
+export interface PriceLineHandle {
+  remove(): void;
+  applyOptions(opts: Partial<PriceLineOptions>): void;
+}
+
+export interface ExternalMarker {
+  timeMs: number;
+  position: "aboveBar" | "belowBar" | "inBar";
+  shape: "arrowUp" | "arrowDown" | "circle" | "square";
+  color: string;
+  text?: string;
+}
+
 
 export type ChartAdapterFactory = (opts: ChartMountOptions) => ChartAdapter;
