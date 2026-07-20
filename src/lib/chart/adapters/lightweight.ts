@@ -126,12 +126,20 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
     });
   }
 
+  let didInitialFit = false;
   return {
     kind: "lightweight-charts",
     setCandles(candles) {
       applyCandles(priceSeries, currentType, candles);
-      chart.timeScale().fitContent();
+      // Only fit on the very first data push. Later updates must preserve
+      // the user's zoom/pan — otherwise every tick or indicator toggle
+      // snaps the range back to fit-all.
+      if (!didInitialFit && candles.length) {
+        chart.timeScale().fitContent();
+        didInitialFit = true;
+      }
     },
+
     updateLastCandle(candle) {
       try { updateLast(priceSeries, currentType, [candle]); } catch { /* series torn down */ }
     },
