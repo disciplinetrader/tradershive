@@ -49,7 +49,7 @@ export function CompareCard() {
               <div className="mt-1 text-lg font-bold tabular-nums">{r.cur}</div>
               <div className="mt-1 flex items-center justify-between text-[10px]">
                 <span className="text-muted-foreground">Prev {r.prev}</span>
-                <span className={cn("inline-flex items-center gap-0.5", r.delta > 0 ? "text-emerald-400" : r.delta < 0 ? "text-rose-400" : "text-muted-foreground")}>
+                <span className={cn("inline-flex items-center gap-0.5", r.delta > 0 ? "text-success" : r.delta < 0 ? "text-danger" : "text-muted-foreground")}>
                   {r.delta > 0 ? <ArrowUp className="h-3 w-3" /> : r.delta < 0 ? <ArrowDown className="h-3 w-3" /> : null}
                   {r.fmt(r.delta)}
                 </span>

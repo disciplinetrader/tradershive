@@ -58,7 +58,7 @@ export function MarketSymbolSearch({ onSelect, favorites, onToggleFavorite }: {
               </button>
               {onToggleFavorite && (
                 <Button size="icon" variant="ghost" onClick={() => onToggleFavorite(s.symbol)} aria-label={fav ? "Unfavorite" : "Favorite"}>
-                  <Star className={cn("h-4 w-4", fav && "fill-amber-400 text-amber-400")} />
+                  <Star className={cn("h-4 w-4", fav && "fill-warning text-warning")} />
                 </Button>
               )}
             </li>

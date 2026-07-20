@@ -121,7 +121,7 @@ export function NotesEditor({
             className={cn(
               "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px]",
               status === "saving" && "bg-primary/10 text-primary",
-              status === "saved" && "bg-emerald-500/10 text-emerald-400",
+              status === "saved" && "bg-success/10 text-success",
               status === "idle" && "bg-muted/40 text-muted-foreground",
             )}
             aria-live="polite"

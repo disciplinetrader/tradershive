@@ -106,11 +106,11 @@ export function ReportsView() {
                 <TableRow key={r.period}>
                   <TableCell className="font-medium">{r.period}</TableCell>
                   <TableCell className="text-right tabular-nums">{r.trades}</TableCell>
-                  <TableCell className="text-right tabular-nums text-emerald-400">{r.wins}</TableCell>
-                  <TableCell className="text-right tabular-nums text-rose-400">{r.losses}</TableCell>
+                  <TableCell className="text-right tabular-nums text-success">{r.wins}</TableCell>
+                  <TableCell className="text-right tabular-nums text-danger">{r.losses}</TableCell>
                   <TableCell className="text-right tabular-nums">{fmtPercent(r.winRate)}</TableCell>
                   <TableCell className="text-right tabular-nums">{fmtNumber(r.avgRR)}R</TableCell>
-                  <TableCell className={`text-right tabular-nums font-semibold ${r.netProfit >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{fmtCurrency(r.netProfit)}</TableCell>
+                  <TableCell className={`text-right tabular-nums font-semibold ${r.netProfit >= 0 ? "text-success" : "text-danger"}`}>{fmtCurrency(r.netProfit)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

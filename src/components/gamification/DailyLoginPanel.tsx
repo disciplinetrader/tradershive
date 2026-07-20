@@ -73,7 +73,7 @@ export function DailyLoginPanel() {
                 transition={{ delay: i * 0.03 }}
                 className={cn(
                   "relative rounded-xl border p-2 text-center",
-                  done ? "border-emerald-500/40 bg-emerald-500/10" :
+                  done ? "border-success/40 bg-success/10" :
                   isNext ? "border-primary/50 bg-primary/10 shadow-elegant" :
                   "border-border/40 bg-surface/30",
                   reward.bonus && "ring-1 ring-warning/40"

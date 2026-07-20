@@ -70,7 +70,7 @@ function AdminAnnouncements() {
                 <div className="mt-2 flex items-center justify-between text-[10px]">
                   <div className="flex items-center gap-2">
                     <span className={"rounded-full px-2 py-0.5 " + severityClass(a.severity)}>{a.severity}</span>
-                    {a.published ? <Badge className="bg-emerald-500/10 text-emerald-400">Published</Badge> : <Badge variant="outline">Draft</Badge>}
+                    {a.published ? <Badge className="bg-success/10 text-success">Published</Badge> : <Badge variant="outline">Draft</Badge>}
                   </div>
                   <div className="flex gap-1">
                     <EditDialog trigger={<Button size="sm" variant="outline">Edit</Button>} initial={a} onSave={up.mutate} />
@@ -86,9 +86,9 @@ function AdminAnnouncements() {
 
 function severityClass(sev: string) {
   switch (sev) {
-    case "critical": return "bg-rose-500/10 text-rose-400";
-    case "warning": return "bg-amber-500/10 text-amber-400";
-    case "success": return "bg-emerald-500/10 text-emerald-400";
+    case "critical": return "bg-danger/10 text-danger";
+    case "warning": return "bg-warning/10 text-warning";
+    case "success": return "bg-success/10 text-success";
     default: return "bg-primary/10 text-primary";
   }
 }

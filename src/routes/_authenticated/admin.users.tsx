@@ -123,9 +123,9 @@ function AdminUsers() {
                         ) : u.moderation?.status === "banned" ? (
                           <Badge variant="destructive" className="text-[10px]">Banned</Badge>
                         ) : u.moderation?.status === "suspended" ? (
-                          <Badge className="bg-amber-500/10 text-amber-400 text-[10px]">Suspended</Badge>
+                          <Badge className="bg-warning/10 text-warning text-[10px]">Suspended</Badge>
                         ) : (
-                          <Badge className="bg-emerald-500/10 text-emerald-400 text-[10px]">Active</Badge>
+                          <Badge className="bg-success/10 text-success text-[10px]">Active</Badge>
                         )}
                       </td>
                       <td className="p-3 text-xs text-muted-foreground">

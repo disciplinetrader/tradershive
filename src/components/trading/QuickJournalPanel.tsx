@@ -51,10 +51,10 @@ export function QuickJournalPanel({ symbol }: { symbol?: string }) {
             {rows.map((t) => (
               <tr key={t.id} className="border-t border-border/40">
                 <td className="py-1.5 font-medium">{t.symbol}</td>
-                <td className={t.direction === "long" ? "text-emerald-400" : "text-rose-400"}>{t.direction}</td>
+                <td className={t.direction === "long" ? "text-success" : "text-danger"}>{t.direction}</td>
                 <td className="text-right tabular-nums">{Number(t.entry_price).toFixed(4)}</td>
                 <td className="text-right tabular-nums">{t.exit_price != null ? Number(t.exit_price).toFixed(4) : "—"}</td>
-                <td className={`text-right tabular-nums ${Number(t.pnl) >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                <td className={`text-right tabular-nums ${Number(t.pnl) >= 0 ? "text-success" : "text-danger"}`}>
                   {t.pnl != null ? formatCurrency(Number(t.pnl)) : "—"}
                 </td>
                 <td className="text-right text-muted-foreground">{t.closed_at ? new Date(t.closed_at).toLocaleString() : "—"}</td>

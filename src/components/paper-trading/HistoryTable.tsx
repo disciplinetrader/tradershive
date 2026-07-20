@@ -113,16 +113,16 @@ export function HistoryTable() {
                     <TableCell className="font-semibold">{r.symbol}</TableCell>
                     <TableCell>
                       <span className={cn("rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase",
-                        r.direction === "long" ? "bg-emerald-500/15 text-emerald-300" : "bg-rose-500/15 text-rose-300")}>
+                        r.direction === "long" ? "bg-success/15 text-success" : "bg-danger/15 text-danger")}>
                         {r.direction}
                       </span>
                     </TableCell>
                     <TableCell className="text-right font-mono">{formatNumber(Number(r.entry_price), sym?.decimals ?? 2)}</TableCell>
                     <TableCell className="text-right font-mono">{r.exit_price != null ? formatNumber(Number(r.exit_price), sym?.decimals ?? 2) : "—"}</TableCell>
-                    <TableCell className={cn("text-right font-mono", (r.rr_realized ?? 0) >= 0 ? "text-emerald-400" : "text-rose-400")}>
+                    <TableCell className={cn("text-right font-mono", (r.rr_realized ?? 0) >= 0 ? "text-success" : "text-danger")}>
                       {r.rr_realized != null ? `${Number(r.rr_realized).toFixed(2)}R` : "—"}
                     </TableCell>
-                    <TableCell className={cn("text-right font-mono font-semibold", pnl >= 0 ? "text-emerald-400" : "text-rose-400")}>
+                    <TableCell className={cn("text-right font-mono font-semibold", pnl >= 0 ? "text-success" : "text-danger")}>
                       {pnl >= 0 ? "+" : ""}{formatCurrency(pnl, account?.currency)}
                     </TableCell>
                     <TableCell className="text-right">

@@ -70,8 +70,8 @@ export function SharedContentCard({ share }: { share: any }) {
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{st.label}</div>
                 <div className={cn(
                   "mt-0.5 text-sm font-semibold tabular-nums",
-                  st.tone === "up" && "text-emerald-500",
-                  st.tone === "down" && "text-rose-500",
+                  st.tone === "up" && "text-success",
+                  st.tone === "down" && "text-danger",
                 )}>{st.value}</div>
               </div>
             ))}

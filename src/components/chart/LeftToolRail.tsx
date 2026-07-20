@@ -47,7 +47,7 @@ export function LeftToolRail({ active, onChange }: Props) {
       <button title="Magnet" className="grid h-8 w-8 place-items-center rounded text-muted-foreground hover:bg-background/60 hover:text-foreground"><Magnet className="h-4 w-4" /></button>
       <button title="Lock all drawings" className="grid h-8 w-8 place-items-center rounded text-muted-foreground hover:bg-background/60 hover:text-foreground"><Lock className="h-4 w-4" /></button>
       <button title="Hide/erase" className="grid h-8 w-8 place-items-center rounded text-muted-foreground hover:bg-background/60 hover:text-foreground"><Eraser className="h-4 w-4" /></button>
-      <button title="Remove all" className="mt-auto grid h-8 w-8 place-items-center rounded text-muted-foreground hover:bg-background/60 hover:text-rose-400"><Trash2 className="h-4 w-4" /></button>
+      <button title="Remove all" className="mt-auto grid h-8 w-8 place-items-center rounded text-muted-foreground hover:bg-background/60 hover:text-danger"><Trash2 className="h-4 w-4" /></button>
     </aside>
   );
 }

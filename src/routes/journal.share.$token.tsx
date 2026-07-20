@@ -72,7 +72,7 @@ function SharedTradePage() {
         {loading ? (
           <GlassCard className="p-8 text-center text-sm text-muted-foreground">Loading…</GlassCard>
         ) : error ? (
-          <GlassCard className="p-8 text-center text-sm text-rose-300">
+          <GlassCard className="p-8 text-center text-sm text-danger">
             <Lock className="mx-auto mb-3 h-5 w-5" />
             {error}
           </GlassCard>
@@ -100,7 +100,7 @@ function SharedEntry({ entry, urls }: { entry: JournalEntry; urls: Record<string
             </p>
           </div>
           <div className="text-right">
-            <p className={cn("font-mono text-xl font-bold", pnl > 0 && "text-emerald-400", pnl < 0 && "text-rose-400")}>
+            <p className={cn("font-mono text-xl font-bold", pnl > 0 && "text-success", pnl < 0 && "text-danger")}>
               {entry.pnl != null ? formatCurrency(pnl) : "—"}
             </p>
             {entry.rr != null ? <p className="text-xs text-muted-foreground">{formatNumber(Number(entry.rr), 2)}R</p> : null}
@@ -159,7 +159,7 @@ function SharedEntry({ entry, urls }: { entry: JournalEntry; urls: Record<string
               <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Mistakes</h3>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {entry.mistakes.map((m) => (
-                  <span key={m} className="rounded-full border border-rose-400/40 bg-rose-500/10 px-2 py-0.5 text-xs text-rose-300">{m.replace(/_/g, " ")}</span>
+                  <span key={m} className="rounded-full border border-danger/40 bg-danger/10 px-2 py-0.5 text-xs text-danger">{m.replace(/_/g, " ")}</span>
                 ))}
               </div>
             </div>

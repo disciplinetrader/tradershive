@@ -61,7 +61,7 @@ export function AlertsDialog({ open, onOpenChange, symbol }: Props) {
           {alerts.length ? alerts.map((a) => (
             <div key={a.id} className="flex items-center justify-between rounded px-2 py-1.5 text-sm hover:bg-background/50">
               <span>{a.symbol} · {a.alert_type} {a.condition} {a.target_price ?? ""}</span>
-              <button onClick={() => remove(a.id)} className="text-xs text-rose-400 hover:underline">Delete</button>
+              <button onClick={() => remove(a.id)} className="text-xs text-danger hover:underline">Delete</button>
             </div>
           )) : <div className="p-4 text-center text-xs text-muted-foreground">No alerts yet</div>}
         </div>

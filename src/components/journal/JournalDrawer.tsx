@@ -175,8 +175,8 @@ export function JournalDrawer({
               <p
                 className={cn(
                   "text-right font-mono text-lg font-bold tabular-nums",
-                  Number(entry.pnl ?? 0) > 0 && "text-emerald-400",
-                  Number(entry.pnl ?? 0) < 0 && "text-rose-400",
+                  Number(entry.pnl ?? 0) > 0 && "text-success",
+                  Number(entry.pnl ?? 0) < 0 && "text-danger",
                 )}
               >
                 {entry.pnl != null ? formatCurrency(Number(entry.pnl)) : "—"}
@@ -188,7 +188,7 @@ export function JournalDrawer({
                 aria-label="Toggle favorite"
                 onClick={() => updateMutation.mutate({ is_favorite: !entry.is_favorite })}
               >
-                <Star className={cn("h-4 w-4", entry.is_favorite && "fill-amber-400 text-amber-400")} />
+                <Star className={cn("h-4 w-4", entry.is_favorite && "fill-warning text-warning")} />
               </Button>
               <Select
                 value={entry.status}
@@ -415,7 +415,7 @@ function OverviewSection({
           </div>
           <div className="flex items-center gap-2">
             {entry.is_public ? (
-              <Badge className="border border-emerald-400/40 bg-emerald-500/10 text-emerald-400">
+              <Badge className="border border-success/40 bg-success/10 text-success">
                 <Globe className="mr-1 h-3 w-3" /> Public
               </Badge>
             ) : (
@@ -436,7 +436,7 @@ function OverviewSection({
               aria-label="Copy link"
               onClick={() => navigator.clipboard.writeText(shareUrl)}
             >
-              {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+              {copied ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
             </Button>
           </div>
         ) : null}
@@ -623,7 +623,7 @@ function PsychologySection({
               <label htmlFor={`chk-${c.id}`} className={cn("flex-1 text-sm", c.checked && "line-through text-muted-foreground")}>
                 {c.label}
               </label>
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-rose-400" onClick={() => removeChecklistItem(c.id)} aria-label="Remove">
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-danger" onClick={() => removeChecklistItem(c.id)} aria-label="Remove">
                 <X className="h-3.5 w-3.5" />
               </Button>
             </li>
@@ -850,7 +850,7 @@ function AttachmentRow({ a, onRemove }: { a: JournalAttachment; onRemove: () => 
           <Download className="h-4 w-4" />
         </a>
       ) : null}
-      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-rose-400" onClick={onRemove} aria-label="Remove attachment">
+      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-danger" onClick={onRemove} aria-label="Remove attachment">
         <Trash2 className="h-4 w-4" />
       </Button>
     </li>

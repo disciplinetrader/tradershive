@@ -116,7 +116,7 @@ export function BattleChat({ battleId, canPost, isHost }: { battleId: string; ca
                   ))}
                   {(mine || isHost) && (
                     <button onClick={async () => { try { await fnDel({ data: { messageId: m.id } }); } catch (e: any) { toast.error(e?.message); } }}
-                      className="rounded p-1 hover:bg-background/60"><Trash2 className="h-3 w-3 text-rose-500" /></button>
+                      className="rounded p-1 hover:bg-background/60"><Trash2 className="h-3 w-3 text-danger" /></button>
                   )}
                 </div>
               </div>

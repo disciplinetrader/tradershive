@@ -81,7 +81,7 @@ export function ShareToCommunityDialog({
         {q.isLoading ? (
           <div className="space-y-3"><Skeleton className="h-40 w-full rounded-xl" /><Skeleton className="h-24 w-full rounded-xl" /></div>
         ) : q.error ? (
-          <div className="rounded-lg border border-rose-500/40 bg-rose-500/10 p-3 text-sm text-rose-400">
+          <div className="rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-danger">
             {(q.error as any)?.message ?? "Failed to load preview"}
           </div>
         ) : (

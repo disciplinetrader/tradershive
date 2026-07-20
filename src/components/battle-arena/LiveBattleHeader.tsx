@@ -53,19 +53,19 @@ export function LiveBattleHeader({ battle, stats, profiles, participantCount }: 
 
         <div className="flex flex-col items-end gap-2">
           {leader && (
-            <div className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-sm">
-              <Crown className="h-4 w-4 text-amber-500" />
+            <div className="flex items-center gap-2 rounded-xl border border-warning/30 bg-warning/10 px-3 py-1.5 text-sm">
+              <Crown className="h-4 w-4 text-warning" />
               <Avatar className="h-6 w-6"><AvatarImage src={leader.avatar_url ?? undefined} /><AvatarFallback>{(leader.display_name ?? leader.username ?? "?").slice(0, 1)}</AvatarFallback></Avatar>
               <div className="leading-tight">
                 <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Leader</div>
                 <div className="font-semibold">{leader.display_name ?? leader.username}</div>
               </div>
-              <span className="ml-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-bold tabular-nums text-emerald-600">
+              <span className="ml-1 rounded-full bg-success/15 px-2 py-0.5 text-xs font-bold tabular-nums text-success">
                 {Number(stats?.leader_pnl ?? 0).toLocaleString(undefined, { style: "currency", currency: "USD" })}
               </span>
             </div>
           )}
-          <div className={cn("flex items-center gap-1.5 rounded-lg bg-background/60 px-3 py-1 font-mono tabular-nums", isLive && "text-emerald-600")}>
+          <div className={cn("flex items-center gap-1.5 rounded-lg bg-background/60 px-3 py-1 font-mono tabular-nums", isLive && "text-success")}>
             <Timer className="h-3.5 w-3.5" />
             <span className="text-sm font-bold">{fmtRemaining(remainingMs)}</span>
           </div>
@@ -75,7 +75,7 @@ export function LiveBattleHeader({ battle, stats, profiles, participantCount }: 
       {isLive && (
         <div className="mt-3">
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-background/60">
-            <div className="h-full rounded-full bg-gradient-to-r from-primary via-emerald-500 to-amber-500 transition-all"
+            <div className="h-full rounded-full bg-gradient-to-r from-primary via-success to-warning transition-all"
                  style={{ width: `${pct}%` }} />
           </div>
           <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">

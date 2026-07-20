@@ -75,13 +75,13 @@ function StatsTable({ title, subtitle, rows, keyLabel = "Group", transform }: { 
               <TableRow key={r.key}>
                 <TableCell className="font-medium">{transform ? transform(r.key) : r.key}</TableCell>
                 <TableCell className="text-right tabular-nums">{r.trades}</TableCell>
-                <TableCell className="text-right tabular-nums text-emerald-400">{r.wins}</TableCell>
-                <TableCell className="text-right tabular-nums text-rose-400">{r.losses}</TableCell>
+                <TableCell className="text-right tabular-nums text-success">{r.wins}</TableCell>
+                <TableCell className="text-right tabular-nums text-danger">{r.losses}</TableCell>
                 <TableCell className="text-right tabular-nums">{fmtPercent(r.winRate)}</TableCell>
-                <TableCell className={cn("text-right tabular-nums font-semibold", r.netProfit >= 0 ? "text-emerald-400" : "text-rose-400")}>{fmtCurrency(r.netProfit)}</TableCell>
+                <TableCell className={cn("text-right tabular-nums font-semibold", r.netProfit >= 0 ? "text-success" : "text-danger")}>{fmtCurrency(r.netProfit)}</TableCell>
                 <TableCell className="text-right tabular-nums">{fmtNumber(r.avgRR)}R</TableCell>
-                <TableCell className="text-right tabular-nums text-emerald-400">{fmtCurrency(r.bestTrade)}</TableCell>
-                <TableCell className="text-right tabular-nums text-rose-400">{fmtCurrency(r.worstTrade)}</TableCell>
+                <TableCell className="text-right tabular-nums text-success">{fmtCurrency(r.bestTrade)}</TableCell>
+                <TableCell className="text-right tabular-nums text-danger">{fmtCurrency(r.worstTrade)}</TableCell>
               </TableRow>
             ))}
           </TableBody>

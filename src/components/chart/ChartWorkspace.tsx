@@ -210,7 +210,7 @@ export function ChartWorkspace({ fullscreen, initial }: Props) {
             <aside className="flex min-h-0 w-[260px] shrink-0 flex-col border-l border-border/60 bg-surface">
               <div className="flex h-9 items-center gap-1 border-b border-border/60 px-2 text-[11px]">
                 <RightTabButton active={rightTab === "watchlist"} onClick={() => setRightTab("watchlist")}>
-                  <span className="mr-1 inline-block h-2 w-2 rounded-full bg-rose-500" />
+                  <span className="mr-1 inline-block h-2 w-2 rounded-full bg-danger" />
                   Red list
                   <ChevronDown className="ml-1 h-3 w-3 opacity-60" />
                 </RightTabButton>

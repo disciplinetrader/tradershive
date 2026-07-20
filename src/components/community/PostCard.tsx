@@ -82,7 +82,7 @@ export function PostCard({ post }: { post: any }) {
               </span>
             ) : null}
             {post.direction ? (
-              <span className={cn("inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase", post.direction === "long" ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500")}>
+              <span className={cn("inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase", post.direction === "long" ? "bg-success/10 text-success" : "bg-danger/10 text-danger")}>
                 {post.direction === "long" ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
                 {post.direction}
               </span>
@@ -133,14 +133,14 @@ export function PostCard({ post }: { post: any }) {
         <ReactionButton
           active={liked}
           onClick={() => mut.mutate({ kind: "like" })}
-          icon={<Heart className={cn("h-4 w-4", liked && "fill-current text-rose-500")} />}
+          icon={<Heart className={cn("h-4 w-4", liked && "fill-current text-danger")} />}
           count={post.like_count}
           label="Like"
         />
         <ReactionButton
           active={helpful}
           onClick={() => mut.mutate({ kind: "helpful" })}
-          icon={<Lightbulb className={cn("h-4 w-4", helpful && "fill-current text-amber-500")} />}
+          icon={<Lightbulb className={cn("h-4 w-4", helpful && "fill-current text-warning")} />}
           count={post.helpful_count}
           label="Helpful"
         />
@@ -178,7 +178,7 @@ export function PostCard({ post }: { post: any }) {
       </div>
 
       {post.is_featured ? (
-        <div className="mt-3 inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-500">
+        <div className="mt-3 inline-flex items-center gap-1 rounded-md bg-warning/10 px-2 py-0.5 text-[10px] font-semibold text-warning">
           <Sparkles className="h-3 w-3" /> Featured
         </div>
       ) : null}

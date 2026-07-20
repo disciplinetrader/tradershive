@@ -52,7 +52,7 @@ function Page() {
             <ArrowLeft className="mr-1.5 h-4 w-4" /> Back to feed
           </Button>
           {isAuthor ? (
-            <Button size="sm" variant="ghost" className="text-rose-500" onClick={async () => {
+            <Button size="sm" variant="ghost" className="text-danger" onClick={async () => {
               if (!confirm("Delete this post?")) return;
               await del({ data: { id } });
               toast.success("Post deleted");

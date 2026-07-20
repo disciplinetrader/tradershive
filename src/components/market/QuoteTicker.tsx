@@ -22,11 +22,11 @@ export function QuoteTicker({ symbol, className }: { symbol: string; className?:
   const up = (quote.changePct ?? 0) >= 0;
   return (
     <div className={cn("inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-mono tabular-nums transition-colors",
-      flash === "up" && "bg-emerald-500/10 text-emerald-300",
-      flash === "down" && "bg-rose-500/10 text-rose-300",
+      flash === "up" && "bg-success/10 text-success",
+      flash === "down" && "bg-danger/10 text-danger",
       !flash && "text-foreground/90", className)}>
       <span>{quote.last.toLocaleString(undefined, { maximumFractionDigits: 5 })}</span>
-      <span className={cn("inline-flex items-center gap-0.5 text-[10px]", up ? "text-emerald-400" : "text-rose-400")}>
+      <span className={cn("inline-flex items-center gap-0.5 text-[10px]", up ? "text-success" : "text-danger")}>
         {up ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
         {Math.abs(quote.changePct ?? 0).toFixed(2)}%
       </span>

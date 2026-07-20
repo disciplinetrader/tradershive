@@ -63,7 +63,7 @@ export function InsightsPanel() {
       <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
         {items.map((it, i) => (
           <div key={i} className="flex items-center gap-3 rounded-xl border border-border/40 bg-background/40 p-3">
-            <div className={`grid h-8 w-8 place-items-center rounded-xl ${it.tone === "up" ? "bg-emerald-500/10 text-emerald-400" : it.tone === "down" ? "bg-rose-500/10 text-rose-400" : "bg-muted/40 text-muted-foreground"}`}>
+            <div className={`grid h-8 w-8 place-items-center rounded-xl ${it.tone === "up" ? "bg-success/10 text-success" : it.tone === "down" ? "bg-danger/10 text-danger" : "bg-muted/40 text-muted-foreground"}`}>
               <it.icon className="h-4 w-4" />
             </div>
             <div className="min-w-0">

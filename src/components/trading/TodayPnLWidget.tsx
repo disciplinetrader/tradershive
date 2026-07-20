@@ -73,7 +73,7 @@ export function TodayPnLWidget({ dailyTargetPct = 5, dailyLossLimitPct = 5 }: Pr
       <Metric label="Trades" value={String(stats.count)} />
       <div className="ml-auto flex items-center gap-3">
         <Progress icon={<Target className="h-3 w-3 text-primary" />} label="Target" pct={targetPct} tone="primary" />
-        <Progress icon={<ShieldAlert className="h-3 w-3 text-rose-400" />} label="Loss" pct={lossPct} tone="rose" />
+        <Progress icon={<ShieldAlert className="h-3 w-3 text-danger" />} label="Loss" pct={lossPct} tone="rose" />
       </div>
     </div>
   );
@@ -87,8 +87,8 @@ function Metric({ icon, label, value, tone, strong }: { icon?: React.ReactNode; 
       <span className={cn(
         "font-mono tabular-nums",
         strong ? "text-sm font-bold" : "font-semibold",
-        tone === "green" && "text-emerald-500",
-        tone === "red" && "text-rose-500",
+        tone === "green" && "text-success",
+        tone === "red" && "text-danger",
       )}>{value}</span>
     </div>
   );
@@ -100,7 +100,7 @@ function Progress({ icon, label, pct, tone }: { icon: React.ReactNode; label: st
       {icon}
       <span className="text-[10px] uppercase text-muted-foreground">{label}</span>
       <div className="relative h-1.5 w-20 overflow-hidden rounded-full bg-muted">
-        <div className={cn("absolute inset-y-0 left-0", tone === "primary" ? "bg-primary" : "bg-rose-500")} style={{ width: `${pct}%` }} />
+        <div className={cn("absolute inset-y-0 left-0", tone === "primary" ? "bg-primary" : "bg-danger")} style={{ width: `${pct}%` }} />
       </div>
       <span className="w-8 text-right font-mono text-[10px] font-semibold">{pct.toFixed(0)}%</span>
     </div>

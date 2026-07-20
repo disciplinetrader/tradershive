@@ -60,16 +60,18 @@ export function CalendarHeatmap() {
           const entry = map.get(monthKey(c));
           const pnl = entry?.pnl ?? 0;
           const intensity = Math.min(1, Math.abs(pnl) / maxAbs);
-          const bg = !entry
-            ? "bg-muted/20"
-            : pnl > 0
-              ? `bg-emerald-500/[${Math.max(0.15, intensity).toFixed(2)}]`
-              : pnl < 0
-                ? `bg-rose-500/[${Math.max(0.15, intensity).toFixed(2)}]`
-                : "bg-muted/30";
+          const alpha = 0.12 + intensity * 0.55;
           const inline = entry
-            ? { backgroundColor: pnl > 0 ? `rgba(16, 185, 129, ${0.15 + intensity * 0.55})` : pnl < 0 ? `rgba(244, 63, 94, ${0.15 + intensity * 0.55})` : undefined }
+            ? {
+                backgroundColor:
+                  pnl > 0
+                    ? `color-mix(in oklab, var(--success) ${Math.round(alpha * 100)}%, transparent)`
+                    : pnl < 0
+                      ? `color-mix(in oklab, var(--danger) ${Math.round(alpha * 100)}%, transparent)`
+                      : undefined,
+              }
             : {};
+
           return (
             <Popover key={i}>
               <PopoverTrigger asChild>
@@ -77,13 +79,13 @@ export function CalendarHeatmap() {
                   style={inline}
                   className={cn(
                     "aspect-square rounded-lg text-[10px] font-medium relative group border border-border/30 transition hover:scale-105",
-                    !entry && bg,
+                    !entry && "bg-muted/20",
                     entry && pnl === 0 && "bg-muted/30",
                   )}
                 >
                   <span className="absolute top-1 left-1 text-muted-foreground">{c.getDate()}</span>
                   {entry ? (
-                    <span className={cn("absolute bottom-1 right-1 tabular-nums text-[9px]", pnl > 0 ? "text-emerald-200" : pnl < 0 ? "text-rose-200" : "")}>
+                    <span className={cn("absolute bottom-1 right-1 tabular-nums text-[9px]", pnl > 0 ? "text-success" : pnl < 0 ? "text-danger" : "")}>
                       {pnl >= 0 ? "+" : ""}{Math.round(pnl)}
                     </span>
                   ) : null}
@@ -108,8 +110,8 @@ export function CalendarHeatmap() {
       </div>
 
       <div className="mt-4 flex items-center gap-3 text-[10px] text-muted-foreground">
-        <span className="inline-flex items-center gap-1"><span className="h-3 w-3 rounded bg-emerald-500/60" /> Winning day</span>
-        <span className="inline-flex items-center gap-1"><span className="h-3 w-3 rounded bg-rose-500/60" /> Losing day</span>
+        <span className="inline-flex items-center gap-1"><span className="h-3 w-3 rounded bg-success/60" /> Winning day</span>
+        <span className="inline-flex items-center gap-1"><span className="h-3 w-3 rounded bg-danger/60" /> Losing day</span>
         <span className="inline-flex items-center gap-1"><span className="h-3 w-3 rounded bg-muted/40 border border-border/40" /> No trades</span>
       </div>
     </GlassCard>
@@ -120,7 +122,7 @@ function Row({ k, v, tone }: { k: string; v: string; tone?: "up" | "down" }) {
   return (
     <div className="flex justify-between">
       <span className="text-muted-foreground">{k}</span>
-      <span className={cn("font-semibold tabular-nums", tone === "up" && "text-emerald-400", tone === "down" && "text-rose-400")}>{v}</span>
+      <span className={cn("font-semibold tabular-nums", tone === "up" && "text-success", tone === "down" && "text-danger")}>{v}</span>
     </div>
   );
 }

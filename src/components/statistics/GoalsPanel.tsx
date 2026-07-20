@@ -77,7 +77,7 @@ export function GoalsPanel() {
                   <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Delete goal" onClick={() => del.mutate(g.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
                 </div>
                 <div className="mt-3 flex items-baseline justify-between text-sm">
-                  <span className={cn("font-bold tabular-nums", tone === "up" && "text-emerald-400", tone === "down" && "text-rose-400")}>{current}</span>
+                  <span className={cn("font-bold tabular-nums", tone === "up" && "text-success", tone === "down" && "text-danger")}>{current}</span>
                   <span className="text-xs text-muted-foreground">of {targetDisplay}</span>
                 </div>
                 <Progress value={pct} className="mt-2 h-2" />

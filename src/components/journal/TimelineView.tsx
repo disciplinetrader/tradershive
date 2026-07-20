@@ -52,15 +52,15 @@ export function TimelineView({
                   <span
                     className={cn(
                       "absolute -left-[26px] top-3 grid h-4 w-4 place-items-center rounded-full border",
-                      tone === "up" && "border-emerald-400/60 bg-emerald-500/20",
-                      tone === "down" && "border-rose-400/60 bg-rose-500/20",
+                      tone === "up" && "border-success/60 bg-success/20",
+                      tone === "down" && "border-danger/60 bg-danger/20",
                       tone === "flat" && "border-border bg-surface",
                     )}
                   >
                     {tone === "up" ? (
-                      <ArrowUpRight className="h-2.5 w-2.5 text-emerald-400" />
+                      <ArrowUpRight className="h-2.5 w-2.5 text-success" />
                     ) : tone === "down" ? (
-                      <ArrowDownRight className="h-2.5 w-2.5 text-rose-400" />
+                      <ArrowDownRight className="h-2.5 w-2.5 text-danger" />
                     ) : null}
                   </span>
                   <GlassCard
@@ -100,8 +100,8 @@ export function TimelineView({
                     <p
                       className={cn(
                         "shrink-0 text-right font-mono text-sm font-semibold tabular-nums",
-                        tone === "up" && "text-emerald-400",
-                        tone === "down" && "text-rose-400",
+                        tone === "up" && "text-success",
+                        tone === "down" && "text-danger",
                       )}
                     >
                       {e.pnl != null ? formatCurrency(Number(e.pnl)) : "—"}

@@ -57,8 +57,8 @@ export function TradePanel() {
         </div>
       </div>
       <div className="grid grid-cols-2 gap-2">
-        <Button disabled={busy} onClick={() => submit("long")} className="bg-emerald-500 hover:bg-emerald-600">BUY / LONG</Button>
-        <Button disabled={busy} onClick={() => submit("short")} className="bg-rose-500 hover:bg-rose-600">SELL / SHORT</Button>
+        <Button disabled={busy} onClick={() => submit("long")} className="bg-success hover:bg-success">BUY / LONG</Button>
+        <Button disabled={busy} onClick={() => submit("short")} className="bg-danger hover:bg-danger">SELL / SHORT</Button>
       </div>
 
       <div className="pt-3 border-t border-border/40 space-y-2">
@@ -77,12 +77,12 @@ export function TradePanel() {
               >
                 <div>
                   <div className="font-medium">
-                    <span className={cn("mr-1", t.direction === "long" ? "text-emerald-400" : "text-rose-400")}>
+                    <span className={cn("mr-1", t.direction === "long" ? "text-success" : "text-danger")}>
                       {t.direction === "long" ? "▲" : "▼"}
                     </span>
                     {t.lot_size} @ {t.entry_price.toFixed(t.entry_price < 10 ? 5 : 2)}
                   </div>
-                  <div className={cn("tabular-nums", upnl >= 0 ? "text-emerald-400" : "text-rose-400")}>
+                  <div className={cn("tabular-nums", upnl >= 0 ? "text-success" : "text-danger")}>
                     {upnl >= 0 ? "+" : ""}{upnl.toFixed(2)}
                   </div>
                 </div>

@@ -180,7 +180,7 @@ export function TradePlanner({
           >
             <Crosshair className="h-3.5 w-3.5 text-primary" />
             Click the chart to place Entry —
-            <button onClick={flipSide} className={cn("rounded px-2 py-0.5 text-[11px] font-bold uppercase", side === "long" ? "bg-emerald-500/20 text-emerald-500" : "bg-rose-500/20 text-rose-500")}>
+            <button onClick={flipSide} className={cn("rounded px-2 py-0.5 text-[11px] font-bold uppercase", side === "long" ? "bg-success/20 text-success" : "bg-danger/20 text-danger")}>
               {side}
             </button>
             <button onClick={(e) => { e.stopPropagation(); onClose(); }} className="ml-1 text-muted-foreground hover:text-foreground">
@@ -195,12 +195,12 @@ export function TradePlanner({
         <>
           {/* Reward zone (entry -> tp) */}
           <div
-            className="absolute left-0 right-16 bg-emerald-500/10"
+            className="absolute left-0 right-16 bg-success/10"
             style={{ top: Math.min(entryY, tpY), height: Math.abs(tpY - entryY) }}
           />
           {/* Risk zone (entry -> sl) */}
           <div
-            className="absolute left-0 right-16 bg-rose-500/10"
+            className="absolute left-0 right-16 bg-danger/10"
             style={{ top: Math.min(entryY, slY), height: Math.abs(slY - entryY) }}
           />
           {(["entry", "sl", "tp"] as Handle[]).map((h) => {
@@ -242,7 +242,7 @@ export function TradePlanner({
             </button>
           </div>
           <div className="mb-2 flex items-center gap-2">
-            <button onClick={flipSide} className={cn("flex-1 rounded px-2 py-1 text-[11px] font-bold uppercase", plan.side === "long" ? "bg-emerald-500/20 text-emerald-500" : "bg-rose-500/20 text-rose-500")}>
+            <button onClick={flipSide} className={cn("flex-1 rounded px-2 py-1 text-[11px] font-bold uppercase", plan.side === "long" ? "bg-success/20 text-success" : "bg-danger/20 text-danger")}>
               {plan.side}
             </button>
             <label className="flex items-center gap-1 rounded border border-border/50 px-1.5 py-1">
@@ -291,9 +291,9 @@ function StatRow({
   muted?: boolean;
 }) {
   const color =
-    accent === "green" ? "text-emerald-500" :
-    accent === "red" ? "text-rose-500" :
-    accent === "amber" ? "text-amber-500" :
+    accent === "green" ? "text-success" :
+    accent === "red" ? "text-danger" :
+    accent === "amber" ? "text-warning" :
     muted ? "text-muted-foreground" : "text-foreground";
   return (
     <div className="flex items-center justify-between border-b border-border/30 py-1 last:border-b-0">

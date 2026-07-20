@@ -224,11 +224,11 @@ export function TradeTable({
                   {visible.direction ? (
                     <TableCell>
                       {e.direction === "long" ? (
-                        <span className="inline-flex items-center gap-1 text-emerald-400">
+                        <span className="inline-flex items-center gap-1 text-success">
                           <ArrowUp className="h-3 w-3" /> Long
                         </span>
                       ) : e.direction === "short" ? (
-                        <span className="inline-flex items-center gap-1 text-rose-400">
+                        <span className="inline-flex items-center gap-1 text-danger">
                           <ArrowDown className="h-3 w-3" /> Short
                         </span>
                       ) : "—"}
@@ -241,8 +241,8 @@ export function TradeTable({
                     <TableCell
                       className={cn(
                         "font-mono text-xs font-semibold tabular-nums",
-                        pnlTone(e.pnl) === "up" && "text-emerald-400",
-                        pnlTone(e.pnl) === "down" && "text-rose-400",
+                        pnlTone(e.pnl) === "up" && "text-success",
+                        pnlTone(e.pnl) === "down" && "text-danger",
                       )}
                     >
                       {e.pnl != null ? formatCurrency(Number(e.pnl)) : "—"}
@@ -282,7 +282,7 @@ export function TradeTable({
                         <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Share" onClick={() => onShare(e.id)}>
                           <Share2 className="h-3.5 w-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 hover:text-rose-400" aria-label="Delete" onClick={() => onDelete(e.id)}>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 hover:text-danger" aria-label="Delete" onClick={() => onDelete(e.id)}>
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>

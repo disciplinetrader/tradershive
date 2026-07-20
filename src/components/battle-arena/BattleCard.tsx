@@ -25,7 +25,7 @@ export function BattleCard({ battle }: { battle: BattleRow }) {
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
             {battle.visibility === "private" && <Lock className="h-3 w-3 text-muted-foreground" />}
-            {battle.featured && <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-amber-600">Featured</span>}
+            {battle.featured && <span className="rounded-full bg-warning/15 px-1.5 py-0.5 text-[10px] font-semibold text-warning">Featured</span>}
             <BattleStatusBadge status={battle.status} />
           </div>
           <h3 className="mt-1 truncate font-semibold group-hover:text-primary">{battle.name}</h3>

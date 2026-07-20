@@ -67,7 +67,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
     return (
       <div className="grid min-h-[60vh] place-items-center">
         <div className="text-center">
-          <AlertTriangle className="mx-auto mb-3 h-8 w-8 text-rose-400" />
+          <AlertTriangle className="mx-auto mb-3 h-8 w-8 text-danger" />
           <h2 className="text-lg font-semibold">Access denied</h2>
           <p className="text-sm text-muted-foreground">You need an admin role to view this area.</p>
         </div>

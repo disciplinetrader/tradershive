@@ -40,16 +40,16 @@ function LeagueLeaderboard() {
       </div>
 
       <div className="grid grid-cols-3 gap-3 text-center text-xs">
-        <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3">
-          <div className="text-[10px] uppercase tracking-widest text-emerald-300">Promotion zone</div>
+        <div className="rounded-2xl border border-success/30 bg-success/10 p-3">
+          <div className="text-[10px] uppercase tracking-widest text-success">Promotion zone</div>
           <div className="mt-1 text-xs text-muted-foreground">Top 10% climb next season.</div>
         </div>
         <div className="rounded-2xl border border-primary/30 bg-primary/10 p-3">
           <div className="text-[10px] uppercase tracking-widest text-primary">Safe zone</div>
           <div className="mt-1 text-xs text-muted-foreground">Middle 70% stay put.</div>
         </div>
-        <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-3">
-          <div className="text-[10px] uppercase tracking-widest text-rose-300">Relegation zone</div>
+        <div className="rounded-2xl border border-danger/30 bg-danger/10 p-3">
+          <div className="text-[10px] uppercase tracking-widest text-danger">Relegation zone</div>
           <div className="mt-1 text-xs text-muted-foreground">Bottom 20% drop a league.</div>
         </div>
       </div>

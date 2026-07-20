@@ -109,7 +109,7 @@ export function PositionsTable() {
                     <TableCell className="font-semibold">{t.symbol}</TableCell>
                     <TableCell>
                       <span className={cn("rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase",
-                        t.direction === "long" ? "bg-emerald-500/15 text-emerald-300" : "bg-rose-500/15 text-rose-300")}>
+                        t.direction === "long" ? "bg-success/15 text-success" : "bg-danger/15 text-danger")}>
                         {t.direction}
                       </span>
                     </TableCell>
@@ -118,10 +118,10 @@ export function PositionsTable() {
                     <TableCell className="text-right font-mono">{Number(t.lot_size).toFixed(2)}</TableCell>
                     <TableCell className="text-right font-mono text-muted-foreground">{t.stop_loss ? formatNumber(Number(t.stop_loss), sym?.decimals ?? 2) : "—"}</TableCell>
                     <TableCell className="text-right font-mono text-muted-foreground">{t.take_profit ? formatNumber(Number(t.take_profit), sym?.decimals ?? 2) : "—"}</TableCell>
-                    <TableCell className={cn("text-right font-mono tabular-nums", rr >= 0 ? "text-emerald-400" : "text-rose-400")}>
+                    <TableCell className={cn("text-right font-mono tabular-nums", rr >= 0 ? "text-success" : "text-danger")}>
                       {rr ? `${rr.toFixed(2)}R` : "—"}
                     </TableCell>
-                    <TableCell className={cn("text-right font-mono tabular-nums font-semibold", up ? "text-emerald-400" : "text-rose-400")}>
+                    <TableCell className={cn("text-right font-mono tabular-nums font-semibold", up ? "text-success" : "text-danger")}>
                       {up ? "+" : ""}{formatCurrency(floating, account?.currency)}
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">{duration}</TableCell>
@@ -139,7 +139,7 @@ export function PositionsTable() {
                         <Button
                           variant="default"
                           size="sm"
-                          className="h-7 gap-1 bg-rose-500/90 px-2 text-[11px] font-semibold text-white hover:bg-rose-500"
+                          className="h-7 gap-1 bg-danger/90 px-2 text-[11px] font-semibold text-white hover:bg-danger"
                           onClick={() => instantClose(t)}
                           disabled={closingIds.has(t.id)}
                           aria-label="Close at market"

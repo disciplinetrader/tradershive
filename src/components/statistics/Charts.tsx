@@ -55,7 +55,7 @@ export function EquityCurveCard() {
       subtitle="Cumulative P&L across the filtered range"
       height={320}
       actions={
-        <Badge variant="outline" className={up ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400" : "border-rose-500/40 bg-rose-500/10 text-rose-400"}>
+        <Badge variant="outline" className={up ? "border-success/40 bg-success/10 text-success" : "border-danger/40 bg-danger/10 text-danger"}>
           {fmtCurrency(pnl)}
         </Badge>
       }
@@ -251,7 +251,7 @@ export function ProfitFactorCard() {
         {items.map((it) => (
           <div key={it.label} className="rounded-xl border border-border/40 bg-background/40 p-3">
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{it.label}</div>
-            <div className={`mt-1 text-lg font-bold tabular-nums ${it.tone === "up" ? "text-emerald-400" : "text-rose-400"}`}>{it.value}</div>
+            <div className={`mt-1 text-lg font-bold tabular-nums ${it.tone === "up" ? "text-success" : "text-danger"}`}>{it.value}</div>
           </div>
         ))}
       </div>
@@ -295,7 +295,7 @@ function Row({ k, v, tone }: { k: string; v: string; tone?: "up" | "down" }) {
   return (
     <div className="flex items-center justify-between text-sm">
       <span className="text-muted-foreground">{k}</span>
-      <span className={`font-bold tabular-nums ${tone === "up" ? "text-emerald-400" : tone === "down" ? "text-rose-400" : ""}`}>{v}</span>
+      <span className={`font-bold tabular-nums ${tone === "up" ? "text-success" : tone === "down" ? "text-danger" : ""}`}>{v}</span>
     </div>
   );
 }

@@ -69,7 +69,7 @@ function DatasetStatus() {
   const { loading, error, filtered } = useStatistics();
   if (error) {
     return (
-      <GlassCard className="p-4 flex items-center gap-2 text-sm text-rose-300">
+      <GlassCard className="p-4 flex items-center gap-2 text-sm text-danger">
         <AlertCircle className="h-4 w-4" />
         Failed to load statistics data.
       </GlassCard>

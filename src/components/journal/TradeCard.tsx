@@ -53,9 +53,9 @@ export function TradeCard({
 
   const badge = useMemo(() => {
     if (result === "win")
-      return { text: "Win", cls: "bg-emerald-500/10 text-emerald-400 border-emerald-400/30" };
+      return { text: "Win", cls: "bg-success/10 text-success border-success/30" };
     if (result === "loss")
-      return { text: "Loss", cls: "bg-rose-500/10 text-rose-400 border-rose-400/30" };
+      return { text: "Loss", cls: "bg-danger/10 text-danger border-danger/30" };
     return { text: "BE", cls: "bg-muted/40 text-muted-foreground border-border" };
   }, [result]);
 
@@ -106,7 +106,7 @@ export function TradeCard({
             className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full bg-black/40 text-white backdrop-blur transition hover:scale-110"
             aria-label={entry.is_favorite ? "Unfavorite" : "Favorite"}
           >
-            <Heart className={cn("h-4 w-4", entry.is_favorite && "fill-rose-400 text-rose-400")} />
+            <Heart className={cn("h-4 w-4", entry.is_favorite && "fill-danger text-danger")} />
           </button>
         </button>
 
@@ -121,9 +121,9 @@ export function TradeCard({
               </div>
               <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
                 {entry.direction === "long" ? (
-                  <ArrowUpRight className="h-3 w-3 text-emerald-400" />
+                  <ArrowUpRight className="h-3 w-3 text-success" />
                 ) : entry.direction === "short" ? (
-                  <ArrowDownRight className="h-3 w-3 text-rose-400" />
+                  <ArrowDownRight className="h-3 w-3 text-danger" />
                 ) : null}
                 {entry.direction ? entry.direction.toUpperCase() : ""} · #{shortId(entry.id)}
               </p>
@@ -132,8 +132,8 @@ export function TradeCard({
               <p
                 className={cn(
                   "text-base font-bold tabular-nums",
-                  tone === "up" && "text-emerald-400",
-                  tone === "down" && "text-rose-400",
+                  tone === "up" && "text-success",
+                  tone === "down" && "text-danger",
                   tone === "flat" && "text-muted-foreground",
                 )}
               >
@@ -240,7 +240,7 @@ function IconBtn({
     <Button
       variant="ghost"
       size="icon"
-      className={cn("h-7 w-7", destructive && "hover:text-rose-400")}
+      className={cn("h-7 w-7", destructive && "hover:text-danger")}
       aria-label={label}
       title={label}
       onClick={(e) => {

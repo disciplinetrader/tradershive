@@ -31,7 +31,7 @@ export function ActivityTimeline({ items }: { items: Item[] }) {
               </div>
               <div className="shrink-0 text-right">
                 {it.value != null ? (
-                  <div className={cn("font-mono text-xs font-semibold", it.value > 0 ? "text-emerald-400" : it.value < 0 ? "text-rose-400" : "")}>
+                  <div className={cn("font-mono text-xs font-semibold", it.value > 0 ? "text-success" : it.value < 0 ? "text-danger" : "")}>
                     {it.value >= 0 ? "+" : ""}{it.value.toFixed(2)}
                   </div>
                 ) : null}

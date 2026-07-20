@@ -52,7 +52,7 @@ export function EmotionAnalysis() {
                 <div className="flex gap-3 text-muted-foreground">
                   <span>{d.trades} trades</span>
                   <span>Win {fmtPercent(d.winRate)}</span>
-                  <span className={d.pnl >= 0 ? "text-emerald-400" : "text-rose-400"}>{fmtCurrency(d.pnl)}</span>
+                  <span className={d.pnl >= 0 ? "text-success" : "text-danger"}>{fmtCurrency(d.pnl)}</span>
                 </div>
               </div>
             ))}
@@ -98,7 +98,7 @@ export function MistakeAnalysis() {
               </div>
               <div className="mt-1 flex justify-between text-xs text-muted-foreground">
                 <span>Win rate {fmtPercent(d.winRate)}</span>
-                <span className={d.pnl >= 0 ? "text-emerald-400" : "text-rose-400"}>Impact {fmtCurrency(d.pnl)}</span>
+                <span className={d.pnl >= 0 ? "text-success" : "text-danger"}>Impact {fmtCurrency(d.pnl)}</span>
               </div>
             </div>
           ))}

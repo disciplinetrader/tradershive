@@ -53,7 +53,7 @@ function AdminChampionships() {
       <div className="grid gap-3">
         {q.data?.map((c) => (
           <GlassCard key={c.id} className="flex flex-wrap items-center gap-3 p-4">
-            <Trophy className="h-4 w-4 text-amber-500" />
+            <Trophy className="h-4 w-4 text-warning" />
             <div className="min-w-0 flex-1">
               <Link to="/championship/$slug" params={{ slug: c.slug }} className="text-sm font-semibold hover:underline">
                 {c.name}

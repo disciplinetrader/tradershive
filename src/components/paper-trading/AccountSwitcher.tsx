@@ -110,7 +110,7 @@ export function AccountSwitcher() {
           <button
             onClick={() => setOpenDelete(true)}
             disabled={!account}
-            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-rose-400 hover:bg-accent disabled:opacity-40"
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-danger hover:bg-accent disabled:opacity-40"
           >
             <Archive className="h-4 w-4" /> Archive account
           </button>

@@ -16,7 +16,7 @@ export function LibraryCard({ session }: { session: ReplaySession }) {
                 {session.market} · {session.symbol} · {session.timeframe}
               </div>
             </div>
-            {session.is_favorite ? <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" /> : null}
+            {session.is_favorite ? <Star className="h-3.5 w-3.5 text-warning fill-warning" /> : null}
           </div>
           <div className="h-1.5 rounded-full bg-background/60 overflow-hidden">
             <div className="h-full bg-primary transition-all" style={{ width: `${session.completion_pct}%` }} />

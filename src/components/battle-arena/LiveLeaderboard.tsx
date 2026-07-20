@@ -75,16 +75,16 @@ export function LiveLeaderboard({
                 return (
                   <tr key={r.user_id} className={cn(
                     "border-t border-border/60 transition-colors",
-                    change > 0 && "bg-emerald-500/5 animate-in fade-in",
-                    change < 0 && "bg-rose-500/5",
-                    r.rank === 1 && "bg-amber-500/5",
+                    change > 0 && "bg-success/5 animate-in fade-in",
+                    change < 0 && "bg-danger/5",
+                    r.rank === 1 && "bg-warning/5",
                   )}>
                     <td className="px-3 py-2 tabular-nums">
                       <div className="flex items-center gap-1 font-bold">
-                        {r.rank === 1 && <Trophy className="h-3.5 w-3.5 text-amber-500" />}
+                        {r.rank === 1 && <Trophy className="h-3.5 w-3.5 text-warning" />}
                         <span>{r.rank}</span>
-                        {change > 0 && <ArrowUp className="h-3 w-3 text-emerald-500" />}
-                        {change < 0 && <ArrowDown className="h-3 w-3 text-rose-500" />}
+                        {change > 0 && <ArrowUp className="h-3 w-3 text-success" />}
+                        {change < 0 && <ArrowDown className="h-3 w-3 text-danger" />}
                         {change === 0 && prevRankRef.current.has(r.user_id) && <Minus className="h-3 w-3 text-muted-foreground/40" />}
                       </div>
                     </td>
@@ -102,14 +102,14 @@ export function LiveLeaderboard({
                         </div>
                       </div>
                     </td>
-                    <td className={cn("px-2 py-2 text-right tabular-nums font-semibold", Number(r.pnl) > 0 ? "text-emerald-600" : Number(r.pnl) < 0 ? "text-rose-600" : "")}>
+                    <td className={cn("px-2 py-2 text-right tabular-nums font-semibold", Number(r.pnl) > 0 ? "text-success" : Number(r.pnl) < 0 ? "text-danger" : "")}>
                       {Number(r.pnl).toLocaleString(undefined, { style: "currency", currency: "USD" })}
                     </td>
                     <td className="px-2 py-2 text-right tabular-nums">{Number(r.r_multiple).toFixed(2)}</td>
                     <td className="px-2 py-2 text-right tabular-nums">{Number(r.win_rate).toFixed(1)}%</td>
                     <td className="px-2 py-2 text-right tabular-nums">{r.trades_count}</td>
                     <td className="px-2 py-2 text-right tabular-nums">{openCount || "—"}</td>
-                    <td className="px-2 py-2 text-right tabular-nums text-rose-600/80">-${Number(r.max_drawdown).toFixed(0)}</td>
+                    <td className="px-2 py-2 text-right tabular-nums text-danger/80">-${Number(r.max_drawdown).toFixed(0)}</td>
                     <td className="px-2 py-2 text-right text-[11px] text-muted-foreground">
                       {last ? new Date(last).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"}
                     </td>

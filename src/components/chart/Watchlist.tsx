@@ -84,7 +84,7 @@ function WatchRow({ sym, active, fav, onPick, onToggleFav }: {
         <div className="ml-5 truncate text-[10px] uppercase text-muted-foreground">{sym.market}</div>
       </div>
       <span className="tabular-nums text-xs">{q?.last?.toFixed(sym.pricePrecision) ?? "—"}</span>
-      <span className={cn("tabular-nums text-xs", chg >= 0 ? "text-emerald-400" : "text-rose-400")}>
+      <span className={cn("tabular-nums text-xs", chg >= 0 ? "text-success" : "text-danger")}>
         {chg >= 0 ? "+" : ""}{chg.toFixed(2)}%
       </span>
     </button>

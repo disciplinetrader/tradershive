@@ -85,7 +85,7 @@ function PerformancePage() {
 
 function Tile({ label, value, tone }: { label: string; value: string | null; tone: "up" | "down" }) {
   const Icon = tone === "up" ? TrendingUp : TrendingDown;
-  const color = tone === "up" ? "text-emerald-400 border-emerald-500/30" : "text-red-400 border-red-500/30";
+  const color = tone === "up" ? "text-success border-success/30" : "text-danger border-danger/30";
   return (
     <div className={"rounded-lg border bg-background/40 p-3 " + color}>
       <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground"><Icon className="h-3 w-3" /> {label}</div>

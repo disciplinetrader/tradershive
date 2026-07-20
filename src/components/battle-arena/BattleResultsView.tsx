@@ -16,8 +16,8 @@ export function BattleResultsView({ battle, results, profiles }: { battle: any; 
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-primary/30 bg-gradient-to-br from-amber-500/10 via-primary/5 to-background p-6 text-center">
-        <Trophy className="mx-auto h-8 w-8 text-amber-500" />
+      <div className="rounded-2xl border border-primary/30 bg-gradient-to-br from-warning/10 via-primary/5 to-background p-6 text-center">
+        <Trophy className="mx-auto h-8 w-8 text-warning" />
         <div className="mt-2 text-xs uppercase tracking-wide text-muted-foreground">Winner</div>
         <div className="mt-1 text-2xl font-bold">{winner?.display_name ?? winner?.username ?? "—"}</div>
         {myResult ? (
@@ -35,7 +35,7 @@ export function BattleResultsView({ battle, results, profiles }: { battle: any; 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           {podium.map((r) => {
             const p = byId.get(r.user_id);
-            const colors = ["border-amber-500/40 bg-amber-500/5", "border-slate-400/40 bg-slate-400/5", "border-orange-600/40 bg-orange-600/5"];
+            const colors = ["border-warning/40 bg-warning/5", "border-slate-400/40 bg-slate-400/5", "border-orange-600/40 bg-orange-600/5"];
             return (
               <div key={r.user_id} className={`rounded-2xl border p-4 text-center ${colors[r.final_rank - 1]}`}>
                 <div className="text-3xl font-black tabular-nums">#{r.final_rank}</div>
@@ -44,7 +44,7 @@ export function BattleResultsView({ battle, results, profiles }: { battle: any; 
                 <div className="mt-1 text-sm text-muted-foreground tabular-nums">${Number(r.pnl).toFixed(2)} · {Number(r.r_multiple).toFixed(2)}R</div>
                 <div className="mt-2 flex items-center justify-center gap-2 text-[11px]">
                   <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5"><Sparkles className="h-3 w-3" />{r.xp_awarded} XP</span>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5"><Coins className="h-3 w-3" />{r.coins_awarded}</span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-warning/10 px-2 py-0.5"><Coins className="h-3 w-3" />{r.coins_awarded}</span>
                 </div>
               </div>
             );

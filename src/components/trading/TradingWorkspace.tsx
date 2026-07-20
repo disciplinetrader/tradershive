@@ -181,7 +181,7 @@ function TradingWorkspaceInner() {
                 <div className="flex items-baseline gap-3 tabular-nums">
                   <motion.span
                     key={last} initial={{ opacity: 0.4 }} animate={{ opacity: 1 }}
-                    className={cn("text-lg font-bold", quote?.last && quote.last >= bid ? "text-emerald-500" : "text-rose-500")}
+                    className={cn("text-lg font-bold", quote?.last && quote.last >= bid ? "text-success" : "text-danger")}
                   >{last.toFixed(decimals)}</motion.span>
                   <span className="text-[11px] text-muted-foreground">Bid <span className="text-foreground">{bid.toFixed(decimals)}</span></span>
                   <span className="text-[11px] text-muted-foreground">Ask <span className="text-foreground">{ask.toFixed(decimals)}</span></span>
@@ -244,7 +244,7 @@ function TradingWorkspaceInner() {
                 );
               })}
               <div className="ml-auto flex items-center gap-1 text-[11px] text-muted-foreground">
-                <Activity className="h-3 w-3 text-emerald-500 animate-pulse" /> live
+                <Activity className="h-3 w-3 text-success animate-pulse" /> live
               </div>
             </div>
 

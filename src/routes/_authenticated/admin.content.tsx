@@ -76,7 +76,7 @@ function AdminContent() {
                       <td className="p-3 font-semibold">{p.title}</td>
                       <td className="p-3 text-xs text-muted-foreground">/{p.slug}</td>
                       <td className="p-3"><Badge variant="outline">{p.kind}</Badge></td>
-                      <td className="p-3">{p.published ? <Badge className="bg-emerald-500/10 text-emerald-400">Live</Badge> : <Badge variant="outline">Draft</Badge>}</td>
+                      <td className="p-3">{p.published ? <Badge className="bg-success/10 text-success">Live</Badge> : <Badge variant="outline">Draft</Badge>}</td>
                       <td className="p-3 text-right">
                         <div className="flex justify-end gap-1">
                           <EditorDialog trigger={<Button size="sm" variant="outline">Edit</Button>} initial={p} onSave={(v) => upsert.mutate(v)} />
