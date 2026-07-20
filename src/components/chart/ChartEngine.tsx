@@ -101,6 +101,7 @@ export const ChartEngine = forwardRef<ChartHandle, Props>(function ChartEngine(
 
   // Indicators + volume
   useEffect(() => { adapterRef.current?.syncOverlayIndicators(indicators, candles); }, [indicators, candles]);
+  useEffect(() => { adapterRef.current?.syncSubPaneIndicators(indicators, candles); }, [indicators, candles]);
   useEffect(() => {
     const showVol = settings.showVolume || indicators.some((i) => i.key === "volume" && i.visible !== false);
     adapterRef.current?.setVolumeVisible(showVol, candles);
