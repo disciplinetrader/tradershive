@@ -8321,6 +8321,14 @@ export type Database = {
       is_platform_admin: { Args: { _user_id: string }; Returns: boolean }
       join_battle: { Args: { _battle_id: string }; Returns: string }
       join_battle_by_code: { Args: { _code: string }; Returns: string }
+      join_championship_live: {
+        Args: { _champ: string }
+        Returns: {
+          paper_account_id: string
+          participant_id: string
+          registration_id: string
+        }[]
+      }
       recompute_battle_live_stats: {
         Args: { _battle_id: string }
         Returns: undefined
