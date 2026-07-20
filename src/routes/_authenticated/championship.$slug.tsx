@@ -181,17 +181,28 @@ function ChampionshipDetail() {
 
         {/* CTA */}
         <div className="mt-6 flex flex-wrap items-center gap-3">
-          {registeredOpen && !isRegistered ? (
+          {champ.status === "live" && !isParticipant ? (
+            <Button size="lg" onClick={() => joinLive.mutate()} disabled={joinLive.isPending} className="bg-success hover:bg-success/90 text-success-foreground">
+              <Zap className="mr-2 h-4 w-4" /> Join Live Tournament · ${Number(champ.starting_balance ?? 10000).toLocaleString()} account
+            </Button>
+          ) : null}
+          {registeredOpen && !isRegistered && champ.status !== "live" ? (
             <Button size="lg" onClick={() => register.mutate()} disabled={register.isPending}>
               <Trophy className="mr-2 h-4 w-4" /> Register now
             </Button>
           ) : null}
-          {registeredOpen && isRegistered ? (
+          {registeredOpen && isRegistered && !isParticipant ? (
             <Button size="lg" variant="outline" onClick={() => cancel.mutate()} disabled={cancel.isPending}>
               Cancel registration
             </Button>
           ) : null}
-          {isRegistered ? <Badge className="bg-success/15 text-success">✓ Registered</Badge> : null}
+          {isParticipant ? (
+            <Button size="lg" variant="outline" onClick={() => nav({ to: "/trading" })}>
+              <TrendingUp className="mr-2 h-4 w-4" /> Open trading workspace
+            </Button>
+          ) : null}
+          {isRegistered && !isParticipant ? <Badge className="bg-success/15 text-success">✓ Registered</Badge> : null}
+          {isParticipant ? <Badge className="bg-success/15 text-success">✓ Trading live</Badge> : null}
           {isParticipant && myRank ? (
             <Badge className="bg-primary/15 text-primary text-sm">Your rank: #{myRank.rank ?? "—"}</Badge>
           ) : null}
