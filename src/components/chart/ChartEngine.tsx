@@ -53,7 +53,14 @@ export const ChartEngine = forwardRef<ChartHandle, Props>(function ChartEngine(
 
   // Settings & chart type
   useEffect(() => { adapterRef.current?.applySettings(settings); }, [settings]);
-  useEffect(() => { adapterRef.current?.setChartType(settings.chartType); }, [settings.chartType]);
+  useEffect(() => {
+    const a = adapterRef.current;
+    if (!a) return;
+    a.setChartType(settings.chartType);
+    // The adapter rebuilds its price series on type change — re-push the
+    // existing candles so the new series isn't empty until the next bar.
+    if (candles.length) a.setCandles(candles);
+  }, [settings.chartType, candles]);
 
   // Load history + subscribe live via MarketDataEngine
   useEffect(() => {
