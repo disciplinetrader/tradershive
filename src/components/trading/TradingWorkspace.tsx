@@ -84,6 +84,7 @@ const SMC_SUB_OPTIONS: { key: "show_swings" | "show_bos" | "show_fvg" | "show_ob
 function TradingWorkspaceInner() {
   const qc = useQueryClient();
   const { symbol, symbolMeta, market, timeframe, setTimeframe, accountId, account } = usePaper();
+  useRiskMonitor(account);
   const [enabled, setEnabled] = useState<Record<string, boolean>>({ ema: true, volume: true });
   const [chartType, setChartType] = useState<ChartType>("candles");
   const [smcOn, setSmcOn] = useState(false);
