@@ -19,24 +19,29 @@ import { ema, sma, bollinger, vwap, atr, donchian, heikinAshi, fibonacci, suppor
 const INDICATOR_COLORS = ["#22d3ee", "#a78bfa", "#f472b6", "#f59e0b", "#34d399", "#f87171", "#60a5fa"];
 
 export const createLightweightAdapter: ChartAdapterFactory = ({ container, settings, onCrosshair }) => {
+  const cs = typeof window !== "undefined" ? getComputedStyle(document.documentElement) : null;
+  const cssVar = (name: string, fallback: string) => (cs?.getPropertyValue(name).trim() || fallback);
+  const textColor = cssVar("--muted-foreground", "#94a3b8");
+  const gridColor = "color-mix(in oklab, " + cssVar("--foreground", "#94a3b8") + " 8%, transparent)";
+  const borderColor = "color-mix(in oklab, " + cssVar("--foreground", "#94a3b8") + " 15%, transparent)";
   const chart = createChart(container, {
     autoSize: true,
     layout: {
       background: { type: ColorType.Solid, color: "transparent" },
-      textColor: "#94a3b8",
+      textColor,
       fontFamily: "ui-sans-serif, system-ui",
     },
     grid: {
-      vertLines: { color: "rgba(148,163,184,0.08)", visible: settings.showGrid },
-      horzLines: { color: "rgba(148,163,184,0.08)", visible: settings.showGrid },
+      vertLines: { color: gridColor, visible: settings.showGrid },
+      horzLines: { color: gridColor, visible: settings.showGrid },
     },
     rightPriceScale: {
-      borderColor: "rgba(148,163,184,0.15)",
+      borderColor,
       mode: priceMode(settings),
       autoScale: settings.autoScale,
       invertScale: settings.priceScale === "inverted",
     },
-    timeScale: { borderColor: "rgba(148,163,184,0.15)", timeVisible: true, secondsVisible: false },
+    timeScale: { borderColor, timeVisible: true, secondsVisible: false },
     crosshair: { mode: crosshairMode(settings) },
   });
 
