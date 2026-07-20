@@ -118,6 +118,23 @@ export const registerChampionship = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/** Open-join for a live tournament — provisions a $10k paper account tied to the championship. */
+export const joinChampionshipLive = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ championship_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: rows, error } = await supabase.rpc("join_championship_live" as any, { _champ: data.championship_id });
+    if (error) throw new Error(error.message);
+    const row = Array.isArray(rows) ? rows[0] : rows;
+    return {
+      ok: true,
+      registration_id: row?.registration_id as string,
+      participant_id: row?.participant_id as string,
+      paper_account_id: row?.paper_account_id as string,
+    };
+  });
+
 export const cancelChampionshipRegistration = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ championship_id: z.string().uuid() }).parse(d))
