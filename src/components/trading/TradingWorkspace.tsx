@@ -84,9 +84,10 @@ function TradingWorkspaceInner() {
 
   // Open positions for this account (all symbols — filter for this symbol only in overlay)
   const fetchOpen = useServerFn(listTrades);
+  type OpenTradeRow = OpenTradeLine & { symbol: string };
   const { data: openTradesAll } = useQuery({
     queryKey: ["paper", "trades", accountId, "open"],
-    queryFn: () => fetchOpen({ data: { account_id: accountId!, status: "open" } }) as unknown as Promise<OpenTradeLine[]>,
+    queryFn: () => fetchOpen({ data: { account_id: accountId!, status: "open" } }) as unknown as Promise<OpenTradeRow[]>,
     enabled: !!accountId,
     refetchInterval: 4000,
   });
