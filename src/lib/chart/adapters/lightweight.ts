@@ -65,6 +65,8 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
   const sessionSeries = new Map<string, ISeriesApi<"Histogram">>();
   const smcBoxSeries = new Map<string, ISeriesApi<"Line">>();
   let smcMarkers: ISeriesMarkersPluginApi<UTCTimestamp> | null = null;
+  let externalMarkers: ISeriesMarkersPluginApi<UTCTimestamp> | null = null;
+
   const SESSION_COLORS: Record<string, string> = {
     asia: "#a78bfa",
     london: "#60a5fa",
