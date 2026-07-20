@@ -239,12 +239,21 @@ function ManageDialog({
   const [lev, setLev] = useState<number>(account?.leverage ?? 100);
   const [daily, setDaily] = useState<number>(Number(account?.max_daily_risk_pct ?? 5));
   const [perTrade, setPerTrade] = useState<number>(Number(account?.max_trade_risk_pct ?? 2));
+  const [marginCall, setMarginCall] = useState<number>(Number(account?.margin_call_level ?? 100));
+  const [stopOut, setStopOut] = useState<number>(Number(account?.stop_out_level ?? 50));
+  const [nbp, setNbp] = useState<boolean>(account?.negative_balance_protection ?? true);
 
   if (!account) return null;
   return (
     <Dialog open={open} onOpenChange={(v) => {
       onOpenChange(v);
-      if (v) { setName(account.name); setLev(account.leverage); setDaily(Number(account.max_daily_risk_pct)); setPerTrade(Number(account.max_trade_risk_pct)); }
+      if (v) {
+        setName(account.name); setLev(account.leverage);
+        setDaily(Number(account.max_daily_risk_pct)); setPerTrade(Number(account.max_trade_risk_pct));
+        setMarginCall(Number(account.margin_call_level ?? 100));
+        setStopOut(Number(account.stop_out_level ?? 50));
+        setNbp(account.negative_balance_protection ?? true);
+      }
     }}>
       <DialogContent>
         <DialogHeader><DialogTitle>Edit account</DialogTitle></DialogHeader>
@@ -261,17 +270,31 @@ function ManageDialog({
             <div><Label>Daily risk %</Label><Input type="number" step="0.1" value={daily} onChange={(e) => setDaily(Number(e.target.value))} /></div>
             <div><Label>Per-trade risk %</Label><Input type="number" step="0.1" value={perTrade} onChange={(e) => setPerTrade(Number(e.target.value))} /></div>
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label>Margin call %</Label><Input type="number" step="1" value={marginCall} onChange={(e) => setMarginCall(Number(e.target.value))} /></div>
+            <div><Label>Stop-out %</Label><Input type="number" step="1" value={stopOut} onChange={(e) => setStopOut(Number(e.target.value))} /></div>
+          </div>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={nbp} onChange={(e) => setNbp(e.target.checked)} className="h-4 w-4 rounded border-border" />
+            Negative balance protection
+          </label>
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button
             onClick={async () => {
               try {
-                await update({ data: { id: account.id, name, leverage: lev, max_daily_risk_pct: daily, max_trade_risk_pct: perTrade } });
+                await update({ data: {
+                  id: account.id, name, leverage: lev,
+                  max_daily_risk_pct: daily, max_trade_risk_pct: perTrade,
+                  margin_call_level: marginCall, stop_out_level: stopOut,
+                  negative_balance_protection: nbp,
+                } });
                 toast.success("Account updated");
                 onSaved(); onOpenChange(false);
               } catch (e) { toast.error((e as Error).message); }
             }}
+            disabled={marginCall < stopOut}
             className="gradient-primary text-primary-foreground"
           >Save</Button>
         </DialogFooter>
