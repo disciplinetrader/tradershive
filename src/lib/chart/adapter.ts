@@ -37,6 +37,8 @@ export interface ChartAdapter {
 
   /** Indicator overlays drawn on the price pane. */
   syncOverlayIndicators(indicators: IndicatorConfig[], candles: Candle[]): void;
+  /** Oscillators drawn in their own stacked sub-panes (RSI / MACD / ATR / Stoch). */
+  syncSubPaneIndicators(indicators: IndicatorConfig[], candles: Candle[]): void;
   /** Volume histogram in the bottom scale margin. */
   setVolumeVisible(visible: boolean, candles: Candle[]): void;
 
