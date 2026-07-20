@@ -1,50 +1,46 @@
-# Trading Workspace Pro Upgrade
 
-Enhancing the existing Trading Workspace, Paper Trading, Journal, and Replay Studio without rebuilding them. Keeps TradingView Charting Library as the primary chart.
+# Platform-Wide Polish Audit
 
-## Scope & Phasing
+A single-pass polish sweep across TradersHIVE. No new features — only consistency, theme correctness, accessibility, and code hygiene.
 
-Given the size, I'll ship this in **4 sequential phases** in one turn each, but I need your go-ahead first because the total work is large (~40 files, 3 migrations). Each phase is independently useful:
+## Scope
 
-### Phase 1 — Chart Trading Layer (on top of TradingView)
-- Target/RR tool: click to place Entry → drag SL/TP → live overlay showing RR, Risk $, Reward $, pips, position size, lot size, % risk
-- Right-click chart context menu: Buy/Sell Market, Buy/Sell Limit, Buy/Sell Stop, Set Alert, Copy Price, Create Drawing (uses clicked price)
-- Draggable Entry/SL/TP lines for open positions and pending orders, with live floating PnL, profit/loss zones, direction arrow
-- Chart-native price alerts
+Ship in **4 sequential batches** in one turn each. Each batch is self-contained and safe to merge independently.
 
-Files: `src/components/trading/chart/ChartOverlay.tsx`, `TargetTool.tsx`, `ChartContextMenu.tsx`, `PositionLines.tsx`, `useChartPriceMath.ts`
+### Batch 1 — Design tokens & theme correctness (highest leverage)
+- Sweep `src/**/*.{tsx,ts}` with `rg` for hardcoded colors: `text-white`, `text-black`, `bg-white`, `bg-black`, `bg-gray-*`, `text-gray-*`, `border-gray-*`, `text-green-*`, `text-red-*`, `bg-slate-*`, hex literals `#[0-9a-f]{3,8}`, and `rgba(`. Replace with semantic tokens (`text-foreground`, `bg-card`, `bg-muted`, `text-success`, `text-danger`, `border-border`, etc.).
+- Audit `src/styles.css` — verify all semantic tokens (`--success`, `--warning`, `--info`, `--danger`) render legibly in both themes; bump muted-foreground contrast in dark mode to hit WCAG AA (currently 0.7 lightness → target ≥ 0.72).
+- Add missing dark-mode surface tokens for tables, heatmaps, chart gridlines, and skeletons where components use bare grays.
+- Fix chart libraries that read hardcoded `#fff` / `#000` — inject CSS-var-driven color from `getComputedStyle(document.documentElement)`.
 
-### Phase 2 — Prop-Firm Risk Rules
-- Migration: `risk_rule_profiles`, `risk_rule_violations`, `daily_risk_snapshots` tables
-- Presets: FTMO, 5%ers, Funding Pips, FundedNext, MyFundedFX, TradersHIVE Default + Custom
-- Rule fields: max daily loss, max overall loss, profit target, max DD, max risk/trade, min trading days, max positions, max lot, news restriction, weekend holding, max daily trades, session restriction
-- Live Risk Dashboard widget (daily loss remaining, DD, target %, violations, warnings)
-- Server-side enforcement in `paper-trading.functions.ts` — reject trades that violate active profile
-- Today's PnL topbar widget (today profit/loss, open PnL, closed PnL, current DD, target %)
+### Batch 2 — Accessibility & consistency polish
+- Icon-only buttons: audit `<Button size="icon">` occurrences and add `aria-label` where missing (topbar, chart rails, close buttons on dialogs/toasts).
+- Focus states: verify `:focus-visible` ring uses `--ring` token and is visible in both themes (already in `styles.css` base — check components that override).
+- Consistent border-radius: unify ad-hoc `rounded-xl` / `rounded-2xl` / `rounded-[10px]` on cards to project's `rounded-2xl` (matches `--radius`).
+- Standardize animation duration to `duration-200` / `duration-300` — remove one-off `duration-500`+ on interactive elements.
+- Ensure every `<Skeleton>` uses `bg-muted` (auto-themes) instead of `bg-gray-200`.
+- Single `<main>` per route — verify no duplicate landmarks.
 
-Files: migration + `src/lib/risk-rules/` + `src/components/trading/RiskDashboard.tsx`, `TodayPnLWidget.tsx`, `/settings/risk-rules` route
+### Batch 3 — Empty / error / loading state polish
+- Create shared `<EmptyState>` component (`src/components/common/EmptyState.tsx`) with icon + title + description + optional action, using semantic tokens.
+- Replace inline "No X yet" strings across Journal, Battle Arena, Community, Championship, Replay Library, Statistics with the shared component.
+- Standardize error toasts on `showError()` from `src/lib/client-errors.ts` (already exists — sweep remaining `catch { toast.error("...") }` sites).
+- Ensure every route with a loader has both `errorComponent` and `notFoundComponent`; add missing ones using a shared `<RouteError>` + `<RouteNotFound>` in `src/components/common/`.
 
-### Phase 3 — Order & Position Management + Journal Screenshots
-- Partial close, break-even, trailing stop, modify/cancel pending, close all, reverse position (server fns + UI buttons in position panel)
-- Position panel columns: swap, commission, risk, RR, current pips, floating PnL
-- Journal enhancements: open/close time, duration, holding time (computed)
-- Screenshots: storage bucket `trade-screenshots`, before/after entries auto-captured from TradingView, manual upload/replace, gallery in journal entry
-- Trade metadata: entry reason, exit reason, mistakes, lessons, emotion, market conditions, setup, strategy, tags (extend `journal_entries` where fields missing)
-- Keyboard shortcuts: Buy (B), Sell (S), Close (X), Cancel orders (C), Toggle replay (R), Screenshot (P), Hide drawings (H)
+### Batch 4 — Code hygiene & performance
+- Run `tsgo` and fix any warnings surfaced.
+- `rg` for unused imports flagged by ESLint, prune.
+- Memoize the two known re-render hotspots: `TradingWorkspace` overlay lists and `LiveScoreboard` participant rows.
+- Verify heavy routes (`/replay/*`, `/trading`, `/admin/*`) are already code-split by TanStack file-based routing — no change needed unless bundle audit flags a specific eager import.
+- Remove dead files identified by `rg` orphan scan (e.g. `OrderLinesOverlay.tsx` if fully replaced by `PositionLinesLive.tsx`).
 
-Files: migration + `useKeyboardShortcuts.ts`, `PositionActions.tsx`, `TradeScreenshotGallery.tsx`, extend Journal entry form
+## Out of scope
+- No workflow / IA changes.
+- No new features, routes, DB migrations, or server functions.
+- No changes to Authentication, Landing, Dashboard business logic, Paper Trading engine, Journal logic, Challenges, or Statistics calculations — presentation-layer only where those pages appear.
 
-### Phase 4 — Replay Studio + Stats + Dark Mode Polish
-- Replay: FX-Replay-style timeline scrubber, better playback controls (speed presets, step forward/back N candles), session sidebar, trade history panel, bookmarks strip
-- Stats: today / weekly / current-session widgets, avg holding time, avg RR, avg trade duration (server fn + dashboard cards)
-- Dark mode audit: fix low-contrast tokens for charts/tables/heatmaps/bars/icons in `src/styles.css`; ensure semantic tokens used everywhere in workspace
-- Responsive pass: workspace collapses tool rails and stacks panels on tablet/mobile
-
-## Technical Notes
-- All price math shared via `src/lib/trading/price-math.ts` (pips, position size, PnL, RR)
-- TradingView integration via `widget.activeChart().createOrderLine()` / `createPositionLine()` / `subscribe('mouse_down')` for right-click coords
-- Realtime updates via existing Market Data Engine subscriptions; drag handlers debounced via rAF, no re-render storms
-- Server enforcement of risk rules is authoritative — client UI is just a preview
+## Deliverable
+A final report listing: pages reviewed, components touched, hardcoded colors replaced (count), a11y fixes (count), empty/error states standardized, dead files removed, remaining known debt.
 
 ## Confirm to proceed
-Reply **"go phase 1"** (or "go all") and I'll ship Phase 1 immediately, then continue sequentially. Each phase = one message with all files + migration in parallel.
+Reply **"go"** (or "go batch 1", "go all") and I'll ship Batch 1 immediately, then continue sequentially. Each batch = one message with all edits in parallel.

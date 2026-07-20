@@ -8,12 +8,12 @@ const LABEL: Record<string, string> = {
   after_hours: "AFTER HOURS", holiday: "HOLIDAY", maintenance: "MAINT",
 };
 const TONE: Record<string, string> = {
-  open: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
-  closed: "bg-rose-500/10 text-rose-300 border-rose-500/25",
-  pre_market: "bg-amber-500/10 text-amber-300 border-amber-500/25",
-  after_hours: "bg-blue-500/10 text-blue-300 border-blue-500/25",
-  holiday: "bg-purple-500/10 text-purple-300 border-purple-500/25",
-  maintenance: "bg-zinc-500/15 text-zinc-300 border-zinc-500/30",
+  open: "bg-success/15 text-success border-success/30",
+  closed: "bg-danger/10 text-danger border-danger/25",
+  pre_market: "bg-warning/10 text-warning border-warning/25",
+  after_hours: "bg-info/10 text-info border-info/25",
+  holiday: "bg-primary/10 text-primary border-primary/25",
+  maintenance: "bg-muted text-muted-foreground border-border",
 };
 
 export function MarketStatusBadge({ market, className }: { market: MarketKind; className?: string }) {
@@ -22,7 +22,7 @@ export function MarketStatusBadge({ market, className }: { market: MarketKind; c
     <span className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
       TONE[status] ?? TONE.closed, className)}>
       <span className={cn("h-1.5 w-1.5 rounded-full",
-        status === "open" ? "bg-emerald-400 animate-pulse" : "bg-current opacity-60")} />
+        status === "open" ? "bg-success animate-pulse" : "bg-current opacity-60")} />
       {LABEL[status] ?? status}
     </span>
   );

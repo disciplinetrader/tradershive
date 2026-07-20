@@ -74,11 +74,11 @@ function HallOfFame() {
 
                 <div className="mt-4 grid grid-cols-2 gap-2 text-[11px]">
                   <div className="flex items-center gap-1.5 rounded-lg border bg-muted/30 p-1.5">
-                    <Medal className="h-3 w-3 text-slate-400" />
+                    <Medal className="h-3 w-3 text-muted-foreground" />
                     <span className="truncate">{runner?.display_name ?? runner?.username ?? "—"}</span>
                   </div>
                   <div className="flex items-center gap-1.5 rounded-lg border bg-muted/30 p-1.5">
-                    <Award className={cn("h-3 w-3 text-amber-700")} />
+                    <Award className={cn("h-3 w-3 text-warning")} />
                     <span className="truncate">{third?.display_name ?? third?.username ?? "—"}</span>
                   </div>
                 </div>

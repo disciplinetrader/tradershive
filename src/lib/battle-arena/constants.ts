@@ -33,11 +33,11 @@ export type BattleStatus = "draft" | "upcoming" | "live" | "completed" | "cancel
 export type BattleVisibility = "public" | "private";
 
 export const STATUS_STYLES: Record<BattleStatus, { label: string; className: string }> = {
-  draft:     { label: "Draft",     className: "bg-muted text-foreground/70" },
-  upcoming:  { label: "Upcoming",  className: "bg-blue-500/15 text-blue-600 border border-blue-500/25" },
-  live:      { label: "Live",      className: "bg-emerald-500/15 text-emerald-600 border border-emerald-500/25 animate-pulse" },
-  completed: { label: "Completed", className: "bg-slate-500/15 text-slate-600 border border-slate-500/25" },
-  cancelled: { label: "Cancelled", className: "bg-rose-500/15 text-rose-600 border border-rose-500/25" },
+  draft:     { label: "Draft",     className: "bg-muted text-muted-foreground border border-border" },
+  upcoming:  { label: "Upcoming",  className: "bg-info/15 text-info border border-info/25" },
+  live:      { label: "Live",      className: "bg-success/15 text-success border border-success/25 animate-pulse" },
+  completed: { label: "Completed", className: "bg-muted text-muted-foreground border border-border" },
+  cancelled: { label: "Cancelled", className: "bg-danger/15 text-danger border border-danger/25" },
 };
 
 export function findMarket(v: string) {

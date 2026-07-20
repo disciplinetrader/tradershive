@@ -157,15 +157,15 @@
   --secondary: oklch(0.24 0.017 220);
   --secondary-foreground: oklch(0.94 0.008 200);
   --muted: oklch(0.24 0.017 220);
-  --muted-foreground: oklch(0.7 0.014 210);      /* readable dim */
+  --muted-foreground: oklch(0.74 0.014 210);     /* WCAG AA on --surface */
   --accent: oklch(0.26 0.02 220);
   --accent-foreground: oklch(0.96 0.008 200);
 
   --success: oklch(0.78 0.15 170);
   --warning: oklch(0.82 0.15 80);
   --info: oklch(0.75 0.14 230);
-  --danger: oklch(0.7 0.2 22);
-  --destructive: oklch(0.7 0.2 22);
+  --danger: oklch(0.72 0.19 22);
+  --destructive: oklch(0.72 0.19 22);
   --destructive-foreground: oklch(0.99 0 0);
 
   --border: oklch(0.96 0.008 200 / 0.08);
@@ -282,6 +282,16 @@
 @utility safe-bottom {
   padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
 }
+
+/* Semantic P/L tokens — auto-adapt to light/dark via --success/--danger */
+@utility text-profit { color: var(--success); }
+@utility text-loss { color: var(--danger); }
+@utility bg-profit { background-color: var(--success); }
+@utility bg-loss { background-color: var(--danger); }
+@utility border-profit { border-color: var(--success); }
+@utility border-loss { border-color: var(--danger); }
+@utility bg-profit-soft { background-color: color-mix(in oklab, var(--success) 14%, transparent); }
+@utility bg-loss-soft { background-color: color-mix(in oklab, var(--danger) 14%, transparent); }
 
 /* =========================================================
  * Utilities — Milkinside soft cards, ambient pastel wash,
