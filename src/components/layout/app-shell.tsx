@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils";
 import { Topbar } from "./topbar";
 import { CommandPalette, useCommandPalette } from "@/components/command-palette";
 import { APP_NAME } from "@/lib/constants";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 type NavItem = { to: string; label: string; icon: typeof Home; admin?: boolean };
 
@@ -87,8 +88,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* Desktop sidebar */}
       <aside
         className={cn(
-          "sticky top-0 z-30 hidden h-dvh shrink-0 border-r border-border/60 bg-sidebar/80 backdrop-blur-xl transition-[width] duration-300 md:block",
-          collapsed ? "w-[76px]" : "w-[248px]",
+          "sticky top-0 z-30 hidden h-dvh shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-300 md:block",
+          collapsed ? "w-[72px]" : "w-[248px]",
         )}
         aria-label="Primary"
       >
@@ -114,7 +115,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             initial={{ x: -280 }}
             animate={{ x: 0 }}
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute inset-y-0 left-0 w-[280px] border-r border-border/60 bg-sidebar shadow-2xl"
+            className="absolute inset-y-0 left-0 w-[280px] border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-2xl"
           >
             <button
               onClick={() => setMobileOpen(false)}
@@ -165,68 +166,69 @@ function SidebarInner({
   currentPath: string;
   hideToggle?: boolean;
 }) {
-  const items = [...NAV, ...SECONDARY, ...(showAdmin ? ADMIN : [])];
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex h-16 items-center gap-2 border-b border-sidebar-border/80 px-4">
-        <Link to="/dashboard" className="flex min-w-0 items-center gap-2">
-          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-xl gradient-primary text-primary-foreground shadow-elegant">
-            <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
-              <path d="M4 17l5-5 4 4 7-9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </div>
-          {!collapsed ? (
-            <span className="truncate text-sm font-bold tracking-tight">{APP_NAME}</span>
+    <TooltipProvider delayDuration={120} skipDelayDuration={80}>
+      <div className="flex h-full flex-col">
+        <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-4">
+          <Link to="/dashboard" className="flex min-w-0 items-center gap-2">
+            <div className="grid h-8 w-8 shrink-0 place-items-center rounded-xl gradient-primary text-primary-foreground shadow-elegant">
+              <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+                <path d="M4 17l5-5 4 4 7-9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            {!collapsed ? (
+              <span className="truncate text-sm font-bold tracking-tight text-sidebar-foreground">{APP_NAME}</span>
+            ) : null}
+          </Link>
+          {!hideToggle ? (
+            <button
+              onClick={onToggle}
+              className="ml-auto hidden h-8 w-8 place-items-center rounded-md text-muted-foreground transition hover:bg-sidebar-accent hover:text-sidebar-accent-foreground md:grid"
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            </button>
           ) : null}
-        </Link>
-        {!hideToggle ? (
-          <button
-            onClick={onToggle}
-            className="ml-auto hidden h-8 w-8 place-items-center rounded-lg text-muted-foreground transition hover:bg-sidebar-accent hover:text-foreground md:grid"
-            aria-label="Toggle sidebar"
-          >
-            {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-          </button>
+        </div>
+
+        <nav className={cn("flex-1 overflow-y-auto", collapsed ? "px-2 py-3" : "p-3")}>
+          <SectionLabel collapsed={collapsed}>Arena</SectionLabel>
+          <ul className="space-y-0.5">
+            {NAV.map((item) => (
+              <SidebarLink key={item.to} item={item} collapsed={collapsed} active={isActive(currentPath, item.to)} />
+            ))}
+          </ul>
+          <SectionLabel collapsed={collapsed} className="mt-5">Account</SectionLabel>
+          <ul className="space-y-0.5">
+            {SECONDARY.map((item) => (
+              <SidebarLink key={item.to} item={item} collapsed={collapsed} active={isActive(currentPath, item.to)} />
+            ))}
+          </ul>
+          {showAdmin ? (
+            <>
+              <SectionLabel collapsed={collapsed} className="mt-5">System</SectionLabel>
+              <ul className="space-y-0.5">
+                {ADMIN.map((item) => (
+                  <SidebarLink key={item.to} item={item} collapsed={collapsed} active={isActive(currentPath, item.to)} />
+                ))}
+              </ul>
+            </>
+          ) : null}
+        </nav>
+
+        {!collapsed ? (
+          <div className="m-3 rounded-md border border-sidebar-border bg-sidebar-accent/50 p-4">
+            <div className="flex items-center gap-2 text-xs font-semibold text-primary">
+              <Sparkles className="h-3.5 w-3.5" />
+              Season 1 · Live
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Weekly challenges reset every Monday at 00:00 UTC.
+            </p>
+          </div>
         ) : null}
       </div>
-
-      <nav className="flex-1 overflow-y-auto p-3">
-        <SectionLabel collapsed={collapsed}>Arena</SectionLabel>
-        <ul className="space-y-1">
-          {NAV.map((item) => (
-            <SidebarLink key={item.to} item={item} collapsed={collapsed} active={isActive(currentPath, item.to)} />
-          ))}
-        </ul>
-        <SectionLabel collapsed={collapsed} className="mt-6">Account</SectionLabel>
-        <ul className="space-y-1">
-          {SECONDARY.map((item) => (
-            <SidebarLink key={item.to} item={item} collapsed={collapsed} active={isActive(currentPath, item.to)} />
-          ))}
-        </ul>
-        {showAdmin ? (
-          <>
-            <SectionLabel collapsed={collapsed} className="mt-6">System</SectionLabel>
-            <ul className="space-y-1">
-              {ADMIN.map((item) => (
-                <SidebarLink key={item.to} item={item} collapsed={collapsed} active={isActive(currentPath, item.to)} />
-              ))}
-            </ul>
-          </>
-        ) : null}
-      </nav>
-
-      {!collapsed ? (
-        <div className="m-3 rounded-2xl border border-sidebar-border/80 bg-sidebar-accent/40 p-4">
-          <div className="flex items-center gap-2 text-xs font-semibold text-primary">
-            <Sparkles className="h-3.5 w-3.5" />
-            Season 1 · Live
-          </div>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Weekly challenges reset every Monday at 00:00 UTC.
-          </p>
-        </div>
-      ) : null}
-    </div>
+    </TooltipProvider>
   );
 }
 
@@ -266,39 +268,61 @@ function SidebarLink({
   active: boolean;
 }) {
   const Icon = item.icon;
+  const link = (
+    <Link
+      to={item.to}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "group relative flex items-center gap-3 rounded-md text-sm font-medium outline-none transition-colors duration-150",
+        "focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-0",
+        collapsed ? "h-10 w-full justify-center px-0" : "px-3 py-2",
+        active
+          ? "bg-sidebar-accent text-sidebar-accent-foreground"
+          : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
+      )}
+    >
+      {active ? (
+        <motion.span
+          layoutId="sidebar-active"
+          className="absolute inset-y-1 left-0 w-[3px] rounded-r-full bg-primary"
+          transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+        />
+      ) : null}
+      <Icon
+        className={cn(
+          "h-[18px] w-[18px] shrink-0 transition-colors",
+          active ? "text-primary" : "group-hover:text-foreground",
+        )}
+      />
+      {!collapsed ? <span className="truncate">{item.label}</span> : null}
+      {item.admin && !collapsed ? (
+        <span className="ml-auto rounded-sm bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-primary">
+          ADMIN
+        </span>
+      ) : null}
+    </Link>
+  );
+
+  if (!collapsed) return <li>{link}</li>;
+
   return (
     <li>
-      <Link
-        to={item.to}
-        aria-current={active ? "page" : undefined}
-        title={collapsed ? item.label : undefined}
-        className={cn(
-          "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
-          active
-            ? "bg-sidebar-accent text-sidebar-accent-foreground"
-            : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground",
-        )}
-      >
-        {active ? (
-          <motion.span
-            layoutId="sidebar-active"
-            className="absolute inset-y-1.5 left-0 w-0.5 rounded-full bg-primary"
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-          />
-        ) : null}
-        <Icon
-          className={cn(
-            "h-4 w-4 shrink-0 transition",
-            active ? "text-primary" : "group-hover:text-primary",
-          )}
-        />
-        {!collapsed ? <span className="truncate">{item.label}</span> : null}
-        {item.admin && !collapsed ? (
-          <span className="ml-auto rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
-            ADMIN
-          </span>
-        ) : null}
-      </Link>
+      <Tooltip>
+        <TooltipTrigger asChild>{link}</TooltipTrigger>
+        <TooltipContent
+          side="right"
+          sideOffset={12}
+          collisionPadding={8}
+          className="rounded-md border border-border bg-popover px-2.5 py-1.5 text-xs font-medium text-popover-foreground shadow-lg"
+        >
+          {item.label}
+          {item.admin ? (
+            <span className="ml-2 rounded-sm bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-primary">
+              ADMIN
+            </span>
+          ) : null}
+        </TooltipContent>
+      </Tooltip>
     </li>
   );
 }
