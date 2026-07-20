@@ -100,7 +100,7 @@ function Progress({ icon, label, pct, tone }: { icon: React.ReactNode; label: st
       {icon}
       <span className="text-[10px] uppercase text-muted-foreground">{label}</span>
       <div className="relative h-1.5 w-20 overflow-hidden rounded-full bg-muted">
-        <div className={cn("absolute inset-y-0 left-0", tone === "primary" ? "bg-primary" : "bg-rose-500")} style={{ width: `${pct}%` }} />
+        <div className={cn("absolute inset-y-0 left-0", tone === "primary" ? "bg-primary" : "bg-danger")} style={{ width: `${pct}%` }} />
       </div>
       <span className="w-8 text-right font-mono text-[10px] font-semibold">{pct.toFixed(0)}%</span>
     </div>

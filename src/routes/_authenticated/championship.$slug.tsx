@@ -124,7 +124,7 @@ function ChampionshipDetail() {
   return (
     <div className="space-y-6">
       {/* Banner */}
-      <div className="relative overflow-hidden rounded-3xl border border-primary/30 bg-gradient-to-br from-amber-500/15 via-primary/10 to-background p-6 shadow-elegant md:p-10">
+      <div className="relative overflow-hidden rounded-3xl border border-primary/30 bg-gradient-to-br from-warning/15 via-primary/10 to-background p-6 shadow-elegant md:p-10">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
@@ -139,7 +139,7 @@ function ChampionshipDetail() {
               <span
                 className={cn(
                   "mr-1.5 h-1.5 w-1.5 rounded-full",
-                  champ.status === "live" ? "animate-pulse bg-emerald-500" : "bg-amber-500",
+                  champ.status === "live" ? "animate-pulse bg-success" : "bg-warning",
                 )}
               />
               {champ.status}
@@ -278,9 +278,9 @@ function ChampionshipDetail() {
                     <div
                       className={cn(
                         "mt-1 h-2 w-2 shrink-0 rounded-full",
-                        a.severity === "success" && "bg-emerald-500",
-                        a.severity === "warning" && "bg-amber-500",
-                        a.severity === "error" && "bg-rose-500",
+                        a.severity === "success" && "bg-success",
+                        a.severity === "warning" && "bg-warning",
+                        a.severity === "error" && "bg-danger",
                         a.severity === "info" && "bg-primary",
                       )}
                     />
@@ -297,7 +297,7 @@ function ChampionshipDetail() {
           </div>
 
           {d?.hall_of_fame ? (
-            <div className="rounded-2xl border border-warning/30 bg-gradient-to-br from-amber-500/10 to-background p-5 shadow-sm">
+            <div className="rounded-2xl border border-warning/30 bg-gradient-to-br from-warning/10 to-background p-5 shadow-sm">
               <h3 className="flex items-center gap-2 text-sm font-semibold text-warning">
                 <Trophy className="h-3.5 w-3.5" /> Hall of Fame
               </h3>

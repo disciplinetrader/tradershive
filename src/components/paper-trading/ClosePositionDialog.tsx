@@ -69,7 +69,7 @@ export function ClosePositionDialog({ trade, onClose }: { trade: Trade; onClose:
           <Button
             onClick={() => mut.mutate()}
             disabled={mut.isPending || exitNum <= 0}
-            className={cn(pnl >= 0 ? "bg-emerald-500 hover:bg-success/90" : "bg-rose-500 hover:bg-danger/90", "text-white")}
+            className={cn(pnl >= 0 ? "bg-success hover:bg-success/90" : "bg-danger hover:bg-danger/90", "text-white")}
           >
             Confirm close
           </Button>

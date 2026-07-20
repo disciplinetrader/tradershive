@@ -171,7 +171,7 @@ function BattleDetail() {
           </span>
         )}
         <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/60 px-3 py-1 text-xs">
-          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> {onlineCount} online
+          <span className="h-2 w-2 rounded-full bg-success animate-pulse" /> {onlineCount} online
         </span>
         {canJoin && <Button size="sm" onClick={doJoin}><LogIn className="mr-1.5 h-4 w-4" />Join battle</Button>}
         {canLeave && <Button size="sm" variant="outline" onClick={doLeave}><LogOut className="mr-1.5 h-4 w-4" />Leave</Button>}

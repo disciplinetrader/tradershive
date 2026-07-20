@@ -75,7 +75,7 @@ export function LiveBattleHeader({ battle, stats, profiles, participantCount }: 
       {isLive && (
         <div className="mt-3">
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-background/60">
-            <div className="h-full rounded-full bg-gradient-to-r from-primary via-emerald-500 to-amber-500 transition-all"
+            <div className="h-full rounded-full bg-gradient-to-r from-primary via-success to-amber-500 transition-all"
                  style={{ width: `${pct}%` }} />
           </div>
           <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">

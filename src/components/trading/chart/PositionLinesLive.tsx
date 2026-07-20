@@ -132,7 +132,7 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
               <div className="h-px flex-1 bg-blue-500" style={{ boxShadow: "0 0 6px #3b82f6" }} />
               <div className="pointer-events-auto ml-2 flex select-none items-center gap-1 rounded-md border border-blue-500 bg-blue-500 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">
                 {t.direction === "long" ? "▲" : "▼"} {t.lot_size} · {fmtPrice(sym, t.entry_price)}
-                <span className={cn("ml-1 rounded px-1 py-0.5", pnl >= 0 ? "bg-emerald-600" : "bg-rose-600")}>
+                <span className={cn("ml-1 rounded px-1 py-0.5", pnl >= 0 ? "bg-success" : "bg-danger")}>
                   {pnl >= 0 ? "+" : ""}{pnl.toFixed(2)}
                 </span>
                 <button
@@ -146,9 +146,9 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
             {/* SL */}
             {slY != null && slPrice != null && (
               <div className="absolute left-0 right-16 flex items-center" style={{ top: slY - 10, height: 20 }}>
-                <div className="h-px flex-1 bg-rose-500" style={{ boxShadow: "0 0 6px #ef4444" }} />
+                <div className="h-px flex-1 bg-danger" style={{ boxShadow: "0 0 6px #ef4444" }} />
                 <div
-                  className="pointer-events-auto ml-2 flex select-none items-center gap-1 rounded-md border border-rose-500 bg-rose-500 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white"
+                  className="pointer-events-auto ml-2 flex select-none items-center gap-1 rounded-md border border-rose-500 bg-danger px-1.5 py-0.5 text-[10px] font-bold uppercase text-white"
                   style={{ cursor: "ns-resize" }}
                   onPointerDown={(e) => {
                     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
@@ -163,9 +163,9 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
             {/* TP */}
             {tpY != null && tpPrice != null && (
               <div className="absolute left-0 right-16 flex items-center" style={{ top: tpY - 10, height: 20 }}>
-                <div className="h-px flex-1 bg-emerald-500" style={{ boxShadow: "0 0 6px #22c55e" }} />
+                <div className="h-px flex-1 bg-success" style={{ boxShadow: "0 0 6px #22c55e" }} />
                 <div
-                  className="pointer-events-auto ml-2 flex select-none items-center gap-1 rounded-md border border-emerald-500 bg-emerald-500 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white"
+                  className="pointer-events-auto ml-2 flex select-none items-center gap-1 rounded-md border border-emerald-500 bg-success px-1.5 py-0.5 text-[10px] font-bold uppercase text-white"
                   style={{ cursor: "ns-resize" }}
                   onPointerDown={(e) => {
                     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);

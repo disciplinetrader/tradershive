@@ -48,7 +48,7 @@ function HallOfFame() {
                 key={e.id}
                 to="/championship/$slug"
                 params={{ slug: meta?.slug }}
-                className="group relative overflow-hidden rounded-2xl border border-warning/30 bg-gradient-to-br from-amber-500/10 via-primary/5 to-background p-5 shadow-sm transition hover:border-amber-500 hover:shadow-elegant"
+                className="group relative overflow-hidden rounded-2xl border border-warning/30 bg-gradient-to-br from-warning/10 via-primary/5 to-background p-5 shadow-sm transition hover:border-warning hover:shadow-elegant"
               >
                 <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-warning">
                   <Trophy className="h-3.5 w-3.5" /> Champion
@@ -56,9 +56,9 @@ function HallOfFame() {
                 <div className="mt-1 text-xs text-muted-foreground">{meta?.name}</div>
                 <div className="mt-4 flex items-center gap-3">
                   {champ?.avatar_url ? (
-                    <img src={champ.avatar_url} className="h-14 w-14 rounded-full border-2 border-amber-500 shadow" alt="" />
+                    <img src={champ.avatar_url} className="h-14 w-14 rounded-full border-2 border-warning shadow" alt="" />
                   ) : (
-                    <div className="h-14 w-14 rounded-full border-2 border-amber-500 bg-muted" />
+                    <div className="h-14 w-14 rounded-full border-2 border-warning bg-muted" />
                   )}
                   <div>
                     <div className="text-lg font-bold">{champ?.display_name ?? champ?.username ?? "—"}</div>

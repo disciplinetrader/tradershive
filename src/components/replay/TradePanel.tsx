@@ -57,8 +57,8 @@ export function TradePanel() {
         </div>
       </div>
       <div className="grid grid-cols-2 gap-2">
-        <Button disabled={busy} onClick={() => submit("long")} className="bg-emerald-500 hover:bg-emerald-600">BUY / LONG</Button>
-        <Button disabled={busy} onClick={() => submit("short")} className="bg-rose-500 hover:bg-rose-600">SELL / SHORT</Button>
+        <Button disabled={busy} onClick={() => submit("long")} className="bg-success hover:bg-success">BUY / LONG</Button>
+        <Button disabled={busy} onClick={() => submit("short")} className="bg-danger hover:bg-danger">SELL / SHORT</Button>
       </div>
 
       <div className="pt-3 border-t border-border/40 space-y-2">

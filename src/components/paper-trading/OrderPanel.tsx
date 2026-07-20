@@ -281,8 +281,8 @@ export function OrderPanel() {
           disabled={openMut.isPending || !accountId || !symbolMeta}
           className={cn("flex-1 shadow-elegant",
             side === "long"
-              ? "bg-emerald-500 text-white hover:bg-success/90"
-              : "bg-rose-500 text-white hover:bg-danger/90")}
+              ? "bg-success text-white hover:bg-success/90"
+              : "bg-danger text-white hover:bg-danger/90")}
         >
           <Send className="mr-1.5 h-4 w-4" />
           {orderType === "market" ? (side === "long" ? "Buy market" : "Sell market") : "Place order"}

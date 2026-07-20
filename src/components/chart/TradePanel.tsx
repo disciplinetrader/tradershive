@@ -101,7 +101,7 @@ export function TradePanel({ symbol, market }: Props) {
         <Button
           disabled={mutation.isPending || !accountId || !price}
           onClick={() => mutation.mutate("long")}
-          className="h-10 gap-1.5 bg-emerald-600 hover:bg-emerald-500"
+          className="h-10 gap-1.5 bg-success hover:bg-success"
         >
           <ArrowUp className="h-4 w-4" />Buy
         </Button>

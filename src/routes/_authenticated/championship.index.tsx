@@ -37,10 +37,10 @@ function ChampionshipIndex() {
       {featured ? (
         <button
           onClick={() => nav({ to: "/championship/$slug", params: { slug: featured.slug } })}
-          className="group relative w-full overflow-hidden rounded-3xl border border-primary/30 bg-gradient-to-br from-amber-500/15 via-primary/10 to-background p-6 text-left shadow-elegant transition hover:border-primary/60 md:p-10"
+          className="group relative w-full overflow-hidden rounded-3xl border border-primary/30 bg-gradient-to-br from-warning/15 via-primary/10 to-background p-6 text-left shadow-elegant transition hover:border-primary/60 md:p-10"
         >
           <div className="absolute right-4 top-4 flex items-center gap-2 rounded-full border border-primary/30 bg-background/50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-primary">
-            <span className={cn("h-2 w-2 rounded-full", featured.status === "live" ? "animate-pulse bg-emerald-500" : "bg-amber-500")} />
+            <span className={cn("h-2 w-2 rounded-full", featured.status === "live" ? "animate-pulse bg-success" : "bg-warning")} />
             {featured.status}
           </div>
           <div className="flex items-center gap-3 text-primary">

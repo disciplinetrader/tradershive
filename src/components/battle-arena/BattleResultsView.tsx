@@ -16,7 +16,7 @@ export function BattleResultsView({ battle, results, profiles }: { battle: any; 
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-primary/30 bg-gradient-to-br from-amber-500/10 via-primary/5 to-background p-6 text-center">
+      <div className="rounded-2xl border border-primary/30 bg-gradient-to-br from-warning/10 via-primary/5 to-background p-6 text-center">
         <Trophy className="mx-auto h-8 w-8 text-warning" />
         <div className="mt-2 text-xs uppercase tracking-wide text-muted-foreground">Winner</div>
         <div className="mt-1 text-2xl font-bold">{winner?.display_name ?? winner?.username ?? "—"}</div>

@@ -3,9 +3,9 @@ import { cn } from "@/lib/utils";
 export type PresenceStatus = "trading" | "watching" | "idle" | "disconnected" | "finished";
 
 const styles: Record<PresenceStatus, { color: string; label: string; pulse?: boolean }> = {
-  trading:      { color: "bg-emerald-500", label: "Trading",       pulse: true },
+  trading:      { color: "bg-success", label: "Trading",       pulse: true },
   watching:     { color: "bg-blue-500",    label: "Watching" },
-  idle:         { color: "bg-amber-500",   label: "Idle" },
+  idle:         { color: "bg-warning",   label: "Idle" },
   disconnected: { color: "bg-slate-400",   label: "Disconnected" },
   finished:     { color: "bg-purple-500",  label: "Finished" },
 };

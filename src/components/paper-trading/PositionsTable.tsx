@@ -139,7 +139,7 @@ export function PositionsTable() {
                         <Button
                           variant="default"
                           size="sm"
-                          className="h-7 gap-1 bg-danger/90 px-2 text-[11px] font-semibold text-white hover:bg-rose-500"
+                          className="h-7 gap-1 bg-danger/90 px-2 text-[11px] font-semibold text-white hover:bg-danger"
                           onClick={() => instantClose(t)}
                           disabled={closingIds.has(t.id)}
                           aria-label="Close at market"
