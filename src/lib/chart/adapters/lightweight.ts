@@ -20,30 +20,47 @@ const INDICATOR_COLORS = ["#22d3ee", "#a78bfa", "#f472b6", "#f59e0b", "#34d399",
 
 export const createLightweightAdapter: ChartAdapterFactory = ({ container, settings, onCrosshair }) => {
   // lightweight-charts' color parser doesn't accept oklch()/color-mix(). Resolve any
-  // CSS color string to a concrete rgb()/rgba() via the browser before passing it in.
+  // CSS color to a concrete rgb()/rgba() via a canvas — getComputedStyle keeps
+  // oklch() in its serialized form on modern Chromium, but canvas fillStyle
+  // always normalises to `rgba(r, g, b, a)` (or `#rrggbb`).
   const resolveColor = (value: string, fallback: string): string => {
-    if (typeof window === "undefined") return fallback;
-    const el = document.createElement("div");
-    el.style.color = "";
-    el.style.color = value;
-    document.body.appendChild(el);
-    const resolved = getComputedStyle(el).color;
-    document.body.removeChild(el);
-    return resolved && resolved !== "" ? resolved : fallback;
+    if (typeof document === "undefined") return fallback;
+    try {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return fallback;
+      ctx.fillStyle = "#000"; // reset baseline
+      ctx.fillStyle = value;
+      const resolved = ctx.fillStyle as string;
+      if (!resolved) return fallback;
+      // Some engines still hand back oklch — fall back to painting a pixel
+      // and reading it out.
+      if (/oklch|oklab|color\(|color-mix/i.test(resolved)) {
+        ctx.fillRect(0, 0, 1, 1);
+        const [r, g, b, a] = ctx.getImageData(0, 0, 1, 1).data;
+        return `rgba(${r}, ${g}, ${b}, ${(a / 255).toFixed(3)})`;
+      }
+      return resolved;
+    } catch { return fallback; }
   };
+
   const cs = typeof window !== "undefined" ? getComputedStyle(document.documentElement) : null;
   const cssVar = (name: string, fallback: string) => (cs?.getPropertyValue(name).trim() || fallback);
   const textColor = resolveColor(cssVar("--muted-foreground", "#94a3b8"), "#94a3b8");
   const fg = cssVar("--foreground", "#94a3b8");
   const gridColor = resolveColor(`color-mix(in oklab, ${fg} 8%, transparent)`, "rgba(148,163,184,0.08)");
   const borderColor = resolveColor(`color-mix(in oklab, ${fg} 15%, transparent)`, "rgba(148,163,184,0.15)");
+  // Resolve a concrete background — lightweight-charts' attribution-logo widget
+  // parses this to pick a light/dark variant and its parser rejects oklch().
+  const bgColor = resolveColor(cssVar("--card", "#0f172a"), "#0f172a");
   const chart = createChart(container, {
     autoSize: true,
     layout: {
-      background: { type: ColorType.Solid, color: "transparent" },
+      background: { type: ColorType.Solid, color: bgColor },
       textColor,
       fontFamily: "ui-sans-serif, system-ui",
     },
+
     grid: {
       vertLines: { color: gridColor, visible: settings.showGrid },
       horzLines: { color: gridColor, visible: settings.showGrid },
@@ -65,6 +82,8 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
   const sessionSeries = new Map<string, ISeriesApi<"Histogram">>();
   const smcBoxSeries = new Map<string, ISeriesApi<"Line">>();
   let smcMarkers: ISeriesMarkersPluginApi<UTCTimestamp> | null = null;
+  let externalMarkers: ISeriesMarkersPluginApi<UTCTimestamp> | null = null;
+
   const SESSION_COLORS: Record<string, string> = {
     asia: "#a78bfa",
     london: "#60a5fa",
@@ -115,7 +134,12 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
       chart.removeSeries(priceSeries);
       priceSeries = buildPriceSeries(chart, type);
       currentType = type;
+      // Marker plugins were bound to the old series — drop them so callers
+      // re-attach on the next sync.
+      smcMarkers = null;
+      externalMarkers = null;
     },
+
     syncOverlayIndicators(indicators, candles) {
       if (!candles.length) return;
       const closes = candles.map((c) => c.close);
@@ -332,9 +356,45 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
     },
     fitContent() { chart.timeScale().fitContent(); },
     resetPriceScale() { chart.priceScale("right").applyOptions({ autoScale: true }); },
-    destroy() { chart.remove(); overlays.clear(); subPanes.clear(); sessionSeries.clear(); smcBoxSeries.clear(); smcMarkers = null; volSeries = null; },
+    addPriceLine(opts) {
+      const line = priceSeries.createPriceLine({
+        price: opts.price,
+        color: resolveColor(opts.color, "#60a5fa"),
+        title: opts.title ?? "",
+        lineStyle: (opts.lineStyle ?? 2) as any,
+        lineWidth: (opts.lineWidth ?? 1) as any,
+        axisLabelVisible: opts.axisLabelVisible ?? true,
+      });
+      return {
+        remove: () => { try { priceSeries.removePriceLine(line); } catch { /* series torn down */ } },
+        applyOptions: (o) => {
+          const patch: any = { ...o };
+          if (o.color) patch.color = resolveColor(o.color, "#60a5fa");
+          if (o.lineStyle != null) patch.lineStyle = o.lineStyle;
+          if (o.lineWidth != null) patch.lineWidth = o.lineWidth;
+          line.applyOptions(patch);
+        },
+      };
+    },
+    setExternalMarkers(markers) {
+      const mapped: SeriesMarker<UTCTimestamp>[] = markers.map((m) => ({
+        time: (m.timeMs / 1000) as UTCTimestamp,
+        position: m.position,
+        shape: m.shape,
+        color: resolveColor(m.color, "#a855f7"),
+        text: m.text,
+      }));
+      if (!externalMarkers) externalMarkers = createSeriesMarkers(priceSeries, mapped) as any;
+      else externalMarkers.setMarkers(mapped);
+    },
+    destroy() {
+      chart.remove();
+      overlays.clear(); subPanes.clear(); sessionSeries.clear(); smcBoxSeries.clear();
+      smcMarkers = null; externalMarkers = null; volSeries = null;
+    },
   } satisfies ChartAdapter;
 };
+
 
 function priceMode(s: ChartSettings) {
   return s.priceScale === "log" ? 1 : s.priceScale === "percentage" ? 2 : 0;
