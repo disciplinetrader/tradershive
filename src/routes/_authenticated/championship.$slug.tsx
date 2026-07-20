@@ -41,6 +41,7 @@ function ChampionshipDetail() {
   const getFn = useServerFn(getChampionship);
   const regFn = useServerFn(registerChampionship);
   const cancelFn = useServerFn(cancelChampionshipRegistration);
+  const joinLiveFn = useServerFn(joinChampionshipLive);
 
   // fetch by slug via first list then id
   const idQuery = useQuery({
