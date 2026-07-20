@@ -69,8 +69,8 @@ function PlaybooksPage() {
             <div key={p.id} className="relative group">
               <PlaybookCard pb={p} />
               <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 flex gap-1 transition">
-                <Button size="icon" variant="secondary" className="h-7 w-7" onClick={() => setEditing(p)}>✎</Button>
-                <Button size="icon" variant="secondary" className="h-7 w-7" onClick={() => delMut.mutate(p.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                <Button size="icon" variant="secondary" className="h-7 w-7" aria-label="Edit playbook" onClick={() => setEditing(p)}>✎</Button>
+                <Button size="icon" variant="secondary" className="h-7 w-7" aria-label="Delete playbook" onClick={() => delMut.mutate(p.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
               </div>
             </div>
           ))}

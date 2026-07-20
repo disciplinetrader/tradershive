@@ -185,7 +185,7 @@ export function OrderPanel() {
         <Field label="Risk %">
           <div className="flex gap-1">
             <Input inputMode="decimal" value={riskPct} onChange={(e) => setRiskPct(e.target.value)} className="h-8 font-mono" />
-            <Button size="icon" variant="outline" className="h-8 w-8" title="Calculate lot from risk" onClick={calculateSizeFromRisk}>
+            <Button size="icon" variant="outline" className="h-8 w-8" aria-label="Calculate lot from risk" title="Calculate lot from risk" onClick={calculateSizeFromRisk}>
               <Calculator className="h-3.5 w-3.5" />
             </Button>
           </div>

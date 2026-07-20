@@ -65,14 +65,14 @@ export function ChecklistEditor({ strategyId, initial }: { strategyId: string; i
             </select>
             <Input value={c.title} onChange={(e) => setLists((p) => p.map((x, i) => i === idx ? { ...x, title: e.target.value } : x))} className="h-8 flex-1" />
             <Button size="sm" onClick={() => saveMut.mutate(idx)} disabled={saveMut.isPending}><Save className="mr-1 h-3.5 w-3.5" />Save</Button>
-            {c.id ? <Button size="icon" variant="ghost" onClick={() => delMut.mutate(c.id!)}><Trash2 className="h-3.5 w-3.5" /></Button> : null}
+            {c.id ? <Button size="icon" variant="ghost" aria-label="Delete checklist" onClick={() => delMut.mutate(c.id!)}><Trash2 className="h-3.5 w-3.5" /></Button> : null}
           </div>
           <div className="space-y-1.5">
             {c.items.map((it, ii) => (
               <div key={ii} className="flex items-center gap-2">
                 <input type="checkbox" checked={!!it.required} onChange={(e) => setItem(idx, ii, { required: e.target.checked })} title="Required?" />
                 <Input value={it.label} onChange={(e) => setItem(idx, ii, { label: e.target.value })} placeholder="Checklist item" className="h-8" />
-                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => removeItem(idx, ii)}><Trash2 className="h-3 w-3" /></Button>
+                <Button size="icon" variant="ghost" className="h-7 w-7" aria-label="Remove item" onClick={() => removeItem(idx, ii)}><Trash2 className="h-3 w-3" /></Button>
               </div>
             ))}
             <Button size="sm" variant="ghost" onClick={() => addItem(idx)}><Plus className="mr-1 h-3.5 w-3.5" />Add item</Button>

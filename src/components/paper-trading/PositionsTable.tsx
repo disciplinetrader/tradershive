@@ -133,7 +133,7 @@ export function PositionsTable() {
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setClosing(t)} aria-label="Close with custom price" title="Close at custom price…">
                           <Sliders className="h-3.5 w-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7" disabled title="Partial close (coming soon)">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" disabled aria-label="Partial close (coming soon)" title="Partial close (coming soon)">
                           <Split className="h-3.5 w-3.5" />
                         </Button>
                         <Button

@@ -72,7 +72,7 @@ export function ExamplesPanel({ strategyId, initial, userId }: { strategyId: str
                   <div className="text-xs uppercase tracking-wider text-muted-foreground">{ex.ref_type}</div>
                   <div className="truncate text-sm">{ex.title ?? ex.description ?? ex.ref_id ?? "—"}</div>
                 </div>
-                <Button size="icon" variant="ghost" onClick={() => delMut.mutate(ex.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                <Button size="icon" variant="ghost" aria-label="Delete example" onClick={() => delMut.mutate(ex.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
               </li>
             ))}
           </ul>
@@ -93,7 +93,7 @@ function QuickList({ title, icon: Icon, items, onAttach }: { title: string; icon
           {items.slice(0, 6).map((it) => (
             <li key={it.id} className="flex items-center justify-between gap-2">
               <span className="truncate text-xs">{it.label}</span>
-              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => onAttach(it)}><Link className="h-3 w-3" /></Button>
+              <Button size="icon" variant="ghost" className="h-6 w-6" aria-label="Attach item" onClick={() => onAttach(it)}><Link className="h-3 w-3" /></Button>
             </li>
           ))}
         </ul>
