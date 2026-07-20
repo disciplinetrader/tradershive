@@ -14,7 +14,7 @@ import {
 import type { Candle } from "@/lib/market-data/types";
 import type { ChartAdapter, ChartAdapterFactory } from "../adapter";
 import type { ChartSettings, ChartType, IndicatorConfig } from "../types";
-import { ema, sma, bollinger, vwap, atr, donchian, heikinAshi, fibonacci, supportResistance, sessions, smc } from "../indicators";
+import { ema, sma, bollinger, vwap, atr, donchian, heikinAshi, fibonacci, supportResistance, sessions, smc, rsi, macd } from "../indicators";
 
 const INDICATOR_COLORS = ["#22d3ee", "#a78bfa", "#f472b6", "#f59e0b", "#34d399", "#f87171", "#60a5fa"];
 
@@ -43,6 +43,7 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
   let priceSeries: ISeriesApi<any> = buildPriceSeries(chart, settings.chartType);
   let currentType: ChartType = settings.chartType;
   const overlays = new Map<string, ISeriesApi<"Line">>();
+  const subPanes = new Map<string, { series: ISeriesApi<any>; paneIndex: number }>();
   const sessionSeries = new Map<string, ISeriesApi<"Histogram">>();
   const smcBoxSeries = new Map<string, ISeriesApi<"Line">>();
   let smcMarkers: ISeriesMarkersPluginApi<UTCTimestamp> | null = null;
@@ -239,6 +240,52 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
       }
       if (!smcHandled && smcMarkers) { smcMarkers.setMarkers([]); }
     },
+    syncSubPaneIndicators(indicators, candles) {
+      if (!candles.length) return;
+      const closes = candles.map((c) => c.close);
+      const active = new Set<string>();
+      // Assign each configured sub indicator a dedicated pane index (1, 2, 3…).
+      // Volume stays in the overlay margin; not handled here.
+      const oscillators = indicators.filter(
+        (i) => i.pane === "sub" && i.visible !== false && i.key !== "volume",
+      );
+      oscillators.forEach((cfg, i) => {
+        const paneIndex = i + 1;
+        const series = computeSub(cfg, candles, closes);
+        for (const [key, { data, color, type, extra }] of Object.entries(series)) {
+          const id = `${cfg.id}:${key}`;
+          active.add(id);
+          let entry = subPanes.get(id);
+          if (!entry || entry.paneIndex !== paneIndex) {
+            if (entry) chart.removeSeries(entry.series);
+            const s = type === "histogram"
+              ? chart.addSeries(HistogramSeries, { color, priceLineVisible: false, lastValueVisible: false, ...extra }, paneIndex)
+              : chart.addSeries(LineSeries, { color, lineWidth: 2, priceLineVisible: false, lastValueVisible: false, ...extra }, paneIndex);
+            entry = { series: s, paneIndex };
+            subPanes.set(id, entry);
+          }
+          entry.series.setData(
+            data
+              .map((v, idx) => ({ time: (candles[idx].time / 1000) as UTCTimestamp, value: v }))
+              .filter((p) => Number.isFinite(p.value)) as any,
+          );
+        }
+      });
+      for (const [id, entry] of subPanes) {
+        if (!active.has(id)) { try { chart.removeSeries(entry.series); } catch { /* removed with pane */ } subPanes.delete(id); }
+      }
+      // Compact pane heights so oscillators get ~120px each.
+      try {
+        const panes = chart.panes();
+        const container = chart.chartElement();
+        const totalH = container.clientHeight || 600;
+        const oscPaneCount = panes.length - 1;
+        if (oscPaneCount > 0) {
+          const oscH = Math.min(140, Math.max(90, (totalH * 0.28) / oscPaneCount));
+          panes.slice(1).forEach((p) => p.setHeight(oscH));
+        }
+      } catch { /* older builds */ }
+    },
     setVolumeVisible(visible, candles) {
       if (visible && !volSeries) {
         volSeries = chart.addSeries(HistogramSeries, { priceFormat: { type: "volume" }, priceScaleId: "vol" });
@@ -267,7 +314,7 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
     },
     fitContent() { chart.timeScale().fitContent(); },
     resetPriceScale() { chart.priceScale("right").applyOptions({ autoScale: true }); },
-    destroy() { chart.remove(); overlays.clear(); sessionSeries.clear(); smcBoxSeries.clear(); smcMarkers = null; volSeries = null; },
+    destroy() { chart.remove(); overlays.clear(); subPanes.clear(); sessionSeries.clear(); smcBoxSeries.clear(); smcMarkers = null; volSeries = null; },
   } satisfies ChartAdapter;
 };
 
@@ -364,3 +411,67 @@ function computeOverlay(cfg: IndicatorConfig, candles: Candle[], closes: number[
   }
   return map;
 }
+
+type SubSeriesSpec = { data: number[]; color: string; type: "line" | "histogram"; extra?: Record<string, unknown> };
+
+function computeSub(cfg: IndicatorConfig, candles: Candle[], closes: number[]): Record<string, SubSeriesSpec> {
+  const p = cfg.params;
+  switch (cfg.key) {
+    case "rsi": {
+      const v = rsi(closes, p.length ?? 14);
+      return { rsi: { data: v, color: "#a78bfa", type: "line" } };
+    }
+    case "macd": {
+      const m = macd(closes, p.fast ?? 12, p.slow ?? 26, p.signal ?? 9);
+      return {
+        macd: { data: m.macdLine, color: "#22d3ee", type: "line" },
+        signal: { data: m.signal, color: "#f59e0b", type: "line" },
+        hist: { data: m.hist, color: "#64748b", type: "histogram" },
+      };
+    }
+    case "atr": {
+      const v = atr(candles, p.length ?? 14);
+      return { atr: { data: v, color: "#34d399", type: "line" } };
+    }
+    case "stochastic": {
+      const k = p.k ?? 14;
+      const dLen = p.d ?? 3;
+      const kv: number[] = [];
+      for (let i = 0; i < candles.length; i++) {
+        const s = Math.max(0, i - k + 1);
+        const slice = candles.slice(s, i + 1);
+        const hi = Math.max(...slice.map((c) => c.high));
+        const lo = Math.min(...slice.map((c) => c.low));
+        kv.push(hi === lo ? 50 : ((candles[i].close - lo) / (hi - lo)) * 100);
+      }
+      return {
+        k: { data: kv, color: "#22d3ee", type: "line" },
+        d: { data: sma(kv, dLen), color: "#f59e0b", type: "line" },
+      };
+    }
+    case "cci": {
+      const length = p.length ?? 20;
+      const tp = candles.map((c) => (c.high + c.low + c.close) / 3);
+      const out: number[] = [];
+      for (let i = 0; i < tp.length; i++) {
+        const s = Math.max(0, i - length + 1);
+        const slice = tp.slice(s, i + 1);
+        const mean = slice.reduce((a, b) => a + b, 0) / slice.length;
+        const md = slice.reduce((a, b) => a + Math.abs(b - mean), 0) / slice.length;
+        out.push(md === 0 ? 0 : (tp[i] - mean) / (0.015 * md));
+      }
+      return { cci: { data: out, color: "#a78bfa", type: "line" } };
+    }
+    case "obv": {
+      const out: number[] = [0];
+      for (let i = 1; i < candles.length; i++) {
+        const prev = out[i - 1];
+        out.push(candles[i].close > candles[i - 1].close ? prev + candles[i].volume : candles[i].close < candles[i - 1].close ? prev - candles[i].volume : prev);
+      }
+      return { obv: { data: out, color: "#22d3ee", type: "line" } };
+    }
+    default:
+      return {};
+  }
+}
+

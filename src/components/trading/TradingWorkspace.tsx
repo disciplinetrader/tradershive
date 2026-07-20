@@ -28,6 +28,7 @@ import { TradePlanner } from "@/components/trading/chart/TradePlanner";
 import { ChartContextMenu } from "@/components/trading/chart/ChartContextMenu";
 import { PositionLinesLive, type OpenTradeLine } from "@/components/trading/chart/PositionLinesLive";
 import { TodayPnLWidget } from "@/components/trading/TodayPnLWidget";
+import { MultiChartStrip, type MultiChartPane } from "@/components/trading/MultiChartStrip";
 import { useTradingShortcuts } from "@/hooks/useTradingShortcuts";
 import { emitTradeIntent } from "@/lib/trading/trade-intent";
 
@@ -96,6 +97,7 @@ function TradingWorkspaceInner() {
   const [plannerActive, setPlannerActive] = useState(false);
   const [drawingsHidden, setDrawingsHidden] = useState(false);
   const [shortcutsHelp, setShortcutsHelp] = useState(false);
+  const [multiPanes, setMultiPanes] = useState<MultiChartPane[]>([]);
 
   const handleReady = useCallback((api: ChartHandle) => {
     chartApi.current = api;
@@ -494,6 +496,8 @@ function TradingWorkspaceInner() {
             <OrderPanel />
           </div>
         </div>
+
+        <MultiChartStrip panes={multiPanes} onChange={setMultiPanes} primarySymbol={symbol} />
 
         <GlassCard className="min-h-[240px] p-0">
           <Tabs defaultValue="positions" className="w-full">
