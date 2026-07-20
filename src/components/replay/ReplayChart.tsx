@@ -41,7 +41,9 @@ export function ReplayChart({ onCapture }: Props) {
     [session?.symbol, session?.timeframe, session?.market],
   );
 
-  // Mount the adapter once, tear it down on unmount.
+  // Mount the adapter once; keep it alive for the lifetime of the component
+  // and just push new candles / settings when the session changes. Re-creating
+  // on session id lost the reference before the candle-push effect could re-run.
   useEffect(() => {
     if (!hostRef.current) return;
     const a = createLightweightAdapter({ container: hostRef.current, settings });
@@ -54,9 +56,9 @@ export function ReplayChart({ onCapture }: Props) {
       a.destroy();
       adapterRef.current = null;
     };
-    // Rebuild if the session (symbol/tf) changes — otherwise keep the chart alive.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.id]);
+  }, []);
+
 
   // Keep colors/grid/crosshair in sync with settings updates.
   useEffect(() => { adapterRef.current?.applySettings(settings); }, [settings]);
