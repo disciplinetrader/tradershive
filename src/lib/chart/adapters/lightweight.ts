@@ -8,8 +8,8 @@
 
 import {
   createChart, CandlestickSeries, LineSeries, AreaSeries, BarSeries, BaselineSeries, HistogramSeries,
-  CrosshairMode as LWCrosshair, ColorType,
-  type IChartApi, type ISeriesApi, type UTCTimestamp,
+  createSeriesMarkers, CrosshairMode as LWCrosshair, ColorType,
+  type IChartApi, type ISeriesApi, type ISeriesMarkersPluginApi, type SeriesMarker, type UTCTimestamp,
 } from "lightweight-charts";
 import type { Candle } from "@/lib/market-data/types";
 import type { ChartAdapter, ChartAdapterFactory } from "../adapter";
