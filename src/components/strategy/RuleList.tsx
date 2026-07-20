@@ -21,7 +21,7 @@ export function RuleList({
         <div key={r.id} className="flex items-center gap-2">
           <GripVertical className="h-3.5 w-3.5 text-muted-foreground/60" />
           <Input value={r.text} onChange={(e) => set(i, e.target.value)} placeholder={placeholder} className="h-9" />
-          <Button variant="ghost" size="icon" onClick={() => remove(i)} className="h-8 w-8"><Trash2 className="h-3.5 w-3.5" /></Button>
+          <Button variant="ghost" size="icon" aria-label="Remove rule" onClick={() => remove(i)} className="h-8 w-8"><Trash2 className="h-3.5 w-3.5" /></Button>
         </div>
       ))}
       <Button variant="ghost" size="sm" onClick={add} className="h-8"><Plus className="mr-1.5 h-3.5 w-3.5" />Add rule</Button>

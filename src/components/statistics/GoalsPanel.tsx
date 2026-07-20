@@ -74,7 +74,7 @@ export function GoalsPanel() {
                     <div className="text-sm font-semibold">{g.name}</div>
                     <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{KIND_LABEL[g.kind]} · {g.period}</div>
                   </div>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => del.mutate(g.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Delete goal" onClick={() => del.mutate(g.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
                 </div>
                 <div className="mt-3 flex items-baseline justify-between text-sm">
                   <span className={cn("font-bold tabular-nums", tone === "up" && "text-emerald-400", tone === "down" && "text-rose-400")}>{current}</span>

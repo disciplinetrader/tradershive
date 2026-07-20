@@ -73,7 +73,7 @@ function AlertsPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <QuoteTicker symbol={a.symbol} />
-                  <Button size="icon" variant="ghost" onClick={() => remove.mutate(a.id)}><Trash2 className="h-4 w-4" /></Button>
+                  <Button size="icon" variant="ghost" aria-label="Delete alert" onClick={() => remove.mutate(a.id)}><Trash2 className="h-4 w-4" /></Button>
                 </div>
               </li>
             ))}

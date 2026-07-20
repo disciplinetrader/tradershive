@@ -84,7 +84,7 @@ export function CreatorWizard({ open, onOpenChange, initial }: { open: boolean; 
             <div className="text-xs text-muted-foreground">Step {step} of {WIZARD_STEPS.length}</div>
             <div className="text-base font-semibold">{WIZARD_STEPS[step - 1].title}</div>
           </div>
-          <Button size="icon" variant="ghost" onClick={() => onOpenChange(false)}><X className="h-4 w-4" /></Button>
+          <Button size="icon" variant="ghost" aria-label="Close" onClick={() => onOpenChange(false)}><X className="h-4 w-4" /></Button>
         </div>
         <div className="grid grid-cols-9 gap-1 px-5 pt-3">
           {WIZARD_STEPS.map((s) => (

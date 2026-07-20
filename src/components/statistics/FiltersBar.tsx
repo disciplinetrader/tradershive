@@ -139,7 +139,7 @@ export function FiltersBar() {
                 {savedQuery.data.map((f: any) => (
                   <div key={f.id} className="flex items-center gap-1">
                     <button className="flex-1 text-left px-2 py-1.5 text-xs rounded hover:bg-muted" onClick={() => setFilters({ ...EMPTY_FILTERS, ...(f.filters ?? {}) })}>{f.name}</button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => remove.mutate(f.id)}><X className="h-3 w-3" /></Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Remove filter" onClick={() => remove.mutate(f.id)}><X className="h-3 w-3" /></Button>
                   </div>
                 ))}
               </div>
