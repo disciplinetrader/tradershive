@@ -148,7 +148,7 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
               <div className="absolute left-0 right-16 flex items-center" style={{ top: slY - 10, height: 20 }}>
                 <div className="h-px flex-1 bg-danger" style={{ boxShadow: "0 0 6px #ef4444" }} />
                 <div
-                  className="pointer-events-auto ml-2 flex select-none items-center gap-1 rounded-md border border-rose-500 bg-danger px-1.5 py-0.5 text-[10px] font-bold uppercase text-white"
+                  className="pointer-events-auto ml-2 flex select-none items-center gap-1 rounded-md border border-danger bg-danger px-1.5 py-0.5 text-[10px] font-bold uppercase text-white"
                   style={{ cursor: "ns-resize" }}
                   onPointerDown={(e) => {
                     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
@@ -165,7 +165,7 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
               <div className="absolute left-0 right-16 flex items-center" style={{ top: tpY - 10, height: 20 }}>
                 <div className="h-px flex-1 bg-success" style={{ boxShadow: "0 0 6px #22c55e" }} />
                 <div
-                  className="pointer-events-auto ml-2 flex select-none items-center gap-1 rounded-md border border-emerald-500 bg-success px-1.5 py-0.5 text-[10px] font-bold uppercase text-white"
+                  className="pointer-events-auto ml-2 flex select-none items-center gap-1 rounded-md border border-success bg-success px-1.5 py-0.5 text-[10px] font-bold uppercase text-white"
                   style={{ cursor: "ns-resize" }}
                   onPointerDown={(e) => {
                     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
