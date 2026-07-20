@@ -1,46 +1,45 @@
+# TradingView-parity Charting
 
-# Platform-Wide Polish Audit
+Design tokens for the minimalist 3px look are already in `src/styles.css`. This plan covers the five charting capabilities you selected. Everything reuses the existing `ChartEngine` + `MarketDataEngine` and is scoped to the Trading Workspace so nothing else regresses.
 
-A single-pass polish sweep across TradersHIVE. No new features — only consistency, theme correctness, accessibility, and code hygiene.
+## 1. Multi-chart / multi-timeframe grid
 
-## Scope
+- Extend `ChartSettings` with `panes: Array<{ symbol; timeframe; chartType; indicators }>` and a `layout` picker (1×1, 2×1, 1×2, 2×2, 3×1) in the top toolbar.
+- Each pane is an independent `ChartEngine` instance so BTC 1m / BTC 15m / BTC 1H can sit side by side. Active pane is highlighted; toolbar edits target it.
+- Persist to `chart_layouts` (already exists).
 
-Ship in **4 sequential batches** in one turn each. Each batch is self-contained and safe to merge independently.
+## 2. Functional drawing tools
 
-### Batch 1 — Design tokens & theme correctness (highest leverage)
-- Sweep `src/**/*.{tsx,ts}` with `rg` for hardcoded colors: `text-white`, `text-black`, `bg-white`, `bg-black`, `bg-gray-*`, `text-gray-*`, `border-gray-*`, `text-green-*`, `text-red-*`, `bg-slate-*`, hex literals `#[0-9a-f]{3,8}`, and `rgba(`. Replace with semantic tokens (`text-foreground`, `bg-card`, `bg-muted`, `text-success`, `text-danger`, `border-border`, etc.).
-- Audit `src/styles.css` — verify all semantic tokens (`--success`, `--warning`, `--info`, `--danger`) render legibly in both themes; bump muted-foreground contrast in dark mode to hit WCAG AA (currently 0.7 lightness → target ≥ 0.72).
-- Add missing dark-mode surface tokens for tables, heatmaps, chart gridlines, and skeletons where components use bare grays.
-- Fix chart libraries that read hardcoded `#fff` / `#000` — inject CSS-var-driven color from `getComputedStyle(document.documentElement)`.
+- New `DrawingsLayer.tsx` — an absolutely-positioned SVG synced to the adapter's `priceToY` / `timeToX`. Redraws on `visibleRangeChanged` and on tick.
+- Tools wired end-to-end: Trend line, Horizontal, Vertical, Ray, Rectangle, Fib Retracement (7 levels), Arrow, Text, Measure.
+- Interactions: click-to-place points, drag endpoints, right-click to delete, ESC cancels, Delete key removes selection.
+- Persist to `chart_drawings` (already exists) keyed by `(user_id, symbol, timeframe)`; load on mount.
 
-### Batch 2 — Accessibility & consistency polish
-- Icon-only buttons: audit `<Button size="icon">` occurrences and add `aria-label` where missing (topbar, chart rails, close buttons on dialogs/toasts).
-- Focus states: verify `:focus-visible` ring uses `--ring` token and is visible in both themes (already in `styles.css` base — check components that override).
-- Consistent border-radius: unify ad-hoc `rounded-xl` / `rounded-2xl` / `rounded-[10px]` on cards to project's `rounded-2xl` (matches `--radius`).
-- Standardize animation duration to `duration-200` / `duration-300` — remove one-off `duration-500`+ on interactive elements.
-- Ensure every `<Skeleton>` uses `bg-muted` (auto-themes) instead of `bg-gray-200`.
-- Single `<main>` per route — verify no duplicate landmarks.
+## 3. Multi-pane oscillators
 
-### Batch 3 — Empty / error / loading state polish
-- Create shared `<EmptyState>` component (`src/components/common/EmptyState.tsx`) with icon + title + description + optional action, using semantic tokens.
-- Replace inline "No X yet" strings across Journal, Battle Arena, Community, Championship, Replay Library, Statistics with the shared component.
-- Standardize error toasts on `showError()` from `src/lib/client-errors.ts` (already exists — sweep remaining `catch { toast.error("...") }` sites).
-- Ensure every route with a loader has both `errorComponent` and `notFoundComponent`; add missing ones using a shared `<RouteError>` + `<RouteNotFound>` in `src/components/common/`.
+- Rework `lightweight` adapter to support **sub-panes**: RSI, MACD, Stochastic, ADX, CCI, OBV each render in their own stacked pane with independent price scale and shared time axis (via `lightweight-charts` `panes` API).
+- Pane heights are resizable via a thin drag handle between panes; state saved to `chart_preferences`.
 
-### Batch 4 — Code hygiene & performance
-- Run `tsgo` and fix any warnings surfaced.
-- `rg` for unused imports flagged by ESLint, prune.
-- Memoize the two known re-render hotspots: `TradingWorkspace` overlay lists and `LiveScoreboard` participant rows.
-- Verify heavy routes (`/replay/*`, `/trading`, `/admin/*`) are already code-split by TanStack file-based routing — no change needed unless bundle audit flags a specific eager import.
-- Remove dead files identified by `rg` orphan scan (e.g. `OrderLinesOverlay.tsx` if fully replaced by `PositionLinesLive.tsx`).
+## 4. Compare symbols overlay
 
-## Out of scope
-- No workflow / IA changes.
-- No new features, routes, DB migrations, or server functions.
-- No changes to Authentication, Landing, Dashboard business logic, Paper Trading engine, Journal logic, Challenges, or Statistics calculations — presentation-layer only where those pages appear.
+- "+ Compare" button in the chart info bar. Adds a second (or third) symbol as a percentage-normalized line series on the same price pane, colored per symbol with its own legend chip and remove button.
+- Base symbol stays as candles; comparisons update live from the MarketDataEngine.
 
-## Deliverable
-A final report listing: pages reviewed, components touched, hardcoded colors replaced (count), a11y fixes (count), empty/error states standardized, dead files removed, remaining known debt.
+## 5. Object tree + templates
 
-## Confirm to proceed
-Reply **"go"** (or "go batch 1", "go all") and I'll ship Batch 1 immediately, then continue sequentially. Each batch = one message with all edits in parallel.
+- Right-side collapsible "Objects" panel listing every drawing and indicator on the active pane with visibility toggle, lock, rename, delete, and jump-to.
+- "Templates" menu in the Indicators dropdown: Save current indicator set as a named template → stored in `chart_indicator_sets`; one-click apply/replace.
+
+## Technical notes
+
+- No schema changes needed — `chart_drawings`, `chart_layouts`, `chart_indicator_sets`, `chart_preferences`, `chart_templates` all exist.
+- All persistence via existing `src/lib/chart/storage.ts` (extend with `saveDrawing`, `listDrawings`, `saveTemplate`, `listTemplates`).
+- Adapter contract in `src/lib/chart/adapter.ts` gains: `addPane`, `removePane`, `addCompareSeries(symbol)`, `getPaneCount`, and preserves the swap-in path for the official TradingView library later.
+- Keyboard: `Alt+T` trend line, `Alt+H` horizontal, `Alt+F` fib, `Alt+R` rectangle, `Alt+C` compare, `Del` delete selected, `Esc` cursor.
+
+## Out of scope (for this pass)
+
+- Cross-hair sync across panes in the multi-chart grid (nice-to-have, adds later).
+- Real TradingView Advanced Charts library swap (loader is already in place at `src/lib/chart/tv-loader.ts`; drops in when the licensed bundle is added to `public/charting_library/`).
+
+Approve and I'll build all five in one pass.
