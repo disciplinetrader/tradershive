@@ -192,10 +192,8 @@ export function supportResistance(candles: Candle[], left = 5, right = 5, maxLev
   return { resistance, support };
 }
 
-/** Trading-session bands. For each bar we emit the session's open price
- *  (Asia / London / New York) so it draws as a stepped horizontal line
- *  that highlights the session's control price. UTC session windows:
- *  Asia 00-08, London 07-16, NY 12-21. */
+/** Trading-session bands. Standard forex UTC windows (non-DST baseline):
+ *  Tokyo/Asia 00:00-09:00, London 08:00-17:00, New York 13:00-22:00. */
 export function sessions(candles: Candle[]) {
   const n = candles.length;
   const asia: number[] = new Array(n).fill(NaN);
@@ -207,15 +205,15 @@ export function sessions(candles: Candle[]) {
     const d = new Date(candles[i].time);
     const day = Math.floor(candles[i].time / 86_400_000);
     const h = d.getUTCHours();
-    if (h >= 0 && h < 8) {
+    if (h >= 0 && h < 9) {
       if (day !== asiaDay) { asiaOpen = candles[i].open; asiaDay = day; }
       asia[i] = asiaOpen;
     }
-    if (h >= 7 && h < 16) {
+    if (h >= 8 && h < 17) {
       if (day !== londonDay) { londonOpen = candles[i].open; londonDay = day; }
       london[i] = londonOpen;
     }
-    if (h >= 12 && h < 21) {
+    if (h >= 13 && h < 22) {
       if (day !== nyDay) { nyOpen = candles[i].open; nyDay = day; }
       ny[i] = nyOpen;
     }
@@ -223,18 +221,32 @@ export function sessions(candles: Candle[]) {
   return { asia, london, ny };
 }
 
-/** Smart Money Concepts (SMC/ICT) — swing structure, BOS/CHoCH lines,
- *  and fair-value-gap midlines. Swing detection uses a `pivot` fractal.
- *  Emits four series:
- *    - swing_high / swing_low: horizontal levels projected forward
- *    - bos: break-of-structure — last broken swing level, projected forward
- *    - fvg: bullish/bearish fair-value-gap midpoint (3-bar imbalance) */
+export type SmcMarker = {
+  time: number;
+  position: "aboveBar" | "belowBar";
+  shape: "arrowUp" | "arrowDown" | "circle";
+  color: string;
+  text?: string;
+};
+export type SmcBox = {
+  time: number;
+  endTime: number;
+  top: number;
+  bottom: number;
+  kind: "fvg_bull" | "fvg_bear" | "ob_bull" | "ob_bear";
+};
+
+/** Smart Money Concepts (SMC/ICT) — swing pivots, BOS/CHoCH breaks,
+ *  Fair-Value-Gaps and Order Blocks. */
 export function smc(candles: Candle[], pivot = 3) {
   const n = candles.length;
   const swingHigh: number[] = new Array(n).fill(NaN);
   const swingLow: number[] = new Array(n).fill(NaN);
   const bos: number[] = new Array(n).fill(NaN);
-  const fvg: number[] = new Array(n).fill(NaN);
+  const markers: SmcMarker[] = [];
+  const boxes: SmcBox[] = [];
+  if (n < pivot * 2 + 2) return { swing_high: swingHigh, swing_low: swingLow, bos, markers, boxes };
+
   const highs: Array<{ idx: number; price: number }> = [];
   const lows: Array<{ idx: number; price: number }> = [];
   for (let i = pivot; i < n - pivot; i++) {
@@ -244,32 +256,82 @@ export function smc(candles: Candle[], pivot = 3) {
       if (candles[j].high >= candles[i].high) hi = false;
       if (candles[j].low <= candles[i].low) lo = false;
     }
-    if (hi) highs.push({ idx: i, price: candles[i].high });
-    if (lo) lows.push({ idx: i, price: candles[i].low });
+    if (hi) {
+      highs.push({ idx: i, price: candles[i].high });
+      markers.push({ time: candles[i].time, position: "aboveBar", shape: "circle", color: "#22c55e", text: "SH" });
+    }
+    if (lo) {
+      lows.push({ idx: i, price: candles[i].low });
+      markers.push({ time: candles[i].time, position: "belowBar", shape: "circle", color: "#ef4444", text: "SL" });
+    }
   }
+
   const lastHi = highs[highs.length - 1];
   const lastLo = lows[lows.length - 1];
   if (lastHi) for (let i = lastHi.idx; i < n; i++) swingHigh[i] = lastHi.price;
   if (lastLo) for (let i = lastLo.idx; i < n; i++) swingLow[i] = lastLo.price;
-  // BOS: most recent close above prior swing high OR below prior swing low.
-  for (let i = n - 1; i >= 1; i--) {
-    const priorHi = highs.filter((h) => h.idx < i).pop();
-    const priorLo = lows.filter((l) => l.idx < i).pop();
+
+  // BOS / CHoCH detection with trend memory.
+  let trend: "up" | "down" | null = null;
+  const bosBreaks: Array<{ idx: number; price: number; kind: "BOS" | "CHoCH"; dir: "up" | "down" }> = [];
+  for (let i = pivot + 1; i < n; i++) {
+    const priorHi = highs.filter((h) => h.idx < i - pivot).pop();
+    const priorLo = lows.filter((l) => l.idx < i - pivot).pop();
     if (priorHi && candles[i].close > priorHi.price) {
-      for (let j = i; j < n; j++) bos[j] = priorHi.price;
-      break;
-    }
-    if (priorLo && candles[i].close < priorLo.price) {
-      for (let j = i; j < n; j++) bos[j] = priorLo.price;
-      break;
+      const kind = trend === "down" ? "CHoCH" : "BOS";
+      bosBreaks.push({ idx: i, price: priorHi.price, kind, dir: "up" });
+      trend = "up";
+    } else if (priorLo && candles[i].close < priorLo.price) {
+      const kind = trend === "up" ? "CHoCH" : "BOS";
+      bosBreaks.push({ idx: i, price: priorLo.price, kind, dir: "down" });
+      trend = "down";
     }
   }
-  // FVG: 3-bar imbalance — gap between candle[i-2] and candle[i].
+  const lastBreak = bosBreaks[bosBreaks.length - 1];
+  if (lastBreak) {
+    for (let j = lastBreak.idx; j < n; j++) bos[j] = lastBreak.price;
+    for (const b of bosBreaks.slice(-4)) {
+      markers.push({
+        time: candles[b.idx].time,
+        position: b.dir === "up" ? "belowBar" : "aboveBar",
+        shape: b.dir === "up" ? "arrowUp" : "arrowDown",
+        color: b.kind === "CHoCH" ? "#f59e0b" : "#60a5fa",
+        text: b.kind,
+      });
+    }
+  }
+
+  // FVG: 3-bar imbalance, rendered as rectangles projected forward.
+  const projectBars = 20;
+  const dt = n > 1 ? candles[1].time - candles[0].time : 60_000;
   for (let i = 2; i < n; i++) {
     const a = candles[i - 2], c = candles[i];
-    if (a.high < c.low) fvg[i] = (a.high + c.low) / 2; // bullish FVG
-    else if (a.low > c.high) fvg[i] = (a.low + c.high) / 2; // bearish FVG
+    if (a.high < c.low) {
+      boxes.push({ time: a.time, endTime: c.time + dt * projectBars, top: c.low, bottom: a.high, kind: "fvg_bull" });
+    } else if (a.low > c.high) {
+      boxes.push({ time: a.time, endTime: c.time + dt * projectBars, top: a.low, bottom: c.high, kind: "fvg_bear" });
+    }
   }
-  return { swing_high: swingHigh, swing_low: swingLow, bos, fvg };
+
+  // Order blocks: last opposite-color candle before each BOS/CHoCH break.
+  for (const b of bosBreaks.slice(-3)) {
+    for (let k = b.idx - 1; k >= Math.max(0, b.idx - 20); k--) {
+      const cd = candles[k];
+      const bullish = cd.close > cd.open;
+      const bearish = cd.close < cd.open;
+      if (b.dir === "up" && bearish) {
+        boxes.push({ time: cd.time, endTime: candles[Math.min(n - 1, b.idx + projectBars)].time, top: cd.high, bottom: cd.low, kind: "ob_bull" });
+        break;
+      }
+      if (b.dir === "down" && bullish) {
+        boxes.push({ time: cd.time, endTime: candles[Math.min(n - 1, b.idx + projectBars)].time, top: cd.high, bottom: cd.low, kind: "ob_bear" });
+        break;
+      }
+    }
+  }
+
+  const fvgs = boxes.filter((b) => b.kind.startsWith("fvg")).slice(-6);
+  const obs = boxes.filter((b) => b.kind.startsWith("ob"));
+  return { swing_high: swingHigh, swing_low: swingLow, bos, markers, boxes: [...fvgs, ...obs] };
 }
 
