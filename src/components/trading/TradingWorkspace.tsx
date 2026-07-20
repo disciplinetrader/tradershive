@@ -97,6 +97,7 @@ function TradingWorkspaceInner() {
   const [plannerActive, setPlannerActive] = useState(false);
   const [drawingsHidden, setDrawingsHidden] = useState(false);
   const [shortcutsHelp, setShortcutsHelp] = useState(false);
+  const [multiPanes, setMultiPanes] = useState<MultiChartPane[]>([]);
 
   const handleReady = useCallback((api: ChartHandle) => {
     chartApi.current = api;
