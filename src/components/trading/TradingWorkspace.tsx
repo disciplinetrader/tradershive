@@ -42,6 +42,7 @@ import { findSymbol } from "@/lib/paper-trading/symbols";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { closeTrade, listTrades } from "@/lib/paper-trading.functions";
+import { useRiskMonitor } from "@/hooks/use-risk-monitor";
 
 const CHART_TIMEFRAMES: Timeframe[] = ["1m", "5m", "15m", "30m", "1H", "4H", "1D", "1W"];
 
