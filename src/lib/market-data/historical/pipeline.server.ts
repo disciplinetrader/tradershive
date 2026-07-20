@@ -195,7 +195,7 @@ export async function runImport(opts: RunImportOpts) {
         if (!sym.earliest_available || new Date(sym.earliest_available).getTime() > clean[0].ts) {
           patch.earliest_available = earliestIso;
         }
-        await admin.from("historical_symbols").update(patch).eq("id", sym.id);
+        await admin.from("historical_symbols").update(patch as any).eq("id", sym.id);
       }
     }
 
