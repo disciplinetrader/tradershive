@@ -44,10 +44,18 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
   let currentType: ChartType = settings.chartType;
   const overlays = new Map<string, ISeriesApi<"Line">>();
   const sessionSeries = new Map<string, ISeriesApi<"Histogram">>();
+  const smcBoxSeries = new Map<string, ISeriesApi<"Line">>();
+  let smcMarkers: ISeriesMarkersPluginApi<UTCTimestamp> | null = null;
   const SESSION_COLORS: Record<string, string> = {
-    asia: "#a78bfa",   // purple
-    london: "#60a5fa", // blue
-    ny: "#fb923c",     // orange
+    asia: "#a78bfa",
+    london: "#60a5fa",
+    ny: "#fb923c",
+  };
+  const SMC_BOX_COLORS: Record<string, string> = {
+    fvg_bull: "rgba(34,197,94,0.9)",
+    fvg_bear: "rgba(239,68,68,0.9)",
+    ob_bull: "rgba(34,197,94,0.9)",
+    ob_bear: "rgba(239,68,68,0.9)",
   };
   let volSeries: ISeriesApi<"Histogram"> | null = null;
 
