@@ -126,9 +126,9 @@ export function CalendarView({
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-4 text-[11px] text-muted-foreground">
-        <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-emerald-500/60" /> Winning day</span>
-        <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-rose-500/60" /> Losing day</span>
-        <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-slate-500/40" /> Break even</span>
+        <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-success/60" /> Winning day</span>
+        <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-danger/60" /> Losing day</span>
+        <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-muted-foreground/40" /> Break even</span>
       </div>
     </GlassCard>
   );
