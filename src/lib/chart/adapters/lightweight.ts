@@ -219,6 +219,30 @@ function computeOverlay(cfg: IndicatorConfig, candles: Candle[], closes: number[
       map.set("conv", donchian(candles, p.conversion ?? 9).mid);
       map.set("base", donchian(candles, p.base ?? 26).mid); break;
     }
+    case "fib": {
+      const f = fibonacci(candles, p.length ?? 120);
+      for (const [k, v] of Object.entries(f)) map.set(`fib_${k}`, v);
+      break;
+    }
+    case "sr": {
+      const s = supportResistance(candles, p.left ?? 5, p.right ?? 5, p.levels ?? 6);
+      map.set("resistance", s.resistance);
+      map.set("support", s.support);
+      break;
+    }
+    case "sessions": {
+      const s = sessions(candles);
+      map.set("asia", s.asia); map.set("london", s.london); map.set("ny", s.ny);
+      break;
+    }
+    case "smc": {
+      const s = smc(candles, p.pivot ?? 3);
+      map.set("swing_high", s.swing_high);
+      map.set("swing_low", s.swing_low);
+      map.set("bos", s.bos);
+      map.set("fvg", s.fvg);
+      break;
+    }
     default: break;
   }
   return map;
