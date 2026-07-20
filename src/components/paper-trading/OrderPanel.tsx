@@ -131,7 +131,7 @@ export function OrderPanel() {
 
   // Listen for chart-side intents (right-click menu, planner "Send")
   useEffect(() => {
-    return onTradeIntent((i) => {
+    const unsub = onTradeIntent((i) => {
       if (i.kind === "focus_side") { setSide(i.side); return; }
       const isSubmit = i.kind === "submit";
       setSide(i.side);
@@ -140,11 +140,9 @@ export function OrderPanel() {
       if (i.sl != null) setSl(String(i.sl));
       if (i.tp != null) setTp(String(i.tp));
       if (i.lot != null) setLot(String(i.lot));
-      if (isSubmit) {
-        // Defer so state updates flush first
-        setTimeout(() => openMut.mutate(), 0);
-      }
+      if (isSubmit) setTimeout(() => openMut.mutate(), 0);
     });
+    return () => { unsub(); };
   }, [openMut]);
 
   const filteredTags = (tags ?? []).filter((t) => t.name.toLowerCase().includes(tagQuery.toLowerCase()));
