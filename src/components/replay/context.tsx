@@ -297,6 +297,25 @@ export function ReplayProvider({ id, children }: { id: string; children: ReactNo
             .then(() => qc.invalidateQueries({ queryKey: ["replay", id] }))
             .catch(() => {});
         }
+        // Trailing stop: nudge SL when price moves favourably by `distance`.
+        const trailDist = trailingStops[t.id];
+        if (hitPrice == null && trailDist != null && trailDist > 0) {
+          if (t.direction === "long") {
+            const candidate = c.high - trailDist;
+            if (t.stop_loss == null || candidate > t.stop_loss) {
+              updateTradeFn({ data: { id: t.id, stop_loss: candidate } })
+                .then(() => qc.invalidateQueries({ queryKey: ["replay", id] }))
+                .catch(() => {});
+            }
+          } else {
+            const candidate = c.low + trailDist;
+            if (t.stop_loss == null || candidate < t.stop_loss) {
+              updateTradeFn({ data: { id: t.id, stop_loss: candidate } })
+                .then(() => qc.invalidateQueries({ queryKey: ["replay", id] }))
+                .catch(() => {});
+            }
+          }
+        }
       }
       // Pending order triggers
       if (pendingOrders.length && session) {
