@@ -87,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setRoles([]);
       return;
     }
-    const { profile, roles } = await loadUserData(nextSession.user.id);
+    const { profile, roles } = await loadUserData(nextSession.user.id, nextSession.user.email ?? null);
     setProfile(profile);
     setRoles(roles);
   }, []);
@@ -118,7 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     if (!session?.user) return;
-    const { profile, roles } = await loadUserData(session.user.id);
+    const { profile, roles } = await loadUserData(session.user.id, session.user.email ?? null);
     setProfile(profile);
     setRoles(roles);
   }, [session?.user]);
