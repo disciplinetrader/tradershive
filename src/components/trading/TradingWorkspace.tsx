@@ -500,31 +500,54 @@ function TradingWorkspaceInner() {
             </div>
           </GlassCard>
 
-          <div className="flex min-h-0 flex-col gap-3">
+          <div className="hidden min-h-0 flex-col gap-3 lg:flex">
             <OrderPanel />
           </div>
         </div>
 
-        <MultiChartStrip panes={multiPanes} onChange={setMultiPanes} primarySymbol={symbol} />
+        <div className="hidden md:block">
+          <MultiChartStrip panes={multiPanes} onChange={setMultiPanes} primarySymbol={symbol} />
+        </div>
 
         <GlassCard className="min-h-[240px] p-0">
           <Tabs defaultValue="positions" className="w-full">
             <div className="border-b border-border/50 px-3 pt-2">
-              <TabsList className="bg-background/60">
+              <TabsList className="bg-background/60 w-full justify-start overflow-x-auto no-scrollbar">
                 <TabsTrigger value="positions" className="text-xs">Positions</TabsTrigger>
                 <TabsTrigger value="orders" className="text-xs">Orders</TabsTrigger>
                 <TabsTrigger value="history" className="text-xs">History</TabsTrigger>
                 <TabsTrigger value="watchlist" className="text-xs">Watchlist</TabsTrigger>
               </TabsList>
             </div>
-            <TabsContent value="positions" className="p-3"><PositionsTable /></TabsContent>
-            <TabsContent value="orders" className="p-3"><OrdersTable /></TabsContent>
-            <TabsContent value="history" className="p-3"><HistoryTable /></TabsContent>
-            <TabsContent value="watchlist" className="p-3"><WatchlistPanel /></TabsContent>
+            <TabsContent value="positions" className="p-2 sm:p-3"><PositionsTable /></TabsContent>
+            <TabsContent value="orders" className="p-2 sm:p-3"><OrdersTable /></TabsContent>
+            <TabsContent value="history" className="p-2 sm:p-3"><HistoryTable /></TabsContent>
+            <TabsContent value="watchlist" className="p-2 sm:p-3"><WatchlistPanel /></TabsContent>
           </Tabs>
         </GlassCard>
 
         <SymbolSearch open={symbolSearchOpen} onOpenChange={setSymbolSearchOpen} />
+
+        {/* Mobile trade FAB → bottom Sheet with OrderPanel */}
+        {isMobile ? (
+          <>
+            <button
+              onClick={() => setTradeSheetOpen(true)}
+              className="fixed bottom-20 right-4 z-40 grid h-14 w-14 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg safe-bottom active:scale-95 transition lg:hidden"
+              aria-label="Open trade panel"
+            >
+              <Zap className="h-6 w-6" />
+            </button>
+            <Sheet open={tradeSheetOpen} onOpenChange={setTradeSheetOpen}>
+              <SheetContent side="bottom" className="max-h-[90dvh] overflow-y-auto p-4 safe-bottom">
+                <SheetHeader className="mb-3 text-left">
+                  <SheetTitle>Trade {symbol}</SheetTitle>
+                </SheetHeader>
+                <OrderPanel />
+              </SheetContent>
+            </Sheet>
+          </>
+        ) : null}
       </div>
     </TooltipProvider>
   );
