@@ -560,7 +560,17 @@ export const partialCloseTrade = createServerFn({ method: "POST" })
     const gross = computePnl(sym, trade.direction as "long"|"short", Number(trade.entry_price), data.exit_price, closedLot);
     const commissionShare = Number(trade.commission ?? 0) * data.fraction;
     const swapShare = Number(trade.swap ?? 0) * data.fraction;
-    const pnl = gross - commissionShare - swapShare;
+    let pnl = gross - commissionShare - swapShare;
+
+    const { data: acct } = await context.supabase.from("paper_accounts")
+      .select("balance, negative_balance_protection").eq("id", trade.account_id).single();
+
+    // Bound realized loss under NBP before writing anywhere — keeps stats
+    // consistent with the actual balance movement.
+    if (acct?.negative_balance_protection) {
+      const balance = Number(acct.balance);
+      if (balance + pnl < 0) pnl = -balance;
+    }
 
     const { error: upErr } = await context.supabase.from("paper_trades").update({
       lot_size: remainingLot,
@@ -569,8 +579,6 @@ export const partialCloseTrade = createServerFn({ method: "POST" })
     }).eq("id", data.id).eq("user_id", context.userId);
     if (upErr) throw upErr;
 
-    const { data: acct } = await context.supabase.from("paper_accounts")
-      .select("balance, negative_balance_protection").eq("id", trade.account_id).single();
     if (acct) {
       const raw = Number(acct.balance) + pnl;
       const newBal = acct.negative_balance_protection ? Math.max(0, raw) : raw;
