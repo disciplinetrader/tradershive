@@ -56,7 +56,7 @@ export function OrderPanel() {
   // Currently open positions on this account — needed to compute free margin
   // for the pre-flight validation so the panel shows the same numbers the
   // server will use when it accepts or rejects the order.
-  const { data: openTrades } = useQueryTanstack({
+  const { data: openTrades } = useQuery({
     queryKey: ["paper", "trades", accountId, "open"],
     queryFn: () => listTradesFn({ data: { account_id: accountId!, status: "open" } }) as unknown as Promise<OpenTradeInput[]>,
     enabled: !!accountId,
