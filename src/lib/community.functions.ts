@@ -505,12 +505,13 @@ export const listCommunityNotifications = createServerFn({ method: "GET" })
     const { supabase, userId } = context;
     const { data, error } = await supabase
       .from("community_notifications")
-      .select("id, actor_id, kind, post_id, comment_id, message, is_read, created_at, actor:profiles!community_notifications_actor_id_fkey(username, display_name, avatar_url)")
+      .select("id, actor_id, kind, post_id, comment_id, message, is_read, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(50);
     if (error) throw error;
-    return { items: data ?? [] };
+    const items = await attachAuthors(supabase, data ?? [], "actor_id", "actor", "id, username, display_name, avatar_url");
+    return { items };
   });
 
 export const markNotificationsRead = createServerFn({ method: "POST" })
