@@ -3,8 +3,148 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { computeReplayScore } from "./replay/score";
 import { getProvider } from "./replay/market-data";
-import { TIMEFRAME_SECONDS } from "./replay/constants";
+import { TIMEFRAME_SECONDS, DEFAULT_TEMPLATES, CHECKPOINT_KINDS } from "./replay/constants";
 import type { Timeframe } from "./replay/types";
+
+/* ============ Checkpoints ============ */
+
+export const listReplayCheckpoints = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ session_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: rows, error } = await context.supabase
+      .from("replay_checkpoints")
+      .select("*")
+      .eq("session_id", data.session_id)
+      .order("checkpoint_ts");
+    if (error) throw error;
+    return rows ?? [];
+  });
+
+export const createReplayCheckpoint = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({
+      session_id: z.string().uuid(),
+      label: z.string().trim().min(1).max(80).default("Checkpoint"),
+      checkpoint_ts: z.string(),
+      kind: z.enum(CHECKPOINT_KINDS).default("custom"),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: row, error } = await context.supabase
+      .from("replay_checkpoints")
+      .insert({ ...data, user_id: context.userId })
+      .select()
+      .single();
+    if (error) throw error;
+    return row;
+  });
+
+export const deleteReplayCheckpoint = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.from("replay_checkpoints").delete().eq("id", data.id);
+    if (error) throw error;
+    return { ok: true };
+  });
+
+/* ============ Templates ============ */
+
+export const listReplayTemplates = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase
+      .from("replay_templates")
+      .select("*")
+      .order("updated_at", { ascending: false })
+      .limit(100);
+    if (error) throw error;
+    // Seed defaults for first-time users
+    if (!data || data.filter((t) => t.user_id === context.userId).length === 0) {
+      const seed = DEFAULT_TEMPLATES.map((t) => ({
+        user_id: context.userId,
+        name: t.name,
+        market: t.market,
+        symbol: t.symbol,
+        timeframe: t.timeframe,
+        mode: t.mode,
+        playback_speed: t.playback_speed,
+        difficulty: t.difficulty,
+        favorite_session: t.favorite_session,
+        objectives: t.objectives,
+      }));
+      await context.supabase.from("replay_templates").insert(seed);
+      const { data: refreshed } = await context.supabase
+        .from("replay_templates")
+        .select("*")
+        .order("updated_at", { ascending: false })
+        .limit(100);
+      return refreshed ?? [];
+    }
+    return data;
+  });
+
+export const saveReplayTemplate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({
+      name: z.string().trim().min(1).max(80),
+      market: z.string(),
+      symbol: z.string(),
+      timeframe: z.string(),
+      mode: z.string(),
+      playback_speed: z.number().default(1),
+      difficulty: z.string().optional().nullable(),
+      favorite_session: z.string().optional().nullable(),
+      objectives: z.array(z.string()).default([]),
+      settings: z.record(z.string(), z.any()).default({}),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: row, error } = await context.supabase
+      .from("replay_templates")
+      .insert({ ...data, user_id: context.userId })
+      .select()
+      .single();
+    if (error) throw error;
+    return row;
+  });
+
+export const deleteReplayTemplate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.from("replay_templates").delete().eq("id", data.id);
+    if (error) throw error;
+    return { ok: true };
+  });
+
+/* ============ Reset progress (Replay Again) ============ */
+
+export const resetReplayProgress = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ session_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await Promise.all([
+      context.supabase.from("replay_trades").delete().eq("session_id", data.session_id),
+      context.supabase.from("replay_scores").delete().eq("session_id", data.session_id),
+    ]);
+    await context.supabase
+      .from("replay_sessions")
+      .update({ cursor_ts: null, completion_pct: 0, status: "active", duration_seconds: 0 })
+      .eq("id", data.session_id);
+    await context.supabase.from("replay_events").insert({
+      session_id: data.session_id,
+      user_id: context.userId,
+      event_type: "session_reset",
+      event_ts: new Date().toISOString(),
+      payload: {},
+    });
+    return { ok: true };
+  });
+
 
 /* ============ Sessions ============ */
 

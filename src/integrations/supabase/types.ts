@@ -6374,6 +6374,44 @@ export type Database = {
           },
         ]
       }
+      replay_checkpoints: {
+        Row: {
+          checkpoint_ts: string
+          created_at: string
+          id: string
+          kind: string
+          label: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          checkpoint_ts: string
+          created_at?: string
+          id?: string
+          kind?: string
+          label?: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          checkpoint_ts?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          label?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "replay_checkpoints_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "replay_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       replay_comparisons: {
         Row: {
           breakdown: Json
@@ -6796,6 +6834,60 @@ export type Database = {
           total_hours?: number
           total_sessions?: number
           total_trades?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      replay_templates: {
+        Row: {
+          created_at: string
+          difficulty: string | null
+          favorite_session: string | null
+          id: string
+          is_shared: boolean
+          market: string
+          mode: string
+          name: string
+          objectives: Json
+          playback_speed: number
+          settings: Json
+          symbol: string
+          timeframe: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          difficulty?: string | null
+          favorite_session?: string | null
+          id?: string
+          is_shared?: boolean
+          market: string
+          mode?: string
+          name: string
+          objectives?: Json
+          playback_speed?: number
+          settings?: Json
+          symbol: string
+          timeframe?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          difficulty?: string | null
+          favorite_session?: string | null
+          id?: string
+          is_shared?: boolean
+          market?: string
+          mode?: string
+          name?: string
+          objectives?: Json
+          playback_speed?: number
+          settings?: Json
+          symbol?: string
+          timeframe?: string
           updated_at?: string
           user_id?: string
         }
