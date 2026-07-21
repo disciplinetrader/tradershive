@@ -99,11 +99,11 @@ export const analyzeReplayMistakes = createServerFn({ method: "POST" })
           trade_id: m.trade_id,
           kind: m.kind,
           severity: m.severity,
-          evidence: m.evidence,
-        })),
+          evidence: m.evidence as any,
+        })) as any,
       );
     }
-    return { count: detected.length, mistakes: detected };
+    return { count: detected.length };
   });
 
 export const listReplayMistakes = createServerFn({ method: "GET" })
