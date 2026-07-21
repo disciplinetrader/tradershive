@@ -54,9 +54,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 const WIDGETS: WidgetDef[] = [
   { id: "welcome", label: "Welcome & progress", group: "Overview" },
   { id: "challenge", label: "Today's challenge", group: "Overview" },
-  { id: "stats", label: "Statistics overview", group: "Performance" },
-  { id: "equity", label: "Equity curve", group: "Performance" },
-  { id: "perf", label: "Performance charts", group: "Performance" },
+  { id: "analytics_cta", label: "Analytics shortcut", group: "Overview" },
   { id: "trades", label: "Recent trades", group: "Trading" },
   { id: "watchlist", label: "Watchlist", group: "Trading" },
   { id: "markets", label: "Market overview", group: "Trading" },
