@@ -120,7 +120,8 @@ export const listFeed = createServerFn({ method: "POST" })
 
     const { data: posts, error } = await q;
     if (error) throw error;
-    const withState = await attachViewerState(supabase, userId, posts ?? []);
+    const withAuthors = await attachAuthors(supabase, posts ?? []);
+    const withState = await attachViewerState(supabase, userId, withAuthors);
     const nextCursor = posts && posts.length === data.limit ? posts[posts.length - 1].published_at : null;
     return { posts: withState, nextCursor };
   });
