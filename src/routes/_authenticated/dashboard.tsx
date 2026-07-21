@@ -1,16 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
 import {
   Activity,
+  ArrowUpRight,
   Award,
-  BarChart3,
   Bell,
-  BookOpen,
   Calendar as CalendarIcon,
-  CheckSquare,
   Eye,
   Flame,
   LineChart,
@@ -18,7 +16,6 @@ import {
   Sparkles,
   StickyNote,
   Star,
-  TrendingUp,
   Trophy,
   User as UserIcon,
   Zap,
@@ -31,9 +28,6 @@ import { TodaysChallenge } from "@/components/dashboard/TodaysChallenge";
 import { RecentTrades } from "@/components/dashboard/RecentTrades";
 import { Watchlist } from "@/components/dashboard/Watchlist";
 import { MarketOverview } from "@/components/dashboard/MarketOverview";
-import { StatsOverview } from "@/components/dashboard/StatsOverview";
-import { EquityCurve } from "@/components/dashboard/EquityCurve";
-import { PerformanceCharts } from "@/components/dashboard/PerformanceCharts";
 import { StreakWidget } from "@/components/dashboard/StreakWidget";
 import { XPWidget } from "@/components/dashboard/XPWidget";
 import { Achievements } from "@/components/dashboard/Achievements";
