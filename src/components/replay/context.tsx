@@ -43,6 +43,7 @@ import type {
 } from "@/lib/replay/types";
 import { uploadReplayScreenshot } from "@/lib/replay/storage";
 import { useAuth } from "@/hooks/use-auth";
+import { useReplaySettings, type ReplaySettings, type TradingMode } from "@/lib/replay/settings";
 import * as nav from "@/lib/replay/navigation";
 
 type ReplayCtx = {
@@ -78,6 +79,12 @@ type ReplayCtx = {
   closeTrade: (id: string) => Promise<void>;
   cancelTrade: (id: string) => Promise<void>;
   cancelPendingOrder: (id: string) => void;
+  closeAllPositions: () => Promise<void>;
+  partialClose: (id: string, fraction: number) => Promise<void>;
+  moveToBreakEven: (id: string) => Promise<void>;
+  setTrailingStop: (id: string, distance: number | null) => void;
+  reversePosition: (id: string) => Promise<void>;
+  modifyTrade: (id: string, patch: { stop_loss?: number | null; take_profit?: number | null }) => Promise<void>;
   addNote: (body: string) => Promise<void>;
   removeNote: (id: string) => Promise<void>;
   addBookmark: (label: string, category: BookmarkCategory) => Promise<void>;
@@ -90,6 +97,11 @@ type ReplayCtx = {
   captureScreenshot: (dataUrl: string, caption?: string) => Promise<void>;
   finish: () => Promise<void>;
   replayAgain: () => Promise<void>;
+  // ---- Settings ----
+  settings: ReplaySettings;
+  updateSettings: (patch: Partial<ReplaySettings>) => void;
+  tradingMode: TradingMode;
+  trailingStops: Record<string, number>;
 };
 
 const Ctx = createContext<ReplayCtx | null>(null);
