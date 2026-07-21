@@ -871,8 +871,8 @@ export const runCoachOnSession = createServerFn({ method: "POST" })
           trade_id: m.trade_id,
           kind: m.kind,
           severity: m.severity,
-          evidence: m.evidence,
-        })),
+          evidence: m.evidence as any,
+        })) as any,
       );
     }
     return { ok: true, mistakes: detected.length };
