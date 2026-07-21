@@ -564,11 +564,12 @@ export const getCommunityProfile = createServerFn({ method: "POST" })
       supabase.from("social_follows").select("*", { count: "exact", head: true }).eq("follower_id", profile.id),
       supabase.from("community_posts").select(POST_SELECT).eq("author_id", profile.id).eq("is_published", true).eq("is_deleted", false).order("published_at", { ascending: false }).limit(20),
     ]);
+    const postsWithAuthor = (posts ?? []).map((p: any) => ({ ...p, author: profile }));
     return {
       profile,
       reputation: rep ?? null,
       followers: followers ?? 0,
       following: following ?? 0,
-      posts: posts ?? [],
+      posts: postsWithAuthor,
     };
   });
