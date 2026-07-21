@@ -842,10 +842,12 @@ export function ReplayProvider({ id, children }: { id: string; children: ReactNo
     play, pause, toggle, restart, step, skip, setSpeed, setCursorIdx,
     jumpTo, fastForwardUntil,
     openTrade, closeTrade, cancelTrade, cancelPendingOrder,
+    closeAllPositions, partialClose, moveToBreakEven, setTrailingStop, reversePosition, modifyTrade,
     addNote, removeNote, addBookmark, removeBookmark,
     toggleCheck, addCheck,
     addCheckpoint, jumpToCheckpoint, removeCheckpoint,
     captureScreenshot, finish, replayAgain,
+    settings, updateSettings, tradingMode, trailingStops,
   };
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
