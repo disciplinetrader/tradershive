@@ -11,11 +11,13 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { openTrade, placeOrder, listTradeTags, createTradeTag } from "@/lib/paper-trading.functions";
+import { openTrade, placeOrder, listTradeTags, createTradeTag, listTrades } from "@/lib/paper-trading.functions";
 import { COMMON_TAGS } from "@/lib/paper-trading/symbols";
 import { lotForRisk, tradeCalculation, validateStops, formatCurrency } from "@/lib/paper-trading/calculations";
-import { useLivePrice } from "@/lib/paper-trading/mock-prices";
+import { useLivePrice, useLiveQuotes } from "@/lib/paper-trading/mock-prices";
+import { validateNewOrder, liquidationPrice, type OpenTradeInput } from "@/lib/paper-trading/risk";
 import { onTradeIntent } from "@/lib/trading/trade-intent";
+import { useQuery as useQueryTanstack } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { usePaper } from "./context";
 
