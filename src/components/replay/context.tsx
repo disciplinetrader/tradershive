@@ -633,19 +633,100 @@ export function ReplayProvider({ id, children }: { id: string; children: ReactNo
       const t = trades.find((x) => x.id === tid);
       if (!t || !session) return;
       const exit = currentPrice;
-      const pnl = (t.direction === "long" ? exit - t.entry_price : t.entry_price - exit) * t.lot_size;
-      const risk = t.stop_loss ? Math.abs(t.entry_price - t.stop_loss) * t.lot_size : 0;
-      const rr = risk > 0 ? pnl / risk : null;
-      await closeMut.mutateAsync({
-        data: { id: tid, exit_price: exit, closed_at: new Date(cursorTs).toISOString(), pnl, rr_realized: rr },
-      });
-      toast.success(`Closed @ ${exit.toFixed(5)} — PnL ${pnl.toFixed(2)}`);
+      await bookClose(t, exit, t.lot_size, cursorTs);
+      setTrailingStops((prev) => { const { [tid]: _drop, ...rest } = prev; return rest; });
+      toast.success(`Closed @ ${exit.toFixed(5)}`);
     },
-    [trades, session, currentPrice, cursorTs, closeMut],
+    [trades, session, currentPrice, cursorTs, bookClose],
   );
 
   const cancelTrade = useCallback(async (tid: string) => { await delTradeMut.mutateAsync({ data: { id: tid } }); }, [delTradeMut]);
   const cancelPendingOrder = useCallback((pid: string) => setPendingOrders((prev) => prev.filter((p) => p.id !== pid)), []);
+
+  /** Close every open position on this session at the current price. */
+  const closeAllPositions = useCallback(async () => {
+    if (!openTrades.length) return;
+    const exit = currentPrice;
+    for (const t of openTrades) {
+      await bookClose(t, exit, t.lot_size, cursorTs);
+    }
+    setTrailingStops({});
+    toast.success(`Closed ${openTrades.length} position${openTrades.length > 1 ? "s" : ""}`);
+  }, [openTrades, currentPrice, cursorTs, bookClose]);
+
+  /** Partial close by fraction (0..1). 0.5 = close half. */
+  const partialClose = useCallback(
+    async (tid: string, fraction: number) => {
+      const t = trades.find((x) => x.id === tid);
+      if (!t || fraction <= 0 || fraction >= 1) return;
+      const lots = Number((t.lot_size * fraction).toFixed(4));
+      if (lots <= 0) return;
+      await bookClose(t, currentPrice, lots, cursorTs);
+      toast.success(`Closed ${Math.round(fraction * 100)}% (${lots} lots)`);
+    },
+    [trades, currentPrice, cursorTs, bookClose],
+  );
+
+  /** Move stop-loss to entry (locks in break-even). */
+  const moveToBreakEven = useCallback(
+    async (tid: string) => {
+      const t = trades.find((x) => x.id === tid);
+      if (!t) return;
+      await updateTradeFn({ data: { id: tid, stop_loss: t.entry_price } });
+      await qc.invalidateQueries({ queryKey: ["replay", id] });
+      toast.success("Break-even set");
+    },
+    [trades, updateTradeFn, qc, id],
+  );
+
+  /** Enable/disable a trailing stop at `distance` price units. Pass null to clear. */
+  const setTrailingStop = useCallback((tid: string, distance: number | null) => {
+    setTrailingStops((prev) => {
+      const next = { ...prev };
+      if (distance == null || distance <= 0) delete next[tid];
+      else next[tid] = distance;
+      return next;
+    });
+    if (distance != null && distance > 0) toast.success(`Trailing stop @ ${distance}`);
+    else toast.success("Trailing stop cleared");
+  }, []);
+
+  /** Netting-mode reverse: close the position and open the opposite side with the same lot size. */
+  const reversePosition = useCallback(
+    async (tid: string) => {
+      const t = trades.find((x) => x.id === tid);
+      if (!t || !session) return;
+      const lots = t.lot_size;
+      const newDir = t.direction === "long" ? "short" : "long";
+      await bookClose(t, currentPrice, lots, cursorTs);
+      await openMut.mutateAsync({
+        data: {
+          session_id: session.id,
+          symbol: session.symbol,
+          market: session.market,
+          direction: newDir,
+          order_type: "market",
+          entry_price: currentPrice,
+          stop_loss: null,
+          take_profit: null,
+          lot_size: lots,
+          risk_pct: null,
+          rr_planned: null,
+          opened_at: new Date(cursorTs).toISOString(),
+        },
+      });
+      toast.success(`Reversed → ${newDir.toUpperCase()} ${lots}`);
+    },
+    [trades, session, currentPrice, cursorTs, bookClose, openMut],
+  );
+
+  const modifyTrade = useCallback(
+    async (tid: string, patch: { stop_loss?: number | null; take_profit?: number | null }) => {
+      await updateTradeFn({ data: { id: tid, ...patch } });
+      await qc.invalidateQueries({ queryKey: ["replay", id] });
+    },
+    [updateTradeFn, qc, id],
+  );
 
   const addNote = useCallback(
     async (body: string) => {
