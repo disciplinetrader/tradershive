@@ -15,6 +15,7 @@ import { ChecklistPanel } from "@/components/replay/ChecklistPanel";
 import { ScoreCard } from "@/components/replay/ScoreCard";
 import { AiReviewPanel } from "@/components/replay/AiReviewPanel";
 import { PostSessionSummary } from "@/components/replay/PostSessionSummary";
+import { CheckpointsPanel } from "@/components/replay/CheckpointsPanel";
 
 const searchSchema = z.object({ id: z.string().optional() });
 
@@ -48,7 +49,7 @@ function NoSession() {
 }
 
 function Workspace() {
-  const { session, loading, captureScreenshot, finish } = useReplay();
+  const { session, loading, captureScreenshot, finish, replayAgain } = useReplay();
   const [summaryOpen, setSummaryOpen] = useState(false);
 
   const takeShot = () => {
