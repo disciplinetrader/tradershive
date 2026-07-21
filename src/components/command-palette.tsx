@@ -30,7 +30,7 @@ const ROUTES = [
   { to: "/journal", label: "Journal", icon: BookOpen },
   { to: "/challenges", label: "Challenges", icon: Sparkles },
   { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
-  { to: "/statistics", label: "Statistics", icon: BarChart3 },
+  { to: "/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/profile", label: "Profile", icon: UserIcon },
   { to: "/settings", label: "Settings", icon: Settings },
   { to: "/support", label: "Support", icon: LifeBuoy },
