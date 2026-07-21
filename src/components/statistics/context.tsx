@@ -20,7 +20,15 @@ interface Ctx {
 
 const StatsContext = createContext<Ctx | null>(null);
 
-export function StatisticsProvider({ children }: { children: ReactNode }) {
+interface Props {
+  children: ReactNode;
+  /** Optional override — replaces the fetched dataset (used by Analytics Center backtest selector). */
+  overrideTrades?: AnalyticsTrade[] | null;
+  /** Skip the network fetch entirely when `overrideTrades` is supplied. */
+  disableFetch?: boolean;
+}
+
+export function StatisticsProvider({ children, overrideTrades, disableFetch }: Props) {
   const fetchData = useServerFn(getAnalyticsDataset);
   const [filters, setFilters] = useState<StatisticsFilters>(EMPTY_FILTERS);
 
@@ -29,9 +37,10 @@ export function StatisticsProvider({ children }: { children: ReactNode }) {
     queryFn: () => fetchData(),
     staleTime: 30_000,
     refetchOnWindowFocus: false,
+    enabled: !disableFetch,
   });
 
-  const raw = (query.data?.trades ?? []) as AnalyticsTrade[];
+  const raw = (overrideTrades ?? (query.data?.trades ?? [])) as AnalyticsTrade[];
   const accounts = (query.data?.accounts ?? []) as Ctx["accounts"];
 
   const filtered = useMemo(() => {
@@ -56,7 +65,7 @@ export function StatisticsProvider({ children }: { children: ReactNode }) {
     raw, filtered, accounts, filters,
     setFilters: (u) => setFilters((prev) => (typeof u === "function" ? (u as any)(prev) : u)),
     resetFilters: () => setFilters(EMPTY_FILTERS),
-    loading: query.isPending,
+    loading: disableFetch ? false : query.isPending,
     error: query.error,
     refresh: () => query.refetch(),
   };
