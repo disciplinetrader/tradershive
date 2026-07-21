@@ -55,6 +55,7 @@ import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authentic
 import { Route as JournalShareTokenRouteImport } from './routes/journal.share.$token'
 import { Route as ApiAiChatRouteImport } from './routes/api/ai/chat'
 import { Route as AuthenticatedTradingFullscreenRouteImport } from './routes/_authenticated/trading.fullscreen'
+import { Route as AuthenticatedTradesTradeIdRouteImport } from './routes/_authenticated/trades.$tradeId'
 import { Route as AuthenticatedStrategiesTemplatesRouteImport } from './routes/_authenticated/strategies.templates'
 import { Route as AuthenticatedStrategiesSharedRouteImport } from './routes/_authenticated/strategies.shared'
 import { Route as AuthenticatedStrategiesSettingsRouteImport } from './routes/_authenticated/strategies.settings'
@@ -376,6 +377,12 @@ const AuthenticatedTradingFullscreenRoute =
     id: '/fullscreen',
     path: '/fullscreen',
     getParentRoute: () => AuthenticatedTradingRoute,
+  } as any)
+const AuthenticatedTradesTradeIdRoute =
+  AuthenticatedTradesTradeIdRouteImport.update({
+    id: '/trades/$tradeId',
+    path: '/trades/$tradeId',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedStrategiesTemplatesRoute =
   AuthenticatedStrategiesTemplatesRouteImport.update({
@@ -927,6 +934,7 @@ export interface FileRoutesByFullPath {
   '/strategies/settings': typeof AuthenticatedStrategiesSettingsRoute
   '/strategies/shared': typeof AuthenticatedStrategiesSharedRoute
   '/strategies/templates': typeof AuthenticatedStrategiesTemplatesRoute
+  '/trades/$tradeId': typeof AuthenticatedTradesTradeIdRoute
   '/trading/fullscreen': typeof AuthenticatedTradingFullscreenRoute
   '/api/ai/chat': typeof ApiAiChatRoute
   '/journal/share/$token': typeof JournalShareTokenRoute
@@ -1039,6 +1047,7 @@ export interface FileRoutesByTo {
   '/strategies/settings': typeof AuthenticatedStrategiesSettingsRoute
   '/strategies/shared': typeof AuthenticatedStrategiesSharedRoute
   '/strategies/templates': typeof AuthenticatedStrategiesTemplatesRoute
+  '/trades/$tradeId': typeof AuthenticatedTradesTradeIdRoute
   '/trading/fullscreen': typeof AuthenticatedTradingFullscreenRoute
   '/api/ai/chat': typeof ApiAiChatRoute
   '/journal/share/$token': typeof JournalShareTokenRoute
@@ -1164,6 +1173,7 @@ export interface FileRoutesById {
   '/_authenticated/strategies/settings': typeof AuthenticatedStrategiesSettingsRoute
   '/_authenticated/strategies/shared': typeof AuthenticatedStrategiesSharedRoute
   '/_authenticated/strategies/templates': typeof AuthenticatedStrategiesTemplatesRoute
+  '/_authenticated/trades/$tradeId': typeof AuthenticatedTradesTradeIdRoute
   '/_authenticated/trading/fullscreen': typeof AuthenticatedTradingFullscreenRoute
   '/api/ai/chat': typeof ApiAiChatRoute
   '/journal/share/$token': typeof JournalShareTokenRoute
@@ -1289,6 +1299,7 @@ export interface FileRouteTypes {
     | '/strategies/settings'
     | '/strategies/shared'
     | '/strategies/templates'
+    | '/trades/$tradeId'
     | '/trading/fullscreen'
     | '/api/ai/chat'
     | '/journal/share/$token'
@@ -1401,6 +1412,7 @@ export interface FileRouteTypes {
     | '/strategies/settings'
     | '/strategies/shared'
     | '/strategies/templates'
+    | '/trades/$tradeId'
     | '/trading/fullscreen'
     | '/api/ai/chat'
     | '/journal/share/$token'
@@ -1525,6 +1537,7 @@ export interface FileRouteTypes {
     | '/_authenticated/strategies/settings'
     | '/_authenticated/strategies/shared'
     | '/_authenticated/strategies/templates'
+    | '/_authenticated/trades/$tradeId'
     | '/_authenticated/trading/fullscreen'
     | '/api/ai/chat'
     | '/journal/share/$token'
@@ -1887,6 +1900,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/trading/fullscreen'
       preLoaderRoute: typeof AuthenticatedTradingFullscreenRouteImport
       parentRoute: typeof AuthenticatedTradingRoute
+    }
+    '/_authenticated/trades/$tradeId': {
+      id: '/_authenticated/trades/$tradeId'
+      path: '/trades/$tradeId'
+      fullPath: '/trades/$tradeId'
+      preLoaderRoute: typeof AuthenticatedTradesTradeIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/strategies/templates': {
       id: '/_authenticated/strategies/templates'
@@ -2775,6 +2795,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSupportRoute: typeof AuthenticatedSupportRoute
   AuthenticatedTradingRoute: typeof AuthenticatedTradingRouteWithChildren
   AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
+  AuthenticatedTradesTradeIdRoute: typeof AuthenticatedTradesTradeIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -2802,6 +2823,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSupportRoute: AuthenticatedSupportRoute,
   AuthenticatedTradingRoute: AuthenticatedTradingRouteWithChildren,
   AuthenticatedUsersRoute: AuthenticatedUsersRoute,
+  AuthenticatedTradesTradeIdRoute: AuthenticatedTradesTradeIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
