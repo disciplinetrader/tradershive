@@ -2,14 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { findSymbol } from "./paper-trading/symbols";
-import { pnl as computePnl, pipsBetween, marginRequired } from "./paper-trading/calculations";
-import {
-  accountRiskLimits,
-  computeAccountRisk,
-  validateNewOrder,
-  MAX_OPEN_POSITIONS,
-  type OpenTradeInput,
-} from "./paper-trading/risk";
+import { pnl as computePnl, pipsBetween } from "./paper-trading/calculations";
+import { validateNewOrder, type OpenTradeInput } from "./paper-trading/risk";
 
 /* ---------------- Accounts ---------------- */
 
