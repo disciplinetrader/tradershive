@@ -1,10 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
-import { BookOpen, Play, RotateCcw, Share2, X } from "lucide-react";
+import { BookOpen, GraduationCap, Play, RotateCcw, Share2, Sparkles, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { getReplaySessionSummary } from "@/lib/replay-studio.functions";
+import { generateReplayDebrief, getReplayDebrief } from "@/lib/replay-coach.functions";
 
 export function PostSessionSummary({
   sessionId,
