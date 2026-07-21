@@ -119,3 +119,84 @@ export type ReplayStatistics = {
   most_practiced_market: string | null;
   most_practiced_symbol: string | null;
 };
+
+export type CheckpointKind =
+  | "london_open"
+  | "ny_open"
+  | "asia_open"
+  | "trade_entry"
+  | "trade_exit"
+  | "liquidity_sweep"
+  | "bookmark"
+  | "custom";
+
+export type ReplayCheckpoint = {
+  id: string;
+  session_id: string;
+  user_id: string;
+  label: string;
+  checkpoint_ts: string;
+  kind: CheckpointKind;
+  created_at: string;
+};
+
+export type ReplayTemplate = {
+  id: string;
+  user_id: string;
+  name: string;
+  market: string;
+  symbol: string;
+  timeframe: string;
+  mode: string;
+  playback_speed: number;
+  difficulty: string | null;
+  favorite_session: string | null;
+  objectives: string[];
+  settings: Record<string, unknown>;
+  is_shared: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+/** Client-side pending order (limit/stop). Persists in memory for the session. */
+export type PendingOrder = {
+  id: string;
+  direction: "long" | "short";
+  orderType: "limit" | "stop";
+  entryPrice: number;
+  stopLoss: number | null;
+  takeProfit: number | null;
+  lotSize: number;
+  riskPct: number | null;
+  createdAtTs: number;
+};
+
+export type FastForwardEvent =
+  | "next_order_trigger"
+  | "next_pending_order"
+  | "next_sl"
+  | "next_tp"
+  | "next_bookmark"
+  | "next_session"
+  | "next_day";
+
+export type JumpTarget =
+  | "next_session"
+  | "prev_session"
+  | "london_open"
+  | "ny_open"
+  | "asia_open"
+  | "session_close"
+  | "next_bookmark"
+  | "prev_bookmark"
+  | "next_trade"
+  | "prev_trade"
+  | "trade_entry"
+  | "trade_exit"
+  | "next_objective"
+  | "prev_objective"
+  | "next_day"
+  | "prev_day"
+  | "next_checkpoint"
+  | "prev_checkpoint";
+
