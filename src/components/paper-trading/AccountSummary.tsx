@@ -73,6 +73,8 @@ export function AccountSummary() {
   const used = risk?.usedMargin ?? 0;
   const free = risk?.freeMargin ?? equity;
   const marginLevel = risk?.marginLevel ?? null;
+  const buyingPower = risk?.buyingPower ?? equity * Number(account.leverage ?? 1);
+  const marginRatio = risk?.marginRatio ?? 0;
 
   const marginTone =
     risk?.status === "stop_out" ? "text-danger"
