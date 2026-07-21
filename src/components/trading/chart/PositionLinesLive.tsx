@@ -64,6 +64,26 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
     },
   });
 
+  const beFn = useServerFn(moveToBreakEven);
+  const partialFn = useServerFn(partialCloseTrade);
+  const be = useMutation({
+    mutationFn: async (id: string) => beFn({ data: { id } }) as unknown as Promise<{ changed: boolean }>,
+    onSuccess: (r) => {
+      toast.success(r.changed ? "Moved to break-even" : "Already at break-even");
+      qc.invalidateQueries({ queryKey: ["paper", "trades"] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+  const partial = useMutation({
+    mutationFn: async (v: { id: string; fraction: number; exit_price: number }) =>
+      partialFn({ data: v }) as unknown as Promise<{ closed_lot: number; pnl: number }>,
+    onSuccess: (r) => {
+      toast.success(`Closed ${r.closed_lot} lots · P/L ${r.pnl.toFixed(2)}`);
+      qc.invalidateQueries({ queryKey: ["paper"] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
   useEffect(() => {
     if (!hostRef.current) return;
     const ro = new ResizeObserver(() => force((n) => n + 1));
