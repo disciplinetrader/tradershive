@@ -18,6 +18,29 @@ async function ensureAdmin(ctx: { supabase: any; userId: string }) {
   if (error || !data) throw new Error("Forbidden");
 }
 
+/**
+ * Batch-fetch profiles for a list of rows and attach them under `profiles`.
+ * Used because most FKs (paper_trades.user_id, admin_audit_logs.admin_id,
+ * journal_entries.user_id) reference auth.users, so PostgREST cannot embed
+ * public.profiles directly (PGRST200). profiles.id equals the auth user id.
+ */
+async function attachProfiles<T extends Record<string, any>>(
+  supabase: any,
+  rows: T[],
+  idField: string,
+): Promise<(T & { profiles: { username: string | null; display_name: string | null } | null })[]> {
+  if (!rows.length) return [];
+  const ids = Array.from(new Set(rows.map((r) => r[idField]).filter(Boolean)));
+  if (!ids.length) return rows.map((r) => ({ ...r, profiles: null }));
+  const { data } = await supabase
+    .from("profiles")
+    .select("id, username, display_name")
+    .in("id", ids);
+  const map = new Map<string, { username: string | null; display_name: string | null }>();
+  (data ?? []).forEach((p: any) => map.set(p.id, { username: p.username, display_name: p.display_name }));
+  return rows.map((r) => ({ ...r, profiles: map.get(r[idField]) ?? null }));
+}
+
 // ============ DASHBOARD KPIs ============
 export const getAdminKpis = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -340,7 +363,7 @@ export const listAdminTrades = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await ensurePerm(context, "trades:view");
     const s = context.supabase;
-    let q = s.from("paper_trades").select("*, profiles!inner(username, display_name)", { count: "exact" });
+    let q = s.from("paper_trades").select("*", { count: "exact" });
     if (data.status === "deleted") q = q.not("deleted_at", "is", null);
     else if (data.status === "open") q = q.eq("status", "open").is("deleted_at", null);
     else if (data.status === "closed") q = q.eq("status", "closed").is("deleted_at", null);
@@ -350,8 +373,10 @@ export const listAdminTrades = createServerFn({ method: "POST" })
     q = q.order("created_at", { ascending: false }).range(from, from + data.pageSize - 1);
     const { data: rows, count, error } = await q;
     if (error) throw error;
-    return { rows: rows ?? [], total: count ?? 0 };
+    const withProfiles = await attachProfiles(s, rows ?? [], "user_id");
+    return { rows: withProfiles, total: count ?? 0 };
   });
+
 
 export const softDeleteTrade = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -385,7 +410,7 @@ export const listAdminJournal = createServerFn({ method: "POST" })
     const s = context.supabase;
     let q = s
       .from("journal_entries")
-      .select("id, symbol, pnl, rr, opened_at, status, moderation_status, deleted_at, user_id, profiles!inner(username, display_name)", {
+      .select("id, symbol, pnl, rr, opened_at, status, moderation_status, deleted_at, user_id", {
         count: "exact",
       });
     if (data.status === "deleted") q = q.not("deleted_at", "is", null);
@@ -397,7 +422,8 @@ export const listAdminJournal = createServerFn({ method: "POST" })
     q = q.order("created_at", { ascending: false }).range(from, from + data.pageSize - 1);
     const { data: rows, count, error } = await q;
     if (error) throw error;
-    return { rows: rows ?? [], total: count ?? 0 };
+    const withProfiles = await attachProfiles(s, rows ?? [], "user_id");
+    return { rows: withProfiles, total: count ?? 0 };
   });
 
 export const moderateJournal = createServerFn({ method: "POST" })
@@ -437,20 +463,13 @@ export const listAuditLogs = createServerFn({ method: "POST" })
     const s = context.supabase;
     let q = s
       .from("admin_audit_logs")
-      .select("*, profiles!admin_audit_logs_admin_id_fkey(username, display_name)", { count: "exact" });
+      .select("*", { count: "exact" });
     if (data.resource) q = q.eq("resource", data.resource);
     if (data.search) q = q.ilike("action", `%${data.search.trim()}%`);
     const from = (data.page - 1) * data.pageSize;
     q = q.order("created_at", { ascending: false }).range(from, from + data.pageSize - 1);
     const { data: rows, count, error } = await q;
-    if (error) {
-      // Fallback if fk name differs
-      const alt = await s
-        .from("admin_audit_logs")
-        .select("*", { count: "exact" })
-        .order("created_at", { ascending: false })
-        .range(from, from + data.pageSize - 1);
-      return { rows: alt.data ?? [], total: alt.count ?? 0 };
-    }
-    return { rows: rows ?? [], total: count ?? 0 };
+    if (error) throw error;
+    const withProfiles = await attachProfiles(s, rows ?? [], "admin_id");
+    return { rows: withProfiles, total: count ?? 0 };
   });
