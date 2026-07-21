@@ -57,16 +57,8 @@ const WIDGETS: WidgetDef[] = [
   { id: "analytics_cta", label: "Analytics shortcut", group: "Overview" },
   { id: "trades", label: "Recent trades", group: "Trading" },
   { id: "watchlist", label: "Watchlist", group: "Trading" },
-  { id: "markets", label: "Market overview", group: "Trading" },
   { id: "streak", label: "Streaks", group: "Gamification" },
   { id: "xp", label: "XP & rank", group: "Gamification" },
-  { id: "achievements", label: "Achievements", group: "Gamification" },
-  { id: "leaderboard", label: "Leaderboard preview", group: "Gamification" },
-  { id: "notifications", label: "Notifications", group: "Productivity" },
-  { id: "calendar", label: "Calendar", group: "Productivity" },
-  { id: "productivity", label: "Today's goals", group: "Productivity" },
-  { id: "notes", label: "Quick notes", group: "Productivity" },
-  { id: "profile", label: "Profile summary", group: "Overview" },
 ];
 
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.04 } } };
