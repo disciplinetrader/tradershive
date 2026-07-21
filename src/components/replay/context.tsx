@@ -21,6 +21,7 @@ import {
   resetReplayProgress,
   toggleChecklistItem,
   updateReplaySession,
+  updateReplayTrade,
 } from "@/lib/replay.functions";
 import { runCoachOnSession } from "@/lib/replay-coach.functions";
 import { TIMEFRAME_SECONDS } from "@/lib/replay/constants";
