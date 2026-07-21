@@ -215,7 +215,10 @@
     font-size: 14.5px;
     line-height: 1.6;
     letter-spacing: -0.005em;
+    overflow-x: hidden;
   }
+  html { overflow-x: hidden; }
+
   h1, h2, h3, h4, h5 {
     font-family: var(--font-display);
     letter-spacing: -0.022em;
