@@ -6,18 +6,11 @@ import { motion } from "framer-motion";
 import {
   Activity,
   ArrowUpRight,
-  Award,
-  Bell,
-  Calendar as CalendarIcon,
   Eye,
   Flame,
-  LineChart,
-  ListChecks,
   Sparkles,
-  StickyNote,
   Star,
   Trophy,
-  User as UserIcon,
   Zap,
 } from "lucide-react";
 import { useCommandPalette } from "@/components/command-palette";
@@ -27,16 +20,8 @@ import { WelcomeCard } from "@/components/dashboard/WelcomeCard";
 import { TodaysChallenge } from "@/components/dashboard/TodaysChallenge";
 import { RecentTrades } from "@/components/dashboard/RecentTrades";
 import { Watchlist } from "@/components/dashboard/Watchlist";
-import { MarketOverview } from "@/components/dashboard/MarketOverview";
 import { StreakWidget } from "@/components/dashboard/StreakWidget";
 import { XPWidget } from "@/components/dashboard/XPWidget";
-import { Achievements } from "@/components/dashboard/Achievements";
-import { NotificationsWidget } from "@/components/dashboard/NotificationsWidget";
-import { CalendarWidget } from "@/components/dashboard/CalendarWidget";
-import { ProductivityWidget } from "@/components/dashboard/ProductivityWidget";
-import { QuickNotes } from "@/components/dashboard/QuickNotes";
-import { LeaderboardPreview } from "@/components/dashboard/LeaderboardPreview";
-import { ProfileSummary } from "@/components/dashboard/ProfileSummary";
 import { WidgetShell } from "@/components/dashboard/WidgetShell";
 import { CustomizeSheet, type WidgetDef } from "@/components/dashboard/CustomizeSheet";
 import { getDashboardLayout, saveDashboardLayout } from "@/lib/dashboard.functions";
@@ -57,16 +42,8 @@ const WIDGETS: WidgetDef[] = [
   { id: "analytics_cta", label: "Analytics shortcut", group: "Overview" },
   { id: "trades", label: "Recent trades", group: "Trading" },
   { id: "watchlist", label: "Watchlist", group: "Trading" },
-  { id: "markets", label: "Market overview", group: "Trading" },
   { id: "streak", label: "Streaks", group: "Gamification" },
   { id: "xp", label: "XP & rank", group: "Gamification" },
-  { id: "achievements", label: "Achievements", group: "Gamification" },
-  { id: "leaderboard", label: "Leaderboard preview", group: "Gamification" },
-  { id: "notifications", label: "Notifications", group: "Productivity" },
-  { id: "calendar", label: "Calendar", group: "Productivity" },
-  { id: "productivity", label: "Today's goals", group: "Productivity" },
-  { id: "notes", label: "Quick notes", group: "Productivity" },
-  { id: "profile", label: "Profile summary", group: "Overview" },
 ];
 
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.04 } } };
@@ -201,68 +178,6 @@ function DashboardPage() {
           {visible("watchlist") && (
             <WidgetShell {...wProps("watchlist")} title="Watchlist" description="Symbols you're tracking" icon={Star}>
               <Watchlist />
-            </WidgetShell>
-          )}
-        </motion.div>
-      )}
-
-      {/* Market overview */}
-      {visible("markets") && (
-        <motion.div variants={item}>
-          <WidgetShell {...wProps("markets")} title="Market overview" description="Global snapshot" icon={LineChart}>
-            <MarketOverview />
-          </WidgetShell>
-        </motion.div>
-      )}
-
-      {/* Achievements + leaderboard */}
-      {(visible("achievements") || visible("leaderboard")) && (
-        <motion.div variants={item} className="grid gap-4 lg:grid-cols-3">
-          {visible("achievements") && (
-            <WidgetShell {...wProps("achievements")} title="Achievements" description="Unlock badges as you play" icon={Award} className="lg:col-span-2">
-              <Achievements />
-            </WidgetShell>
-          )}
-          {visible("leaderboard") && (
-            <WidgetShell {...wProps("leaderboard")} title="Leaderboard" description="Top traders this season" icon={Trophy}>
-              <LeaderboardPreview />
-            </WidgetShell>
-          )}
-        </motion.div>
-      )}
-
-      {/* Calendar + productivity + notifications */}
-      {(visible("calendar") || visible("productivity") || visible("notifications")) && (
-        <motion.div variants={item} className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {visible("calendar") && (
-            <WidgetShell {...wProps("calendar")} title="Trading calendar" icon={CalendarIcon}>
-              <CalendarWidget />
-            </WidgetShell>
-          )}
-          {visible("productivity") && (
-            <WidgetShell {...wProps("productivity")} title="Productivity" description="Daily rituals" icon={ListChecks}>
-              <ProductivityWidget />
-            </WidgetShell>
-          )}
-          {visible("notifications") && (
-            <WidgetShell {...wProps("notifications")} title="Notifications" icon={Bell}>
-              <NotificationsWidget />
-            </WidgetShell>
-          )}
-        </motion.div>
-      )}
-
-      {/* Notes + profile */}
-      {(visible("notes") || visible("profile")) && (
-        <motion.div variants={item} className="grid gap-4 lg:grid-cols-3">
-          {visible("notes") && (
-            <WidgetShell {...wProps("notes")} title="Quick notes" description="Autosaves as you type" icon={StickyNote} className="lg:col-span-2">
-              <QuickNotes />
-            </WidgetShell>
-          )}
-          {visible("profile") && (
-            <WidgetShell {...wProps("profile")} title="Profile" icon={UserIcon}>
-              <ProfileSummary />
             </WidgetShell>
           )}
         </motion.div>
