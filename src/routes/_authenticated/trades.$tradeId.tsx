@@ -53,7 +53,7 @@ function TradeDetailsPage() {
         actions={
           <div className="flex items-center gap-2">
             <ShareToCommunityButton
-              sourceType={data.source === "replay" ? "replay_session" : "trading_workspace"}
+              sourceType={data.source === "replay" ? "replay" : "trading_workspace"}
               sourceId={data.source === "replay" ? (trade.session_id as string) : (trade.id as string)}
               variant="outline"
               size="sm"
@@ -103,11 +103,7 @@ function TradeDetailsPage() {
             <EmptyState
               title="No journal entry"
               description={data.source === "paper" ? "Add reflection and lessons to build your edge." : "Journal entries are created from paper trades."}
-              action={
-                data.source === "paper" ? (
-                  <Button asChild size="sm"><Link to="/journal">Open Journal</Link></Button>
-                ) : null
-              }
+              action={data.source === "paper" ? { label: "Open Journal", href: "/journal" } : undefined}
             />
           )}
         </TabsContent>
@@ -117,16 +113,10 @@ function TradeDetailsPage() {
             <AiReviewPanel review={data.ai_review} />
           ) : (
             <EmptyState
-              icon={<Brain className="h-5 w-5" />}
+              icon={Brain}
               title="No AI review yet"
               description="Generate an AI review to see execution, risk and psychology analysis."
-              action={
-                <Button asChild size="sm">
-                  <Link to="/ai/trade-review" search={{ tradeId } as any}>
-                    <Sparkles className="mr-1.5 h-3.5 w-3.5" /> Generate Review
-                  </Link>
-                </Button>
-              }
+              action={{ label: "Generate Review", href: `/ai/trade-review?tradeId=${tradeId}` }}
             />
           )}
         </TabsContent>
