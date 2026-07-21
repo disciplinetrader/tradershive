@@ -1,3 +1,4 @@
+import { escapeSearch } from "@/lib/search-escape";
 /**
  * Market Data server functions — user-scoped preferences, favorites, alerts,
  * and admin health snapshots. Live prices/candles are pulled client-side
