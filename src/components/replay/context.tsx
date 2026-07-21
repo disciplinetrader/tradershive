@@ -352,7 +352,15 @@ export function ReplayProvider({ id, children }: { id: string; children: ReactNo
   const cpAddMut = useMutation({ mutationFn: useServerFn(createReplayCheckpoint), onSuccess: () => qc.invalidateQueries({ queryKey: ["replay-checkpoints", id] }) });
   const cpDelMut = useMutation({ mutationFn: useServerFn(deleteReplayCheckpoint), onSuccess: () => qc.invalidateQueries({ queryKey: ["replay-checkpoints", id] }) });
   const resetMut = useMutation({ mutationFn: useServerFn(resetReplayProgress) });
+  const updateTradeFn = useServerFn(updateReplayTrade);
   const runCoach = useServerFn(runCoachOnSession);
+
+  // ---- Trading settings + trailing stops (client-side monitored) ----
+  const { settings, updateSettings } = useReplaySettings();
+  const tradingMode = settings.tradingMode;
+  const [trailingStops, setTrailingStops] = useState<Record<string, number>>({});
+  const settingsRef = useRef(settings);
+  useEffect(() => { settingsRef.current = settings; }, [settings]);
 
   const play = useCallback(() => setPlaying(true), []);
   const pause = useCallback(() => setPlaying(false), []);
