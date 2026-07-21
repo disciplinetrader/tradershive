@@ -11,10 +11,11 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { openTrade, placeOrder, listTradeTags, createTradeTag } from "@/lib/paper-trading.functions";
+import { openTrade, placeOrder, listTradeTags, createTradeTag, listTrades } from "@/lib/paper-trading.functions";
 import { COMMON_TAGS } from "@/lib/paper-trading/symbols";
 import { lotForRisk, tradeCalculation, validateStops, formatCurrency } from "@/lib/paper-trading/calculations";
-import { useLivePrice } from "@/lib/paper-trading/mock-prices";
+import { useLivePrice, useLiveQuotes } from "@/lib/paper-trading/mock-prices";
+import { validateNewOrder, liquidationPrice, type OpenTradeInput } from "@/lib/paper-trading/risk";
 import { onTradeIntent } from "@/lib/trading/trade-intent";
 import { cn } from "@/lib/utils";
 import { usePaper } from "./context";
@@ -44,10 +45,22 @@ export function OrderPanel() {
   const orderFn = useServerFn(placeOrder);
   const tagsFn = useServerFn(listTradeTags);
   const createTagFn = useServerFn(createTradeTag);
+  const listTradesFn = useServerFn(listTrades);
+  const liveQuotes = useLiveQuotes();
 
   const { data: tags } = useQuery({
     queryKey: ["paper", "tags"],
     queryFn: () => tagsFn() as unknown as Promise<Array<{ id: string; name: string; color: string }>>,
+  });
+
+  // Currently open positions on this account — needed to compute free margin
+  // for the pre-flight validation so the panel shows the same numbers the
+  // server will use when it accepts or rejects the order.
+  const { data: openTrades } = useQuery({
+    queryKey: ["paper", "trades", accountId, "open"],
+    queryFn: () => listTradesFn({ data: { account_id: accountId!, status: "open" } }) as unknown as Promise<OpenTradeInput[]>,
+    enabled: !!accountId,
+    refetchInterval: 5000,
   });
 
   useEffect(() => {
@@ -60,14 +73,40 @@ export function OrderPanel() {
   const tpNum = tp === "" ? null : Number(tp);
   const lotNum = Number(lot) || 0;
   const balance = Number(account?.balance ?? 0);
+  const leverage = Number(account?.leverage ?? 100);
 
   const calc = useMemo(() => {
     if (!symbolMeta) return null;
     return tradeCalculation({
       sym: symbolMeta, side, entry: entryNum, sl: slNum, tp: tpNum, lot: lotNum,
-      leverage: account?.leverage ?? 100, balance,
+      leverage, balance,
     });
-  }, [symbolMeta, side, entryNum, slNum, tpNum, lotNum, account?.leverage, balance]);
+  }, [symbolMeta, side, entryNum, slNum, tpNum, lotNum, leverage, balance]);
+
+  // Broker-style pre-flight: reject the same orders the server will reject,
+  // and warn on the same ones. Runs on every keystroke so the CTA reflects
+  // reality instantly.
+  const validation = useMemo(() => {
+    if (!account || !symbolMeta || !entryNum || !lotNum) return null;
+    return validateNewOrder(
+      account as any,
+      openTrades ?? [],
+      {
+        symbol,
+        direction: side,
+        entry_price: entryNum,
+        lot_size: lotNum,
+        stop_loss: slNum,
+        risk_amount: calc?.riskAmount ?? null,
+      },
+      (s) => liveQuotes[s]?.price ?? null,
+    );
+  }, [account, symbolMeta, openTrades, symbol, side, entryNum, lotNum, slNum, calc?.riskAmount, liveQuotes]);
+
+  const liqPrice = useMemo(
+    () => symbolMeta && entryNum && leverage > 1 ? liquidationPrice(entryNum, side, leverage) : null,
+    [symbolMeta, entryNum, side, leverage],
+  );
 
   const calculateSizeFromRisk = () => {
     if (!symbolMeta || !slNum || !entryNum) return toast.error("Set entry and stop loss first");
@@ -86,15 +125,22 @@ export function OrderPanel() {
   const openMut = useMutation({
     mutationFn: async () => {
       if (!accountId || !symbolMeta) throw new Error("Select an account first");
-      const validation = validateStops(side, entryNum, slNum, tpNum);
-      if (validation) throw new Error(validation);
+      const stopsMsg = validateStops(side, entryNum, slNum, tpNum);
+      if (stopsMsg) throw new Error(stopsMsg);
       if (!lotNum || lotNum < symbolMeta.minLot) throw new Error(`Minimum lot is ${symbolMeta.minLot}`);
-      if (calc && account?.max_trade_risk_pct && calc.riskPct > Number(account.max_trade_risk_pct)) {
+
+      // Hard errors block regardless of user choice — server enforces these too.
+      if (validation && !validation.ok) {
+        throw new Error(validation.errors[0] ?? "Order rejected");
+      }
+      // Soft warnings require an explicit confirm (broker-style).
+      if (validation && validation.warnings.length > 0) {
         const proceed = window.confirm(
-          `Risk ${calc.riskPct.toFixed(2)}% exceeds your per-trade limit of ${account.max_trade_risk_pct}%. Proceed anyway?`,
+          `${validation.warnings.join("\n")}\n\nProceed anyway?`,
         );
         if (!proceed) throw new Error("Cancelled");
       }
+
       const base = {
         account_id: accountId, symbol, market: symbolMeta.market, direction: side,
         lot_size: lotNum, stop_loss: slNum, take_profit: tpNum,
@@ -206,12 +252,42 @@ export function OrderPanel() {
             <Row label="Risk %" value={`${calc.riskPct.toFixed(2)}%`} accent={riskWarn ? "rose" : undefined} />
             <Row label="RR" value={calc.rr ? `${calc.rr.toFixed(2)} : 1` : "—"} />
             <Row label="Notional" value={formatCurrency(calc.notional, account?.currency)} />
-            <Row label="Margin" value={formatCurrency(calc.margin, account?.currency)} />
+            <Row label="Required margin" value={formatCurrency(calc.margin, account?.currency)} />
+            {validation && (
+              <>
+                <Row
+                  label="Free margin after"
+                  value={formatCurrency(validation.free_margin_after, account?.currency)}
+                  accent={validation.free_margin_after < 0 ? "rose" : undefined}
+                />
+                <Row
+                  label="Buying power after"
+                  value={formatCurrency(validation.buying_power_after, account?.currency)}
+                />
+              </>
+            )}
+            <Row label="Leverage" value={`${leverage}×`} />
+            {liqPrice != null && (
+              <Row label="Est. liquidation" value={liqPrice.toFixed(symbolMeta?.decimals ?? 2)} accent="rose" />
+            )}
           </div>
-          {riskWarn && (
-            <p className="mt-2 flex items-center gap-1.5 rounded-md bg-danger/10 px-2 py-1 text-danger">
-              <AlertTriangle className="h-3.5 w-3.5" /> Exceeds per-trade risk limit ({account?.max_trade_risk_pct}%)
-            </p>
+          {validation && validation.errors.length > 0 && (
+            <div className="mt-2 space-y-1">
+              {validation.errors.map((msg, i) => (
+                <p key={i} className="flex items-start gap-1.5 rounded-md bg-danger/10 px-2 py-1 text-danger">
+                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {msg}
+                </p>
+              ))}
+            </div>
+          )}
+          {validation && validation.errors.length === 0 && validation.warnings.length > 0 && (
+            <div className="mt-2 space-y-1">
+              {validation.warnings.map((msg, i) => (
+                <p key={i} className="flex items-start gap-1.5 rounded-md bg-warning/10 px-2 py-1 text-warning">
+                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {msg}
+                </p>
+              ))}
+            </div>
           )}
         </motion.div>
       )}
@@ -278,14 +354,14 @@ export function OrderPanel() {
         <Button variant="outline" onClick={reset}><RotateCcw className="mr-1.5 h-4 w-4" /> Reset</Button>
         <Button
           onClick={() => openMut.mutate()}
-          disabled={openMut.isPending || !accountId || !symbolMeta}
+          disabled={openMut.isPending || !accountId || !symbolMeta || (validation != null && !validation.ok)}
           className={cn("flex-1 shadow-elegant",
             side === "long"
               ? "bg-success text-white hover:bg-success/90"
               : "bg-danger text-white hover:bg-danger/90")}
         >
           <Send className="mr-1.5 h-4 w-4" />
-          {orderType === "market" ? (side === "long" ? "Buy market" : "Sell market") : "Place order"}
+          {validation && !validation.ok ? "Insufficient margin" : (orderType === "market" ? (side === "long" ? "Buy market" : "Sell market") : "Place order")}
         </Button>
       </div>
       <p className="text-[10px] text-muted-foreground">Shortcuts — <kbd>B</kbd> buy · <kbd>S</kbd> sell · <kbd>⌘/Ctrl</kbd>+<kbd>↵</kbd> place</p>

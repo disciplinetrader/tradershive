@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { findSymbol } from "./paper-trading/symbols";
 import { pnl as computePnl, pipsBetween } from "./paper-trading/calculations";
+import { validateNewOrder, type OpenTradeInput } from "./paper-trading/risk";
 
 /* ---------------- Accounts ---------------- */
 
@@ -150,6 +151,41 @@ export const openTrade = createServerFn({ method: "POST" })
   .inputValidator((d) => openTradeSchema.parse(d))
   .handler(async ({ data, context }) => {
     const { tag_ids, ...trade } = data;
+
+    // ---- Broker-style pre-flight validation (hard gate) ----
+    // Prevents the "$25k balance vs −$70M net P/L" impossible-state bug by
+    // rejecting any order that would exceed free margin, absolute risk cap,
+    // symbol lot limits, or the concurrent-position cap.
+    const [{ data: acct, error: acctErr }, { data: opens }] = await Promise.all([
+      context.supabase
+        .from("paper_accounts")
+        .select("id, balance, equity, leverage, currency, max_trade_risk_pct, margin_call_level, stop_out_level, negative_balance_protection, is_archived, deleted_at")
+        .eq("id", data.account_id).eq("user_id", context.userId).single(),
+      context.supabase
+        .from("paper_trades")
+        .select("id, symbol, direction, entry_price, lot_size")
+        .eq("account_id", data.account_id).eq("user_id", context.userId)
+        .eq("status", "open").is("deleted_at", null),
+    ]);
+    if (acctErr || !acct) throw new Error("Account not found");
+    if (acct.is_archived || acct.deleted_at) throw new Error("Account is archived");
+
+    const validation = validateNewOrder(
+      acct as any,
+      (opens ?? []) as OpenTradeInput[],
+      {
+        symbol: data.symbol,
+        direction: data.direction,
+        entry_price: Number(data.entry_price),
+        lot_size: Number(data.lot_size),
+        stop_loss: data.stop_loss ?? null,
+        risk_amount: data.risk_amount ?? null,
+      },
+    );
+    if (!validation.ok) {
+      throw new Error(validation.errors.join(" · "));
+    }
+
     const { data: created, error } = await context.supabase
       .from("paper_trades")
       .insert({ ...trade, user_id: context.userId, status: "open", opened_at: new Date().toISOString() })
@@ -163,7 +199,10 @@ export const openTrade = createServerFn({ method: "POST" })
     }
     await context.supabase.from("position_history").insert({
       user_id: context.userId, account_id: data.account_id, trade_id: created.id,
-      event: "opened", payload: { entry_price: data.entry_price, lot_size: data.lot_size },
+      event: "opened", payload: {
+        entry_price: data.entry_price, lot_size: data.lot_size,
+        required_margin: validation.required_margin, liq_price: validation.liq_price,
+      },
     });
     return created;
   });
@@ -212,7 +251,26 @@ export const closeTrade = createServerFn({ method: "POST" })
     const sym = findSymbol(trade.symbol);
     if (!sym) throw new Error("Unknown symbol");
     const gross = computePnl(sym, trade.direction as "long"|"short", Number(trade.entry_price), data.exit_price, Number(trade.lot_size));
-    const pnl = gross - Number(trade.commission ?? 0) - Number(trade.swap ?? 0);
+    let pnl = gross - Number(trade.commission ?? 0) - Number(trade.swap ?? 0);
+
+    // Fetch the account BEFORE writing the trade so we can bound the
+    // realized loss under negative-balance-protection. Bounding here (not
+    // just at balance-update time) keeps `paper_trades.pnl`,
+    // `account_statistics.net_pnl` and `paper_accounts.balance` internally
+    // consistent — the invariant that closed a $70M drift on a $25k account.
+    const { data: acct } = await context.supabase.from("paper_accounts")
+      .select("balance, negative_balance_protection").eq("id", trade.account_id).single();
+
+    let closeReason = data.close_reason;
+    if (acct?.negative_balance_protection) {
+      const balance = Number(acct.balance);
+      if (balance + pnl < 0) {
+        // Cap the loss so post-close balance floors at $0 (broker NBP).
+        pnl = -balance;
+        if (closeReason === "manual") closeReason = "liquidation";
+      }
+    }
+
     const rr_realized = trade.risk_amount && Number(trade.risk_amount) > 0
       ? pnl / Number(trade.risk_amount)
       : null;
@@ -223,24 +281,21 @@ export const closeTrade = createServerFn({ method: "POST" })
       exit_price: data.exit_price,
       pnl,
       rr_realized,
-      close_reason: data.close_reason,
+      close_reason: closeReason,
       closed_at: new Date(closedAt).toISOString(),
     }).eq("id", data.id).eq("user_id", context.userId);
     if (upErr) throw upErr;
 
-    // Update account balance. Honour negative-balance-protection: if the
-    // account has NBP on, floor the post-close balance at $0 so a runaway
-    // move can never leave the trader owing money.
-    const { data: acct } = await context.supabase.from("paper_accounts")
-      .select("balance, negative_balance_protection").eq("id", trade.account_id).single();
     if (acct) {
-      const raw = Number(acct.balance) + pnl;
-      const newBal = acct.negative_balance_protection ? Math.max(0, raw) : raw;
-      await context.supabase.from("paper_accounts").update({ balance: newBal, equity: newBal })
+      const newBal = Number(acct.balance) + pnl;
+      // pnl is already NBP-bounded above; the max(0, …) is belt-and-braces
+      // for legacy accounts still carrying a stale balance value.
+      const safeBal = acct.negative_balance_protection ? Math.max(0, newBal) : newBal;
+      await context.supabase.from("paper_accounts").update({ balance: safeBal, equity: safeBal })
         .eq("id", trade.account_id).eq("user_id", context.userId);
     }
 
-    // Update cached stats
+    // Update cached stats (net_pnl now matches balance movement exactly).
     const { data: stats } = await context.supabase.from("account_statistics")
       .select("*").eq("account_id", trade.account_id).maybeSingle();
     const isWin = pnl > 0, isLoss = pnl < 0;
@@ -264,11 +319,11 @@ export const closeTrade = createServerFn({ method: "POST" })
     await context.supabase.from("position_history").insert({
       user_id: context.userId, account_id: trade.account_id, trade_id: data.id,
       event: "closed", payload: {
-        exit_price: data.exit_price, pnl, close_reason: data.close_reason,
+        exit_price: data.exit_price, pnl, close_reason: closeReason,
         duration_ms: closedAt - openedAt,
       },
     });
-    return { ok: true, pnl, rr_realized };
+    return { ok: true, pnl, rr_realized, close_reason: closeReason };
   });
 
 export const listTrades = createServerFn({ method: "GET" })
@@ -499,7 +554,17 @@ export const partialCloseTrade = createServerFn({ method: "POST" })
     const gross = computePnl(sym, trade.direction as "long"|"short", Number(trade.entry_price), data.exit_price, closedLot);
     const commissionShare = Number(trade.commission ?? 0) * data.fraction;
     const swapShare = Number(trade.swap ?? 0) * data.fraction;
-    const pnl = gross - commissionShare - swapShare;
+    let pnl = gross - commissionShare - swapShare;
+
+    const { data: acct } = await context.supabase.from("paper_accounts")
+      .select("balance, negative_balance_protection").eq("id", trade.account_id).single();
+
+    // Bound realized loss under NBP before writing anywhere — keeps stats
+    // consistent with the actual balance movement.
+    if (acct?.negative_balance_protection) {
+      const balance = Number(acct.balance);
+      if (balance + pnl < 0) pnl = -balance;
+    }
 
     const { error: upErr } = await context.supabase.from("paper_trades").update({
       lot_size: remainingLot,
@@ -508,8 +573,6 @@ export const partialCloseTrade = createServerFn({ method: "POST" })
     }).eq("id", data.id).eq("user_id", context.userId);
     if (upErr) throw upErr;
 
-    const { data: acct } = await context.supabase.from("paper_accounts")
-      .select("balance, negative_balance_protection").eq("id", trade.account_id).single();
     if (acct) {
       const raw = Number(acct.balance) + pnl;
       const newBal = acct.negative_balance_protection ? Math.max(0, raw) : raw;
