@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, Link, useRouterState, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, Link, useRouterState } from "@tanstack/react-router";
 import { Brain, ClipboardList, LineChart, Sparkles, Target, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
