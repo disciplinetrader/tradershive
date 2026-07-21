@@ -323,7 +323,8 @@ export const listBookmarks = createServerFn({ method: "POST" })
       .limit(100);
     if (error) throw error;
     const posts = (data ?? []).map((r: any) => r.post).filter(Boolean);
-    const withState = await attachViewerState(supabase, userId, posts);
+    const withAuthors = await attachAuthors(supabase, posts);
+    const withState = await attachViewerState(supabase, userId, withAuthors);
     return { posts: withState };
   });
 
