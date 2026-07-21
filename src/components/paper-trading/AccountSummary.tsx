@@ -112,6 +112,8 @@ export function AccountSummary() {
         <Stat mobile label="Margin level" value={
           <span className={cn("flex items-center gap-1", marginTone)}>{formatMarginLevel(marginLevel)}</span>
         } />
+        <Stat mobile label="Buying power" value={formatCurrency(buyingPower, account.currency)} />
+        <Stat mobile label="Margin ratio" value={formatMarginRatio(marginRatio)} />
         <Stat mobile label="Win rate" value={`${Number(stats?.win_rate ?? 0).toFixed(1)}%`} />
         <Stat mobile label="Net P/L" value={
           <span className={Number(stats?.net_pnl ?? 0) >= 0 ? "text-success" : "text-danger"}>
