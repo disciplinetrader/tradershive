@@ -1,6 +1,6 @@
-import { createFileRoute, Outlet, Link, useRouterState, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useRouterState, redirect } from "@tanstack/react-router";
 import { AiAvatar } from "@/components/ai/AiAvatar";
-import { cn } from "@/lib/utils";
+import { SegmentedTabs } from "@/components/ui/segmented-tabs";
 import { BookMarked, BrainCog, Gauge, GraduationCap, History, MessageSquare, PlaySquare, Settings2, Sparkles } from "lucide-react";
 
 const TABS = [
