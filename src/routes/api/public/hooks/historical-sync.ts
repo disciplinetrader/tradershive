@@ -5,6 +5,7 @@
  */
 import { createFileRoute } from "@tanstack/react-router";
 import { timingSafeEqual } from "crypto";
+import { guardRoute } from "@/lib/server-errors";
 
 function safeEqual(a: string, b: string): boolean {
   const ab = Buffer.from(a);
@@ -16,7 +17,7 @@ function safeEqual(a: string, b: string): boolean {
 export const Route = createFileRoute("/api/public/hooks/historical-sync")({
   server: {
     handlers: {
-      POST: async ({ request }) => {
+      POST: guardRoute("api/public/hooks/historical-sync", async ({ request }) => {
         const expected = process.env.HISTORICAL_SYNC_CRON_SECRET;
         if (!expected) return new Response("Not configured", { status: 503 });
         const provided =
@@ -35,11 +36,7 @@ export const Route = createFileRoute("/api/public/hooks/historical-sync")({
           .select("id, symbol, native_symbol, source_code, base_timeframe")
           .eq("is_enabled", true)
           .order("priority", { ascending: true });
-        if (error) {
-          return new Response(JSON.stringify({ ok: false, error: error.message }), {
-            status: 500, headers: { "Content-Type": "application/json" },
-          });
-        }
+        if (error) throw error;
 
         const results: unknown[] = [];
         for (const s of symbols ?? []) {
@@ -47,6 +44,7 @@ export const Route = createFileRoute("/api/public/hooks/historical-sync")({
             const r = await runIncrementalUpdate(s as any);
             results.push({ symbol: s.symbol, ok: true, ...(typeof r === "object" ? r : {}) });
           } catch (e) {
+            console.error("[historical-sync] symbol failed", s.symbol, e);
             results.push({ symbol: s.symbol, ok: false, error: e instanceof Error ? e.message : String(e) });
           }
         }
@@ -54,7 +52,7 @@ export const Route = createFileRoute("/api/public/hooks/historical-sync")({
         return new Response(JSON.stringify({ ok: true, synced: results.length, results }), {
           headers: { "Content-Type": "application/json" },
         });
-      },
+      }),
     },
   },
 });
