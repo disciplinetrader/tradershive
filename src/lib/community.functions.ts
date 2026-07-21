@@ -358,7 +358,8 @@ export const listComments = createServerFn({ method: "POST" })
         .in("comment_id", ids);
       liked = new Set((my ?? []).map((r: any) => r.comment_id));
     }
-    return { comments: (rows ?? []).map((r: any) => ({ ...r, viewer_liked: liked.has(r.id) })) };
+    const withAuthors = await attachAuthors(supabase, rows ?? []);
+    return { comments: withAuthors.map((r: any) => ({ ...r, viewer_liked: liked.has(r.id) })) };
   });
 
 export const addComment = createServerFn({ method: "POST" })
