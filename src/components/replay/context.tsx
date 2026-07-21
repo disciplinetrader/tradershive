@@ -21,6 +21,7 @@ import {
   resetReplayProgress,
   toggleChecklistItem,
   updateReplaySession,
+  updateReplayTrade,
 } from "@/lib/replay.functions";
 import { runCoachOnSession } from "@/lib/replay-coach.functions";
 import { TIMEFRAME_SECONDS } from "@/lib/replay/constants";
@@ -42,6 +43,7 @@ import type {
 } from "@/lib/replay/types";
 import { uploadReplayScreenshot } from "@/lib/replay/storage";
 import { useAuth } from "@/hooks/use-auth";
+import { useReplaySettings, type ReplaySettings, type TradingMode } from "@/lib/replay/settings";
 import * as nav from "@/lib/replay/navigation";
 
 type ReplayCtx = {
@@ -77,6 +79,12 @@ type ReplayCtx = {
   closeTrade: (id: string) => Promise<void>;
   cancelTrade: (id: string) => Promise<void>;
   cancelPendingOrder: (id: string) => void;
+  closeAllPositions: () => Promise<void>;
+  partialClose: (id: string, fraction: number) => Promise<void>;
+  moveToBreakEven: (id: string) => Promise<void>;
+  setTrailingStop: (id: string, distance: number | null) => void;
+  reversePosition: (id: string) => Promise<void>;
+  modifyTrade: (id: string, patch: { stop_loss?: number | null; take_profit?: number | null }) => Promise<void>;
   addNote: (body: string) => Promise<void>;
   removeNote: (id: string) => Promise<void>;
   addBookmark: (label: string, category: BookmarkCategory) => Promise<void>;
@@ -89,6 +97,11 @@ type ReplayCtx = {
   captureScreenshot: (dataUrl: string, caption?: string) => Promise<void>;
   finish: () => Promise<void>;
   replayAgain: () => Promise<void>;
+  // ---- Settings ----
+  settings: ReplaySettings;
+  updateSettings: (patch: Partial<ReplaySettings>) => void;
+  tradingMode: TradingMode;
+  trailingStops: Record<string, number>;
 };
 
 const Ctx = createContext<ReplayCtx | null>(null);
@@ -284,6 +297,25 @@ export function ReplayProvider({ id, children }: { id: string; children: ReactNo
             .then(() => qc.invalidateQueries({ queryKey: ["replay", id] }))
             .catch(() => {});
         }
+        // Trailing stop: nudge SL when price moves favourably by `distance`.
+        const trailDist = trailingStops[t.id];
+        if (hitPrice == null && trailDist != null && trailDist > 0) {
+          if (t.direction === "long") {
+            const candidate = c.high - trailDist;
+            if (t.stop_loss == null || candidate > t.stop_loss) {
+              updateTradeFn({ data: { id: t.id, stop_loss: candidate } })
+                .then(() => qc.invalidateQueries({ queryKey: ["replay", id] }))
+                .catch(() => {});
+            }
+          } else {
+            const candidate = c.low + trailDist;
+            if (t.stop_loss == null || candidate < t.stop_loss) {
+              updateTradeFn({ data: { id: t.id, stop_loss: candidate } })
+                .then(() => qc.invalidateQueries({ queryKey: ["replay", id] }))
+                .catch(() => {});
+            }
+          }
+        }
       }
       // Pending order triggers
       if (pendingOrders.length && session) {
@@ -339,7 +371,15 @@ export function ReplayProvider({ id, children }: { id: string; children: ReactNo
   const cpAddMut = useMutation({ mutationFn: useServerFn(createReplayCheckpoint), onSuccess: () => qc.invalidateQueries({ queryKey: ["replay-checkpoints", id] }) });
   const cpDelMut = useMutation({ mutationFn: useServerFn(deleteReplayCheckpoint), onSuccess: () => qc.invalidateQueries({ queryKey: ["replay-checkpoints", id] }) });
   const resetMut = useMutation({ mutationFn: useServerFn(resetReplayProgress) });
+  const updateTradeFn = useServerFn(updateReplayTrade);
   const runCoach = useServerFn(runCoachOnSession);
+
+  // ---- Trading settings + trailing stops (client-side monitored) ----
+  const { settings, updateSettings } = useReplaySettings();
+  const tradingMode = settings.tradingMode;
+  const [trailingStops, setTrailingStops] = useState<Record<string, number>>({});
+  const settingsRef = useRef(settings);
+  useEffect(() => { settingsRef.current = settings; }, [settings]);
 
   const play = useCallback(() => setPlaying(true), []);
   const pause = useCallback(() => setPlaying(false), []);
@@ -460,6 +500,75 @@ export function ReplayProvider({ id, children }: { id: string; children: ReactNo
   );
 
   // ---- Trade actions ----
+
+  /** Book a closed replay_trade row for `lots` at `exit` — used by close & partial-close flows. */
+  const bookClose = useCallback(
+    async (t: ReplayTrade, exit: number, lots: number, ts: number) => {
+      const pnl = (t.direction === "long" ? exit - t.entry_price : t.entry_price - exit) * lots;
+      const risk = t.stop_loss ? Math.abs(t.entry_price - t.stop_loss) * lots : 0;
+      const rr = risk > 0 ? pnl / risk : null;
+      if (Math.abs(lots - t.lot_size) < 1e-9) {
+        // Full close
+        await closeMut.mutateAsync({
+          data: { id: t.id, exit_price: exit, closed_at: new Date(ts).toISOString(), pnl, rr_realized: rr },
+        });
+      } else if (lots < t.lot_size) {
+        // Partial close: shrink existing trade in place and record a closed sibling for stats.
+        const remaining = Number((t.lot_size - lots).toFixed(4));
+        await updateTradeFn({ data: { id: t.id, lot_size: remaining } });
+        // Record the closed portion as a synthetic closed trade (same entry, closed now).
+        if (session) {
+          const closedRow = await openFn({
+            data: {
+              session_id: session.id,
+              symbol: t.symbol,
+              market: t.market,
+              direction: t.direction,
+              order_type: "market",
+              entry_price: t.entry_price,
+              stop_loss: t.stop_loss,
+              take_profit: t.take_profit,
+              lot_size: lots,
+              risk_pct: t.risk_pct,
+              rr_planned: null,
+              opened_at: t.opened_at,
+            },
+          });
+          if (closedRow?.id) {
+            await closeMut.mutateAsync({
+              data: { id: closedRow.id, exit_price: exit, closed_at: new Date(ts).toISOString(), pnl, rr_realized: rr },
+            });
+          }
+        }
+      }
+    },
+    [closeMut, updateTradeFn, openFn, session],
+  );
+
+  /**
+   * Reconcile a new market order against existing open positions when
+   * trading in netting mode. Returns leftover lots that still need to
+   * open a fresh position (0 when the order was fully consumed).
+   */
+  const applyNettingReconciliation = useCallback(
+    async (direction: "long" | "short", incomingLots: number): Promise<number> => {
+      if (!session) return incomingLots;
+      const opposite = openTrades.filter(
+        (t) => t.symbol === session.symbol && t.direction !== direction,
+      );
+      let remaining = incomingLots;
+      for (const t of opposite) {
+        if (remaining <= 0) break;
+        const consume = Math.min(t.lot_size, remaining);
+        await bookClose(t, currentPrice, consume, cursorTs);
+        remaining = Number((remaining - consume).toFixed(6));
+      }
+      await qc.invalidateQueries({ queryKey: ["replay", id] });
+      return Math.max(0, remaining);
+    },
+    [session, openTrades, currentPrice, cursorTs, bookClose, qc, id],
+  );
+
   const openTrade: ReplayCtx["openTrade"] = useCallback(
     async (opts) => {
       if (!session) return;
@@ -482,8 +591,20 @@ export function ReplayProvider({ id, children }: { id: string; children: ReactNo
         toast.success(`Placed ${opts.direction} ${opts.orderType} @ ${opts.entryPrice.toFixed(5)}`);
         return;
       }
-      // Market order — hit immediately
-      const entry = currentPrice;
+      // Market order — hit immediately (spread from settings)
+      const spread = settingsRef.current.spread ?? 0;
+      const entry = opts.direction === "long" ? currentPrice + spread / 2 : currentPrice - spread / 2;
+      let lotsToOpen = opts.lotSize;
+
+      // Netting: net down opposing exposure before opening new lots.
+      if (settingsRef.current.tradingMode === "netting") {
+        lotsToOpen = await applyNettingReconciliation(opts.direction, opts.lotSize);
+        if (lotsToOpen <= 0) {
+          toast.success(`Netted flat @ ${entry.toFixed(5)}`);
+          return;
+        }
+      }
+
       const risk = opts.stopLoss ? Math.abs(entry - opts.stopLoss) : null;
       const rrPlanned = risk && opts.takeProfit ? Math.abs(opts.takeProfit - entry) / risk : null;
       await openMut.mutateAsync({
@@ -496,15 +617,15 @@ export function ReplayProvider({ id, children }: { id: string; children: ReactNo
           entry_price: entry,
           stop_loss: opts.stopLoss ?? null,
           take_profit: opts.takeProfit ?? null,
-          lot_size: opts.lotSize,
+          lot_size: lotsToOpen,
           risk_pct: opts.riskPct ?? null,
           rr_planned: rrPlanned,
           opened_at: new Date(cursorTs).toISOString(),
         },
       });
-      toast.success(`${opts.direction === "long" ? "Long" : "Short"} @ ${entry.toFixed(5)}`);
+      toast.success(`${opts.direction === "long" ? "Long" : "Short"} ${lotsToOpen} @ ${entry.toFixed(5)}`);
     },
-    [session, currentPrice, cursorTs, openMut],
+    [session, currentPrice, cursorTs, openMut, applyNettingReconciliation],
   );
 
   const closeTrade = useCallback(
@@ -512,19 +633,100 @@ export function ReplayProvider({ id, children }: { id: string; children: ReactNo
       const t = trades.find((x) => x.id === tid);
       if (!t || !session) return;
       const exit = currentPrice;
-      const pnl = (t.direction === "long" ? exit - t.entry_price : t.entry_price - exit) * t.lot_size;
-      const risk = t.stop_loss ? Math.abs(t.entry_price - t.stop_loss) * t.lot_size : 0;
-      const rr = risk > 0 ? pnl / risk : null;
-      await closeMut.mutateAsync({
-        data: { id: tid, exit_price: exit, closed_at: new Date(cursorTs).toISOString(), pnl, rr_realized: rr },
-      });
-      toast.success(`Closed @ ${exit.toFixed(5)} — PnL ${pnl.toFixed(2)}`);
+      await bookClose(t, exit, t.lot_size, cursorTs);
+      setTrailingStops((prev) => { const { [tid]: _drop, ...rest } = prev; return rest; });
+      toast.success(`Closed @ ${exit.toFixed(5)}`);
     },
-    [trades, session, currentPrice, cursorTs, closeMut],
+    [trades, session, currentPrice, cursorTs, bookClose],
   );
 
   const cancelTrade = useCallback(async (tid: string) => { await delTradeMut.mutateAsync({ data: { id: tid } }); }, [delTradeMut]);
   const cancelPendingOrder = useCallback((pid: string) => setPendingOrders((prev) => prev.filter((p) => p.id !== pid)), []);
+
+  /** Close every open position on this session at the current price. */
+  const closeAllPositions = useCallback(async () => {
+    if (!openTrades.length) return;
+    const exit = currentPrice;
+    for (const t of openTrades) {
+      await bookClose(t, exit, t.lot_size, cursorTs);
+    }
+    setTrailingStops({});
+    toast.success(`Closed ${openTrades.length} position${openTrades.length > 1 ? "s" : ""}`);
+  }, [openTrades, currentPrice, cursorTs, bookClose]);
+
+  /** Partial close by fraction (0..1). 0.5 = close half. */
+  const partialClose = useCallback(
+    async (tid: string, fraction: number) => {
+      const t = trades.find((x) => x.id === tid);
+      if (!t || fraction <= 0 || fraction >= 1) return;
+      const lots = Number((t.lot_size * fraction).toFixed(4));
+      if (lots <= 0) return;
+      await bookClose(t, currentPrice, lots, cursorTs);
+      toast.success(`Closed ${Math.round(fraction * 100)}% (${lots} lots)`);
+    },
+    [trades, currentPrice, cursorTs, bookClose],
+  );
+
+  /** Move stop-loss to entry (locks in break-even). */
+  const moveToBreakEven = useCallback(
+    async (tid: string) => {
+      const t = trades.find((x) => x.id === tid);
+      if (!t) return;
+      await updateTradeFn({ data: { id: tid, stop_loss: t.entry_price } });
+      await qc.invalidateQueries({ queryKey: ["replay", id] });
+      toast.success("Break-even set");
+    },
+    [trades, updateTradeFn, qc, id],
+  );
+
+  /** Enable/disable a trailing stop at `distance` price units. Pass null to clear. */
+  const setTrailingStop = useCallback((tid: string, distance: number | null) => {
+    setTrailingStops((prev) => {
+      const next = { ...prev };
+      if (distance == null || distance <= 0) delete next[tid];
+      else next[tid] = distance;
+      return next;
+    });
+    if (distance != null && distance > 0) toast.success(`Trailing stop @ ${distance}`);
+    else toast.success("Trailing stop cleared");
+  }, []);
+
+  /** Netting-mode reverse: close the position and open the opposite side with the same lot size. */
+  const reversePosition = useCallback(
+    async (tid: string) => {
+      const t = trades.find((x) => x.id === tid);
+      if (!t || !session) return;
+      const lots = t.lot_size;
+      const newDir = t.direction === "long" ? "short" : "long";
+      await bookClose(t, currentPrice, lots, cursorTs);
+      await openMut.mutateAsync({
+        data: {
+          session_id: session.id,
+          symbol: session.symbol,
+          market: session.market,
+          direction: newDir,
+          order_type: "market",
+          entry_price: currentPrice,
+          stop_loss: null,
+          take_profit: null,
+          lot_size: lots,
+          risk_pct: null,
+          rr_planned: null,
+          opened_at: new Date(cursorTs).toISOString(),
+        },
+      });
+      toast.success(`Reversed → ${newDir.toUpperCase()} ${lots}`);
+    },
+    [trades, session, currentPrice, cursorTs, bookClose, openMut],
+  );
+
+  const modifyTrade = useCallback(
+    async (tid: string, patch: { stop_loss?: number | null; take_profit?: number | null }) => {
+      await updateTradeFn({ data: { id: tid, ...patch } });
+      await qc.invalidateQueries({ queryKey: ["replay", id] });
+    },
+    [updateTradeFn, qc, id],
+  );
 
   const addNote = useCallback(
     async (body: string) => {
@@ -640,10 +842,12 @@ export function ReplayProvider({ id, children }: { id: string; children: ReactNo
     play, pause, toggle, restart, step, skip, setSpeed, setCursorIdx,
     jumpTo, fastForwardUntil,
     openTrade, closeTrade, cancelTrade, cancelPendingOrder,
+    closeAllPositions, partialClose, moveToBreakEven, setTrailingStop, reversePosition, modifyTrade,
     addNote, removeNote, addBookmark, removeBookmark,
     toggleCheck, addCheck,
     addCheckpoint, jumpToCheckpoint, removeCheckpoint,
     captureScreenshot, finish, replayAgain,
+    settings, updateSettings, tradingMode, trailingStops,
   };
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

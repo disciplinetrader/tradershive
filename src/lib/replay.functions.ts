@@ -385,6 +385,42 @@ export const deleteReplayTrade = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/**
+ * Modify an open replay trade's SL / TP / lot size. Used by Break-Even,
+ * Trailing Stop, and Partial Close flows so we don't have to close+reopen
+ * for a simple stop nudge.
+ */
+export const updateReplayTrade = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({
+      id: z.string().uuid(),
+      stop_loss: z.number().nullable().optional(),
+      take_profit: z.number().nullable().optional(),
+      lot_size: z.number().positive().optional(),
+      notes: z.string().optional().nullable(),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { id, ...patch } = data;
+    const { data: row, error } = await context.supabase
+      .from("replay_trades")
+      .update(patch)
+      .eq("id", id)
+      .eq("status", "open")
+      .select()
+      .single();
+    if (error) throw error;
+    await context.supabase.from("replay_events").insert({
+      session_id: row.session_id,
+      user_id: context.userId,
+      event_type: "trade_modified",
+      event_ts: new Date().toISOString(),
+      payload: { trade_id: id, ...patch },
+    });
+    return row;
+  });
+
 export const listReplayTrades = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
