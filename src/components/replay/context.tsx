@@ -22,6 +22,7 @@ import {
   toggleChecklistItem,
   updateReplaySession,
 } from "@/lib/replay.functions";
+import { runCoachOnSession } from "@/lib/replay-coach.functions";
 import { TIMEFRAME_SECONDS } from "@/lib/replay/constants";
 import type {
   BookmarkCategory,
