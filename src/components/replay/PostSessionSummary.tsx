@@ -19,11 +19,27 @@ export function PostSessionSummary({
   onReplayAgain?: () => void;
 }) {
   const get = useServerFn(getReplaySessionSummary);
+  const getDeb = useServerFn(getReplayDebrief);
+  const genDeb = useServerFn(generateReplayDebrief);
+  const qc = useQueryClient();
   const q = useQuery({
     queryKey: ["replay", "summary", sessionId],
     queryFn: () => get({ data: { session_id: sessionId } }),
     enabled: open,
   });
+  const dQ = useQuery({
+    queryKey: ["replay", "debrief", sessionId],
+    queryFn: () => getDeb({ data: { session_id: sessionId } }),
+    enabled: open,
+  });
+  const genM = useMutation({
+    mutationFn: () => genDeb({ data: { session_id: sessionId } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["replay", "debrief", sessionId] });
+      qc.invalidateQueries({ queryKey: ["coach"] });
+    },
+  });
+  const debrief: any = dQ.data;
 
   const t = (q.data as any)?.totals;
   const s = (q.data as any)?.session;
