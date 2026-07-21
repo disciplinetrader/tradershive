@@ -211,7 +211,7 @@ function TradingWorkspaceInner() {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="flex min-h-0 flex-col gap-3 p-3">
+      <div className="flex min-h-0 flex-col gap-3 p-2 sm:p-3">
         <TopToolbar />
         <TodayPnLWidget
           dailyTargetPct={Number(account?.max_daily_risk_pct ?? 5)}
@@ -220,29 +220,31 @@ function TradingWorkspaceInner() {
         <AccountSummary />
 
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_360px]">
-          <GlassCard className="relative flex h-[440px] flex-col overflow-hidden p-0 sm:h-[520px] lg:h-[600px]">
+          <GlassCard className="relative flex h-[60vh] min-h-[360px] flex-col overflow-hidden p-0 sm:h-[520px] lg:h-[600px]">
+
             {/* Chart header */}
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/50 px-3 py-2">
-              <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/50 px-2 py-2 sm:px-3">
+              <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                 <button
                   onClick={() => setSymbolSearchOpen(true)}
-                  className="group flex items-baseline gap-2 rounded-md border border-transparent px-1.5 py-1 transition hover:border-border/60 hover:bg-background/60"
+                  className="group flex min-w-0 items-baseline gap-2 rounded-md border border-transparent px-1.5 py-1 transition hover:border-border/60 hover:bg-background/60"
                   title="Change symbol"
                 >
-                  <span className="text-sm font-bold tracking-wide">{symbol}</span>
-                  <span className="text-[11px] uppercase text-muted-foreground">{meta?.name}</span>
-                  <ChevronDown className="h-3 w-3 text-muted-foreground opacity-60 group-hover:opacity-100" />
+                  <span className="truncate text-sm font-bold tracking-wide">{symbol}</span>
+                  <span className="hidden truncate text-[11px] uppercase text-muted-foreground sm:inline">{meta?.name}</span>
+                  <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground opacity-60 group-hover:opacity-100" />
                 </button>
-                <div className="flex items-baseline gap-3 tabular-nums">
+                <div className="flex min-w-0 items-baseline gap-2 tabular-nums sm:gap-3">
                   <motion.span
                     key={last} initial={{ opacity: 0.4 }} animate={{ opacity: 1 }}
-                    className={cn("text-lg font-bold", quote?.last && quote.last >= bid ? "text-success" : "text-danger")}
+                    className={cn("text-base font-bold sm:text-lg", quote?.last && quote.last >= bid ? "text-success" : "text-danger")}
                   >{last.toFixed(decimals)}</motion.span>
-                  <span className="text-[11px] text-muted-foreground">Bid <span className="text-foreground">{bid.toFixed(decimals)}</span></span>
-                  <span className="text-[11px] text-muted-foreground">Ask <span className="text-foreground">{ask.toFixed(decimals)}</span></span>
-                  <Badge variant="outline" className="text-[10px]">Spread {spread.toFixed(decimals)}</Badge>
+                  <span className="hidden text-[11px] text-muted-foreground sm:inline">Bid <span className="text-foreground">{bid.toFixed(decimals)}</span></span>
+                  <span className="hidden text-[11px] text-muted-foreground sm:inline">Ask <span className="text-foreground">{ask.toFixed(decimals)}</span></span>
+                  <Badge variant="outline" className="hidden text-[10px] sm:inline-flex">Spread {spread.toFixed(decimals)}</Badge>
                 </div>
               </div>
+
 
               <div className="flex items-center gap-2">
                 <Tooltip>

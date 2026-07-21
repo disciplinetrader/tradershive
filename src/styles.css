@@ -215,7 +215,10 @@
     font-size: 14.5px;
     line-height: 1.6;
     letter-spacing: -0.005em;
+    overflow-x: hidden;
   }
+  html { overflow-x: hidden; }
+
   h1, h2, h3, h4, h5 {
     font-family: var(--font-display);
     letter-spacing: -0.022em;
@@ -289,6 +292,29 @@
 @utility safe-bottom {
   padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
 }
+
+@utility safe-top {
+  padding-top: max(0.5rem, env(safe-area-inset-top));
+}
+
+@utility safe-x {
+  padding-left: max(0px, env(safe-area-inset-left));
+  padding-right: max(0px, env(safe-area-inset-right));
+}
+
+@utility min-h-touch {
+  min-height: 44px;
+}
+
+@utility min-w-touch {
+  min-width: 44px;
+}
+
+@utility no-hscroll {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
 
 /* Semantic P/L tokens — auto-adapt to light/dark via --success/--danger */
 @utility text-profit { color: var(--success); }
