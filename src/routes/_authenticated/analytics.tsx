@@ -45,25 +45,7 @@ function AnalyticsLayout() {
         />
 
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="overflow-x-auto -mx-2 px-2">
-            <div className="inline-flex rounded-2xl border border-border/40 bg-background/40 p-1">
-              {TABS.map((t) => {
-                const active = t.exact ? loc.pathname === t.to : loc.pathname === t.to || loc.pathname.startsWith(t.to + "/");
-                return (
-                  <Link
-                    key={t.to}
-                    to={t.to}
-                    className={cn(
-                      "whitespace-nowrap rounded-xl px-3 py-1.5 text-xs font-medium transition",
-                      active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    {t.label}
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
+          <SegmentedTabs tabs={TABS} pathname={loc.pathname} className="min-w-0 flex-1" />
           <div className="flex flex-wrap items-center gap-2">
             <AnalyticsSearch />
             <BacktestSelector />
