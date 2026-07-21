@@ -10,9 +10,13 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import type { ChartAdapter } from "@/lib/chart/adapter";
 import type { SymbolMeta } from "@/lib/paper-trading/symbols";
-import { modifyTrade, closeTrade } from "@/lib/paper-trading.functions";
+import { modifyTrade, closeTrade, moveToBreakEven, partialCloseTrade } from "@/lib/paper-trading.functions";
 import { floatingPnl, fmtPrice } from "@/lib/trading/plan-math";
 import { cn } from "@/lib/utils";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
+import { Shield, Scissors, MoreHorizontal } from "lucide-react";
 
 export type OpenTradeLine = {
   id: string;
