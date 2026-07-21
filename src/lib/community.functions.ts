@@ -433,17 +433,19 @@ export const listTrending = createServerFn({ method: "GET" })
     const [postsRes, tradersRes, tagsRes] = await Promise.all([
       supabase
         .from("community_posts")
-        .select("id, title, excerpt, post_type, symbol, like_count, comment_count, trending_score, published_at, author:profiles!community_posts_author_id_fkey(username, display_name, avatar_url)")
+        .select("id, author_id, title, excerpt, post_type, symbol, like_count, comment_count, trending_score, published_at")
         .eq("is_published", true).eq("is_deleted", false)
         .order("trending_score", { ascending: false }).limit(6),
       supabase.from("community_reputation")
-        .select("user_id, reputation_score, posts_count, likes_received, profile:profiles!community_reputation_user_id_fkey(username, display_name, avatar_url, country, level, league)")
+        .select("user_id, reputation_score, posts_count, likes_received")
         .order("reputation_score", { ascending: false }).limit(6),
       supabase.from("community_tags").select("slug, name, post_count").order("post_count", { ascending: false }).limit(10),
     ]);
+    const posts = await attachAuthors(supabase, postsRes.data ?? [], "author_id", "author", "username, display_name, avatar_url, id");
+    const traders = await attachAuthors(supabase, tradersRes.data ?? [], "user_id", "profile", "id, username, display_name, avatar_url, country, level, league");
     return {
-      posts: postsRes.data ?? [],
-      traders: tradersRes.data ?? [],
+      posts,
+      traders,
       tags: tagsRes.data ?? [],
     };
   });
