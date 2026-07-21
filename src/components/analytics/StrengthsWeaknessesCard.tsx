@@ -25,7 +25,8 @@ export function StrengthsWeaknessesCard() {
   if (k.avgRR >= 1.5) strengths.push(`Average RR ${fmtNumber(k.avgRR)}R shows healthy asymmetry`);
   else if (k.avgRR < 0.8 && k.totalTrades > 10) weaknesses.push(`Average RR ${fmtNumber(k.avgRR)}R — cutting winners too early`);
 
-  if (k.maxConsecLosses >= 5) weaknesses.push(`Max losing streak reached ${k.maxConsecLosses} — review risk sizing`);
+  if (k.longestLossStreak >= 5) weaknesses.push(`Longest losing streak ${k.longestLossStreak} — review risk sizing`);
+  if (k.longestWinStreak >= 5) strengths.push(`Longest winning streak ${k.longestWinStreak} — momentum trading works for you`);
   if (k.expectancy > 0) strengths.push(`Positive expectancy: ${fmtCurrency(k.expectancy)} per trade`);
   else if (k.expectancy < 0 && k.totalTrades > 10) weaknesses.push(`Negative expectancy: ${fmtCurrency(k.expectancy)} per trade`);
 
