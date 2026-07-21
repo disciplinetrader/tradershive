@@ -100,6 +100,7 @@ function Workspace() {
         </div>
         <div className="space-y-3">
           <TradePanel />
+          <CheckpointsPanel />
           <ChecklistPanel />
           <ScoreCard />
           {session ? <AiReviewPanel sessionId={session.id} /> : null}
@@ -111,7 +112,7 @@ function Workspace() {
           sessionId={session.id}
           open={summaryOpen}
           onOpenChange={setSummaryOpen}
-          onReplayAgain={() => window.location.reload()}
+          onReplayAgain={() => { replayAgain().catch(() => {}); setSummaryOpen(false); }}
         />
       ) : null}
     </div>
