@@ -354,14 +354,14 @@ export function OrderPanel() {
         <Button variant="outline" onClick={reset}><RotateCcw className="mr-1.5 h-4 w-4" /> Reset</Button>
         <Button
           onClick={() => openMut.mutate()}
-          disabled={openMut.isPending || !accountId || !symbolMeta}
+          disabled={openMut.isPending || !accountId || !symbolMeta || (validation != null && !validation.ok)}
           className={cn("flex-1 shadow-elegant",
             side === "long"
               ? "bg-success text-white hover:bg-success/90"
               : "bg-danger text-white hover:bg-danger/90")}
         >
           <Send className="mr-1.5 h-4 w-4" />
-          {orderType === "market" ? (side === "long" ? "Buy market" : "Sell market") : "Place order"}
+          {validation && !validation.ok ? "Insufficient margin" : (orderType === "market" ? (side === "long" ? "Buy market" : "Sell market") : "Place order")}
         </Button>
       </div>
       <p className="text-[10px] text-muted-foreground">Shortcuts — <kbd>B</kbd> buy · <kbd>S</kbd> sell · <kbd>⌘/Ctrl</kbd>+<kbd>↵</kbd> place</p>
