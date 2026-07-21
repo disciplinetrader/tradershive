@@ -174,11 +174,17 @@ function SharedEntry({ entry, urls }: { entry: JournalEntry; urls: Record<string
   );
 }
 
-/** Very small allowlist sanitizer for shared HTML notes. */
+/** Vetted allowlist HTML sanitizer for shared user notes (prevents stored XSS). */
+import DOMPurify from "isomorphic-dompurify";
 function sanitize(html: string): string {
-  return html
-    .replace(/<script[\s\S]*?<\/script>/gi, "")
-    .replace(/<iframe[\s\S]*?<\/iframe>/gi, "")
-    .replace(/ on[a-z]+="[^"]*"/gi, "")
-    .replace(/ on[a-z]+='[^']*'/gi, "");
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: [
+      "p", "br", "b", "strong", "i", "em", "u", "s", "code", "pre",
+      "blockquote", "ul", "ol", "li", "h1", "h2", "h3", "h4", "a", "hr", "span",
+    ],
+    ALLOWED_ATTR: ["href", "title", "target", "rel"],
+    ALLOWED_URI_REGEXP: /^(?:https?:|mailto:|#)/i,
+    FORBID_TAGS: ["script", "iframe", "object", "embed", "style"],
+    FORBID_ATTR: ["style", "onerror", "onload", "onclick"],
+  });
 }
