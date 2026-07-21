@@ -1,17 +1,20 @@
+import { useState } from "react";
 import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
 import { z } from "zod";
-import { AlertCircle, Camera, Sparkles } from "lucide-react";
+import { AlertCircle, Camera, CheckCircle2, Sparkles } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { ReplayProvider, useReplay } from "@/components/replay/context";
 import { ReplayChart } from "@/components/replay/ReplayChart";
 import { ReplayControls } from "@/components/replay/ReplayControls";
+import { ReplayHUD } from "@/components/replay/ReplayHUD";
 import { TradePanel } from "@/components/replay/TradePanel";
 import { NotesPanel } from "@/components/replay/NotesPanel";
 import { BookmarksPanel } from "@/components/replay/BookmarksPanel";
 import { ChecklistPanel } from "@/components/replay/ChecklistPanel";
 import { ScoreCard } from "@/components/replay/ScoreCard";
 import { AiReviewPanel } from "@/components/replay/AiReviewPanel";
+import { PostSessionSummary } from "@/components/replay/PostSessionSummary";
 
 const searchSchema = z.object({ id: z.string().optional() });
 
