@@ -1,11 +1,7 @@
 /**
  * Analytics Center — server functions.
  * Adds capabilities on top of the existing statistics engine without
- * duplicating aggregation logic:
- *  - list saved backtests (completed replay sessions)
- *  - fetch the trades that back a single backtest (for the Backtest Selector)
- *  - compact replay analytics for the Replay section
- *  - lightweight list of recent championships for the Championships section
+ * duplicating aggregation logic.
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
@@ -54,44 +50,55 @@ export const getReplayAnalytics = createServerFn({ method: "GET" })
         .from("replay_sessions")
         .select("id, status, duration_seconds, completion_pct, created_at")
         .is("deleted_at", null),
-      context.supabase.from("replay_scores").select("session_id, score, execution_score:score"),
-      context.supabase.from("replay_mistakes").select("session_id, mistake_type"),
-      context.supabase.from("replay_homework").select("id, completed, status").limit(500),
+      context.supabase
+        .from("replay_scores")
+        .select("session_id, score, discipline, risk, execution, patience, consistency"),
+      context.supabase.from("replay_mistakes").select("session_id, kind, severity"),
+      context.supabase.from("replay_homework").select("id, status").limit(500),
     ]);
 
-    const sessions = sessionsRes.data ?? [];
-    const scores = scoresRes.data ?? [];
-    const mistakes = mistakesRes.data ?? [];
-    const homework = homeworkRes.data ?? [];
+    const sessions = (sessionsRes.data ?? []) as any[];
+    const scores = (scoresRes.data ?? []) as any[];
+    const mistakes = (mistakesRes.data ?? []) as any[];
+    const homework = (homeworkRes.data ?? []) as any[];
 
     const totalSessions = sessions.length;
-    const completed = sessions.filter((s: any) => s.status === "completed").length;
-    const replayMinutes = sessions.reduce((a: number, s: any) => a + Number(s.duration_seconds ?? 0), 0) / 60;
+    const completed = sessions.filter((s) => s.status === "completed").length;
+    const replayMinutes = Math.round(
+      sessions.reduce((a, s) => a + Number(s.duration_seconds ?? 0), 0) / 60,
+    );
 
-    const scoreVals = scores.map((r: any) => Number(r.score) || 0).filter((n: number) => n > 0);
-    const avgScore = scoreVals.length ? scoreVals.reduce((a: number, b: number) => a + b, 0) / scoreVals.length : 0;
+    const avg = (key: string) => {
+      const vals = scores.map((s) => Number(s[key]) || 0).filter((n) => n > 0);
+      return vals.length ? Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10 : 0;
+    };
 
     const mistakeCounts = new Map<string, number>();
-    for (const m of mistakes as any[]) mistakeCounts.set(m.mistake_type, (mistakeCounts.get(m.mistake_type) ?? 0) + 1);
+    for (const m of mistakes) mistakeCounts.set(m.kind, (mistakeCounts.get(m.kind) ?? 0) + 1);
     const topMistakes = Array.from(mistakeCounts.entries())
       .map(([type, count]) => ({ type, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 6);
 
     const homeworkTotal = homework.length;
-    const homeworkDone = (homework as any[]).filter((h) => h.completed === true || h.status === "completed").length;
-    const homeworkPct = homeworkTotal ? (homeworkDone / homeworkTotal) * 100 : 0;
+    const homeworkDone = homework.filter((h) => h.status === "completed").length;
+    const homeworkPct = homeworkTotal ? Math.round((homeworkDone / homeworkTotal) * 100) : 0;
 
     return {
       totalSessions,
       completed,
-      replayMinutes: Math.round(replayMinutes),
-      avgScore: Math.round(avgScore * 10) / 10,
+      replayMinutes,
+      avgScore: avg("score"),
+      avgDiscipline: avg("discipline"),
+      avgRisk: avg("risk"),
+      avgExecution: avg("execution"),
+      avgPatience: avg("patience"),
+      avgConsistency: avg("consistency"),
       totalMistakes: mistakes.length,
       topMistakes,
       homeworkTotal,
       homeworkDone,
-      homeworkPct: Math.round(homeworkPct),
+      homeworkPct,
     };
   });
 
@@ -99,10 +106,10 @@ export const listAnalyticsChampionships = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
-      .from("championship_participants")
-      .select("id, championship_id, final_rank, final_pnl, final_score, joined_at, championships(id, name, slug, status, start_at, end_at)")
+      .from("championship_results")
+      .select("id, championship_id, final_rank, pnl, r_multiple, win_rate, created_at, championships(id, name, slug, status, start_at, end_at)")
       .eq("user_id", context.userId)
-      .order("joined_at", { ascending: false })
+      .order("created_at", { ascending: false })
       .limit(30);
     if (error) throw error;
     return data ?? [];
