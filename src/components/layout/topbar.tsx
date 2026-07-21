@@ -1,4 +1,5 @@
-import { Bell, Command, Flame, Menu, Moon, Search, Sparkles, Sun } from "lucide-react";
+import { Bell, Flame, Menu, Moon, Sparkles, Sun } from "lucide-react";
+import { InlineSearch } from "@/components/ui/inline-search";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
   DropdownMenu,
@@ -43,29 +44,19 @@ export function Topbar({
       .toUpperCase() || "T";
 
   return (
-    <header className="sticky top-0 z-20 border-b border-border/60 bg-background/70 backdrop-blur-xl">
-      <div className="flex h-16 items-center gap-3 px-4 sm:px-6">
+    <header className="sticky top-0 z-20 border-b border-border/60 bg-background/70 backdrop-blur-xl safe-top">
+      <div className="flex h-16 items-center gap-2 px-3 sm:gap-3 sm:px-6">
         <button
           onClick={onMenuClick}
-          className="grid h-11 w-11 place-items-center rounded-xl text-muted-foreground transition hover:bg-accent hover:text-foreground md:hidden"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-muted-foreground transition hover:bg-accent hover:text-foreground md:hidden"
           aria-label="Open navigation menu"
         >
           <Menu className="h-5 w-5" aria-hidden />
         </button>
 
-        {/* Search */}
-        <button
-          onClick={onSearchClick}
-          aria-label="Open search"
-          className="group flex h-11 min-w-0 flex-1 items-center gap-2 rounded-xl border border-border bg-surface/60 px-3 text-left text-sm text-muted-foreground transition hover:border-primary/40 hover:bg-surface"
-        >
-          <Search className="h-4 w-4 shrink-0" aria-hidden />
-          <span className="truncate">Search trades, journals, users…</span>
-          <span className="ml-auto hidden shrink-0 items-center gap-1 rounded-md border border-border bg-background/60 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground sm:inline-flex">
-            <Command className="h-3 w-3" aria-hidden />
-            {isMac ? "K" : "Ctrl K"}
-          </span>
-        </button>
+        {/* Search — inline expandable on mobile, palette pill on desktop */}
+        <InlineSearch onOpenPalette={onSearchClick} isMac={isMac} />
+
 
         {/* XP / Level / Streak — desktop */}
         <div className="hidden items-center gap-4 lg:flex">
