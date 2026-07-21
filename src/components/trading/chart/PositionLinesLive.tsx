@@ -164,6 +164,33 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
                   onClick={() => livePrice != null && close.mutate({ id: t.id, exit_price: livePrice })}
                   className="ml-1 rounded bg-white/20 px-1 hover:bg-white/40"
                 >×</button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button title="Quick actions" className="ml-0.5 rounded bg-white/20 px-1 hover:bg-white/40">
+                      <MoreHorizontal className="h-3 w-3" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-44">
+                    <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Quick actions</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onSelect={() => be.mutate(t.id)}
+                      disabled={t.stop_loss != null && t.stop_loss === t.entry_price}
+                    >
+                      <Shield className="mr-2 h-3.5 w-3.5" /> Break-even
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    {[0.25, 0.5, 0.75].map((f) => (
+                      <DropdownMenuItem
+                        key={f}
+                        disabled={livePrice == null}
+                        onSelect={() => livePrice != null && partial.mutate({ id: t.id, fraction: f, exit_price: livePrice })}
+                      >
+                        <Scissors className="mr-2 h-3.5 w-3.5" /> Close {Math.round(f * 100)}%
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
 
