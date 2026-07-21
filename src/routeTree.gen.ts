@@ -22,7 +22,6 @@ import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedTradingRouteImport } from './routes/_authenticated/trading'
 import { Route as AuthenticatedSupportRouteImport } from './routes/_authenticated/support'
 import { Route as AuthenticatedStrategiesRouteImport } from './routes/_authenticated/strategies'
-import { Route as AuthenticatedStatisticsRouteImport } from './routes/_authenticated/statistics'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedReplayRouteImport } from './routes/_authenticated/replay'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
@@ -45,7 +44,6 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedAchievementsRouteImport } from './routes/_authenticated/achievements'
 import { Route as AuthenticatedTradingIndexRouteImport } from './routes/_authenticated/trading.index'
 import { Route as AuthenticatedStrategiesIndexRouteImport } from './routes/_authenticated/strategies.index'
-import { Route as AuthenticatedStatisticsIndexRouteImport } from './routes/_authenticated/statistics.index'
 import { Route as AuthenticatedReplayIndexRouteImport } from './routes/_authenticated/replay.index'
 import { Route as AuthenticatedMarketIndexRouteImport } from './routes/_authenticated/market.index'
 import { Route as AuthenticatedLeaderboardIndexRouteImport } from './routes/_authenticated/leaderboard.index'
@@ -66,12 +64,6 @@ import { Route as AuthenticatedStrategiesLibraryRouteImport } from './routes/_au
 import { Route as AuthenticatedStrategiesCreateRouteImport } from './routes/_authenticated/strategies.create'
 import { Route as AuthenticatedStrategiesBacktestsRouteImport } from './routes/_authenticated/strategies.backtests'
 import { Route as AuthenticatedStrategiesIdRouteImport } from './routes/_authenticated/strategies.$id'
-import { Route as AuthenticatedStatisticsSetupsRouteImport } from './routes/_authenticated/statistics.setups'
-import { Route as AuthenticatedStatisticsSessionsRouteImport } from './routes/_authenticated/statistics.sessions'
-import { Route as AuthenticatedStatisticsRiskRouteImport } from './routes/_authenticated/statistics.risk'
-import { Route as AuthenticatedStatisticsReportsRouteImport } from './routes/_authenticated/statistics.reports'
-import { Route as AuthenticatedStatisticsPerformanceRouteImport } from './routes/_authenticated/statistics.performance'
-import { Route as AuthenticatedStatisticsCalendarRouteImport } from './routes/_authenticated/statistics.calendar'
 import { Route as AuthenticatedReplayTradesRouteImport } from './routes/_authenticated/replay.trades'
 import { Route as AuthenticatedReplaySettingsRouteImport } from './routes/_authenticated/replay.settings'
 import { Route as AuthenticatedReplaySessionRouteImport } from './routes/_authenticated/replay.session'
@@ -102,6 +94,7 @@ import { Route as AuthenticatedAnalyticsTradesRouteImport } from './routes/_auth
 import { Route as AuthenticatedAnalyticsSymbolsRouteImport } from './routes/_authenticated/analytics.symbols'
 import { Route as AuthenticatedAnalyticsSessionsRouteImport } from './routes/_authenticated/analytics.sessions'
 import { Route as AuthenticatedAnalyticsRiskRouteImport } from './routes/_authenticated/analytics.risk'
+import { Route as AuthenticatedAnalyticsReportsRouteImport } from './routes/_authenticated/analytics.reports'
 import { Route as AuthenticatedAnalyticsReplayRouteImport } from './routes/_authenticated/analytics.replay'
 import { Route as AuthenticatedAnalyticsPerformanceRouteImport } from './routes/_authenticated/analytics.performance'
 import { Route as AuthenticatedAnalyticsCompareRouteImport } from './routes/_authenticated/analytics.compare'
@@ -207,11 +200,6 @@ const AuthenticatedSupportRoute = AuthenticatedSupportRouteImport.update({
 const AuthenticatedStrategiesRoute = AuthenticatedStrategiesRouteImport.update({
   id: '/strategies',
   path: '/strategies',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedStatisticsRoute = AuthenticatedStatisticsRouteImport.update({
-  id: '/statistics',
-  path: '/statistics',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
@@ -332,12 +320,6 @@ const AuthenticatedStrategiesIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedStrategiesRoute,
   } as any)
-const AuthenticatedStatisticsIndexRoute =
-  AuthenticatedStatisticsIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedStatisticsRoute,
-  } as any)
 const AuthenticatedReplayIndexRoute =
   AuthenticatedReplayIndexRouteImport.update({
     id: '/',
@@ -454,42 +436,6 @@ const AuthenticatedStrategiesIdRoute =
     id: '/$id',
     path: '/$id',
     getParentRoute: () => AuthenticatedStrategiesRoute,
-  } as any)
-const AuthenticatedStatisticsSetupsRoute =
-  AuthenticatedStatisticsSetupsRouteImport.update({
-    id: '/setups',
-    path: '/setups',
-    getParentRoute: () => AuthenticatedStatisticsRoute,
-  } as any)
-const AuthenticatedStatisticsSessionsRoute =
-  AuthenticatedStatisticsSessionsRouteImport.update({
-    id: '/sessions',
-    path: '/sessions',
-    getParentRoute: () => AuthenticatedStatisticsRoute,
-  } as any)
-const AuthenticatedStatisticsRiskRoute =
-  AuthenticatedStatisticsRiskRouteImport.update({
-    id: '/risk',
-    path: '/risk',
-    getParentRoute: () => AuthenticatedStatisticsRoute,
-  } as any)
-const AuthenticatedStatisticsReportsRoute =
-  AuthenticatedStatisticsReportsRouteImport.update({
-    id: '/reports',
-    path: '/reports',
-    getParentRoute: () => AuthenticatedStatisticsRoute,
-  } as any)
-const AuthenticatedStatisticsPerformanceRoute =
-  AuthenticatedStatisticsPerformanceRouteImport.update({
-    id: '/performance',
-    path: '/performance',
-    getParentRoute: () => AuthenticatedStatisticsRoute,
-  } as any)
-const AuthenticatedStatisticsCalendarRoute =
-  AuthenticatedStatisticsCalendarRouteImport.update({
-    id: '/calendar',
-    path: '/calendar',
-    getParentRoute: () => AuthenticatedStatisticsRoute,
   } as any)
 const AuthenticatedReplayTradesRoute =
   AuthenticatedReplayTradesRouteImport.update({
@@ -669,6 +615,12 @@ const AuthenticatedAnalyticsRiskRoute =
   AuthenticatedAnalyticsRiskRouteImport.update({
     id: '/risk',
     path: '/risk',
+    getParentRoute: () => AuthenticatedAnalyticsRoute,
+  } as any)
+const AuthenticatedAnalyticsReportsRoute =
+  AuthenticatedAnalyticsReportsRouteImport.update({
+    id: '/reports',
+    path: '/reports',
     getParentRoute: () => AuthenticatedAnalyticsRoute,
   } as any)
 const AuthenticatedAnalyticsReplayRoute =
@@ -946,7 +898,6 @@ export interface FileRoutesByFullPath {
   '/profile': typeof AuthenticatedProfileRouteWithChildren
   '/replay': typeof AuthenticatedReplayRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
-  '/statistics': typeof AuthenticatedStatisticsRouteWithChildren
   '/strategies': typeof AuthenticatedStrategiesRouteWithChildren
   '/support': typeof AuthenticatedSupportRoute
   '/trading': typeof AuthenticatedTradingRouteWithChildren
@@ -984,6 +935,7 @@ export interface FileRoutesByFullPath {
   '/analytics/compare': typeof AuthenticatedAnalyticsCompareRoute
   '/analytics/performance': typeof AuthenticatedAnalyticsPerformanceRoute
   '/analytics/replay': typeof AuthenticatedAnalyticsReplayRoute
+  '/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
   '/analytics/risk': typeof AuthenticatedAnalyticsRiskRoute
   '/analytics/sessions': typeof AuthenticatedAnalyticsSessionsRoute
   '/analytics/symbols': typeof AuthenticatedAnalyticsSymbolsRoute
@@ -1014,12 +966,6 @@ export interface FileRoutesByFullPath {
   '/replay/session': typeof AuthenticatedReplaySessionRoute
   '/replay/settings': typeof AuthenticatedReplaySettingsRoute
   '/replay/trades': typeof AuthenticatedReplayTradesRoute
-  '/statistics/calendar': typeof AuthenticatedStatisticsCalendarRoute
-  '/statistics/performance': typeof AuthenticatedStatisticsPerformanceRoute
-  '/statistics/reports': typeof AuthenticatedStatisticsReportsRoute
-  '/statistics/risk': typeof AuthenticatedStatisticsRiskRoute
-  '/statistics/sessions': typeof AuthenticatedStatisticsSessionsRoute
-  '/statistics/setups': typeof AuthenticatedStatisticsSetupsRoute
   '/strategies/$id': typeof AuthenticatedStrategiesIdRoute
   '/strategies/backtests': typeof AuthenticatedStrategiesBacktestsRoute
   '/strategies/create': typeof AuthenticatedStrategiesCreateRoute
@@ -1040,7 +986,6 @@ export interface FileRoutesByFullPath {
   '/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
   '/market/': typeof AuthenticatedMarketIndexRoute
   '/replay/': typeof AuthenticatedReplayIndexRoute
-  '/statistics/': typeof AuthenticatedStatisticsIndexRoute
   '/strategies/': typeof AuthenticatedStrategiesIndexRoute
   '/trading/': typeof AuthenticatedTradingIndexRoute
   '/ai/coach/evolution': typeof AuthenticatedAiCoachEvolutionRoute
@@ -1108,6 +1053,7 @@ export interface FileRoutesByTo {
   '/analytics/compare': typeof AuthenticatedAnalyticsCompareRoute
   '/analytics/performance': typeof AuthenticatedAnalyticsPerformanceRoute
   '/analytics/replay': typeof AuthenticatedAnalyticsReplayRoute
+  '/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
   '/analytics/risk': typeof AuthenticatedAnalyticsRiskRoute
   '/analytics/sessions': typeof AuthenticatedAnalyticsSessionsRoute
   '/analytics/symbols': typeof AuthenticatedAnalyticsSymbolsRoute
@@ -1138,12 +1084,6 @@ export interface FileRoutesByTo {
   '/replay/session': typeof AuthenticatedReplaySessionRoute
   '/replay/settings': typeof AuthenticatedReplaySettingsRoute
   '/replay/trades': typeof AuthenticatedReplayTradesRoute
-  '/statistics/calendar': typeof AuthenticatedStatisticsCalendarRoute
-  '/statistics/performance': typeof AuthenticatedStatisticsPerformanceRoute
-  '/statistics/reports': typeof AuthenticatedStatisticsReportsRoute
-  '/statistics/risk': typeof AuthenticatedStatisticsRiskRoute
-  '/statistics/sessions': typeof AuthenticatedStatisticsSessionsRoute
-  '/statistics/setups': typeof AuthenticatedStatisticsSetupsRoute
   '/strategies/$id': typeof AuthenticatedStrategiesIdRoute
   '/strategies/backtests': typeof AuthenticatedStrategiesBacktestsRoute
   '/strategies/create': typeof AuthenticatedStrategiesCreateRoute
@@ -1164,7 +1104,6 @@ export interface FileRoutesByTo {
   '/leaderboard': typeof AuthenticatedLeaderboardIndexRoute
   '/market': typeof AuthenticatedMarketIndexRoute
   '/replay': typeof AuthenticatedReplayIndexRoute
-  '/statistics': typeof AuthenticatedStatisticsIndexRoute
   '/strategies': typeof AuthenticatedStrategiesIndexRoute
   '/trading': typeof AuthenticatedTradingIndexRoute
   '/ai/coach/evolution': typeof AuthenticatedAiCoachEvolutionRoute
@@ -1208,7 +1147,6 @@ export interface FileRoutesById {
   '/_authenticated/profile': typeof AuthenticatedProfileRouteWithChildren
   '/_authenticated/replay': typeof AuthenticatedReplayRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
-  '/_authenticated/statistics': typeof AuthenticatedStatisticsRouteWithChildren
   '/_authenticated/strategies': typeof AuthenticatedStrategiesRouteWithChildren
   '/_authenticated/support': typeof AuthenticatedSupportRoute
   '/_authenticated/trading': typeof AuthenticatedTradingRouteWithChildren
@@ -1246,6 +1184,7 @@ export interface FileRoutesById {
   '/_authenticated/analytics/compare': typeof AuthenticatedAnalyticsCompareRoute
   '/_authenticated/analytics/performance': typeof AuthenticatedAnalyticsPerformanceRoute
   '/_authenticated/analytics/replay': typeof AuthenticatedAnalyticsReplayRoute
+  '/_authenticated/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
   '/_authenticated/analytics/risk': typeof AuthenticatedAnalyticsRiskRoute
   '/_authenticated/analytics/sessions': typeof AuthenticatedAnalyticsSessionsRoute
   '/_authenticated/analytics/symbols': typeof AuthenticatedAnalyticsSymbolsRoute
@@ -1276,12 +1215,6 @@ export interface FileRoutesById {
   '/_authenticated/replay/session': typeof AuthenticatedReplaySessionRoute
   '/_authenticated/replay/settings': typeof AuthenticatedReplaySettingsRoute
   '/_authenticated/replay/trades': typeof AuthenticatedReplayTradesRoute
-  '/_authenticated/statistics/calendar': typeof AuthenticatedStatisticsCalendarRoute
-  '/_authenticated/statistics/performance': typeof AuthenticatedStatisticsPerformanceRoute
-  '/_authenticated/statistics/reports': typeof AuthenticatedStatisticsReportsRoute
-  '/_authenticated/statistics/risk': typeof AuthenticatedStatisticsRiskRoute
-  '/_authenticated/statistics/sessions': typeof AuthenticatedStatisticsSessionsRoute
-  '/_authenticated/statistics/setups': typeof AuthenticatedStatisticsSetupsRoute
   '/_authenticated/strategies/$id': typeof AuthenticatedStrategiesIdRoute
   '/_authenticated/strategies/backtests': typeof AuthenticatedStrategiesBacktestsRoute
   '/_authenticated/strategies/create': typeof AuthenticatedStrategiesCreateRoute
@@ -1302,7 +1235,6 @@ export interface FileRoutesById {
   '/_authenticated/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
   '/_authenticated/market/': typeof AuthenticatedMarketIndexRoute
   '/_authenticated/replay/': typeof AuthenticatedReplayIndexRoute
-  '/_authenticated/statistics/': typeof AuthenticatedStatisticsIndexRoute
   '/_authenticated/strategies/': typeof AuthenticatedStrategiesIndexRoute
   '/_authenticated/trading/': typeof AuthenticatedTradingIndexRoute
   '/_authenticated/ai/coach/evolution': typeof AuthenticatedAiCoachEvolutionRoute
@@ -1346,7 +1278,6 @@ export interface FileRouteTypes {
     | '/profile'
     | '/replay'
     | '/settings'
-    | '/statistics'
     | '/strategies'
     | '/support'
     | '/trading'
@@ -1384,6 +1315,7 @@ export interface FileRouteTypes {
     | '/analytics/compare'
     | '/analytics/performance'
     | '/analytics/replay'
+    | '/analytics/reports'
     | '/analytics/risk'
     | '/analytics/sessions'
     | '/analytics/symbols'
@@ -1414,12 +1346,6 @@ export interface FileRouteTypes {
     | '/replay/session'
     | '/replay/settings'
     | '/replay/trades'
-    | '/statistics/calendar'
-    | '/statistics/performance'
-    | '/statistics/reports'
-    | '/statistics/risk'
-    | '/statistics/sessions'
-    | '/statistics/setups'
     | '/strategies/$id'
     | '/strategies/backtests'
     | '/strategies/create'
@@ -1440,7 +1366,6 @@ export interface FileRouteTypes {
     | '/leaderboard/'
     | '/market/'
     | '/replay/'
-    | '/statistics/'
     | '/strategies/'
     | '/trading/'
     | '/ai/coach/evolution'
@@ -1508,6 +1433,7 @@ export interface FileRouteTypes {
     | '/analytics/compare'
     | '/analytics/performance'
     | '/analytics/replay'
+    | '/analytics/reports'
     | '/analytics/risk'
     | '/analytics/sessions'
     | '/analytics/symbols'
@@ -1538,12 +1464,6 @@ export interface FileRouteTypes {
     | '/replay/session'
     | '/replay/settings'
     | '/replay/trades'
-    | '/statistics/calendar'
-    | '/statistics/performance'
-    | '/statistics/reports'
-    | '/statistics/risk'
-    | '/statistics/sessions'
-    | '/statistics/setups'
     | '/strategies/$id'
     | '/strategies/backtests'
     | '/strategies/create'
@@ -1564,7 +1484,6 @@ export interface FileRouteTypes {
     | '/leaderboard'
     | '/market'
     | '/replay'
-    | '/statistics'
     | '/strategies'
     | '/trading'
     | '/ai/coach/evolution'
@@ -1607,7 +1526,6 @@ export interface FileRouteTypes {
     | '/_authenticated/profile'
     | '/_authenticated/replay'
     | '/_authenticated/settings'
-    | '/_authenticated/statistics'
     | '/_authenticated/strategies'
     | '/_authenticated/support'
     | '/_authenticated/trading'
@@ -1645,6 +1563,7 @@ export interface FileRouteTypes {
     | '/_authenticated/analytics/compare'
     | '/_authenticated/analytics/performance'
     | '/_authenticated/analytics/replay'
+    | '/_authenticated/analytics/reports'
     | '/_authenticated/analytics/risk'
     | '/_authenticated/analytics/sessions'
     | '/_authenticated/analytics/symbols'
@@ -1675,12 +1594,6 @@ export interface FileRouteTypes {
     | '/_authenticated/replay/session'
     | '/_authenticated/replay/settings'
     | '/_authenticated/replay/trades'
-    | '/_authenticated/statistics/calendar'
-    | '/_authenticated/statistics/performance'
-    | '/_authenticated/statistics/reports'
-    | '/_authenticated/statistics/risk'
-    | '/_authenticated/statistics/sessions'
-    | '/_authenticated/statistics/setups'
     | '/_authenticated/strategies/$id'
     | '/_authenticated/strategies/backtests'
     | '/_authenticated/strategies/create'
@@ -1701,7 +1614,6 @@ export interface FileRouteTypes {
     | '/_authenticated/leaderboard/'
     | '/_authenticated/market/'
     | '/_authenticated/replay/'
-    | '/_authenticated/statistics/'
     | '/_authenticated/strategies/'
     | '/_authenticated/trading/'
     | '/_authenticated/ai/coach/evolution'
@@ -1821,13 +1733,6 @@ declare module '@tanstack/react-router' {
       path: '/strategies'
       fullPath: '/strategies'
       preLoaderRoute: typeof AuthenticatedStrategiesRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/statistics': {
-      id: '/_authenticated/statistics'
-      path: '/statistics'
-      fullPath: '/statistics'
-      preLoaderRoute: typeof AuthenticatedStatisticsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/settings': {
@@ -1984,13 +1889,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStrategiesIndexRouteImport
       parentRoute: typeof AuthenticatedStrategiesRoute
     }
-    '/_authenticated/statistics/': {
-      id: '/_authenticated/statistics/'
-      path: '/'
-      fullPath: '/statistics/'
-      preLoaderRoute: typeof AuthenticatedStatisticsIndexRouteImport
-      parentRoute: typeof AuthenticatedStatisticsRoute
-    }
     '/_authenticated/replay/': {
       id: '/_authenticated/replay/'
       path: '/'
@@ -2130,48 +2028,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/strategies/$id'
       preLoaderRoute: typeof AuthenticatedStrategiesIdRouteImport
       parentRoute: typeof AuthenticatedStrategiesRoute
-    }
-    '/_authenticated/statistics/setups': {
-      id: '/_authenticated/statistics/setups'
-      path: '/setups'
-      fullPath: '/statistics/setups'
-      preLoaderRoute: typeof AuthenticatedStatisticsSetupsRouteImport
-      parentRoute: typeof AuthenticatedStatisticsRoute
-    }
-    '/_authenticated/statistics/sessions': {
-      id: '/_authenticated/statistics/sessions'
-      path: '/sessions'
-      fullPath: '/statistics/sessions'
-      preLoaderRoute: typeof AuthenticatedStatisticsSessionsRouteImport
-      parentRoute: typeof AuthenticatedStatisticsRoute
-    }
-    '/_authenticated/statistics/risk': {
-      id: '/_authenticated/statistics/risk'
-      path: '/risk'
-      fullPath: '/statistics/risk'
-      preLoaderRoute: typeof AuthenticatedStatisticsRiskRouteImport
-      parentRoute: typeof AuthenticatedStatisticsRoute
-    }
-    '/_authenticated/statistics/reports': {
-      id: '/_authenticated/statistics/reports'
-      path: '/reports'
-      fullPath: '/statistics/reports'
-      preLoaderRoute: typeof AuthenticatedStatisticsReportsRouteImport
-      parentRoute: typeof AuthenticatedStatisticsRoute
-    }
-    '/_authenticated/statistics/performance': {
-      id: '/_authenticated/statistics/performance'
-      path: '/performance'
-      fullPath: '/statistics/performance'
-      preLoaderRoute: typeof AuthenticatedStatisticsPerformanceRouteImport
-      parentRoute: typeof AuthenticatedStatisticsRoute
-    }
-    '/_authenticated/statistics/calendar': {
-      id: '/_authenticated/statistics/calendar'
-      path: '/calendar'
-      fullPath: '/statistics/calendar'
-      preLoaderRoute: typeof AuthenticatedStatisticsCalendarRouteImport
-      parentRoute: typeof AuthenticatedStatisticsRoute
     }
     '/_authenticated/replay/trades': {
       id: '/_authenticated/replay/trades'
@@ -2381,6 +2237,13 @@ declare module '@tanstack/react-router' {
       path: '/risk'
       fullPath: '/analytics/risk'
       preLoaderRoute: typeof AuthenticatedAnalyticsRiskRouteImport
+      parentRoute: typeof AuthenticatedAnalyticsRoute
+    }
+    '/_authenticated/analytics/reports': {
+      id: '/_authenticated/analytics/reports'
+      path: '/reports'
+      fullPath: '/analytics/reports'
+      preLoaderRoute: typeof AuthenticatedAnalyticsReportsRouteImport
       parentRoute: typeof AuthenticatedAnalyticsRoute
     }
     '/_authenticated/analytics/replay': {
@@ -2783,6 +2646,7 @@ interface AuthenticatedAnalyticsRouteChildren {
   AuthenticatedAnalyticsCompareRoute: typeof AuthenticatedAnalyticsCompareRoute
   AuthenticatedAnalyticsPerformanceRoute: typeof AuthenticatedAnalyticsPerformanceRoute
   AuthenticatedAnalyticsReplayRoute: typeof AuthenticatedAnalyticsReplayRoute
+  AuthenticatedAnalyticsReportsRoute: typeof AuthenticatedAnalyticsReportsRoute
   AuthenticatedAnalyticsRiskRoute: typeof AuthenticatedAnalyticsRiskRoute
   AuthenticatedAnalyticsSessionsRoute: typeof AuthenticatedAnalyticsSessionsRoute
   AuthenticatedAnalyticsSymbolsRoute: typeof AuthenticatedAnalyticsSymbolsRoute
@@ -2800,6 +2664,7 @@ const AuthenticatedAnalyticsRouteChildren: AuthenticatedAnalyticsRouteChildren =
     AuthenticatedAnalyticsPerformanceRoute:
       AuthenticatedAnalyticsPerformanceRoute,
     AuthenticatedAnalyticsReplayRoute: AuthenticatedAnalyticsReplayRoute,
+    AuthenticatedAnalyticsReportsRoute: AuthenticatedAnalyticsReportsRoute,
     AuthenticatedAnalyticsRiskRoute: AuthenticatedAnalyticsRiskRoute,
     AuthenticatedAnalyticsSessionsRoute: AuthenticatedAnalyticsSessionsRoute,
     AuthenticatedAnalyticsSymbolsRoute: AuthenticatedAnalyticsSymbolsRoute,
@@ -2970,33 +2835,6 @@ const AuthenticatedReplayRouteChildren: AuthenticatedReplayRouteChildren = {
 const AuthenticatedReplayRouteWithChildren =
   AuthenticatedReplayRoute._addFileChildren(AuthenticatedReplayRouteChildren)
 
-interface AuthenticatedStatisticsRouteChildren {
-  AuthenticatedStatisticsCalendarRoute: typeof AuthenticatedStatisticsCalendarRoute
-  AuthenticatedStatisticsPerformanceRoute: typeof AuthenticatedStatisticsPerformanceRoute
-  AuthenticatedStatisticsReportsRoute: typeof AuthenticatedStatisticsReportsRoute
-  AuthenticatedStatisticsRiskRoute: typeof AuthenticatedStatisticsRiskRoute
-  AuthenticatedStatisticsSessionsRoute: typeof AuthenticatedStatisticsSessionsRoute
-  AuthenticatedStatisticsSetupsRoute: typeof AuthenticatedStatisticsSetupsRoute
-  AuthenticatedStatisticsIndexRoute: typeof AuthenticatedStatisticsIndexRoute
-}
-
-const AuthenticatedStatisticsRouteChildren: AuthenticatedStatisticsRouteChildren =
-  {
-    AuthenticatedStatisticsCalendarRoute: AuthenticatedStatisticsCalendarRoute,
-    AuthenticatedStatisticsPerformanceRoute:
-      AuthenticatedStatisticsPerformanceRoute,
-    AuthenticatedStatisticsReportsRoute: AuthenticatedStatisticsReportsRoute,
-    AuthenticatedStatisticsRiskRoute: AuthenticatedStatisticsRiskRoute,
-    AuthenticatedStatisticsSessionsRoute: AuthenticatedStatisticsSessionsRoute,
-    AuthenticatedStatisticsSetupsRoute: AuthenticatedStatisticsSetupsRoute,
-    AuthenticatedStatisticsIndexRoute: AuthenticatedStatisticsIndexRoute,
-  }
-
-const AuthenticatedStatisticsRouteWithChildren =
-  AuthenticatedStatisticsRoute._addFileChildren(
-    AuthenticatedStatisticsRouteChildren,
-  )
-
 interface AuthenticatedStrategiesRouteChildren {
   AuthenticatedStrategiesIdRoute: typeof AuthenticatedStrategiesIdRoute
   AuthenticatedStrategiesBacktestsRoute: typeof AuthenticatedStrategiesBacktestsRoute
@@ -3064,7 +2902,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRouteWithChildren
   AuthenticatedReplayRoute: typeof AuthenticatedReplayRouteWithChildren
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
-  AuthenticatedStatisticsRoute: typeof AuthenticatedStatisticsRouteWithChildren
   AuthenticatedStrategiesRoute: typeof AuthenticatedStrategiesRouteWithChildren
   AuthenticatedSupportRoute: typeof AuthenticatedSupportRoute
   AuthenticatedTradingRoute: typeof AuthenticatedTradingRouteWithChildren
@@ -3093,7 +2930,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProfileRoute: AuthenticatedProfileRouteWithChildren,
   AuthenticatedReplayRoute: AuthenticatedReplayRouteWithChildren,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
-  AuthenticatedStatisticsRoute: AuthenticatedStatisticsRouteWithChildren,
   AuthenticatedStrategiesRoute: AuthenticatedStrategiesRouteWithChildren,
   AuthenticatedSupportRoute: AuthenticatedSupportRoute,
   AuthenticatedTradingRoute: AuthenticatedTradingRouteWithChildren,
