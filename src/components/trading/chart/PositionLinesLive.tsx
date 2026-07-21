@@ -10,9 +10,13 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import type { ChartAdapter } from "@/lib/chart/adapter";
 import type { SymbolMeta } from "@/lib/paper-trading/symbols";
-import { modifyTrade, closeTrade } from "@/lib/paper-trading.functions";
+import { modifyTrade, closeTrade, moveToBreakEven, partialCloseTrade } from "@/lib/paper-trading.functions";
 import { floatingPnl, fmtPrice } from "@/lib/trading/plan-math";
 import { cn } from "@/lib/utils";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
+import { Shield, Scissors, MoreHorizontal } from "lucide-react";
 
 export type OpenTradeLine = {
   id: string;
@@ -58,6 +62,26 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
       qc.invalidateQueries({ queryKey: ["paper", "trades"] });
       qc.invalidateQueries({ queryKey: ["paper", "accounts"] });
     },
+  });
+
+  const beFn = useServerFn(moveToBreakEven);
+  const partialFn = useServerFn(partialCloseTrade);
+  const be = useMutation({
+    mutationFn: async (id: string) => beFn({ data: { id } }) as unknown as Promise<{ changed: boolean }>,
+    onSuccess: (r) => {
+      toast.success(r.changed ? "Moved to break-even" : "Already at break-even");
+      qc.invalidateQueries({ queryKey: ["paper", "trades"] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+  const partial = useMutation({
+    mutationFn: async (v: { id: string; fraction: number; exit_price: number }) =>
+      partialFn({ data: v }) as unknown as Promise<{ closed_lot: number; pnl: number }>,
+    onSuccess: (r) => {
+      toast.success(`Closed ${r.closed_lot} lots · P/L ${r.pnl.toFixed(2)}`);
+      qc.invalidateQueries({ queryKey: ["paper"] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
   useEffect(() => {
@@ -140,6 +164,33 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
                   onClick={() => livePrice != null && close.mutate({ id: t.id, exit_price: livePrice })}
                   className="ml-1 rounded bg-white/20 px-1 hover:bg-white/40"
                 >×</button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button title="Quick actions" className="ml-0.5 rounded bg-white/20 px-1 hover:bg-white/40">
+                      <MoreHorizontal className="h-3 w-3" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-44">
+                    <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Quick actions</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onSelect={() => be.mutate(t.id)}
+                      disabled={t.stop_loss != null && t.stop_loss === t.entry_price}
+                    >
+                      <Shield className="mr-2 h-3.5 w-3.5" /> Break-even
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    {[0.25, 0.5, 0.75].map((f) => (
+                      <DropdownMenuItem
+                        key={f}
+                        disabled={livePrice == null}
+                        onSelect={() => livePrice != null && partial.mutate({ id: t.id, fraction: f, exit_price: livePrice })}
+                      >
+                        <Scissors className="mr-2 h-3.5 w-3.5" /> Close {Math.round(f * 100)}%
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
 

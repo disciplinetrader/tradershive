@@ -467,5 +467,128 @@ export const getAccountStats = createServerFn({ method: "GET" })
     return row ?? null;
   });
 
+/* ---------------- Pro trade management ---------------- */
+
+/**
+ * Partial close — reduce lot_size on an open position by a fraction (0–1),
+ * booking P/L for the closed slice and leaving the rest running with the
+ * original entry/SL/TP. Emits `partial_close` into position_history.
+ */
+export const partialCloseTrade = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({
+      id: z.string().uuid(),
+      fraction: z.number().gt(0).lt(1),
+      exit_price: z.number().positive(),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: trade, error: fetchErr } = await context.supabase
+      .from("paper_trades").select("*").eq("id", data.id).eq("user_id", context.userId).single();
+    if (fetchErr) throw fetchErr;
+    if (trade.status !== "open") throw new Error("Trade is not open");
+    const sym = findSymbol(trade.symbol);
+    if (!sym) throw new Error("Unknown symbol");
+
+    const originalLot = Number(trade.lot_size);
+    const closedLot = Math.max(sym.minLot, Number((originalLot * data.fraction).toFixed(4)));
+    const remainingLot = Number((originalLot - closedLot).toFixed(4));
+    if (remainingLot < sym.minLot) throw new Error("Remaining size would be below symbol minimum — close fully instead");
+
+    const gross = computePnl(sym, trade.direction as "long"|"short", Number(trade.entry_price), data.exit_price, closedLot);
+    const commissionShare = Number(trade.commission ?? 0) * data.fraction;
+    const swapShare = Number(trade.swap ?? 0) * data.fraction;
+    const pnl = gross - commissionShare - swapShare;
+
+    const { error: upErr } = await context.supabase.from("paper_trades").update({
+      lot_size: remainingLot,
+      commission: Number(trade.commission ?? 0) - commissionShare,
+      swap: Number(trade.swap ?? 0) - swapShare,
+    }).eq("id", data.id).eq("user_id", context.userId);
+    if (upErr) throw upErr;
+
+    const { data: acct } = await context.supabase.from("paper_accounts")
+      .select("balance, negative_balance_protection").eq("id", trade.account_id).single();
+    if (acct) {
+      const raw = Number(acct.balance) + pnl;
+      const newBal = acct.negative_balance_protection ? Math.max(0, raw) : raw;
+      await context.supabase.from("paper_accounts")
+        .update({ balance: newBal, equity: newBal })
+        .eq("id", trade.account_id).eq("user_id", context.userId);
+    }
+
+    await context.supabase.from("position_history").insert({
+      user_id: context.userId, account_id: trade.account_id, trade_id: data.id,
+      event: "partial_close",
+      payload: { fraction: data.fraction, closed_lot: closedLot, remaining_lot: remainingLot, exit_price: data.exit_price, pnl },
+    });
+    return { ok: true, pnl, closed_lot: closedLot, remaining_lot: remainingLot };
+  });
+
+/** Move stop-loss to entry (break-even). Idempotent. */
+export const moveToBreakEven = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: trade, error } = await context.supabase
+      .from("paper_trades").select("id, entry_price, stop_loss, account_id, status")
+      .eq("id", data.id).eq("user_id", context.userId).single();
+    if (error) throw error;
+    if (trade.status !== "open") throw new Error("Trade is not open");
+    const entry = Number(trade.entry_price);
+    const changed = Number(trade.stop_loss ?? NaN) !== entry;
+    if (changed) {
+      const { error: upErr } = await context.supabase.from("paper_trades")
+        .update({ stop_loss: entry }).eq("id", data.id).eq("user_id", context.userId);
+      if (upErr) throw upErr;
+      await context.supabase.from("position_history").insert({
+        user_id: context.userId, account_id: trade.account_id, trade_id: data.id,
+        event: "break_even", payload: { stop_loss: entry },
+      });
+    }
+    return { ok: true, changed };
+  });
+
+/** Append a timestamped note to an open/closed trade. */
+export const addTradeNote = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({
+    id: z.string().uuid(),
+    note: z.string().trim().min(1).max(1000),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: trade, error } = await context.supabase
+      .from("paper_trades").select("notes, account_id")
+      .eq("id", data.id).eq("user_id", context.userId).single();
+    if (error) throw error;
+    const stamp = new Date().toISOString();
+    const line = `[${stamp}] ${data.note}`;
+    const next = trade.notes ? `${trade.notes}\n${line}` : line;
+    const { error: upErr } = await context.supabase.from("paper_trades")
+      .update({ notes: next }).eq("id", data.id).eq("user_id", context.userId);
+    if (upErr) throw upErr;
+    await context.supabase.from("position_history").insert({
+      user_id: context.userId, account_id: trade.account_id, trade_id: data.id,
+      event: "note_added", payload: { note: data.note },
+    });
+    return { ok: true, notes: next };
+  });
+
+/** Ordered event timeline for a single trade. */
+export const listTradeTimeline = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ trade_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: rows, error } = await context.supabase
+      .from("position_history")
+      .select("id, event, payload, created_at")
+      .eq("user_id", context.userId)
+      .eq("trade_id", data.trade_id)
+      .order("created_at", { ascending: true });
+    if (error) throw error;
+    return rows ?? [];
+  });
+
 // Helper re-export to keep client-side pip math available at call sites.
 export { pipsBetween };
