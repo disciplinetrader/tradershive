@@ -6,18 +6,11 @@ import { motion } from "framer-motion";
 import {
   Activity,
   ArrowUpRight,
-  Award,
-  Bell,
-  Calendar as CalendarIcon,
   Eye,
   Flame,
-  LineChart,
-  ListChecks,
   Sparkles,
-  StickyNote,
   Star,
   Trophy,
-  User as UserIcon,
   Zap,
 } from "lucide-react";
 import { useCommandPalette } from "@/components/command-palette";
@@ -27,16 +20,8 @@ import { WelcomeCard } from "@/components/dashboard/WelcomeCard";
 import { TodaysChallenge } from "@/components/dashboard/TodaysChallenge";
 import { RecentTrades } from "@/components/dashboard/RecentTrades";
 import { Watchlist } from "@/components/dashboard/Watchlist";
-import { MarketOverview } from "@/components/dashboard/MarketOverview";
 import { StreakWidget } from "@/components/dashboard/StreakWidget";
 import { XPWidget } from "@/components/dashboard/XPWidget";
-import { Achievements } from "@/components/dashboard/Achievements";
-import { NotificationsWidget } from "@/components/dashboard/NotificationsWidget";
-import { CalendarWidget } from "@/components/dashboard/CalendarWidget";
-import { ProductivityWidget } from "@/components/dashboard/ProductivityWidget";
-import { QuickNotes } from "@/components/dashboard/QuickNotes";
-import { LeaderboardPreview } from "@/components/dashboard/LeaderboardPreview";
-import { ProfileSummary } from "@/components/dashboard/ProfileSummary";
 import { WidgetShell } from "@/components/dashboard/WidgetShell";
 import { CustomizeSheet, type WidgetDef } from "@/components/dashboard/CustomizeSheet";
 import { getDashboardLayout, saveDashboardLayout } from "@/lib/dashboard.functions";
