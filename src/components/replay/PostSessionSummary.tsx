@@ -1,10 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
-import { BookOpen, Play, RotateCcw, Share2, X } from "lucide-react";
+import { BookOpen, GraduationCap, Play, RotateCcw, Share2, Sparkles, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { getReplaySessionSummary } from "@/lib/replay-studio.functions";
+import { generateReplayDebrief, getReplayDebrief } from "@/lib/replay-coach.functions";
 
 export function PostSessionSummary({
   sessionId,
@@ -18,18 +19,34 @@ export function PostSessionSummary({
   onReplayAgain?: () => void;
 }) {
   const get = useServerFn(getReplaySessionSummary);
+  const getDeb = useServerFn(getReplayDebrief);
+  const genDeb = useServerFn(generateReplayDebrief);
+  const qc = useQueryClient();
   const q = useQuery({
     queryKey: ["replay", "summary", sessionId],
     queryFn: () => get({ data: { session_id: sessionId } }),
     enabled: open,
   });
+  const dQ = useQuery({
+    queryKey: ["replay", "debrief", sessionId],
+    queryFn: () => getDeb({ data: { session_id: sessionId } }),
+    enabled: open,
+  });
+  const genM = useMutation({
+    mutationFn: () => genDeb({ data: { session_id: sessionId } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["replay", "debrief", sessionId] });
+      qc.invalidateQueries({ queryKey: ["coach"] });
+    },
+  });
+  const debrief: any = dQ.data;
 
   const t = (q.data as any)?.totals;
   const s = (q.data as any)?.session;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Session Summary</DialogTitle>
         </DialogHeader>
@@ -52,6 +69,31 @@ export function PostSessionSummary({
               />
               <Metric label="Profit Factor" value={t.profit_factor.toFixed(2)} />
               <Metric label="Max DD" value={`$${t.max_drawdown.toFixed(2)}`} tone="danger" />
+            </div>
+
+            <div className="rounded-[3px] border border-primary/30 bg-primary/5 p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
+                  <GraduationCap className="h-4 w-4" /> AI Coach Debrief
+                </div>
+                {debrief ? <span className="text-[10px] rounded-full bg-primary/20 text-primary px-1.5 py-0.5">Grade {debrief.grade}</span> : null}
+              </div>
+              {debrief ? (
+                <div className="space-y-1.5 text-xs">
+                  <p className="text-foreground/90">{debrief.overall_summary}</p>
+                  {debrief.wins?.length ? <div><span className="text-[10px] uppercase text-success">Wins</span><ul className="list-disc pl-4 text-foreground/80">{debrief.wins.slice(0, 2).map((w: string, i: number) => <li key={i}>{w}</li>)}</ul></div> : null}
+                  {debrief.mistakes?.length ? <div><span className="text-[10px] uppercase text-danger">Mistakes</span><ul className="list-disc pl-4 text-foreground/80">{debrief.mistakes.slice(0, 2).map((m: any, i: number) => <li key={i}>{typeof m === "string" ? m : m.description ?? m.kind}</li>)}</ul></div> : null}
+                  {debrief.action_items?.length ? <div><span className="text-[10px] uppercase text-primary">Action Items</span><ul className="list-disc pl-4 text-foreground/80">{debrief.action_items.slice(0, 2).map((a: string, i: number) => <li key={i}>{a}</li>)}</ul></div> : null}
+                  <Button size="sm" variant="ghost" className="w-full mt-1" asChild>
+                    <Link to="/ai/coach">Open Coach Hub →</Link>
+                  </Button>
+                </div>
+              ) : (
+                <Button size="sm" className="w-full" onClick={() => genM.mutate()} disabled={genM.isPending}>
+                  <Sparkles className="mr-2 h-3.5 w-3.5" />
+                  {genM.isPending ? "Coach analyzing…" : "Generate AI Debrief"}
+                </Button>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-2 pt-2">

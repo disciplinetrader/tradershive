@@ -102,6 +102,7 @@ import { Route as AuthenticatedAiPlaybooksRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAiPerformanceRouteImport } from './routes/_authenticated/ai.performance'
 import { Route as AuthenticatedAiHistoryRouteImport } from './routes/_authenticated/ai.history'
 import { Route as AuthenticatedAiDashboardRouteImport } from './routes/_authenticated/ai.dashboard'
+import { Route as AuthenticatedAiCoachRouteImport } from './routes/_authenticated/ai.coach'
 import { Route as AuthenticatedAiChatRouteImport } from './routes/_authenticated/ai.chat'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin.users'
 import { Route as AuthenticatedAdminTradesRouteImport } from './routes/_authenticated/admin.trades'
@@ -121,9 +122,15 @@ import { Route as AuthenticatedAdminChampionshipsRouteImport } from './routes/_a
 import { Route as AuthenticatedAdminChallengesRouteImport } from './routes/_authenticated/admin.challenges'
 import { Route as AuthenticatedAdminAnnouncementsRouteImport } from './routes/_authenticated/admin.announcements'
 import { Route as AuthenticatedAdminAchievementsRouteImport } from './routes/_authenticated/admin.achievements'
+import { Route as AuthenticatedAiCoachIndexRouteImport } from './routes/_authenticated/ai.coach.index'
 import { Route as ApiPublicHooksHistoricalSyncRouteImport } from './routes/api/public/hooks/historical-sync'
 import { Route as AuthenticatedCommunityProfileUsernameRouteImport } from './routes/_authenticated/community.profile.$username'
 import { Route as AuthenticatedCommunityPostIdRouteImport } from './routes/_authenticated/community.post.$id'
+import { Route as AuthenticatedAiCoachReportsRouteImport } from './routes/_authenticated/ai.coach.reports'
+import { Route as AuthenticatedAiCoachProfileRouteImport } from './routes/_authenticated/ai.coach.profile'
+import { Route as AuthenticatedAiCoachMistakesRouteImport } from './routes/_authenticated/ai.coach.mistakes'
+import { Route as AuthenticatedAiCoachHomeworkRouteImport } from './routes/_authenticated/ai.coach.homework'
+import { Route as AuthenticatedAiCoachEvolutionRouteImport } from './routes/_authenticated/ai.coach.evolution'
 
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
   id: '/verify-email',
@@ -650,6 +657,11 @@ const AuthenticatedAiDashboardRoute =
     path: '/dashboard',
     getParentRoute: () => AuthenticatedAiRoute,
   } as any)
+const AuthenticatedAiCoachRoute = AuthenticatedAiCoachRouteImport.update({
+  id: '/coach',
+  path: '/coach',
+  getParentRoute: () => AuthenticatedAiRoute,
+} as any)
 const AuthenticatedAiChatRoute = AuthenticatedAiChatRouteImport.update({
   id: '/chat',
   path: '/chat',
@@ -760,6 +772,12 @@ const AuthenticatedAdminAchievementsRoute =
     path: '/achievements',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAiCoachIndexRoute =
+  AuthenticatedAiCoachIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedAiCoachRoute,
+  } as any)
 const ApiPublicHooksHistoricalSyncRoute =
   ApiPublicHooksHistoricalSyncRouteImport.update({
     id: '/api/public/hooks/historical-sync',
@@ -777,6 +795,36 @@ const AuthenticatedCommunityPostIdRoute =
     id: '/post/$id',
     path: '/post/$id',
     getParentRoute: () => AuthenticatedCommunityRoute,
+  } as any)
+const AuthenticatedAiCoachReportsRoute =
+  AuthenticatedAiCoachReportsRouteImport.update({
+    id: '/reports',
+    path: '/reports',
+    getParentRoute: () => AuthenticatedAiCoachRoute,
+  } as any)
+const AuthenticatedAiCoachProfileRoute =
+  AuthenticatedAiCoachProfileRouteImport.update({
+    id: '/profile',
+    path: '/profile',
+    getParentRoute: () => AuthenticatedAiCoachRoute,
+  } as any)
+const AuthenticatedAiCoachMistakesRoute =
+  AuthenticatedAiCoachMistakesRouteImport.update({
+    id: '/mistakes',
+    path: '/mistakes',
+    getParentRoute: () => AuthenticatedAiCoachRoute,
+  } as any)
+const AuthenticatedAiCoachHomeworkRoute =
+  AuthenticatedAiCoachHomeworkRouteImport.update({
+    id: '/homework',
+    path: '/homework',
+    getParentRoute: () => AuthenticatedAiCoachRoute,
+  } as any)
+const AuthenticatedAiCoachEvolutionRoute =
+  AuthenticatedAiCoachEvolutionRouteImport.update({
+    id: '/evolution',
+    path: '/evolution',
+    getParentRoute: () => AuthenticatedAiCoachRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -831,6 +879,7 @@ export interface FileRoutesByFullPath {
   '/admin/trades': typeof AuthenticatedAdminTradesRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/ai/chat': typeof AuthenticatedAiChatRoute
+  '/ai/coach': typeof AuthenticatedAiCoachRouteWithChildren
   '/ai/dashboard': typeof AuthenticatedAiDashboardRoute
   '/ai/history': typeof AuthenticatedAiHistoryRoute
   '/ai/performance': typeof AuthenticatedAiPerformanceRoute
@@ -891,9 +940,15 @@ export interface FileRoutesByFullPath {
   '/statistics/': typeof AuthenticatedStatisticsIndexRoute
   '/strategies/': typeof AuthenticatedStrategiesIndexRoute
   '/trading/': typeof AuthenticatedTradingIndexRoute
+  '/ai/coach/evolution': typeof AuthenticatedAiCoachEvolutionRoute
+  '/ai/coach/homework': typeof AuthenticatedAiCoachHomeworkRoute
+  '/ai/coach/mistakes': typeof AuthenticatedAiCoachMistakesRoute
+  '/ai/coach/profile': typeof AuthenticatedAiCoachProfileRoute
+  '/ai/coach/reports': typeof AuthenticatedAiCoachReportsRoute
   '/community/post/$id': typeof AuthenticatedCommunityPostIdRoute
   '/community/profile/$username': typeof AuthenticatedCommunityProfileUsernameRoute
   '/api/public/hooks/historical-sync': typeof ApiPublicHooksHistoricalSyncRoute
+  '/ai/coach/': typeof AuthenticatedAiCoachIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -997,9 +1052,15 @@ export interface FileRoutesByTo {
   '/statistics': typeof AuthenticatedStatisticsIndexRoute
   '/strategies': typeof AuthenticatedStrategiesIndexRoute
   '/trading': typeof AuthenticatedTradingIndexRoute
+  '/ai/coach/evolution': typeof AuthenticatedAiCoachEvolutionRoute
+  '/ai/coach/homework': typeof AuthenticatedAiCoachHomeworkRoute
+  '/ai/coach/mistakes': typeof AuthenticatedAiCoachMistakesRoute
+  '/ai/coach/profile': typeof AuthenticatedAiCoachProfileRoute
+  '/ai/coach/reports': typeof AuthenticatedAiCoachReportsRoute
   '/community/post/$id': typeof AuthenticatedCommunityPostIdRoute
   '/community/profile/$username': typeof AuthenticatedCommunityProfileUsernameRoute
   '/api/public/hooks/historical-sync': typeof ApiPublicHooksHistoricalSyncRoute
+  '/ai/coach': typeof AuthenticatedAiCoachIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -1055,6 +1116,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/trades': typeof AuthenticatedAdminTradesRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/ai/chat': typeof AuthenticatedAiChatRoute
+  '/_authenticated/ai/coach': typeof AuthenticatedAiCoachRouteWithChildren
   '/_authenticated/ai/dashboard': typeof AuthenticatedAiDashboardRoute
   '/_authenticated/ai/history': typeof AuthenticatedAiHistoryRoute
   '/_authenticated/ai/performance': typeof AuthenticatedAiPerformanceRoute
@@ -1115,9 +1177,15 @@ export interface FileRoutesById {
   '/_authenticated/statistics/': typeof AuthenticatedStatisticsIndexRoute
   '/_authenticated/strategies/': typeof AuthenticatedStrategiesIndexRoute
   '/_authenticated/trading/': typeof AuthenticatedTradingIndexRoute
+  '/_authenticated/ai/coach/evolution': typeof AuthenticatedAiCoachEvolutionRoute
+  '/_authenticated/ai/coach/homework': typeof AuthenticatedAiCoachHomeworkRoute
+  '/_authenticated/ai/coach/mistakes': typeof AuthenticatedAiCoachMistakesRoute
+  '/_authenticated/ai/coach/profile': typeof AuthenticatedAiCoachProfileRoute
+  '/_authenticated/ai/coach/reports': typeof AuthenticatedAiCoachReportsRoute
   '/_authenticated/community/post/$id': typeof AuthenticatedCommunityPostIdRoute
   '/_authenticated/community/profile/$username': typeof AuthenticatedCommunityProfileUsernameRoute
   '/api/public/hooks/historical-sync': typeof ApiPublicHooksHistoricalSyncRoute
+  '/_authenticated/ai/coach/': typeof AuthenticatedAiCoachIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -1173,6 +1241,7 @@ export interface FileRouteTypes {
     | '/admin/trades'
     | '/admin/users'
     | '/ai/chat'
+    | '/ai/coach'
     | '/ai/dashboard'
     | '/ai/history'
     | '/ai/performance'
@@ -1233,9 +1302,15 @@ export interface FileRouteTypes {
     | '/statistics/'
     | '/strategies/'
     | '/trading/'
+    | '/ai/coach/evolution'
+    | '/ai/coach/homework'
+    | '/ai/coach/mistakes'
+    | '/ai/coach/profile'
+    | '/ai/coach/reports'
     | '/community/post/$id'
     | '/community/profile/$username'
     | '/api/public/hooks/historical-sync'
+    | '/ai/coach/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -1339,9 +1414,15 @@ export interface FileRouteTypes {
     | '/statistics'
     | '/strategies'
     | '/trading'
+    | '/ai/coach/evolution'
+    | '/ai/coach/homework'
+    | '/ai/coach/mistakes'
+    | '/ai/coach/profile'
+    | '/ai/coach/reports'
     | '/community/post/$id'
     | '/community/profile/$username'
     | '/api/public/hooks/historical-sync'
+    | '/ai/coach'
   id:
     | '__root__'
     | '/'
@@ -1396,6 +1477,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/trades'
     | '/_authenticated/admin/users'
     | '/_authenticated/ai/chat'
+    | '/_authenticated/ai/coach'
     | '/_authenticated/ai/dashboard'
     | '/_authenticated/ai/history'
     | '/_authenticated/ai/performance'
@@ -1456,9 +1538,15 @@ export interface FileRouteTypes {
     | '/_authenticated/statistics/'
     | '/_authenticated/strategies/'
     | '/_authenticated/trading/'
+    | '/_authenticated/ai/coach/evolution'
+    | '/_authenticated/ai/coach/homework'
+    | '/_authenticated/ai/coach/mistakes'
+    | '/_authenticated/ai/coach/profile'
+    | '/_authenticated/ai/coach/reports'
     | '/_authenticated/community/post/$id'
     | '/_authenticated/community/profile/$username'
     | '/api/public/hooks/historical-sync'
+    | '/_authenticated/ai/coach/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -2129,6 +2217,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAiDashboardRouteImport
       parentRoute: typeof AuthenticatedAiRoute
     }
+    '/_authenticated/ai/coach': {
+      id: '/_authenticated/ai/coach'
+      path: '/coach'
+      fullPath: '/ai/coach'
+      preLoaderRoute: typeof AuthenticatedAiCoachRouteImport
+      parentRoute: typeof AuthenticatedAiRoute
+    }
     '/_authenticated/ai/chat': {
       id: '/_authenticated/ai/chat'
       path: '/chat'
@@ -2262,6 +2357,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAchievementsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/ai/coach/': {
+      id: '/_authenticated/ai/coach/'
+      path: '/'
+      fullPath: '/ai/coach/'
+      preLoaderRoute: typeof AuthenticatedAiCoachIndexRouteImport
+      parentRoute: typeof AuthenticatedAiCoachRoute
+    }
     '/api/public/hooks/historical-sync': {
       id: '/api/public/hooks/historical-sync'
       path: '/api/public/hooks/historical-sync'
@@ -2282,6 +2384,41 @@ declare module '@tanstack/react-router' {
       fullPath: '/community/post/$id'
       preLoaderRoute: typeof AuthenticatedCommunityPostIdRouteImport
       parentRoute: typeof AuthenticatedCommunityRoute
+    }
+    '/_authenticated/ai/coach/reports': {
+      id: '/_authenticated/ai/coach/reports'
+      path: '/reports'
+      fullPath: '/ai/coach/reports'
+      preLoaderRoute: typeof AuthenticatedAiCoachReportsRouteImport
+      parentRoute: typeof AuthenticatedAiCoachRoute
+    }
+    '/_authenticated/ai/coach/profile': {
+      id: '/_authenticated/ai/coach/profile'
+      path: '/profile'
+      fullPath: '/ai/coach/profile'
+      preLoaderRoute: typeof AuthenticatedAiCoachProfileRouteImport
+      parentRoute: typeof AuthenticatedAiCoachRoute
+    }
+    '/_authenticated/ai/coach/mistakes': {
+      id: '/_authenticated/ai/coach/mistakes'
+      path: '/mistakes'
+      fullPath: '/ai/coach/mistakes'
+      preLoaderRoute: typeof AuthenticatedAiCoachMistakesRouteImport
+      parentRoute: typeof AuthenticatedAiCoachRoute
+    }
+    '/_authenticated/ai/coach/homework': {
+      id: '/_authenticated/ai/coach/homework'
+      path: '/homework'
+      fullPath: '/ai/coach/homework'
+      preLoaderRoute: typeof AuthenticatedAiCoachHomeworkRouteImport
+      parentRoute: typeof AuthenticatedAiCoachRoute
+    }
+    '/_authenticated/ai/coach/evolution': {
+      id: '/_authenticated/ai/coach/evolution'
+      path: '/evolution'
+      fullPath: '/ai/coach/evolution'
+      preLoaderRoute: typeof AuthenticatedAiCoachEvolutionRouteImport
+      parentRoute: typeof AuthenticatedAiCoachRoute
     }
   }
 }
@@ -2333,8 +2470,30 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
 const AuthenticatedAdminRouteWithChildren =
   AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
 
+interface AuthenticatedAiCoachRouteChildren {
+  AuthenticatedAiCoachEvolutionRoute: typeof AuthenticatedAiCoachEvolutionRoute
+  AuthenticatedAiCoachHomeworkRoute: typeof AuthenticatedAiCoachHomeworkRoute
+  AuthenticatedAiCoachMistakesRoute: typeof AuthenticatedAiCoachMistakesRoute
+  AuthenticatedAiCoachProfileRoute: typeof AuthenticatedAiCoachProfileRoute
+  AuthenticatedAiCoachReportsRoute: typeof AuthenticatedAiCoachReportsRoute
+  AuthenticatedAiCoachIndexRoute: typeof AuthenticatedAiCoachIndexRoute
+}
+
+const AuthenticatedAiCoachRouteChildren: AuthenticatedAiCoachRouteChildren = {
+  AuthenticatedAiCoachEvolutionRoute: AuthenticatedAiCoachEvolutionRoute,
+  AuthenticatedAiCoachHomeworkRoute: AuthenticatedAiCoachHomeworkRoute,
+  AuthenticatedAiCoachMistakesRoute: AuthenticatedAiCoachMistakesRoute,
+  AuthenticatedAiCoachProfileRoute: AuthenticatedAiCoachProfileRoute,
+  AuthenticatedAiCoachReportsRoute: AuthenticatedAiCoachReportsRoute,
+  AuthenticatedAiCoachIndexRoute: AuthenticatedAiCoachIndexRoute,
+}
+
+const AuthenticatedAiCoachRouteWithChildren =
+  AuthenticatedAiCoachRoute._addFileChildren(AuthenticatedAiCoachRouteChildren)
+
 interface AuthenticatedAiRouteChildren {
   AuthenticatedAiChatRoute: typeof AuthenticatedAiChatRoute
+  AuthenticatedAiCoachRoute: typeof AuthenticatedAiCoachRouteWithChildren
   AuthenticatedAiDashboardRoute: typeof AuthenticatedAiDashboardRoute
   AuthenticatedAiHistoryRoute: typeof AuthenticatedAiHistoryRoute
   AuthenticatedAiPerformanceRoute: typeof AuthenticatedAiPerformanceRoute
@@ -2346,6 +2505,7 @@ interface AuthenticatedAiRouteChildren {
 
 const AuthenticatedAiRouteChildren: AuthenticatedAiRouteChildren = {
   AuthenticatedAiChatRoute: AuthenticatedAiChatRoute,
+  AuthenticatedAiCoachRoute: AuthenticatedAiCoachRouteWithChildren,
   AuthenticatedAiDashboardRoute: AuthenticatedAiDashboardRoute,
   AuthenticatedAiHistoryRoute: AuthenticatedAiHistoryRoute,
   AuthenticatedAiPerformanceRoute: AuthenticatedAiPerformanceRoute,

@@ -22,6 +22,7 @@ import {
   toggleChecklistItem,
   updateReplaySession,
 } from "@/lib/replay.functions";
+import { runCoachOnSession } from "@/lib/replay-coach.functions";
 import { TIMEFRAME_SECONDS } from "@/lib/replay/constants";
 import type {
   BookmarkCategory,
@@ -338,6 +339,7 @@ export function ReplayProvider({ id, children }: { id: string; children: ReactNo
   const cpAddMut = useMutation({ mutationFn: useServerFn(createReplayCheckpoint), onSuccess: () => qc.invalidateQueries({ queryKey: ["replay-checkpoints", id] }) });
   const cpDelMut = useMutation({ mutationFn: useServerFn(deleteReplayCheckpoint), onSuccess: () => qc.invalidateQueries({ queryKey: ["replay-checkpoints", id] }) });
   const resetMut = useMutation({ mutationFn: useServerFn(resetReplayProgress) });
+  const runCoach = useServerFn(runCoachOnSession);
 
   const play = useCallback(() => setPlaying(true), []);
   const pause = useCallback(() => setPlaying(false), []);
@@ -600,7 +602,10 @@ export function ReplayProvider({ id, children }: { id: string; children: ReactNo
     if (!session) return;
     const r = await finishMut.mutateAsync({ data: { id: session.id } });
     toast.success(`Replay complete — Score ${r.score.score}/100`);
-  }, [session, finishMut]);
+    runCoach({ data: { session_id: session.id } })
+      .then(() => qc.invalidateQueries({ queryKey: ["coach"] }))
+      .catch(() => {});
+  }, [session, finishMut, runCoach, qc]);
 
   const replayAgain = useCallback(async () => {
     if (!session) return;
