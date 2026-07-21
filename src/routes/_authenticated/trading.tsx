@@ -8,7 +8,7 @@ export const Route = createFileRoute("/_authenticated/trading")({
     ],
   }),
   component: () => (
-    <div className="mx-auto flex min-h-[calc(100vh-72px)] w-full max-w-none flex-col rounded-xl border border-border/60 bg-card/20 backdrop-blur">
+    <div className="mx-auto flex min-h-[calc(100vh-72px)] w-full max-w-none flex-col md:rounded-xl md:border md:border-border/60 md:bg-card/20 md:backdrop-blur">
       <Outlet />
     </div>
   ),
