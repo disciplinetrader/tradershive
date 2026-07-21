@@ -1,4 +1,4 @@
-import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useLocation } from "@tanstack/react-router";
 import { AlertCircle } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { GlassCard } from "@/components/ui/glass-card";
@@ -7,7 +7,7 @@ import { useStatistics } from "@/components/statistics/context";
 import { AnalyticsProvider } from "@/components/analytics/AnalyticsProvider";
 import { BacktestSelector } from "@/components/analytics/BacktestSelector";
 import { AnalyticsSearch } from "@/components/analytics/AnalyticsSearch";
-import { cn } from "@/lib/utils";
+import { SegmentedTabs } from "@/components/ui/segmented-tabs";
 
 export const Route = createFileRoute("/_authenticated/analytics")({
   head: () => ({
