@@ -62,7 +62,7 @@ export function MyPerformancePanel({
   const ddUsed = Number(rank.max_drawdown ?? 0);
   const ddCap = (champ.max_drawdown_pct / 100) * champ.starting_balance;
   const ddRemaining = Math.max(0, ddCap - ddUsed);
-  const target = (champ.prizeTarget as unknown as number) ?? 0;
+  
   const totalTrades = rank.total_trades ?? 0;
   const minTrades = champ.min_trades ?? 0;
   const tradesProgress = minTrades > 0 ? Math.min(100, (totalTrades / minTrades) * 100) : 100;
