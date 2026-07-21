@@ -94,7 +94,29 @@ export function AccountSummary() {
           Stop-out triggered — closing worst losers automatically until margin level recovers above {Number(account.stop_out_level ?? 50)}%.
         </div>
       )}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">
+      {/* Mobile: horizontal snap-scroll KPI ribbon.
+          Desktop (sm+): original responsive grid. */}
+      <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 sm:mx-0 sm:hidden sm:px-0">
+        <Stat mobile label="Balance" value={formatCurrency(Number(account.balance), account.currency)} />
+        <Stat mobile label="Equity" value={formatCurrency(equity, account.currency)} accent />
+        <Stat mobile label="Floating P/L" value={
+          <span className={floating >= 0 ? "text-success" : "text-danger"}>
+            {floating >= 0 ? "+" : ""}{formatCurrency(floating, account.currency)}
+          </span>
+        } />
+        <Stat mobile label="Used margin" value={formatCurrency(used, account.currency)} />
+        <Stat mobile label="Free margin" value={formatCurrency(free, account.currency)} />
+        <Stat mobile label="Margin level" value={
+          <span className={cn("flex items-center gap-1", marginTone)}>{formatMarginLevel(marginLevel)}</span>
+        } />
+        <Stat mobile label="Win rate" value={`${Number(stats?.win_rate ?? 0).toFixed(1)}%`} />
+        <Stat mobile label="Net P/L" value={
+          <span className={Number(stats?.net_pnl ?? 0) >= 0 ? "text-success" : "text-danger"}>
+            {formatCurrency(Number(stats?.net_pnl ?? 0), account.currency)}
+          </span>
+        } />
+      </div>
+      <div className="hidden grid-cols-2 gap-3 sm:grid md:grid-cols-4 xl:grid-cols-8">
         <Stat label="Balance" value={formatCurrency(Number(account.balance), account.currency)} />
         <Stat label="Equity" value={formatCurrency(equity, account.currency)} accent />
         <Stat label="Floating P/L" value={
@@ -133,14 +155,21 @@ export function AccountSummary() {
   );
 }
 
-function Stat({ label, value, icon, accent }: { label: string; value: React.ReactNode; icon?: React.ReactNode; accent?: boolean }) {
+function Stat({ label, value, icon, accent, mobile }: { label: string; value: React.ReactNode; icon?: React.ReactNode; accent?: boolean; mobile?: boolean }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-      className="min-w-0"
+      className={cn(
+        "min-w-0",
+        mobile && "min-w-[112px] shrink-0 snap-start rounded-md border border-border/60 bg-card/60 p-2.5",
+      )}
     >
       <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className={"mt-1 flex items-center gap-1 truncate text-base font-semibold tabular-nums " + (accent ? "text-primary" : "")}>
+      <p className={cn(
+        "mt-1 flex items-center gap-1 truncate font-semibold tabular-nums",
+        mobile ? "font-mono text-[13px]" : "text-base",
+        accent && "text-primary",
+      )}>
         {icon}{value}
       </p>
     </motion.div>

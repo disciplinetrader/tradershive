@@ -1,6 +1,6 @@
-import { createFileRoute, Outlet, Link, useRouterState, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useRouterState, redirect } from "@tanstack/react-router";
 import { AiAvatar } from "@/components/ai/AiAvatar";
-import { cn } from "@/lib/utils";
+import { SegmentedTabs } from "@/components/ui/segmented-tabs";
 import { BookMarked, BrainCog, Gauge, GraduationCap, History, MessageSquare, PlaySquare, Settings2, Sparkles } from "lucide-react";
 
 const TABS = [
@@ -38,27 +38,11 @@ function AiLayout() {
         </div>
       </header>
 
-      <nav className="mb-6 flex flex-wrap gap-1.5 rounded-md border border-border/60 bg-card/60 p-1.5">
-        {TABS.map((t) => {
-          const active = pathname === t.to;
-          const Icon = t.icon;
-          return (
-            <Link
-              key={t.to}
-              to={t.to}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-sm font-medium transition",
-                active
-                  ? "bg-primary/15 text-primary shadow-[inset_0_0_0_1px_color-mix(in oklab, var(--primary) 30%, transparent)]"
-                  : "text-muted-foreground hover:bg-background/40 hover:text-foreground",
-              )}
-            >
-              <Icon className="h-4 w-4" />
-              {t.label}
-            </Link>
-          );
-        })}
-      </nav>
+      <SegmentedTabs
+        tabs={TABS.map((t) => ({ to: t.to, label: t.label, icon: t.icon }))}
+        pathname={pathname}
+        className="mb-6"
+      />
 
       <Outlet />
     </div>
