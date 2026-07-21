@@ -150,36 +150,43 @@ function DashboardPage() {
         </motion.div>
       )}
 
-      {/* Stats grid */}
-      {visible("stats") && (
+      {/* Analytics shortcut — statistics live in the Analytics Center now */}
+      {visible("analytics_cta") && (
         <motion.div variants={item}>
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Statistics</h2>
-          </div>
-          <StatsOverview />
+          <Link
+            to="/analytics"
+            className="group flex flex-col gap-3 rounded-lg border border-border/60 bg-gradient-to-br from-primary/10 via-card to-card p-5 transition hover:border-primary/40 hover:shadow-elegant sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div className="flex items-start gap-3">
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-md bg-primary/15 text-primary">
+                <Sparkles className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary/80">Analytics Center</p>
+                <h3 className="mt-0.5 text-base font-semibold">Equity curve, KPIs & performance breakdown</h3>
+                <p className="mt-0.5 text-xs text-muted-foreground">All statistics moved to Analytics — deeper filters, compare mode and coach insights.</p>
+              </div>
+            </div>
+            <span className="inline-flex items-center gap-1.5 self-start rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm transition group-hover:translate-x-0.5 sm:self-auto">
+              Open Analytics <ArrowUpRight className="h-3.5 w-3.5" />
+            </span>
+          </Link>
         </motion.div>
       )}
 
-      {/* Equity + right column */}
-      {(visible("equity") || visible("xp") || visible("streak")) && (
-        <motion.div variants={item} className="grid gap-4 lg:grid-cols-3">
-          {visible("equity") && (
-            <WidgetShell {...wProps("equity")} title="Equity curve" description="Last 30 days" icon={TrendingUp} className="lg:col-span-2">
-              <EquityCurve />
+      {/* XP + streak */}
+      {(visible("xp") || visible("streak")) && (
+        <motion.div variants={item} className="grid gap-4 md:grid-cols-2">
+          {visible("xp") && (
+            <WidgetShell {...wProps("xp")} title="XP & rank" icon={Trophy}>
+              <XPWidget />
             </WidgetShell>
           )}
-          <div className="space-y-4">
-            {visible("xp") && (
-              <WidgetShell {...wProps("xp")} title="XP & rank" icon={Trophy}>
-                <XPWidget />
-              </WidgetShell>
-            )}
-            {visible("streak") && (
-              <WidgetShell {...wProps("streak")} title="Streaks" icon={Flame}>
-                <StreakWidget />
-              </WidgetShell>
-            )}
-          </div>
+          {visible("streak") && (
+            <WidgetShell {...wProps("streak")} title="Streaks" icon={Flame}>
+              <StreakWidget />
+            </WidgetShell>
+          )}
         </motion.div>
       )}
 
@@ -199,19 +206,12 @@ function DashboardPage() {
         </motion.div>
       )}
 
-      {/* Markets + performance charts */}
-      {(visible("markets") || visible("perf")) && (
-        <motion.div variants={item} className="grid gap-4 lg:grid-cols-3">
-          {visible("perf") && (
-            <WidgetShell {...wProps("perf")} title="Performance breakdown" description="Weekly, monthly, sessions & R distribution" icon={BarChart3} className="lg:col-span-2">
-              <PerformanceCharts />
-            </WidgetShell>
-          )}
-          {visible("markets") && (
-            <WidgetShell {...wProps("markets")} title="Market overview" description="Global snapshot" icon={LineChart}>
-              <MarketOverview />
-            </WidgetShell>
-          )}
+      {/* Market overview */}
+      {visible("markets") && (
+        <motion.div variants={item}>
+          <WidgetShell {...wProps("markets")} title="Market overview" description="Global snapshot" icon={LineChart}>
+            <MarketOverview />
+          </WidgetShell>
         </motion.div>
       )}
 
