@@ -55,3 +55,23 @@ export function reportLovableError(error: unknown, context: Record<string, unkno
     filename: window.location.pathname,
   });
 }
+
+/**
+ * Install browser-side listeners that forward uncaught errors and unhandled
+ * promise rejections into Lovable telemetry. Idempotent — safe to call more
+ * than once. No-op on the server.
+ */
+export function installGlobalErrorHandlers() {
+  if (typeof window === "undefined") return;
+  const w = window as Window & { __lovableGlobalHandlersInstalled?: boolean };
+  if (w.__lovableGlobalHandlersInstalled) return;
+  w.__lovableGlobalHandlersInstalled = true;
+
+  window.addEventListener("error", (event) => {
+    const err = event.error ?? new Error(event.message || "Uncaught error");
+    reportLovableError(err, { mechanism: "onerror", filename: event.filename });
+  });
+  window.addEventListener("unhandledrejection", (event) => {
+    reportLovableError(event.reason, { mechanism: "unhandledrejection" });
+  });
+}
