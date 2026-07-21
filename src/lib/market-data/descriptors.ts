@@ -16,6 +16,14 @@ const OANDA_ENV: CredentialField = {
 
 export const PROVIDER_DESCRIPTORS: ProviderDescriptor[] = [
   {
+    code: "yahoo", name: "Yahoo Finance",
+    description: "Key-less near-live quotes and historical candles for forex, metals, indices and commodities. Delayed 10-30s.",
+    website: "https://finance.yahoo.com",
+    markets: ["forex", "metals", "indices", "commodities", "stocks"], publicByDefault: true,
+    capabilities: { markets: ["forex","metals","indices","commodities","stocks"], supportsRest: true, supportsWs: false, supportsHistorical: true, supportsStreaming: true },
+    credentials: [],
+  },
+  {
     code: "binance", name: "Binance",
     description: "Public spot market data for crypto pairs. No API key needed.",
     website: "https://binance.com",
