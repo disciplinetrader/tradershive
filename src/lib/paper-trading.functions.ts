@@ -157,6 +157,41 @@ export const openTrade = createServerFn({ method: "POST" })
   .inputValidator((d) => openTradeSchema.parse(d))
   .handler(async ({ data, context }) => {
     const { tag_ids, ...trade } = data;
+
+    // ---- Broker-style pre-flight validation (hard gate) ----
+    // Prevents the "$25k balance vs −$70M net P/L" impossible-state bug by
+    // rejecting any order that would exceed free margin, absolute risk cap,
+    // symbol lot limits, or the concurrent-position cap.
+    const [{ data: acct, error: acctErr }, { data: opens }] = await Promise.all([
+      context.supabase
+        .from("paper_accounts")
+        .select("id, balance, equity, leverage, currency, max_trade_risk_pct, margin_call_level, stop_out_level, negative_balance_protection, is_archived, deleted_at")
+        .eq("id", data.account_id).eq("user_id", context.userId).single(),
+      context.supabase
+        .from("paper_trades")
+        .select("id, symbol, direction, entry_price, lot_size")
+        .eq("account_id", data.account_id).eq("user_id", context.userId)
+        .eq("status", "open").is("deleted_at", null),
+    ]);
+    if (acctErr || !acct) throw new Error("Account not found");
+    if (acct.is_archived || acct.deleted_at) throw new Error("Account is archived");
+
+    const validation = validateNewOrder(
+      acct as any,
+      (opens ?? []) as OpenTradeInput[],
+      {
+        symbol: data.symbol,
+        direction: data.direction,
+        entry_price: Number(data.entry_price),
+        lot_size: Number(data.lot_size),
+        stop_loss: data.stop_loss ?? null,
+        risk_amount: data.risk_amount ?? null,
+      },
+    );
+    if (!validation.ok) {
+      throw new Error(validation.errors.join(" · "));
+    }
+
     const { data: created, error } = await context.supabase
       .from("paper_trades")
       .insert({ ...trade, user_id: context.userId, status: "open", opened_at: new Date().toISOString() })
@@ -170,7 +205,10 @@ export const openTrade = createServerFn({ method: "POST" })
     }
     await context.supabase.from("position_history").insert({
       user_id: context.userId, account_id: data.account_id, trade_id: created.id,
-      event: "opened", payload: { entry_price: data.entry_price, lot_size: data.lot_size },
+      event: "opened", payload: {
+        entry_price: data.entry_price, lot_size: data.lot_size,
+        required_margin: validation.required_margin, liq_price: validation.liq_price,
+      },
     });
     return created;
   });
