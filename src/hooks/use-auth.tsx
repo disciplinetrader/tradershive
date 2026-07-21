@@ -52,10 +52,13 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+// Note: `email` is intentionally omitted here — column-level SELECT is revoked
+// for the `authenticated` role to prevent PII leakage across users. The email
+// is populated from the authenticated Supabase session below.
 const PROFILE_COLUMNS =
-  "id, username, display_name, email, avatar_url, first_name, last_name, country, timezone, experience, preferred_market, trading_style, preferred_markets, goals, level, xp, coins, league, streak, rank, onboarded, is_premium";
+  "id, username, display_name, avatar_url, first_name, last_name, country, timezone, experience, preferred_market, trading_style, preferred_markets, goals, level, xp, coins, league, streak, rank, onboarded, is_premium";
 
-async function loadUserData(userId: string) {
+async function loadUserData(userId: string, email: string | null) {
   const [{ data: profile }, { data: roles }] = await Promise.all([
     supabase
       .from("profiles")
@@ -65,7 +68,7 @@ async function loadUserData(userId: string) {
     supabase.from("user_roles").select("role").eq("user_id", userId),
   ]);
   return {
-    profile: (profile ?? null) as Profile | null,
+    profile: profile ? ({ ...(profile as any), email } as Profile) : null,
     roles: (roles?.map((r) => r.role) ?? []) as AppRole[],
   };
 }
@@ -84,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setRoles([]);
       return;
     }
-    const { profile, roles } = await loadUserData(nextSession.user.id);
+    const { profile, roles } = await loadUserData(nextSession.user.id, nextSession.user.email ?? null);
     setProfile(profile);
     setRoles(roles);
   }, []);
@@ -115,7 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     if (!session?.user) return;
-    const { profile, roles } = await loadUserData(session.user.id);
+    const { profile, roles } = await loadUserData(session.user.id, session.user.email ?? null);
     setProfile(profile);
     setRoles(roles);
   }, [session?.user]);

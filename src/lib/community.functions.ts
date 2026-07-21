@@ -1,3 +1,4 @@
+import { escapeSearch } from "@/lib/search-escape";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -429,7 +430,8 @@ export const searchCommunity = createServerFn({ method: "POST" })
   .inputValidator((v: unknown) => z.object({ q: z.string().min(1).max(80) }).parse(v))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const q = data.q.trim();
+    const q = escapeSearch(data.q);
+    if (!q) return { posts: [], traders: [], tags: [] };
     const [posts, traders, tags] = await Promise.all([
       supabase.from("community_posts")
         .select("id, title, excerpt, published_at, symbol, post_type")

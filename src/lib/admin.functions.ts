@@ -1,3 +1,4 @@
+import { escapeSearch } from "@/lib/search-escape";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -99,8 +100,8 @@ export const listUsers = createServerFn({ method: "POST" })
     }
 
     if (data.search) {
-      const s2 = data.search.trim();
-      q = q.or(`username.ilike.%${s2}%,email.ilike.%${s2}%,display_name.ilike.%${s2}%`);
+      const s2 = escapeSearch(data.search);
+      if (s2) q = q.or(`username.ilike.%${s2}%,email.ilike.%${s2}%,display_name.ilike.%${s2}%`);
     }
 
     const from = (data.page - 1) * data.pageSize;

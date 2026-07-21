@@ -1,16 +1,31 @@
 /**
  * Cron endpoint — nightly historical data sync.
- * Bypasses auth on published sites; secured by the Supabase anon apikey
- * header (the standard pattern for /api/public/* cron hooks).
+ * Bypasses auth on published sites; secured by a dedicated shared secret
+ * (HISTORICAL_SYNC_CRON_SECRET) with constant-time comparison.
  */
 import { createFileRoute } from "@tanstack/react-router";
+import { timingSafeEqual } from "crypto";
+
+function safeEqual(a: string, b: string): boolean {
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ab.length !== bb.length) return false;
+  return timingSafeEqual(ab, bb);
+}
 
 export const Route = createFileRoute("/api/public/hooks/historical-sync")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const apikey = request.headers.get("apikey");
-        if (!apikey) return new Response("Missing apikey", { status: 401 });
+        const expected = process.env.HISTORICAL_SYNC_CRON_SECRET;
+        if (!expected) return new Response("Not configured", { status: 503 });
+        const provided =
+          request.headers.get("x-cron-secret") ??
+          request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ??
+          "";
+        if (!provided || !safeEqual(provided, expected)) {
+          return new Response("Unauthorized", { status: 401 });
+        }
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const { runIncrementalUpdate } = await import("@/lib/market-data/historical/pipeline.server");

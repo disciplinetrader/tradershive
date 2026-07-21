@@ -1,3 +1,4 @@
+import { escapeSearch } from "@/lib/search-escape";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -332,7 +333,7 @@ export const searchUsers = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase } = context as SupabaseCtx;
     let q = supabase.from("profiles").select("id, username, display_name, avatar_url, country, league, level, xp, streak, trading_style, preferred_market, created_at").eq("onboarded", true);
-    if (data.q) q = q.or(`username.ilike.%${data.q}%,display_name.ilike.%${data.q}%`);
+    if (data.q) { const s = escapeSearch(data.q); if (s) q = q.or(`username.ilike.%${s}%,display_name.ilike.%${s}%`); }
     if (data.country) q = q.eq("country", data.country);
     if (data.league) q = q.eq("league", data.league);
     if (data.market) q = q.eq("preferred_market", data.market);

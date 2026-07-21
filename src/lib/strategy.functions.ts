@@ -1,3 +1,4 @@
+import { escapeSearch } from "@/lib/search-escape";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -465,7 +466,9 @@ export const searchStrategies = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ q: z.string().max(200) }).parse(d))
   .handler(async ({ data, context }) => {
-    const q = `%${data.q.trim()}%`;
+    const safe = escapeSearch(data.q, 200);
+    if (!safe) return [];
+    const q = `%${safe}%`;
     const { data: rows, error } = await context.supabase
       .from("strategies")
       .select("id,name,description,category,market,tags,color,icon,status")

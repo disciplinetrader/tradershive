@@ -1,3 +1,4 @@
+import { escapeSearch } from "@/lib/search-escape";
 /**
  * Market Data server functions — user-scoped preferences, favorites, alerts,
  * and admin health snapshots. Live prices/candles are pulled client-side
@@ -88,7 +89,7 @@ export const listSymbols = createServerFn({ method: "GET" })
   .handler(async ({ context, data }) => {
     let query = context.supabase.from("symbols").select("*").eq("is_enabled", true).order("is_popular", { ascending: false }).limit(data.limit);
     if (data.market) query = query.eq("market_kind", data.market);
-    if (data.q) query = query.or(`symbol.ilike.%${data.q}%,display_name.ilike.%${data.q}%`);
+    if (data.q) { const s = escapeSearch(data.q); if (s) query = query.or(`symbol.ilike.%${s}%,display_name.ilike.%${s}%`); }
     const { data: rows } = await query;
     return rows ?? [];
   });
