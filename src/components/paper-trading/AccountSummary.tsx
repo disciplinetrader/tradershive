@@ -141,6 +141,8 @@ export function AccountSummary() {
             )}
           </span>
         } />
+        <Stat label="Buying power" value={formatCurrency(buyingPower, account.currency)} />
+        <Stat label="Margin ratio" value={formatMarginRatio(marginRatio)} />
         <Stat label="Win rate" value={`${Number(stats?.win_rate ?? 0).toFixed(1)}%`} />
         <Stat label="Net P/L" value={
           <span className={Number(stats?.net_pnl ?? 0) >= 0 ? "text-success" : "text-danger"}>
