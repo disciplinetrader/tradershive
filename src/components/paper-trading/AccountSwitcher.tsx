@@ -67,7 +67,7 @@ export function AccountSwitcher() {
 
   return (
     <div className="flex items-center gap-2">
-      <Select value={accountId ?? undefined} onValueChange={setAccountId}>
+      <Select value={accountId ?? ""} onValueChange={setAccountId}>
         <SelectTrigger className="h-9 min-w-[220px]">
           <SelectValue placeholder="Select account" />
         </SelectTrigger>
