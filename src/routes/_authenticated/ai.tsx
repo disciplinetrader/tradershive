@@ -1,10 +1,11 @@
 import { createFileRoute, Outlet, Link, useRouterState, redirect } from "@tanstack/react-router";
 import { AiAvatar } from "@/components/ai/AiAvatar";
 import { cn } from "@/lib/utils";
-import { BookMarked, BrainCog, Gauge, History, MessageSquare, PlaySquare, Settings2, Sparkles } from "lucide-react";
+import { BookMarked, BrainCog, Gauge, GraduationCap, History, MessageSquare, PlaySquare, Settings2, Sparkles } from "lucide-react";
 
 const TABS = [
   { to: "/ai/dashboard", label: "Dashboard", icon: Gauge },
+  { to: "/ai/coach", label: "Replay Coach", icon: GraduationCap },
   { to: "/ai/trade-review", label: "Trade Review", icon: PlaySquare },
   { to: "/ai/performance", label: "Performance", icon: Sparkles },
   { to: "/ai/psychology", label: "Psychology", icon: BrainCog },
