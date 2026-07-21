@@ -1,16 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
 import {
   Activity,
+  ArrowUpRight,
   Award,
-  BarChart3,
   Bell,
-  BookOpen,
   Calendar as CalendarIcon,
-  CheckSquare,
   Eye,
   Flame,
   LineChart,
@@ -18,7 +16,6 @@ import {
   Sparkles,
   StickyNote,
   Star,
-  TrendingUp,
   Trophy,
   User as UserIcon,
   Zap,
@@ -31,9 +28,6 @@ import { TodaysChallenge } from "@/components/dashboard/TodaysChallenge";
 import { RecentTrades } from "@/components/dashboard/RecentTrades";
 import { Watchlist } from "@/components/dashboard/Watchlist";
 import { MarketOverview } from "@/components/dashboard/MarketOverview";
-import { StatsOverview } from "@/components/dashboard/StatsOverview";
-import { EquityCurve } from "@/components/dashboard/EquityCurve";
-import { PerformanceCharts } from "@/components/dashboard/PerformanceCharts";
 import { StreakWidget } from "@/components/dashboard/StreakWidget";
 import { XPWidget } from "@/components/dashboard/XPWidget";
 import { Achievements } from "@/components/dashboard/Achievements";
@@ -60,9 +54,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 const WIDGETS: WidgetDef[] = [
   { id: "welcome", label: "Welcome & progress", group: "Overview" },
   { id: "challenge", label: "Today's challenge", group: "Overview" },
-  { id: "stats", label: "Statistics overview", group: "Performance" },
-  { id: "equity", label: "Equity curve", group: "Performance" },
-  { id: "perf", label: "Performance charts", group: "Performance" },
+  { id: "analytics_cta", label: "Analytics shortcut", group: "Overview" },
   { id: "trades", label: "Recent trades", group: "Trading" },
   { id: "watchlist", label: "Watchlist", group: "Trading" },
   { id: "markets", label: "Market overview", group: "Trading" },
@@ -158,36 +150,43 @@ function DashboardPage() {
         </motion.div>
       )}
 
-      {/* Stats grid */}
-      {visible("stats") && (
+      {/* Analytics shortcut — statistics live in the Analytics Center now */}
+      {visible("analytics_cta") && (
         <motion.div variants={item}>
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Statistics</h2>
-          </div>
-          <StatsOverview />
+          <Link
+            to="/analytics"
+            className="group flex flex-col gap-3 rounded-lg border border-border/60 bg-gradient-to-br from-primary/10 via-card to-card p-5 transition hover:border-primary/40 hover:shadow-elegant sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div className="flex items-start gap-3">
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-md bg-primary/15 text-primary">
+                <Sparkles className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary/80">Analytics Center</p>
+                <h3 className="mt-0.5 text-base font-semibold">Equity curve, KPIs & performance breakdown</h3>
+                <p className="mt-0.5 text-xs text-muted-foreground">All statistics moved to Analytics — deeper filters, compare mode and coach insights.</p>
+              </div>
+            </div>
+            <span className="inline-flex items-center gap-1.5 self-start rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm transition group-hover:translate-x-0.5 sm:self-auto">
+              Open Analytics <ArrowUpRight className="h-3.5 w-3.5" />
+            </span>
+          </Link>
         </motion.div>
       )}
 
-      {/* Equity + right column */}
-      {(visible("equity") || visible("xp") || visible("streak")) && (
-        <motion.div variants={item} className="grid gap-4 lg:grid-cols-3">
-          {visible("equity") && (
-            <WidgetShell {...wProps("equity")} title="Equity curve" description="Last 30 days" icon={TrendingUp} className="lg:col-span-2">
-              <EquityCurve />
+      {/* XP + streak */}
+      {(visible("xp") || visible("streak")) && (
+        <motion.div variants={item} className="grid gap-4 md:grid-cols-2">
+          {visible("xp") && (
+            <WidgetShell {...wProps("xp")} title="XP & rank" icon={Trophy}>
+              <XPWidget />
             </WidgetShell>
           )}
-          <div className="space-y-4">
-            {visible("xp") && (
-              <WidgetShell {...wProps("xp")} title="XP & rank" icon={Trophy}>
-                <XPWidget />
-              </WidgetShell>
-            )}
-            {visible("streak") && (
-              <WidgetShell {...wProps("streak")} title="Streaks" icon={Flame}>
-                <StreakWidget />
-              </WidgetShell>
-            )}
-          </div>
+          {visible("streak") && (
+            <WidgetShell {...wProps("streak")} title="Streaks" icon={Flame}>
+              <StreakWidget />
+            </WidgetShell>
+          )}
         </motion.div>
       )}
 
@@ -207,19 +206,12 @@ function DashboardPage() {
         </motion.div>
       )}
 
-      {/* Markets + performance charts */}
-      {(visible("markets") || visible("perf")) && (
-        <motion.div variants={item} className="grid gap-4 lg:grid-cols-3">
-          {visible("perf") && (
-            <WidgetShell {...wProps("perf")} title="Performance breakdown" description="Weekly, monthly, sessions & R distribution" icon={BarChart3} className="lg:col-span-2">
-              <PerformanceCharts />
-            </WidgetShell>
-          )}
-          {visible("markets") && (
-            <WidgetShell {...wProps("markets")} title="Market overview" description="Global snapshot" icon={LineChart}>
-              <MarketOverview />
-            </WidgetShell>
-          )}
+      {/* Market overview */}
+      {visible("markets") && (
+        <motion.div variants={item}>
+          <WidgetShell {...wProps("markets")} title="Market overview" description="Global snapshot" icon={LineChart}>
+            <MarketOverview />
+          </WidgetShell>
         </motion.div>
       )}
 
