@@ -477,19 +477,6 @@ export function ReplayProvider({ id, children }: { id: string; children: ReactNo
             createdAtTs: cursorTs,
           },
         ]);
-          ...prev,
-          {
-            id: `p_${Date.now()}`,
-            direction: opts.direction,
-            orderType: opts.orderType,
-            entryPrice: opts.entryPrice!,
-            stopLoss: opts.stopLoss ?? null,
-            takeProfit: opts.takeProfit ?? null,
-            lotSize: opts.lotSize,
-            riskPct: opts.riskPct ?? null,
-            createdAtTs: cursorTs,
-          },
-        ]);
         toast.success(`Placed ${opts.direction} ${opts.orderType} @ ${opts.entryPrice.toFixed(5)}`);
         return;
       }
