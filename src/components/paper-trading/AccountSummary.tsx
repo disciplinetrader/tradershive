@@ -14,6 +14,7 @@ import {
   accountRiskLimits,
   computeAccountRisk,
   formatMarginLevel,
+  formatMarginRatio,
   type OpenTradeInput,
 } from "@/lib/paper-trading/risk";
 import { cn } from "@/lib/utils";
