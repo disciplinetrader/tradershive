@@ -198,68 +198,6 @@ function DashboardPage() {
         </motion.div>
       )}
 
-      {/* Market overview */}
-      {visible("markets") && (
-        <motion.div variants={item}>
-          <WidgetShell {...wProps("markets")} title="Market overview" description="Global snapshot" icon={LineChart}>
-            <MarketOverview />
-          </WidgetShell>
-        </motion.div>
-      )}
-
-      {/* Achievements + leaderboard */}
-      {(visible("achievements") || visible("leaderboard")) && (
-        <motion.div variants={item} className="grid gap-4 lg:grid-cols-3">
-          {visible("achievements") && (
-            <WidgetShell {...wProps("achievements")} title="Achievements" description="Unlock badges as you play" icon={Award} className="lg:col-span-2">
-              <Achievements />
-            </WidgetShell>
-          )}
-          {visible("leaderboard") && (
-            <WidgetShell {...wProps("leaderboard")} title="Leaderboard" description="Top traders this season" icon={Trophy}>
-              <LeaderboardPreview />
-            </WidgetShell>
-          )}
-        </motion.div>
-      )}
-
-      {/* Calendar + productivity + notifications */}
-      {(visible("calendar") || visible("productivity") || visible("notifications")) && (
-        <motion.div variants={item} className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {visible("calendar") && (
-            <WidgetShell {...wProps("calendar")} title="Trading calendar" icon={CalendarIcon}>
-              <CalendarWidget />
-            </WidgetShell>
-          )}
-          {visible("productivity") && (
-            <WidgetShell {...wProps("productivity")} title="Productivity" description="Daily rituals" icon={ListChecks}>
-              <ProductivityWidget />
-            </WidgetShell>
-          )}
-          {visible("notifications") && (
-            <WidgetShell {...wProps("notifications")} title="Notifications" icon={Bell}>
-              <NotificationsWidget />
-            </WidgetShell>
-          )}
-        </motion.div>
-      )}
-
-      {/* Notes + profile */}
-      {(visible("notes") || visible("profile")) && (
-        <motion.div variants={item} className="grid gap-4 lg:grid-cols-3">
-          {visible("notes") && (
-            <WidgetShell {...wProps("notes")} title="Quick notes" description="Autosaves as you type" icon={StickyNote} className="lg:col-span-2">
-              <QuickNotes />
-            </WidgetShell>
-          )}
-          {visible("profile") && (
-            <WidgetShell {...wProps("profile")} title="Profile" icon={UserIcon}>
-              <ProfileSummary />
-            </WidgetShell>
-          )}
-        </motion.div>
-      )}
-
       {hidden.size === WIDGETS.length ? (
         <div className="rounded-3xl border border-dashed border-border/60 bg-surface/40 p-10 text-center">
           <Eye className="mx-auto mb-3 h-6 w-6 text-muted-foreground" />
