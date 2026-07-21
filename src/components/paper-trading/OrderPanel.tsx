@@ -46,10 +46,22 @@ export function OrderPanel() {
   const orderFn = useServerFn(placeOrder);
   const tagsFn = useServerFn(listTradeTags);
   const createTagFn = useServerFn(createTradeTag);
+  const listTradesFn = useServerFn(listTrades);
+  const liveQuotes = useLiveQuotes();
 
   const { data: tags } = useQuery({
     queryKey: ["paper", "tags"],
     queryFn: () => tagsFn() as unknown as Promise<Array<{ id: string; name: string; color: string }>>,
+  });
+
+  // Currently open positions on this account — needed to compute free margin
+  // for the pre-flight validation so the panel shows the same numbers the
+  // server will use when it accepts or rejects the order.
+  const { data: openTrades } = useQueryTanstack({
+    queryKey: ["paper", "trades", accountId, "open"],
+    queryFn: () => listTradesFn({ data: { account_id: accountId!, status: "open" } }) as unknown as Promise<OpenTradeInput[]>,
+    enabled: !!accountId,
+    refetchInterval: 5000,
   });
 
   useEffect(() => {
@@ -62,14 +74,40 @@ export function OrderPanel() {
   const tpNum = tp === "" ? null : Number(tp);
   const lotNum = Number(lot) || 0;
   const balance = Number(account?.balance ?? 0);
+  const leverage = Number(account?.leverage ?? 100);
 
   const calc = useMemo(() => {
     if (!symbolMeta) return null;
     return tradeCalculation({
       sym: symbolMeta, side, entry: entryNum, sl: slNum, tp: tpNum, lot: lotNum,
-      leverage: account?.leverage ?? 100, balance,
+      leverage, balance,
     });
-  }, [symbolMeta, side, entryNum, slNum, tpNum, lotNum, account?.leverage, balance]);
+  }, [symbolMeta, side, entryNum, slNum, tpNum, lotNum, leverage, balance]);
+
+  // Broker-style pre-flight: reject the same orders the server will reject,
+  // and warn on the same ones. Runs on every keystroke so the CTA reflects
+  // reality instantly.
+  const validation = useMemo(() => {
+    if (!account || !symbolMeta || !entryNum || !lotNum) return null;
+    return validateNewOrder(
+      account as any,
+      openTrades ?? [],
+      {
+        symbol,
+        direction: side,
+        entry_price: entryNum,
+        lot_size: lotNum,
+        stop_loss: slNum,
+        risk_amount: calc?.riskAmount ?? null,
+      },
+      (s) => liveQuotes[s]?.price ?? null,
+    );
+  }, [account, symbolMeta, openTrades, symbol, side, entryNum, lotNum, slNum, calc?.riskAmount, liveQuotes]);
+
+  const liqPrice = useMemo(
+    () => symbolMeta && entryNum && leverage > 1 ? liquidationPrice(entryNum, side, leverage) : null,
+    [symbolMeta, entryNum, side, leverage],
+  );
 
   const calculateSizeFromRisk = () => {
     if (!symbolMeta || !slNum || !entryNum) return toast.error("Set entry and stop loss first");
