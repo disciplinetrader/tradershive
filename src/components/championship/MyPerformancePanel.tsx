@@ -120,7 +120,7 @@ export function MyPerformancePanel({
             <Zap className="mr-1.5 h-3.5 w-3.5" /> Trading workspace
           </Button>
         </Link>
-        <Link to="/statistics">
+        <Link to="/analytics">
           <Button size="sm" variant="outline">
             <BarChart3 className="mr-1.5 h-3.5 w-3.5" /> Analytics
           </Button>

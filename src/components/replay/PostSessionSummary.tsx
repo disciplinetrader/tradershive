@@ -104,7 +104,7 @@ export function PostSessionSummary({
                 <Link to="/journal"><BookOpen className="mr-2 h-3.5 w-3.5" /> Open Journal</Link>
               </Button>
               <Button variant="secondary" asChild>
-                <Link to="/statistics"><Play className="mr-2 h-3.5 w-3.5" /> Statistics</Link>
+                <Link to="/analytics"><Play className="mr-2 h-3.5 w-3.5" /> Statistics</Link>
               </Button>
               <Button variant="secondary" asChild>
                 <Link to="/community"><Share2 className="mr-2 h-3.5 w-3.5" /> Share</Link>
