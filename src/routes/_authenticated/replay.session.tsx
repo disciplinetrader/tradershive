@@ -1,17 +1,20 @@
+import { useState } from "react";
 import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
 import { z } from "zod";
-import { AlertCircle, Camera, Sparkles } from "lucide-react";
+import { AlertCircle, Camera, CheckCircle2, Sparkles } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { ReplayProvider, useReplay } from "@/components/replay/context";
 import { ReplayChart } from "@/components/replay/ReplayChart";
 import { ReplayControls } from "@/components/replay/ReplayControls";
+import { ReplayHUD } from "@/components/replay/ReplayHUD";
 import { TradePanel } from "@/components/replay/TradePanel";
 import { NotesPanel } from "@/components/replay/NotesPanel";
 import { BookmarksPanel } from "@/components/replay/BookmarksPanel";
 import { ChecklistPanel } from "@/components/replay/ChecklistPanel";
 import { ScoreCard } from "@/components/replay/ScoreCard";
 import { AiReviewPanel } from "@/components/replay/AiReviewPanel";
+import { PostSessionSummary } from "@/components/replay/PostSessionSummary";
 
 const searchSchema = z.object({ id: z.string().optional() });
 
@@ -45,13 +48,18 @@ function NoSession() {
 }
 
 function Workspace() {
-  const { session, loading, captureScreenshot } = useReplay();
+  const { session, loading, captureScreenshot, finish } = useReplay();
+  const [summaryOpen, setSummaryOpen] = useState(false);
 
   const takeShot = () => {
-    // ReplayChart listens for this event and calls onCapture
     const handler = (dataUrl: string) => { captureScreenshot(dataUrl).catch(() => {}); };
     (window as any).__replayCaptureHandler = handler;
     window.dispatchEvent(new Event("replay-capture"));
+  };
+
+  const finishAndReview = async () => {
+    try { await finish(); } catch { /* score computed even if update fails */ }
+    setSummaryOpen(true);
   };
 
   if (loading) return <div className="glass rounded-3xl h-[600px] animate-pulse" />;
@@ -70,8 +78,13 @@ function Workspace() {
           <Button size="sm" variant="secondary" asChild>
             <Link to="/ai/dashboard"><Sparkles className="mr-2 h-3.5 w-3.5" />Coach</Link>
           </Button>
+          <Button size="sm" onClick={finishAndReview}>
+            <CheckCircle2 className="mr-2 h-3.5 w-3.5" />Finish & Review
+          </Button>
         </div>
       </div>
+
+      <ReplayHUD />
 
       <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-3">
@@ -91,6 +104,15 @@ function Workspace() {
           {session ? <AiReviewPanel sessionId={session.id} /> : null}
         </div>
       </div>
+
+      {session ? (
+        <PostSessionSummary
+          sessionId={session.id}
+          open={summaryOpen}
+          onOpenChange={setSummaryOpen}
+          onReplayAgain={() => window.location.reload()}
+        />
+      ) : null}
     </div>
   );
 }
