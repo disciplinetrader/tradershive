@@ -11,10 +11,30 @@ const POST_SELECT = `
   is_pinned, is_featured, is_locked, visibility,
   like_count, comment_count, bookmark_count, share_count, view_count, helpful_count,
   trending_score, published_at, edited_at, created_at,
-  author:profiles!community_posts_author_id_fkey(id, username, display_name, avatar_url, country, level, league),
   category:community_categories(id, slug, name, color, icon),
   shared_content(id, source_type, source_id, source_ref, title, summary, snapshot, cover_url, visibility)
 `;
+
+/**
+ * PostgREST cannot resolve `community_*.author_id -> profiles` embeds because
+ * those FKs point at `auth.users`, not `public.profiles`. We fetch the profile
+ * rows in a follow-up query and merge them in application code.
+ */
+async function attachAuthors<T extends Record<string, any>>(
+  supabase: any,
+  rows: T[],
+  key: string = "author_id",
+  as: string = "author",
+  columns: string = "id, username, display_name, avatar_url, country, level, league",
+): Promise<T[]> {
+  if (!rows.length) return rows;
+  const ids = Array.from(new Set(rows.map((r) => r[key]).filter(Boolean)));
+  if (!ids.length) return rows.map((r) => ({ ...r, [as]: null }));
+  const { data: profs } = await supabase.from("profiles").select(columns).in("id", ids);
+  const map = new Map((profs ?? []).map((p: any) => [p.id, p]));
+  return rows.map((r) => ({ ...r, [as]: map.get(r[key]) ?? null }));
+}
+
 
 async function attachViewerState(
   supabase: any,
