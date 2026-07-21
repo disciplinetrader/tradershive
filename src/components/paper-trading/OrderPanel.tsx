@@ -252,12 +252,42 @@ export function OrderPanel() {
             <Row label="Risk %" value={`${calc.riskPct.toFixed(2)}%`} accent={riskWarn ? "rose" : undefined} />
             <Row label="RR" value={calc.rr ? `${calc.rr.toFixed(2)} : 1` : "—"} />
             <Row label="Notional" value={formatCurrency(calc.notional, account?.currency)} />
-            <Row label="Margin" value={formatCurrency(calc.margin, account?.currency)} />
+            <Row label="Required margin" value={formatCurrency(calc.margin, account?.currency)} />
+            {validation && (
+              <>
+                <Row
+                  label="Free margin after"
+                  value={formatCurrency(validation.free_margin_after, account?.currency)}
+                  accent={validation.free_margin_after < 0 ? "rose" : undefined}
+                />
+                <Row
+                  label="Buying power after"
+                  value={formatCurrency(validation.buying_power_after, account?.currency)}
+                />
+              </>
+            )}
+            <Row label="Leverage" value={`${leverage}×`} />
+            {liqPrice != null && (
+              <Row label="Est. liquidation" value={liqPrice.toFixed(symbolMeta?.decimals ?? 2)} accent="rose" />
+            )}
           </div>
-          {riskWarn && (
-            <p className="mt-2 flex items-center gap-1.5 rounded-md bg-danger/10 px-2 py-1 text-danger">
-              <AlertTriangle className="h-3.5 w-3.5" /> Exceeds per-trade risk limit ({account?.max_trade_risk_pct}%)
-            </p>
+          {validation && validation.errors.length > 0 && (
+            <div className="mt-2 space-y-1">
+              {validation.errors.map((msg, i) => (
+                <p key={i} className="flex items-start gap-1.5 rounded-md bg-danger/10 px-2 py-1 text-danger">
+                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {msg}
+                </p>
+              ))}
+            </div>
+          )}
+          {validation && validation.errors.length === 0 && validation.warnings.length > 0 && (
+            <div className="mt-2 space-y-1">
+              {validation.warnings.map((msg, i) => (
+                <p key={i} className="flex items-start gap-1.5 rounded-md bg-warning/10 px-2 py-1 text-warning">
+                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {msg}
+                </p>
+              ))}
+            </div>
           )}
         </motion.div>
       )}
