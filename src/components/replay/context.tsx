@@ -339,6 +339,7 @@ export function ReplayProvider({ id, children }: { id: string; children: ReactNo
   const cpAddMut = useMutation({ mutationFn: useServerFn(createReplayCheckpoint), onSuccess: () => qc.invalidateQueries({ queryKey: ["replay-checkpoints", id] }) });
   const cpDelMut = useMutation({ mutationFn: useServerFn(deleteReplayCheckpoint), onSuccess: () => qc.invalidateQueries({ queryKey: ["replay-checkpoints", id] }) });
   const resetMut = useMutation({ mutationFn: useServerFn(resetReplayProgress) });
+  const runCoach = useServerFn(runCoachOnSession);
 
   const play = useCallback(() => setPlaying(true), []);
   const pause = useCallback(() => setPlaying(false), []);
