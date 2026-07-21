@@ -6412,6 +6412,102 @@ export type Database = {
           },
         ]
       }
+      replay_coach_memory: {
+        Row: {
+          id: string
+          key: string
+          kind: string
+          last_seen_at: string
+          user_id: string
+          value: Json
+          weight: number
+        }
+        Insert: {
+          id?: string
+          key: string
+          kind: string
+          last_seen_at?: string
+          user_id: string
+          value?: Json
+          weight?: number
+        }
+        Update: {
+          id?: string
+          key?: string
+          kind?: string
+          last_seen_at?: string
+          user_id?: string
+          value?: Json
+          weight?: number
+        }
+        Relationships: []
+      }
+      replay_coach_reports: {
+        Row: {
+          best_session_id: string | null
+          biggest_improvement: string | null
+          biggest_weakness: string | null
+          body: Json
+          created_at: string
+          homework_recommendation: string | null
+          id: string
+          next_focus: string | null
+          period: string
+          period_end: string
+          period_start: string
+          stats: Json
+          user_id: string
+          worst_session_id: string | null
+        }
+        Insert: {
+          best_session_id?: string | null
+          biggest_improvement?: string | null
+          biggest_weakness?: string | null
+          body?: Json
+          created_at?: string
+          homework_recommendation?: string | null
+          id?: string
+          next_focus?: string | null
+          period: string
+          period_end: string
+          period_start: string
+          stats?: Json
+          user_id: string
+          worst_session_id?: string | null
+        }
+        Update: {
+          best_session_id?: string | null
+          biggest_improvement?: string | null
+          biggest_weakness?: string | null
+          body?: Json
+          created_at?: string
+          homework_recommendation?: string | null
+          id?: string
+          next_focus?: string | null
+          period?: string
+          period_end?: string
+          period_start?: string
+          stats?: Json
+          user_id?: string
+          worst_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "replay_coach_reports_best_session_id_fkey"
+            columns: ["best_session_id"]
+            isOneToOne: false
+            referencedRelation: "replay_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "replay_coach_reports_worst_session_id_fkey"
+            columns: ["worst_session_id"]
+            isOneToOne: false
+            referencedRelation: "replay_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       replay_comparisons: {
         Row: {
           breakdown: Json
@@ -6470,6 +6566,119 @@ export type Database = {
             foreignKeyName: "replay_comparisons_session_id_fkey"
             columns: ["session_id"]
             isOneToOne: false
+            referencedRelation: "replay_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      replay_confidence_history: {
+        Row: {
+          deltas: Json
+          discipline: number
+          execution: number
+          id: string
+          overall: number
+          psychology: number
+          reasons: Json
+          risk: number
+          taken_at: string
+          user_id: string
+        }
+        Insert: {
+          deltas?: Json
+          discipline?: number
+          execution?: number
+          id?: string
+          overall?: number
+          psychology?: number
+          reasons?: Json
+          risk?: number
+          taken_at?: string
+          user_id: string
+        }
+        Update: {
+          deltas?: Json
+          discipline?: number
+          execution?: number
+          id?: string
+          overall?: number
+          psychology?: number
+          reasons?: Json
+          risk?: number
+          taken_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      replay_debriefs: {
+        Row: {
+          action_items: string[]
+          best_trade: Json | null
+          confidence: number | null
+          created_at: string
+          discipline_review: string | null
+          execution_review: string | null
+          grade: string | null
+          id: string
+          improvement_suggestions: string[]
+          model: string | null
+          overall_summary: string | null
+          psychology_review: string | null
+          risk_review: string | null
+          session_id: string
+          strengths: string[]
+          updated_at: string
+          user_id: string
+          weaknesses: string[]
+          worst_trade: Json | null
+        }
+        Insert: {
+          action_items?: string[]
+          best_trade?: Json | null
+          confidence?: number | null
+          created_at?: string
+          discipline_review?: string | null
+          execution_review?: string | null
+          grade?: string | null
+          id?: string
+          improvement_suggestions?: string[]
+          model?: string | null
+          overall_summary?: string | null
+          psychology_review?: string | null
+          risk_review?: string | null
+          session_id: string
+          strengths?: string[]
+          updated_at?: string
+          user_id: string
+          weaknesses?: string[]
+          worst_trade?: Json | null
+        }
+        Update: {
+          action_items?: string[]
+          best_trade?: Json | null
+          confidence?: number | null
+          created_at?: string
+          discipline_review?: string | null
+          execution_review?: string | null
+          grade?: string | null
+          id?: string
+          improvement_suggestions?: string[]
+          model?: string | null
+          overall_summary?: string | null
+          psychology_review?: string | null
+          risk_review?: string | null
+          session_id?: string
+          strengths?: string[]
+          updated_at?: string
+          user_id?: string
+          weaknesses?: string[]
+          worst_trade?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "replay_debriefs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
             referencedRelation: "replay_sessions"
             referencedColumns: ["id"]
           },
@@ -6554,6 +6763,113 @@ export type Database = {
           },
         ]
       }
+      replay_homework: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          difficulty: string
+          id: string
+          market: string
+          max_trades: number
+          reason: string | null
+          session_hint: string | null
+          source_session_id: string | null
+          status: string
+          symbol: string
+          target_r: number
+          timeframe: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          difficulty?: string
+          id?: string
+          market: string
+          max_trades?: number
+          reason?: string | null
+          session_hint?: string | null
+          source_session_id?: string | null
+          status?: string
+          symbol: string
+          target_r?: number
+          timeframe: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          difficulty?: string
+          id?: string
+          market?: string
+          max_trades?: number
+          reason?: string | null
+          session_hint?: string | null
+          source_session_id?: string | null
+          status?: string
+          symbol?: string
+          target_r?: number
+          timeframe?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "replay_homework_source_session_id_fkey"
+            columns: ["source_session_id"]
+            isOneToOne: false
+            referencedRelation: "replay_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      replay_mistakes: {
+        Row: {
+          detected_at: string
+          evidence: Json
+          id: string
+          kind: string
+          session_id: string
+          severity: string
+          trade_id: string | null
+          user_id: string
+        }
+        Insert: {
+          detected_at?: string
+          evidence?: Json
+          id?: string
+          kind: string
+          session_id: string
+          severity?: string
+          trade_id?: string | null
+          user_id: string
+        }
+        Update: {
+          detected_at?: string
+          evidence?: Json
+          id?: string
+          kind?: string
+          session_id?: string
+          severity?: string
+          trade_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "replay_mistakes_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "replay_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "replay_mistakes_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: false
+            referencedRelation: "replay_trades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       replay_notes: {
         Row: {
           body: string
@@ -6600,6 +6916,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      replay_recommendations: {
+        Row: {
+          created_at: string
+          description: string | null
+          dismissed_at: string | null
+          evidence: Json
+          id: string
+          kind: string
+          priority: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          dismissed_at?: string | null
+          evidence?: Json
+          id?: string
+          kind: string
+          priority?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          dismissed_at?: string | null
+          evidence?: Json
+          id?: string
+          kind?: string
+          priority?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       replay_scores: {
         Row: {
@@ -6890,6 +7242,51 @@ export type Database = {
           timeframe?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      replay_trader_profile: {
+        Row: {
+          confidence: number
+          consistency: number
+          decision_quality: number
+          execution_quality: number
+          patience: number
+          risk_discipline: number
+          snapshot: Json
+          strengths: string[]
+          style: string | null
+          updated_at: string
+          user_id: string
+          weaknesses: string[]
+        }
+        Insert: {
+          confidence?: number
+          consistency?: number
+          decision_quality?: number
+          execution_quality?: number
+          patience?: number
+          risk_discipline?: number
+          snapshot?: Json
+          strengths?: string[]
+          style?: string | null
+          updated_at?: string
+          user_id: string
+          weaknesses?: string[]
+        }
+        Update: {
+          confidence?: number
+          consistency?: number
+          decision_quality?: number
+          execution_quality?: number
+          patience?: number
+          risk_discipline?: number
+          snapshot?: Json
+          strengths?: string[]
+          style?: string | null
+          updated_at?: string
+          user_id?: string
+          weaknesses?: string[]
         }
         Relationships: []
       }
