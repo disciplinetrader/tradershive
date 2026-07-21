@@ -6,7 +6,7 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { cn } from "@/lib/utils";
 
 type Action = {
-  to: "/paper-trading" | "/journal" | "/challenges" | "/leaderboard" | "/statistics";
+  to: "/paper-trading" | "/journal" | "/challenges" | "/leaderboard" | "/analytics";
   title: string;
   description: string;
   icon: LucideIcon;
@@ -20,7 +20,7 @@ const ACTIONS: Action[] = [
   { to: "/journal", title: "Open Journal", description: "Log setups, mistakes, and lessons.", icon: BookOpen, tint: "from-violet-500/20 to-violet-500/0", cta: "Write entry" },
   { to: "/challenges", title: "Today's Challenge", description: "Earn XP and climb the ladder.", icon: Sparkles, tint: "from-warning/20 to-warning/0", cta: "Play now" },
   { to: "/leaderboard", title: "Leaderboard", description: "See where you rank this season.", icon: Trophy, tint: "from-danger/20 to-danger/0", cta: "View ranks" },
-  { to: "/statistics", title: "Statistics", description: "Deep dive into your edge.", icon: BarChart3, tint: "from-teal-500/20 to-teal-500/0", cta: "See stats" },
+  { to: "/analytics", title: "Analytics", description: "Deep dive into your edge.", icon: BarChart3, tint: "from-teal-500/20 to-teal-500/0", cta: "Open analytics" },
 ];
 
 export function QuickActions() {

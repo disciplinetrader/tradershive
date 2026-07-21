@@ -3,7 +3,7 @@ import { ReportsView } from "@/components/statistics/ReportsView";
 import { CompareCard } from "@/components/statistics/CompareCard";
 import { InsightsPanel } from "@/components/statistics/InsightsPanel";
 
-export const Route = createFileRoute("/_authenticated/statistics/reports")({
+export const Route = createFileRoute("/_authenticated/analytics/reports")({
   component: () => (
     <div className="space-y-4">
       <CompareCard />
