@@ -1,112 +1,196 @@
+import { useMemo, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Trophy, Calendar, Users, Sparkles, ArrowRight, History } from "lucide-react";
-import { listChampionships } from "@/lib/championship.functions";
+import { History, Search, Trophy } from "lucide-react";
+import { toast } from "sonner";
+import { listChampionships, joinChampionshipLive } from "@/lib/championship.functions";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/ui/empty-state";
-import { cn } from "@/lib/utils";
+import { TournamentCard } from "@/components/championship/TournamentCard";
 
 export const Route = createFileRoute("/_authenticated/championship/")({
   component: ChampionshipIndex,
 });
 
+type SortKey = "starts_soonest" | "biggest_prize" | "most_participants" | "duration";
+
 function ChampionshipIndex() {
   const nav = useNavigate();
+  const qc = useQueryClient();
   const fn = useServerFn(listChampionships);
+  const joinLive = useServerFn(joinChampionshipLive);
+
+  const [tab, setTab] = useState<"live" | "upcoming" | "past" | "mine">("live");
+  const [q, setQ] = useState("");
+  const [sort, setSort] = useState<SortKey>("starts_soonest");
+
   const current = useQuery({
     queryKey: ["champ", "current"],
     queryFn: () => fn({ data: { scope: "current" } }) as unknown as Promise<any[]>,
   });
+  const upcoming = useQuery({
+    queryKey: ["champ", "next"],
+    queryFn: () => fn({ data: { scope: "next", limit: 24 } }) as unknown as Promise<any[]>,
+  });
   const past = useQuery({
     queryKey: ["champ", "past"],
-    queryFn: () => fn({ data: { scope: "past", limit: 12 } }) as unknown as Promise<any[]>,
+    queryFn: () => fn({ data: { scope: "past", limit: 24 } }) as unknown as Promise<any[]>,
+  });
+  const mine = useQuery({
+    queryKey: ["champ", "mine"],
+    queryFn: () => fn({ data: { scope: "mine", limit: 24 } }) as unknown as Promise<any[]>,
   });
 
-  const featured = current.data?.find((c) => c.status === "live") ?? current.data?.[0];
+  const activeList = useMemo(() => {
+    const raw =
+      tab === "live" ? (current.data ?? []).filter((c) => c.status === "live") :
+      tab === "upcoming" ? [...(upcoming.data ?? []), ...(current.data ?? []).filter((c) => c.status !== "live")] :
+      tab === "past" ? past.data ?? [] :
+      mine.data ?? [];
+    const needle = q.trim().toLowerCase();
+    const filtered = needle
+      ? raw.filter((c: any) =>
+          [c.name, c.description, ...(c.allowed_markets ?? [])].filter(Boolean).some((s: string) => String(s).toLowerCase().includes(needle)),
+        )
+      : raw;
+    const sorted = [...filtered].sort((a: any, b: any) => {
+      switch (sort) {
+        case "biggest_prize":
+          return Number(b.prize_info?.pool ?? 0) - Number(a.prize_info?.pool ?? 0);
+        case "most_participants":
+          return Number(b.participant_count ?? 0) - Number(a.participant_count ?? 0);
+        case "duration": {
+          const da = new Date(a.end_at).getTime() - new Date(a.start_at).getTime();
+          const db = new Date(b.end_at).getTime() - new Date(b.start_at).getTime();
+          return db - da;
+        }
+        case "starts_soonest":
+        default:
+          return new Date(a.start_at).getTime() - new Date(b.start_at).getTime();
+      }
+    });
+    return sorted;
+  }, [tab, current.data, upcoming.data, past.data, mine.data, q, sort]);
+
+  const quickJoin = useMutation({
+    mutationFn: (championship_id: string) => joinLive({ data: { championship_id } }),
+    onSuccess: () => {
+      toast.success("You're in — $10,000 tournament account created.");
+      qc.invalidateQueries({ queryKey: ["champ"] });
+      setTimeout(() => nav({ to: "/trading" }), 800);
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Failed to join tournament"),
+  });
+
+  const isLoading =
+    (tab === "live" && current.isLoading) ||
+    (tab === "upcoming" && (upcoming.isLoading || current.isLoading)) ||
+    (tab === "past" && past.isLoading) ||
+    (tab === "mine" && mine.isLoading);
+
+  const featured = (current.data ?? []).find((c) => c.is_featured) ?? (current.data ?? [])[0];
 
   return (
     <div className="space-y-6">
-      <header className="space-y-1">
-        <h1 className="text-3xl font-semibold tracking-tight">Monthly Championship</h1>
-        <p className="text-sm text-muted-foreground">
-          The flagship platform-wide competition. One winner every month. A permanent place in the Hall of Fame.
-        </p>
-      </header>
-
-      {featured ? (
-        <button
-          onClick={() => nav({ to: "/championship/$slug", params: { slug: featured.slug } })}
-          className="group relative w-full overflow-hidden rounded-3xl border border-primary/30 bg-gradient-to-br from-warning/15 via-primary/10 to-background p-6 text-left shadow-elegant transition hover:border-primary/60 md:p-10"
-        >
-          <div className="absolute right-4 top-4 flex items-center gap-2 rounded-full border border-primary/30 bg-background/50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-primary">
-            <span className={cn("h-2 w-2 rounded-full", featured.status === "live" ? "animate-pulse bg-success" : "bg-warning")} />
-            {featured.status}
-          </div>
-          <div className="flex items-center gap-3 text-primary">
-            <Trophy className="h-6 w-6" />
-            <span className="text-xs font-semibold uppercase tracking-wider">Current championship</span>
-          </div>
-          <h2 className="mt-3 text-3xl font-bold md:text-4xl">{featured.name}</h2>
-          <p className="mt-2 max-w-xl text-sm text-muted-foreground">{featured.description}</p>
-          <div className="mt-6 flex flex-wrap gap-4 text-xs text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-3.5 w-3.5" />
-              {new Date(featured.start_at).toLocaleDateString()} — {new Date(featured.end_at).toLocaleDateString()}
-            </div>
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-3.5 w-3.5" />
-              ${Number(featured.starting_balance).toLocaleString()} starting balance
-            </div>
-          </div>
-          <div className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-primary group-hover:gap-3 transition-all">
-            View championship <ArrowRight className="h-4 w-4" />
-          </div>
-        </button>
-      ) : current.isLoading ? (
-        <div className="h-64 animate-pulse rounded-3xl bg-muted/40" />
-      ) : (
-        <EmptyState title="No active championship" description="A new championship will be created automatically at the start of next month." />
-      )}
-
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Past championships</h3>
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight">Tournaments</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Compete in monthly championships, sponsored events, and community battles. Every result contributes to your career stats.
+          </p>
+        </div>
         <Link to="/championship/hall-of-fame">
           <Button variant="outline" size="sm">
             <History className="mr-1.5 h-3.5 w-3.5" /> Hall of Fame
           </Button>
         </Link>
-      </div>
+      </header>
 
-      {past.data?.length ? (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {past.data.map((c) => (
-            <Link
-              key={c.id}
-              to="/championship/$slug"
-              params={{ slug: c.slug }}
-              className="group rounded-2xl border bg-card p-5 shadow-sm transition hover:border-primary/50 hover:shadow-elegant"
-            >
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                <Trophy className="h-3.5 w-3.5" /> Completed
-              </div>
-              <div className="mt-1 text-lg font-semibold">{c.name}</div>
-              <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
-                <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" /> Recap</span>
-                <span>{new Date(c.end_at).toLocaleDateString()}</span>
-              </div>
-            </Link>
-          ))}
+      {featured ? (
+        <div className="rounded-2xl border border-primary/30 bg-gradient-to-br from-warning/10 via-primary/5 to-background p-4 shadow-elegant">
+          <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
+            <Trophy className="h-4 w-4" /> Featured Tournament
+          </div>
+          <TournamentCard
+            champ={featured}
+            participantCount={featured.participant_count}
+            onQuickJoin={(id) => quickJoin.mutate(id)}
+            quickJoinPending={quickJoin.isPending}
+          />
         </div>
-      ) : past.isLoading ? (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-32 animate-pulse rounded-2xl bg-muted/40" />
-          ))}
+      ) : null}
+
+      <div className="rounded-2xl border bg-card/60 p-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="w-full sm:w-auto">
+            <TabsList>
+              <TabsTrigger value="live">Live</TabsTrigger>
+              <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+              <TabsTrigger value="past">Past</TabsTrigger>
+              <TabsTrigger value="mine">My tournaments</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <div className="ml-auto flex flex-1 flex-wrap items-center gap-2 sm:flex-none">
+            <div className="relative min-w-[220px] flex-1">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input className="h-9 pl-8" placeholder="Search tournaments…" value={q} onChange={(e) => setQ(e.target.value)} />
+            </div>
+            <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
+              <SelectTrigger className="h-9 w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="starts_soonest">Starts soonest</SelectItem>
+                <SelectItem value="biggest_prize">Biggest prize</SelectItem>
+                <SelectItem value="most_participants">Most participants</SelectItem>
+                <SelectItem value="duration">Longest duration</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-      ) : (
-        <EmptyState className="py-10" title="No previous championships yet" description="Winners will appear here after the first championship ends." />
-      )}
+
+        <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
+          <TabsContent value={tab} className="mt-4">
+            {isLoading ? (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="h-64 animate-pulse rounded-2xl bg-muted/40" />
+                ))}
+              </div>
+            ) : activeList.length ? (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {activeList.map((c: any) => (
+                  <TournamentCard
+                    key={c.id}
+                    champ={c}
+                    participantCount={c.participant_count}
+                    onQuickJoin={(id) => quickJoin.mutate(id)}
+                    quickJoinPending={quickJoin.isPending}
+                  />
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                title={
+                  tab === "live" ? "No live tournaments" :
+                  tab === "upcoming" ? "No upcoming tournaments" :
+                  tab === "past" ? "No past tournaments" :
+                  "You haven't joined any tournaments yet"
+                }
+                description={
+                  tab === "mine"
+                    ? "Join a live tournament to see it here."
+                    : "A new tournament will appear here as soon as one is scheduled."
+                }
+              />
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }
