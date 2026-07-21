@@ -2,12 +2,13 @@ import { useEffect, useMemo } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Trophy, Clock, Users, Sparkles, Shield, TrendingUp, TrendingDown, Zap } from "lucide-react";
+import { Trophy, Users, Sparkles, Shield, TrendingUp, Zap, Info, Book, Film, Megaphone, Target } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
 import {
@@ -17,21 +18,16 @@ import {
   joinChampionshipLive,
 } from "@/lib/championship.functions";
 import { ShareToCommunityButton } from "@/components/sharing/ShareToCommunityButton";
+import { CountdownPill } from "@/components/championship/CountdownPill";
+import { LeaderboardTable } from "@/components/championship/LeaderboardTable";
+import { ActivityFeed } from "@/components/championship/ActivityFeed";
+import { PersonalTimeline, buildPersonalTimeline } from "@/components/championship/PersonalTimeline";
+import { MyPerformancePanel } from "@/components/championship/MyPerformancePanel";
+import { TournamentSummary } from "@/components/championship/TournamentSummary";
 
 export const Route = createFileRoute("/_authenticated/championship/$slug")({
   component: ChampionshipDetail,
 });
-
-function useCountdown(target: string | undefined) {
-  const t = target ? new Date(target).getTime() : 0;
-  const now = Date.now();
-  const diff = Math.max(0, t - now);
-  const d = Math.floor(diff / 86_400_000);
-  const h = Math.floor((diff % 86_400_000) / 3_600_000);
-  const m = Math.floor((diff % 3_600_000) / 60_000);
-  const s = Math.floor((diff % 60_000) / 1000);
-  return { d, h, m, s, ended: diff === 0 };
-}
 
 function ChampionshipDetail() {
   const { slug } = Route.useParams();
@@ -43,7 +39,6 @@ function ChampionshipDetail() {
   const cancelFn = useServerFn(cancelChampionshipRegistration);
   const joinLiveFn = useServerFn(joinChampionshipLive);
 
-  // fetch by slug via first list then id
   const idQuery = useQuery({
     queryKey: ["champ-slug", slug],
     queryFn: async () => {
@@ -62,16 +57,19 @@ function ChampionshipDetail() {
     refetchInterval: 15_000,
   });
 
-  // Realtime
   useEffect(() => {
     if (!id) return;
     const ch = supabase
       .channel(`champ:${id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "championship_rankings", filter: `championship_id=eq.${id}` }, () =>
-        qc.invalidateQueries({ queryKey: ["champ-detail", id] }),
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "championship_rankings", filter: `championship_id=eq.${id}` },
+        () => qc.invalidateQueries({ queryKey: ["champ-detail", id] }),
       )
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "championship_activity", filter: `championship_id=eq.${id}` }, () =>
-        qc.invalidateQueries({ queryKey: ["champ-detail", id] }),
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "championship_activity", filter: `championship_id=eq.${id}` },
+        () => qc.invalidateQueries({ queryKey: ["champ-detail", id] }),
       )
       .subscribe();
     return () => {
@@ -87,7 +85,6 @@ function ChampionshipDetail() {
     },
     onError: (e: any) => toast.error(e?.message ?? "Failed to register"),
   });
-
   const cancel = useMutation({
     mutationFn: () => cancelFn({ data: { championship_id: id! } }),
     onSuccess: () => {
@@ -96,13 +93,11 @@ function ChampionshipDetail() {
     },
     onError: (e: any) => toast.error(e?.message ?? "Failed"),
   });
-
   const joinLive = useMutation({
     mutationFn: () => joinLiveFn({ data: { championship_id: id! } }),
     onSuccess: () => {
-      toast.success("You're in! $" + Number(champ?.starting_balance ?? 10000).toLocaleString() + " paper account created.");
+      toast.success("You're in — tournament account created.");
       qc.invalidateQueries({ queryKey: ["champ-detail", id] });
-      // Send them straight to the trading workspace to start trading.
       setTimeout(() => nav({ to: "/trading" }), 800);
     },
     onError: (e: any) => toast.error(e?.message ?? "Failed to join tournament"),
@@ -116,35 +111,55 @@ function ChampionshipDetail() {
     return m;
   }, [d]);
 
-  const startsIn = useCountdown(champ?.start_at);
-  const endsIn = useCountdown(champ?.end_at);
   const registeredOpen =
     champ && ["registration", "upcoming"].includes(champ.status) && new Date(champ.registration_closes_at) > new Date();
   const isRegistered = !!d?.my_registration && !d?.my_registration.cancelled_at;
   const isParticipant = !!d?.my_participant && d?.my_participant.status === "active";
   const myRank = d?.rankings?.find((r: any) => r.user_id === user?.id);
+  const timeline = useMemo(
+    () =>
+      champ
+        ? buildPersonalTimeline({
+            champ,
+            participant: d?.my_participant,
+            myRank,
+            activity: d?.activity,
+            userId: user?.id,
+          })
+        : [],
+    [champ, d?.activity, d?.my_participant, myRank, user?.id],
+  );
 
-  if (idQuery.isLoading || detail.isLoading) return <div className="h-96 animate-pulse rounded-3xl bg-muted/40" />;
+  if (idQuery.isLoading || detail.isLoading)
+    return <div className="h-96 animate-pulse rounded-3xl bg-muted/40" />;
   if (idQuery.error || detail.error || !champ)
     return (
       <EmptyState
-        title="Championship not found"
-        description="Return to the championship home page."
-        action={{ label: "Back to championships", onClick: () => nav({ to: "/championship" }) }}
+        title="Tournament not found"
+        description="Return to the tournament home page."
+        action={{ label: "Back to tournaments", onClick: () => nav({ to: "/championship" }) }}
       />
     );
+
+  const prizePool = champ.prize_info?.pool ?? champ.prize_info?.total;
+  const isLive = champ.status === "live";
+  const isCompleted = champ.status === "completed";
+  const showLobby = !isLive && !isCompleted;
+  const target = isLive ? champ.end_at : isCompleted ? champ.end_at : champ.start_at;
+  const targetLabel = isLive ? "Ends" : isCompleted ? "Ended" : "Starts";
+  const announcements = (d?.activity ?? []).filter((a: any) => a.kind === "announcement");
 
   return (
     <div className="space-y-6">
       {/* Banner */}
-      <div className="relative overflow-hidden rounded-3xl border border-primary/30 bg-gradient-to-br from-warning/15 via-primary/10 to-background p-6 shadow-elegant md:p-10">
+      <div className="relative overflow-hidden rounded-3xl border border-primary/30 bg-gradient-to-br from-warning/10 via-primary/5 to-background p-6 shadow-elegant md:p-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
               <Trophy className="h-4 w-4" />
               {champ.season_year} · Month {champ.season_month}
             </div>
-            <h1 className="mt-2 text-3xl font-bold md:text-4xl">{champ.name}</h1>
+            <h1 className="mt-2 truncate text-3xl font-bold md:text-4xl">{champ.name}</h1>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{champ.description}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -152,187 +167,206 @@ function ChampionshipDetail() {
               <span
                 className={cn(
                   "mr-1.5 h-1.5 w-1.5 rounded-full",
-                  champ.status === "live" ? "animate-pulse bg-success" : "bg-warning",
+                  isLive ? "animate-pulse bg-success" : isCompleted ? "bg-muted-foreground" : "bg-warning",
                 )}
               />
               {champ.status}
             </Badge>
-            {isParticipant || isRegistered ? (
+            <CountdownPill target={target} label={targetLabel} />
+            {(isParticipant || isRegistered) && (
               <ShareToCommunityButton
                 sourceType="championship"
                 sourceRef={`${champ.season_year}-${String(champ.season_month).padStart(2, "0")}`}
                 label="Share"
                 variant="outline"
               />
-            ) : null}
-          </div>
-        </div>
-
-        <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
-          <Stat label={champ.status === "live" ? "Ends in" : "Starts in"} value={
-            champ.status === "live"
-              ? `${endsIn.d}d ${endsIn.h}h ${endsIn.m}m`
-              : `${startsIn.d}d ${startsIn.h}h ${startsIn.m}m`
-          } icon={Clock} />
-          <Stat label="Participants" value={String(d?.participant_count ?? 0)} icon={Users} />
-          <Stat label="Balance" value={`$${Number(champ.starting_balance).toLocaleString()}`} icon={Sparkles} />
-          <Stat label="Max drawdown" value={`${champ.max_drawdown_pct}%`} icon={Shield} />
-        </div>
-
-        {/* CTA */}
-        <div className="mt-6 flex flex-wrap items-center gap-3">
-          {champ.status === "live" && !isParticipant ? (
-            <Button size="lg" onClick={() => joinLive.mutate()} disabled={joinLive.isPending} className="bg-success hover:bg-success/90 text-success-foreground">
-              <Zap className="mr-2 h-4 w-4" /> Join Live Tournament · ${Number(champ.starting_balance ?? 10000).toLocaleString()} account
-            </Button>
-          ) : null}
-          {registeredOpen && !isRegistered && champ.status !== "live" ? (
-            <Button size="lg" onClick={() => register.mutate()} disabled={register.isPending}>
-              <Trophy className="mr-2 h-4 w-4" /> Register now
-            </Button>
-          ) : null}
-          {registeredOpen && isRegistered && !isParticipant ? (
-            <Button size="lg" variant="outline" onClick={() => cancel.mutate()} disabled={cancel.isPending}>
-              Cancel registration
-            </Button>
-          ) : null}
-          {isParticipant ? (
-            <Button size="lg" variant="outline" onClick={() => nav({ to: "/trading" })}>
-              <TrendingUp className="mr-2 h-4 w-4" /> Open trading workspace
-            </Button>
-          ) : null}
-          {isRegistered && !isParticipant ? <Badge className="bg-success/15 text-success">✓ Registered</Badge> : null}
-          {isParticipant ? <Badge className="bg-success/15 text-success">✓ Trading live</Badge> : null}
-          {isParticipant && myRank ? (
-            <Badge className="bg-primary/15 text-primary text-sm">Your rank: #{myRank.rank ?? "—"}</Badge>
-          ) : null}
-        </div>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Leaderboard */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="rounded-2xl border bg-card shadow-sm">
-            <div className="flex items-center justify-between border-b px-5 py-3">
-              <h2 className="text-sm font-semibold">Live Leaderboard</h2>
-              <div className="text-xs text-muted-foreground">Updates automatically</div>
-            </div>
-            {d?.rankings?.length ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
-                    <tr>
-                      <th className="px-3 py-2 text-left">Rank</th>
-                      <th className="px-3 py-2 text-left">Trader</th>
-                      <th className="px-3 py-2 text-right">PnL</th>
-                      <th className="px-3 py-2 text-right">R</th>
-                      <th className="px-3 py-2 text-right">Win%</th>
-                      <th className="px-3 py-2 text-right">PF</th>
-                      <th className="px-3 py-2 text-right">DD</th>
-                      <th className="px-3 py-2 text-right">Trades</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {d.rankings.slice(0, 100).map((r: any) => {
-                      const p = profileMap.get(r.user_id);
-                      const isMe = r.user_id === user?.id;
-                      const trend = r.previous_rank != null && r.rank != null ? r.previous_rank - r.rank : 0;
-                      return (
-                        <tr key={r.id} className={cn("border-t transition hover:bg-muted/40", isMe && "bg-primary/5")}>
-                          <td className="px-3 py-2 font-mono font-semibold">
-                            {r.rank ? `#${r.rank}` : "—"}
-                            {trend > 0 ? <TrendingUp className="ml-1 inline h-3 w-3 text-success" /> : trend < 0 ? <TrendingDown className="ml-1 inline h-3 w-3 text-danger" /> : null}
-                          </td>
-                          <td className="px-3 py-2">
-                            <div className="flex items-center gap-2">
-                              {p?.avatar_url ? (
-                                <img src={p.avatar_url} className="h-6 w-6 rounded-full" alt="" />
-                              ) : (
-                                <div className="h-6 w-6 rounded-full bg-muted" />
-                              )}
-                              <div className="min-w-0">
-                                <div className="truncate text-xs font-medium">{p?.display_name ?? p?.username ?? "Trader"}</div>
-                                <div className="text-[10px] text-muted-foreground">{p?.country ?? ""}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className={cn("px-3 py-2 text-right font-mono font-semibold", r.pnl >= 0 ? "text-success" : "text-danger")}>
-                            {r.pnl >= 0 ? "+" : ""}${Number(r.pnl).toFixed(0)}
-                          </td>
-                          <td className="px-3 py-2 text-right font-mono">{Number(r.r_multiple).toFixed(2)}R</td>
-                          <td className="px-3 py-2 text-right font-mono">{Number(r.win_rate).toFixed(0)}%</td>
-                          <td className="px-3 py-2 text-right font-mono">{Number(r.profit_factor).toFixed(2)}</td>
-                          <td className="px-3 py-2 text-right font-mono text-muted-foreground">${Number(r.max_drawdown).toFixed(0)}</td>
-                          <td className="px-3 py-2 text-right font-mono">{r.total_trades}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <EmptyState className="py-12" title="No rankings yet" description="Rankings appear once participants start trading." />
             )}
           </div>
         </div>
 
-        {/* Sidebar */}
-        <div className="space-y-4">
-          <div className="rounded-2xl border bg-card p-5 shadow-sm">
-            <h3 className="text-sm font-semibold">Rules</h3>
-            <ul className="mt-3 space-y-1.5 text-xs text-muted-foreground">
-              <li>Starting balance: <b className="text-foreground">${Number(champ.starting_balance).toLocaleString()}</b></li>
-              <li>Max daily loss: <b className="text-foreground">{champ.max_daily_loss_pct}%</b></li>
-              <li>Max drawdown: <b className="text-foreground">{champ.max_drawdown_pct}%</b></li>
-              <li>Max risk / trade: <b className="text-foreground">{champ.max_risk_per_trade_pct}%</b></li>
-              <li>Minimum trades: <b className="text-foreground">{champ.min_trades}</b></li>
-              <li>Markets: <b className="text-foreground">{(champ.allowed_markets ?? []).join(", ") || "All"}</b></li>
-              <li>Win condition: <b className="text-foreground uppercase">{champ.win_condition}</b></li>
-            </ul>
-          </div>
+        <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+          <Stat label="Participants" value={String(d?.participant_count ?? 0)} icon={Users} />
+          <Stat label="Balance" value={`$${Number(champ.starting_balance).toLocaleString()}`} icon={Sparkles} />
+          <Stat label="Max drawdown" value={`${champ.max_drawdown_pct}%`} icon={Shield} />
+          <Stat label="Prize pool" value={prizePool ? `$${Number(prizePool).toLocaleString()}` : "XP + Badges"} icon={Trophy} />
+        </div>
 
-          <div className="rounded-2xl border bg-card p-5 shadow-sm">
-            <h3 className="flex items-center gap-2 text-sm font-semibold">
-              <Zap className="h-3.5 w-3.5 text-warning" /> Activity
-            </h3>
-            <ul className="mt-3 max-h-96 space-y-2 overflow-y-auto text-xs">
-              {d?.activity?.length ? (
-                d.activity.map((a: any) => (
-                  <li key={a.id} className="flex items-start gap-2 rounded-lg border bg-muted/20 p-2">
-                    <div
-                      className={cn(
-                        "mt-1 h-2 w-2 shrink-0 rounded-full",
-                        a.severity === "success" && "bg-success",
-                        a.severity === "warning" && "bg-warning",
-                        a.severity === "error" && "bg-danger",
-                        a.severity === "info" && "bg-primary",
-                      )}
-                    />
-                    <div className="flex-1">
-                      <div className="text-foreground">{a.message}</div>
-                      <div className="text-[10px] text-muted-foreground">{new Date(a.created_at).toLocaleTimeString()}</div>
-                    </div>
-                  </li>
-                ))
-              ) : (
-                <li className="text-muted-foreground">No activity yet</li>
-              )}
-            </ul>
-          </div>
-
-          {d?.hall_of_fame ? (
-            <div className="rounded-2xl border border-warning/30 bg-gradient-to-br from-warning/10 to-background p-5 shadow-sm">
-              <h3 className="flex items-center gap-2 text-sm font-semibold text-warning">
-                <Trophy className="h-3.5 w-3.5" /> Hall of Fame
-              </h3>
-              <div className="mt-3 text-lg font-bold">
-                {profileMap.get(d.hall_of_fame.champion_user_id)?.display_name ?? "—"}
-              </div>
-              <div className="text-xs text-muted-foreground">Champion</div>
-            </div>
-          ) : null}
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          {isLive && !isParticipant && (
+            <Button
+              size="lg"
+              onClick={() => joinLive.mutate()}
+              disabled={joinLive.isPending}
+              className="bg-success text-success-foreground hover:bg-success/90"
+            >
+              <Zap className="mr-2 h-4 w-4" /> Join Live · ${Number(champ.starting_balance).toLocaleString()} account
+            </Button>
+          )}
+          {registeredOpen && !isRegistered && !isLive && (
+            <Button size="lg" onClick={() => register.mutate()} disabled={register.isPending}>
+              <Trophy className="mr-2 h-4 w-4" /> Register now
+            </Button>
+          )}
+          {registeredOpen && isRegistered && !isParticipant && (
+            <Button size="lg" variant="outline" onClick={() => cancel.mutate()} disabled={cancel.isPending}>
+              Cancel registration
+            </Button>
+          )}
+          {isParticipant && (
+            <Button size="lg" variant="outline" onClick={() => nav({ to: "/trading" })}>
+              <TrendingUp className="mr-2 h-4 w-4" /> Open trading workspace
+            </Button>
+          )}
+          {isRegistered && !isParticipant && <Badge className="bg-success/15 text-success">✓ Registered</Badge>}
+          {isParticipant && <Badge className="bg-success/15 text-success">✓ Trading live</Badge>}
+          {isParticipant && myRank && (
+            <Badge className="bg-primary/15 text-sm text-primary">Your rank: #{myRank.rank ?? "—"}</Badge>
+          )}
         </div>
       </div>
+
+      {isCompleted && myRank && (
+        <TournamentSummary champ={champ} rank={myRank} totalParticipants={d?.participant_count ?? 0} />
+      )}
+
+      <Tabs defaultValue={showLobby ? "lobby" : isCompleted ? "leaderboard" : "leaderboard"} className="space-y-4">
+        <TabsList className="flex flex-wrap">
+          {showLobby && <TabsTrigger value="lobby">Lobby</TabsTrigger>}
+          <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="rules">Rules & Prizes</TabsTrigger>
+          <TabsTrigger value="activity">Activity</TabsTrigger>
+          <TabsTrigger value="my">My Performance</TabsTrigger>
+          <TabsTrigger value="timeline">Timeline</TabsTrigger>
+        </TabsList>
+
+        {showLobby && (
+          <TabsContent value="lobby">
+            <div className="grid gap-4 lg:grid-cols-3">
+              <div className="rounded-2xl border bg-card p-5 lg:col-span-2">
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  <Target className="h-4 w-4 text-primary" /> Tournament Lobby
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Registration is open. Get familiar with the rules while you wait for the start.
+                </p>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <LobbyStat label="Countdown" value={<CountdownPill target={champ.start_at} label="Starts" />} />
+                  <LobbyStat label="Registration closes" value={new Date(champ.registration_closes_at).toLocaleString()} />
+                  <LobbyStat label="Participants" value={String(d?.participant_count ?? 0)} />
+                  <LobbyStat label="Balance" value={`$${Number(champ.starting_balance).toLocaleString()}`} />
+                  <LobbyStat label="Markets" value={(champ.allowed_markets ?? []).join(", ") || "All"} />
+                  <LobbyStat label="Duration" value={`${new Date(champ.start_at).toLocaleDateString()} → ${new Date(champ.end_at).toLocaleDateString()}`} />
+                </div>
+                <RulesGrid champ={champ} className="mt-4" />
+              </div>
+              <div className="rounded-2xl border bg-card p-5">
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  <Megaphone className="h-4 w-4 text-primary" /> Announcements
+                </div>
+                <div className="mt-3">
+                  <ActivityFeed
+                    activity={announcements.length ? announcements : (d?.activity ?? []).slice(0, 20)}
+                    profiles={d?.profiles ?? []}
+                    emptyMessage="No announcements yet"
+                    maxHeight="26rem"
+                  />
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+        )}
+
+        <TabsContent value="leaderboard">
+          <LeaderboardTable rows={d?.rankings ?? []} profiles={d?.profiles ?? []} currentUserId={user?.id} />
+        </TabsContent>
+
+        <TabsContent value="overview">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Section title="About" icon={Info}>
+              <p className="text-sm text-muted-foreground">{champ.description || "No description provided."}</p>
+            </Section>
+            <Section title="Schedule" icon={Book}>
+              <ul className="space-y-1 text-sm">
+                <Li k="Registration opens" v={new Date(champ.registration_opens_at).toLocaleString()} />
+                <Li k="Registration closes" v={new Date(champ.registration_closes_at).toLocaleString()} />
+                <Li k="Starts" v={new Date(champ.start_at).toLocaleString()} />
+                <Li k="Ends" v={new Date(champ.end_at).toLocaleString()} />
+              </ul>
+            </Section>
+            <Section title="Allowed markets & symbols" icon={Target}>
+              <div className="flex flex-wrap gap-1.5">
+                {(champ.allowed_markets ?? []).map((m: string) => (
+                  <Badge key={m} variant="outline" className="uppercase">{m}</Badge>
+                ))}
+                {!(champ.allowed_markets ?? []).length && <span className="text-sm text-muted-foreground">All markets</span>}
+              </div>
+              {champ.allowed_symbols?.length ? (
+                <div className="mt-3 flex flex-wrap gap-1">
+                  {champ.allowed_symbols.map((s: string) => (
+                    <span key={s} className="rounded-md border bg-background px-1.5 py-0.5 font-mono text-[11px]">{s}</span>
+                  ))}
+                </div>
+              ) : null}
+            </Section>
+            <Section title="FAQ" icon={Info}>
+              <FaqItem q="What are the risk rules?" a={`Max drawdown ${champ.max_drawdown_pct}%. Max daily loss ${champ.max_daily_loss_pct}%. Max ${champ.max_risk_per_trade_pct}% risk per trade.`} />
+              <FaqItem q="How is the winner decided?" a={`Winner is the trader with the highest ${champ.win_condition.replace(/_/g, " ")} once the tournament closes.`} />
+              <FaqItem q="Do results contribute to my career?" a="Yes — tournament trades roll into your Statistics, Achievements, XP, and career profile automatically." />
+              <FaqItem q="Can I replay my trades?" a="Yes — every closed trade is available in Replay Studio after the tournament ends." />
+            </Section>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="rules">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Section title="Risk rules" icon={Shield}>
+              <RulesGrid champ={champ} />
+            </Section>
+            <Section title="Prize structure" icon={Trophy}>
+              <PrizeStructure champ={champ} />
+            </Section>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="activity">
+          <div className="grid gap-4 lg:grid-cols-3">
+            <div className="rounded-2xl border bg-card p-4 lg:col-span-2">
+              <h3 className="mb-3 text-sm font-semibold">Live activity feed</h3>
+              <ActivityFeed activity={d?.activity ?? []} profiles={d?.profiles ?? []} maxHeight="36rem" />
+            </div>
+            <div className="rounded-2xl border bg-card p-4">
+              <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold">
+                <Megaphone className="h-4 w-4 text-primary" /> Announcements
+              </h3>
+              <ActivityFeed
+                activity={announcements}
+                profiles={d?.profiles ?? []}
+                emptyMessage="No announcements yet"
+                maxHeight="36rem"
+              />
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="my">
+          <MyPerformancePanel champ={champ} rank={myRank} totalParticipants={d?.participant_count ?? 0} />
+          {isCompleted && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button size="sm" variant="outline" onClick={() => nav({ to: "/replay" })}>
+                <Film className="mr-1.5 h-3.5 w-3.5" /> Replay my trades
+              </Button>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="timeline">
+          <div className="rounded-2xl border bg-card p-5">
+            <h3 className="mb-4 text-sm font-semibold">Your tournament journey</h3>
+            <PersonalTimeline milestones={timeline} />
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
@@ -343,7 +377,104 @@ function Stat({ label, value, icon: Icon }: { label: string; value: string; icon
       <div className="flex items-center gap-2 text-[10px] uppercase tracking-wide text-muted-foreground">
         <Icon className="h-3 w-3" /> {label}
       </div>
-      <div className="mt-1 text-lg font-bold">{value}</div>
+      <div className="mt-1 text-lg font-bold tabular-nums">{value}</div>
+    </div>
+  );
+}
+
+function Section({ title, icon: Icon, children }: { title: string; icon: any; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border bg-card p-5">
+      <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold">
+        <Icon className="h-4 w-4 text-primary" /> {title}
+      </h3>
+      {children}
+    </div>
+  );
+}
+
+function Li({ k, v }: { k: string; v: string }) {
+  return (
+    <li className="flex items-center justify-between border-b border-dashed border-border/60 py-1 text-sm last:border-0">
+      <span className="text-muted-foreground">{k}</span>
+      <span className="font-medium">{v}</span>
+    </li>
+  );
+}
+
+function FaqItem({ q, a }: { q: string; a: string }) {
+  return (
+    <details className="group rounded-lg border bg-background/40 p-3">
+      <summary className="cursor-pointer text-sm font-medium">{q}</summary>
+      <div className="mt-2 text-xs text-muted-foreground">{a}</div>
+    </details>
+  );
+}
+
+function LobbyStat({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="rounded-lg border bg-background/40 p-3">
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="mt-1 text-sm font-medium">{value}</div>
+    </div>
+  );
+}
+
+function RulesGrid({ champ, className }: { champ: any; className?: string }) {
+  return (
+    <ul className={cn("grid grid-cols-2 gap-2 text-xs md:grid-cols-3", className)}>
+      <RuleCell label="Starting balance" value={`$${Number(champ.starting_balance).toLocaleString()}`} />
+      <RuleCell label="Max daily loss" value={`${champ.max_daily_loss_pct}%`} />
+      <RuleCell label="Max drawdown" value={`${champ.max_drawdown_pct}%`} />
+      <RuleCell label="Max risk / trade" value={`${champ.max_risk_per_trade_pct}%`} />
+      <RuleCell label="Minimum trades" value={String(champ.min_trades)} />
+      <RuleCell label="Win condition" value={String(champ.win_condition).replace(/_/g, " ")} />
+      <RuleCell label="Markets" value={(champ.allowed_markets ?? []).join(", ") || "All"} />
+      <RuleCell label="Sessions" value={(champ.allowed_sessions ?? []).join(", ") || "24/7"} />
+    </ul>
+  );
+}
+
+function RuleCell({ label, value }: { label: string; value: string }) {
+  return (
+    <li className="rounded-lg border bg-background/40 p-2.5">
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="mt-0.5 font-medium capitalize">{value}</div>
+    </li>
+  );
+}
+
+function PrizeStructure({ champ }: { champ: any }) {
+  const info = champ.prize_info ?? {};
+  const tiers = Array.isArray(info.tiers) ? info.tiers : null;
+  return (
+    <div className="space-y-3">
+      {info.pool ? (
+        <div className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-sm">
+          <span className="text-muted-foreground">Prize pool: </span>
+          <span className="font-bold text-warning">${Number(info.pool).toLocaleString()}</span>
+        </div>
+      ) : null}
+      {tiers ? (
+        <ul className="space-y-1.5 text-sm">
+          {tiers.map((t: any, i: number) => (
+            <li key={i} className="flex items-center justify-between rounded-lg border bg-background/40 p-2.5">
+              <span className="font-medium">
+                {t.label ?? (t.rank_from === t.rank_to ? `#${t.rank_from}` : `#${t.rank_from}-${t.rank_to}`)}
+              </span>
+              <span className="font-mono text-primary">
+                {t.cash ? `$${Number(t.cash).toLocaleString()}` : ""}
+                {t.xp ? ` · ${t.xp} XP` : ""}
+                {t.badge ? ` · ${t.badge}` : ""}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div className="rounded-lg border bg-background/40 p-3 text-xs text-muted-foreground">
+          Winners earn platform XP, badges, and a permanent place in the Hall of Fame. Cash prizes may apply to sponsored events.
+        </div>
+      )}
     </div>
   );
 }
