@@ -341,8 +341,8 @@ function MobileBottomNav({
     { to: "/leaderboard", label: "Rank", icon: Trophy },
   ];
   return (
-    <nav aria-label="Primary mobile" className="sticky bottom-0 z-30 border-t border-border/60 bg-background/85 backdrop-blur-xl safe-bottom md:hidden">
-      <div className="mx-auto grid max-w-md grid-cols-5 items-center px-2 pt-1.5">
+    <nav aria-label="Primary mobile" className="sticky bottom-0 z-30 border-t border-border/60 bg-background/90 backdrop-blur-xl safe-bottom md:hidden">
+      <div className="mx-auto grid max-w-md grid-cols-5 items-stretch px-1 pt-0">
         {items.map((item) => {
           const Icon = item.icon;
           const active = isActive(currentPath, item.to);
@@ -352,11 +352,18 @@ function MobileBottomNav({
               to={item.to}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex min-h-11 flex-col items-center justify-center gap-1 rounded-xl py-1.5 text-[10px] font-medium transition",
+                "relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 py-1.5 text-[10px] font-semibold uppercase tracking-tight transition",
                 active ? "text-primary" : "text-muted-foreground hover:text-foreground",
               )}
             >
-              <Icon className="h-5 w-5" aria-hidden />
+              {active ? (
+                <motion.span
+                  layoutId="mobile-nav-active"
+                  className="absolute inset-x-4 top-0 h-[2px] rounded-full bg-primary"
+                  transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                />
+              ) : null}
+              <Icon className="h-[18px] w-[18px]" aria-hidden />
               {item.label}
             </Link>
           );
@@ -364,9 +371,9 @@ function MobileBottomNav({
         <button
           onClick={onMenuClick}
           aria-label="Open menu"
-          className="flex min-h-11 flex-col items-center justify-center gap-1 rounded-xl py-1.5 text-[10px] font-medium text-muted-foreground hover:text-foreground"
+          className="relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 py-1.5 text-[10px] font-semibold uppercase tracking-tight text-muted-foreground hover:text-foreground"
         >
-          <Menu className="h-5 w-5" aria-hidden />
+          <Menu className="h-[18px] w-[18px]" aria-hidden />
           More
         </button>
       </div>
