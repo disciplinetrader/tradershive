@@ -1,85 +1,73 @@
-## Goal
-Split concerns: **Dashboard** stays action-oriented ("what next?"). Create a new **Analytics Center** at `/analytics` that is the professional performance lab ("how am I performing?"). Reuse `StatisticsProvider`, `computeKpis`, and existing chart components — no duplicated analytics logic. The old `/statistics` routes stay in place (referenced by other modules) and will be aliased/redirected to the new Analytics sections in a later pass; this pass focuses on the new experience.
+# Stabilization Sprint Plan
 
-## Scope of this pass
-Ship the full new Analytics Center IA + landing + all sub-sections listed below, wired to real data via the existing `StatisticsProvider`. New capabilities on top of existing statistics logic:
+Scope: no new features. Resolve every Critical and High issue from the last QA report, then re-audit. Work is grouped into waves so each wave can ship and be verified independently. No redesign — only fixes and polish on the existing implementation.
 
-1. **Analytics Home** (`/analytics`)
-   - Performance Overview strip (Net Profit, Win Rate, PF, Expectancy, Avg RR, Max DD, Recovery Factor, Trades)
-   - Quick Performance Cards (last 7d / 30d / 90d, computed from filtered set)
-   - Performance Trend (equity sparkline reused from `EquityCurveCard`)
-   - Recent Improvements + Recent Weaknesses (delta vs previous period, reuses `CompareCard` math)
-   - AI Summary card (calls existing `getLatestPerformance` from `ai.functions`)
-   - Recent Reports (reuses `ReportsView` list)
-   - Saved Backtests, Recent Strategies, Comparison Shortcuts
+## Wave 1 — Release Blockers (Critical)
 
-2. **Analytics Navigation** — sub-routes under `/analytics`:
-   - `overview` (home), `performance`, `trades`, `risk`, `sessions`, `symbols`, `replay`, `backtests`, `championships`, `ai-insights`, `reports`, `compare`
-   - Each sub-route composes existing cards (`Charts.tsx`, `RiskPanel`, `GroupTables`, `CalendarHeatmap`, `SessionCards`, `EmotionMistake`, `InsightsPanel`) — no math rewritten.
+**C1 — Locale-safe number/date formatting**
+Audit every `toLocaleString`, `toLocaleDateString`, `Intl.NumberFormat`, and `Intl.DateTimeFormat` call. Force `"en-US"` locale (or a shared `APP_LOCALE` constant) and safe options. Add helpers `formatNumber`, `formatCurrency`, `formatPercent`, `formatDate`, `formatDateTime` in `src/lib/format.ts` and migrate call sites. Prevents `RangeError` on non-EN browser locales.
 
-3. **Backtest Selector**
-   - Top-of-page dropdown: "Overall" | each `replay_sessions` row tagged as backtest (status = completed).
-   - Selection lives in `AnalyticsProvider` (wraps `StatisticsProvider`) and is applied by filtering `raw` to that session's trades (`replay_trades` joined into `AnalyticsTrade` shape via a small adapter in `src/lib/statistics/backtest-source.ts`).
-   - All charts/tables update instantly (context-driven), no page reloads.
+**C2 — Hydration / SSR mismatches**
+Replace `typeof window` guards inside `useState` initializers with `useEffect` reads or a `useHydrated()` hook (theme, sidebar collapsed state, saved symbol, replay settings). Ensures server HTML matches first client render.
 
-4. **Compare Mode** (`/analytics/compare`)
-   - Two selectors: left = Overall/Backtest/Championship/Replay; right = same.
-   - Side-by-side KPI table (Win Rate, RR, Profit, DD, PF, Trade Count, Avg Duration, Best/Worst symbols) computed via `computeKpis` on each dataset.
+**C3 — Invalid DOM nesting**
+Fix `<a>` inside `<a>`, `<button>` inside `<button>`, `<div>` inside `<p>`, and hydration-breaking `<Link asChild>` patterns flagged across shell, cards, and tables.
 
-5. **Sections** (compose existing components, add small new views only where nothing exists):
-   - Trades: new `TradeAnalytics.tsx` (frequency, avg hold, execution quality, best/worst trade) computed from filtered set.
-   - Symbols: reuse `GroupTables` grouped by symbol.
-   - Replay: new `ReplayAnalytics.tsx` (score avg, execution, mistakes count, homework % from `replay_*` tables via a new server fn `getReplayAnalytics`).
-   - AI Insights: reuse `InsightsPanel`, `EmotionAnalysis`, `MistakeAnalysis`; add strengths/weaknesses/regression list computed from delta between last-30d and prior-30d KPIs.
-   - Reports: reuse `ReportsView` with PDF/CSV/Image export buttons (CSV already; add PDF via `window.print` styled sheet and PNG via `html-to-image`).
+**C4 — Recurring `listFeed` server-function 500** (visible in current runtime error log)
+Wrap `listFeed` in `src/lib/community.functions.ts` in the standard `handleServerFnError` guard, return an empty page on empty auth/state instead of throwing, and add a `notFound`/empty component in the community route.
 
-6. **Filters & Search**
-   - Reuse `FiltersBar` (already supports date, market, symbol, session, etc.).
-   - Add an instant search input in the Analytics header that filters trades/backtests/reports by symbol/tag/id in a client-side `useMemo` over `raw`.
+**C5 — Silent failures**
+Standardize all `catch { /* noop */ }` blocks in server-fn call sites to route through `toast.error(getFriendlyError(e))`. No swallow.
 
-7. **Perf & polish**
-   - All lists virtualized only where already virtualized; expensive charts already memoized. Backtest Selector switches by swapping the `raw` array in context — O(n) filter, safe for 10k+ trades.
-   - Dark/light: only use existing tokens (`--primary`, `--success`, `--danger`, `--muted-foreground`, glass utilities). No hardcoded colors.
-   - Responsive: existing grid patterns (`sm:grid-cols-2 xl:grid-cols-3`) reused throughout.
+**C6 — Market-data provider status consistency**
+Single source: `marketData.health()`. Remove duplicate polling in `ProviderStatusStrip` and `MarketStatusBadge`. Show `connecting` distinctly from `error`.
 
-## Non-goals (this pass)
-- Sharpe/Sortino, Strategy analytics, full comparison for future Strategy-vs-Strategy: rendered as "future" placeholders per prompt.
-- No changes to Dashboard, Paper Trading, Journal, Statistics logic files, AI Coach, Replay Studio, Championships, Trade Details.
-- Old `/statistics/*` routes stay working; a follow-up pass will add redirects from `/statistics` → `/analytics` once other modules' deep links are updated.
+**C7 — Loading state correctness**
+Every `useQuery`-backed panel: use `isPending` (not `!data`) so cached data doesn't flash skeletons; every loader route: real skeleton components instead of `h-24 animate-pulse` blocks with wrong aspect.
 
-## File map
-New:
-- `src/routes/_authenticated/analytics.tsx` (layout + tabs + Backtest Selector + search)
-- `src/routes/_authenticated/analytics.index.tsx` (Home)
-- `src/routes/_authenticated/analytics.performance.tsx`
-- `src/routes/_authenticated/analytics.trades.tsx`
-- `src/routes/_authenticated/analytics.risk.tsx`
-- `src/routes/_authenticated/analytics.sessions.tsx`
-- `src/routes/_authenticated/analytics.symbols.tsx`
-- `src/routes/_authenticated/analytics.replay.tsx`
-- `src/routes/_authenticated/analytics.backtests.tsx`
-- `src/routes/_authenticated/analytics.championships.tsx`
-- `src/routes/_authenticated/analytics.ai-insights.tsx`
-- `src/routes/_authenticated/analytics.reports.tsx`
-- `src/routes/_authenticated/analytics.compare.tsx`
-- `src/components/analytics/AnalyticsProvider.tsx` (wraps StatisticsProvider, holds backtest selection + search)
-- `src/components/analytics/BacktestSelector.tsx`
-- `src/components/analytics/AnalyticsHome.tsx` (composes home cards)
-- `src/components/analytics/QuickPerformanceCards.tsx`
-- `src/components/analytics/StrengthsWeaknesses.tsx`
-- `src/components/analytics/AiSummaryCard.tsx`
-- `src/components/analytics/TradeAnalytics.tsx`
-- `src/components/analytics/ReplayAnalytics.tsx`
-- `src/components/analytics/CompareView.tsx`
-- `src/lib/statistics/backtest-source.ts` (adapts replay_trades → AnalyticsTrade)
-- `src/lib/analytics.functions.ts` (`listBacktests`, `getReplayAnalytics`)
+## Wave 2 — Replay Engine audit
 
-Reused unchanged: everything under `src/components/statistics/` and `src/lib/statistics/`.
+Verify each capability against `src/components/replay/*` and `src/lib/replay*`:
+Start / Pause / Resume / Replay Again / Save / Resume / Navigation / Fast-Forward / Chart Nav / Trade Exec / Position Mgmt / Netting / Hedging / Pending Orders / SL / TP / Break-Even / Trailing Stop / Partial Close / Reverse / History / Analytics / AI Review / Trade Details integration / Analytics propagation.
 
-## Technical notes
-- `AnalyticsProvider` renders `StatisticsProvider` internally and exposes selected backtest + search via its own React context. When a backtest is selected, it fetches once via `useQuery(['analytics','bt',id], listBacktestTrades)` and passes those trades to `StatisticsProvider` via a new optional `overrideTrades` prop (small, additive change to `context.tsx`).
-- Server fns follow existing patterns (`requireSupabaseAuth` middleware, `.inputValidator().handler()`).
-- Nav entry "Analytics" added to sidebar next to existing "Statistics"; Dashboard link kept as-is.
+For each: reproduce, fix regression, add a unit test where math is involved (partial-close weighted avg, BE trigger, trailing distance, reverse-nets vs hedges).
 
-## Deliverables
-Complete, production-ready Analytics Center wired to real Supabase data through the existing statistics engine, with Backtest Selector, Compare Mode, and every listed section rendering real metrics.
+## Wave 3 — Paper Trading audit
+
+`src/lib/paper-trading/*` + `src/components/paper-trading/*`:
+execution, lifecycle transitions, persistence across refresh, margin/stop-out/negative-balance rules, PnL magnitude, Analytics propagation (invalidate `['analytics']` on close), Trade Details integration.
+
+## Wave 4 — Analytics accuracy
+
+Validate `src/lib/statistics/calculations.ts`:
+Win Rate, Gross/Net PnL, RR realized/planned, Profit Factor, Expectancy, Max/Peak DD, MFE, MAE, Trade Count, Session/Symbol/Replay/Championship/Backtest groupings. Add snapshot tests with a fixed fixture set. Ensure `queryClient.invalidateQueries({ queryKey: ['analytics'] })` fires on every write path (paper close, replay finish, championship trade).
+
+## Wave 5 — UI/UX polish (no redesign)
+
+Spacing/alignment/typography audit against existing tokens. Empty states via a new shared `<EmptyState/>`. Consistent skeletons. Hover/focus states on every interactive element. Dark-mode contrast pass. Mobile pass on Trading Workspace, Replay, Analytics.
+
+## Wave 6 — Performance
+
+Virtualize History and Journal tables (`@tanstack/react-virtual`). Memoize heavy chart series builders. Batch replay tick updates already in place — verify no leaks on unmount. Audit `useEffect` deps for infinite loops. Add `React.memo` on `PositionsTable` rows, `LeaderboardTable` rows, `FeedList` items.
+
+## Wave 7 — Accessibility
+
+Single `<main>` per page. Heading levels sequential. `aria-label` on every icon-only Button. Focus-visible rings. Radix primitives instead of custom widgets where custom widgets fail axe. Color-token audit (no `text-gray-*`).
+
+## Wave 8 — Consistency
+
+Terminology sweep: Analytics / Replay Studio / Paper Trading / Championships / Trades / Journal / AI Coach. Rename stray "Statistics", "Backtest Studio", "Tournament" strings across nav, buttons, dialogs, toasts.
+
+## Wave 9 — Final QA
+
+Re-run: static review + live smoke test of all 17 top-level routes, console + pageerror capture, axe-core pass, mobile viewport pass. Deliver a final release report with Resolved / Remaining / Known Limitations / Perf notes / A11y summary / Production Readiness score.
+
+## Notes / constraints
+
+- No new features. Fixes only; small additive helpers (`format.ts`, `useHydrated`, `EmptyState`) are allowed.
+- Untouched modules per prior instructions: Authentication, Landing, Dashboard content, Paper Trading behavior (fix bugs only), Journal, Challenges, Statistics math (fix bugs only).
+- Each wave ships independently. I will pause for your confirmation between waves so you can review the diff before I move on.
+
+## Deliverables per wave
+
+Wave 1 first: a single PR-sized batch resolving all Critical items above, with the recurring `listFeed` 500 gone, no hydration warnings on any of the 17 routes, and locale-safe formatting sitewide. Then I stop and hand over for review before starting Wave 2.

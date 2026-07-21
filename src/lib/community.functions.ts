@@ -11,10 +11,30 @@ const POST_SELECT = `
   is_pinned, is_featured, is_locked, visibility,
   like_count, comment_count, bookmark_count, share_count, view_count, helpful_count,
   trending_score, published_at, edited_at, created_at,
-  author:profiles!community_posts_author_id_fkey(id, username, display_name, avatar_url, country, level, league),
   category:community_categories(id, slug, name, color, icon),
   shared_content(id, source_type, source_id, source_ref, title, summary, snapshot, cover_url, visibility)
 `;
+
+/**
+ * PostgREST cannot resolve `community_*.author_id -> profiles` embeds because
+ * those FKs point at `auth.users`, not `public.profiles`. We fetch the profile
+ * rows in a follow-up query and merge them in application code.
+ */
+async function attachAuthors<T extends Record<string, any>>(
+  supabase: any,
+  rows: T[],
+  key: string = "author_id",
+  as: string = "author",
+  columns: string = "id, username, display_name, avatar_url, country, level, league",
+): Promise<T[]> {
+  if (!rows.length) return rows;
+  const ids = Array.from(new Set(rows.map((r) => r[key]).filter(Boolean)));
+  if (!ids.length) return rows.map((r) => ({ ...r, [as]: null }));
+  const { data: profs } = await supabase.from("profiles").select(columns).in("id", ids);
+  const map = new Map((profs ?? []).map((p: any) => [p.id, p]));
+  return rows.map((r) => ({ ...r, [as]: map.get(r[key]) ?? null }));
+}
+
 
 async function attachViewerState(
   supabase: any,
@@ -100,7 +120,8 @@ export const listFeed = createServerFn({ method: "POST" })
 
     const { data: posts, error } = await q;
     if (error) throw error;
-    const withState = await attachViewerState(supabase, userId, posts ?? []);
+    const withAuthors = await attachAuthors(supabase, posts ?? []);
+    const withState = await attachViewerState(supabase, userId, withAuthors);
     const nextCursor = posts && posts.length === data.limit ? posts[posts.length - 1].published_at : null;
     return { posts: withState, nextCursor };
   });
@@ -117,7 +138,8 @@ export const getPost = createServerFn({ method: "POST" })
     if (!post) return { post: null };
     await supabase.rpc("community_recompute_trending" as any, { _post_id: data.id } as any).then(() => {}, () => {});
     await supabase.from("community_posts").update({ view_count: (post.view_count ?? 0) + 1 }).eq("id", data.id);
-    const [withState] = await attachViewerState(supabase, userId, [post]);
+    const [withAuthor] = await attachAuthors(supabase, [post]);
+    const [withState] = await attachViewerState(supabase, userId, [withAuthor]);
     return { post: withState };
   });
 
@@ -301,7 +323,8 @@ export const listBookmarks = createServerFn({ method: "POST" })
       .limit(100);
     if (error) throw error;
     const posts = (data ?? []).map((r: any) => r.post).filter(Boolean);
-    const withState = await attachViewerState(supabase, userId, posts);
+    const withAuthors = await attachAuthors(supabase, posts);
+    const withState = await attachViewerState(supabase, userId, withAuthors);
     return { posts: withState };
   });
 
@@ -309,8 +332,7 @@ export const listBookmarks = createServerFn({ method: "POST" })
 
 const COMMENT_SELECT = `
   id, post_id, parent_id, author_id, body_md, body_html, mentions,
-  like_count, reply_count, is_edited, is_deleted, edited_at, created_at,
-  author:profiles!community_comments_author_id_fkey(id, username, display_name, avatar_url, level, league)
+  like_count, reply_count, is_edited, is_deleted, edited_at, created_at
 `;
 
 export const listComments = createServerFn({ method: "POST" })
@@ -336,7 +358,8 @@ export const listComments = createServerFn({ method: "POST" })
         .in("comment_id", ids);
       liked = new Set((my ?? []).map((r: any) => r.comment_id));
     }
-    return { comments: (rows ?? []).map((r: any) => ({ ...r, viewer_liked: liked.has(r.id) })) };
+    const withAuthors = await attachAuthors(supabase, rows ?? []);
+    return { comments: withAuthors.map((r: any) => ({ ...r, viewer_liked: liked.has(r.id) })) };
   });
 
 export const addComment = createServerFn({ method: "POST" })
@@ -410,17 +433,19 @@ export const listTrending = createServerFn({ method: "GET" })
     const [postsRes, tradersRes, tagsRes] = await Promise.all([
       supabase
         .from("community_posts")
-        .select("id, title, excerpt, post_type, symbol, like_count, comment_count, trending_score, published_at, author:profiles!community_posts_author_id_fkey(username, display_name, avatar_url)")
+        .select("id, author_id, title, excerpt, post_type, symbol, like_count, comment_count, trending_score, published_at")
         .eq("is_published", true).eq("is_deleted", false)
         .order("trending_score", { ascending: false }).limit(6),
       supabase.from("community_reputation")
-        .select("user_id, reputation_score, posts_count, likes_received, profile:profiles!community_reputation_user_id_fkey(username, display_name, avatar_url, country, level, league)")
+        .select("user_id, reputation_score, posts_count, likes_received")
         .order("reputation_score", { ascending: false }).limit(6),
       supabase.from("community_tags").select("slug, name, post_count").order("post_count", { ascending: false }).limit(10),
     ]);
+    const posts = await attachAuthors(supabase, postsRes.data ?? [], "author_id", "author", "username, display_name, avatar_url, id");
+    const traders = await attachAuthors(supabase, tradersRes.data ?? [], "user_id", "profile", "id, username, display_name, avatar_url, country, level, league");
     return {
-      posts: postsRes.data ?? [],
-      traders: tradersRes.data ?? [],
+      posts,
+      traders,
       tags: tagsRes.data ?? [],
     };
   });
@@ -480,12 +505,13 @@ export const listCommunityNotifications = createServerFn({ method: "GET" })
     const { supabase, userId } = context;
     const { data, error } = await supabase
       .from("community_notifications")
-      .select("id, actor_id, kind, post_id, comment_id, message, is_read, created_at, actor:profiles!community_notifications_actor_id_fkey(username, display_name, avatar_url)")
+      .select("id, actor_id, kind, post_id, comment_id, message, is_read, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(50);
     if (error) throw error;
-    return { items: data ?? [] };
+    const items = await attachAuthors(supabase, data ?? [], "actor_id", "actor", "id, username, display_name, avatar_url");
+    return { items };
   });
 
 export const markNotificationsRead = createServerFn({ method: "POST" })
@@ -538,11 +564,12 @@ export const getCommunityProfile = createServerFn({ method: "POST" })
       supabase.from("social_follows").select("*", { count: "exact", head: true }).eq("follower_id", profile.id),
       supabase.from("community_posts").select(POST_SELECT).eq("author_id", profile.id).eq("is_published", true).eq("is_deleted", false).order("published_at", { ascending: false }).limit(20),
     ]);
+    const postsWithAuthor = (posts ?? []).map((p: any) => ({ ...p, author: profile }));
     return {
       profile,
       reputation: rep ?? null,
       followers: followers ?? 0,
       following: following ?? 0,
-      posts: posts ?? [],
+      posts: postsWithAuthor,
     };
   });
