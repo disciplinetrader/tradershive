@@ -125,15 +125,22 @@ export function OrderPanel() {
   const openMut = useMutation({
     mutationFn: async () => {
       if (!accountId || !symbolMeta) throw new Error("Select an account first");
-      const validation = validateStops(side, entryNum, slNum, tpNum);
-      if (validation) throw new Error(validation);
+      const stopsMsg = validateStops(side, entryNum, slNum, tpNum);
+      if (stopsMsg) throw new Error(stopsMsg);
       if (!lotNum || lotNum < symbolMeta.minLot) throw new Error(`Minimum lot is ${symbolMeta.minLot}`);
-      if (calc && account?.max_trade_risk_pct && calc.riskPct > Number(account.max_trade_risk_pct)) {
+
+      // Hard errors block regardless of user choice — server enforces these too.
+      if (validation && !validation.ok) {
+        throw new Error(validation.errors[0] ?? "Order rejected");
+      }
+      // Soft warnings require an explicit confirm (broker-style).
+      if (validation && validation.warnings.length > 0) {
         const proceed = window.confirm(
-          `Risk ${calc.riskPct.toFixed(2)}% exceeds your per-trade limit of ${account.max_trade_risk_pct}%. Proceed anyway?`,
+          `${validation.warnings.join("\n")}\n\nProceed anyway?`,
         );
         if (!proceed) throw new Error("Cancelled");
       }
+
       const base = {
         account_id: accountId, symbol, market: symbolMeta.market, direction: side,
         lot_size: lotNum, stop_loss: slNum, take_profit: tpNum,
