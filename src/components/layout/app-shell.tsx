@@ -141,7 +141,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           onMenuClick={() => setMobileOpen(true)}
           onSearchClick={() => setOpen(true)}
         />
-        <main id="main" className="flex-1 px-4 pb-28 pt-6 sm:px-6 md:pb-10 md:pt-8">
+        <main id="main" className="flex-1 px-3 pb-28 pt-4 safe-x sm:px-6 sm:pt-6 md:pb-10 md:pt-8">
           <div className="mx-auto w-full max-w-7xl">{children}</div>
         </main>
         {/* Mobile bottom nav */}
@@ -341,8 +341,9 @@ function MobileBottomNav({
     { to: "/leaderboard", label: "Rank", icon: Trophy },
   ];
   return (
-    <nav aria-label="Primary mobile" className="sticky bottom-0 z-30 border-t border-border/60 bg-background/90 backdrop-blur-xl safe-bottom md:hidden">
-      <div className="mx-auto grid max-w-md grid-cols-5 items-stretch px-1 pt-0">
+    <nav aria-label="Primary mobile" className="sticky bottom-0 z-30 border-t border-border/60 bg-background/95 backdrop-blur-xl safe-bottom md:hidden">
+      <div className="mx-auto grid w-full max-w-md grid-cols-5 items-stretch px-1 pt-0">
+
         {items.map((item) => {
           const Icon = item.icon;
           const active = isActive(currentPath, item.to);
