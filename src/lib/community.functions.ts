@@ -138,7 +138,8 @@ export const getPost = createServerFn({ method: "POST" })
     if (!post) return { post: null };
     await supabase.rpc("community_recompute_trending" as any, { _post_id: data.id } as any).then(() => {}, () => {});
     await supabase.from("community_posts").update({ view_count: (post.view_count ?? 0) + 1 }).eq("id", data.id);
-    const [withState] = await attachViewerState(supabase, userId, [post]);
+    const [withAuthor] = await attachAuthors(supabase, [post]);
+    const [withState] = await attachViewerState(supabase, userId, [withAuthor]);
     return { post: withState };
   });
 
