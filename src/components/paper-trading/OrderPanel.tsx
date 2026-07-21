@@ -15,9 +15,8 @@ import { openTrade, placeOrder, listTradeTags, createTradeTag, listTrades } from
 import { COMMON_TAGS } from "@/lib/paper-trading/symbols";
 import { lotForRisk, tradeCalculation, validateStops, formatCurrency } from "@/lib/paper-trading/calculations";
 import { useLivePrice, useLiveQuotes } from "@/lib/paper-trading/mock-prices";
-import { validateNewOrder, liquidationPrice, type OpenTradeInput } from "@/lib/paper-trading/risk";
+import { validateNewOrder, liquidationPrice, formatMarginLevel, type OpenTradeInput } from "@/lib/paper-trading/risk";
 import { onTradeIntent } from "@/lib/trading/trade-intent";
-import { useQuery as useQueryTanstack } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { usePaper } from "./context";
 
