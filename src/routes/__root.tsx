@@ -10,7 +10,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
-import { reportLovableError } from "../lib/lovable-error-reporting";
+import { reportLovableError, installGlobalErrorHandlers } from "../lib/lovable-error-reporting";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ThemeProvider } from "@/hooks/use-theme";
@@ -141,25 +141,7 @@ function RootComponent() {
   // Forward uncaught browser errors and unhandled rejections to Lovable
   // reporting so React-boundary escapes and async throws still get captured.
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const onError = (event: ErrorEvent) => {
-      reportLovableError(event.error ?? new Error(event.message), {
-        source: "window.onerror",
-        filename: event.filename,
-        lineno: event.lineno,
-      });
-    };
-    const onRejection = (event: PromiseRejectionEvent) => {
-      reportLovableError(event.reason ?? new Error("Unhandled promise rejection"), {
-        source: "unhandledrejection",
-      });
-    };
-    window.addEventListener("error", onError);
-    window.addEventListener("unhandledrejection", onRejection);
-    return () => {
-      window.removeEventListener("error", onError);
-      window.removeEventListener("unhandledrejection", onRejection);
-    };
+    installGlobalErrorHandlers();
   }, []);
 
   return (
