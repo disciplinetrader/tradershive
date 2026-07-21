@@ -47,13 +47,13 @@ async function safeStructured<T>(
     structuredOutputs: true,
   });
   try {
-    const { experimental_output } = await generateText({
+    const result = await generateText({
       model: gateway(DEFAULT_MODEL),
       system: REPLAY_COACH_SYSTEM_PROMPT,
       prompt,
-      experimental_output: Output.object({ schema }),
+      output: Output.object({ schema }),
     });
-    return experimental_output as T;
+    return result.output as T;
   } catch (err) {
     if (NoObjectGeneratedError.isInstance(err)) {
       try {
