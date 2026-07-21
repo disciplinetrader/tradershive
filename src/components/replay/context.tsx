@@ -602,7 +602,10 @@ export function ReplayProvider({ id, children }: { id: string; children: ReactNo
     if (!session) return;
     const r = await finishMut.mutateAsync({ data: { id: session.id } });
     toast.success(`Replay complete — Score ${r.score.score}/100`);
-  }, [session, finishMut]);
+    runCoach({ data: { session_id: session.id } })
+      .then(() => qc.invalidateQueries({ queryKey: ["coach"] }))
+      .catch(() => {});
+  }, [session, finishMut, runCoach, qc]);
 
   const replayAgain = useCallback(async () => {
     if (!session) return;
