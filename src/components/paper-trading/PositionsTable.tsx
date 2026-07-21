@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
-import { Pencil, X, Split, Sliders } from "lucide-react";
+import { Pencil, X, Split, Sliders, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -10,13 +10,21 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { closeTrade, listTrades, modifyTrade } from "@/lib/paper-trading.functions";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import {
+  closeTrade, listTrades, modifyTrade, partialCloseTrade, moveToBreakEven,
+} from "@/lib/paper-trading.functions";
 import { findSymbol } from "@/lib/paper-trading/symbols";
 import { pnl as computePnl, formatCurrency, formatNumber } from "@/lib/paper-trading/calculations";
 import { useLiveQuotes } from "@/lib/paper-trading/mock-prices";
 import { usePaper } from "./context";
 import { ClosePositionDialog } from "./ClosePositionDialog";
+import { PostTradeSummary, type ClosedTrade } from "./PostTradeSummary";
+import { SessionBadge } from "./SessionBadge";
 import { cn } from "@/lib/utils";
+
 
 type Trade = {
   id: string; symbol: string; direction: "long"|"short"; entry_price: number;
