@@ -332,8 +332,7 @@ export const listBookmarks = createServerFn({ method: "POST" })
 
 const COMMENT_SELECT = `
   id, post_id, parent_id, author_id, body_md, body_html, mentions,
-  like_count, reply_count, is_edited, is_deleted, edited_at, created_at,
-  author:profiles!community_comments_author_id_fkey(id, username, display_name, avatar_url, level, league)
+  like_count, reply_count, is_edited, is_deleted, edited_at, created_at
 `;
 
 export const listComments = createServerFn({ method: "POST" })
