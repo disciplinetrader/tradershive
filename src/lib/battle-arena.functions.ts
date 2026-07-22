@@ -214,10 +214,13 @@ export const cancelBattle = createServerFn({ method: "POST" })
 export const tickBattles = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    // Best-effort state advancement. The underlying RPC may be admin-only or
+    // RLS-restricted for regular users — swallow those failures so periodic
+    // client-driven ticks never surface as errors.
     const { error } = await context.supabase.rpc("tick_battles");
-    if (error) throw error;
-    return { ok: true };
+    return { ok: !error };
   });
+
 
 export const finalizeBattle = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
