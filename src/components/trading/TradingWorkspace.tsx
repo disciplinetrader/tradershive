@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { ChartHandle } from "@/components/chart/ChartEngine";
 import { motion } from "framer-motion";
-import { Activity, BarChart3, Camera, CandlestickChart, Check, ChevronDown, Clock, Keyboard, LineChart as LineChartIcon, Target, Zap } from "lucide-react";
+import { Activity, BarChart3, Camera, CandlestickChart, Check, ChevronDown, Clock, Keyboard, LineChart as LineChartIcon, Target } from "lucide-react";
 import { toast } from "sonner";
 
 import { PaperTradingProvider, usePaper } from "@/components/paper-trading/context";
@@ -13,6 +13,7 @@ import { OrdersTable } from "@/components/paper-trading/OrdersTable";
 import { HistoryTable } from "@/components/paper-trading/HistoryTable";
 import { WatchlistPanel } from "@/components/paper-trading/WatchlistPanel";
 import { SymbolSearch } from "@/components/paper-trading/SymbolSearch";
+import { MobileQuickTradeDock } from "@/components/paper-trading/MobileQuickTradeDock";
 
 import { ChartEngine } from "@/components/chart/ChartEngine";
 import { DEFAULT_CHART_SETTINGS } from "@/lib/chart/constants";
@@ -37,7 +38,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { findSymbol } from "@/lib/paper-trading/symbols";
@@ -85,7 +86,6 @@ const SMC_SUB_OPTIONS: { key: "show_swings" | "show_bos" | "show_fvg" | "show_ob
 
 function TradingWorkspaceInner() {
   const isMobile = useIsMobile();
-  const [tradeSheetOpen, setTradeSheetOpen] = useState(false);
   const qc = useQueryClient();
   const { symbol, symbolMeta, market, timeframe, setTimeframe, accountId, account } = usePaper();
   useRiskMonitor(account);
@@ -215,7 +215,7 @@ function TradingWorkspaceInner() {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="flex min-h-0 flex-col gap-3 p-2 pb-24 md:pb-3 sm:p-3">
+      <div className="flex min-h-0 flex-col gap-3 p-2 pb-[240px] md:pb-3 sm:p-3">
         <TopToolbar />
         <TodayPnLWidget
           dailyTargetPct={Number(account?.max_daily_risk_pct ?? 5)}
@@ -528,26 +528,8 @@ function TradingWorkspaceInner() {
 
         <SymbolSearch open={symbolSearchOpen} onOpenChange={setSymbolSearchOpen} />
 
-        {/* Mobile trade FAB → bottom Sheet with OrderPanel */}
-        {isMobile ? (
-          <>
-            <button
-              onClick={() => setTradeSheetOpen(true)}
-              className="fixed bottom-20 right-4 z-40 grid h-14 w-14 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg safe-bottom active:scale-95 transition lg:hidden"
-              aria-label="Open trade panel"
-            >
-              <Zap className="h-6 w-6" />
-            </button>
-            <Sheet open={tradeSheetOpen} onOpenChange={setTradeSheetOpen}>
-              <SheetContent side="bottom" className="max-h-[90dvh] overflow-y-auto p-4 safe-bottom">
-                <SheetHeader className="mb-3 text-left">
-                  <SheetTitle>Trade {symbol}</SheetTitle>
-                </SheetHeader>
-                <OrderPanel />
-              </SheetContent>
-            </Sheet>
-          </>
-        ) : null}
+        {/* Persistent mobile trade dock — no FAB hunt */}
+        {isMobile ? <MobileQuickTradeDock /> : null}
       </div>
     </TooltipProvider>
   );
