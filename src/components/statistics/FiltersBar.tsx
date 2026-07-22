@@ -34,8 +34,8 @@ function MultiSelect({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="h-9 justify-start">
-          <span className="text-xs uppercase tracking-wider text-muted-foreground mr-2">{label}</span>
+        <Button variant="outline" size="sm" className="h-9 w-full justify-start">
+          <span className="text-xs uppercase tracking-wider text-muted-foreground mr-2 truncate">{label}</span>
           {values.length ? <Badge variant="secondary" className="h-5">{values.length}</Badge> : <span className="text-muted-foreground text-xs">All</span>}
         </Button>
       </PopoverTrigger>
