@@ -213,7 +213,7 @@ export function OrderTicket({ manager, symbol, onPlaced, className }: OrderTicke
   );
 }
 
-function Row({ label, value }: { label: string; value: string }): JSX.Element {
+function Row({ label, value }: { label: string; value: string }) {
   return (
     <>
       <span className="text-muted-foreground">{label}</span>
