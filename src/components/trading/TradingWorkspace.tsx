@@ -222,8 +222,9 @@ function TradingWorkspaceInner() {
         />
         <AccountSummary />
 
-        <div className="grid grid-cols-[minmax(0,1fr)_200px] gap-2 sm:grid-cols-[minmax(0,1fr)_260px] sm:gap-3 md:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_360px]">
-          <GlassCard className="relative flex h-[420px] min-h-[320px] flex-col overflow-hidden p-0 sm:h-[520px] md:h-[560px] xl:h-[620px]">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_360px]">
+          <GlassCard className="relative flex h-[60vh] min-h-[380px] flex-col overflow-hidden p-0 sm:h-[520px] lg:h-[560px] xl:h-[620px]">
+
 
 
             {/* Chart header */}
