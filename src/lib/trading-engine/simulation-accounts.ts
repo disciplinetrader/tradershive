@@ -54,8 +54,8 @@ export class SimulationAccountRegistry {
     const profile = SIMULATION_PROFILES[input.profileId];
     if (!profile) throw new Error(`Unknown simulation profile ${input.profileId}`);
     const config = accountConfigFromProfile(input.profileId, input.overrides);
-    const bus = new EventBus();
-    const engine = new TradingEngine(config, bus);
+    const engine = new TradingEngine(config);
+    const bus = engine.bus;
     // Fan events into the global bus with the account id attached.
     bus.on((e) => this.globalBus.emit({ ...e, __accountId: id } as TradingEvent & { __accountId: string }));
     const acc: SimulationAccount = {
