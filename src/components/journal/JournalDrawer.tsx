@@ -196,7 +196,7 @@ export function JournalDrawer({
                   updateMutation.mutate({ status: v as Database["public"]["Enums"]["journal_status"] })
                 }
               >
-                <SelectTrigger className="h-9 w-[130px]">
+                <SelectTrigger className="h-9 w-full sm:w-[130px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

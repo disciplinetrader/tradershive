@@ -44,7 +44,7 @@ function AdminJournal() {
         <div className="flex flex-wrap items-center gap-3">
           <Input placeholder="Search symbol…" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-xs" />
           <Select value={status} onValueChange={(v: any) => setStatus(v)}>
-            <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full sm:w-[140px]"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
               <SelectItem value="shared">Published</SelectItem>

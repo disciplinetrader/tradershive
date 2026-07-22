@@ -46,16 +46,16 @@ function UsersPage() {
 
       <GlassCard className="p-4">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative min-w-[220px] flex-1">
+          <div className="relative sm:min-w-[220px] flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input className="pl-9" placeholder="Search by username or name" value={q} onChange={(e) => setQ(e.target.value)} />
           </div>
-          <PickList value={country} onChange={setCountry} placeholder="Country" options={COUNTRIES.map((c) => ({ value: c, label: c }))} width="w-[170px]" />
-          <PickList value={league} onChange={setLeague} placeholder="League" options={LEAGUES.map((l) => ({ value: l, label: l.toUpperCase() }))} width="w-[140px]" />
-          <PickList value={market} onChange={setMarket} placeholder="Market" options={MARKETS.map((m) => ({ value: m.value, label: m.label }))} width="w-[140px]" />
-          <PickList value={tradingStyle} onChange={setTradingStyle} placeholder="Style" options={TRADING_STYLES.map((s) => ({ value: s.value, label: s.label }))} width="w-[140px]" />
+          <PickList value={country} onChange={setCountry} placeholder="Country" options={COUNTRIES.map((c) => ({ value: c, label: c }))} width="w-full sm:w-[170px]" />
+          <PickList value={league} onChange={setLeague} placeholder="League" options={LEAGUES.map((l) => ({ value: l, label: l.toUpperCase() }))} width="w-full sm:w-[140px]" />
+          <PickList value={market} onChange={setMarket} placeholder="Market" options={MARKETS.map((m) => ({ value: m.value, label: m.label }))} width="w-full sm:w-[140px]" />
+          <PickList value={tradingStyle} onChange={setTradingStyle} placeholder="Style" options={TRADING_STYLES.map((s) => ({ value: s.value, label: s.label }))} width="w-full sm:w-[140px]" />
           <Select value={sort} onValueChange={(v) => setSort(v as any)}>
-            <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full sm:w-[140px]"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="xp">Most XP</SelectItem>
               <SelectItem value="streak">Longest streak</SelectItem>

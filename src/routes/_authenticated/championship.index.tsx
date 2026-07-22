@@ -135,12 +135,12 @@ function ChampionshipIndex() {
             </TabsList>
           </Tabs>
           <div className="ml-auto flex flex-1 flex-wrap items-center gap-2 sm:flex-none">
-            <div className="relative min-w-[220px] flex-1">
+            <div className="relative sm:min-w-[220px] flex-1">
               <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input className="h-9 pl-8" placeholder="Search tournaments…" value={q} onChange={(e) => setQ(e.target.value)} />
             </div>
             <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
-              <SelectTrigger className="h-9 w-[180px]">
+              <SelectTrigger className="h-9 w-full sm:w-[180px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
