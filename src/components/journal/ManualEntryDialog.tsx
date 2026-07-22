@@ -665,10 +665,32 @@ function ManualForm({
     onError: (err: Error) => toast.error(err.message),
   });
 
+  const focusFirstInvalid = () => {
+    const order: (keyof typeof fieldRefs)[] = ["instrument", "entry", "openedAt", "session", "strategy"];
+    const bad = order.find((k) => {
+      if (k === "instrument") return !instrument;
+      if (k === "entry") return !entryPrice || !entryValidation.valid;
+      if (k === "openedAt") return !openedAt;
+      if (k === "session") return !session;
+      if (k === "strategy") return strategyTags.length === 0;
+      return false;
+    });
+    if (!bad) return;
+    const el = fieldRefs[bad].current;
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      requestAnimationFrame(() => {
+        try { el.focus({ preventScroll: true }); } catch { /* ignore */ }
+      });
+    }
+  };
+
   submitRef.current = () => {
     if (mut.isPending) return;
+    setAttemptedSubmit(true);
     if (!canSubmit) {
       toast.error("Complete the required fields highlighted in red");
+      focusFirstInvalid();
       return;
     }
     mut.mutate();
