@@ -55,10 +55,12 @@ export const DEFAULT_CHECKLIST: { id: string; label: string }[] = [
 ];
 
 export const SESSION_OPTIONS: Option[] = [
-  { value: "london", label: "London" },
-  { value: "new_york", label: "New York" },
-  { value: "asia", label: "Asia" },
   { value: "sydney", label: "Sydney" },
+  { value: "tokyo", label: "Tokyo" },
+  { value: "asia", label: "Asia" },
+  { value: "london", label: "London" },
+  { value: "london_ny_overlap", label: "London / NY Overlap" },
+  { value: "new_york", label: "New York" },
   { value: "custom", label: "Custom" },
 ];
 
