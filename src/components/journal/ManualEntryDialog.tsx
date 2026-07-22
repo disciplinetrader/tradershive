@@ -1036,16 +1036,18 @@ function ManualForm({
         onToggle={toggleSection}
       >
         <div className="space-y-3">
-          <div className="space-y-1.5">
+          <div ref={strategyRef} tabIndex={-1} className="space-y-1.5">
             <Label>Strategy tags <span className="text-danger">*</span></Label>
-            <ChipMulti options={DEFAULT_SETUPS} values={strategyTags} onChange={setStrategyTags} />
-            {strategyTags.length > 0 ? (
-              <div className="flex flex-wrap gap-1 pt-1">
-                {strategyTags.map((t) => (
-                  <Badge key={t} variant="secondary" className="text-[10px]">{t}</Badge>
-                ))}
-              </div>
-            ) : requiredMissing.strategy ? (
+            <StrategyTagPicker
+              options={strategyOptions}
+              values={strategyTags}
+              onChange={setStrategyTags}
+              onAddCustom={addCustomSetup}
+              onRemoveCustom={removeCustomSetup}
+              customSetups={customSetups}
+              invalid={attemptedSubmit && requiredMissing.strategy}
+            />
+            {attemptedSubmit && requiredMissing.strategy ? (
               <p className="text-[11px] text-danger">Pick at least one setup</p>
             ) : null}
           </div>
