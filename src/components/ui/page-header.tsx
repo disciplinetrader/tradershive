@@ -17,12 +17,12 @@ export function PageHeader({ title, description, actions, className }: PageHeade
   return (
     <header
       className={cn(
-        "grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 sm:flex sm:flex-wrap sm:items-center sm:justify-between sm:gap-4",
+        "flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4",
         className,
       )}
     >
       <div className="min-w-0">
-        <h1 className="truncate text-fluid-2xl font-bold tracking-tight">{title}</h1>
+        <h1 className="text-fluid-2xl font-bold tracking-tight break-words sm:truncate">{title}</h1>
         {description ? (
           <p className="mt-1 line-clamp-2 text-fluid-sm text-muted-foreground sm:line-clamp-none">
             {description}
@@ -30,7 +30,7 @@ export function PageHeader({ title, description, actions, className }: PageHeade
         ) : null}
       </div>
       {actions ? (
-        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+        <div className="flex w-full flex-wrap items-stretch gap-2 sm:w-auto sm:shrink-0 sm:items-center sm:justify-end [&>*]:flex-1 sm:[&>*]:flex-none">
           {actions}
         </div>
       ) : null}

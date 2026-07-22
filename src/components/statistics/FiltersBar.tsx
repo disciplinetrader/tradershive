@@ -34,8 +34,8 @@ function MultiSelect({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="h-9 justify-start">
-          <span className="text-xs uppercase tracking-wider text-muted-foreground mr-2">{label}</span>
+        <Button variant="outline" size="sm" className="h-9 w-full justify-start">
+          <span className="text-xs uppercase tracking-wider text-muted-foreground mr-2 truncate">{label}</span>
           {values.length ? <Badge variant="secondary" className="h-5">{values.length}</Badge> : <span className="text-muted-foreground text-xs">All</span>}
         </Button>
       </PopoverTrigger>
@@ -90,9 +90,9 @@ export function FiltersBar() {
     filters.strategies.length + filters.sessions.length + filters.directions.length + filters.emotions.length;
 
   return (
-    <div className="glass rounded-2xl p-3 flex flex-wrap items-center gap-2">
+    <div className="glass rounded-2xl p-3 grid grid-cols-2 gap-2 sm:grid-cols-3 md:flex md:flex-wrap md:items-center">
       <Select value={filters.preset} onValueChange={(v) => setFilters({ ...filters, preset: v as StatisticsFilters["preset"] })}>
-        <SelectTrigger className="h-9 w-40"><SelectValue /></SelectTrigger>
+        <SelectTrigger className="h-9 w-full md:w-40"><SelectValue /></SelectTrigger>
         <SelectContent>
           {DATE_PRESETS.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
         </SelectContent>
@@ -101,8 +101,8 @@ export function FiltersBar() {
       {filters.preset === "custom" ? (
         <Popover open={customOpen} onOpenChange={setCustomOpen}>
           <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className="h-9"><CalendarIcon className="h-3.5 w-3.5 mr-2" />
-              {filters.from && filters.to ? `${filters.from.slice(0,10)} → ${filters.to.slice(0,10)}` : "Pick range"}
+            <Button variant="outline" size="sm" className="h-9 w-full md:w-auto justify-start"><CalendarIcon className="h-3.5 w-3.5 mr-2" />
+              <span className="truncate">{filters.from && filters.to ? `${filters.from.slice(0,10)} → ${filters.to.slice(0,10)}` : "Pick range"}</span>
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-64 p-3 pointer-events-auto" align="start">
@@ -126,10 +126,10 @@ export function FiltersBar() {
       {emotions.length ? <MultiSelect label="Emotion" values={filters.emotions} options={emotions.map((s) => ({ value: s, label: s }))} onChange={(v) => setFilters({ ...filters, emotions: v })} /> : null}
 
       {activeCount > 0 ? (
-        <Button variant="ghost" size="sm" className="h-9" onClick={resetFilters}><X className="h-3.5 w-3.5 mr-1" />Clear</Button>
+        <Button variant="ghost" size="sm" className="h-9 w-full md:w-auto" onClick={resetFilters}><X className="h-3.5 w-3.5 mr-1" />Clear</Button>
       ) : null}
 
-      <div className="ml-auto flex items-center gap-2">
+      <div className="col-span-full flex flex-wrap items-center gap-2 md:col-auto md:ml-auto">
         <SaveFilterDialog onSave={(name) => save.mutate(name)} />
         {Array.isArray(savedQuery.data) && savedQuery.data.length ? (
           <Popover>

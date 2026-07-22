@@ -48,7 +48,7 @@ function BattleArenaHome() {
   }, [qc]);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <PageHeader
         title="Battle Arena"
         description="Compete in real-time paper trading battles. Real market data, real rankings, real XP."
