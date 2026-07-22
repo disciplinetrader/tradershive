@@ -309,7 +309,7 @@ function ManualForm({
         emotions,
         mistakes,
         entry_reason_text: entryReason || null,
-        notes: postTradeNotes || null,
+        notes_text: postTradeNotes || null,
         status: "draft",
       };
 
