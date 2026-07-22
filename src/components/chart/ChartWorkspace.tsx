@@ -145,13 +145,17 @@ export function ChartWorkspace({ fullscreen, initial }: Props) {
                           market={settings.market}
                           last={lastCandle}
                         />
-                        <ChartEngine settings={settings} indicators={indicators} onReady={setChartApi}>
-                          <OrderLinesOverlay
+                        <ChartEngine
+                          settings={settings}
+                          indicators={indicators}
+                          onReady={setChartApi}
+                          onQuote={(q) => setLivePrice(q?.last ?? null)}
+                        >
+                          <ChartTradingOverlay
                             adapter={chartApi?.adapter ?? null}
-                            lines={orderLines}
+                            symbol={settings.symbol}
                             tick={chartApi?.candles.length ?? 0}
-                            onChange={handleOrderLineChange}
-                            onCommit={handleOrderLineCommit}
+                            livePrice={livePrice}
                           />
                         </ChartEngine>
                       </>
