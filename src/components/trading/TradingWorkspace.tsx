@@ -215,7 +215,7 @@ function TradingWorkspaceInner() {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="flex min-h-0 flex-col gap-3 p-2 pb-[240px] md:pb-3 sm:p-3">
+      <div className="flex min-h-0 flex-col gap-3 p-2 pb-3 sm:p-3">
         <TopToolbar />
         <TodayPnLWidget
           dailyTargetPct={Number(account?.max_daily_risk_pct ?? 5)}
@@ -223,8 +223,8 @@ function TradingWorkspaceInner() {
         />
         <AccountSummary />
 
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_360px]">
-          <GlassCard className="relative flex h-[55vh] min-h-[320px] flex-col overflow-hidden p-0 sm:h-[520px] md:h-[560px] xl:h-[620px]">
+        <div className="grid grid-cols-[minmax(0,1fr)_200px] gap-2 sm:grid-cols-[minmax(0,1fr)_260px] sm:gap-3 md:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_360px]">
+          <GlassCard className="relative flex h-[420px] min-h-[320px] flex-col overflow-hidden p-0 sm:h-[520px] md:h-[560px] xl:h-[620px]">
 
 
             {/* Chart header */}
