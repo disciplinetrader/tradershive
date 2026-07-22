@@ -23,6 +23,7 @@ const TABS = [
   { to: "/analytics", label: "Overview", exact: true },
   { to: "/analytics/performance", label: "Performance" },
   { to: "/analytics/risk", label: "Risk" },
+  { to: "/analytics/behaviour", label: "Behaviour" },
   { to: "/analytics/trades", label: "Trades" },
   { to: "/analytics/sessions", label: "Sessions" },
   { to: "/analytics/symbols", label: "Symbols" },

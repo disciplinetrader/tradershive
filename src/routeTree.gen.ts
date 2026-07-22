@@ -101,6 +101,7 @@ import { Route as AuthenticatedAnalyticsPerformanceRouteImport } from './routes/
 import { Route as AuthenticatedAnalyticsCompareRouteImport } from './routes/_authenticated/analytics.compare'
 import { Route as AuthenticatedAnalyticsChampionshipsRouteImport } from './routes/_authenticated/analytics.championships'
 import { Route as AuthenticatedAnalyticsCalendarRouteImport } from './routes/_authenticated/analytics.calendar'
+import { Route as AuthenticatedAnalyticsBehaviourRouteImport } from './routes/_authenticated/analytics.behaviour'
 import { Route as AuthenticatedAnalyticsAiRouteImport } from './routes/_authenticated/analytics.ai'
 import { Route as AuthenticatedAiTradeReviewRouteImport } from './routes/_authenticated/ai.trade-review'
 import { Route as AuthenticatedAiSettingsRouteImport } from './routes/_authenticated/ai.settings'
@@ -660,6 +661,12 @@ const AuthenticatedAnalyticsCalendarRoute =
     path: '/calendar',
     getParentRoute: () => AuthenticatedAnalyticsRoute,
   } as any)
+const AuthenticatedAnalyticsBehaviourRoute =
+  AuthenticatedAnalyticsBehaviourRouteImport.update({
+    id: '/behaviour',
+    path: '/behaviour',
+    getParentRoute: () => AuthenticatedAnalyticsRoute,
+  } as any)
 const AuthenticatedAnalyticsAiRoute =
   AuthenticatedAnalyticsAiRouteImport.update({
     id: '/ai',
@@ -937,6 +944,7 @@ export interface FileRoutesByFullPath {
   '/ai/settings': typeof AuthenticatedAiSettingsRoute
   '/ai/trade-review': typeof AuthenticatedAiTradeReviewRoute
   '/analytics/ai': typeof AuthenticatedAnalyticsAiRoute
+  '/analytics/behaviour': typeof AuthenticatedAnalyticsBehaviourRoute
   '/analytics/calendar': typeof AuthenticatedAnalyticsCalendarRoute
   '/analytics/championships': typeof AuthenticatedAnalyticsChampionshipsRoute
   '/analytics/compare': typeof AuthenticatedAnalyticsCompareRoute
@@ -1056,6 +1064,7 @@ export interface FileRoutesByTo {
   '/ai/settings': typeof AuthenticatedAiSettingsRoute
   '/ai/trade-review': typeof AuthenticatedAiTradeReviewRoute
   '/analytics/ai': typeof AuthenticatedAnalyticsAiRoute
+  '/analytics/behaviour': typeof AuthenticatedAnalyticsBehaviourRoute
   '/analytics/calendar': typeof AuthenticatedAnalyticsCalendarRoute
   '/analytics/championships': typeof AuthenticatedAnalyticsChampionshipsRoute
   '/analytics/compare': typeof AuthenticatedAnalyticsCompareRoute
@@ -1188,6 +1197,7 @@ export interface FileRoutesById {
   '/_authenticated/ai/settings': typeof AuthenticatedAiSettingsRoute
   '/_authenticated/ai/trade-review': typeof AuthenticatedAiTradeReviewRoute
   '/_authenticated/analytics/ai': typeof AuthenticatedAnalyticsAiRoute
+  '/_authenticated/analytics/behaviour': typeof AuthenticatedAnalyticsBehaviourRoute
   '/_authenticated/analytics/calendar': typeof AuthenticatedAnalyticsCalendarRoute
   '/_authenticated/analytics/championships': typeof AuthenticatedAnalyticsChampionshipsRoute
   '/_authenticated/analytics/compare': typeof AuthenticatedAnalyticsCompareRoute
@@ -1320,6 +1330,7 @@ export interface FileRouteTypes {
     | '/ai/settings'
     | '/ai/trade-review'
     | '/analytics/ai'
+    | '/analytics/behaviour'
     | '/analytics/calendar'
     | '/analytics/championships'
     | '/analytics/compare'
@@ -1439,6 +1450,7 @@ export interface FileRouteTypes {
     | '/ai/settings'
     | '/ai/trade-review'
     | '/analytics/ai'
+    | '/analytics/behaviour'
     | '/analytics/calendar'
     | '/analytics/championships'
     | '/analytics/compare'
@@ -1570,6 +1582,7 @@ export interface FileRouteTypes {
     | '/_authenticated/ai/settings'
     | '/_authenticated/ai/trade-review'
     | '/_authenticated/analytics/ai'
+    | '/_authenticated/analytics/behaviour'
     | '/_authenticated/analytics/calendar'
     | '/_authenticated/analytics/championships'
     | '/_authenticated/analytics/compare'
@@ -2301,6 +2314,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAnalyticsCalendarRouteImport
       parentRoute: typeof AuthenticatedAnalyticsRoute
     }
+    '/_authenticated/analytics/behaviour': {
+      id: '/_authenticated/analytics/behaviour'
+      path: '/behaviour'
+      fullPath: '/analytics/behaviour'
+      preLoaderRoute: typeof AuthenticatedAnalyticsBehaviourRouteImport
+      parentRoute: typeof AuthenticatedAnalyticsRoute
+    }
     '/_authenticated/analytics/ai': {
       id: '/_authenticated/analytics/ai'
       path: '/ai'
@@ -2661,6 +2681,7 @@ const AuthenticatedAiRouteWithChildren = AuthenticatedAiRoute._addFileChildren(
 
 interface AuthenticatedAnalyticsRouteChildren {
   AuthenticatedAnalyticsAiRoute: typeof AuthenticatedAnalyticsAiRoute
+  AuthenticatedAnalyticsBehaviourRoute: typeof AuthenticatedAnalyticsBehaviourRoute
   AuthenticatedAnalyticsCalendarRoute: typeof AuthenticatedAnalyticsCalendarRoute
   AuthenticatedAnalyticsChampionshipsRoute: typeof AuthenticatedAnalyticsChampionshipsRoute
   AuthenticatedAnalyticsCompareRoute: typeof AuthenticatedAnalyticsCompareRoute
@@ -2677,6 +2698,7 @@ interface AuthenticatedAnalyticsRouteChildren {
 const AuthenticatedAnalyticsRouteChildren: AuthenticatedAnalyticsRouteChildren =
   {
     AuthenticatedAnalyticsAiRoute: AuthenticatedAnalyticsAiRoute,
+    AuthenticatedAnalyticsBehaviourRoute: AuthenticatedAnalyticsBehaviourRoute,
     AuthenticatedAnalyticsCalendarRoute: AuthenticatedAnalyticsCalendarRoute,
     AuthenticatedAnalyticsChampionshipsRoute:
       AuthenticatedAnalyticsChampionshipsRoute,
