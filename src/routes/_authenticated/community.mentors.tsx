@@ -121,8 +121,8 @@ function BecomeMentorDialog({ current }: { current: any }) {
   const [open, setOpen] = useState(false);
   const [headline, setHeadline] = useState(current?.headline ?? "");
   const [bio, setBio] = useState(current?.bio ?? "");
-  const [markets, setMarkets] = useState((current?.markets ?? []).join(", "));
-  const [specialties, setSpecialties] = useState((current?.specialties ?? []).join(", "));
+  const [markets, setMarkets] = useState(((current?.markets ?? []) as string[]).join(", "));
+  const [specialties, setSpecialties] = useState(((current?.specialties ?? []) as string[]).join(", "));
   const mut = useMutation({
     mutationFn: () => fn({
       data: {

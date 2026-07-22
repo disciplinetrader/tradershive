@@ -81,8 +81,14 @@ import { Route as AuthenticatedLeaderboardGlobalRouteImport } from './routes/_au
 import { Route as AuthenticatedLeaderboardFriendsRouteImport } from './routes/_authenticated/leaderboard.friends'
 import { Route as AuthenticatedLeaderboardCountryRouteImport } from './routes/_authenticated/leaderboard.country'
 import { Route as AuthenticatedCommunityTrendingRouteImport } from './routes/_authenticated/community.trending'
+import { Route as AuthenticatedCommunityReviewsRouteImport } from './routes/_authenticated/community.reviews'
+import { Route as AuthenticatedCommunityMentorsRouteImport } from './routes/_authenticated/community.mentors'
+import { Route as AuthenticatedCommunityLiveRouteImport } from './routes/_authenticated/community.live'
+import { Route as AuthenticatedCommunityIdeasRouteImport } from './routes/_authenticated/community.ideas'
+import { Route as AuthenticatedCommunityGroupsRouteImport } from './routes/_authenticated/community.groups'
 import { Route as AuthenticatedCommunityFollowingRouteImport } from './routes/_authenticated/community.following'
 import { Route as AuthenticatedCommunityExploreRouteImport } from './routes/_authenticated/community.explore'
+import { Route as AuthenticatedCommunityChallengesRouteImport } from './routes/_authenticated/community.challenges'
 import { Route as AuthenticatedCommunityBookmarksRouteImport } from './routes/_authenticated/community.bookmarks'
 import { Route as AuthenticatedChampionshipHallOfFameRouteImport } from './routes/_authenticated/championship.hall-of-fame'
 import { Route as AuthenticatedChampionshipSlugRouteImport } from './routes/_authenticated/championship.$slug'
@@ -134,6 +140,8 @@ import { Route as AuthenticatedAiCoachIndexRouteImport } from './routes/_authent
 import { Route as ApiPublicHooksHistoricalSyncRouteImport } from './routes/api/public/hooks/historical-sync'
 import { Route as AuthenticatedCommunityProfileUsernameRouteImport } from './routes/_authenticated/community.profile.$username'
 import { Route as AuthenticatedCommunityPostIdRouteImport } from './routes/_authenticated/community.post.$id'
+import { Route as AuthenticatedCommunityIdeasNewRouteImport } from './routes/_authenticated/community.ideas.new'
+import { Route as AuthenticatedCommunityGroupsSlugRouteImport } from './routes/_authenticated/community.groups.$slug'
 import { Route as AuthenticatedAiCoachReportsRouteImport } from './routes/_authenticated/ai.coach.reports'
 import { Route as AuthenticatedAiCoachProfileRouteImport } from './routes/_authenticated/ai.coach.profile'
 import { Route as AuthenticatedAiCoachMistakesRouteImport } from './routes/_authenticated/ai.coach.mistakes'
@@ -541,6 +549,36 @@ const AuthenticatedCommunityTrendingRoute =
     path: '/trending',
     getParentRoute: () => AuthenticatedCommunityRoute,
   } as any)
+const AuthenticatedCommunityReviewsRoute =
+  AuthenticatedCommunityReviewsRouteImport.update({
+    id: '/reviews',
+    path: '/reviews',
+    getParentRoute: () => AuthenticatedCommunityRoute,
+  } as any)
+const AuthenticatedCommunityMentorsRoute =
+  AuthenticatedCommunityMentorsRouteImport.update({
+    id: '/mentors',
+    path: '/mentors',
+    getParentRoute: () => AuthenticatedCommunityRoute,
+  } as any)
+const AuthenticatedCommunityLiveRoute =
+  AuthenticatedCommunityLiveRouteImport.update({
+    id: '/live',
+    path: '/live',
+    getParentRoute: () => AuthenticatedCommunityRoute,
+  } as any)
+const AuthenticatedCommunityIdeasRoute =
+  AuthenticatedCommunityIdeasRouteImport.update({
+    id: '/ideas',
+    path: '/ideas',
+    getParentRoute: () => AuthenticatedCommunityRoute,
+  } as any)
+const AuthenticatedCommunityGroupsRoute =
+  AuthenticatedCommunityGroupsRouteImport.update({
+    id: '/groups',
+    path: '/groups',
+    getParentRoute: () => AuthenticatedCommunityRoute,
+  } as any)
 const AuthenticatedCommunityFollowingRoute =
   AuthenticatedCommunityFollowingRouteImport.update({
     id: '/following',
@@ -551,6 +589,12 @@ const AuthenticatedCommunityExploreRoute =
   AuthenticatedCommunityExploreRouteImport.update({
     id: '/explore',
     path: '/explore',
+    getParentRoute: () => AuthenticatedCommunityRoute,
+  } as any)
+const AuthenticatedCommunityChallengesRoute =
+  AuthenticatedCommunityChallengesRouteImport.update({
+    id: '/challenges',
+    path: '/challenges',
     getParentRoute: () => AuthenticatedCommunityRoute,
   } as any)
 const AuthenticatedCommunityBookmarksRoute =
@@ -852,6 +896,18 @@ const AuthenticatedCommunityPostIdRoute =
     path: '/post/$id',
     getParentRoute: () => AuthenticatedCommunityRoute,
   } as any)
+const AuthenticatedCommunityIdeasNewRoute =
+  AuthenticatedCommunityIdeasNewRouteImport.update({
+    id: '/new',
+    path: '/new',
+    getParentRoute: () => AuthenticatedCommunityIdeasRoute,
+  } as any)
+const AuthenticatedCommunityGroupsSlugRoute =
+  AuthenticatedCommunityGroupsSlugRouteImport.update({
+    id: '/$slug',
+    path: '/$slug',
+    getParentRoute: () => AuthenticatedCommunityGroupsRoute,
+  } as any)
 const AuthenticatedAiCoachReportsRoute =
   AuthenticatedAiCoachReportsRouteImport.update({
     id: '/reports',
@@ -963,8 +1019,14 @@ export interface FileRoutesByFullPath {
   '/championship/$slug': typeof AuthenticatedChampionshipSlugRoute
   '/championship/hall-of-fame': typeof AuthenticatedChampionshipHallOfFameRoute
   '/community/bookmarks': typeof AuthenticatedCommunityBookmarksRoute
+  '/community/challenges': typeof AuthenticatedCommunityChallengesRoute
   '/community/explore': typeof AuthenticatedCommunityExploreRoute
   '/community/following': typeof AuthenticatedCommunityFollowingRoute
+  '/community/groups': typeof AuthenticatedCommunityGroupsRouteWithChildren
+  '/community/ideas': typeof AuthenticatedCommunityIdeasRouteWithChildren
+  '/community/live': typeof AuthenticatedCommunityLiveRoute
+  '/community/mentors': typeof AuthenticatedCommunityMentorsRoute
+  '/community/reviews': typeof AuthenticatedCommunityReviewsRoute
   '/community/trending': typeof AuthenticatedCommunityTrendingRoute
   '/leaderboard/country': typeof AuthenticatedLeaderboardCountryRoute
   '/leaderboard/friends': typeof AuthenticatedLeaderboardFriendsRoute
@@ -1009,6 +1071,8 @@ export interface FileRoutesByFullPath {
   '/ai/coach/mistakes': typeof AuthenticatedAiCoachMistakesRoute
   '/ai/coach/profile': typeof AuthenticatedAiCoachProfileRoute
   '/ai/coach/reports': typeof AuthenticatedAiCoachReportsRoute
+  '/community/groups/$slug': typeof AuthenticatedCommunityGroupsSlugRoute
+  '/community/ideas/new': typeof AuthenticatedCommunityIdeasNewRoute
   '/community/post/$id': typeof AuthenticatedCommunityPostIdRoute
   '/community/profile/$username': typeof AuthenticatedCommunityProfileUsernameRoute
   '/api/public/hooks/historical-sync': typeof ApiPublicHooksHistoricalSyncRoute
@@ -1083,8 +1147,14 @@ export interface FileRoutesByTo {
   '/championship/$slug': typeof AuthenticatedChampionshipSlugRoute
   '/championship/hall-of-fame': typeof AuthenticatedChampionshipHallOfFameRoute
   '/community/bookmarks': typeof AuthenticatedCommunityBookmarksRoute
+  '/community/challenges': typeof AuthenticatedCommunityChallengesRoute
   '/community/explore': typeof AuthenticatedCommunityExploreRoute
   '/community/following': typeof AuthenticatedCommunityFollowingRoute
+  '/community/groups': typeof AuthenticatedCommunityGroupsRouteWithChildren
+  '/community/ideas': typeof AuthenticatedCommunityIdeasRouteWithChildren
+  '/community/live': typeof AuthenticatedCommunityLiveRoute
+  '/community/mentors': typeof AuthenticatedCommunityMentorsRoute
+  '/community/reviews': typeof AuthenticatedCommunityReviewsRoute
   '/community/trending': typeof AuthenticatedCommunityTrendingRoute
   '/leaderboard/country': typeof AuthenticatedLeaderboardCountryRoute
   '/leaderboard/friends': typeof AuthenticatedLeaderboardFriendsRoute
@@ -1129,6 +1199,8 @@ export interface FileRoutesByTo {
   '/ai/coach/mistakes': typeof AuthenticatedAiCoachMistakesRoute
   '/ai/coach/profile': typeof AuthenticatedAiCoachProfileRoute
   '/ai/coach/reports': typeof AuthenticatedAiCoachReportsRoute
+  '/community/groups/$slug': typeof AuthenticatedCommunityGroupsSlugRoute
+  '/community/ideas/new': typeof AuthenticatedCommunityIdeasNewRoute
   '/community/post/$id': typeof AuthenticatedCommunityPostIdRoute
   '/community/profile/$username': typeof AuthenticatedCommunityProfileUsernameRoute
   '/api/public/hooks/historical-sync': typeof ApiPublicHooksHistoricalSyncRoute
@@ -1216,8 +1288,14 @@ export interface FileRoutesById {
   '/_authenticated/championship/$slug': typeof AuthenticatedChampionshipSlugRoute
   '/_authenticated/championship/hall-of-fame': typeof AuthenticatedChampionshipHallOfFameRoute
   '/_authenticated/community/bookmarks': typeof AuthenticatedCommunityBookmarksRoute
+  '/_authenticated/community/challenges': typeof AuthenticatedCommunityChallengesRoute
   '/_authenticated/community/explore': typeof AuthenticatedCommunityExploreRoute
   '/_authenticated/community/following': typeof AuthenticatedCommunityFollowingRoute
+  '/_authenticated/community/groups': typeof AuthenticatedCommunityGroupsRouteWithChildren
+  '/_authenticated/community/ideas': typeof AuthenticatedCommunityIdeasRouteWithChildren
+  '/_authenticated/community/live': typeof AuthenticatedCommunityLiveRoute
+  '/_authenticated/community/mentors': typeof AuthenticatedCommunityMentorsRoute
+  '/_authenticated/community/reviews': typeof AuthenticatedCommunityReviewsRoute
   '/_authenticated/community/trending': typeof AuthenticatedCommunityTrendingRoute
   '/_authenticated/leaderboard/country': typeof AuthenticatedLeaderboardCountryRoute
   '/_authenticated/leaderboard/friends': typeof AuthenticatedLeaderboardFriendsRoute
@@ -1262,6 +1340,8 @@ export interface FileRoutesById {
   '/_authenticated/ai/coach/mistakes': typeof AuthenticatedAiCoachMistakesRoute
   '/_authenticated/ai/coach/profile': typeof AuthenticatedAiCoachProfileRoute
   '/_authenticated/ai/coach/reports': typeof AuthenticatedAiCoachReportsRoute
+  '/_authenticated/community/groups/$slug': typeof AuthenticatedCommunityGroupsSlugRoute
+  '/_authenticated/community/ideas/new': typeof AuthenticatedCommunityIdeasNewRoute
   '/_authenticated/community/post/$id': typeof AuthenticatedCommunityPostIdRoute
   '/_authenticated/community/profile/$username': typeof AuthenticatedCommunityProfileUsernameRoute
   '/api/public/hooks/historical-sync': typeof ApiPublicHooksHistoricalSyncRoute
@@ -1349,8 +1429,14 @@ export interface FileRouteTypes {
     | '/championship/$slug'
     | '/championship/hall-of-fame'
     | '/community/bookmarks'
+    | '/community/challenges'
     | '/community/explore'
     | '/community/following'
+    | '/community/groups'
+    | '/community/ideas'
+    | '/community/live'
+    | '/community/mentors'
+    | '/community/reviews'
     | '/community/trending'
     | '/leaderboard/country'
     | '/leaderboard/friends'
@@ -1395,6 +1481,8 @@ export interface FileRouteTypes {
     | '/ai/coach/mistakes'
     | '/ai/coach/profile'
     | '/ai/coach/reports'
+    | '/community/groups/$slug'
+    | '/community/ideas/new'
     | '/community/post/$id'
     | '/community/profile/$username'
     | '/api/public/hooks/historical-sync'
@@ -1469,8 +1557,14 @@ export interface FileRouteTypes {
     | '/championship/$slug'
     | '/championship/hall-of-fame'
     | '/community/bookmarks'
+    | '/community/challenges'
     | '/community/explore'
     | '/community/following'
+    | '/community/groups'
+    | '/community/ideas'
+    | '/community/live'
+    | '/community/mentors'
+    | '/community/reviews'
     | '/community/trending'
     | '/leaderboard/country'
     | '/leaderboard/friends'
@@ -1515,6 +1609,8 @@ export interface FileRouteTypes {
     | '/ai/coach/mistakes'
     | '/ai/coach/profile'
     | '/ai/coach/reports'
+    | '/community/groups/$slug'
+    | '/community/ideas/new'
     | '/community/post/$id'
     | '/community/profile/$username'
     | '/api/public/hooks/historical-sync'
@@ -1601,8 +1697,14 @@ export interface FileRouteTypes {
     | '/_authenticated/championship/$slug'
     | '/_authenticated/championship/hall-of-fame'
     | '/_authenticated/community/bookmarks'
+    | '/_authenticated/community/challenges'
     | '/_authenticated/community/explore'
     | '/_authenticated/community/following'
+    | '/_authenticated/community/groups'
+    | '/_authenticated/community/ideas'
+    | '/_authenticated/community/live'
+    | '/_authenticated/community/mentors'
+    | '/_authenticated/community/reviews'
     | '/_authenticated/community/trending'
     | '/_authenticated/leaderboard/country'
     | '/_authenticated/leaderboard/friends'
@@ -1647,6 +1749,8 @@ export interface FileRouteTypes {
     | '/_authenticated/ai/coach/mistakes'
     | '/_authenticated/ai/coach/profile'
     | '/_authenticated/ai/coach/reports'
+    | '/_authenticated/community/groups/$slug'
+    | '/_authenticated/community/ideas/new'
     | '/_authenticated/community/post/$id'
     | '/_authenticated/community/profile/$username'
     | '/api/public/hooks/historical-sync'
@@ -2174,6 +2278,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCommunityTrendingRouteImport
       parentRoute: typeof AuthenticatedCommunityRoute
     }
+    '/_authenticated/community/reviews': {
+      id: '/_authenticated/community/reviews'
+      path: '/reviews'
+      fullPath: '/community/reviews'
+      preLoaderRoute: typeof AuthenticatedCommunityReviewsRouteImport
+      parentRoute: typeof AuthenticatedCommunityRoute
+    }
+    '/_authenticated/community/mentors': {
+      id: '/_authenticated/community/mentors'
+      path: '/mentors'
+      fullPath: '/community/mentors'
+      preLoaderRoute: typeof AuthenticatedCommunityMentorsRouteImport
+      parentRoute: typeof AuthenticatedCommunityRoute
+    }
+    '/_authenticated/community/live': {
+      id: '/_authenticated/community/live'
+      path: '/live'
+      fullPath: '/community/live'
+      preLoaderRoute: typeof AuthenticatedCommunityLiveRouteImport
+      parentRoute: typeof AuthenticatedCommunityRoute
+    }
+    '/_authenticated/community/ideas': {
+      id: '/_authenticated/community/ideas'
+      path: '/ideas'
+      fullPath: '/community/ideas'
+      preLoaderRoute: typeof AuthenticatedCommunityIdeasRouteImport
+      parentRoute: typeof AuthenticatedCommunityRoute
+    }
+    '/_authenticated/community/groups': {
+      id: '/_authenticated/community/groups'
+      path: '/groups'
+      fullPath: '/community/groups'
+      preLoaderRoute: typeof AuthenticatedCommunityGroupsRouteImport
+      parentRoute: typeof AuthenticatedCommunityRoute
+    }
     '/_authenticated/community/following': {
       id: '/_authenticated/community/following'
       path: '/following'
@@ -2186,6 +2325,13 @@ declare module '@tanstack/react-router' {
       path: '/explore'
       fullPath: '/community/explore'
       preLoaderRoute: typeof AuthenticatedCommunityExploreRouteImport
+      parentRoute: typeof AuthenticatedCommunityRoute
+    }
+    '/_authenticated/community/challenges': {
+      id: '/_authenticated/community/challenges'
+      path: '/challenges'
+      fullPath: '/community/challenges'
+      preLoaderRoute: typeof AuthenticatedCommunityChallengesRouteImport
       parentRoute: typeof AuthenticatedCommunityRoute
     }
     '/_authenticated/community/bookmarks': {
@@ -2545,6 +2691,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCommunityPostIdRouteImport
       parentRoute: typeof AuthenticatedCommunityRoute
     }
+    '/_authenticated/community/ideas/new': {
+      id: '/_authenticated/community/ideas/new'
+      path: '/new'
+      fullPath: '/community/ideas/new'
+      preLoaderRoute: typeof AuthenticatedCommunityIdeasNewRouteImport
+      parentRoute: typeof AuthenticatedCommunityIdeasRoute
+    }
+    '/_authenticated/community/groups/$slug': {
+      id: '/_authenticated/community/groups/$slug'
+      path: '/$slug'
+      fullPath: '/community/groups/$slug'
+      preLoaderRoute: typeof AuthenticatedCommunityGroupsSlugRouteImport
+      parentRoute: typeof AuthenticatedCommunityGroupsRoute
+    }
     '/_authenticated/ai/coach/reports': {
       id: '/_authenticated/ai/coach/reports'
       path: '/reports'
@@ -2775,10 +2935,45 @@ const AuthenticatedChampionshipRouteWithChildren =
     AuthenticatedChampionshipRouteChildren,
   )
 
+interface AuthenticatedCommunityGroupsRouteChildren {
+  AuthenticatedCommunityGroupsSlugRoute: typeof AuthenticatedCommunityGroupsSlugRoute
+}
+
+const AuthenticatedCommunityGroupsRouteChildren: AuthenticatedCommunityGroupsRouteChildren =
+  {
+    AuthenticatedCommunityGroupsSlugRoute:
+      AuthenticatedCommunityGroupsSlugRoute,
+  }
+
+const AuthenticatedCommunityGroupsRouteWithChildren =
+  AuthenticatedCommunityGroupsRoute._addFileChildren(
+    AuthenticatedCommunityGroupsRouteChildren,
+  )
+
+interface AuthenticatedCommunityIdeasRouteChildren {
+  AuthenticatedCommunityIdeasNewRoute: typeof AuthenticatedCommunityIdeasNewRoute
+}
+
+const AuthenticatedCommunityIdeasRouteChildren: AuthenticatedCommunityIdeasRouteChildren =
+  {
+    AuthenticatedCommunityIdeasNewRoute: AuthenticatedCommunityIdeasNewRoute,
+  }
+
+const AuthenticatedCommunityIdeasRouteWithChildren =
+  AuthenticatedCommunityIdeasRoute._addFileChildren(
+    AuthenticatedCommunityIdeasRouteChildren,
+  )
+
 interface AuthenticatedCommunityRouteChildren {
   AuthenticatedCommunityBookmarksRoute: typeof AuthenticatedCommunityBookmarksRoute
+  AuthenticatedCommunityChallengesRoute: typeof AuthenticatedCommunityChallengesRoute
   AuthenticatedCommunityExploreRoute: typeof AuthenticatedCommunityExploreRoute
   AuthenticatedCommunityFollowingRoute: typeof AuthenticatedCommunityFollowingRoute
+  AuthenticatedCommunityGroupsRoute: typeof AuthenticatedCommunityGroupsRouteWithChildren
+  AuthenticatedCommunityIdeasRoute: typeof AuthenticatedCommunityIdeasRouteWithChildren
+  AuthenticatedCommunityLiveRoute: typeof AuthenticatedCommunityLiveRoute
+  AuthenticatedCommunityMentorsRoute: typeof AuthenticatedCommunityMentorsRoute
+  AuthenticatedCommunityReviewsRoute: typeof AuthenticatedCommunityReviewsRoute
   AuthenticatedCommunityTrendingRoute: typeof AuthenticatedCommunityTrendingRoute
   AuthenticatedCommunityIndexRoute: typeof AuthenticatedCommunityIndexRoute
   AuthenticatedCommunityPostIdRoute: typeof AuthenticatedCommunityPostIdRoute
@@ -2788,8 +2983,17 @@ interface AuthenticatedCommunityRouteChildren {
 const AuthenticatedCommunityRouteChildren: AuthenticatedCommunityRouteChildren =
   {
     AuthenticatedCommunityBookmarksRoute: AuthenticatedCommunityBookmarksRoute,
+    AuthenticatedCommunityChallengesRoute:
+      AuthenticatedCommunityChallengesRoute,
     AuthenticatedCommunityExploreRoute: AuthenticatedCommunityExploreRoute,
     AuthenticatedCommunityFollowingRoute: AuthenticatedCommunityFollowingRoute,
+    AuthenticatedCommunityGroupsRoute:
+      AuthenticatedCommunityGroupsRouteWithChildren,
+    AuthenticatedCommunityIdeasRoute:
+      AuthenticatedCommunityIdeasRouteWithChildren,
+    AuthenticatedCommunityLiveRoute: AuthenticatedCommunityLiveRoute,
+    AuthenticatedCommunityMentorsRoute: AuthenticatedCommunityMentorsRoute,
+    AuthenticatedCommunityReviewsRoute: AuthenticatedCommunityReviewsRoute,
     AuthenticatedCommunityTrendingRoute: AuthenticatedCommunityTrendingRoute,
     AuthenticatedCommunityIndexRoute: AuthenticatedCommunityIndexRoute,
     AuthenticatedCommunityPostIdRoute: AuthenticatedCommunityPostIdRoute,
