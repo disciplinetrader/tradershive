@@ -1,48 +1,85 @@
-## Responsive & Mobile UX Sprint
+# Responsive Design System — Full-App Rework
 
-Scope: refine responsiveness and mobile UX only. No new features, no redesigns. All existing desktop layouts preserved at `md`+ breakpoints.
+This is an architecture change, not a page-by-page patch. We introduce one system, then migrate every route to use it.
 
-### Wave 1 — Foundations (shared primitives)
-- `src/styles.css`: add safe-area utilities (`safe-top`, `safe-x`), fluid type helpers, and `min-h-touch` (44px) utility. Ensure body avoids horizontal overflow (`overflow-x: hidden` on `html, body` with guarded exceptions).
-- `src/components/layout/app-shell.tsx` + `topbar.tsx`: sticky top with safe-area padding, larger tap targets on mobile bottom nav, hide desktop-only chrome under `md`.
-- New `src/components/ui/responsive-table.tsx` helper: renders `<table>` on `md+`, stacked cards on mobile. Use in high-traffic tables (Positions, Orders, History, Trades, Leaderboard, Admin lists).
-- New `src/components/ui/inline-search.tsx`: expandable icon→input with autofocus + collapse-on-blur-if-empty. Replaces command-palette trigger on mobile (desktop keeps ⌘K).
+## 1. Foundation — Design Tokens & Breakpoints
 
-### Wave 2 — Trading Workspace (`/trading`)
-- `TradingWorkspace.tsx`: on mobile, single-column with chart-first (fixed ~55vh), collapsible bottom sheet for Positions/Orders/History (BottomTabs), and a floating "Trade" FAB opening `TradePanel` as a Sheet. Watchlist becomes a horizontal ribbon at top. Toolbar collapses non-essential tools into an overflow menu.
-- `LeftToolRail.tsx`: hide on mobile; expose via toolbar overflow.
-- `RightIconRail.tsx`, `ChartInfoBar.tsx`, `ChartToolbar.tsx`, `BottomTabs.tsx`: compact spacing under `sm`, scrollable tab strip, sticky action bar with safe-area.
-- `OrderLinesOverlay`: enlarge drag hit-areas on touch.
+Add to `src/styles.css` under `@theme`:
 
-### Wave 3 — Journal add/edit
-- `ManualEntryDialog.tsx` + `JournalDrawer.tsx` + `NotesEditor.tsx`: full-screen Sheet on mobile, sticky Save/Cancel footer with safe-area, larger textareas (min-h 40vh), field spacing, image upload button sized to 44px, `enterKeyHint`/`inputMode` on inputs.
+```text
+Breakpoints (Tailwind screens)
+  xs   → 375px   Mobile Small / Standard phones
+  sm   → 480px   Mobile Large / Phablet
+  md   → 768px   Tablet Portrait
+  lg   → 1024px  Tablet Landscape / Small Laptop
+  xl   → 1280px  Laptop
+  2xl  → 1536px  Desktop
+  3xl  → 1920px  Large Desktop / Ultrawide
+```
 
-### Wave 4 — Search
-- Swap search-icon triggers in `topbar.tsx` and relevant pages to `InlineSearch`. Preserve global command palette on `⌘K`.
+Fluid tokens (CSS `clamp()`):
+- Typography scale: `--text-xs` … `--text-3xl` all fluid
+- Spacing scale: `--space-1` … `--space-10` fluid
+- Container padding: `--pad-page` = `clamp(0.75rem, 2vw, 2rem)`
+- Radius, shadow: already unified — keep
 
-### Wave 5 — Battle Arena
-- `battle-arena.tsx` grid → single column on mobile. `LiveScoreboard`, `LiveLeaderboard`, `ParticipantsList` use `responsive-table`. `BattleChat` becomes a bottom sheet on mobile with sticky composer. `LiveBattleHeader` stacks; countdown wraps.
+## 2. Layout Primitives (new)
 
-### Wave 6 — Page-by-page responsive polish
-Adjust padding/grid columns, table→card, sticky headers, safe-area for:
-- Dashboard, Analytics (all sub-routes), Replay Studio (chart+HUD stacking, controls as bottom sheet), Paper Trading legacy screens, Trade Details, Trades, Championships (leaderboard cards), AI Coach, Achievements, Community (composer + feed), Leaderboards, Settings, Login/Register/Auth, Admin shell.
-- Standard fixes per page: `p-4 md:p-6`, `grid-cols-1 md:grid-cols-*`, `text-2xl md:text-3xl`, `min-w-0` + `truncate` on flex text children, `shrink-0` on icons.
+New shared components under `src/components/layout/`:
 
-### Wave 7 — Modals/Drawers/Forms consistency
-- Ensure every shadcn `Dialog` used for input flows switches to `Sheet side="bottom"` on mobile (via `useIsMobile`). Sticky footers, scrollable body, `max-h-[90dvh]`.
-- Standardize form spacing (`space-y-4`), 44px inputs on mobile, `aria-*` intact.
+- `PageContainer` — replaces every ad-hoc wrapper; applies fluid page padding, max-width, and safe-area insets. Every route mounts inside it.
+- `ResponsiveGrid` — auto-fit CSS grid (`repeat(auto-fit, minmax(var(--min), 1fr))`) with `min` prop; kills all fixed-column grids that break on tablet.
+- `Stack` / `Cluster` — vertical / wrap-flex primitives with responsive gap tokens.
+- `SplitPane` — two-column layout that stacks below a configurable breakpoint (default `lg`); used by Trading, Replay, Analytics detail, Journal detail.
+- `SectionHeader` — standard title + actions row with `grid-cols-[minmax(0,1fr)_auto]` + `sm:flex` pattern (from responsive-layout rules), used everywhere instead of hand-rolled headers.
+- `ScrollArea` wrapper for tables/timelines so nothing produces page-level horizontal scroll.
 
-### Wave 8 — Charts
-- Confirm zoom/pan/crosshair usable on touch: enable `handleScroll.touch` + `handleScale.pinch` in `lightweight` adapter. Compact chart toolbar under `sm`.
+## 3. Component Audit & Fixes
 
-### Wave 9 — Verification
-- Playwright screenshots at 320, 375, 414, 768, 1024, 1440 for: `/trading`, `/journal`, `/battle-arena`, `/dashboard`, `/analytics`, `/replay`, `/community`, `/leaderboards`, `/settings`.
-- Typecheck + verify no horizontal scroll (`document.documentElement.scrollWidth <= innerWidth`).
+Global rules applied via find-and-replace + primitive adoption:
+- Remove all `w-[NNNpx]` fixed widths on panels; convert to `min-w-0 flex-1` or grid `minmax(0,1fr)`.
+- Every text container gets `min-w-0`; every icon/avatar gets `shrink-0`; every single-line heading gets `truncate`.
+- All Dialogs → responsive: full-screen sheet on `< md`, centered dialog on `≥ md` via a shared `ResponsiveDialog`.
+- All Tables → wrap in `ScrollArea` OR convert to card list on `< md` via new `DataList` fallback.
+- All Toolbars → `flex flex-wrap` with `gap-2` and consistent `min-h-touch` (44px) targets.
+- Charts → parent-sized (`ResizeObserver`), never fixed `height`.
 
-### Technical notes
-- Reuse `useIsMobile()` hook; do not add new state libs.
-- Only touch presentation/layout code. No changes to server functions, schemas, business logic, or Auth/Landing/Dashboard data logic.
-- Keep desktop layouts byte-identical at `md`+ where possible (all changes gated by mobile-first classes).
+## 4. Trading Workspace (highest priority)
 
-### Deliverable
-Concise summary of pages/components changed, remaining known issues, and screenshot evidence.
+Rebuild layout as a true responsive grid, not stacked-vs-side-by-side flip:
+
+```text
+< md  (phone)   : chart 55vh, tabs [Trade | Watchlist | Positions] below
+md–lg (tablet)  : chart + collapsible Trade panel (240px) side-by-side, watchlist as bottom drawer
+≥ lg  (laptop+) : chart | Trade panel | Watchlist rail | bottom Positions
+≥ 2xl           : add MultiChartStrip + AI panel column
+```
+
+Buy/Sell always visible from `md` upward. Bottom dock stays only on `< md`.
+
+## 5. Migration Waves
+
+Wave A — Foundation (tokens, primitives, ResponsiveDialog, DataList, ScrollArea wrappers). No visual change yet.
+
+Wave B — High-traffic routes: Trading Workspace, Analytics Center, Journal, Paper Trading, Dashboard.
+
+Wave C — Replay Studio, Championships, Battle Arena, Community, AI Coach.
+
+Wave D — Achievements, Settings, Admin, Auth polish, Landing sanity check.
+
+Wave E — QA sweep at 320 / 375 / 390 / 414 / 768 / 820 / 1024 / 1280 / 1440 / 1920 via Playwright screenshots; fix any residual overflow/clip.
+
+## 6. Guardrails
+
+- Add an ESLint rule / doc note forbidding raw `w-[Npx]` and `min-w-[Npx]` outside `src/components/layout/`.
+- Add a Storybook-less "responsive playground" route `/dev/responsive` (dev-only) listing every primitive at each breakpoint for regression checks.
+- Do NOT touch: Auth flow logic, Landing copy, Dashboard data wiring, Paper Trading engine, Journal data model, Challenges logic, Statistics math — layout only, per prior constraints.
+
+## Technical Notes
+
+- Tailwind v4: breakpoints declared via `@theme` custom `--breakpoint-*` tokens; fluid type via `--text-*: clamp(...)`.
+- Primitives are presentational only — no data fetching, so migration is mechanical.
+- Estimated file touches: ~6 new primitives, ~40 route/component edits, 1 styles.css update.
+- No DB changes, no server function changes.
+
+Reply "go" to start with Wave A, or tell me to reorder waves / drop routes.

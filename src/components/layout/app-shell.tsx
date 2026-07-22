@@ -141,8 +141,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           onMenuClick={() => setMobileOpen(true)}
           onSearchClick={() => setOpen(true)}
         />
-        <main id="main" className="flex-1 px-4 pb-28 pt-4 safe-x sm:px-6 sm:pt-6 md:pb-10 md:pt-8 lg:px-8">
-          <div className="mx-auto w-full max-w-7xl">{children}</div>
+        <main id="main" className="flex-1 page-x page-y pb-28 md:pb-10">
+          <div className="mx-auto w-full max-w-[1600px]">{children}</div>
         </main>
         {/* Mobile bottom nav */}
         <MobileBottomNav currentPath={pathname} onMenuClick={() => setMobileOpen(true)} />
