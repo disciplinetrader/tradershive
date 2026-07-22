@@ -101,8 +101,8 @@ export function FiltersBar() {
       {filters.preset === "custom" ? (
         <Popover open={customOpen} onOpenChange={setCustomOpen}>
           <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className="h-9"><CalendarIcon className="h-3.5 w-3.5 mr-2" />
-              {filters.from && filters.to ? `${filters.from.slice(0,10)} → ${filters.to.slice(0,10)}` : "Pick range"}
+            <Button variant="outline" size="sm" className="h-9 w-full md:w-auto justify-start"><CalendarIcon className="h-3.5 w-3.5 mr-2" />
+              <span className="truncate">{filters.from && filters.to ? `${filters.from.slice(0,10)} → ${filters.to.slice(0,10)}` : "Pick range"}</span>
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-64 p-3 pointer-events-auto" align="start">
