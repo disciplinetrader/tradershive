@@ -110,9 +110,9 @@ export class SimulationAccountRegistry {
 }
 
 function cryptoId(): string {
-  if (typeof globalThis !== "undefined" && (globalThis as typeof globalThis & { crypto?: { randomUUID?: () => string } }).crypto?.randomUUID) {
-    return (globalThis as typeof globalThis & { crypto: { randomUUID: () => string } }).crypto.randomUUID();
-  }
+  const g = globalThis as typeof globalThis & { crypto?: { randomUUID?: () => string } };
+  const uuid = g.crypto?.randomUUID;
+  if (uuid) return uuid.call(g.crypto);
   return `acc_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`;
 }
 
