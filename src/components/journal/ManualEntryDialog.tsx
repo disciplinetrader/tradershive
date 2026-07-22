@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   AlertCircle,
@@ -10,6 +10,8 @@ import {
   Plus,
   RotateCcw,
   Sparkles,
+  Trash2,
+  X,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -33,7 +35,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import { createEntry, journalKeys, type EntryInsert } from "@/lib/journal/api";
+import {
+  createEntry,
+  deleteTaxonomy,
+  fetchTaxonomy,
+  journalKeys,
+  upsertTaxonomy,
+  type EntryInsert,
+  type JournalTaxonomy,
+} from "@/lib/journal/api";
 import {
   DEFAULT_EMOTIONS,
   DEFAULT_MISTAKES,
@@ -44,7 +54,6 @@ import {
 } from "@/lib/journal/constants";
 import {
   findInstrument,
-  formatPrice,
   validatePrice,
   type InstrumentRecord,
 } from "@/lib/journal/instruments";
@@ -53,7 +62,6 @@ import {
   clearDraft,
   computeCompleteness,
   computePips,
-  computeRiskPercent,
   formatDuration,
   loadDefaults,
   loadDraft,
@@ -383,6 +391,50 @@ function ManualForm({
 
   const [savedAt, setSavedAt] = useState<number | null>(null);
 
+  // ---- Custom strategy tags (kind: setup) ----
+  const taxonomyQuery = useQuery({
+    queryKey: journalKeys.taxonomy(),
+    queryFn: fetchTaxonomy,
+  });
+  const customSetups = useMemo<JournalTaxonomy[]>(
+    () => (taxonomyQuery.data ?? []).filter((t) => t.kind === "setup"),
+    [taxonomyQuery.data],
+  );
+  const strategyOptions = useMemo(() => {
+    const defaults = DEFAULT_SETUPS.map((o) => ({ value: o.value, label: o.label, custom: false as const }));
+    const custom = customSetups.map((c) => ({ value: c.value, label: c.label, custom: true as const, id: c.id }));
+    return [...defaults, ...custom];
+  }, [customSetups]);
+
+  const addCustomSetup = async (label: string) => {
+    const trimmed = label.trim();
+    if (!user || !trimmed) return;
+    try {
+      const created = await upsertTaxonomy({ userId: user.id, kind: "setup", label: trimmed });
+      await qc.invalidateQueries({ queryKey: journalKeys.taxonomy() });
+      setStrategyTags((prev) => (prev.includes(created.value) ? prev : [...prev, created.value]));
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  };
+  const removeCustomSetup = async (t: JournalTaxonomy) => {
+    try {
+      await deleteTaxonomy(t.id);
+      await qc.invalidateQueries({ queryKey: journalKeys.taxonomy() });
+      setStrategyTags((prev) => prev.filter((v) => v !== t.value));
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  };
+
+  // ---- Validation refs (scroll + focus first invalid) ----
+  const instrumentRef = useRef<HTMLDivElement>(null);
+  const entryRef = useRef<HTMLInputElement>(null);
+  const openedAtRef = useRef<HTMLInputElement>(null);
+  const sessionRef = useRef<HTMLButtonElement>(null);
+  const strategyRef = useRef<HTMLDivElement>(null);
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false);
+
   // Auto-detect session whenever open time changes and auto mode is on.
   useEffect(() => {
     if (!sessionAuto) return;
@@ -422,13 +474,12 @@ function ManualForm({
     const bal = Number(accountBalance);
     const lot = Number(lotSize);
     if (!instrument || !Number.isFinite(bal) || !bal || !Number.isFinite(lot) || !lot) return null;
-    return computeRiskPercent(
-      entryValidation.value,
-      slValidation.value,
-      lot,
-      instrument.contractSize,
-      bal,
-    );
+    const e = entryValidation.value;
+    const sl = slValidation.value;
+    if (e == null || sl == null) return null;
+    const riskCash = Math.abs(e - sl) * lot * instrument.contractSize;
+    if (!Number.isFinite(riskCash) || !riskCash) return null;
+    return Math.round((riskCash / bal) * 10_000) / 100;
   }, [instrument, accountBalance, lotSize, entryValidation.value, slValidation.value]);
 
   const computedDuration = useMemo(() => {
@@ -612,10 +663,26 @@ function ManualForm({
     onError: (err: Error) => toast.error(err.message),
   });
 
+  const focusFirstInvalid = () => {
+    let el: HTMLElement | null = null;
+    if (!instrument) el = instrumentRef.current;
+    else if (!entryPrice || !entryValidation.valid) el = entryRef.current;
+    else if (!openedAt) el = openedAtRef.current;
+    else if (!session) el = sessionRef.current;
+    else if (strategyTags.length === 0) el = strategyRef.current;
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    requestAnimationFrame(() => {
+      try { el?.focus({ preventScroll: true }); } catch { /* ignore */ }
+    });
+  };
+
   submitRef.current = () => {
     if (mut.isPending) return;
+    setAttemptedSubmit(true);
     if (!canSubmit) {
       toast.error("Complete the required fields highlighted in red");
+      focusFirstInvalid();
       return;
     }
     mut.mutate();
@@ -722,16 +789,21 @@ function ManualForm({
         onToggle={toggleSection}
       >
         <div className="grid gap-3 sm:grid-cols-[1fr_180px]">
-          <div className="space-y-1.5">
+          <div className="space-y-1.5" ref={instrumentRef} tabIndex={-1}>
             <Label>
               Symbol <span className="ml-0.5 text-danger">*</span>
             </Label>
-            <InstrumentSearchInput
-              value={symbol}
-              marketFilter={null}
-              onSelect={(i) => { setInstrument(i); setSymbol(i.symbol); }}
-              autoFocus
-            />
+            <div className={cn(
+              "rounded-md",
+              attemptedSubmit && !instrument && "ring-2 ring-danger ring-offset-1 ring-offset-background",
+            )}>
+              <InstrumentSearchInput
+                value={symbol}
+                marketFilter={null}
+                onSelect={(i) => { setInstrument(i); setSymbol(i.symbol); }}
+                autoFocus
+              />
+            </div>
             {instrument ? (
               <p className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
                 <CheckCircle2 className="h-3 w-3 text-success" />
@@ -745,7 +817,7 @@ function ManualForm({
               <p className="flex items-center gap-1.5 text-[11px] text-warning">
                 <AlertCircle className="h-3 w-3" /> Not in catalog — will be saved as custom symbol
               </p>
-            ) : requiredMissing.instrument ? (
+            ) : (attemptedSubmit && requiredMissing.instrument) ? (
               <p className="flex items-center gap-1.5 text-[11px] text-danger">
                 <AlertCircle className="h-3 w-3" /> Instrument is required
               </p>
@@ -769,7 +841,7 @@ function ManualForm({
       <Section
         id="execution"
         title="Execution"
-        description="Direction, prices, and position size. Prices are validated against instrument precision."
+        description="Direction, entry price, and stop / take profit. Exit price and position size are captured automatically from your closed trades."
         status={sectionStatus(["execution", "risk"])}
         sectionState={sectionState}
         onToggle={toggleSection}
@@ -798,16 +870,6 @@ function ManualForm({
               ))}
             </div>
           </div>
-          <div className="space-y-1.5">
-            <Label>Position size (lots / units)</Label>
-            <Input
-              value={lotSize}
-              onChange={(e) => setLotSize(sanitizeDecimal(e.target.value))}
-              inputMode="decimal"
-              placeholder={instrument ? `min ${instrument.minLot}` : "e.g. 0.10"}
-              className="h-11"
-            />
-          </div>
           <PriceField
             label="Entry price"
             value={entryPrice}
@@ -815,13 +877,8 @@ function ManualForm({
             validation={entryValidation}
             instrument={instrument}
             required
-          />
-          <PriceField
-            label="Exit price"
-            value={exitPrice}
-            onChange={setExitPrice}
-            validation={exitValidation}
-            instrument={instrument}
+            attempted={attemptedSubmit}
+            inputRef={entryRef}
           />
           <PriceField
             label="Stop loss"
@@ -840,7 +897,7 @@ function ManualForm({
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label>Account balance (for risk %)</Label>
+            <Label>Account balance</Label>
             <Input
               value={accountBalance}
               onChange={(e) => setAccountBalance(sanitizeDecimal(e.target.value))}
@@ -850,7 +907,7 @@ function ManualForm({
             />
           </div>
           <div className="space-y-1.5">
-            <Label>Target risk %</Label>
+            <Label>Risk %</Label>
             <Input
               value={riskPercent}
               onChange={(e) => setRiskPercent(sanitizeDecimal(e.target.value))}
@@ -876,10 +933,11 @@ function ManualForm({
               <Clock className="h-3.5 w-3.5" />Opened at <span className="text-danger">*</span>
             </Label>
             <Input
+              ref={openedAtRef}
               type="datetime-local"
               value={openedAt}
               onChange={(e) => setOpenedAt(e.target.value)}
-              className={cn("h-11", requiredMissing.openedAt && "border-danger")}
+              className={cn("h-11", attemptedSubmit && requiredMissing.openedAt && "border-danger")}
             />
           </div>
           <div className="space-y-1.5">
@@ -900,7 +958,7 @@ function ManualForm({
               </label>
             </div>
             <Select value={session} onValueChange={(v) => { setSession(v); setSessionAuto(false); }}>
-              <SelectTrigger className={cn("mt-1.5 h-11", requiredMissing.session && "border-danger")}>
+              <SelectTrigger ref={sessionRef} className={cn("mt-1.5 h-11", attemptedSubmit && requiredMissing.session && "border-danger")}>
                 <SelectValue placeholder="Select session" />
               </SelectTrigger>
               <SelectContent>
@@ -978,16 +1036,18 @@ function ManualForm({
         onToggle={toggleSection}
       >
         <div className="space-y-3">
-          <div className="space-y-1.5">
+          <div ref={strategyRef} tabIndex={-1} className="space-y-1.5">
             <Label>Strategy tags <span className="text-danger">*</span></Label>
-            <ChipMulti options={DEFAULT_SETUPS} values={strategyTags} onChange={setStrategyTags} />
-            {strategyTags.length > 0 ? (
-              <div className="flex flex-wrap gap-1 pt-1">
-                {strategyTags.map((t) => (
-                  <Badge key={t} variant="secondary" className="text-[10px]">{t}</Badge>
-                ))}
-              </div>
-            ) : requiredMissing.strategy ? (
+            <StrategyTagPicker
+              options={strategyOptions}
+              values={strategyTags}
+              onChange={setStrategyTags}
+              onAddCustom={addCustomSetup}
+              onRemoveCustom={removeCustomSetup}
+              customSetups={customSetups}
+              invalid={attemptedSubmit && requiredMissing.strategy}
+            />
+            {attemptedSubmit && requiredMissing.strategy ? (
               <p className="text-[11px] text-danger">Pick at least one setup</p>
             ) : null}
           </div>
@@ -1121,6 +1181,8 @@ function PriceField({
   validation,
   instrument,
   required = false,
+  attempted = false,
+  inputRef,
 }: {
   label: string;
   value: string;
@@ -1128,9 +1190,11 @@ function PriceField({
   validation: ReturnType<typeof validatePrice>;
   instrument: InstrumentRecord | null;
   required?: boolean;
+  attempted?: boolean;
+  inputRef?: React.Ref<HTMLInputElement>;
 }) {
   const invalid = value.length > 0 && !validation.valid;
-  const missingRequired = required && value.length === 0;
+  const missingRequired = required && value.length === 0 && attempted;
   return (
     <div className="space-y-1">
       <Label>
@@ -1138,6 +1202,7 @@ function PriceField({
         {required ? <span className="ml-0.5 text-danger">*</span> : null}
       </Label>
       <Input
+        ref={inputRef}
         value={value}
         onChange={(e) => onChange(sanitizeDecimal(e.target.value))}
         inputMode="decimal"
@@ -1207,4 +1272,90 @@ function sanitizeSignedDecimal(v: string): string {
 
 function sessionLabel(v: string): string {
   return SESSION_OPTIONS.find((s) => s.value === v)?.label ?? v;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  StrategyTagPicker                                                          */
+/* -------------------------------------------------------------------------- */
+
+type StrategyOption =
+  | { value: string; label: string; custom: false }
+  | { value: string; label: string; custom: true; id: string };
+
+function StrategyTagPicker({
+  options,
+  values,
+  onChange,
+  onAddCustom,
+  onRemoveCustom,
+  customSetups,
+  invalid,
+}: {
+  options: StrategyOption[];
+  values: string[];
+  onChange: (v: string[]) => void;
+  onAddCustom: (label: string) => void | Promise<void>;
+  onRemoveCustom: (t: JournalTaxonomy) => void | Promise<void>;
+  customSetups: JournalTaxonomy[];
+  invalid?: boolean;
+}) {
+  const [draft, setDraft] = useState("");
+  const toggle = (v: string) => {
+    onChange(values.includes(v) ? values.filter((x) => x !== v) : [...values, v]);
+  };
+  const submit = async () => {
+    const t = draft.trim();
+    if (!t) return;
+    setDraft("");
+    await onAddCustom(t);
+  };
+  return (
+    <div className={cn("rounded-md border border-input bg-background/50 p-2", invalid && "border-danger")}>
+      <div className="flex flex-wrap gap-1.5">
+        {options.map((o) => {
+          const active = values.includes(o.value);
+          const customRef = o.custom ? customSetups.find((c) => c.id === o.id) : null;
+          return (
+            <span key={o.value} className="inline-flex items-center">
+              <button
+                type="button"
+                onClick={() => toggle(o.value)}
+                className={cn(
+                  "h-7 rounded-full border px-2.5 text-[11px] transition-colors",
+                  active
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border/70 text-muted-foreground hover:text-foreground",
+                  o.custom && "pr-1",
+                )}
+              >
+                {o.label}
+                {o.custom && customRef ? (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onRemoveCustom(customRef); }}
+                    className="ml-1 rounded-full p-0.5 text-muted-foreground hover:bg-danger/10 hover:text-danger"
+                    aria-label={`Delete ${o.label}`}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                ) : null}
+              </button>
+            </span>
+          );
+        })}
+      </div>
+      <div className="mt-2 flex items-center gap-2">
+        <Input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void submit(); } }}
+          placeholder="Add your own tag…"
+          className="h-8 text-xs"
+        />
+        <Button type="button" size="sm" variant="outline" className="h-8" onClick={submit} disabled={!draft.trim()}>
+          <Plus className="mr-1 h-3 w-3" /> Add
+        </Button>
+      </div>
+    </div>
+  );
 }

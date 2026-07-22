@@ -80,6 +80,7 @@ import { Route as AuthenticatedLeaderboardLeagueRouteImport } from './routes/_au
 import { Route as AuthenticatedLeaderboardGlobalRouteImport } from './routes/_authenticated/leaderboard.global'
 import { Route as AuthenticatedLeaderboardFriendsRouteImport } from './routes/_authenticated/leaderboard.friends'
 import { Route as AuthenticatedLeaderboardCountryRouteImport } from './routes/_authenticated/leaderboard.country'
+import { Route as AuthenticatedJournalEntryIdRouteImport } from './routes/_authenticated/journal.$entryId'
 import { Route as AuthenticatedCommunityTrendingRouteImport } from './routes/_authenticated/community.trending'
 import { Route as AuthenticatedCommunityReviewsRouteImport } from './routes/_authenticated/community.reviews'
 import { Route as AuthenticatedCommunityMentorsRouteImport } from './routes/_authenticated/community.mentors'
@@ -543,6 +544,12 @@ const AuthenticatedLeaderboardCountryRoute =
     path: '/country',
     getParentRoute: () => AuthenticatedLeaderboardRoute,
   } as any)
+const AuthenticatedJournalEntryIdRoute =
+  AuthenticatedJournalEntryIdRouteImport.update({
+    id: '/$entryId',
+    path: '/$entryId',
+    getParentRoute: () => AuthenticatedJournalRoute,
+  } as any)
 const AuthenticatedCommunityTrendingRoute =
   AuthenticatedCommunityTrendingRouteImport.update({
     id: '/trending',
@@ -960,7 +967,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/education': typeof AuthenticatedEducationRoute
   '/guilds': typeof AuthenticatedGuildsRoute
-  '/journal': typeof AuthenticatedJournalRoute
+  '/journal': typeof AuthenticatedJournalRouteWithChildren
   '/leaderboard': typeof AuthenticatedLeaderboardRouteWithChildren
   '/market': typeof AuthenticatedMarketRouteWithChildren
   '/marketplace': typeof AuthenticatedMarketplaceRoute
@@ -1028,6 +1035,7 @@ export interface FileRoutesByFullPath {
   '/community/mentors': typeof AuthenticatedCommunityMentorsRoute
   '/community/reviews': typeof AuthenticatedCommunityReviewsRoute
   '/community/trending': typeof AuthenticatedCommunityTrendingRoute
+  '/journal/$entryId': typeof AuthenticatedJournalEntryIdRoute
   '/leaderboard/country': typeof AuthenticatedLeaderboardCountryRoute
   '/leaderboard/friends': typeof AuthenticatedLeaderboardFriendsRoute
   '/leaderboard/global': typeof AuthenticatedLeaderboardGlobalRoute
@@ -1094,7 +1102,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/education': typeof AuthenticatedEducationRoute
   '/guilds': typeof AuthenticatedGuildsRoute
-  '/journal': typeof AuthenticatedJournalRoute
+  '/journal': typeof AuthenticatedJournalRouteWithChildren
   '/marketplace': typeof AuthenticatedMarketplaceRoute
   '/paper-trading': typeof AuthenticatedPaperTradingRoute
   '/profile': typeof AuthenticatedProfileRouteWithChildren
@@ -1156,6 +1164,7 @@ export interface FileRoutesByTo {
   '/community/mentors': typeof AuthenticatedCommunityMentorsRoute
   '/community/reviews': typeof AuthenticatedCommunityReviewsRoute
   '/community/trending': typeof AuthenticatedCommunityTrendingRoute
+  '/journal/$entryId': typeof AuthenticatedJournalEntryIdRoute
   '/leaderboard/country': typeof AuthenticatedLeaderboardCountryRoute
   '/leaderboard/friends': typeof AuthenticatedLeaderboardFriendsRoute
   '/leaderboard/global': typeof AuthenticatedLeaderboardGlobalRoute
@@ -1229,7 +1238,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/education': typeof AuthenticatedEducationRoute
   '/_authenticated/guilds': typeof AuthenticatedGuildsRoute
-  '/_authenticated/journal': typeof AuthenticatedJournalRoute
+  '/_authenticated/journal': typeof AuthenticatedJournalRouteWithChildren
   '/_authenticated/leaderboard': typeof AuthenticatedLeaderboardRouteWithChildren
   '/_authenticated/market': typeof AuthenticatedMarketRouteWithChildren
   '/_authenticated/marketplace': typeof AuthenticatedMarketplaceRoute
@@ -1297,6 +1306,7 @@ export interface FileRoutesById {
   '/_authenticated/community/mentors': typeof AuthenticatedCommunityMentorsRoute
   '/_authenticated/community/reviews': typeof AuthenticatedCommunityReviewsRoute
   '/_authenticated/community/trending': typeof AuthenticatedCommunityTrendingRoute
+  '/_authenticated/journal/$entryId': typeof AuthenticatedJournalEntryIdRoute
   '/_authenticated/leaderboard/country': typeof AuthenticatedLeaderboardCountryRoute
   '/_authenticated/leaderboard/friends': typeof AuthenticatedLeaderboardFriendsRoute
   '/_authenticated/leaderboard/global': typeof AuthenticatedLeaderboardGlobalRoute
@@ -1438,6 +1448,7 @@ export interface FileRouteTypes {
     | '/community/mentors'
     | '/community/reviews'
     | '/community/trending'
+    | '/journal/$entryId'
     | '/leaderboard/country'
     | '/leaderboard/friends'
     | '/leaderboard/global'
@@ -1566,6 +1577,7 @@ export interface FileRouteTypes {
     | '/community/mentors'
     | '/community/reviews'
     | '/community/trending'
+    | '/journal/$entryId'
     | '/leaderboard/country'
     | '/leaderboard/friends'
     | '/leaderboard/global'
@@ -1706,6 +1718,7 @@ export interface FileRouteTypes {
     | '/_authenticated/community/mentors'
     | '/_authenticated/community/reviews'
     | '/_authenticated/community/trending'
+    | '/_authenticated/journal/$entryId'
     | '/_authenticated/leaderboard/country'
     | '/_authenticated/leaderboard/friends'
     | '/_authenticated/leaderboard/global'
@@ -2270,6 +2283,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/leaderboard/country'
       preLoaderRoute: typeof AuthenticatedLeaderboardCountryRouteImport
       parentRoute: typeof AuthenticatedLeaderboardRoute
+    }
+    '/_authenticated/journal/$entryId': {
+      id: '/_authenticated/journal/$entryId'
+      path: '/$entryId'
+      fullPath: '/journal/$entryId'
+      preLoaderRoute: typeof AuthenticatedJournalEntryIdRouteImport
+      parentRoute: typeof AuthenticatedJournalRoute
     }
     '/_authenticated/community/trending': {
       id: '/_authenticated/community/trending'
@@ -3006,6 +3026,17 @@ const AuthenticatedCommunityRouteWithChildren =
     AuthenticatedCommunityRouteChildren,
   )
 
+interface AuthenticatedJournalRouteChildren {
+  AuthenticatedJournalEntryIdRoute: typeof AuthenticatedJournalEntryIdRoute
+}
+
+const AuthenticatedJournalRouteChildren: AuthenticatedJournalRouteChildren = {
+  AuthenticatedJournalEntryIdRoute: AuthenticatedJournalEntryIdRoute,
+}
+
+const AuthenticatedJournalRouteWithChildren =
+  AuthenticatedJournalRoute._addFileChildren(AuthenticatedJournalRouteChildren)
+
 interface AuthenticatedLeaderboardRouteChildren {
   AuthenticatedLeaderboardCountryRoute: typeof AuthenticatedLeaderboardCountryRoute
   AuthenticatedLeaderboardFriendsRoute: typeof AuthenticatedLeaderboardFriendsRoute
@@ -3142,7 +3173,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEducationRoute: typeof AuthenticatedEducationRoute
   AuthenticatedGuildsRoute: typeof AuthenticatedGuildsRoute
-  AuthenticatedJournalRoute: typeof AuthenticatedJournalRoute
+  AuthenticatedJournalRoute: typeof AuthenticatedJournalRouteWithChildren
   AuthenticatedLeaderboardRoute: typeof AuthenticatedLeaderboardRouteWithChildren
   AuthenticatedMarketRoute: typeof AuthenticatedMarketRouteWithChildren
   AuthenticatedMarketplaceRoute: typeof AuthenticatedMarketplaceRoute
@@ -3170,7 +3201,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEducationRoute: AuthenticatedEducationRoute,
   AuthenticatedGuildsRoute: AuthenticatedGuildsRoute,
-  AuthenticatedJournalRoute: AuthenticatedJournalRoute,
+  AuthenticatedJournalRoute: AuthenticatedJournalRouteWithChildren,
   AuthenticatedLeaderboardRoute: AuthenticatedLeaderboardRouteWithChildren,
   AuthenticatedMarketRoute: AuthenticatedMarketRouteWithChildren,
   AuthenticatedMarketplaceRoute: AuthenticatedMarketplaceRoute,

@@ -61,7 +61,6 @@ export const SESSION_OPTIONS: Option[] = [
   { value: "london", label: "London" },
   { value: "london_ny_overlap", label: "London / NY Overlap" },
   { value: "new_york", label: "New York" },
-  { value: "custom", label: "Custom" },
 ];
 
 export const GRADE_OPTIONS: Option[] = [
