@@ -120,4 +120,8 @@ export const JOURNAL_FEATURES = {
 export const JOURNAL_STORAGE_KEYS = {
   view: "th_journal_view",
   filters: "th_journal_filters",
+  draft: "th_journal_draft_v2",
+  defaults: "th_journal_defaults_v2",
+  sections: "th_journal_sections_v2",
 } as const;
+
