@@ -92,7 +92,7 @@ function scenarioPropFirmRules(): ScenarioResult {
     { startingBalance: 100_000, profitTargetPct: 8, maxDailyDrawdownPct: 5, maxTotalDrawdownPct: 10, minTradingDays: 5 },
     snap, daily,
   );
-  if (!result.ok) return fail("prop_rules_pass", result.breaches.map((b) => b.message).join("; "));
+  if (!result.passed) return fail("prop_rules_pass", result.breaches.map((b) => b.message).join("; "));
   if (!result.progress.profitTargetHit) return fail("prop_rules_target", "8% target not hit");
   if (!result.progress.tradingDaysMet) return fail("prop_rules_days", "min days not met");
   return ok("prop_rules_pass", `profit=${result.progress.profitPct.toFixed(2)}% days=${result.progress.tradingDays}`);
@@ -109,7 +109,7 @@ function scenarioPropFirmBreach(): ScenarioResult {
     { startingBalance: 100_000, maxDailyDrawdownPct: 5, maxTotalDrawdownPct: 10 },
     snap, daily,
   );
-  if (result.ok) return fail("prop_rules_breach", "expected daily drawdown breach");
+  if (result.passed) return fail("prop_rules_breach", "expected daily drawdown breach");
   if (result.breaches[0].code !== "daily_drawdown") return fail("prop_rules_breach", "wrong breach code");
   return ok("prop_rules_breach", `caught ${result.breaches[0].message}`);
 }
