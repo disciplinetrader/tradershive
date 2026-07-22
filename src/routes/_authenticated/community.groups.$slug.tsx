@@ -15,6 +15,7 @@ import {
   getGroup, joinGroup, leaveGroup, listGroupMessages, sendGroupMessage, listGroupResources,
 } from "@/lib/community-groups.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { routeBoundaries } from "@/lib/route-boundaries";
 
 export const Route = createFileRoute("/_authenticated/community/groups/$slug")({
   head: ({ params }) => ({
@@ -24,6 +25,12 @@ export const Route = createFileRoute("/_authenticated/community/groups/$slug")({
     ],
   }),
   component: GroupPage,
+  ...routeBoundaries({
+    label: "Study group",
+    boundary: "community_group_route",
+    backHref: "/community/groups",
+    backLabel: "Back to Study Groups",
+  }),
 });
 
 function GroupPage() {
