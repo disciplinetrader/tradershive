@@ -529,26 +529,8 @@ function TradingWorkspaceInner() {
 
         <SymbolSearch open={symbolSearchOpen} onOpenChange={setSymbolSearchOpen} />
 
-        {/* Mobile trade FAB → bottom Sheet with OrderPanel */}
-        {isMobile ? (
-          <>
-            <button
-              onClick={() => setTradeSheetOpen(true)}
-              className="fixed bottom-20 right-4 z-40 grid h-14 w-14 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg safe-bottom active:scale-95 transition lg:hidden"
-              aria-label="Open trade panel"
-            >
-              <Zap className="h-6 w-6" />
-            </button>
-            <Sheet open={tradeSheetOpen} onOpenChange={setTradeSheetOpen}>
-              <SheetContent side="bottom" className="max-h-[90dvh] overflow-y-auto p-4 safe-bottom">
-                <SheetHeader className="mb-3 text-left">
-                  <SheetTitle>Trade {symbol}</SheetTitle>
-                </SheetHeader>
-                <OrderPanel />
-              </SheetContent>
-            </Sheet>
-          </>
-        ) : null}
+        {/* Persistent mobile trade dock — no FAB hunt */}
+        {isMobile ? <MobileQuickTradeDock /> : null}
       </div>
     </TooltipProvider>
   );
