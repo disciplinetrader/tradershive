@@ -14,9 +14,16 @@ import { deletePost, getPost } from "@/lib/community.functions";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { routeBoundaries } from "@/lib/route-boundaries";
 
 export const Route = createFileRoute("/_authenticated/community/post/$id")({
   component: Page,
+  ...routeBoundaries({
+    label: "Post",
+    boundary: "community_post_route",
+    backHref: "/community",
+    backLabel: "Back to Community",
+  }),
 });
 
 function Page() {

@@ -50,7 +50,7 @@ import { TimelineView } from "@/components/journal/TimelineView";
 import { JournalDrawer } from "@/components/journal/JournalDrawer";
 import { ManualEntryDialog } from "@/components/journal/ManualEntryDialog";
 import { cn } from "@/lib/utils";
-import { RouteError } from "@/components/common/RouteError";
+import { routeBoundaries } from "@/lib/route-boundaries";
 
 export const Route = createFileRoute("/_authenticated/journal")({
   head: () => ({
@@ -60,14 +60,12 @@ export const Route = createFileRoute("/_authenticated/journal")({
     ],
   }),
   component: JournalPage,
-  errorComponent: ({ error, reset }) => (
-    <RouteError
-      error={error}
-      reset={reset}
-      title="Journal failed to load"
-      boundary="journal_route"
-    />
-  ),
+  ...routeBoundaries({
+    label: "Journal",
+    boundary: "journal_route",
+    backHref: "/dashboard",
+    backLabel: "Back to Dashboard",
+  }),
 });
 
 type ViewMode = "card" | "table" | "calendar" | "timeline";

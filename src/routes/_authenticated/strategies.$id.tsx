@@ -29,9 +29,16 @@ import { toExportJSON, toMarkdown } from "@/lib/strategy/calculations";
 import { useAuth } from "@/hooks/use-auth";
 import type { Strategy } from "@/lib/strategy/types";
 import { cn } from "@/lib/utils";
+import { routeBoundaries } from "@/lib/route-boundaries";
 
 export const Route = createFileRoute("/_authenticated/strategies/$id")({
   component: StrategyDetail,
+  ...routeBoundaries({
+    label: "Strategy",
+    boundary: "strategy_detail_route",
+    backHref: "/strategies",
+    backLabel: "Back to Strategies",
+  }),
 });
 
 function StrategyDetail() {

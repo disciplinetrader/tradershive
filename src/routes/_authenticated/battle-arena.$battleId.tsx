@@ -22,9 +22,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { LineChart, LogIn, LogOut, Trash2, Copy, Play, Eye } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { routeBoundaries } from "@/lib/route-boundaries";
 
 export const Route = createFileRoute("/_authenticated/battle-arena/$battleId")({
   component: BattleDetail,
+  ...routeBoundaries({
+    label: "Battle",
+    boundary: "battle_detail_route",
+    backHref: "/battle-arena",
+    backLabel: "Back to Battle Arena",
+  }),
 });
 
 function BattleDetail() {

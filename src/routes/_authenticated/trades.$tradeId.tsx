@@ -14,6 +14,8 @@ import { findSymbol } from "@/lib/paper-trading/symbols";
 import { formatCurrency, formatNumber } from "@/lib/paper-trading/calculations";
 import { cn } from "@/lib/utils";
 
+import { routeBoundaries } from "@/lib/route-boundaries";
+
 const searchSchema = z.object({
   source: z.enum(["paper", "replay"]).catch("paper").default("paper"),
 });
@@ -21,6 +23,12 @@ const searchSchema = z.object({
 export const Route = createFileRoute("/_authenticated/trades/$tradeId")({
   validateSearch: (s) => searchSchema.parse(s),
   component: TradeDetailsPage,
+  ...routeBoundaries({
+    label: "Trade",
+    boundary: "trade_details_route",
+    backHref: "/journal",
+    backLabel: "Back to Journal",
+  }),
 });
 
 function TradeDetailsPage() {
