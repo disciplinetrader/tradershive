@@ -4521,6 +4521,8 @@ export type Database = {
       journal_attachments: {
         Row: {
           bucket: string
+          caption: string | null
+          category: string | null
           content_type: string | null
           created_at: string
           entry_id: string
@@ -4529,10 +4531,13 @@ export type Database = {
           name: string | null
           path: string
           size_bytes: number | null
+          sort_order: number
           user_id: string
         }
         Insert: {
           bucket: string
+          caption?: string | null
+          category?: string | null
           content_type?: string | null
           created_at?: string
           entry_id: string
@@ -4541,10 +4546,13 @@ export type Database = {
           name?: string | null
           path: string
           size_bytes?: number | null
+          sort_order?: number
           user_id: string
         }
         Update: {
           bucket?: string
+          caption?: string | null
+          category?: string | null
           content_type?: string | null
           created_at?: string
           entry_id?: string
@@ -4553,6 +4561,7 @@ export type Database = {
           name?: string | null
           path?: string
           size_bytes?: number | null
+          sort_order?: number
           user_id?: string
         }
         Relationships: [
@@ -4574,7 +4583,9 @@ export type Database = {
           ai_suggestions: Json | null
           checklist: Json
           closed_at: string | null
+          closed_tz: string | null
           commission: number | null
+          confidence: number | null
           created_at: string
           deleted_at: string | null
           direction: string | null
@@ -4583,6 +4594,8 @@ export type Database = {
           emotions: string[]
           entry_price: number | null
           entry_quality: number | null
+          entry_reason_html: string | null
+          entry_reason_text: string | null
           execution: number | null
           exit_price: number | null
           exit_quality: number | null
@@ -4592,11 +4605,13 @@ export type Database = {
           is_public: boolean
           lot_size: number | null
           market: string | null
+          mistake_flags: Json
           mistakes: string[]
           moderation_status: string | null
           notes_html: string | null
           notes_text: string | null
           opened_at: string | null
+          opened_tz: string | null
           patience: number | null
           pnl: number | null
           reward_pct: number | null
@@ -4605,12 +4620,14 @@ export type Database = {
           rr: number | null
           screenshots: string[]
           session: Database["public"]["Enums"]["journal_session"] | null
+          session_auto_detected: boolean
           setup: string | null
           share_token: string | null
           status: Database["public"]["Enums"]["journal_status"]
           stop_loss: number | null
           strategy: string | null
           strategy_id: string | null
+          strategy_tags: string[]
           swap: number | null
           symbol: string | null
           take_profit: number | null
@@ -4627,7 +4644,9 @@ export type Database = {
           ai_suggestions?: Json | null
           checklist?: Json
           closed_at?: string | null
+          closed_tz?: string | null
           commission?: number | null
+          confidence?: number | null
           created_at?: string
           deleted_at?: string | null
           direction?: string | null
@@ -4636,6 +4655,8 @@ export type Database = {
           emotions?: string[]
           entry_price?: number | null
           entry_quality?: number | null
+          entry_reason_html?: string | null
+          entry_reason_text?: string | null
           execution?: number | null
           exit_price?: number | null
           exit_quality?: number | null
@@ -4645,11 +4666,13 @@ export type Database = {
           is_public?: boolean
           lot_size?: number | null
           market?: string | null
+          mistake_flags?: Json
           mistakes?: string[]
           moderation_status?: string | null
           notes_html?: string | null
           notes_text?: string | null
           opened_at?: string | null
+          opened_tz?: string | null
           patience?: number | null
           pnl?: number | null
           reward_pct?: number | null
@@ -4658,12 +4681,14 @@ export type Database = {
           rr?: number | null
           screenshots?: string[]
           session?: Database["public"]["Enums"]["journal_session"] | null
+          session_auto_detected?: boolean
           setup?: string | null
           share_token?: string | null
           status?: Database["public"]["Enums"]["journal_status"]
           stop_loss?: number | null
           strategy?: string | null
           strategy_id?: string | null
+          strategy_tags?: string[]
           swap?: number | null
           symbol?: string | null
           take_profit?: number | null
@@ -4680,7 +4705,9 @@ export type Database = {
           ai_suggestions?: Json | null
           checklist?: Json
           closed_at?: string | null
+          closed_tz?: string | null
           commission?: number | null
+          confidence?: number | null
           created_at?: string
           deleted_at?: string | null
           direction?: string | null
@@ -4689,6 +4716,8 @@ export type Database = {
           emotions?: string[]
           entry_price?: number | null
           entry_quality?: number | null
+          entry_reason_html?: string | null
+          entry_reason_text?: string | null
           execution?: number | null
           exit_price?: number | null
           exit_quality?: number | null
@@ -4698,11 +4727,13 @@ export type Database = {
           is_public?: boolean
           lot_size?: number | null
           market?: string | null
+          mistake_flags?: Json
           mistakes?: string[]
           moderation_status?: string | null
           notes_html?: string | null
           notes_text?: string | null
           opened_at?: string | null
+          opened_tz?: string | null
           patience?: number | null
           pnl?: number | null
           reward_pct?: number | null
@@ -4711,12 +4742,14 @@ export type Database = {
           rr?: number | null
           screenshots?: string[]
           session?: Database["public"]["Enums"]["journal_session"] | null
+          session_auto_detected?: boolean
           setup?: string | null
           share_token?: string | null
           status?: Database["public"]["Enums"]["journal_status"]
           stop_loss?: number | null
           strategy?: string | null
           strategy_id?: string | null
+          strategy_tags?: string[]
           swap?: number | null
           symbol?: string | null
           take_profit?: number | null
@@ -10225,7 +10258,14 @@ export type Database = {
         | "clap"
       community_report_status: "open" | "reviewing" | "resolved" | "dismissed"
       journal_grade: "A+" | "A" | "B" | "C" | "D" | "F"
-      journal_session: "london" | "new_york" | "asia" | "sydney" | "custom"
+      journal_session:
+        | "london"
+        | "new_york"
+        | "asia"
+        | "sydney"
+        | "custom"
+        | "london_ny_overlap"
+        | "tokyo"
       journal_status: "draft" | "published" | "archived"
       journal_taxonomy_kind: "setup" | "emotion" | "mistake"
       league:
@@ -10661,7 +10701,15 @@ export const Constants = {
       ],
       community_report_status: ["open", "reviewing", "resolved", "dismissed"],
       journal_grade: ["A+", "A", "B", "C", "D", "F"],
-      journal_session: ["london", "new_york", "asia", "sydney", "custom"],
+      journal_session: [
+        "london",
+        "new_york",
+        "asia",
+        "sydney",
+        "custom",
+        "london_ny_overlap",
+        "tokyo",
+      ],
       journal_status: ["draft", "published", "archived"],
       journal_taxonomy_kind: ["setup", "emotion", "mistake"],
       league: [
