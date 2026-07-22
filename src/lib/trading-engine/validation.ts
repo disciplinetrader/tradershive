@@ -106,7 +106,6 @@ export function validateIntent(
   }
 
   // Liquidation price estimate.
-  const { liquidationPrice: liqPx } = require("@/lib/paper-trading/risk") as typeof import("@/lib/paper-trading/risk");
   const liq = liqPx(fill.price, intent.side, lev);
 
   return {
