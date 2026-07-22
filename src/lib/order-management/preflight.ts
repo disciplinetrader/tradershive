@@ -35,7 +35,7 @@ export function preflight(
   const meta = findSymbol(intent.symbol);
   const spec = getInstrument(intent.symbol);
 
-  const sessionOpen = spec ? isMarketOpen(spec, now) : true;
+  const sessionOpen = spec ? isMarketOpen(spec.sessions, spec.exchange, now) : true;
   if (!sessionOpen) errors.push(`Market for ${intent.symbol} is currently closed`);
 
   const status: PreflightReport["instrument_status"] = spec
