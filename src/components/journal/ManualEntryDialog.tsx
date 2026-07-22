@@ -958,7 +958,7 @@ function ManualForm({
               </label>
             </div>
             <Select value={session} onValueChange={(v) => { setSession(v); setSessionAuto(false); }}>
-              <SelectTrigger className={cn("mt-1.5 h-11", requiredMissing.session && "border-danger")}>
+              <SelectTrigger ref={sessionRef} className={cn("mt-1.5 h-11", attemptedSubmit && requiredMissing.session && "border-danger")}>
                 <SelectValue placeholder="Select session" />
               </SelectTrigger>
               <SelectContent>
