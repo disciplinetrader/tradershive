@@ -10,11 +10,11 @@ import { SimulationAccountRegistry } from "./simulation-accounts";
 import { evaluatePropFirmRules } from "./prop-firm-rules";
 import type { ScenarioResult } from "./scenarios-phase2";
 
-function ok(name: string, notes: string): ScenarioResult {
-  return { name, passed: true, notes };
+function ok(name: string, details: string): ScenarioResult {
+  return { name, ok: true, notes };
 }
-function fail(name: string, notes: string): ScenarioResult {
-  return { name, passed: false, notes };
+function fail(name: string, details: string): ScenarioResult {
+  return { name, ok: false, notes };
 }
 
 function scenarioRetailForex(): ScenarioResult {
@@ -92,7 +92,7 @@ function scenarioPropFirmRules(): ScenarioResult {
     { startingBalance: 100_000, profitTargetPct: 8, maxDailyDrawdownPct: 5, maxTotalDrawdownPct: 10, minTradingDays: 5 },
     snap, daily,
   );
-  if (!result.passed) return fail("prop_rules_pass", result.breaches.map((b) => b.message).join("; "));
+  if (!result.ok) return fail("prop_rules_pass", result.breaches.map((b) => b.message).join("; "));
   if (!result.progress.profitTargetHit) return fail("prop_rules_target", "8% target not hit");
   if (!result.progress.tradingDaysMet) return fail("prop_rules_days", "min days not met");
   return ok("prop_rules_pass", `profit=${result.progress.profitPct.toFixed(2)}% days=${result.progress.tradingDays}`);
@@ -109,7 +109,7 @@ function scenarioPropFirmBreach(): ScenarioResult {
     { startingBalance: 100_000, maxDailyDrawdownPct: 5, maxTotalDrawdownPct: 10 },
     snap, daily,
   );
-  if (result.passed) return fail("prop_rules_breach", "expected daily drawdown breach");
+  if (result.ok) return fail("prop_rules_breach", "expected daily drawdown breach");
   if (result.breaches[0].code !== "daily_drawdown") return fail("prop_rules_breach", "wrong breach code");
   return ok("prop_rules_breach", `caught ${result.breaches[0].message}`);
 }
@@ -134,11 +134,11 @@ export const PHASE3_SCENARIOS = [
 export function runPhase3Scenarios(): ScenarioResult[] {
   return PHASE3_SCENARIOS.map((s) => {
     try { return s(); }
-    catch (err) { return { name: s.name, passed: false, notes: (err as Error).message }; }
+    catch (err) { return { name: s.name, ok: false, details: (err as Error).message }; }
   });
 }
 
 export function summarizePhase3(results: ScenarioResult[]): string {
-  const pass = results.filter((r) => r.passed).length;
+  const pass = results.filter((r) => r.ok).length;
   return `${pass}/${results.length} Phase 3 scenarios passed`;
 }
