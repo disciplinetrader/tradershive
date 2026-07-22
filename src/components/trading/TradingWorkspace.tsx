@@ -501,9 +501,10 @@ function TradingWorkspaceInner() {
             </div>
           </GlassCard>
 
-          <div className="hidden min-h-0 flex-col gap-3 lg:flex">
+          <div className="hidden min-h-0 flex-col gap-3 md:flex">
             <OrderPanel />
           </div>
+
         </div>
 
         <div className="hidden md:block">
