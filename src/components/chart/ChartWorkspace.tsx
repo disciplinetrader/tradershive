@@ -45,49 +45,12 @@ export function ChartWorkspace({ fullscreen, initial }: Props) {
   const [tool, setTool] = useState<DrawingTool>("cursor");
   const [alertsOpen, setAlertsOpen] = useState(false);
   const [chartApi, setChartApi] = useState<ChartHandle | null>(null);
-  const [orderLines, setOrderLines] = useState<OrderLine[]>([]);
+  const [livePrice, setLivePrice] = useState<number | null>(null);
   const [rightOpen, setRightOpen] = useState(true);
   const [rightTab, setRightTab] = useState<RightTab>("watchlist");
   const [bottomOpen, setBottomOpen] = useState(true);
 
-  // Open positions → SL/TP overlay lines
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) { setOrderLines([]); return; }
-      const { data } = await supabase
-        .from("paper_trades")
-        .select("id,entry_price,stop_loss,take_profit,direction")
-        .eq("user_id", u.user.id).eq("symbol", settings.symbol).eq("status", "open");
-      if (cancelled || !data) return;
-      const lines: OrderLine[] = [];
-      for (const t of data) {
-        lines.push({ id: `${t.id}-entry`, kind: "entry", price: Number(t.entry_price), label: `${t.direction.toUpperCase()} ENTRY`, editable: false });
-        if (t.stop_loss != null) lines.push({ id: `${t.id}-sl`, kind: "sl", price: Number(t.stop_loss), label: "SL" });
-        if (t.take_profit != null) lines.push({ id: `${t.id}-tp`, kind: "tp", price: Number(t.take_profit), label: "TP" });
-      }
-      setOrderLines(lines);
-    }
-    void load();
-    const ch = supabase
-      .channel(`paper_trades:${settings.symbol}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "paper_trades", filter: `symbol=eq.${settings.symbol}` }, () => void load())
-      .subscribe();
-    return () => { cancelled = true; void supabase.removeChannel(ch); };
-  }, [settings.symbol]);
 
-  const handleOrderLineChange = useCallback((id: string, price: number) => {
-    setOrderLines((prev) => prev.map((l) => (l.id === id ? { ...l, price } : l)));
-  }, []);
-  const handleOrderLineCommit = useCallback(async (id: string, price: number) => {
-    const [tradeId, kind] = id.split(/-(sl|tp|entry)$/);
-    if (!tradeId || (kind !== "sl" && kind !== "tp")) return;
-    const patch = kind === "sl" ? { stop_loss: price } : { take_profit: price };
-    const { error } = await supabase.from("paper_trades").update(patch).eq("id", tradeId);
-    if (error) toast.error(`Failed to update ${kind.toUpperCase()}: ${error.message}`);
-    else toast.success(`${kind.toUpperCase()} moved to ${price.toFixed(4)}`);
-  }, []);
 
   const updateSettings = useCallback((patch: Partial<ChartSettings>) => setSettings((s) => ({ ...s, ...patch })), []);
 
