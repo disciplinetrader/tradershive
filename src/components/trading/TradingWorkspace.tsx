@@ -216,7 +216,7 @@ function TradingWorkspaceInner() {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="flex min-h-0 flex-col gap-3 p-2 pb-24 md:pb-3 sm:p-3">
+      <div className="flex min-h-0 flex-col gap-3 p-2 pb-[240px] md:pb-3 sm:p-3">
         <TopToolbar />
         <TodayPnLWidget
           dailyTargetPct={Number(account?.max_daily_risk_pct ?? 5)}
