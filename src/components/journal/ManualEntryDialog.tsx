@@ -933,10 +933,11 @@ function ManualForm({
               <Clock className="h-3.5 w-3.5" />Opened at <span className="text-danger">*</span>
             </Label>
             <Input
+              ref={openedAtRef}
               type="datetime-local"
               value={openedAt}
               onChange={(e) => setOpenedAt(e.target.value)}
-              className={cn("h-11", requiredMissing.openedAt && "border-danger")}
+              className={cn("h-11", attemptedSubmit && requiredMissing.openedAt && "border-danger")}
             />
           </div>
           <div className="space-y-1.5">
