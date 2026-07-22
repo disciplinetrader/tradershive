@@ -265,16 +265,7 @@ function JournalEntryPage() {
             <Field label="Mistakes" value={(entry.mistakes ?? []).join(", ") || "—"} multiline />
           </GlassCard>
 
-          {entry.replay_session_id ? (
-            <GlassCard className="p-5">
-              <SectionTitle icon={<Play className="h-4 w-4" />} title="Replay reference" />
-              <Button asChild variant="outline" size="sm" className="w-full">
-                <Link to="/replay/session/$sessionId" params={{ sessionId: entry.replay_session_id }}>
-                  Open replay session
-                </Link>
-              </Button>
-            </GlassCard>
-          ) : null}
+          {null}
 
           {attachmentsQuery.data?.length ? (
             <GlassCard className="p-5">
