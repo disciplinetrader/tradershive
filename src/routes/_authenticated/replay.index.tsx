@@ -184,15 +184,15 @@ function ReplayDashboard() {
       ) : null}
 
       <section className="space-y-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <h2 className="mr-auto text-sm font-semibold uppercase tracking-wider text-muted-foreground">Sessions</h2>
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground sm:mr-auto">Sessions</h2>
           <Input
             placeholder="Search sessions…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-8 w-48 text-xs"
+            className="h-8 w-full text-xs sm:w-48"
           />
-          <div className="flex gap-1 rounded-[3px] border border-border/60 bg-background/60 p-0.5">
+          <div className="flex flex-wrap gap-1 rounded-[3px] border border-border/60 bg-background/60 p-0.5">
             {FILTERS.map((f) => (
               <button
                 key={f}
