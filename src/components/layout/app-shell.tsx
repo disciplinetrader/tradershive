@@ -198,28 +198,16 @@ function SidebarInner({
         </div>
 
         <nav className={cn("flex-1 overflow-y-auto", collapsed ? "px-2 py-3" : "p-3")}>
-          <SectionLabel collapsed={collapsed}>Arena</SectionLabel>
-          <ul className="space-y-0.5">
-            {NAV.map((item) => (
-              <SidebarLink key={item.to} item={item} collapsed={collapsed} active={isActive(currentPath, item.to)} />
-            ))}
-          </ul>
-          <SectionLabel collapsed={collapsed} className="mt-5">Account</SectionLabel>
-          <ul className="space-y-0.5">
-            {SECONDARY.map((item) => (
-              <SidebarLink key={item.to} item={item} collapsed={collapsed} active={isActive(currentPath, item.to)} />
-            ))}
-          </ul>
-          {showAdmin ? (
-            <>
-              <SectionLabel collapsed={collapsed} className="mt-5">System</SectionLabel>
-              <ul className="space-y-0.5">
-                {ADMIN.map((item) => (
-                  <SidebarLink key={item.to} item={item} collapsed={collapsed} active={isActive(currentPath, item.to)} />
-                ))}
-              </ul>
-            </>
-          ) : null}
+          <NavSection label="Trading" items={TRADING} collapsed={collapsed} currentPath={currentPath} />
+          <NavSection label="Compete" items={COMPETE} collapsed={collapsed} currentPath={currentPath} className="mt-5" />
+          <NavSection label="Community" items={COMMUNITY} collapsed={collapsed} currentPath={currentPath} className="mt-5" />
+          <NavSection
+            label="System"
+            items={showAdmin ? [...SYSTEM_ITEMS, ...ADMIN_ITEMS] : SYSTEM_ITEMS}
+            collapsed={collapsed}
+            currentPath={currentPath}
+            className="mt-5"
+          />
         </nav>
 
         {!collapsed ? (
