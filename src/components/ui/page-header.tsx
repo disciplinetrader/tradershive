@@ -11,17 +11,21 @@ export function PageHeader({ title, description, actions, className }: PageHeade
   return (
     <header
       className={cn(
-        "grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 sm:flex sm:items-center sm:justify-between",
+        "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4",
         className,
       )}
     >
       <div className="min-w-0">
-        <h1 className="truncate text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
+        <h1 className="truncate text-xl font-bold tracking-tight sm:text-3xl">{title}</h1>
         {description ? (
-          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+          <p className="mt-1 hidden text-sm text-muted-foreground sm:block">{description}</p>
         ) : null}
       </div>
-      {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
+      {actions ? (
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:shrink-0">
+          {actions}
+        </div>
+      ) : null}
     </header>
   );
 }
