@@ -530,8 +530,7 @@ function TradingWorkspaceInner() {
 
         <SymbolSearch open={symbolSearchOpen} onOpenChange={setSymbolSearchOpen} />
 
-        {/* Persistent mobile trade dock — no FAB hunt */}
-        {isMobile ? <MobileQuickTradeDock /> : null}
+        {/* Same desktop layout across breakpoints — no mobile-only dock */}
       </div>
     </TooltipProvider>
   );
