@@ -12,7 +12,7 @@ import { Watchlist } from "@/components/chart/Watchlist";
 import { TradePanel } from "@/components/chart/TradePanel";
 import { BottomTabs } from "@/components/chart/BottomTabs";
 import { AlertsDialog } from "@/components/chart/AlertsDialog";
-import { OrderLinesOverlay, type OrderLine } from "@/components/chart/OrderLinesOverlay";
+import { ChartTradingOverlay } from "@/components/chart/ChartTradingOverlay";
 import { DEFAULT_CHART_SETTINGS, INDICATORS } from "@/lib/chart/constants";
 import type { ChartSettings, DrawingTool, IndicatorConfig, IndicatorKey } from "@/lib/chart/types";
 import { saveLayout, pushRecentSymbol, uploadChartScreenshot } from "@/lib/chart/storage";
