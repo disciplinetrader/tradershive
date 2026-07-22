@@ -1,85 +1,52 @@
-# Responsive Design System — Full-App Rework
+# Phase 5 — Professional Chart Trading
 
-This is an architecture change, not a page-by-page patch. We introduce one system, then migrate every route to use it.
+Build on top of the existing chart engine, adapter, `paper_trades` / `paper_orders`, and Order Management. **No changes** to Trading Engine internals, Yahoo Finance, or the Trading Workspace layout — only what's rendered inside the chart column.
 
-## 1. Foundation — Design Tokens & Breakpoints
+## What ships
 
-Add to `src/styles.css` under `@theme`:
+1. **Unified chart trading overlay** replacing today's SL/TP-only `OrderLinesOverlay`. Renders every trade artifact directly on the chart:
+   - Open positions (entry, SL, TP, live P/L badge, side chip)
+   - Pending orders (trigger, optional limit, SL, TP)
+   - A "draft" order being placed from the chart
+   - Trailing-stop marker for positions with `trailing_stop_pips`
+   - Closed-position markers (entry ▲ / exit ▼) via adapter `setExternalMarkers`
+2. **Chart-native order entry** — click on the chart to open a draft. Buy Market / Sell Market / Buy Limit / Sell Limit / Buy Stop / Sell Stop are chosen from a popover pinned to the click price. Confirm places via existing `openTrade` / `placeOrder` server functions.
+3. **Drag & drop** — entry line, SL, TP, pending trigger and trailing stop all draggable. On release: side-aware validation (`validateStops`), then persist:
+   - Open positions → `modifyTrade` (SL/TP)
+   - Pending orders → new `modifyOrder` server fn (trigger / limit / SL / TP)
+   - Draft → local state
+4. **Live R/R box** shown while dragging or building a draft. Uses the existing pure `tradeCalculation` for risk $, reward $, RR, risk %, margin, notional, spread/commission estimates, potential P/L.
+5. **Per-position quick actions** floating next to each position ribbon: Close, Partial (25/50/75%), Move to BE, Reverse, Attach trailing. Wired to `closeTrade`, `partialCloseTrade`, `moveToBreakEven`, `openTrade` (reverse), and a new `attachTrailing` fn writing `trailing_stop_pips`.
+6. **Pending-order actions**: Modify (drag), Cancel, Duplicate.
+7. **Account scoping**: overlay reads `usePaper().accountId`. Chip in top-right of chart shows active account; toggle "Show all accounts" filters positions/orders returned from realtime.
+8. **Performance**: draft/drag state is local (`useRef` + rAF) — no server round-trip until drop. Overlay reuses a single ResizeObserver and a single `requestAnimationFrame` reproject loop; each line/ribbon is memo-keyed by id.
 
-```text
-Breakpoints (Tailwind screens)
-  xs   → 375px   Mobile Small / Standard phones
-  sm   → 480px   Mobile Large / Phablet
-  md   → 768px   Tablet Portrait
-  lg   → 1024px  Tablet Landscape / Small Laptop
-  xl   → 1280px  Laptop
-  2xl  → 1536px  Desktop
-  3xl  → 1920px  Large Desktop / Ultrawide
-```
+## New / touched files
 
-Fluid tokens (CSS `clamp()`):
-- Typography scale: `--text-xs` … `--text-3xl` all fluid
-- Spacing scale: `--space-1` … `--space-10` fluid
-- Container padding: `--pad-page` = `clamp(0.75rem, 2vw, 2rem)`
-- Radius, shadow: already unified — keep
+New:
+- `src/lib/chart-trading/types.ts` — `ChartDraft`, `ChartLine`, `LineKind`, `ChartOrderAction`
+- `src/lib/chart-trading/math.ts` — draft → R/R metrics via `tradeCalculation`
+- `src/lib/chart-trading/persist.ts` — thin wrappers over existing server fns (openTrade, placeOrder, modifyTrade, modifyOrder, cancelOrder, partialCloseTrade, moveToBreakEven, closeTrade)
+- `src/components/chart/ChartTradingOverlay.tsx` — master overlay (positions + orders + draft + closed markers)
+- `src/components/chart/RiskRewardBox.tsx` — pinned R/R panel
+- `src/components/chart/DraftOrderPopover.tsx` — order-type picker at click price
+- `src/components/chart/PositionRibbon.tsx` — per-position action pill
+- `src/components/chart/PendingOrderRibbon.tsx` — per-order action pill
+- `src/components/chart/ChartAccountChip.tsx` — active account + Show All toggle
 
-## 2. Layout Primitives (new)
+Touched (surgical):
+- `src/components/chart/ChartWorkspace.tsx` — swap `OrderLinesOverlay` for `ChartTradingOverlay`, keep the rest of the layout, and pass account/symbol/settings through.
+- `src/lib/paper-trading.functions.ts` — add `modifyOrder`, `attachTrailing` server functions (additive, no schema change; uses existing `trailing_stop_pips` column already present on `paper_trades` and the `paper_orders` columns).
+- `src/lib/order-management/index.ts` — no changes; overlay talks directly to server fns to keep the existing paper-trading write path as the single source of truth.
 
-New shared components under `src/components/layout/`:
+## Trading Engine contract
 
-- `PageContainer` — replaces every ad-hoc wrapper; applies fluid page padding, max-width, and safe-area insets. Every route mounts inside it.
-- `ResponsiveGrid` — auto-fit CSS grid (`repeat(auto-fit, minmax(var(--min), 1fr))`) with `min` prop; kills all fixed-column grids that break on tablet.
-- `Stack` / `Cluster` — vertical / wrap-flex primitives with responsive gap tokens.
-- `SplitPane` — two-column layout that stacks below a configurable breakpoint (default `lg`); used by Trading, Replay, Analytics detail, Journal detail.
-- `SectionHeader` — standard title + actions row with `grid-cols-[minmax(0,1fr)_auto]` + `sm:flex` pattern (from responsive-layout rules), used everywhere instead of hand-rolled headers.
-- `ScrollArea` wrapper for tables/timelines so nothing produces page-level horizontal scroll.
+The overlay never touches `src/lib/trading-engine/*` or Yahoo Finance. It writes exclusively through the existing `paper_trades` / `paper_orders` server functions, which already fan events out to Analytics, Journal, position history, and stats. Replay Studio can reuse `ChartTradingOverlay` in a future pass because it depends only on `ChartAdapter` — no Workspace coupling.
 
-## 3. Component Audit & Fixes
+## Explicitly out of scope
 
-Global rules applied via find-and-replace + primitive adoption:
-- Remove all `w-[NNNpx]` fixed widths on panels; convert to `min-w-0 flex-1` or grid `minmax(0,1fr)`.
-- Every text container gets `min-w-0`; every icon/avatar gets `shrink-0`; every single-line heading gets `truncate`.
-- All Dialogs → responsive: full-screen sheet on `< md`, centered dialog on `≥ md` via a shared `ResponsiveDialog`.
-- All Tables → wrap in `ScrollArea` OR convert to card list on `< md` via new `DataList` fallback.
-- All Toolbars → `flex flex-wrap` with `gap-2` and consistent `min-h-touch` (44px) targets.
-- Charts → parent-sized (`ResizeObserver`), never fixed `height`.
+- No redesign of Trading Workspace toolbars, watchlist, or bottom tabs.
+- No changes to Trading Engine, cost model, sizing, or Yahoo provider.
+- Closed-trade heatmap on the chart is limited to entry/exit markers (adapter markers API); rich annotations for BE / partial / cancelled events land in a follow-up pass.
 
-## 4. Trading Workspace (highest priority)
-
-Rebuild layout as a true responsive grid, not stacked-vs-side-by-side flip:
-
-```text
-< md  (phone)   : chart 55vh, tabs [Trade | Watchlist | Positions] below
-md–lg (tablet)  : chart + collapsible Trade panel (240px) side-by-side, watchlist as bottom drawer
-≥ lg  (laptop+) : chart | Trade panel | Watchlist rail | bottom Positions
-≥ 2xl           : add MultiChartStrip + AI panel column
-```
-
-Buy/Sell always visible from `md` upward. Bottom dock stays only on `< md`.
-
-## 5. Migration Waves
-
-Wave A — Foundation (tokens, primitives, ResponsiveDialog, DataList, ScrollArea wrappers). No visual change yet.
-
-Wave B — High-traffic routes: Trading Workspace, Analytics Center, Journal, Paper Trading, Dashboard.
-
-Wave C — Replay Studio, Championships, Battle Arena, Community, AI Coach.
-
-Wave D — Achievements, Settings, Admin, Auth polish, Landing sanity check.
-
-Wave E — QA sweep at 320 / 375 / 390 / 414 / 768 / 820 / 1024 / 1280 / 1440 / 1920 via Playwright screenshots; fix any residual overflow/clip.
-
-## 6. Guardrails
-
-- Add an ESLint rule / doc note forbidding raw `w-[Npx]` and `min-w-[Npx]` outside `src/components/layout/`.
-- Add a Storybook-less "responsive playground" route `/dev/responsive` (dev-only) listing every primitive at each breakpoint for regression checks.
-- Do NOT touch: Auth flow logic, Landing copy, Dashboard data wiring, Paper Trading engine, Journal data model, Challenges logic, Statistics math — layout only, per prior constraints.
-
-## Technical Notes
-
-- Tailwind v4: breakpoints declared via `@theme` custom `--breakpoint-*` tokens; fluid type via `--text-*: clamp(...)`.
-- Primitives are presentational only — no data fetching, so migration is mechanical.
-- Estimated file touches: ~6 new primitives, ~40 route/component edits, 1 styles.css update.
-- No DB changes, no server function changes.
-
-Reply "go" to start with Wave A, or tell me to reorder waves / drop routes.
+Please approve and I'll build it in one implementation pass.
