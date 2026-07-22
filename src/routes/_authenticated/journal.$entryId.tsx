@@ -208,7 +208,7 @@ function JournalEntryPage() {
           <GlassCard className="p-5">
             <SectionTitle icon={<Sparkles className="h-4 w-4" />} title="Entry reason" />
             <p className="whitespace-pre-wrap text-sm text-muted-foreground">
-              {entry.entry_reason?.trim() || "No entry reason recorded."}
+              {entry.entry_reason_text?.trim() || "No entry reason recorded."}
             </p>
           </GlassCard>
 
@@ -281,7 +281,7 @@ function JournalEntryPage() {
               <SectionTitle icon={<Camera className="h-4 w-4" />} title={`Attachments (${attachmentsQuery.data.length})`} />
               <ul className="space-y-1 text-xs text-muted-foreground">
                 {attachmentsQuery.data.map((a) => (
-                  <li key={a.id} className="truncate">{a.file_name ?? a.storage_path}</li>
+                  <li key={a.id} className="truncate">{a.name ?? a.path}</li>
                 ))}
               </ul>
             </GlassCard>
