@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   AlertCircle,
@@ -10,6 +10,8 @@ import {
   Plus,
   RotateCcw,
   Sparkles,
+  Trash2,
+  X,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -33,7 +35,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import { createEntry, journalKeys, type EntryInsert } from "@/lib/journal/api";
+import {
+  createEntry,
+  deleteTaxonomy,
+  fetchTaxonomy,
+  journalKeys,
+  upsertTaxonomy,
+  type EntryInsert,
+  type JournalTaxonomy,
+} from "@/lib/journal/api";
 import {
   DEFAULT_EMOTIONS,
   DEFAULT_MISTAKES,
@@ -44,7 +54,6 @@ import {
 } from "@/lib/journal/constants";
 import {
   findInstrument,
-  formatPrice,
   validatePrice,
   type InstrumentRecord,
 } from "@/lib/journal/instruments";
@@ -53,7 +62,6 @@ import {
   clearDraft,
   computeCompleteness,
   computePips,
-  computeRiskPercent,
   formatDuration,
   loadDefaults,
   loadDraft,
