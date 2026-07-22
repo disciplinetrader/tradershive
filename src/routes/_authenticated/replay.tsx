@@ -1,12 +1,24 @@
 import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router";
-import { Film, LayoutGrid, Library, Play, Settings2, Target } from "lucide-react";
+import {
+  BarChart3,
+  Film,
+  LayoutGrid,
+  Library,
+  Play,
+  Settings2,
+  Target,
+} from "lucide-react";
 import { SegmentedTabs } from "@/components/ui/segmented-tabs";
 
+// Reorganized around the four core Replay Studio workflows:
+// Practice · Saved Sessions · Trade Review · Performance.
+// Workspace and utilities remain reachable but visually secondary.
 const TABS = [
-  { to: "/replay", label: "Dashboard", icon: LayoutGrid, exact: true },
+  { to: "/replay", label: "Practice", icon: LayoutGrid, exact: true },
   { to: "/replay/session", label: "Workspace", icon: Play },
-  { to: "/replay/trades", label: "Trades", icon: Film },
-  { to: "/replay/library", label: "Library", icon: Library },
+  { to: "/replay/library", label: "Saved Sessions", icon: Library },
+  { to: "/replay/trades", label: "Trade Review", icon: Film },
+  { to: "/replay/performance", label: "Performance", icon: BarChart3 },
   { to: "/replay/challenges", label: "Challenges", icon: Target },
   { to: "/replay/settings", label: "Settings", icon: Settings2 },
 ];
@@ -14,8 +26,12 @@ const TABS = [
 export const Route = createFileRoute("/_authenticated/replay")({
   head: () => ({
     meta: [
-      { title: "Replay — TradersHIVE Arena" },
-      { name: "description", content: "Chart, Trade and Session Replay for deliberate practice on historical market data." },
+      { title: "Replay Studio — TradersHIVE Arena" },
+      {
+        name: "description",
+        content:
+          "Professional trading practice environment: replay, review, bookmark and master execution on historical market data.",
+      },
     ],
   }),
   component: ReplayLayout,
