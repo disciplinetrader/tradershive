@@ -3109,6 +3109,112 @@ export type Database = {
         }
         Relationships: []
       }
+      community_challenge_entries: {
+        Row: {
+          breakdown: Json
+          challenge_id: string
+          computed_at: string
+          id: string
+          joined_at: string
+          rank: number | null
+          score: number
+          user_id: string
+        }
+        Insert: {
+          breakdown?: Json
+          challenge_id: string
+          computed_at?: string
+          id?: string
+          joined_at?: string
+          rank?: number | null
+          score?: number
+          user_id: string
+        }
+        Update: {
+          breakdown?: Json
+          challenge_id?: string
+          computed_at?: string
+          id?: string
+          joined_at?: string
+          rank?: number | null
+          score?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_challenge_entries_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "community_challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_challenges: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          end_at: string
+          group_id: string | null
+          id: string
+          kind: string
+          metric: Json
+          participant_count: number
+          rewards: Json
+          slug: string
+          start_at: string
+          status: string
+          title: string
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_at: string
+          group_id?: string | null
+          id?: string
+          kind: string
+          metric?: Json
+          participant_count?: number
+          rewards?: Json
+          slug: string
+          start_at: string
+          status?: string
+          title: string
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_at?: string
+          group_id?: string | null
+          id?: string
+          kind?: string
+          metric?: Json
+          participant_count?: number
+          rewards?: Json
+          slug?: string
+          start_at?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_challenges_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       community_comments: {
         Row: {
           author_id: string
@@ -4858,6 +4964,103 @@ export type Database = {
         }
         Relationships: []
       }
+      live_session_attendees: {
+        Row: {
+          attended: boolean
+          created_at: string
+          rsvp: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          attended?: boolean
+          created_at?: string
+          rsvp?: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          attended?: boolean
+          created_at?: string
+          rsvp?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_session_attendees_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "live_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      live_sessions: {
+        Row: {
+          attendee_count: number
+          created_at: string
+          description: string | null
+          end_at: string | null
+          group_id: string | null
+          host_id: string
+          id: string
+          instrument: string | null
+          replay_url: string | null
+          session_type: string
+          start_at: string
+          status: string
+          stream_url: string | null
+          title: string
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          attendee_count?: number
+          created_at?: string
+          description?: string | null
+          end_at?: string | null
+          group_id?: string | null
+          host_id: string
+          id?: string
+          instrument?: string | null
+          replay_url?: string | null
+          session_type?: string
+          start_at: string
+          status?: string
+          stream_url?: string | null
+          title: string
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          attendee_count?: number
+          created_at?: string
+          description?: string | null
+          end_at?: string | null
+          group_id?: string | null
+          host_id?: string
+          id?: string
+          instrument?: string | null
+          replay_url?: string | null
+          session_type?: string
+          start_at?: string
+          status?: string
+          stream_url?: string | null
+          title?: string
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_sessions_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       maintenance_windows: {
         Row: {
           active: boolean
@@ -5132,6 +5335,152 @@ export type Database = {
           name?: string
           timezone?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      mentor_assignments: {
+        Row: {
+          created_at: string
+          ended_at: string | null
+          id: string
+          mentee_id: string
+          mentor_id: string
+          message: string | null
+          plan: Json
+          started_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          mentee_id: string
+          mentor_id: string
+          message?: string | null
+          plan?: Json
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          mentee_id?: string
+          mentor_id?: string
+          message?: string | null
+          plan?: Json
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      mentor_homework: {
+        Row: {
+          assignment_id: string
+          created_at: string
+          description: string | null
+          due_at: string | null
+          feedback: string | null
+          id: string
+          mentee_id: string
+          mentor_id: string
+          status: string
+          submission: Json | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assignment_id: string
+          created_at?: string
+          description?: string | null
+          due_at?: string | null
+          feedback?: string | null
+          id?: string
+          mentee_id: string
+          mentor_id: string
+          status?: string
+          submission?: Json | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assignment_id?: string
+          created_at?: string
+          description?: string | null
+          due_at?: string | null
+          feedback?: string | null
+          id?: string
+          mentee_id?: string
+          mentor_id?: string
+          status?: string
+          submission?: Json | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentor_homework_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "mentor_assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mentor_profiles: {
+        Row: {
+          active: boolean
+          availability: Json
+          bio: string | null
+          created_at: string
+          headline: string | null
+          hourly_rate: number | null
+          languages: string[]
+          markets: string[]
+          mentees_count: number
+          rating: number
+          reviews_count: number
+          specialties: string[]
+          updated_at: string
+          user_id: string
+          verified: boolean
+        }
+        Insert: {
+          active?: boolean
+          availability?: Json
+          bio?: string | null
+          created_at?: string
+          headline?: string | null
+          hourly_rate?: number | null
+          languages?: string[]
+          markets?: string[]
+          mentees_count?: number
+          rating?: number
+          reviews_count?: number
+          specialties?: string[]
+          updated_at?: string
+          user_id: string
+          verified?: boolean
+        }
+        Update: {
+          active?: boolean
+          availability?: Json
+          bio?: string | null
+          created_at?: string
+          headline?: string | null
+          hourly_rate?: number | null
+          languages?: string[]
+          markets?: string[]
+          mentees_count?: number
+          rating?: number
+          reviews_count?: number
+          specialties?: string[]
+          updated_at?: string
+          user_id?: string
+          verified?: boolean
         }
         Relationships: []
       }
@@ -7379,6 +7728,39 @@ export type Database = {
           },
         ]
       }
+      reputation_events: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          metadata: Json
+          points: number
+          ref_id: string | null
+          ref_type: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          metadata?: Json
+          points: number
+          ref_id?: string | null
+          ref_type?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          metadata?: Json
+          points?: number
+          ref_id?: string | null
+          ref_type?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       role_permissions: {
         Row: {
           created_at: string
@@ -8409,6 +8791,169 @@ export type Database = {
           },
         ]
       }
+      study_group_members: {
+        Row: {
+          group_id: string
+          joined_at: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          group_id: string
+          joined_at?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          group_id?: string
+          joined_at?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_group_messages: {
+        Row: {
+          attachments: Json
+          body: string
+          created_at: string
+          group_id: string
+          id: string
+          reply_to: string | null
+          user_id: string
+        }
+        Insert: {
+          attachments?: Json
+          body: string
+          created_at?: string
+          group_id: string
+          id?: string
+          reply_to?: string | null
+          user_id: string
+        }
+        Update: {
+          attachments?: Json
+          body?: string
+          created_at?: string
+          group_id?: string
+          id?: string
+          reply_to?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_group_messages_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "study_group_messages_reply_to_fkey"
+            columns: ["reply_to"]
+            isOneToOne: false
+            referencedRelation: "study_group_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_group_resources: {
+        Row: {
+          added_by: string
+          created_at: string
+          group_id: string
+          id: string
+          kind: string
+          note: string | null
+          ref_id: string | null
+          title: string | null
+          url: string | null
+        }
+        Insert: {
+          added_by: string
+          created_at?: string
+          group_id: string
+          id?: string
+          kind: string
+          note?: string | null
+          ref_id?: string | null
+          title?: string | null
+          url?: string | null
+        }
+        Update: {
+          added_by?: string
+          created_at?: string
+          group_id?: string
+          id?: string
+          kind?: string
+          note?: string | null
+          ref_id?: string | null
+          title?: string | null
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_group_resources_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_groups: {
+        Row: {
+          avatar_url: string | null
+          banner_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          member_count: number
+          name: string
+          owner_id: string
+          slug: string
+          tags: string[]
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          banner_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          member_count?: number
+          name: string
+          owner_id: string
+          slug: string
+          tags?: string[]
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          banner_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          member_count?: number
+          name?: string
+          owner_id?: string
+          slug?: string
+          tags?: string[]
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: []
+      }
       support_tickets: {
         Row: {
           assigned_to: string | null
@@ -8624,6 +9169,164 @@ export type Database = {
           key?: string
           new_value?: Json
           previous_value?: Json | null
+        }
+        Relationships: []
+      }
+      trade_ideas: {
+        Row: {
+          author_id: string
+          chart_url: string | null
+          closed_at: string | null
+          created_at: string
+          direction: string
+          entry: number | null
+          id: string
+          journal_entry_id: string | null
+          market: string | null
+          notes: string | null
+          pnl_pct: number | null
+          post_id: string | null
+          replay_session_id: string | null
+          rr: number | null
+          status: string
+          stop_loss: number | null
+          strategy_id: string | null
+          symbol: string
+          tags: string[]
+          take_profit: number | null
+          timeframe: string | null
+          tv_url: string | null
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          author_id: string
+          chart_url?: string | null
+          closed_at?: string | null
+          created_at?: string
+          direction: string
+          entry?: number | null
+          id?: string
+          journal_entry_id?: string | null
+          market?: string | null
+          notes?: string | null
+          pnl_pct?: number | null
+          post_id?: string | null
+          replay_session_id?: string | null
+          rr?: number | null
+          status?: string
+          stop_loss?: number | null
+          strategy_id?: string | null
+          symbol: string
+          tags?: string[]
+          take_profit?: number | null
+          timeframe?: string | null
+          tv_url?: string | null
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          author_id?: string
+          chart_url?: string | null
+          closed_at?: string | null
+          created_at?: string
+          direction?: string
+          entry?: number | null
+          id?: string
+          journal_entry_id?: string | null
+          market?: string | null
+          notes?: string | null
+          pnl_pct?: number | null
+          post_id?: string | null
+          replay_session_id?: string | null
+          rr?: number | null
+          status?: string
+          stop_loss?: number | null
+          strategy_id?: string | null
+          symbol?: string
+          tags?: string[]
+          take_profit?: number | null
+          timeframe?: string | null
+          tv_url?: string | null
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_ideas_journal_entry_id_fkey"
+            columns: ["journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_ideas_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "community_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_ideas_replay_session_id_fkey"
+            columns: ["replay_session_id"]
+            isOneToOne: false
+            referencedRelation: "replay_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_ideas_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "strategies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trade_reviews: {
+        Row: {
+          created_at: string
+          id: string
+          is_mentor_review: boolean
+          overall_score: number | null
+          reviewer_id: string
+          scores: Json
+          strengths: string | null
+          suggestions: string | null
+          target_id: string
+          target_owner_id: string
+          target_type: string
+          updated_at: string
+          weaknesses: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_mentor_review?: boolean
+          overall_score?: number | null
+          reviewer_id: string
+          scores?: Json
+          strengths?: string | null
+          suggestions?: string | null
+          target_id: string
+          target_owner_id: string
+          target_type: string
+          updated_at?: string
+          weaknesses?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_mentor_review?: boolean
+          overall_score?: number | null
+          reviewer_id?: string
+          scores?: Json
+          strengths?: string | null
+          suggestions?: string | null
+          target_id?: string
+          target_owner_id?: string
+          target_type?: string
+          updated_at?: string
+          weaknesses?: string | null
         }
         Relationships: []
       }
@@ -9488,6 +10191,14 @@ export type Database = {
         | "post_featured"
         | "post_pinned"
         | "report_resolved"
+        | "review_received"
+        | "mentor_feedback"
+        | "homework_assigned"
+        | "group_message"
+        | "group_invite"
+        | "live_session_reminder"
+        | "challenge_result"
+        | "idea_closed"
       community_post_type:
         | "text"
         | "chart"
@@ -9913,6 +10624,14 @@ export const Constants = {
         "post_featured",
         "post_pinned",
         "report_resolved",
+        "review_received",
+        "mentor_feedback",
+        "homework_assigned",
+        "group_message",
+        "group_invite",
+        "live_session_reminder",
+        "challenge_result",
+        "idea_closed",
       ],
       community_post_type: [
         "text",
