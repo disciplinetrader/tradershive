@@ -90,9 +90,9 @@ export function FiltersBar() {
     filters.strategies.length + filters.sessions.length + filters.directions.length + filters.emotions.length;
 
   return (
-    <div className="glass rounded-2xl p-3 grid grid-cols-2 gap-2 sm:grid-cols-3 md:flex md:flex-wrap md:items-center">
+    <div className="glass rounded-2xl p-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
       <Select value={filters.preset} onValueChange={(v) => setFilters({ ...filters, preset: v as StatisticsFilters["preset"] })}>
-        <SelectTrigger className="h-9 w-full md:w-40"><SelectValue /></SelectTrigger>
+        <SelectTrigger className="h-9 w-full"><SelectValue /></SelectTrigger>
         <SelectContent>
           {DATE_PRESETS.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
         </SelectContent>
@@ -101,7 +101,7 @@ export function FiltersBar() {
       {filters.preset === "custom" ? (
         <Popover open={customOpen} onOpenChange={setCustomOpen}>
           <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className="h-9 w-full md:w-auto justify-start"><CalendarIcon className="h-3.5 w-3.5 mr-2" />
+            <Button variant="outline" size="sm" className="h-9 w-full justify-start"><CalendarIcon className="h-3.5 w-3.5 mr-2 shrink-0" />
               <span className="truncate">{filters.from && filters.to ? `${filters.from.slice(0,10)} → ${filters.to.slice(0,10)}` : "Pick range"}</span>
             </Button>
           </PopoverTrigger>
@@ -126,10 +126,10 @@ export function FiltersBar() {
       {emotions.length ? <MultiSelect label="Emotion" values={filters.emotions} options={emotions.map((s) => ({ value: s, label: s }))} onChange={(v) => setFilters({ ...filters, emotions: v })} /> : null}
 
       {activeCount > 0 ? (
-        <Button variant="ghost" size="sm" className="h-9 w-full md:w-auto" onClick={resetFilters}><X className="h-3.5 w-3.5 mr-1" />Clear</Button>
+        <Button variant="ghost" size="sm" className="h-9 w-full" onClick={resetFilters}><X className="h-3.5 w-3.5 mr-1" />Clear</Button>
       ) : null}
 
-      <div className="col-span-full flex flex-wrap items-center gap-2 md:col-auto md:ml-auto">
+      <div className="col-span-full flex flex-wrap items-center gap-2 border-t border-border/40 pt-2">
         <SaveFilterDialog onSave={(name) => save.mutate(name)} />
         {Array.isArray(savedQuery.data) && savedQuery.data.length ? (
           <Popover>
@@ -150,6 +150,7 @@ export function FiltersBar() {
     </div>
   );
 }
+
 
 function SaveFilterDialog({ onSave }: { onSave: (name: string) => void }) {
   const [open, setOpen] = useState(false);

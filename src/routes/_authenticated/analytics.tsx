@@ -44,7 +44,7 @@ function AnalyticsLayout() {
           description="Your performance laboratory — analyse live trades, replay backtests, and coach scores in one place."
         />
 
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
           <SegmentedTabs tabs={TABS} pathname={loc.pathname} className="min-w-0 flex-1" />
           <div className="flex flex-wrap items-center gap-2">
             <AnalyticsSearch />
