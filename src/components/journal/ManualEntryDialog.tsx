@@ -664,23 +664,17 @@ function ManualForm({
   });
 
   const focusFirstInvalid = () => {
-    const order: (keyof typeof fieldRefs)[] = ["instrument", "entry", "openedAt", "session", "strategy"];
-    const bad = order.find((k) => {
-      if (k === "instrument") return !instrument;
-      if (k === "entry") return !entryPrice || !entryValidation.valid;
-      if (k === "openedAt") return !openedAt;
-      if (k === "session") return !session;
-      if (k === "strategy") return strategyTags.length === 0;
-      return false;
+    let el: HTMLElement | null = null;
+    if (!instrument) el = instrumentRef.current;
+    else if (!entryPrice || !entryValidation.valid) el = entryRef.current;
+    else if (!openedAt) el = openedAtRef.current;
+    else if (!session) el = sessionRef.current;
+    else if (strategyTags.length === 0) el = strategyRef.current;
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    requestAnimationFrame(() => {
+      try { el?.focus({ preventScroll: true }); } catch { /* ignore */ }
     });
-    if (!bad) return;
-    const el = fieldRefs[bad].current;
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
-      requestAnimationFrame(() => {
-        try { el.focus({ preventScroll: true }); } catch { /* ignore */ }
-      });
-    }
   };
 
   submitRef.current = () => {
