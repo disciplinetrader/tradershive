@@ -33,29 +33,34 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 type NavItem = { to: string; label: string; icon: typeof Home; admin?: boolean };
 
-const NAV: NavItem[] = [
+const TRADING: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: Home },
   { to: "/trading", label: "Trading Workspace", icon: LineChart },
-  { to: "/journal", label: "Journal", icon: BookOpen },
   { to: "/replay", label: "Replay Studio", icon: Film },
+  { to: "/journal", label: "Journal", icon: BookOpen },
+  { to: "/analytics", label: "Analytics", icon: BarChart3 },
+];
+
+const COMPETE: NavItem[] = [
   { to: "/challenges", label: "Challenges", icon: Sparkles },
   { to: "/battle-arena", label: "Battle Arena", icon: Swords },
-  { to: "/analytics", label: "Analytics", icon: BarChart3 },
+  { to: "/championship", label: "Championships", icon: Trophy },
   { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
-  { to: "/championship", label: "Championship", icon: Trophy },
+];
+
+const COMMUNITY: NavItem[] = [
   { to: "/community", label: "Community", icon: MessageSquare },
   { to: "/achievements", label: "Achievements", icon: Award },
 ];
-// Not yet implemented — kept as routes for direct URLs but hidden from primary nav.
-void Users; void ShoppingBag; void GraduationCap;
 
-const SECONDARY: NavItem[] = [
-  { to: "/profile", label: "Profile", icon: UserIcon },
+const SYSTEM_ITEMS: NavItem[] = [
   { to: "/settings", label: "Settings", icon: Settings },
-  { to: "/support", label: "Support", icon: LifeBuoy },
 ];
 
-const ADMIN: NavItem[] = [{ to: "/admin", label: "Admin", icon: Shield, admin: true }];
+const ADMIN_ITEMS: NavItem[] = [{ to: "/admin", label: "Admin", icon: Shield, admin: true }];
+
+// Kept as valid routes but not surfaced in the reorganized sidebar.
+void Users; void ShoppingBag; void GraduationCap; void UserIcon; void LifeBuoy;
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -193,28 +198,16 @@ function SidebarInner({
         </div>
 
         <nav className={cn("flex-1 overflow-y-auto", collapsed ? "px-2 py-3" : "p-3")}>
-          <SectionLabel collapsed={collapsed}>Arena</SectionLabel>
-          <ul className="space-y-0.5">
-            {NAV.map((item) => (
-              <SidebarLink key={item.to} item={item} collapsed={collapsed} active={isActive(currentPath, item.to)} />
-            ))}
-          </ul>
-          <SectionLabel collapsed={collapsed} className="mt-5">Account</SectionLabel>
-          <ul className="space-y-0.5">
-            {SECONDARY.map((item) => (
-              <SidebarLink key={item.to} item={item} collapsed={collapsed} active={isActive(currentPath, item.to)} />
-            ))}
-          </ul>
-          {showAdmin ? (
-            <>
-              <SectionLabel collapsed={collapsed} className="mt-5">System</SectionLabel>
-              <ul className="space-y-0.5">
-                {ADMIN.map((item) => (
-                  <SidebarLink key={item.to} item={item} collapsed={collapsed} active={isActive(currentPath, item.to)} />
-                ))}
-              </ul>
-            </>
-          ) : null}
+          <NavSection label="Trading" items={TRADING} collapsed={collapsed} currentPath={currentPath} />
+          <NavSection label="Compete" items={COMPETE} collapsed={collapsed} currentPath={currentPath} className="mt-5" />
+          <NavSection label="Community" items={COMMUNITY} collapsed={collapsed} currentPath={currentPath} className="mt-5" />
+          <NavSection
+            label="System"
+            items={showAdmin ? [...SYSTEM_ITEMS, ...ADMIN_ITEMS] : SYSTEM_ITEMS}
+            collapsed={collapsed}
+            currentPath={currentPath}
+            className="mt-5"
+          />
         </nav>
 
         {!collapsed ? (
@@ -251,6 +244,31 @@ function SectionLabel({
       )}
     >
       {children}
+    </div>
+  );
+}
+
+function NavSection({
+  label,
+  items,
+  collapsed,
+  currentPath,
+  className,
+}: {
+  label: string;
+  items: NavItem[];
+  collapsed: boolean;
+  currentPath: string;
+  className?: string;
+}) {
+  return (
+    <div className={cn(collapsed ? "" : "border-t border-sidebar-border/60 first:border-t-0 first:pt-0 pt-3", className)}>
+      <SectionLabel collapsed={collapsed}>{label}</SectionLabel>
+      <ul className="space-y-0.5">
+        {items.map((item) => (
+          <SidebarLink key={item.to} item={item} collapsed={collapsed} active={isActive(currentPath, item.to)} />
+        ))}
+      </ul>
     </div>
   );
 }
