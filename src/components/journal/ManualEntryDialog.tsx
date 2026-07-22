@@ -841,7 +841,7 @@ function ManualForm({
       <Section
         id="execution"
         title="Execution"
-        description="Direction, prices, and position size. Prices are validated against instrument precision."
+        description="Direction, entry price, and stop / take profit. Exit price and position size are captured automatically from your closed trades."
         status={sectionStatus(["execution", "risk"])}
         sectionState={sectionState}
         onToggle={toggleSection}
@@ -870,16 +870,6 @@ function ManualForm({
               ))}
             </div>
           </div>
-          <div className="space-y-1.5">
-            <Label>Position size (lots / units)</Label>
-            <Input
-              value={lotSize}
-              onChange={(e) => setLotSize(sanitizeDecimal(e.target.value))}
-              inputMode="decimal"
-              placeholder={instrument ? `min ${instrument.minLot}` : "e.g. 0.10"}
-              className="h-11"
-            />
-          </div>
           <PriceField
             label="Entry price"
             value={entryPrice}
@@ -887,13 +877,8 @@ function ManualForm({
             validation={entryValidation}
             instrument={instrument}
             required
-          />
-          <PriceField
-            label="Exit price"
-            value={exitPrice}
-            onChange={setExitPrice}
-            validation={exitValidation}
-            instrument={instrument}
+            attempted={attemptedSubmit}
+            inputRef={entryRef}
           />
           <PriceField
             label="Stop loss"
@@ -912,7 +897,7 @@ function ManualForm({
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label>Account balance (for risk %)</Label>
+            <Label>Account balance</Label>
             <Input
               value={accountBalance}
               onChange={(e) => setAccountBalance(sanitizeDecimal(e.target.value))}
@@ -922,7 +907,7 @@ function ManualForm({
             />
           </div>
           <div className="space-y-1.5">
-            <Label>Target risk %</Label>
+            <Label>Risk %</Label>
             <Input
               value={riskPercent}
               onChange={(e) => setRiskPercent(sanitizeDecimal(e.target.value))}
