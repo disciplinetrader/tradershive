@@ -428,13 +428,11 @@ function ManualForm({
   };
 
   // ---- Validation refs (scroll + focus first invalid) ----
-  const fieldRefs = {
-    instrument: useRef<HTMLInputElement>(null),
-    entry: useRef<HTMLInputElement>(null),
-    openedAt: useRef<HTMLInputElement>(null),
-    session: useRef<HTMLButtonElement>(null),
-    strategy: useRef<HTMLDivElement>(null),
-  };
+  const instrumentRef = useRef<HTMLDivElement>(null);
+  const entryRef = useRef<HTMLInputElement>(null);
+  const openedAtRef = useRef<HTMLInputElement>(null);
+  const sessionRef = useRef<HTMLButtonElement>(null);
+  const strategyRef = useRef<HTMLDivElement>(null);
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
 
   // Auto-detect session whenever open time changes and auto mode is on.
