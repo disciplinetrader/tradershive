@@ -210,7 +210,7 @@ export async function persistStagedScreenshots(
         bucket: uploaded.bucket,
         path: uploaded.path,
         kind: "image",
-        mime_type: s.file.type || null,
+        content_type: s.file.type || null,
         size_bytes: s.file.size,
         caption: s.caption || null,
         category: s.category || null,
