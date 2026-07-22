@@ -13,6 +13,7 @@ import { OrdersTable } from "@/components/paper-trading/OrdersTable";
 import { HistoryTable } from "@/components/paper-trading/HistoryTable";
 import { WatchlistPanel } from "@/components/paper-trading/WatchlistPanel";
 import { SymbolSearch } from "@/components/paper-trading/SymbolSearch";
+import { MobileQuickTradeDock } from "@/components/paper-trading/MobileQuickTradeDock";
 
 import { ChartEngine } from "@/components/chart/ChartEngine";
 import { DEFAULT_CHART_SETTINGS } from "@/lib/chart/constants";
