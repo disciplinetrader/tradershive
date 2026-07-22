@@ -1672,7 +1672,7 @@ function LogoMark({ className = "h-8 w-8" }: { className?: string }) {
     <img
       src="/logo.png"
       alt="TradersHIVE Arena"
-      className={cn("rounded-xl object-cover shadow-elegant", className)}
+      className={cn("rounded-full object-cover shadow-elegant", className)}
     />
   );
 }

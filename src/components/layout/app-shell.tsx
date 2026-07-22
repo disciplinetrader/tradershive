@@ -179,7 +179,7 @@ function SidebarInner({
             <img
               src="/logo.png"
               alt="TradersHIVE Arena"
-              className="h-8 w-8 shrink-0 rounded-xl object-cover shadow-elegant"
+              className="h-8 w-8 shrink-0 rounded-full object-cover shadow-elegant"
             />
 
             {!collapsed ? (
