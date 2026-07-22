@@ -125,16 +125,8 @@ function JournalEntryPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={
-          <span className="flex items-center gap-2">
-            <span className="truncate">{entry.symbol ?? "Untitled"}</span>
-            <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] uppercase text-muted-foreground">
-              {entry.market ?? ""}
-            </span>
-            {entry.is_favorite ? <Heart className="h-4 w-4 fill-danger text-danger" /> : null}
-          </span>
-        }
-        description={`#${shortId(entry.id)} · ${formatDate(entry.closed_at ?? entry.created_at)}`}
+        title={`${entry.symbol ?? "Untitled"}${entry.is_favorite ? " ★" : ""}`}
+        description={`${entry.market ?? ""} · #${shortId(entry.id)} · ${formatDate(entry.closed_at ?? entry.created_at)}`}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <Button asChild variant="outline" size="sm">
