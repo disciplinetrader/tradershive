@@ -21,3 +21,30 @@ export type {
 
 // Scenario harness for QA / storybook / manual smoke.
 export { runScenarios, SCENARIOS } from "./scenarios";
+
+// Phase 2 — Instruments, brokers, sessions, sizing, validation.
+export {
+  getInstrument, requireInstrument, listInstruments,
+  registerInstrument, registerInstrumentPartial, CLASS_DEFAULTS,
+} from "./instruments";
+export type {
+  InstrumentSpec, AssetClass, LotType, MarginClass, InstrumentStatus, SessionId,
+} from "./instruments";
+export { ASSET_CLASS_DEFAULTS, assetClassDefaults } from "./asset-classes";
+export type { AssetClassDefaults, ExecutionModel, LiquidationRule } from "./asset-classes";
+export { BROKER_PROFILES, getBrokerProfile, brokerSupports, resolveClassSettings } from "./broker-profiles";
+export type { BrokerProfile, BrokerProfileId } from "./broker-profiles";
+export { SESSIONS, HOLIDAYS, isSessionOpen, isMarketOpen, nextSessionOpen } from "./sessions";
+export type { SessionWindow } from "./sessions";
+export {
+  roundToTick, roundQuantity, priceToTicks, ticksBetween, pipsBetween,
+  moveToCash, pipsToCash, notional, formatPrice, formatQuantity, stopDistanceOk,
+} from "./tick-engine";
+export { calculateSize, sizeFromPipStop } from "./sizing";
+export type { SizingMode, SizingResult } from "./sizing";
+export { validateInstrumentIntent } from "./instrument-validation";
+export type { InstrumentValidationInput, InstrumentValidationResult } from "./instrument-validation";
+export { ACCOUNT_TYPES, accountConfigFor } from "./account-types";
+export type { AccountKind, AccountTypeSpec } from "./account-types";
+export { runPhase2Scenarios, summarizePhase2 } from "./scenarios-phase2";
+export type { ScenarioResult } from "./scenarios-phase2";
