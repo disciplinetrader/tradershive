@@ -1273,3 +1273,89 @@ function sanitizeSignedDecimal(v: string): string {
 function sessionLabel(v: string): string {
   return SESSION_OPTIONS.find((s) => s.value === v)?.label ?? v;
 }
+
+/* -------------------------------------------------------------------------- */
+/*  StrategyTagPicker                                                          */
+/* -------------------------------------------------------------------------- */
+
+type StrategyOption =
+  | { value: string; label: string; custom: false }
+  | { value: string; label: string; custom: true; id: string };
+
+function StrategyTagPicker({
+  options,
+  values,
+  onChange,
+  onAddCustom,
+  onRemoveCustom,
+  customSetups,
+  invalid,
+}: {
+  options: StrategyOption[];
+  values: string[];
+  onChange: (v: string[]) => void;
+  onAddCustom: (label: string) => void | Promise<void>;
+  onRemoveCustom: (t: JournalTaxonomy) => void | Promise<void>;
+  customSetups: JournalTaxonomy[];
+  invalid?: boolean;
+}) {
+  const [draft, setDraft] = useState("");
+  const toggle = (v: string) => {
+    onChange(values.includes(v) ? values.filter((x) => x !== v) : [...values, v]);
+  };
+  const submit = async () => {
+    const t = draft.trim();
+    if (!t) return;
+    setDraft("");
+    await onAddCustom(t);
+  };
+  return (
+    <div className={cn("rounded-md border border-input bg-background/50 p-2", invalid && "border-danger")}>
+      <div className="flex flex-wrap gap-1.5">
+        {options.map((o) => {
+          const active = values.includes(o.value);
+          const customRef = o.custom ? customSetups.find((c) => c.id === o.id) : null;
+          return (
+            <span key={o.value} className="inline-flex items-center">
+              <button
+                type="button"
+                onClick={() => toggle(o.value)}
+                className={cn(
+                  "h-7 rounded-full border px-2.5 text-[11px] transition-colors",
+                  active
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border/70 text-muted-foreground hover:text-foreground",
+                  o.custom && "pr-1",
+                )}
+              >
+                {o.label}
+                {o.custom && customRef ? (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onRemoveCustom(customRef); }}
+                    className="ml-1 rounded-full p-0.5 text-muted-foreground hover:bg-danger/10 hover:text-danger"
+                    aria-label={`Delete ${o.label}`}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                ) : null}
+              </button>
+            </span>
+          );
+        })}
+      </div>
+      <div className="mt-2 flex items-center gap-2">
+        <Input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void submit(); } }}
+          placeholder="Add your own tag…"
+          className="h-8 text-xs"
+        />
+        <Button type="button" size="sm" variant="outline" className="h-8" onClick={submit} disabled={!draft.trim()}>
+          <Plus className="mr-1 h-3 w-3" /> Add
+        </Button>
+      </div>
+    </div>
+  );
+}
