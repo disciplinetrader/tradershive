@@ -296,7 +296,7 @@ function ManualForm({
         take_profit: tpValidation.value,
         pnl: pnl ? Number(pnl) : null,
         rr: rr ? Number(rr) : computedRR,
-        volume: lotSize ? Number(lotSize) : null,
+        lot_size: lotSize ? Number(lotSize) : null,
         opened_at: openedAt ? new Date(openedAt).toISOString() : null,
         closed_at: closedAt ? new Date(closedAt).toISOString() : null,
         opened_tz: tz,
