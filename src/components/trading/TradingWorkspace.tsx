@@ -13,7 +13,7 @@ import { OrdersTable } from "@/components/paper-trading/OrdersTable";
 import { HistoryTable } from "@/components/paper-trading/HistoryTable";
 import { WatchlistPanel } from "@/components/paper-trading/WatchlistPanel";
 import { SymbolSearch } from "@/components/paper-trading/SymbolSearch";
-import { MobileQuickTradeDock } from "@/components/paper-trading/MobileQuickTradeDock";
+
 
 import { ChartEngine } from "@/components/chart/ChartEngine";
 import { DEFAULT_CHART_SETTINGS } from "@/lib/chart/constants";
@@ -39,7 +39,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 
-import { useIsMobile } from "@/hooks/use-mobile";
+
 import { cn } from "@/lib/utils";
 import { findSymbol } from "@/lib/paper-trading/symbols";
 import { useServerFn } from "@tanstack/react-start";
@@ -85,7 +85,6 @@ const SMC_SUB_OPTIONS: { key: "show_swings" | "show_bos" | "show_fvg" | "show_ob
 ];
 
 function TradingWorkspaceInner() {
-  const isMobile = useIsMobile();
   const qc = useQueryClient();
   const { symbol, symbolMeta, market, timeframe, setTimeframe, accountId, account } = usePaper();
   useRiskMonitor(account);
@@ -215,7 +214,7 @@ function TradingWorkspaceInner() {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="flex min-h-0 flex-col gap-3 p-2 pb-[240px] md:pb-3 sm:p-3">
+      <div className="flex min-h-0 flex-col gap-3 p-2 pb-3 sm:p-3">
         <TopToolbar />
         <TodayPnLWidget
           dailyTargetPct={Number(account?.max_daily_risk_pct ?? 5)}
@@ -223,8 +222,8 @@ function TradingWorkspaceInner() {
         />
         <AccountSummary />
 
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_360px]">
-          <GlassCard className="relative flex h-[55vh] min-h-[320px] flex-col overflow-hidden p-0 sm:h-[520px] md:h-[560px] xl:h-[620px]">
+        <div className="grid grid-cols-[minmax(0,1fr)_200px] gap-2 sm:grid-cols-[minmax(0,1fr)_260px] sm:gap-3 md:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_360px]">
+          <GlassCard className="relative flex h-[420px] min-h-[320px] flex-col overflow-hidden p-0 sm:h-[520px] md:h-[560px] xl:h-[620px]">
 
 
             {/* Chart header */}
@@ -501,13 +500,13 @@ function TradingWorkspaceInner() {
             </div>
           </GlassCard>
 
-          <div className="hidden min-h-0 flex-col gap-3 md:flex">
+          <div className="flex min-h-0 flex-col gap-3">
             <OrderPanel />
           </div>
 
         </div>
 
-        <div className="hidden md:block">
+        <div className="block">
           <MultiChartStrip panes={multiPanes} onChange={setMultiPanes} primarySymbol={symbol} />
         </div>
 
@@ -530,8 +529,7 @@ function TradingWorkspaceInner() {
 
         <SymbolSearch open={symbolSearchOpen} onOpenChange={setSymbolSearchOpen} />
 
-        {/* Persistent mobile trade dock — no FAB hunt */}
-        {isMobile ? <MobileQuickTradeDock /> : null}
+        {/* Same desktop layout across breakpoints — no mobile-only dock */}
       </div>
     </TooltipProvider>
   );
