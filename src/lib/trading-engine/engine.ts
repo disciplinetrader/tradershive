@@ -499,4 +499,3 @@ export function defaultConfig(overrides: Partial<AccountConfig> = {}): AccountCo
   };
 }
 
-void Side; // keep type-only import from tree-shaking
