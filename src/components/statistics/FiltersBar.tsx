@@ -126,10 +126,10 @@ export function FiltersBar() {
       {emotions.length ? <MultiSelect label="Emotion" values={filters.emotions} options={emotions.map((s) => ({ value: s, label: s }))} onChange={(v) => setFilters({ ...filters, emotions: v })} /> : null}
 
       {activeCount > 0 ? (
-        <Button variant="ghost" size="sm" className="h-9" onClick={resetFilters}><X className="h-3.5 w-3.5 mr-1" />Clear</Button>
+        <Button variant="ghost" size="sm" className="h-9 w-full md:w-auto" onClick={resetFilters}><X className="h-3.5 w-3.5 mr-1" />Clear</Button>
       ) : null}
 
-      <div className="ml-auto flex items-center gap-2">
+      <div className="col-span-full flex flex-wrap items-center gap-2 md:col-auto md:ml-auto">
         <SaveFilterDialog onSave={(name) => save.mutate(name)} />
         {Array.isArray(savedQuery.data) && savedQuery.data.length ? (
           <Popover>
