@@ -94,7 +94,7 @@ export function Watchlist() {
           addMut.mutate({ symbol: sym, market: newMarket });
         }}
       >
-        <div className="relative flex-1 min-w-[140px]">
+        <div className="relative flex-1 sm:min-w-[140px]">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={q}

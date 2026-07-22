@@ -107,7 +107,7 @@ export function JournalFilters({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <div className="relative min-w-[200px] flex-1">
+      <div className="relative sm:min-w-[200px] flex-1">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           value={local.q}
@@ -263,7 +263,7 @@ function FilterSelect({
 }) {
   return (
     <Select value={toSel(value)} onValueChange={(v) => onChange(fromSel(v))}>
-      <SelectTrigger className="h-9 w-[130px]">
+      <SelectTrigger className="h-9 w-full sm:w-[130px]">
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>

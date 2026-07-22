@@ -47,7 +47,7 @@ export function LeaderboardFilters({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <div className="relative min-w-[220px] flex-1">
+      <div className="relative sm:min-w-[220px] flex-1">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           className="pl-9"
@@ -58,7 +58,7 @@ export function LeaderboardFilters({
       </div>
 
       <Select value={state.category} onValueChange={(v) => set("category", v)}>
-        <SelectTrigger className="w-[170px]"><SelectValue /></SelectTrigger>
+        <SelectTrigger className="w-full sm:w-[170px]"><SelectValue /></SelectTrigger>
         <SelectContent>
           {RANKING_CATEGORIES.map((c) => (
             <SelectItem key={c.key} value={c.key}>{c.label}</SelectItem>
@@ -68,7 +68,7 @@ export function LeaderboardFilters({
 
       {!hideLeague ? (
         <Select value={val(state.league)} onValueChange={(v) => set("league", norm(v))}>
-          <SelectTrigger className="w-[140px]"><SelectValue placeholder="League" /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-[140px]"><SelectValue placeholder="League" /></SelectTrigger>
           <SelectContent>
             <SelectItem value={NONE}>All leagues</SelectItem>
             {LEAGUES.map((l) => <SelectItem key={l} value={l} className="capitalize">{l}</SelectItem>)}
@@ -78,7 +78,7 @@ export function LeaderboardFilters({
 
       {!hideCountry ? (
         <Select value={val(state.country)} onValueChange={(v) => set("country", norm(v))}>
-          <SelectTrigger className="w-[170px]"><SelectValue placeholder="Country" /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-[170px]"><SelectValue placeholder="Country" /></SelectTrigger>
           <SelectContent className="max-h-72">
             <SelectItem value={NONE}>All countries</SelectItem>
             {COUNTRIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
@@ -87,7 +87,7 @@ export function LeaderboardFilters({
       ) : null}
 
       <Select value={val(state.market)} onValueChange={(v) => set("market", norm(v))}>
-        <SelectTrigger className="w-[140px]"><SelectValue placeholder="Market" /></SelectTrigger>
+        <SelectTrigger className="w-full sm:w-[140px]"><SelectValue placeholder="Market" /></SelectTrigger>
         <SelectContent>
           <SelectItem value={NONE}>All markets</SelectItem>
           {MARKETS.map((m) => <SelectItem key={m.value} value={m.value}>{m.emoji} {m.label}</SelectItem>)}
@@ -95,7 +95,7 @@ export function LeaderboardFilters({
       </Select>
 
       <Select value={val(state.tradingStyle)} onValueChange={(v) => set("tradingStyle", norm(v))}>
-        <SelectTrigger className="w-[140px]"><SelectValue placeholder="Style" /></SelectTrigger>
+        <SelectTrigger className="w-full sm:w-[140px]"><SelectValue placeholder="Style" /></SelectTrigger>
         <SelectContent>
           <SelectItem value={NONE}>All styles</SelectItem>
           {TRADING_STYLES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
@@ -103,7 +103,7 @@ export function LeaderboardFilters({
       </Select>
 
       <Select value={val(state.experience)} onValueChange={(v) => set("experience", norm(v))}>
-        <SelectTrigger className="w-[150px]"><SelectValue placeholder="Experience" /></SelectTrigger>
+        <SelectTrigger className="w-full sm:w-[150px]"><SelectValue placeholder="Experience" /></SelectTrigger>
         <SelectContent>
           <SelectItem value={NONE}>All levels</SelectItem>
           {EXPERIENCE_LEVELS.map((e) => <SelectItem key={e.value} value={e.value}>{e.label}</SelectItem>)}

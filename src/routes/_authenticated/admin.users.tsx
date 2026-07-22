@@ -44,7 +44,7 @@ function AdminUsers() {
     <div className="space-y-4">
       <GlassCard className="p-4">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="relative flex-1 min-w-[220px]">
+          <div className="relative flex-1 sm:min-w-[220px]">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={search}
@@ -54,7 +54,7 @@ function AdminUsers() {
             />
           </div>
           <Select value={status} onValueChange={(v: any) => { setStatus(v); setPage(1); }}>
-            <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full sm:w-[160px]"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All active</SelectItem>
               <SelectItem value="suspended">Suspended</SelectItem>
@@ -237,13 +237,13 @@ function UserDrawer({ userId, onClose, onChanged }: { userId: string | null; onC
             <Section title="Grant reward">
               <div className="flex items-center gap-2">
                 <Select value={grantKind} onValueChange={(v: any) => setGrantKind(v)}>
-                  <SelectTrigger className="w-[100px]"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="w-full sm:w-[100px]"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="xp">XP</SelectItem>
                     <SelectItem value="coins">Coins</SelectItem>
                   </SelectContent>
                 </Select>
-                <Input type="number" value={grantAmount} onChange={(e) => setGrantAmount(Number(e.target.value))} className="w-[120px]" />
+                <Input type="number" value={grantAmount} onChange={(e) => setGrantAmount(Number(e.target.value))} className="w-full sm:w-[120px]" />
                 <Button size="sm" onClick={run(() => grantFn({ data: { userId: userId!, kind: grantKind, amount: grantAmount } }), "Granted")}>Grant</Button>
               </div>
             </Section>
@@ -271,7 +271,7 @@ function UserDrawer({ userId, onClose, onChanged }: { userId: string | null; onC
               </div>
               <div className="mt-2 flex items-center gap-2">
                 <Select value={selectedRole} onValueChange={setSelectedRole}>
-                  <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="w-full sm:w-[180px]"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {ADMIN_ROLES.map((r) => <SelectItem key={r} value={r}>{roleMeta(r).label}</SelectItem>)}
                     <SelectItem value="premium">Premium</SelectItem>

@@ -101,26 +101,26 @@ export function PostComposer({ compact = false, onCreated }: { compact?: boolean
             <>
               <div className="flex flex-wrap items-center gap-2">
                 <Select value={postType} onValueChange={setPostType}>
-                  <SelectTrigger className="w-[170px]"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="w-full sm:w-[170px]"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {POST_TYPES.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <Select value={categorySlug || "__none__"} onValueChange={(v) => setCategorySlug(v === "__none__" ? "" : v)}>
-                  <SelectTrigger className="w-[170px]"><SelectValue placeholder="Category" /></SelectTrigger>
+                  <SelectTrigger className="w-full sm:w-[170px]"><SelectValue placeholder="Category" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none__">No category</SelectItem>
                     {(cats.data?.categories ?? []).map((c: any) => <SelectItem key={c.id} value={c.slug}>{c.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <Input
-                  className="w-[140px]"
+                  className="w-full sm:w-[140px]"
                   value={symbol}
                   onChange={(e) => setSymbol(e.target.value.toUpperCase())}
                   placeholder="Symbol (BTC)"
                 />
                 <Select value={visibility} onValueChange={setVisibility}>
-                  <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="w-full sm:w-[180px]"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {VISIBILITY.map((v) => <SelectItem key={v.value} value={v.value}>{v.label}</SelectItem>)}
                   </SelectContent>
