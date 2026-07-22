@@ -789,16 +789,21 @@ function ManualForm({
         onToggle={toggleSection}
       >
         <div className="grid gap-3 sm:grid-cols-[1fr_180px]">
-          <div className="space-y-1.5">
+          <div className="space-y-1.5" ref={instrumentRef} tabIndex={-1}>
             <Label>
               Symbol <span className="ml-0.5 text-danger">*</span>
             </Label>
-            <InstrumentSearchInput
-              value={symbol}
-              marketFilter={null}
-              onSelect={(i) => { setInstrument(i); setSymbol(i.symbol); }}
-              autoFocus
-            />
+            <div className={cn(
+              "rounded-md",
+              attemptedSubmit && !instrument && "ring-2 ring-danger ring-offset-1 ring-offset-background",
+            )}>
+              <InstrumentSearchInput
+                value={symbol}
+                marketFilter={null}
+                onSelect={(i) => { setInstrument(i); setSymbol(i.symbol); }}
+                autoFocus
+              />
+            </div>
             {instrument ? (
               <p className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
                 <CheckCircle2 className="h-3 w-3 text-success" />
@@ -812,7 +817,7 @@ function ManualForm({
               <p className="flex items-center gap-1.5 text-[11px] text-warning">
                 <AlertCircle className="h-3 w-3" /> Not in catalog — will be saved as custom symbol
               </p>
-            ) : requiredMissing.instrument ? (
+            ) : (attemptedSubmit && requiredMissing.instrument) ? (
               <p className="flex items-center gap-1.5 text-[11px] text-danger">
                 <AlertCircle className="h-3 w-3" /> Instrument is required
               </p>
