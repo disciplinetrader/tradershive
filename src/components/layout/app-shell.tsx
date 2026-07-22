@@ -33,29 +33,34 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 type NavItem = { to: string; label: string; icon: typeof Home; admin?: boolean };
 
-const NAV: NavItem[] = [
+const TRADING: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: Home },
   { to: "/trading", label: "Trading Workspace", icon: LineChart },
-  { to: "/journal", label: "Journal", icon: BookOpen },
   { to: "/replay", label: "Replay Studio", icon: Film },
+  { to: "/journal", label: "Journal", icon: BookOpen },
+  { to: "/analytics", label: "Analytics", icon: BarChart3 },
+];
+
+const COMPETE: NavItem[] = [
   { to: "/challenges", label: "Challenges", icon: Sparkles },
   { to: "/battle-arena", label: "Battle Arena", icon: Swords },
-  { to: "/analytics", label: "Analytics", icon: BarChart3 },
+  { to: "/championship", label: "Championships", icon: Trophy },
   { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
-  { to: "/championship", label: "Championship", icon: Trophy },
+];
+
+const COMMUNITY: NavItem[] = [
   { to: "/community", label: "Community", icon: MessageSquare },
   { to: "/achievements", label: "Achievements", icon: Award },
 ];
-// Not yet implemented — kept as routes for direct URLs but hidden from primary nav.
-void Users; void ShoppingBag; void GraduationCap;
 
-const SECONDARY: NavItem[] = [
-  { to: "/profile", label: "Profile", icon: UserIcon },
+const SYSTEM_ITEMS: NavItem[] = [
   { to: "/settings", label: "Settings", icon: Settings },
-  { to: "/support", label: "Support", icon: LifeBuoy },
 ];
 
-const ADMIN: NavItem[] = [{ to: "/admin", label: "Admin", icon: Shield, admin: true }];
+const ADMIN_ITEMS: NavItem[] = [{ to: "/admin", label: "Admin", icon: Shield, admin: true }];
+
+// Kept as valid routes but not surfaced in the reorganized sidebar.
+void Users; void ShoppingBag; void GraduationCap; void UserIcon; void LifeBuoy;
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
