@@ -6,7 +6,7 @@
 
 import { findSymbol } from "@/lib/paper-trading/symbols";
 import { notionalValue, marginRequired, pnl as computePnl } from "@/lib/paper-trading/calculations";
-import { HARD_RISK_CAP_PCT, MAX_OPEN_POSITIONS } from "@/lib/paper-trading/risk";
+import { HARD_RISK_CAP_PCT, MAX_OPEN_POSITIONS, liquidationPrice as liqPx } from "@/lib/paper-trading/risk";
 import type {
   AccountConfig, AccountSnapshot, OrderIntent, ValidationResult,
 } from "./types";
