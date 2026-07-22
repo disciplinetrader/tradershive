@@ -430,13 +430,12 @@ function ManualForm({
     const bal = Number(accountBalance);
     const lot = Number(lotSize);
     if (!instrument || !Number.isFinite(bal) || !bal || !Number.isFinite(lot) || !lot) return null;
-    return computeRiskPercent(
-      entryValidation.value,
-      slValidation.value,
-      lot,
-      instrument.contractSize,
-      bal,
-    );
+    const e = entryValidation.value;
+    const sl = slValidation.value;
+    if (e == null || sl == null) return null;
+    const riskCash = Math.abs(e - sl) * lot * instrument.contractSize;
+    if (!Number.isFinite(riskCash) || !riskCash) return null;
+    return Math.round((riskCash / bal) * 10_000) / 100;
   }, [instrument, accountBalance, lotSize, entryValidation.value, slValidation.value]);
 
   const computedDuration = useMemo(() => {
