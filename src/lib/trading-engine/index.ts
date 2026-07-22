@@ -48,3 +48,19 @@ export { ACCOUNT_TYPES, accountConfigFor } from "./account-types";
 export type { AccountKind, AccountTypeSpec } from "./account-types";
 export { runPhase2Scenarios, summarizePhase2 } from "./scenarios-phase2";
 export type { ScenarioResult } from "./scenarios-phase2";
+
+// Phase 3 — Simulation profiles, multi-account registry, prop-firm rules.
+export {
+  SIMULATION_PROFILES, getSimulationProfile, listSimulationProfiles,
+  accountConfigFromProfile,
+} from "./simulation-profiles";
+export type { SimulationProfile, SimulationProfileId } from "./simulation-profiles";
+export {
+  SimulationAccountRegistry, simulationAccounts,
+} from "./simulation-accounts";
+export type {
+  SimulationAccount, SimulationAccountId, SimulationAccountMeta, CreateAccountInput,
+} from "./simulation-accounts";
+export { evaluatePropFirmRules, isPropFirmCleared } from "./prop-firm-rules";
+export type { PropFirmRules, RuleBreach, RuleEvaluation, DailyStat } from "./prop-firm-rules";
+export { runPhase3Scenarios, summarizePhase3, PHASE3_SCENARIOS } from "./scenarios-phase3";
