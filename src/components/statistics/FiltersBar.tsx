@@ -90,9 +90,9 @@ export function FiltersBar() {
     filters.strategies.length + filters.sessions.length + filters.directions.length + filters.emotions.length;
 
   return (
-    <div className="glass rounded-2xl p-3 flex flex-wrap items-center gap-2">
+    <div className="glass rounded-2xl p-3 grid grid-cols-2 gap-2 sm:grid-cols-3 md:flex md:flex-wrap md:items-center">
       <Select value={filters.preset} onValueChange={(v) => setFilters({ ...filters, preset: v as StatisticsFilters["preset"] })}>
-        <SelectTrigger className="h-9 w-40"><SelectValue /></SelectTrigger>
+        <SelectTrigger className="h-9 w-full md:w-40"><SelectValue /></SelectTrigger>
         <SelectContent>
           {DATE_PRESETS.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
         </SelectContent>
