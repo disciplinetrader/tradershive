@@ -71,10 +71,17 @@ export function TradeCard({
       transition={{ duration: 0.25 }}
     >
       <GlassCard className="group flex h-full flex-col overflow-hidden p-0">
-        <button
-          type="button"
+        <div
+          role="button"
+          tabIndex={0}
           onClick={onView}
-          className="relative block aspect-video w-full overflow-hidden bg-gradient-to-br from-primary/10 via-transparent to-transparent text-left"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              onView();
+            }
+          }}
+          className="relative block aspect-video w-full cursor-pointer overflow-hidden bg-gradient-to-br from-primary/10 via-transparent to-transparent text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           aria-label={`Open trade ${entry.symbol ?? ""} details`}
         >
           {screenshotUrl ? (
@@ -108,7 +115,7 @@ export function TradeCard({
           >
             <Heart className={cn("h-4 w-4", entry.is_favorite && "fill-danger text-danger")} />
           </button>
-        </button>
+        </div>
 
         <div className="flex flex-1 flex-col gap-3 p-4">
           <div className="flex items-start justify-between gap-2">
