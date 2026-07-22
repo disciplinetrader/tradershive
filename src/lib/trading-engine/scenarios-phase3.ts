@@ -11,10 +11,10 @@ import { evaluatePropFirmRules } from "./prop-firm-rules";
 import type { ScenarioResult } from "./scenarios-phase2";
 
 function ok(name: string, details: string): ScenarioResult {
-  return { name, ok: true, notes };
+  return { name, ok: true, details };
 }
 function fail(name: string, details: string): ScenarioResult {
-  return { name, ok: false, notes };
+  return { name, ok: false, details };
 }
 
 function scenarioRetailForex(): ScenarioResult {
