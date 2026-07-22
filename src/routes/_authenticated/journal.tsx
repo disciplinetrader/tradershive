@@ -323,11 +323,7 @@ function JournalPage() {
                           onView={() => setDrawerId(entry.id)}
                           onEdit={() => setDrawerId(entry.id)}
                           onDuplicate={() => duplicateMut.mutate(entry.id)}
-                          onDelete={() => {
-                            if (window.confirm("Delete this journal entry? The linked trade is preserved.")) {
-                              deleteMut.mutate(entry.id);
-                            }
-                          }}
+                          onDelete={() => deleteMut.mutate(entry.id)}
                           onShare={() => shareMut.mutate(entry.id)}
                           onFavorite={() => favoriteMut.mutate({ id: entry.id, next: !entry.is_favorite })}
                         />
