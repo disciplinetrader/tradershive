@@ -88,9 +88,9 @@ export class SimulationAccountRegistry {
   }
 
   /** Fan a price tick to every account. Called from the Yahoo Finance layer. */
-  broadcastPrice(symbol: string, price: number, ts: number = Date.now()): void {
+  broadcastPrice(symbol: string, price: number): void {
     for (const acc of this.accounts.values()) {
-      acc.engine.onPrice(symbol, price, ts);
+      acc.engine.onPrice(symbol, price);
     }
   }
 
