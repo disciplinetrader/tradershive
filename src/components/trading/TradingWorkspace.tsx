@@ -501,13 +501,13 @@ function TradingWorkspaceInner() {
             </div>
           </GlassCard>
 
-          <div className="hidden min-h-0 flex-col gap-3 md:flex">
+          <div className="flex min-h-0 flex-col gap-3">
             <OrderPanel />
           </div>
 
         </div>
 
-        <div className="hidden md:block">
+        <div className="block">
           <MultiChartStrip panes={multiPanes} onChange={setMultiPanes} primarySymbol={symbol} />
         </div>
 
