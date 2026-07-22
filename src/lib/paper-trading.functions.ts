@@ -392,6 +392,30 @@ export const cancelOrder = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+const modifyOrderSchema = z.object({
+  id: z.string().uuid(),
+  trigger_price: z.number().positive().optional(),
+  limit_price: z.number().positive().nullable().optional(),
+  stop_loss: z.number().positive().nullable().optional(),
+  take_profit: z.number().positive().nullable().optional(),
+  lot_size: z.number().positive().optional(),
+});
+
+/**
+ * Modify a pending order's trigger / limit / SL / TP / size. Drag-and-drop
+ * from the chart lands here. Only mutates rows in `pending` status.
+ */
+export const modifyOrder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => modifyOrderSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    const { id, ...patch } = data;
+    const { error } = await context.supabase.from("paper_orders")
+      .update(patch).eq("id", id).eq("user_id", context.userId).eq("status", "pending");
+    if (error) throw error;
+    return { ok: true };
+  });
+
 export const listOrders = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ account_id: z.string().uuid().optional() }).parse(d ?? {}))
