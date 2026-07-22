@@ -113,18 +113,17 @@ function ReplayDashboard() {
         title="Replay Studio"
         description="Deliberate practice for professional traders."
         actions={
-          <>
-            <Button variant="ghost" size="sm" onClick={() => randomM.mutate()} disabled={randomM.isPending}>
-              <Dices className="mr-2 h-4 w-4" />{randomM.isPending ? "Rolling…" : "Surprise Me"}
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setPicker("free")}>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+            <Button variant="outline" size="sm" onClick={() => setPicker("free")} className="w-full sm:w-auto order-1">
               <Compass className="mr-2 h-4 w-4" />Scenario Picker
             </Button>
-            <Button size="default" onClick={() => setWiz(true)} className="shadow-elegant">
+            <Button size="default" onClick={() => setWiz(true)} className="w-full sm:w-auto order-2 shadow-elegant">
               <Sparkles className="mr-2 h-4 w-4" />New Replay
             </Button>
-
-          </>
+            <Button variant="ghost" size="sm" onClick={() => randomM.mutate()} disabled={randomM.isPending} className="w-full sm:w-auto order-3">
+              <Dices className="mr-2 h-4 w-4" />{randomM.isPending ? "Rolling…" : "Surprise Me"}
+            </Button>
+          </div>
         }
       />
 
