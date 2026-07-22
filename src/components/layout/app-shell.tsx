@@ -248,6 +248,31 @@ function SectionLabel({
   );
 }
 
+function NavSection({
+  label,
+  items,
+  collapsed,
+  currentPath,
+  className,
+}: {
+  label: string;
+  items: NavItem[];
+  collapsed: boolean;
+  currentPath: string;
+  className?: string;
+}) {
+  return (
+    <div className={cn(collapsed ? "" : "border-t border-sidebar-border/60 first:border-t-0 first:pt-0 pt-3", className)}>
+      <SectionLabel collapsed={collapsed}>{label}</SectionLabel>
+      <ul className="space-y-0.5">
+        {items.map((item) => (
+          <SidebarLink key={item.to} item={item} collapsed={collapsed} active={isActive(currentPath, item.to)} />
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function isActive(pathname: string, to: string) {
   return pathname === to || pathname.startsWith(`${to}/`);
 }
