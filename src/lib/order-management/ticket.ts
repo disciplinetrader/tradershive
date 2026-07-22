@@ -78,7 +78,8 @@ export function computeMetrics(
 
   // Cost breakdown — spread cost vs commission vs slippage.
   const profile = COST_PROFILES[config.cost_profile] ?? COST_PROFILES.zero;
-  const spreadPips = profile.spreadPips ?? 0;
+  const rule = profile.by_market[meta.market];
+  const spreadPips = rule?.spread_pips ?? 0;
   const spreadCost = qty > 0
     ? spreadPips * (meta.pipValuePerLot || 0) * qty
     : 0;
