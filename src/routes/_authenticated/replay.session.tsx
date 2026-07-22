@@ -16,6 +16,7 @@ import { ScoreCard } from "@/components/replay/ScoreCard";
 import { AiReviewPanel } from "@/components/replay/AiReviewPanel";
 import { PostSessionSummary } from "@/components/replay/PostSessionSummary";
 import { CheckpointsPanel } from "@/components/replay/CheckpointsPanel";
+import { ReplayTimeline } from "@/components/replay/ReplayTimeline";
 
 const searchSchema = z.object({ id: z.string().optional() });
 
@@ -93,6 +94,7 @@ function Workspace() {
             <ReplayChart onCapture={(url) => (window as any).__replayCaptureHandler?.(url)} />
           </div>
           <ReplayControls />
+          <ReplayTimeline />
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <NotesPanel />
             <BookmarksPanel />
