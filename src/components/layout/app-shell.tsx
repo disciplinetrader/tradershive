@@ -171,11 +171,12 @@ function SidebarInner({
       <div className="flex h-full flex-col">
         <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-4">
           <Link to="/dashboard" className="flex min-w-0 items-center gap-2">
-            <div className="grid h-8 w-8 shrink-0 place-items-center rounded-xl gradient-primary text-primary-foreground shadow-elegant">
-              <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
-                <path d="M4 17l5-5 4 4 7-9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
+            <img
+              src="/logo.png"
+              alt="TradersHIVE Arena"
+              className="h-8 w-8 shrink-0 rounded-xl object-cover shadow-elegant"
+            />
+
             {!collapsed ? (
               <span className="truncate text-sm font-bold tracking-tight text-sidebar-foreground">{APP_NAME}</span>
             ) : null}

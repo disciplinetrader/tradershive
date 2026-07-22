@@ -1667,25 +1667,13 @@ function SocialLink({
 /* Logo + brand icons                                                  */
 /* ------------------------------------------------------------------ */
 
-function LogoMark({ className = "h-7 w-7" }: { className?: string }) {
+function LogoMark({ className = "h-8 w-8" }: { className?: string }) {
   return (
-    <div
-      className={cn(
-        "grid place-items-center rounded-xl gradient-primary text-primary-foreground shadow-elegant",
-        className,
-      )}
-      aria-hidden
-    >
-      <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
-        <path
-          d="M4 17l5-5 4 4 7-9"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    </div>
+    <img
+      src="/logo.png"
+      alt="TradersHIVE Arena"
+      className={cn("rounded-xl object-cover shadow-elegant", className)}
+    />
   );
 }
 
