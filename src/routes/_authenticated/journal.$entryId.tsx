@@ -8,8 +8,6 @@ import {
   Camera,
   Clock,
   Gauge,
-  Heart,
-  Play,
   Sparkles,
   Target,
   Tag as TagIcon,
