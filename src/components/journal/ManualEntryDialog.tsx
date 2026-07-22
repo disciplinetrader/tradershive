@@ -1178,6 +1178,8 @@ function PriceField({
   validation,
   instrument,
   required = false,
+  attempted = false,
+  inputRef,
 }: {
   label: string;
   value: string;
@@ -1185,9 +1187,11 @@ function PriceField({
   validation: ReturnType<typeof validatePrice>;
   instrument: InstrumentRecord | null;
   required?: boolean;
+  attempted?: boolean;
+  inputRef?: React.Ref<HTMLInputElement>;
 }) {
   const invalid = value.length > 0 && !validation.valid;
-  const missingRequired = required && value.length === 0;
+  const missingRequired = required && value.length === 0 && attempted;
   return (
     <div className="space-y-1">
       <Label>
@@ -1195,6 +1199,7 @@ function PriceField({
         {required ? <span className="ml-0.5 text-danger">*</span> : null}
       </Label>
       <Input
+        ref={inputRef}
         value={value}
         onChange={(e) => onChange(sanitizeDecimal(e.target.value))}
         inputMode="decimal"
