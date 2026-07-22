@@ -85,7 +85,6 @@ const SMC_SUB_OPTIONS: { key: "show_swings" | "show_bos" | "show_fvg" | "show_ob
 ];
 
 function TradingWorkspaceInner() {
-  const isMobile = useIsMobile();
   const qc = useQueryClient();
   const { symbol, symbolMeta, market, timeframe, setTimeframe, accountId, account } = usePaper();
   useRiskMonitor(account);
