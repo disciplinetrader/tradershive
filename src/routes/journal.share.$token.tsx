@@ -15,6 +15,7 @@ import {
 } from "@/lib/journal/format";
 import { cn } from "@/lib/utils";
 import { APP_NAME } from "@/lib/constants";
+import { routeBoundaries } from "@/lib/route-boundaries";
 
 export const Route = createFileRoute("/journal/share/$token")({
   head: () => ({
@@ -25,6 +26,12 @@ export const Route = createFileRoute("/journal/share/$token")({
     ],
   }),
   component: SharedTradePage,
+  ...routeBoundaries({
+    label: "Shared trade",
+    boundary: "shared_trade_route",
+    backHref: "/",
+    backLabel: "Back to home",
+  }),
 });
 
 function SharedTradePage() {

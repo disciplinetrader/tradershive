@@ -12,9 +12,16 @@ import { LeagueBadge } from "@/components/social/LeagueBadge";
 import { CountryFlag } from "@/components/social/CountryFlag";
 import { Award, MessageSquare, Star, ThumbsUp, Users } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { routeBoundaries } from "@/lib/route-boundaries";
 
 export const Route = createFileRoute("/_authenticated/community/profile/$username")({
   component: Page,
+  ...routeBoundaries({
+    label: "Community profile",
+    boundary: "community_profile_route",
+    backHref: "/community",
+    backLabel: "Back to Community",
+  }),
 });
 
 function Page() {

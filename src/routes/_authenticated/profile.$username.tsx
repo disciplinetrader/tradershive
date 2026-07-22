@@ -10,10 +10,17 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ActivityTimeline } from "@/components/social/ActivityTimeline";
 import { getProfileActivity, getPublicProfile } from "@/lib/social.functions";
 import { Award, Flame, LineChart, Target, TrendingUp, Trophy } from "lucide-react";
+import { routeBoundaries } from "@/lib/route-boundaries";
 
 export const Route = createFileRoute("/_authenticated/profile/$username")({
   head: ({ params }) => ({ meta: [{ title: `@${params.username} — TradersHIVE Arena` }] }),
   component: PublicProfilePage,
+  ...routeBoundaries({
+    label: "Profile",
+    boundary: "public_profile_route",
+    backHref: "/leaderboard",
+    backLabel: "Back to Leaderboard",
+  }),
 });
 
 function PublicProfilePage() {

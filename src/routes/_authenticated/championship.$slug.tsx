@@ -24,9 +24,16 @@ import { ActivityFeed } from "@/components/championship/ActivityFeed";
 import { PersonalTimeline, buildPersonalTimeline } from "@/components/championship/PersonalTimeline";
 import { MyPerformancePanel } from "@/components/championship/MyPerformancePanel";
 import { TournamentSummary } from "@/components/championship/TournamentSummary";
+import { routeBoundaries } from "@/lib/route-boundaries";
 
 export const Route = createFileRoute("/_authenticated/championship/$slug")({
   component: ChampionshipDetail,
+  ...routeBoundaries({
+    label: "Championship",
+    boundary: "championship_detail_route",
+    backHref: "/championship",
+    backLabel: "Back to Championships",
+  }),
 });
 
 function ChampionshipDetail() {
