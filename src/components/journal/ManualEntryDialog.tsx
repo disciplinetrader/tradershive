@@ -391,6 +391,52 @@ function ManualForm({
 
   const [savedAt, setSavedAt] = useState<number | null>(null);
 
+  // ---- Custom strategy tags (kind: setup) ----
+  const taxonomyQuery = useQuery({
+    queryKey: journalKeys.taxonomy(),
+    queryFn: fetchTaxonomy,
+  });
+  const customSetups = useMemo<JournalTaxonomy[]>(
+    () => (taxonomyQuery.data ?? []).filter((t) => t.kind === "setup"),
+    [taxonomyQuery.data],
+  );
+  const strategyOptions = useMemo(() => {
+    const defaults = DEFAULT_SETUPS.map((o) => ({ value: o.value, label: o.label, custom: false as const }));
+    const custom = customSetups.map((c) => ({ value: c.value, label: c.label, custom: true as const, id: c.id }));
+    return [...defaults, ...custom];
+  }, [customSetups]);
+
+  const addCustomSetup = async (label: string) => {
+    const trimmed = label.trim();
+    if (!user || !trimmed) return;
+    try {
+      const created = await upsertTaxonomy({ userId: user.id, kind: "setup", label: trimmed });
+      await qc.invalidateQueries({ queryKey: journalKeys.taxonomy() });
+      setStrategyTags((prev) => (prev.includes(created.value) ? prev : [...prev, created.value]));
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  };
+  const removeCustomSetup = async (t: JournalTaxonomy) => {
+    try {
+      await deleteTaxonomy(t.id);
+      await qc.invalidateQueries({ queryKey: journalKeys.taxonomy() });
+      setStrategyTags((prev) => prev.filter((v) => v !== t.value));
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  };
+
+  // ---- Validation refs (scroll + focus first invalid) ----
+  const fieldRefs = {
+    instrument: useRef<HTMLInputElement>(null),
+    entry: useRef<HTMLInputElement>(null),
+    openedAt: useRef<HTMLInputElement>(null),
+    session: useRef<HTMLButtonElement>(null),
+    strategy: useRef<HTMLDivElement>(null),
+  };
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false);
+
   // Auto-detect session whenever open time changes and auto mode is on.
   useEffect(() => {
     if (!sessionAuto) return;
