@@ -38,15 +38,15 @@ export function RangeBar({ onSelect }: Props) {
           </button>
         ))}
       </div>
-      <button className="ml-1 grid h-6 w-6 place-items-center rounded text-muted-foreground hover:bg-background/60 hover:text-foreground" title="Date range">
+      <button className="ml-1 grid h-6 w-6 place-items-center rounded text-muted-foreground hover:bg-background/60 hover:text-foreground" aria-label="Date range" title="Date range">
         <Calendar className="h-3.5 w-3.5" />
       </button>
 
       <div className="ml-auto flex items-center gap-3 text-muted-foreground">
         <span className="tabular-nums">{now}</span>
         <div className="flex items-center gap-0.5">
-          <button className="grid h-6 w-6 place-items-center rounded hover:bg-background/60 hover:text-foreground" title="Auto scale"><ChevronDown className="h-3.5 w-3.5" /></button>
-          <button className="grid h-6 w-6 place-items-center rounded hover:bg-background/60 hover:text-foreground" title="Settings"><Settings2 className="h-3.5 w-3.5" /></button>
+          <button className="grid h-6 w-6 place-items-center rounded hover:bg-background/60 hover:text-foreground" aria-label="Auto scale" title="Auto scale"><ChevronDown className="h-3.5 w-3.5" /></button>
+          <button className="grid h-6 w-6 place-items-center rounded hover:bg-background/60 hover:text-foreground" aria-label="Settings" title="Settings"><Settings2 className="h-3.5 w-3.5" /></button>
         </div>
       </div>
     </div>
