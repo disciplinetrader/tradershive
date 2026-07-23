@@ -150,7 +150,7 @@ export function NotesEditor({
         <ToolbarBtn label="Ordered list" onClick={() => exec("insertOrderedList")}><ListOrdered className="h-3.5 w-3.5" /></ToolbarBtn>
         <ToolbarBtn label="Quote" onClick={() => exec("formatBlock", "BLOCKQUOTE")}><Quote className="h-3.5 w-3.5" /></ToolbarBtn>
         <ToolbarBtn label="Code block" onClick={insertCodeBlock}><Code2 className="h-3.5 w-3.5" /></ToolbarBtn>
-        <ToolbarBtn label="Link" onClick={insertLink}><Link2 className="h-3.5 w-3.5" /></ToolbarBtn>
+        <ToolbarBtn label="Link" onClick={openLinkDialog}><Link2 className="h-3.5 w-3.5" /></ToolbarBtn>
 
         <div className="ml-auto flex items-center gap-2 text-[11px] text-muted-foreground">
           <span>{words} word{words === 1 ? "" : "s"}</span>
