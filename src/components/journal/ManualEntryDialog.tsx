@@ -294,11 +294,11 @@ function ManualForm({
   const notesRef = useRef<HTMLTextAreaElement>(null);
   const [attempted, setAttempted] = useState(false);
 
-  const riskValue = riskType === "risk_percent" ? Number(riskPercent) : Number(rMultiple);
+  const rValue = parseSignedR(rMultiple);
   const missing = {
     instrument: !instrument,
     direction: !direction,
-    risk: !Number.isFinite(riskValue) || riskValue <= 0,
+    risk: rValue == null,
     date: !tradeDate,
     strategy: strategyTags.length === 0,
     notes: !notes.trim(),
@@ -307,7 +307,7 @@ function ManualForm({
 
   /* ----------------------------- Autosave -------------------------------- */
   const isDirty = Boolean(
-    symbol || riskPercent || rMultiple || strategyTags.length ||
+    symbol || rMultiple || strategyTags.length ||
     emotions.length || notes.trim() || screenshots.length,
   );
   useEffect(() => { onDirtyChange(isDirty); }, [isDirty, onDirtyChange]);
@@ -324,8 +324,8 @@ function ManualForm({
     confidence: 0,
     strategyTags, emotions, mistakes: [],
     entryReason: "", postTradeNotes: notes,
-    riskPercent, accountBalance: "",
-  }), [symbol, market, direction, tradeDate, session, strategyTags, emotions, notes, riskPercent, rMultiple]);
+    riskPercent: "", accountBalance: "",
+  }), [symbol, market, direction, tradeDate, session, strategyTags, emotions, notes, rMultiple]);
 
   const draftRef = useRef(draftSnapshot());
   useEffect(() => { draftRef.current = draftSnapshot(); }, [draftSnapshot]);
