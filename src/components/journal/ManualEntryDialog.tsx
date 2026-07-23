@@ -416,6 +416,7 @@ function ManualForm({
   const focusFirstInvalid = () => {
     let el: HTMLElement | null = null;
     if (missing.instrument) el = instrumentRef.current;
+    else if (missing.direction) el = directionRef.current;
     else if (missing.risk) el = riskRef.current;
     else if (missing.date) el = dateRef.current;
     else if (missing.strategy) el = strategyRef.current;
