@@ -5,12 +5,14 @@ import {
   AlertCircle,
   CheckCircle2,
   Clock,
+  Info,
   Loader2,
   Plus,
   RotateCcw,
   Sparkles,
   X,
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
