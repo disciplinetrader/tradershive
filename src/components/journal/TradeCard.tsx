@@ -79,6 +79,7 @@ export function TradeCard({
   const navigate = useNavigate();
   const [hovered, setHovered] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const result = tradeResult(entry.pnl);
   const tone = pnlTone(entry.pnl);
   const screenshotCount = entry.screenshots?.length ?? 0;
