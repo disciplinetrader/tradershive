@@ -9,6 +9,7 @@ import { listBattles, listMyBattleStats, tickBattles } from "@/lib/battle-arena.
 import { BattleCard } from "@/components/battle-arena/BattleCard";
 import { MyBattleStats } from "@/components/battle-arena/MyBattleStats";
 import { JoinByCodeDialog } from "@/components/battle-arena/JoinByCodeDialog";
+import { CardGridSkeleton } from "@/components/ui/skeletons";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/battle-arena/")({
