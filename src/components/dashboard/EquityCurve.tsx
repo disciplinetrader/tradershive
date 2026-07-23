@@ -24,6 +24,12 @@ export function EquityCurve() {
 
   return (
     <div>
+      <ChartA11ySummary
+        label="Account equity curve"
+        series={points.map((p: { equity: number }) => p.equity)}
+        current={last}
+        unit="USD"
+      />
       <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
         <div>
           <div className="text-xs uppercase tracking-wider text-muted-foreground">Equity</div>
