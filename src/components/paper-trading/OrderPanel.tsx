@@ -207,7 +207,7 @@ export function OrderPanel() {
       if (i.sl != null) setSl(String(i.sl));
       if (i.tp != null) setTp(String(i.tp));
       if (i.lot != null) setLot(String(i.lot));
-      if (isSubmit) setTimeout(() => openMut.mutate(), 0);
+      if (isSubmit) setTimeout(() => attemptPlace(), 0);
     });
     return () => { unsub(); };
   }, [openMut]);
