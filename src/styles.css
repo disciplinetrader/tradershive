@@ -247,6 +247,7 @@
       transition-duration: 0.001ms !important;
       scroll-behavior: auto !important;
     }
+    .hover-lift:hover, .press:active, .card-interactive:hover { transform: none !important; }
   }
   ::-webkit-scrollbar { width: 10px; height: 10px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -482,4 +483,72 @@
   background-repeat: no-repeat;
   background-color: color-mix(in oklab, var(--foreground) 6%, transparent);
   animation: th-shimmer 1.4s ease-in-out infinite;
+}
+
+/* =========================================================
+ * Motion system — standardized durations & easings
+ * Used across buttons, cards, tables, dialogs, inputs.
+ * =======================================================*/
+:root {
+  --motion-fast: 120ms;
+  --motion-base: 180ms;
+  --motion-slow: 260ms;
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out-soft: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* Tactile press feedback for any clickable element. */
+@utility press {
+  transition:
+    transform var(--motion-fast) var(--ease-out-soft),
+    background-color var(--motion-base) var(--ease-out-soft),
+    color var(--motion-base) var(--ease-out-soft),
+    border-color var(--motion-base) var(--ease-out-soft),
+    box-shadow var(--motion-base) var(--ease-out-soft),
+    opacity var(--motion-base) var(--ease-out-soft);
+  &:active:not(:disabled) { transform: scale(0.97); }
+}
+
+/* Card-level interactive polish: subtle lift + shadow, click sinks. */
+@utility card-interactive {
+  transition:
+    transform var(--motion-slow) var(--ease-out-soft),
+    box-shadow var(--motion-slow) var(--ease-out-soft),
+    border-color var(--motion-base) var(--ease-out-soft),
+    background-color var(--motion-base) var(--ease-out-soft);
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow:
+      0 1px 2px 0 color-mix(in oklab, var(--foreground) 5%, transparent),
+      0 14px 32px -18px color-mix(in oklab, var(--foreground) 22%, transparent);
+    border-color: color-mix(in oklab, var(--foreground) 12%, var(--border));
+  }
+  &:active { transform: translateY(0); }
+}
+
+/* Row-level highlight for interactive table rows. */
+@utility row-interactive {
+  transition:
+    background-color var(--motion-fast) var(--ease-out-soft),
+    color var(--motion-fast) var(--ease-out-soft);
+  &:hover { background-color: color-mix(in oklab, var(--foreground) 5%, transparent); }
+}
+
+/* One-shot content fade for skeleton→data handoff and route mounts. */
+@keyframes th-content-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@utility animate-content-in {
+  animation: th-content-in var(--motion-slow) var(--ease-out-soft) both;
+}
+
+/* Gentle shake for validation errors — plays once. */
+@keyframes th-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-3px); }
+  40%, 80% { transform: translateX(3px); }
+}
+@utility animate-shake {
+  animation: th-shake 320ms var(--ease-in-out-soft) both;
 }
