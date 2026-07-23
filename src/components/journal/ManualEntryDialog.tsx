@@ -368,7 +368,7 @@ function ManualForm({
         exit_price: prefill?.exit_price ?? null,
         pnl: prefill?.pnl ?? pnlProxy,
         rr: rrSigned,
-        risk_pct: riskType === "risk_percent" ? Number(riskPercent) : null,
+        risk_pct: null,
         opened_at: openedISO,
         closed_at: openedISO,
         opened_tz: tz,
