@@ -7,10 +7,27 @@ import { useStatistics } from "./context";
 import { computeKpis } from "@/lib/statistics/calculations";
 import { KpiTile } from "./KpiTile";
 import { fmtDuration } from "@/lib/statistics/format";
+import { Skeleton } from "@/components/ui/skeleton";
+import { GlassCard } from "@/components/ui/glass-card";
 
 export function KpiGrid() {
-  const { filtered } = useStatistics();
+  const { filtered, loading } = useStatistics();
   const k = useMemo(() => computeKpis(filtered), [filtered]);
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
+        {Array.from({ length: 12 }).map((_, i) => (
+          <GlassCard key={i} className="p-4 space-y-3">
+            <Skeleton className="h-3 w-16" />
+            <Skeleton className="h-6 w-24" />
+            <Skeleton className="h-2.5 w-12" />
+          </GlassCard>
+        ))}
+      </div>
+    );
+  }
+
 
   const items: React.ComponentProps<typeof KpiTile>[] = [
     { label: "Net Profit", value: k.netProfit, icon: DollarSign, tone: k.netProfit >= 0 ? "up" : "down", prefix: "$", decimals: 2 },
