@@ -150,7 +150,7 @@ export function ScreenshotUploader({
           {staged.map((s, idx) => (
             <li key={s.id} className="flex gap-3 rounded-md border border-border/60 bg-card/60 p-2">
               <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded bg-muted">
-                <img src={s.previewUrl} alt="" className="h-full w-full object-cover" />
+                <img src={s.previewUrl} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
                 <span className="absolute left-1 top-1 rounded bg-black/70 px-1 text-[10px] font-medium text-white">
                   {idx + 1}
                 </span>
