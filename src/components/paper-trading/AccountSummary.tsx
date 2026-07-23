@@ -150,7 +150,7 @@ export function AccountSummary() {
           </span>
         } />
       </div>
-      <div className="mt-3 flex items-center gap-2 text-[10px] text-muted-foreground">
+      <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-muted-foreground">
         <span>Trades: <AnimatedCounter value={Number(stats?.total_trades ?? 0)} /></span>
         <span>·</span>
         <span>Margin call at {Number(account.margin_call_level ?? 100)}%</span>

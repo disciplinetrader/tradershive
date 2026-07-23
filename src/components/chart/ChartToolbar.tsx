@@ -41,7 +41,7 @@ export function ChartToolbar({
   const [openGrid, setOpenGrid] = useState(false);
 
   return (
-    <div className="flex h-10 items-center gap-1 border-b border-border/60 bg-surface-2 px-2 text-xs">
+    <div className="no-scrollbar flex h-10 items-center gap-1 overflow-x-auto border-b border-border/60 bg-surface-2 px-2 text-xs">
       {/* Symbol chip */}
       <div className="flex items-center gap-1.5 rounded-md bg-background/60 px-2 py-1 text-[13px] font-semibold tracking-wide">
         <span className="uppercase">{settings.symbol.replace("/", "")}</span>
