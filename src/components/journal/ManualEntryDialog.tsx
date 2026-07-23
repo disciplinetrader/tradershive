@@ -619,7 +619,7 @@ function ManualForm({
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Trading session">
                 <Select value={session || "__auto"} onValueChange={(v) => setSession(v === "__auto" ? "" : v)}>
-                  <SelectTrigger className="h-11">
+                  <SelectTrigger className="h-11 hover:border-primary/50 hover:bg-accent/30">
                     <SelectValue placeholder="Auto Detect" />
                   </SelectTrigger>
                   <SelectContent>
@@ -633,7 +633,7 @@ function ManualForm({
 
               <Field label="Trade duration">
                 <Select value={tradeType || "__none"} onValueChange={(v) => setTradeType(v === "__none" ? "" : v as typeof tradeType)}>
-                  <SelectTrigger className="h-11">
+                  <SelectTrigger className="h-11 hover:border-primary/50 hover:bg-accent/30">
                     <SelectValue placeholder="Select duration" />
                   </SelectTrigger>
                   <SelectContent>
@@ -645,6 +645,7 @@ function ManualForm({
                   </SelectContent>
                 </Select>
               </Field>
+
             </div>
 
 
@@ -739,12 +740,13 @@ function ChipMulti({
             onClick={() => onChange(active ? values.filter((v) => v !== o.value) : [...values, o.value])}
             aria-pressed={active}
             className={cn(
-              "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              "cursor-pointer rounded-full border px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               active
-                ? "border-primary bg-primary/10 text-primary"
-                : "border-border/70 bg-background/40 text-muted-foreground hover:border-border hover:text-foreground",
+                ? "border-primary bg-primary/10 text-primary hover:bg-primary/15"
+                : "border-border/70 bg-background/40 text-muted-foreground hover:border-primary/40 hover:bg-accent/40 hover:text-foreground",
             )}
             style={active && o.color ? { borderColor: o.color, color: o.color } : undefined}
+
           >
             {o.label}
           </button>
