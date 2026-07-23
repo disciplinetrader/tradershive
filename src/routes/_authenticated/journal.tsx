@@ -19,6 +19,16 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/use-auth";
 import {
   deleteEntry,
@@ -85,6 +95,7 @@ function JournalPage() {
   const [filters, setFilters] = useState<JournalFiltersState>(EMPTY_FILTERS);
   const [drawerId, setDrawerId] = useState<string | null>(null);
   const [dayFilterIds, setDayFilterIds] = useState<Set<string> | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   useEffect(() => setFilters(loadStoredFilters()), []);
   useEffect(() => {
@@ -335,11 +346,7 @@ function JournalPage() {
                       onEdit={setDrawerId}
                       onDuplicate={(id) => duplicateMut.mutate(id)}
                       onShare={(id) => shareMut.mutate(id)}
-                      onDelete={(id) => {
-                        if (window.confirm("Delete this journal entry? The linked trade is preserved.")) {
-                          deleteMut.mutate(id);
-                        }
-                      }}
+                      onDelete={(id) => setPendingDeleteId(id)}
                     />
                   </GlassCard>
                 ) : null}
@@ -375,6 +382,29 @@ function JournalPage() {
         entryTagIds={drawerTagIds}
         taxonomy={taxonomyQuery.data ?? []}
       />
+
+      <AlertDialog open={!!pendingDeleteId} onOpenChange={(v) => !v && setPendingDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Journal Entry?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. The linked trade record is preserved.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (pendingDeleteId) deleteMut.mutate(pendingDeleteId);
+                setPendingDeleteId(null);
+              }}
+              className="bg-danger text-danger-foreground hover:bg-danger/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Keep TS happy for occasional unused imports on route mount */}
       <span className="sr-only"><Link to="/paper-trading">Paper Trading</Link></span>

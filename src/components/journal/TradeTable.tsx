@@ -195,7 +195,11 @@ export function TradeTable({
                 return (
                   <TableHead
                     key={c.key}
-                    className="whitespace-nowrap"
+                    className={cn(
+                      "whitespace-nowrap select-none transition-colors duration-150",
+                      isSortable && "cursor-pointer hover:bg-accent/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
+                      isActive && "text-foreground",
+                    )}
                     onClick={() => toggleSort(c.key)}
                     role={isSortable ? "button" : undefined}
                     tabIndex={isSortable ? 0 : undefined}
@@ -272,8 +276,17 @@ export function TradeTable({
                 <ContextMenu key={e.id}>
                   <ContextMenuTrigger asChild>
                     <TableRow
-                      className="cursor-pointer"
+                      className="group cursor-pointer transition-colors duration-150 hover:bg-accent/40 focus-within:bg-accent/30 data-[state=selected]:bg-accent/40"
+                      onClick={() => onView(e.id)}
                       onDoubleClick={() => onView(e.id)}
+                      tabIndex={0}
+                      onKeyDown={(evt) => {
+                        if (evt.key === "Enter") {
+                          evt.preventDefault();
+                          onView(e.id);
+                        }
+                      }}
+                      aria-label={`Open trade ${e.symbol ?? shortId(e.id)}`}
                     >
                       {visible.id ? (
                         <TableCell className="font-mono text-xs text-muted-foreground">#{shortId(e.id)}</TableCell>
