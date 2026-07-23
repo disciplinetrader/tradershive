@@ -7,7 +7,7 @@ export function PlaybookCard({ pb }: { pb: Playbook & { strategies?: { name?: st
   const Icon = ((icons as any)[pb.icon] ?? icons.BookMarked) as React.ComponentType<{ className?: string }>;
   return (
     <Link to="/strategies/playbooks" search={{ id: pb.id } as any}>
-      <GlassCard interactive className="p-4 space-y-2 h-full">
+      <GlassCard interactive className="card-interactive p-4 space-y-2 h-full">
         <div className="flex items-center gap-2">
           <div className="grid place-items-center rounded-xl p-2" style={{ background: `${pb.color}22`, color: pb.color }}><Icon className="h-4 w-4" /></div>
           <div className="min-w-0">

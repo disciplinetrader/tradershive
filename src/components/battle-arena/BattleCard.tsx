@@ -19,7 +19,7 @@ export function BattleCard({ battle }: { battle: BattleRow }) {
     <Link
       to="/battle-arena/$battleId"
       params={{ battleId: battle.id }}
-      className="group flex flex-col gap-3 rounded-2xl border border-border/60 bg-card/40 p-4 transition hover:border-primary/40 hover:bg-card/60"
+      className="card-interactive group flex flex-col gap-3 rounded-2xl border border-border/60 bg-card/40 p-4 hover:border-primary/40 hover:bg-card/60"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">

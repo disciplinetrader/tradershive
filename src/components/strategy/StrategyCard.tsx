@@ -12,7 +12,7 @@ export function StrategyCard({ strategy }: { strategy: Strategy }) {
   return (
     <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
       <Link to="/strategies/$id" params={{ id: strategy.id }} className="block">
-        <GlassCard interactive className="p-4 h-full space-y-3">
+        <GlassCard interactive className="card-interactive p-4 h-full space-y-3">
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
               <div

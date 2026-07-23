@@ -86,7 +86,7 @@ function Section({ title, icon: Icon, items, loading, empty, pulse }: { title: s
       ) : !items?.length ? (
         <div className="rounded-2xl border border-dashed border-border/60 bg-card/30 p-6 text-center text-sm text-muted-foreground">{empty}</div>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="animate-content-in grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {items.map((b) => <BattleCard key={b.id} battle={b} />)}
         </div>
       )}

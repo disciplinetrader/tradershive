@@ -43,7 +43,7 @@ export function SharedContentCard({ share }: { share: any }) {
   return (
     <Wrapper
       {...wrapperProps}
-      className="mt-3 block overflow-hidden rounded-xl border border-border/60 bg-muted/30 transition hover:border-primary/40 hover:bg-muted/50"
+      className="card-interactive mt-3 block overflow-hidden rounded-xl border border-border/60 bg-muted/30 hover:border-primary/40 hover:bg-muted/50"
     >
       {share.cover_url ? (
         <div className="aspect-[16/7] w-full overflow-hidden bg-black/20">

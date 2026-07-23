@@ -27,7 +27,7 @@ function History() {
           No completed battles yet.
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="animate-content-in grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {completed.map((b: any) => <BattleCard key={b.id} battle={b} />)}
         </div>
       )}
