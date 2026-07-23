@@ -249,6 +249,7 @@ function ManualForm({
 
   // Optional
   const [session, setSession] = useState<string>(defaults.session ?? "");
+  const [tradeType, setTradeType] = useState<"" | "scalp" | "intraday" | "swing" | "long_term">("");
   const [emotions, setEmotions] = useState<string[]>([]);
   const [screenshots, setScreenshots] = useState<StagedScreenshot[]>([]);
 
