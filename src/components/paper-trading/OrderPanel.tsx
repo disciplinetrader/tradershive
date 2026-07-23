@@ -386,6 +386,57 @@ export function OrderPanel() {
         </Button>
       </div>
       <p className="text-[10px] text-muted-foreground">Shortcuts — <kbd>B</kbd> buy · <kbd>S</kbd> sell · <kbd>⌘/Ctrl</kbd>+<kbd>↵</kbd> place</p>
+
+      <AlertDialog open={riskDialogOpen} onOpenChange={setRiskDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-warning">
+              <AlertTriangle className="h-5 w-5" /> High risk trade
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              You&apos;re about to place a trade that exceeds your configured risk limits.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <ul className="space-y-2 rounded-lg border border-warning/30 bg-warning/5 p-3 text-sm">
+            {calc && (
+              <li className="flex items-start gap-2">
+                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-warning" />
+                <span>
+                  Risk: <strong className="text-warning">{calc.riskPct.toFixed(2)}%</strong>
+                  {account?.max_trade_risk_pct != null && (
+                    <> (Maximum: <strong>{Number(account.max_trade_risk_pct)}%</strong>)</>
+                  )}
+                </span>
+              </li>
+            )}
+            <li className="flex items-start gap-2">
+              <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-warning" />
+              <span>Leverage: <strong className="text-warning">{leverage}×</strong></span>
+            </li>
+            {validation?.warnings.map((msg, i) => (
+              <li key={i} className="flex items-start gap-2">
+                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-warning" />
+                <span>{msg}</span>
+              </li>
+            ))}
+            <li className="flex items-start gap-2 text-danger">
+              <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-danger" />
+              <span>Small price movements may result in liquidation.</span>
+            </li>
+          </ul>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmRiskyPlace}
+              className="bg-danger text-white hover:bg-danger/90 focus-visible:ring-danger"
+            >
+              Place trade anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
