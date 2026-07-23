@@ -36,7 +36,18 @@ function ChartCard({ title, subtitle, actions, height = 260, children }: { title
 
 /* Equity curve with brush zoom */
 export function EquityCurveCard() {
-  const { filtered, accounts, filters } = useStatistics();
+  const { filtered, accounts, filters, loading } = useStatistics();
+  if (loading && filtered.length === 0) {
+    return (
+      <GlassCard className="p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="h-3 w-32 rounded bg-muted animate-shimmer" />
+          <div className="h-5 w-20 rounded bg-muted animate-shimmer" />
+        </div>
+        <div className="h-[320px] w-full rounded-xl bg-muted animate-shimmer" />
+      </GlassCard>
+    );
+  }
   const startingBalance = useMemo(() => {
     if (filters.accounts.length === 1) {
       const a = accounts.find((x) => x.id === filters.accounts[0]);
