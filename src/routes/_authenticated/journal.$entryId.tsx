@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
+import { createFileRoute, Link, useBlocker, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -148,7 +148,7 @@ function JournalEntryPage() {
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [mode, setMode] = useState<"view" | "edit">("view");
   const [draft, setDraft] = useState<Draft | null>(null);
-  const [discardOpen, setDiscardOpen] = useState(false);
+  const [discardOpenLocal, setDiscardOpenLocal] = useState(false);
 
   const deleteMutation = useMutation({
     mutationFn: () => deleteEntry(entryId),
@@ -203,15 +203,15 @@ function JournalEntryPage() {
     onError: (err) => toast.error((err as Error)?.message ?? "Save failed"),
   });
 
-  useEffect(() => {
-    if (!dirty) return;
-    const handler = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = "";
-    };
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
-  }, [dirty]);
+  // beforeunload guard is delivered via useBlocker's enableBeforeUnload below.
+
+
+  const blocker = useBlocker({
+    shouldBlockFn: () => dirty,
+    withResolver: true,
+    enableBeforeUnload: () => dirty,
+  });
+  const discardOpen = blocker.status === "blocked" || discardOpenLocal;
 
   const enterEdit = () => {
     if (!entry) return;
@@ -219,16 +219,21 @@ function JournalEntryPage() {
     setMode("edit");
   };
   const requestCancel = () => {
-    if (dirty) setDiscardOpen(true);
+    if (dirty) setDiscardOpenLocal(true);
     else {
       setMode("view");
       setDraft(null);
     }
   };
+  const continueEditing = () => {
+    setDiscardOpenLocal(false);
+    if (blocker.status === "blocked") blocker.reset();
+  };
   const discardChanges = () => {
-    setDiscardOpen(false);
     setMode("view");
     setDraft(entry ? toDraft(entry) : null);
+    setDiscardOpenLocal(false);
+    if (blocker.status === "blocked") blocker.proceed();
   };
 
   const entryTags = useMemo(() => {
@@ -293,10 +298,7 @@ function JournalEntryPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                if (editing && dirty) setDiscardOpen(true);
-                else navigate({ to: "/journal" });
-              }}
+              onClick={() => navigate({ to: "/journal" })}
             >
               <ArrowLeft className="mr-1.5 h-4 w-4" /> Back
             </Button>
@@ -656,14 +658,16 @@ function JournalEntryPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={discardOpen} onOpenChange={setDiscardOpen}>
+      <AlertDialog open={discardOpen} onOpenChange={(o) => { if (!o) continueEditing(); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>You have unsaved changes</AlertDialogTitle>
-            <AlertDialogDescription>Do you want to discard them?</AlertDialogDescription>
+            <AlertDialogTitle>Discard changes?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes to this journal. If you leave now, your changes will be lost.
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={continueEditing}>Continue editing</AlertDialogCancel>
             <AlertDialogAction
               onClick={discardChanges}
               className="bg-danger text-danger-foreground hover:bg-danger/90"
