@@ -80,6 +80,7 @@ export function InsightsPanel() {
           </div>
         ))}
       </div>
+      )}
     </GlassCard>
   );
 }
