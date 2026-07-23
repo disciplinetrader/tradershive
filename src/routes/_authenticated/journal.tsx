@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
 import {
@@ -305,71 +305,68 @@ function JournalPage() {
               />
             </GlassCard>
           ) : (
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={view}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.2 }}
-              >
-                {view === "card" ? (
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {filtered.map((entry) => {
-                      const tagIds = Array.from(entryTagMap.get(entry.id) ?? []);
-                      const tags = (tagsQuery.data ?? []).filter((t) => tagIds.includes(t.id));
-                      const path = entry.screenshots?.[0];
-                      const url = path ? screenshotUrlsQuery.data?.[path] ?? null : null;
-                      return (
-                        <TradeCard
-                          key={entry.id}
-                          entry={entry}
-                          tags={tags}
-                          screenshotUrl={url}
-                          onView={() => setDrawerId(entry.id)}
-                          onEdit={() => setDrawerId(entry.id)}
-                          onDuplicate={() => duplicateMut.mutate(entry.id)}
-                          onDelete={() => deleteMut.mutate(entry.id)}
-                          onShare={() => shareMut.mutate(entry.id)}
-                          onFavorite={() => favoriteMut.mutate({ id: entry.id, next: !entry.is_favorite })}
-                        />
-                      );
-                    })}
-                  </div>
-                ) : null}
+            <motion.div
+              key={view}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              {view === "card" ? (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {filtered.map((entry) => {
+                    const tagIds = Array.from(entryTagMap.get(entry.id) ?? []);
+                    const tags = (tagsQuery.data ?? []).filter((t) => tagIds.includes(t.id));
+                    const path = entry.screenshots?.[0];
+                    const url = path ? screenshotUrlsQuery.data?.[path] ?? null : null;
+                    return (
+                      <TradeCard
+                        key={entry.id}
+                        entry={entry}
+                        tags={tags}
+                        screenshotUrl={url}
+                        onView={() => setDrawerId(entry.id)}
+                        onEdit={() => setDrawerId(entry.id)}
+                        onDuplicate={() => duplicateMut.mutate(entry.id)}
+                        onDelete={() => deleteMut.mutate(entry.id)}
+                        onShare={() => shareMut.mutate(entry.id)}
+                        onFavorite={() => favoriteMut.mutate({ id: entry.id, next: !entry.is_favorite })}
+                      />
+                    );
+                  })}
+                </div>
+              ) : null}
 
-                {view === "table" ? (
-                  <GlassCard className="p-4">
-                    <TradeTable
-                      entries={filtered}
-                      onView={setDrawerId}
-                      onEdit={setDrawerId}
-                      onDuplicate={(id) => duplicateMut.mutate(id)}
-                      onShare={(id) => shareMut.mutate(id)}
-                      onDelete={(id) => setPendingDeleteId(id)}
-                    />
-                  </GlassCard>
-                ) : null}
-
-                {view === "calendar" ? (
-                  <CalendarView
-                    entries={entriesQuery.data ?? []}
-                    onDayClick={(_key, ids) => {
-                      setDayFilterIds(new Set(ids));
-                      if (ids.length === 1) setDrawerId(ids[0]);
-                    }}
-                  />
-                ) : null}
-
-                {view === "timeline" ? (
-                  <TimelineView
+              {view === "table" ? (
+                <GlassCard className="p-4">
+                  <TradeTable
                     entries={filtered}
                     onView={setDrawerId}
-                    screenshotUrls={screenshotUrlsQuery.data ?? {}}
+                    onEdit={setDrawerId}
+                    onDuplicate={(id) => duplicateMut.mutate(id)}
+                    onShare={(id) => shareMut.mutate(id)}
+                    onDelete={(id) => setPendingDeleteId(id)}
                   />
-                ) : null}
-              </motion.div>
-            </AnimatePresence>
+                </GlassCard>
+              ) : null}
+
+              {view === "calendar" ? (
+                <CalendarView
+                  entries={entriesQuery.data ?? []}
+                  onDayClick={(_key, ids) => {
+                    setDayFilterIds(new Set(ids));
+                    if (ids.length === 1) setDrawerId(ids[0]);
+                  }}
+                />
+              ) : null}
+
+              {view === "timeline" ? (
+                <TimelineView
+                  entries={filtered}
+                  onView={setDrawerId}
+                  screenshotUrls={screenshotUrlsQuery.data ?? {}}
+                />
+              ) : null}
+            </motion.div>
           )}
         </>
       )}
