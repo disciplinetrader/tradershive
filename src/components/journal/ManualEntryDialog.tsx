@@ -502,6 +502,49 @@ function ManualForm({
           ) : null}
         </Field>
 
+        {/* Position Type */}
+        <Field label="Position Type" required error={attempted && missing.direction ? "Choose Long or Short" : undefined}>
+          <div
+            ref={directionRef}
+            tabIndex={-1}
+            className={cn(
+              "grid grid-cols-2 gap-2 rounded-md",
+              attempted && missing.direction && "ring-2 ring-danger ring-offset-1 ring-offset-background",
+            )}
+          >
+            {([
+              { value: "long", label: "Long (Buy)", tone: "success" as const },
+              { value: "short", label: "Short (Sell)", tone: "danger" as const },
+            ]).map((b) => {
+              const active = direction === b.value;
+              return (
+                <button
+                  key={b.value}
+                  type="button"
+                  onClick={() => setDirection(b.value)}
+                  aria-pressed={active}
+                  className={cn(
+                    "flex h-11 items-center justify-center gap-2 rounded-md border text-sm font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    active
+                      ? b.tone === "success"
+                        ? "border-success bg-success/10 text-success"
+                        : "border-danger bg-danger/10 text-danger"
+                      : "border-border/70 bg-background/40 text-muted-foreground hover:text-foreground hover:bg-accent/30",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "h-2 w-2 rounded-full",
+                      b.tone === "success" ? "bg-success" : "bg-danger",
+                    )}
+                  />
+                  {b.label}
+                </button>
+              );
+            })}
+          </div>
+        </Field>
+
         {/* Trade Result */}
         <Field label="Trade Result" required>
           <div className="grid grid-cols-3 gap-2">
