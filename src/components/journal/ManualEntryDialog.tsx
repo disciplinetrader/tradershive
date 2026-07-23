@@ -79,7 +79,6 @@ export type PrefillTrade = Partial<{
 }>;
 
 type TradeResult = "win" | "loss" | "breakeven";
-type RiskType = "risk_percent" | "r_multiple";
 
 const RESULT_BUTTONS: { value: TradeResult; label: string; tone: "success" | "danger" | "muted" }[] = [
   { value: "win", label: "Win", tone: "success" },
