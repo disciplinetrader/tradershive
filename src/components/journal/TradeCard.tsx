@@ -5,6 +5,7 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   Copy,
+  ExternalLink,
   Eye,
   Heart,
   ImageIcon,
@@ -13,6 +14,7 @@ import {
   Share2,
   Trash2,
 } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
