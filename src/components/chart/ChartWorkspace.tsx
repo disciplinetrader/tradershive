@@ -185,9 +185,9 @@ export function ChartWorkspace({ fullscreen, initial }: Props) {
                   Trade
                 </RightTabButton>
                 <div className="ml-auto flex items-center gap-0.5 text-muted-foreground">
-                  <button title="Add symbol" className="grid h-6 w-6 place-items-center rounded hover:bg-background/60 hover:text-foreground"><Plus className="h-3.5 w-3.5" /></button>
-                  <button title="Sections" className="grid h-6 w-6 place-items-center rounded hover:bg-background/60 hover:text-foreground"><LayoutGrid className="h-3.5 w-3.5" /></button>
-                  <button title="More" className="grid h-6 w-6 place-items-center rounded hover:bg-background/60 hover:text-foreground"><MoreHorizontal className="h-3.5 w-3.5" /></button>
+                  <button aria-label="Add symbol" title="Add symbol" className="grid h-6 w-6 place-items-center rounded hover:bg-background/60 hover:text-foreground"><Plus className="h-3.5 w-3.5" /></button>
+                  <button aria-label="Sections" title="Sections" className="grid h-6 w-6 place-items-center rounded hover:bg-background/60 hover:text-foreground"><LayoutGrid className="h-3.5 w-3.5" /></button>
+                  <button aria-label="More" title="More" className="grid h-6 w-6 place-items-center rounded hover:bg-background/60 hover:text-foreground"><MoreHorizontal className="h-3.5 w-3.5" /></button>
                 </div>
               </div>
               <div className="min-h-0 flex-1 overflow-hidden">
