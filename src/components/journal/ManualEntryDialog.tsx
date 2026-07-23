@@ -246,6 +246,9 @@ function ManualForm({
     defaults.strategy ? [defaults.strategy] : [],
   );
   const [notes, setNotes] = useState("");
+  const [direction, setDirection] = useState<"" | "long" | "short">(
+    (prefill?.direction as "long" | "short" | undefined) ?? "",
+  );
 
   // Optional
   const [session, setSession] = useState<string>(defaults.session ?? "");
