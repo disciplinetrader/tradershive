@@ -172,13 +172,13 @@ function Stat({ label, value, icon, accent, mobile }: { label: string; value: Re
       )}
     >
       <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className={cn(
+      <div className={cn(
         "mt-1 flex items-center gap-1 truncate font-semibold tabular-nums",
         mobile ? "font-mono text-[13px]" : "text-base",
         accent && "text-primary",
       )}>
         {icon}{value}
-      </p>
+      </div>
     </motion.div>
   );
 }
