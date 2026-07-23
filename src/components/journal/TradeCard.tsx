@@ -338,8 +338,46 @@ export function TradeCard({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {screenshotUrl ? (
+        <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
+          <DialogContent className="max-w-5xl border-border/60 bg-background/95 p-3">
+            <div className="flex items-center justify-between pb-2">
+              <p className="text-sm font-semibold">
+                {entry.symbol ?? "Trade"} · {formatDate(entry.closed_at ?? entry.created_at)}
+              </p>
+              <a
+                href={screenshotUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+              >
+                <ExternalLink className="h-3.5 w-3.5" /> Open in new tab
+              </a>
+            </div>
+            <img
+              src={screenshotUrl}
+              alt={entry.symbol ?? "Trade screenshot"}
+              className="max-h-[80vh] w-full rounded-lg object-contain"
+            />
+          </DialogContent>
+        </Dialog>
+      ) : null}
     </>
   );
+}
+
+function sessionLabelShort(v: string | null | undefined): string {
+  if (!v) return "—";
+  const map: Record<string, string> = {
+    london: "London",
+    new_york: "New York",
+    london_ny_overlap: "LDN/NY",
+    asia: "Asia",
+    tokyo: "Tokyo",
+    sydney: "Sydney",
+  };
+  return map[v] ?? v.replace(/_/g, " ");
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
