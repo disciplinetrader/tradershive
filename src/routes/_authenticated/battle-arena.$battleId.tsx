@@ -197,7 +197,7 @@ function BattleDetail() {
         </span>
         {canJoin && <Button size="sm" onClick={doJoin}><LogIn className="mr-1.5 h-4 w-4" />Join battle</Button>}
         {canLeave && <Button size="sm" variant="outline" onClick={doLeave}><LogOut className="mr-1.5 h-4 w-4" />Leave</Button>}
-        {canCancel && <Button size="sm" variant="destructive" onClick={doCancel}><Trash2 className="mr-1.5 h-4 w-4" />Cancel</Button>}
+        {canCancel && <Button size="sm" variant="destructive" onClick={() => setCancelOpen(true)}><Trash2 className="mr-1.5 h-4 w-4" />Cancel</Button>}
         {canFinalize && <Button size="sm" variant="secondary" onClick={doFinalize}><Play className="mr-1.5 h-4 w-4" />Finalize now</Button>}
         {isParticipant && battle!.status === "live" && (
           <Button size="sm" asChild><Link to="/trading"><LineChart className="mr-1.5 h-4 w-4" />Open trading workspace</Link></Button>
