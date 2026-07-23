@@ -1,6 +1,7 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   ArrowLeft,
   ArrowDownRight,
@@ -20,6 +21,17 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  deleteEntry,
   fetchAttachments,
   fetchEntry,
   fetchTags,
@@ -60,6 +72,18 @@ export const Route = createFileRoute("/_authenticated/journal/$entryId")({
 function JournalEntryPage() {
   const { entryId } = Route.useParams();
   const navigate = useNavigate();
+  const qc = useQueryClient();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteEntry(entryId),
+    onSuccess: () => {
+      toast.success("Journal entry deleted");
+      qc.invalidateQueries({ queryKey: journalKeys.list() });
+      navigate({ to: "/journal" });
+    },
+    onError: (err) => toast.error((err as Error)?.message ?? "Delete failed"),
+  });
 
   const entryQuery = useQuery({
     queryKey: journalKeys.entry(entryId),
@@ -182,7 +206,9 @@ function JournalEntryPage() {
               <Field label="Session" value={sessionLabel} />
               <Field label="Confidence" value={entry.confidence != null ? `${entry.confidence}%` : "—"} />
               <Field label="Position size" value={entry.lot_size != null ? String(entry.lot_size) : "—"} />
-              <Field label="Duration" value={formatDuration(entry.duration_seconds)} />
+              <Field label="Risk %" value={(entry as any).risk_pct != null ? `${formatNumber(Number((entry as any).risk_pct), 2)}%` : "—"} />
+              <Field label="Trade duration" value={(entry as any).trade_type ? String((entry as any).trade_type).replace(/_/g, " ") : "—"} />
+              <Field label="Hold time" value={formatDuration(entry.duration_seconds)} />
             </div>
             {entryTags.length ? (
               <>
@@ -280,16 +306,36 @@ function JournalEntryPage() {
             variant="outline"
             size="sm"
             className="w-full text-danger hover:text-danger"
-            onClick={() => {
-              if (window.confirm("Delete this journal entry? This action cannot be undone.")) {
-                navigate({ to: "/journal" });
-              }
-            }}
+            disabled={deleteMutation.isPending}
+            onClick={() => setConfirmOpen(true)}
           >
-            <Trash2 className="mr-1.5 h-4 w-4" /> Delete entry (from list)
+            <Trash2 className="mr-1.5 h-4 w-4" /> {deleteMutation.isPending ? "Deleting…" : "Delete entry"}
           </Button>
         </div>
       </div>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Journal Entry?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. The linked trade record is preserved.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setConfirmOpen(false);
+                deleteMutation.mutate();
+              }}
+              className="bg-danger text-danger-foreground hover:bg-danger/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
