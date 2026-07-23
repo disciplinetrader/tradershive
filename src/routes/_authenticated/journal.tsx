@@ -383,6 +383,29 @@ function JournalPage() {
         taxonomy={taxonomyQuery.data ?? []}
       />
 
+      <AlertDialog open={!!pendingDeleteId} onOpenChange={(v) => !v && setPendingDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Journal Entry?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. The linked trade record is preserved.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (pendingDeleteId) deleteMut.mutate(pendingDeleteId);
+                setPendingDeleteId(null);
+              }}
+              className="bg-danger text-danger-foreground hover:bg-danger/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Keep TS happy for occasional unused imports on route mount */}
       <span className="sr-only"><Link to="/paper-trading">Paper Trading</Link></span>
     </div>
