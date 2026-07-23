@@ -129,7 +129,7 @@ function StrategyDetail() {
           <Button size="sm" variant="ghost" onClick={() => download(toMarkdown(strategy), `${strategy.name}.md`, "text/markdown")}>
             <Download className="mr-1 h-4 w-4" />MD
           </Button>
-          <Button size="sm" variant="ghost" onClick={() => { if (confirm("Delete this strategy?")) delMut.mutate(); }}>
+          <Button size="sm" variant="ghost" onClick={() => setDeleteOpen(true)} className="text-danger hover:text-danger">
             <Trash2 className="mr-1 h-4 w-4" />Delete
           </Button>
           <Button size="sm" onClick={() => saveMut.mutate()} disabled={!dirty || saveMut.isPending}>
