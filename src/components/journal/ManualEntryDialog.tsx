@@ -394,7 +394,7 @@ function ManualForm({
       saveDefaults({
         strategy: strategyTags[0],
         session,
-        riskPercent: riskType === "risk_percent" ? riskPercent : loadDefaults().riskPercent,
+        riskPercent: loadDefaults().riskPercent,
       });
       clearDraft();
       toast.success("Journal entry created");
