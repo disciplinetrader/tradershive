@@ -92,6 +92,16 @@ function Page() {
         }
       </div>
       <aside><CommunitySidebar /></aside>
+      <ConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Delete this post?"
+        description="This will permanently remove the post and all of its comments. This can't be undone."
+        confirmLabel="Delete post"
+        destructive
+        loading={deleting}
+        onConfirm={doDelete}
+      />
     </div>
   );
 }
