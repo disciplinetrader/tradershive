@@ -56,7 +56,7 @@ function HallOfFame() {
                 <div className="mt-1 text-xs text-muted-foreground">{meta?.name}</div>
                 <div className="mt-4 flex items-center gap-3">
                   {champ?.avatar_url ? (
-                    <img src={champ.avatar_url} className="h-14 w-14 rounded-full border-2 border-warning shadow" alt="" />
+                    <img src={champ.avatar_url} loading="lazy" decoding="async" className="h-14 w-14 rounded-full border-2 border-warning shadow" alt="" />
                   ) : (
                     <div className="h-14 w-14 rounded-full border-2 border-warning bg-muted" />
                   )}
