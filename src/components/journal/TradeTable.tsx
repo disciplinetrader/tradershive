@@ -195,7 +195,11 @@ export function TradeTable({
                 return (
                   <TableHead
                     key={c.key}
-                    className="whitespace-nowrap"
+                    className={cn(
+                      "whitespace-nowrap select-none transition-colors duration-150",
+                      isSortable && "cursor-pointer hover:bg-accent/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
+                      isActive && "text-foreground",
+                    )}
                     onClick={() => toggleSort(c.key)}
                     role={isSortable ? "button" : undefined}
                     tabIndex={isSortable ? 0 : undefined}
