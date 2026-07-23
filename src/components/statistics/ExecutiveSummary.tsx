@@ -13,7 +13,28 @@ import { fmtCurrency, fmtNumber, fmtPercent } from "@/lib/statistics/format";
  * Consumes existing dataset via `useStatistics`, so it inherits every filter.
  */
 export function ExecutiveSummary() {
-  const { filtered, accounts, filters } = useStatistics();
+  const { filtered, accounts, filters, loading } = useStatistics();
+
+  if (loading) {
+    return (
+      <GlassCard className="p-4">
+        <div className="mb-3">
+          <Skeleton className="h-3 w-32" />
+          <Skeleton className="mt-2 h-2.5 w-64" />
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8">
+          {Array.from({ length: 16 }).map((_, i) => (
+            <div key={i} className="rounded-2xl border border-border/40 bg-background/40 p-3 min-h-[92px] space-y-2">
+              <Skeleton className="h-2.5 w-20" />
+              <Skeleton className="h-5 w-16" />
+              <Skeleton className="h-2 w-12" />
+            </div>
+          ))}
+        </div>
+      </GlassCard>
+    );
+  }
+
 
   const startingBalance = useMemo(() => {
     if (filters.accounts.length) {
