@@ -75,7 +75,9 @@ function StrategyDetail() {
   const delMut = useMutation({
     mutationFn: async () => del({ data: { id } }),
     onSuccess: () => { toast.success("Deleted"); window.location.href = "/strategies/library"; },
+    onError: (e: any) => toast.error(e?.message ?? "Failed to delete strategy"),
   });
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const favMut = useMutation({ mutationFn: async (v: boolean) => fav({ data: { id, value: v } }), onSuccess: () => qc.invalidateQueries({ queryKey: ["strategy", id] }) });
   const statusMut = useMutation({
     mutationFn: async (s: string) => setS({ data: { id, status: s as any } }),
