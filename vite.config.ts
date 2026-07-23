@@ -12,4 +12,13 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  vite: {
+    esbuild: {
+      // Strip debug logging from production bundles; keep console.error/warn for diagnostics.
+      pure:
+        process.env.NODE_ENV === "production"
+          ? ["console.log", "console.debug", "console.info", "console.trace"]
+          : [],
+    },
+  },
 });
