@@ -25,12 +25,14 @@ import type {
 // components on public routes don't crash the engine.
 const DEFAULT_ASSIGNMENTS: Partial<Record<MarketKind, { primary: string; fallback: string | null }>> = {
   crypto:      { primary: "binance", fallback: null },
-  // Yahoo is key-less so it's the default; Twelve Data becomes fallback
-  // once TWELVE_DATA_API_KEY is set (still works if not).
+  // Yahoo is key-less so it's the default across every non-crypto market;
+  // Twelve Data becomes a fallback once TWELVE_DATA_API_KEY is set.
   forex:       { primary: "yahoo", fallback: "twelvedata" },
   metals:      { primary: "yahoo", fallback: "twelvedata" },
   indices:     { primary: "yahoo", fallback: "twelvedata" },
   commodities: { primary: "yahoo", fallback: "twelvedata" },
+  stocks:      { primary: "yahoo", fallback: "twelvedata" },
+  futures:     { primary: "yahoo", fallback: "twelvedata" },
 };
 
 type Assignment = { primary: string; fallback: string | null };
