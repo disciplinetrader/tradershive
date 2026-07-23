@@ -62,6 +62,18 @@ export const Route = createFileRoute("/_authenticated/journal/$entryId")({
 function JournalEntryPage() {
   const { entryId } = Route.useParams();
   const navigate = useNavigate();
+  const qc = useQueryClient();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteEntry(entryId),
+    onSuccess: () => {
+      toast.success("Journal entry deleted");
+      qc.invalidateQueries({ queryKey: journalKeys.entries() });
+      navigate({ to: "/journal" });
+    },
+    onError: (err) => toast.error((err as Error)?.message ?? "Delete failed"),
+  });
 
   const entryQuery = useQuery({
     queryKey: journalKeys.entry(entryId),
