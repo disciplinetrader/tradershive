@@ -8,7 +8,9 @@ import {
   ArrowUpRight,
   Camera,
   Clock,
+  ExternalLink,
   Gauge,
+  Pencil,
   Sparkles,
   Target,
   Tag as TagIcon,
@@ -20,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -74,6 +77,7 @@ function JournalEntryPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [lightbox, setLightbox] = useState<string | null>(null);
 
   const deleteMutation = useMutation({
     mutationFn: () => deleteEntry(entryId),
@@ -153,6 +157,11 @@ function JournalEntryPage() {
           <div className="flex flex-wrap items-center gap-2">
             <Button asChild variant="outline" size="sm">
               <Link to="/journal"><ArrowLeft className="mr-1.5 h-4 w-4" /> Back</Link>
+            </Button>
+            <Button asChild size="sm" className="gradient-primary text-primary-foreground">
+              <Link to="/journal" search={{ edit: entry.id } as never}>
+                <Pencil className="mr-1.5 h-4 w-4" /> Edit entry
+              </Link>
             </Button>
           </div>
         }
@@ -250,19 +259,18 @@ function JournalEntryPage() {
                 {screenshotPaths.map((p) => {
                   const url = shotUrls.data?.[p];
                   return (
-                    <a
+                    <button
                       key={p}
-                      href={url ?? "#"}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="group relative block aspect-video overflow-hidden rounded-lg border border-border/60 bg-surface-2/30"
+                      type="button"
+                      onClick={() => url && setLightbox(url)}
+                      className="group relative block aspect-video overflow-hidden rounded-lg border border-border/60 bg-surface-2/30 cursor-zoom-in focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                     >
                       {url ? (
-                        <img src={url} alt="Screenshot" loading="lazy" className="h-full w-full object-cover transition group-hover:scale-105" />
+                        <img src={url} alt="Screenshot" loading="lazy" decoding="async" className="h-full w-full object-cover transition group-hover:scale-105" />
                       ) : (
                         <div className="grid h-full w-full place-items-center text-[10px] text-muted-foreground">Loading…</div>
                       )}
-                    </a>
+                    </button>
                   );
                 })}
               </div>
@@ -336,6 +344,27 @@ function JournalEntryPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!lightbox} onOpenChange={(o) => !o && setLightbox(null)}>
+        <DialogContent className="max-w-5xl border-border/60 bg-background/95 p-3">
+          <div className="flex items-center justify-between pb-2">
+            <p className="text-sm font-semibold">{entry.symbol ?? "Trade"} · Chart preview</p>
+            {lightbox ? (
+              <a
+                href={lightbox}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+              >
+                <ExternalLink className="h-3.5 w-3.5" /> Open in new tab
+              </a>
+            ) : null}
+          </div>
+          {lightbox ? (
+            <img src={lightbox} alt="Screenshot" className="max-h-[80vh] w-full rounded-lg object-contain" />
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
 import {
   Calendar as CalendarIcon,
   Download,
@@ -90,6 +90,12 @@ function JournalPage() {
   useEffect(() => {
     try { localStorage.setItem(JOURNAL_STORAGE_KEYS.view, view); } catch { /* ignore */ }
   }, [view]);
+
+  // Deep-link edit — /journal?edit=<entryId> opens the drawer for that entry.
+  const search = useSearch({ strict: false }) as { edit?: string };
+  useEffect(() => {
+    if (search?.edit) setDrawerId(search.edit);
+  }, [search?.edit]);
 
   const entriesQuery = useQuery({
     queryKey: journalKeys.list(),

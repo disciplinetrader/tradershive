@@ -5,6 +5,7 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   Copy,
+  ExternalLink,
   Eye,
   Heart,
   ImageIcon,
@@ -13,6 +14,7 @@ import {
   Share2,
   Trash2,
 } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -77,6 +79,7 @@ export function TradeCard({
   const navigate = useNavigate();
   const [hovered, setHovered] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const result = tradeResult(entry.pnl);
   const tone = pnlTone(entry.pnl);
   const screenshotCount = entry.screenshots?.length ?? 0;
@@ -114,26 +117,29 @@ export function TradeCard({
               <div
                 role="button"
                 tabIndex={0}
-                onClick={onView}
+                onClick={() => (screenshotUrl ? setLightboxOpen(true) : onView())}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
-                    onView();
+                    if (screenshotUrl) setLightboxOpen(true);
+                    else onView();
                   }
                 }}
-                className="relative block aspect-video w-full cursor-pointer overflow-hidden bg-gradient-to-br from-primary/10 via-transparent to-transparent text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                aria-label={`Open trade ${entry.symbol ?? ""} details`}
+                className="relative block aspect-video w-full cursor-zoom-in overflow-hidden bg-gradient-to-br from-primary/10 via-transparent to-transparent text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                aria-label={screenshotUrl ? `Preview chart for ${entry.symbol ?? "trade"}` : `Open trade ${entry.symbol ?? ""} details`}
               >
                 {screenshotUrl ? (
                   <img
                     src={screenshotUrl}
                     alt={entry.symbol ?? "Trade screenshot"}
                     loading="lazy"
-                    className="h-full w-full object-cover"
+                    decoding="async"
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
                   />
                 ) : (
-                  <div className="grid h-full w-full place-items-center text-xs uppercase tracking-widest text-muted-foreground">
-                    No screenshot
+                  <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-[10px] uppercase tracking-widest text-muted-foreground">
+                    <ImageIcon className="h-5 w-5 opacity-40" />
+                    No chart uploaded
                   </div>
                 )}
                 <div className="absolute left-3 top-3 flex items-center gap-2">
@@ -234,9 +240,12 @@ export function TradeCard({
                 </div>
 
                 <dl className="grid grid-cols-3 gap-2 text-[11px]">
-                  <Stat label="Entry" value={entry.entry_price != null ? formatNumber(Number(entry.entry_price), 5) : "—"} />
-                  <Stat label="Exit" value={entry.exit_price != null ? formatNumber(Number(entry.exit_price), 5) : "—"} />
-                  <Stat label="Hold" value={formatDuration(entry.duration_seconds)} />
+                  <Stat label="Strategy" value={entry.strategy?.trim() || entry.setup?.replace(/_/g, " ") || "—"} />
+                  <Stat
+                    label="R Multiple"
+                    value={entry.rr != null ? `${Number(entry.rr) >= 0 ? "+" : ""}${formatNumber(Number(entry.rr), 2)}R` : "—"}
+                  />
+                  <Stat label="Session" value={sessionLabelShort(entry.session)} />
                 </dl>
 
                 {tags.length ? (
@@ -329,8 +338,46 @@ export function TradeCard({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {screenshotUrl ? (
+        <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
+          <DialogContent className="max-w-5xl border-border/60 bg-background/95 p-3">
+            <div className="flex items-center justify-between pb-2">
+              <p className="text-sm font-semibold">
+                {entry.symbol ?? "Trade"} · {formatDate(entry.closed_at ?? entry.created_at)}
+              </p>
+              <a
+                href={screenshotUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+              >
+                <ExternalLink className="h-3.5 w-3.5" /> Open in new tab
+              </a>
+            </div>
+            <img
+              src={screenshotUrl}
+              alt={entry.symbol ?? "Trade screenshot"}
+              className="max-h-[80vh] w-full rounded-lg object-contain"
+            />
+          </DialogContent>
+        </Dialog>
+      ) : null}
     </>
   );
+}
+
+function sessionLabelShort(v: string | null | undefined): string {
+  if (!v) return "—";
+  const map: Record<string, string> = {
+    london: "London",
+    new_york: "New York",
+    london_ny_overlap: "LDN/NY",
+    asia: "Asia",
+    tokyo: "Tokyo",
+    sydney: "Sydney",
+  };
+  return map[v] ?? v.replace(/_/g, " ");
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
