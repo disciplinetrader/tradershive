@@ -588,7 +588,6 @@ function ManualForm({
                   }}
                   inputMode="decimal"
                   placeholder="+2.0"
-                  aria-describedby="trade-result-help"
                   className={cn(
                     "h-11 pr-8 font-medium tabular-nums",
                     attempted && missing.risk && "border-danger",
