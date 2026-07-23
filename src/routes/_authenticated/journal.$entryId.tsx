@@ -8,9 +8,9 @@ import {
   ArrowUpRight,
   Camera,
   Check,
-  Clock,
   ExternalLink,
   Gauge,
+  ImageOff,
   Pencil,
   Sparkles,
   Target,
@@ -58,15 +58,15 @@ import {
 } from "@/lib/journal/api";
 import { batchSignUrls, JOURNAL_IMAGES_BUCKET } from "@/lib/journal/storage";
 import {
-  formatCurrency,
   formatDate,
-  formatDuration,
+  formatDurationLong,
   formatNumber,
-  pnlTone,
   shortId,
   tradeResult,
 } from "@/lib/journal/format";
 import {
+  DEFAULT_EMOTIONS,
+  DEFAULT_MISTAKES,
   DEFAULT_SETUPS,
   GRADE_COLOR,
   SESSION_OPTIONS,
@@ -78,7 +78,7 @@ export const Route = createFileRoute("/_authenticated/journal/$entryId")({
   head: () => ({
     meta: [
       { title: "Journal Entry — TradersHIVE Arena" },
-      { name: "description", content: "Full record of a single trade: execution, risk, psychology, and lessons." },
+      { name: "description", content: "Full record of a single trade: execution, psychology, and lessons." },
     ],
   }),
   component: JournalEntryPage,
@@ -125,6 +125,19 @@ function draftsEqual(a: Draft, b: Draft) {
     a.entry_reason_text === b.entry_reason_text &&
     a.notes_text === b.notes_text
   );
+}
+
+const EMOTION_META = new Map(DEFAULT_EMOTIONS.map((e) => [e.value, e]));
+const MISTAKE_META = new Map(DEFAULT_MISTAKES.map((m) => [m.value, m]));
+
+function emotionLabel(v: string): string {
+  return (EMOTION_META.get(v)?.label ?? v.replace(/_/g, " ")).toUpperCase();
+}
+function emotionColor(v: string): string {
+  return EMOTION_META.get(v)?.color ?? "#a3a3a3";
+}
+function mistakeLabel(v: string): string {
+  return MISTAKE_META.get(v)?.label ?? v.replace(/_/g, " ");
 }
 
 function JournalEntryPage() {
@@ -175,7 +188,6 @@ function JournalEntryPage() {
         strategy: draft.strategy.trim() || null,
         entry_reason_text: draft.entry_reason_text.trim() || null,
         notes_text: draft.notes_text.trim() || null,
-        // trade_type is a project-added column; cast to satisfy generated types
         ...((draft.trade_type
           ? { trade_type: draft.trade_type }
           : { trade_type: null }) as unknown as EntryUpdate),
@@ -191,7 +203,6 @@ function JournalEntryPage() {
     onError: (err) => toast.error((err as Error)?.message ?? "Save failed"),
   });
 
-  // Warn on browser unload with unsaved edits.
   useEffect(() => {
     if (!dirty) return;
     const handler = (e: BeforeUnloadEvent) => {
@@ -259,20 +270,24 @@ function JournalEntryPage() {
   }
 
   const editing = mode === "edit" && draft;
-  const tone = pnlTone(entry.pnl);
   const result = tradeResult(entry.pnl);
   const sessionLabel = SESSION_OPTIONS.find((s) => s.value === entry.session)?.label ?? entry.session ?? "—";
-  const setupLabel = entry.setup ? (DEFAULT_SETUPS.find((s) => s.value === entry.setup)?.label ?? entry.setup.replace(/_/g, " ")) : "—";
   const tradeTypeRaw = (entry as unknown as { trade_type?: string | null }).trade_type ?? null;
-  const tradeTypeLabel = tradeTypeRaw
-    ? (TRADE_TYPE_OPTIONS.find((t) => t.value === tradeTypeRaw)?.label ?? String(tradeTypeRaw).replace(/_/g, " "))
-    : "—";
+
+  const heroShot = screenshotPaths.length > 0 ? shotUrls.data?.[screenshotPaths[0]] : null;
+  const extraShots = screenshotPaths.slice(1);
+  const primaryEmotion = (entry.emotions ?? [])[0] ?? null;
+  const otherEmotions = (entry.emotions ?? []).slice(1);
+  const rValue = entry.rr != null ? Number(entry.rr) : null;
+  const riskPct = (entry as any).risk_pct != null ? Number((entry as any).risk_pct) : null;
+  const returnPct = rValue != null && riskPct != null ? rValue * riskPct : null;
+  const durationText = formatDurationLong(entry.duration_seconds);
 
   return (
     <div className="space-y-6">
       <PageHeader
         title={`${entry.symbol ?? "Untitled"}${entry.is_favorite ? " ★" : ""}`}
-        description={`${entry.market ?? ""} · #${shortId(entry.id)} · ${formatDate(entry.closed_at ?? entry.created_at)}`}
+        description={`${entry.market ?? ""} · #${shortId(entry.id)} · ${formatDate(entry.opened_at ?? entry.created_at)}`}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <Button
@@ -318,58 +333,73 @@ function JournalEntryPage() {
       <div className="grid gap-4 lg:grid-cols-3">
         {/* Left column */}
         <div className="space-y-4 lg:col-span-2">
-          <GlassCard className="p-5">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  {entry.direction === "long" ? (
-                    <span className="inline-flex items-center gap-1 text-success"><ArrowUpRight className="h-3.5 w-3.5" /> LONG</span>
-                  ) : entry.direction === "short" ? (
-                    <span className="inline-flex items-center gap-1 text-danger"><ArrowDownRight className="h-3.5 w-3.5" /> SHORT</span>
-                  ) : null}
-                  {entry.grade ? (
-                    <Badge className={cn("border font-semibold", GRADE_COLOR[entry.grade])}>{entry.grade}</Badge>
-                  ) : null}
-                  <ResultBadge result={result} />
+          {/* Journal Preview */}
+          <GlassCard className="overflow-hidden p-0">
+            <div className="relative">
+              {heroShot ? (
+                <button
+                  type="button"
+                  onClick={() => setLightbox(heroShot)}
+                  className="block w-full cursor-zoom-in bg-surface-2/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                >
+                  <img
+                    src={heroShot}
+                    alt={`${entry.symbol ?? "Trade"} chart`}
+                    loading="lazy"
+                    decoding="async"
+                    className="max-h-[440px] w-full object-contain"
+                  />
+                </button>
+              ) : (
+                <div className="grid aspect-[16/9] w-full place-items-center bg-surface-2/40 text-muted-foreground">
+                  <div className="flex flex-col items-center gap-2">
+                    <ImageOff className="h-8 w-8" />
+                    <p className="text-xs">No chart uploaded for this trade</p>
+                  </div>
                 </div>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-4 p-5">
+              <div className="flex flex-wrap items-center gap-2">
+                {entry.direction === "long" ? (
+                  <Badge className="border border-success/40 bg-success/15 text-success font-semibold">
+                    <ArrowUpRight className="mr-1 h-3.5 w-3.5" /> LONG
+                  </Badge>
+                ) : entry.direction === "short" ? (
+                  <Badge className="border border-danger/40 bg-danger/15 text-danger font-semibold">
+                    <ArrowDownRight className="mr-1 h-3.5 w-3.5" /> SHORT
+                  </Badge>
+                ) : null}
+                {entry.grade ? (
+                  <Badge className={cn("border font-semibold", GRADE_COLOR[entry.grade])}>{entry.grade}</Badge>
+                ) : null}
+                <ResultBadge result={result} />
+                {primaryEmotion ? <EmotionBadge value={primaryEmotion} /> : null}
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Return</p>
                 <p
                   className={cn(
-                    "mt-2 text-3xl font-bold tabular-nums",
-                    tone === "up" && "text-success",
-                    tone === "down" && "text-danger",
-                    tone === "flat" && "text-muted-foreground",
+                    "text-3xl font-bold tabular-nums",
+                    rValue == null ? "text-muted-foreground" : rValue > 0 ? "text-success" : rValue < 0 ? "text-danger" : "text-muted-foreground",
                   )}
                 >
-                  {entry.pnl != null ? formatCurrency(Number(entry.pnl)) : "—"}
+                  {rValue != null ? `${rValue > 0 ? "+" : ""}${formatNumber(rValue, 2)}R` : "—"}
                 </p>
-                {entry.rr != null ? (
-                  <p className="text-xs text-muted-foreground">{formatNumber(Number(entry.rr), 2)}R realised</p>
+                {returnPct != null ? (
+                  <p className="text-xs text-muted-foreground tabular-nums">
+                    {returnPct > 0 ? "+" : ""}{formatNumber(returnPct, 2)}%
+                  </p>
                 ) : null}
-              </div>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <Metric label="Entry" value={entry.entry_price != null ? formatNumber(Number(entry.entry_price), 5) : "—"} />
-                <Metric label="Exit" value={entry.exit_price != null ? formatNumber(Number(entry.exit_price), 5) : "—"} />
-                <Metric label="Stop" value={entry.stop_loss != null ? formatNumber(Number(entry.stop_loss), 5) : "—"} />
-                <Metric label="Target" value={entry.take_profit != null ? formatNumber(Number(entry.take_profit), 5) : "—"} />
               </div>
             </div>
           </GlassCard>
 
+          {/* Trade Summary */}
           <GlassCard className="p-5">
-            <SectionTitle icon={<Target className="h-4 w-4" />} title="Strategy & setup" />
+            <SectionTitle icon={<Target className="h-4 w-4" />} title="Trade summary" />
             {editing ? (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Label htmlFor="edit-setup" className="text-[10px] uppercase tracking-widest text-muted-foreground">Setup</Label>
-                  <Select value={draft!.setup || undefined} onValueChange={(v) => setDraft((d) => (d ? { ...d, setup: v } : d))}>
-                    <SelectTrigger id="edit-setup"><SelectValue placeholder="Choose setup" /></SelectTrigger>
-                    <SelectContent>
-                      {DEFAULT_SETUPS.map((s) => (
-                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="edit-strategy" className="text-[10px] uppercase tracking-widest text-muted-foreground">Strategy</Label>
                   <Input
@@ -392,9 +422,20 @@ function JournalEntryPage() {
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="edit-trade-type" className="text-[10px] uppercase tracking-widest text-muted-foreground">Trade duration</Label>
+                  <Label htmlFor="edit-setup" className="text-[10px] uppercase tracking-widest text-muted-foreground">Setup (hidden from summary)</Label>
+                  <Select value={draft!.setup || undefined} onValueChange={(v) => setDraft((d) => (d ? { ...d, setup: v } : d))}>
+                    <SelectTrigger id="edit-setup"><SelectValue placeholder="Choose setup" /></SelectTrigger>
+                    <SelectContent>
+                      {DEFAULT_SETUPS.map((s) => (
+                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-trade-type" className="text-[10px] uppercase tracking-widest text-muted-foreground">Trade horizon</Label>
                   <Select value={draft!.trade_type || undefined} onValueChange={(v) => setDraft((d) => (d ? { ...d, trade_type: v } : d))}>
-                    <SelectTrigger id="edit-trade-type"><SelectValue placeholder="Choose duration" /></SelectTrigger>
+                    <SelectTrigger id="edit-trade-type"><SelectValue placeholder="Choose horizon" /></SelectTrigger>
                     <SelectContent>
                       {TRADE_TYPE_OPTIONS.map((t) => (
                         <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
@@ -405,14 +446,20 @@ function JournalEntryPage() {
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
-                <Field label="Setup" value={setupLabel} />
                 <Field label="Strategy" value={entry.strategy ?? "—"} />
                 <Field label="Session" value={sessionLabel} />
-                <Field label="Confidence" value={entry.confidence != null ? `${entry.confidence}%` : "—"} />
-                <Field label="Position size" value={entry.lot_size != null ? String(entry.lot_size) : "—"} />
-                <Field label="Risk %" value={(entry as any).risk_pct != null ? `${formatNumber(Number((entry as any).risk_pct), 2)}%` : "—"} />
-                <Field label="Trade duration" value={tradeTypeLabel} />
-                <Field label="Hold time" value={formatDuration(entry.duration_seconds)} />
+                <Field label="Trade Duration" value={durationText} />
+                <Field label="Risk %" value={riskPct != null ? `${formatNumber(riskPct, 2)}%` : "—"} />
+                <Field label="Entry" value={entry.entry_price != null ? formatNumber(Number(entry.entry_price), 5) : "—"} />
+                <Field label="Exit" value={entry.exit_price != null ? formatNumber(Number(entry.exit_price), 5) : "—"} />
+                <Field label="Stop loss" value={entry.stop_loss != null ? formatNumber(Number(entry.stop_loss), 5) : "—"} />
+                <Field label="Take profit" value={entry.take_profit != null ? formatNumber(Number(entry.take_profit), 5) : "—"} />
+                {tradeTypeRaw ? (
+                  <Field
+                    label="Horizon"
+                    value={TRADE_TYPE_OPTIONS.find((t) => t.value === tradeTypeRaw)?.label ?? String(tradeTypeRaw).replace(/_/g, " ")}
+                  />
+                ) : null}
               </div>
             )}
             {!editing && entryTags.length ? (
@@ -452,7 +499,7 @@ function JournalEntryPage() {
           </GlassCard>
 
           <GlassCard className="p-5">
-            <SectionTitle icon={<Sparkles className="h-4 w-4" />} title="Trade review" />
+            <SectionTitle icon={<Sparkles className="h-4 w-4" />} title="Review & lessons" />
             {editing ? (
               <Textarea
                 rows={6}
@@ -468,11 +515,11 @@ function JournalEntryPage() {
             )}
           </GlassCard>
 
-          {screenshotPaths.length ? (
+          {extraShots.length ? (
             <GlassCard className="p-5">
-              <SectionTitle icon={<Camera className="h-4 w-4" />} title={`Screenshots (${screenshotPaths.length})`} />
+              <SectionTitle icon={<Camera className="h-4 w-4" />} title={`Additional screenshots (${extraShots.length})`} />
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {screenshotPaths.map((p) => {
+                {extraShots.map((p) => {
                   const url = shotUrls.data?.[p];
                   return (
                     <button
@@ -490,11 +537,6 @@ function JournalEntryPage() {
                   );
                 })}
               </div>
-              {editing ? (
-                <p className="mt-3 text-[11px] text-muted-foreground">
-                  Manage screenshots from the full editor in the Journal list.
-                </p>
-              ) : null}
             </GlassCard>
           ) : null}
         </div>
@@ -502,20 +544,68 @@ function JournalEntryPage() {
         {/* Right column */}
         <div className="space-y-4">
           <GlassCard className="p-5">
-            <SectionTitle icon={<Clock className="h-4 w-4" />} title="Timeline" />
-            <div className="space-y-2 text-sm">
-              <TimelineRow label="Opened" value={entry.opened_at ? formatDate(entry.opened_at) : "—"} />
-              <TimelineRow label="Closed" value={entry.closed_at ? formatDate(entry.closed_at) : "—"} />
-              <TimelineRow label="Created" value={formatDate(entry.created_at)} />
-              <TimelineRow label="Updated" value={formatDate(entry.updated_at)} />
-            </div>
-          </GlassCard>
-
-          <GlassCard className="p-5">
             <SectionTitle icon={<Gauge className="h-4 w-4" />} title="Psychology" />
-            <Field label="Emotions" value={(entry.emotions ?? []).join(", ") || "—"} multiline />
-            <div className="mt-3" />
-            <Field label="Mistakes" value={(entry.mistakes ?? []).join(", ") || "—"} multiline />
+
+            <div className="space-y-4">
+              <div>
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Emotion</p>
+                {(entry.emotions ?? []).length ? (
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    <EmotionBadge value={primaryEmotion!} size="lg" />
+                    {otherEmotions.map((v) => (
+                      <EmotionBadge key={v} value={v} />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-1 text-sm text-muted-foreground">—</p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Grade</p>
+                  {entry.grade ? (
+                    <Badge className={cn("mt-1 border text-base font-bold", GRADE_COLOR[entry.grade])}>
+                      {entry.grade}
+                    </Badge>
+                  ) : (
+                    <p className="mt-1 text-sm text-muted-foreground">—</p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Confidence</p>
+                  <p className="mt-1 text-sm font-semibold text-foreground tabular-nums">
+                    {entry.confidence != null ? `${entry.confidence}%` : "—"}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Mistakes</p>
+                {(entry.mistakes ?? []).length ? (
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {(entry.mistakes ?? []).map((m) => (
+                      <Badge
+                        key={m}
+                        variant="outline"
+                        className="border-danger/30 bg-danger/5 text-xs text-danger"
+                      >
+                        {mistakeLabel(m)}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-1 text-sm text-muted-foreground">None logged.</p>
+                )}
+              </div>
+
+              <div>
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Notes</p>
+                <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">
+                  {entry.notes_text?.trim() || "No notes captured."}
+                </p>
+              </div>
+            </div>
           </GlassCard>
 
           {attachmentsQuery.data?.length ? (
@@ -617,15 +707,6 @@ function SectionTitle({ icon, title }: { icon: React.ReactNode; title: string })
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-border/60 bg-surface-2/40 px-3 py-2">
-      <p className="text-[9px] uppercase tracking-widest text-muted-foreground">{label}</p>
-      <p className="mt-0.5 truncate font-mono text-sm tabular-nums text-foreground">{value}</p>
-    </div>
-  );
-}
-
 function Field({ label, value, multiline }: { label: string; value: string; multiline?: boolean }) {
   return (
     <div>
@@ -635,20 +716,30 @@ function Field({ label, value, multiline }: { label: string; value: string; mult
   );
 }
 
-function TimelineRow({ label, value }: { label: string; value: string }) {
+function ResultBadge({ result }: { result: ReturnType<typeof tradeResult> }) {
+  if (result === "win") return <Badge className="border border-success/40 bg-success/15 text-success font-semibold">WIN</Badge>;
+  if (result === "loss") return <Badge className="border border-danger/40 bg-danger/15 text-danger font-semibold">LOSS</Badge>;
+  return <Badge className="border border-border bg-muted/40 text-muted-foreground font-semibold">BREAK-EVEN</Badge>;
+}
+
+function EmotionBadge({ value, size = "md" }: { value: string; size?: "md" | "lg" }) {
+  const color = emotionColor(value);
+  const label = emotionLabel(value);
   return (
-    <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1.5 last:border-0 last:pb-0">
-      <span className="text-xs text-muted-foreground">{label}</span>
-      <span className="text-xs font-medium text-foreground">{value}</span>
-    </div>
+    <span
+      className={cn(
+        "inline-flex items-center rounded-full border font-bold uppercase tracking-wider",
+        size === "lg" ? "px-3 py-1 text-xs" : "px-2 py-0.5 text-[10px]",
+      )}
+      style={{
+        color,
+        borderColor: `${color}66`,
+        backgroundColor: `${color}22`,
+      }}
+    >
+      {label}
+    </span>
   );
 }
 
-function ResultBadge({ result }: { result: ReturnType<typeof tradeResult> }) {
-  if (result === "win") return <Badge className="border border-success/30 bg-success/10 text-success">Win</Badge>;
-  if (result === "loss") return <Badge className="border border-danger/30 bg-danger/10 text-danger">Loss</Badge>;
-  return <Badge className="border border-border bg-muted/40 text-muted-foreground">Break-even</Badge>;
-}
-
-// Ensure JournalEntry type import isn't tree-shaken away in odd bundling
 export type _EntryType = JournalEntry;
