@@ -217,16 +217,12 @@ function JournalPage() {
         actions={
           <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
             <ManualEntryDialog />
-            <Button
-              variant="outline"
-              size="sm"
-              className="min-h-touch flex-1 sm:flex-none"
-              disabled={!JOURNAL_FEATURES.importTrade}
-              title={JOURNAL_FEATURES.importTrade ? undefined : "Import Trade — coming soon"}
-            >
-              <Import className="mr-1.5 h-4 w-4" />
-              <span className="truncate">Import</span>
-            </Button>
+            {JOURNAL_FEATURES.importTrade ? (
+              <Button variant="outline" size="sm" className="min-h-touch flex-1 sm:flex-none">
+                <Import className="mr-1.5 h-4 w-4" />
+                <span className="truncate">Import</span>
+              </Button>
+            ) : null}
             <Button
               variant="outline"
               size="sm"

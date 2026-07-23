@@ -14,7 +14,7 @@ import {
   Lock,
   Maximize2,
   Paperclip,
-  Play,
+  
   Plus,
   Sparkles,
   Star,
@@ -730,14 +730,6 @@ function MediaSection({
         </label>
       </div>
 
-      <div className="rounded-2xl border border-border/60 bg-surface/20 p-4">
-        <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-          <Play className="h-3.5 w-3.5" /> Trade replay
-        </p>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Coming soon — connect a market data feed to scrub through the setup, entry, and exit tick-by-tick.
-        </p>
-      </div>
 
       {lightbox ? (
         <div
@@ -888,24 +880,29 @@ function AISection() {
     { key: "aiPerformanceCoach", title: "AI Performance Coach", desc: "Weekly review of your edge, drawdowns and habits." },
     { key: "aiSuggestions", title: "AI Suggestions", desc: "Personalized suggestions on setups, risk, and journaling gaps." },
   ] as const;
+  const enabledItems = items.filter((i) => (JOURNAL_FEATURES as Record<string, boolean>)[i.key]);
+  if (enabledItems.length === 0) {
+    return (
+      <p className="rounded-xl border border-dashed border-border/60 p-4 text-center text-xs text-muted-foreground">
+        AI insights will appear here once you have generated a review for this trade.
+      </p>
+    );
+  }
   return (
     <div className="space-y-3">
-      {items.map((i) => {
-        const enabled = (JOURNAL_FEATURES as Record<string, boolean>)[i.key];
-        return (
-          <div key={i.key} className="rounded-2xl border border-border/60 bg-surface/30 p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                  <Sparkles className="h-3.5 w-3.5 text-primary" /> {i.title}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">{i.desc}</p>
-              </div>
-              <Badge variant="outline" className="shrink-0">{enabled ? "Enabled" : "Coming soon"}</Badge>
+      {enabledItems.map((i) => (
+        <div key={i.key} className="rounded-2xl border border-border/60 bg-surface/30 p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <Sparkles className="h-3.5 w-3.5 text-primary" /> {i.title}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">{i.desc}</p>
             </div>
+            <Badge variant="outline" className="shrink-0">Enabled</Badge>
           </div>
-        );
-      })}
+        </div>
+      ))}
     </div>
   );
 }

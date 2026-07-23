@@ -81,7 +81,6 @@ export function ReportsView() {
         <div className="flex gap-2">
           <Button size="sm" variant="outline" onClick={exportCsv}><FileText className="h-3.5 w-3.5 mr-1" />CSV</Button>
           <Button size="sm" variant="outline" onClick={exportJson}><FileJson className="h-3.5 w-3.5 mr-1" />JSON</Button>
-          <Button size="sm" variant="ghost" disabled title="Coming soon"><Download className="h-3.5 w-3.5 mr-1" />PDF</Button>
         </div>
       </GlassCard>
 

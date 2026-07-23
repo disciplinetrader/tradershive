@@ -25,6 +25,7 @@ import { XPWidget } from "@/components/dashboard/XPWidget";
 import { WidgetShell } from "@/components/dashboard/WidgetShell";
 import { CustomizeSheet, type WidgetDef } from "@/components/dashboard/CustomizeSheet";
 import { getDashboardLayout, saveDashboardLayout } from "@/lib/dashboard.functions";
+import { BetaBanner } from "@/components/beta/BetaBanner";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -96,6 +97,10 @@ function DashboardPage() {
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
+      <motion.div variants={item}>
+        <BetaBanner />
+      </motion.div>
+
       <motion.div variants={item}>
         <HeaderGreeting onOpenSearch={() => setOpen(true)} />
       </motion.div>
