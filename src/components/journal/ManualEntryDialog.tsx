@@ -621,13 +621,6 @@ function ManualForm({
                 </span>
               ) : null}
             </div>
-            <p id="trade-result-help" className="text-xs leading-relaxed text-muted-foreground">
-              Enter the realized result in R multiples. Trade Outcome is calculated automatically. Examples:{" "}
-              <span className="text-success">+2R</span> = won 2× your initial risk ·{" "}
-              <span className="text-success">+1R</span> = won 1R · <span>0R</span> = breakeven ·{" "}
-              <span className="text-danger">-1R</span> = full stop loss ·{" "}
-              <span className="text-danger">-0.5R</span> = half-R loss.
-            </p>
           </div>
         </Field>
 
