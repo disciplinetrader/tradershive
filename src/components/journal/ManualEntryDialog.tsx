@@ -597,15 +597,15 @@ function ManualForm({
           </div>
         </Field>
 
-        {/* Journal Notes */}
-        <Field label="Journal Notes" required error={attempted && missing.notes ? "Add a short note" : undefined}>
+        {/* Trade Review */}
+        <Field label="Trade Review" required error={attempted && missing.notes ? "Add a short reflection" : undefined}>
           <Textarea
             ref={notesRef}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={5}
             className={cn("resize-none", attempted && missing.notes && "border-danger")}
-            placeholder={"Why did you take this trade?\nWhat went well?\nWhat would you improve next time?"}
+            placeholder={"What happened during this trade? What went well? What would you do differently next time?"}
           />
           <p className="mt-1 text-[11px] text-muted-foreground">Markdown supported.</p>
         </Field>
