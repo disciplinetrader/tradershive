@@ -14,7 +14,7 @@ import {
   Lock,
   Maximize2,
   Paperclip,
-  Play,
+  
   Plus,
   Sparkles,
   Star,

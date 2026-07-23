@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Camera, Crosshair, Expand, LineChart as LineChartIcon, Play, Ruler, Wrench } from "lucide-react";
+import { Camera, Crosshair, Expand, LineChart as LineChartIcon, Ruler, Wrench } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
