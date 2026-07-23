@@ -91,6 +91,12 @@ function JournalPage() {
     try { localStorage.setItem(JOURNAL_STORAGE_KEYS.view, view); } catch { /* ignore */ }
   }, [view]);
 
+  // Deep-link edit — /journal?edit=<entryId> opens the drawer for that entry.
+  const search = useSearch({ strict: false }) as { edit?: string };
+  useEffect(() => {
+    if (search?.edit) setDrawerId(search.edit);
+  }, [search?.edit]);
+
   const entriesQuery = useQuery({
     queryKey: journalKeys.list(),
     queryFn: fetchEntries,
