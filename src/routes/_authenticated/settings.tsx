@@ -59,6 +59,20 @@ function SettingsPage() {
   const name = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") ||
     profile?.display_name || profile?.username || "T";
   const initials = name.split(" ").map((s) => s[0]).join("").slice(0, 2).toUpperCase();
+  const [signOutOpen, setSignOutOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const doSignOut = async () => {
+    setSigningOut(true);
+    try {
+      await supabase.auth.signOut();
+      setSignOutOpen(false);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not sign you out. Please try again.");
+    } finally {
+      setSigningOut(false);
+    }
+  };
+
 
   return (
     <div className="space-y-6">
