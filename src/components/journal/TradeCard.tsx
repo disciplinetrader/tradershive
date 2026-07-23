@@ -240,9 +240,12 @@ export function TradeCard({
                 </div>
 
                 <dl className="grid grid-cols-3 gap-2 text-[11px]">
-                  <Stat label="Entry" value={entry.entry_price != null ? formatNumber(Number(entry.entry_price), 5) : "—"} />
-                  <Stat label="Exit" value={entry.exit_price != null ? formatNumber(Number(entry.exit_price), 5) : "—"} />
-                  <Stat label="Hold" value={formatDuration(entry.duration_seconds)} />
+                  <Stat label="Strategy" value={entry.strategy?.trim() || entry.setup?.replace(/_/g, " ") || "—"} />
+                  <Stat
+                    label="R Multiple"
+                    value={entry.rr != null ? `${Number(entry.rr) >= 0 ? "+" : ""}${formatNumber(Number(entry.rr), 2)}R` : "—"}
+                  />
+                  <Stat label="Session" value={sessionLabelShort(entry.session)} />
                 </dl>
 
                 {tags.length ? (
