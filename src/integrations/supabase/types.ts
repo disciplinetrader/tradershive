@@ -4632,6 +4632,7 @@ export type Database = {
           symbol: string | null
           take_profit: number | null
           trade_id: string | null
+          trade_type: Database["public"]["Enums"]["journal_trade_type"] | null
           updated_at: string
           user_id: string
           word_count: number
@@ -4693,6 +4694,7 @@ export type Database = {
           symbol?: string | null
           take_profit?: number | null
           trade_id?: string | null
+          trade_type?: Database["public"]["Enums"]["journal_trade_type"] | null
           updated_at?: string
           user_id: string
           word_count?: number
@@ -4754,6 +4756,7 @@ export type Database = {
           symbol?: string | null
           take_profit?: number | null
           trade_id?: string | null
+          trade_type?: Database["public"]["Enums"]["journal_trade_type"] | null
           updated_at?: string
           user_id?: string
           word_count?: number
@@ -10268,6 +10271,7 @@ export type Database = {
         | "tokyo"
       journal_status: "draft" | "published" | "archived"
       journal_taxonomy_kind: "setup" | "emotion" | "mistake"
+      journal_trade_type: "intraday" | "swing" | "long_term" | "scalp"
       league:
         | "bronze"
         | "silver"
@@ -10712,6 +10716,7 @@ export const Constants = {
       ],
       journal_status: ["draft", "published", "archived"],
       journal_taxonomy_kind: ["setup", "emotion", "mistake"],
+      journal_trade_type: ["intraday", "swing", "long_term", "scalp"],
       league: [
         "bronze",
         "silver",
