@@ -6,6 +6,8 @@ import {
   Copy,
   Download,
   Eye,
+  ImageIcon,
+  MoreHorizontal,
   Pencil,
   Share2,
   Trash2,
@@ -23,10 +25,18 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import { Badge } from "@/components/ui/badge";
 import type { JournalEntry } from "@/lib/journal/api";
 import {
@@ -39,6 +49,7 @@ import {
 } from "@/lib/journal/format";
 import { GRADE_COLOR } from "@/lib/journal/constants";
 import { cn } from "@/lib/utils";
+
 
 type ColKey =
   | "id"
