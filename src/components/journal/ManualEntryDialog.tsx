@@ -246,6 +246,9 @@ function ManualForm({
     defaults.strategy ? [defaults.strategy] : [],
   );
   const [notes, setNotes] = useState("");
+  const [direction, setDirection] = useState<"" | "long" | "short">(
+    (prefill?.direction as "long" | "short" | undefined) ?? "",
+  );
 
   // Optional
   const [session, setSession] = useState<string>(defaults.session ?? "");
@@ -291,6 +294,7 @@ function ManualForm({
 
   /* --------------------------- Validation refs --------------------------- */
   const instrumentRef = useRef<HTMLDivElement>(null);
+  const directionRef = useRef<HTMLDivElement>(null);
   const riskRef = useRef<HTMLInputElement>(null);
   const dateRef = useRef<HTMLInputElement>(null);
   const strategyRef = useRef<HTMLDivElement>(null);
@@ -300,12 +304,13 @@ function ManualForm({
   const riskValue = riskType === "risk_percent" ? Number(riskPercent) : Number(rMultiple);
   const missing = {
     instrument: !instrument,
+    direction: !direction,
     risk: !Number.isFinite(riskValue) || riskValue <= 0,
     date: !tradeDate,
     strategy: strategyTags.length === 0,
     notes: !notes.trim(),
   };
-  const canSubmit = Boolean(user) && !missing.instrument && !missing.risk && !missing.date && !missing.strategy && !missing.notes;
+  const canSubmit = Boolean(user) && !missing.instrument && !missing.direction && !missing.risk && !missing.date && !missing.strategy && !missing.notes;
 
   /* ----------------------------- Autosave -------------------------------- */
   const isDirty = Boolean(
@@ -318,7 +323,7 @@ function ManualForm({
     savedAt: Date.now(),
     symbol,
     market,
-    direction: "long",
+    direction: direction || "long",
     entryPrice: "", exitPrice: "", stopLoss: "", takeProfit: "",
     pnl: "", rr: rMultiple, lotSize: "",
     openedAt: tradeDate, closedAt: tradeDate,
@@ -327,7 +332,7 @@ function ManualForm({
     strategyTags, emotions, mistakes: [],
     entryReason: "", postTradeNotes: notes,
     riskPercent, accountBalance: "",
-  }), [symbol, market, tradeDate, session, strategyTags, emotions, notes, riskPercent, rMultiple]);
+  }), [symbol, market, direction, tradeDate, session, strategyTags, emotions, notes, riskPercent, rMultiple]);
 
   const draftRef = useRef(draftSnapshot());
   useEffect(() => { draftRef.current = draftSnapshot(); }, [draftSnapshot]);
@@ -368,7 +373,7 @@ function ManualForm({
         user_id: user.id,
         symbol: instrument.symbol,
         market: instrument.market,
-        direction: (prefill?.direction ?? null) as EntryInsert["direction"],
+        direction: (direction || prefill?.direction || null) as EntryInsert["direction"],
         entry_price: prefill?.entry_price ?? null,
         exit_price: prefill?.exit_price ?? null,
         pnl: prefill?.pnl ?? pnlProxy,
@@ -411,6 +416,7 @@ function ManualForm({
   const focusFirstInvalid = () => {
     let el: HTMLElement | null = null;
     if (missing.instrument) el = instrumentRef.current;
+    else if (missing.direction) el = directionRef.current;
     else if (missing.risk) el = riskRef.current;
     else if (missing.date) el = dateRef.current;
     else if (missing.strategy) el = strategyRef.current;
@@ -494,6 +500,49 @@ function ManualForm({
               <span>· {instrument.market}</span>
             </p>
           ) : null}
+        </Field>
+
+        {/* Position Type */}
+        <Field label="Position Type" required error={attempted && missing.direction ? "Choose Long or Short" : undefined}>
+          <div
+            ref={directionRef}
+            tabIndex={-1}
+            className={cn(
+              "grid grid-cols-2 gap-2 rounded-md",
+              attempted && missing.direction && "ring-2 ring-danger ring-offset-1 ring-offset-background",
+            )}
+          >
+            {([
+              { value: "long" as const, label: "Long (Buy)", tone: "success" as const },
+              { value: "short" as const, label: "Short (Sell)", tone: "danger" as const },
+            ]).map((b) => {
+              const active = direction === b.value;
+              return (
+                <button
+                  key={b.value}
+                  type="button"
+                  onClick={() => setDirection(b.value)}
+                  aria-pressed={active}
+                  className={cn(
+                    "flex h-11 items-center justify-center gap-2 rounded-md border text-sm font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    active
+                      ? b.tone === "success"
+                        ? "border-success bg-success/10 text-success"
+                        : "border-danger bg-danger/10 text-danger"
+                      : "border-border/70 bg-background/40 text-muted-foreground hover:text-foreground hover:bg-accent/30",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "h-2 w-2 rounded-full",
+                      b.tone === "success" ? "bg-success" : "bg-danger",
+                    )}
+                  />
+                  {b.label}
+                </button>
+              );
+            })}
+          </div>
         </Field>
 
         {/* Trade Result */}
