@@ -88,10 +88,38 @@ export function NotesEditor({
     scheduleSave();
   };
 
-  const insertLink = () => {
-    const url = window.prompt("Link URL");
-    if (!url) return;
-    exec("createLink", url);
+  const openLinkDialog = () => {
+    const sel = window.getSelection();
+    savedSelectionRef.current = sel && sel.rangeCount > 0 ? sel.getRangeAt(0).cloneRange() : null;
+    setLinkUrl("");
+    setLinkError(null);
+    setLinkOpen(true);
+  };
+
+  const confirmLink = () => {
+    const raw = linkUrl.trim();
+    if (!raw) {
+      setLinkError("Enter a URL to link to.");
+      return;
+    }
+    const normalized = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+    try {
+      // eslint-disable-next-line no-new
+      new URL(normalized);
+    } catch {
+      setLinkError("That doesn't look like a valid URL.");
+      return;
+    }
+    ref.current?.focus();
+    const saved = savedSelectionRef.current;
+    if (saved) {
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(saved);
+    }
+    document.execCommand("createLink", false, normalized);
+    handleInput();
+    setLinkOpen(false);
   };
 
   const insertCodeBlock = () => {
