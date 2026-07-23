@@ -43,6 +43,10 @@ export function NotesEditor({
   const [words, setWords] = useState(0);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const bootedRef = useRef(false);
+  const savedSelectionRef = useRef<Range | null>(null);
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [linkUrl, setLinkUrl] = useState("");
+  const [linkError, setLinkError] = useState<string | null>(null);
 
   useEffect(() => {
     if (bootedRef.current) return;
