@@ -51,6 +51,21 @@ function Page() {
 
   const post = q.data?.post;
   const isAuthor = post && user?.id === post.author_id;
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const doDelete = async () => {
+    setDeleting(true);
+    try {
+      await del({ data: { id } });
+      toast.success("Post deleted");
+      setDeleteOpen(false);
+      navigate({ to: "/community" });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to delete post");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_320px]">
