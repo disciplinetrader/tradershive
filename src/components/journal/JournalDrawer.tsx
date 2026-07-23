@@ -746,7 +746,7 @@ function MediaSection({
           role="dialog"
           aria-label="Screenshot preview"
         >
-          <img src={lightbox} alt="Screenshot" className="max-h-[90vh] max-w-[92vw] rounded-xl object-contain shadow-2xl" />
+          <img src={lightbox} alt="Screenshot" loading="lazy" decoding="async" className="max-h-[90vh] max-w-[92vw] rounded-xl object-contain shadow-2xl" />
         </div>
       ) : null}
     </div>
