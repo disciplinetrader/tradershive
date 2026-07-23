@@ -135,7 +135,7 @@ function SharedEntry({ entry, urls }: { entry: JournalEntry; urls: Record<string
 
       <div className="grid gap-3 sm:grid-cols-2">
         {(entry.screenshots ?? []).slice(1).map((path) => (
-          <img key={path} src={urls[path]} alt="Screenshot" className="w-full rounded-2xl object-cover" />
+          <img key={path} src={urls[path]} alt="Screenshot" loading="lazy" decoding="async" className="w-full rounded-2xl object-cover" />
         ))}
       </div>
 
