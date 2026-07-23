@@ -99,14 +99,22 @@ function SettingsPage() {
         <Button
           variant="destructive"
           className="mt-5"
-          onClick={async () => {
-            if (!confirm("This will sign you out. Contact support to permanently delete your data. Continue?")) return;
-            await supabase.auth.signOut();
-          }}
+          onClick={() => setSignOutOpen(true)}
         >
           Sign out & request deletion
         </Button>
       </GlassCard>
+
+      <ConfirmDialog
+        open={signOutOpen}
+        onOpenChange={setSignOutOpen}
+        title="Sign out & request deletion?"
+        description="You will be signed out of this device. To permanently delete your data, please contact support after signing out."
+        confirmLabel="Sign out"
+        destructive
+        loading={signingOut}
+        onConfirm={doSignOut}
+      />
     </div>
   );
 }
