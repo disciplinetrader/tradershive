@@ -46,6 +46,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { closeTrade, listTrades } from "@/lib/paper-trading.functions";
 import { useRiskMonitor } from "@/hooks/use-risk-monitor";
+import { useSlTpMonitor } from "@/hooks/use-sl-tp-monitor";
 
 const CHART_TIMEFRAMES: Timeframe[] = ["1m", "5m", "15m", "30m", "1H", "4H", "1D", "1W"];
 
@@ -87,6 +88,7 @@ const SMC_SUB_OPTIONS: { key: "show_swings" | "show_bos" | "show_fvg" | "show_ob
 function TradingWorkspaceInner() {
   const qc = useQueryClient();
   const { symbol, symbolMeta, market, timeframe, setTimeframe, accountId, account } = usePaper();
+  useSlTpMonitor(account);
   useRiskMonitor(account);
   const [enabled, setEnabled] = useState<Record<string, boolean>>({ ema: true, volume: true });
   const [chartType, setChartType] = useState<ChartType>("candles");
