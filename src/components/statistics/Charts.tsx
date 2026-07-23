@@ -36,7 +36,8 @@ function ChartCard({ title, subtitle, actions, height = 260, children }: { title
 
 /* Equity curve with brush zoom */
 export function EquityCurveCard() {
-  const { filtered, accounts, filters, loading } = useStatistics();
+  const { filtered, accounts, filters } = useStatistics();
+  void loading;
   if (loading && filtered.length === 0) {
     return (
       <GlassCard className="p-4 space-y-3">

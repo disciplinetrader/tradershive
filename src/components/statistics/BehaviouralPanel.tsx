@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { AlertTriangle, CheckCircle2, Info } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useStatistics } from "./context";
 import { computeBehaviourFlags, type BehaviourFlag } from "@/lib/statistics/advanced";
