@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { getMyPrivacy, updateCustomization, updatePrivacy } from "@/lib/social.functions";
 import { toast } from "sonner";
@@ -62,7 +63,17 @@ export function CustomizeProfileDialog({ open, onOpenChange }: { open: boolean; 
           <DialogTitle>Customize public profile</DialogTitle>
         </DialogHeader>
         {isLoading ? (
-          <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+          <div className="space-y-4 py-2" aria-busy="true">
+            <div className="grid gap-3 sm:grid-cols-2">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="space-y-1.5">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-9 w-full rounded-md" />
+                </div>
+              ))}
+            </div>
+            <Skeleton className="h-24 w-full rounded-md" />
+          </div>
         ) : (
           <div className="space-y-5">
             <div className="grid gap-3 sm:grid-cols-2">

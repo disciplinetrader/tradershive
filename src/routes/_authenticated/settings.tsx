@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -368,8 +369,16 @@ function NotificationsSection() {
       <p className="text-xs text-muted-foreground">Choose when we should ping you.</p>
       <div className="mt-5 space-y-4">
         {loading || !settings ? (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Loader2 className="h-3 w-3 animate-spin" /> Loading…
+          <div className="space-y-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex items-center justify-between gap-4">
+                <div className="flex-1 space-y-1.5">
+                  <Skeleton className="h-3 w-40" />
+                  <Skeleton className="h-2.5 w-64 max-w-full" />
+                </div>
+                <Skeleton className="h-5 w-9 rounded-full" />
+              </div>
+            ))}
           </div>
         ) : (
           NOTIF_ROWS.map((row) => (
