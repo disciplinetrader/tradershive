@@ -215,15 +215,17 @@ export function JournalFilters({
                   return (
                     <button
                       key={t.id}
+                      type="button"
                       onClick={() => toggleTag(t.id)}
                       className={cn(
-                        "rounded-full border px-2.5 py-1 text-xs transition",
+                        "cursor-pointer rounded-full border px-2.5 py-1 text-xs transition-colors",
                         active
-                          ? "border-primary bg-primary/15 text-primary"
-                          : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground",
+                          ? "border-primary bg-primary/15 text-primary hover:bg-primary/20"
+                          : "border-border text-muted-foreground hover:border-primary/40 hover:bg-accent/40 hover:text-foreground",
                       )}
                       style={active ? undefined : { borderColor: `${t.color}55`, color: t.color }}
                       aria-pressed={active}
+
                     >
                       {t.name}
                     </button>
