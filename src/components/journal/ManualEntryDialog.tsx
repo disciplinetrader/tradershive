@@ -354,11 +354,8 @@ function ManualForm({
       if (!user) throw new Error("Not authenticated");
       if (!instrument) throw new Error("Pick an instrument");
 
-      const sign = result === "win" ? 1 : result === "loss" ? -1 : 0;
-      const rrSigned = riskType === "r_multiple"
-        ? sign * Math.abs(Number(rMultiple))
-        : sign * 1; // 1R proxy when only risk % is given
-      const pnlProxy = result === "breakeven" ? 0 : rrSigned;
+      const rrSigned = rValue ?? 0;
+      const pnlProxy = rrSigned;
 
       const openedISO = new Date(`${tradeDate}T12:00:00`).toISOString();
 
