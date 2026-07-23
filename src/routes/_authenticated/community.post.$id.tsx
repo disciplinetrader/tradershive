@@ -1,7 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { ArrowLeft, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { PostCard } from "@/components/community/PostCard";
@@ -50,6 +51,21 @@ function Page() {
 
   const post = q.data?.post;
   const isAuthor = post && user?.id === post.author_id;
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const doDelete = async () => {
+    setDeleting(true);
+    try {
+      await del({ data: { id } });
+      toast.success("Post deleted");
+      setDeleteOpen(false);
+      navigate({ to: "/community" });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to delete post");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_320px]">
@@ -59,12 +75,7 @@ function Page() {
             <ArrowLeft className="mr-1.5 h-4 w-4" /> Back to feed
           </Button>
           {isAuthor ? (
-            <Button size="sm" variant="ghost" className="text-danger" onClick={async () => {
-              if (!confirm("Delete this post?")) return;
-              await del({ data: { id } });
-              toast.success("Post deleted");
-              navigate({ to: "/community" });
-            }}>
+            <Button size="sm" variant="ghost" className="text-danger" onClick={() => setDeleteOpen(true)}>
               <Trash2 className="mr-1.5 h-4 w-4" /> Delete
             </Button>
           ) : null}
@@ -81,6 +92,16 @@ function Page() {
         }
       </div>
       <aside><CommunitySidebar /></aside>
+      <ConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Delete this post?"
+        description="This will permanently remove the post and all of its comments. This can't be undone."
+        confirmLabel="Delete post"
+        destructive
+        loading={deleting}
+        onConfirm={doDelete}
+      />
     </div>
   );
 }

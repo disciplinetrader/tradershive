@@ -13,6 +13,11 @@ import {
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { wordCount, stripHtml } from "@/lib/journal/format";
 
@@ -38,6 +43,10 @@ export function NotesEditor({
   const [words, setWords] = useState(0);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const bootedRef = useRef(false);
+  const savedSelectionRef = useRef<Range | null>(null);
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [linkUrl, setLinkUrl] = useState("");
+  const [linkError, setLinkError] = useState<string | null>(null);
 
   useEffect(() => {
     if (bootedRef.current) return;
@@ -79,10 +88,38 @@ export function NotesEditor({
     scheduleSave();
   };
 
-  const insertLink = () => {
-    const url = window.prompt("Link URL");
-    if (!url) return;
-    exec("createLink", url);
+  const openLinkDialog = () => {
+    const sel = window.getSelection();
+    savedSelectionRef.current = sel && sel.rangeCount > 0 ? sel.getRangeAt(0).cloneRange() : null;
+    setLinkUrl("");
+    setLinkError(null);
+    setLinkOpen(true);
+  };
+
+  const confirmLink = () => {
+    const raw = linkUrl.trim();
+    if (!raw) {
+      setLinkError("Enter a URL to link to.");
+      return;
+    }
+    const normalized = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+    try {
+      // eslint-disable-next-line no-new
+      new URL(normalized);
+    } catch {
+      setLinkError("That doesn't look like a valid URL.");
+      return;
+    }
+    ref.current?.focus();
+    const saved = savedSelectionRef.current;
+    if (saved) {
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(saved);
+    }
+    document.execCommand("createLink", false, normalized);
+    handleInput();
+    setLinkOpen(false);
   };
 
   const insertCodeBlock = () => {
@@ -113,7 +150,7 @@ export function NotesEditor({
         <ToolbarBtn label="Ordered list" onClick={() => exec("insertOrderedList")}><ListOrdered className="h-3.5 w-3.5" /></ToolbarBtn>
         <ToolbarBtn label="Quote" onClick={() => exec("formatBlock", "BLOCKQUOTE")}><Quote className="h-3.5 w-3.5" /></ToolbarBtn>
         <ToolbarBtn label="Code block" onClick={insertCodeBlock}><Code2 className="h-3.5 w-3.5" /></ToolbarBtn>
-        <ToolbarBtn label="Link" onClick={insertLink}><Link2 className="h-3.5 w-3.5" /></ToolbarBtn>
+        <ToolbarBtn label="Link" onClick={openLinkDialog}><Link2 className="h-3.5 w-3.5" /></ToolbarBtn>
 
         <div className="ml-auto flex items-center gap-2 text-[11px] text-muted-foreground">
           <span>{words} word{words === 1 ? "" : "s"}</span>
@@ -157,6 +194,35 @@ export function NotesEditor({
         )}
         style={{ minHeight }}
       />
+
+      <Dialog open={linkOpen} onOpenChange={setLinkOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Insert link</DialogTitle>
+            <DialogDescription>Add a URL to link the selected text to.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="notes-link-url">URL</Label>
+            <Input
+              id="notes-link-url"
+              autoFocus
+              placeholder="https://example.com"
+              value={linkUrl}
+              onChange={(e) => { setLinkUrl(e.target.value); if (linkError) setLinkError(null); }}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); confirmLink(); } }}
+              aria-invalid={!!linkError}
+              aria-describedby={linkError ? "notes-link-url-error" : undefined}
+            />
+            {linkError ? (
+              <p id="notes-link-url-error" className="text-xs text-danger">{linkError}</p>
+            ) : null}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setLinkOpen(false)}>Cancel</Button>
+            <Button onClick={confirmLink}>Insert link</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

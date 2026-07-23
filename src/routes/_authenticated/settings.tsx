@@ -29,6 +29,7 @@ import {
 } from "@/lib/constants";
 import { passwordSchema, usernameSchema } from "@/lib/auth-schemas";
 import { cn } from "@/lib/utils";
+import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Settings — TradersHIVE Arena" }] }),
@@ -58,6 +59,20 @@ function SettingsPage() {
   const name = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") ||
     profile?.display_name || profile?.username || "T";
   const initials = name.split(" ").map((s) => s[0]).join("").slice(0, 2).toUpperCase();
+  const [signOutOpen, setSignOutOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const doSignOut = async () => {
+    setSigningOut(true);
+    try {
+      await supabase.auth.signOut();
+      setSignOutOpen(false);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not sign you out. Please try again.");
+    } finally {
+      setSigningOut(false);
+    }
+  };
+
 
   return (
     <div className="space-y-6">
@@ -84,14 +99,22 @@ function SettingsPage() {
         <Button
           variant="destructive"
           className="mt-5"
-          onClick={async () => {
-            if (!confirm("This will sign you out. Contact support to permanently delete your data. Continue?")) return;
-            await supabase.auth.signOut();
-          }}
+          onClick={() => setSignOutOpen(true)}
         >
           Sign out & request deletion
         </Button>
       </GlassCard>
+
+      <ConfirmDialog
+        open={signOutOpen}
+        onOpenChange={setSignOutOpen}
+        title="Sign out & request deletion?"
+        description="You will be signed out of this device. To permanently delete your data, please contact support after signing out."
+        confirmLabel="Sign out"
+        destructive
+        loading={signingOut}
+        onConfirm={doSignOut}
+      />
     </div>
   );
 }

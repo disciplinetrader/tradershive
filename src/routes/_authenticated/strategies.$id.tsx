@@ -30,6 +30,7 @@ import { useAuth } from "@/hooks/use-auth";
 import type { Strategy } from "@/lib/strategy/types";
 import { cn } from "@/lib/utils";
 import { routeBoundaries } from "@/lib/route-boundaries";
+import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 
 export const Route = createFileRoute("/_authenticated/strategies/$id")({
   component: StrategyDetail,
@@ -74,7 +75,9 @@ function StrategyDetail() {
   const delMut = useMutation({
     mutationFn: async () => del({ data: { id } }),
     onSuccess: () => { toast.success("Deleted"); window.location.href = "/strategies/library"; },
+    onError: (e: any) => toast.error(e?.message ?? "Failed to delete strategy"),
   });
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const favMut = useMutation({ mutationFn: async (v: boolean) => fav({ data: { id, value: v } }), onSuccess: () => qc.invalidateQueries({ queryKey: ["strategy", id] }) });
   const statusMut = useMutation({
     mutationFn: async (s: string) => setS({ data: { id, status: s as any } }),
@@ -126,7 +129,7 @@ function StrategyDetail() {
           <Button size="sm" variant="ghost" onClick={() => download(toMarkdown(strategy), `${strategy.name}.md`, "text/markdown")}>
             <Download className="mr-1 h-4 w-4" />MD
           </Button>
-          <Button size="sm" variant="ghost" onClick={() => { if (confirm("Delete this strategy?")) delMut.mutate(); }}>
+          <Button size="sm" variant="ghost" onClick={() => setDeleteOpen(true)} className="text-danger hover:text-danger">
             <Trash2 className="mr-1 h-4 w-4" />Delete
           </Button>
           <Button size="sm" onClick={() => saveMut.mutate()} disabled={!dirty || saveMut.isPending}>
@@ -206,6 +209,17 @@ function StrategyDetail() {
         </TabsContent>
 
       </Tabs>
+
+      <ConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Delete this strategy?"
+        description="This will permanently remove the strategy, its rules, checklists, examples, and version history. This can't be undone."
+        confirmLabel="Delete strategy"
+        destructive
+        loading={delMut.isPending}
+        onConfirm={() => delMut.mutate()}
+      />
     </div>
   );
 }

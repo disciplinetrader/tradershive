@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { LineChart, LogIn, LogOut, Trash2, Copy, Play, Eye } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { routeBoundaries } from "@/lib/route-boundaries";
+import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 
 export const Route = createFileRoute("/_authenticated/battle-arena/$battleId")({
   component: BattleDetail,
@@ -157,7 +158,21 @@ function BattleDetail() {
 
   const doJoin = async () => { try { await fnJoin({ data: { battleId } }); toast.success("Joined!"); qc.invalidateQueries({ queryKey: ["battle", battleId] }); } catch (e: any) { toast.error(e?.message ?? "Failed"); } };
   const doLeave = async () => { try { await fnLeave({ data: { battleId } }); toast.success("Left"); qc.invalidateQueries({ queryKey: ["battle", battleId] }); } catch (e: any) { toast.error(e?.message ?? "Failed"); } };
-  const doCancel = async () => { if (!confirm("Cancel this battle for everyone?")) return; try { await fnCancel({ data: { battleId } }); toast.success("Cancelled"); navigate({ to: "/battle-arena" }); } catch (e: any) { toast.error(e?.message); } };
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const doCancel = async () => {
+    setCancelling(true);
+    try {
+      await fnCancel({ data: { battleId } });
+      toast.success("Battle cancelled");
+      setCancelOpen(false);
+      navigate({ to: "/battle-arena" });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to cancel battle");
+    } finally {
+      setCancelling(false);
+    }
+  };
   const doFinalize = async () => { try { await fnFinalize({ data: { battleId } }); toast.success("Finalized"); qc.invalidateQueries({ queryKey: ["battle", battleId] }); } catch (e: any) { toast.error(e?.message); } };
 
   const onlineCount = (presenceQ.data ?? []).filter((p: any) => p.status !== "disconnected").length;
@@ -182,7 +197,7 @@ function BattleDetail() {
         </span>
         {canJoin && <Button size="sm" onClick={doJoin}><LogIn className="mr-1.5 h-4 w-4" />Join battle</Button>}
         {canLeave && <Button size="sm" variant="outline" onClick={doLeave}><LogOut className="mr-1.5 h-4 w-4" />Leave</Button>}
-        {canCancel && <Button size="sm" variant="destructive" onClick={doCancel}><Trash2 className="mr-1.5 h-4 w-4" />Cancel</Button>}
+        {canCancel && <Button size="sm" variant="destructive" onClick={() => setCancelOpen(true)}><Trash2 className="mr-1.5 h-4 w-4" />Cancel</Button>}
         {canFinalize && <Button size="sm" variant="secondary" onClick={doFinalize}><Play className="mr-1.5 h-4 w-4" />Finalize now</Button>}
         {isParticipant && battle!.status === "live" && (
           <Button size="sm" asChild><Link to="/trading"><LineChart className="mr-1.5 h-4 w-4" />Open trading workspace</Link></Button>
@@ -236,6 +251,17 @@ function BattleDetail() {
           <RulesPanel battle={battle!} />
         </div>
       </div>
+
+      <ConfirmDialog
+        open={cancelOpen}
+        onOpenChange={setCancelOpen}
+        title="Cancel this battle?"
+        description="All participants will be removed and the battle will end for everyone. This can't be undone."
+        confirmLabel="Cancel battle"
+        destructive
+        loading={cancelling}
+        onConfirm={doCancel}
+      />
     </div>
   );
 }
