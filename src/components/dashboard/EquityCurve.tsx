@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getDashboardOverview } from "@/lib/dashboard.functions";
+import { ChartA11ySummary } from "@/components/a11y/ChartA11ySummary";
 
 export function EquityCurve() {
   const fetch = useServerFn(getDashboardOverview);
