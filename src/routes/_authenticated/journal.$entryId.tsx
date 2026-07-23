@@ -296,13 +296,10 @@ function JournalEntryPage() {
             variant="outline"
             size="sm"
             className="w-full text-danger hover:text-danger"
-            onClick={() => {
-              if (window.confirm("Delete this journal entry? This action cannot be undone.")) {
-                navigate({ to: "/journal" });
-              }
-            }}
+            disabled={deleteMutation.isPending}
+            onClick={() => setConfirmOpen(true)}
           >
-            <Trash2 className="mr-1.5 h-4 w-4" /> Delete entry (from list)
+            <Trash2 className="mr-1.5 h-4 w-4" /> {deleteMutation.isPending ? "Deleting…" : "Delete entry"}
           </Button>
         </div>
       </div>
