@@ -158,7 +158,21 @@ function BattleDetail() {
 
   const doJoin = async () => { try { await fnJoin({ data: { battleId } }); toast.success("Joined!"); qc.invalidateQueries({ queryKey: ["battle", battleId] }); } catch (e: any) { toast.error(e?.message ?? "Failed"); } };
   const doLeave = async () => { try { await fnLeave({ data: { battleId } }); toast.success("Left"); qc.invalidateQueries({ queryKey: ["battle", battleId] }); } catch (e: any) { toast.error(e?.message ?? "Failed"); } };
-  const doCancel = async () => { if (!confirm("Cancel this battle for everyone?")) return; try { await fnCancel({ data: { battleId } }); toast.success("Cancelled"); navigate({ to: "/battle-arena" }); } catch (e: any) { toast.error(e?.message); } };
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const doCancel = async () => {
+    setCancelling(true);
+    try {
+      await fnCancel({ data: { battleId } });
+      toast.success("Battle cancelled");
+      setCancelOpen(false);
+      navigate({ to: "/battle-arena" });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to cancel battle");
+    } finally {
+      setCancelling(false);
+    }
+  };
   const doFinalize = async () => { try { await fnFinalize({ data: { battleId } }); toast.success("Finalized"); qc.invalidateQueries({ queryKey: ["battle", battleId] }); } catch (e: any) { toast.error(e?.message); } };
 
   const onlineCount = (presenceQ.data ?? []).filter((p: any) => p.status !== "disconnected").length;
