@@ -241,7 +241,7 @@ export function TradeCard({
 
                 {tags.length ? (
                   <div className="flex flex-wrap gap-1.5">
-                    {tags.slice(0, 3).map((t) => (
+                    {tags.slice(0, 2).map((t) => (
                       <span
                         key={t.id}
                         className="rounded-full border px-2 py-0.5 text-[10px]"
@@ -250,9 +250,9 @@ export function TradeCard({
                         {t.name}
                       </span>
                     ))}
-                    {tags.length > 3 ? (
+                    {tags.length > 2 ? (
                       <span className="rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground">
-                        +{tags.length - 3} more
+                        +{tags.length - 2} more
                       </span>
                     ) : null}
                   </div>
