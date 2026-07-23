@@ -12,7 +12,7 @@ import {
   Gamepad2,
   LineChart,
   Menu,
-  Play,
+  
   Shield,
   Sparkles,
   Star,
