@@ -739,12 +739,13 @@ function ChipMulti({
             onClick={() => onChange(active ? values.filter((v) => v !== o.value) : [...values, o.value])}
             aria-pressed={active}
             className={cn(
-              "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              "cursor-pointer rounded-full border px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               active
-                ? "border-primary bg-primary/10 text-primary"
-                : "border-border/70 bg-background/40 text-muted-foreground hover:border-border hover:text-foreground",
+                ? "border-primary bg-primary/10 text-primary hover:bg-primary/15"
+                : "border-border/70 bg-background/40 text-muted-foreground hover:border-primary/40 hover:bg-accent/40 hover:text-foreground",
             )}
             style={active && o.color ? { borderColor: o.color, color: o.color } : undefined}
+
           >
             {o.label}
           </button>
