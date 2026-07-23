@@ -1,7 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { ArrowLeft, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { PostCard } from "@/components/community/PostCard";
