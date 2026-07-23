@@ -665,14 +665,16 @@ function JournalEntryPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={discardOpen} onOpenChange={setDiscardOpen}>
+      <AlertDialog open={discardOpen} onOpenChange={(o) => { if (!o) continueEditing(); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>You have unsaved changes</AlertDialogTitle>
-            <AlertDialogDescription>Do you want to discard them?</AlertDialogDescription>
+            <AlertDialogTitle>Discard changes?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes to this journal. If you leave now, your changes will be lost.
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={continueEditing}>Continue editing</AlertDialogCancel>
             <AlertDialogAction
               onClick={discardChanges}
               className="bg-danger text-danger-foreground hover:bg-danger/90"
