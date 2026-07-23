@@ -237,9 +237,10 @@ export function TradePlanner({
               <Target className="h-3.5 w-3.5 text-primary" />
               Trade Plan
             </div>
-            <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
-              <X className="h-3.5 w-3.5" />
+            <button onClick={onClose} aria-label="Close trade plan" className="text-muted-foreground hover:text-foreground">
+              <X aria-hidden="true" className="h-3.5 w-3.5" />
             </button>
+
           </div>
           <div className="mb-2 flex items-center gap-2">
             <button onClick={flipSide} className={cn("flex-1 rounded px-2 py-1 text-[11px] font-bold uppercase", plan.side === "long" ? "bg-success/20 text-success" : "bg-danger/20 text-danger")}>
