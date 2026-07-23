@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { LineChart, LogIn, LogOut, Trash2, Copy, Play, Eye } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { routeBoundaries } from "@/lib/route-boundaries";
+import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 
 export const Route = createFileRoute("/_authenticated/battle-arena/$battleId")({
   component: BattleDetail,
