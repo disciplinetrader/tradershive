@@ -148,7 +148,7 @@ function JournalEntryPage() {
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [mode, setMode] = useState<"view" | "edit">("view");
   const [draft, setDraft] = useState<Draft | null>(null);
-  const [discardOpen, setDiscardOpen] = useState(false);
+  const [discardOpenLocal, setDiscardOpenLocal] = useState(false);
 
   const deleteMutation = useMutation({
     mutationFn: () => deleteEntry(entryId),
