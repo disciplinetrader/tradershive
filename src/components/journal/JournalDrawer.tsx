@@ -373,7 +373,7 @@ function OverviewSection({
 
       <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-muted/20">
         {primary ? (
-          <img src={primary} alt={entry.symbol ?? "Trade"} className="max-h-[420px] w-full object-contain" />
+          <img src={primary} alt={entry.symbol ?? "Trade"} loading="lazy" decoding="async" className="max-h-[420px] w-full object-contain" />
         ) : (
           <div className="grid h-56 w-full place-items-center text-sm text-muted-foreground">
             <div className="flex flex-col items-center gap-2">
