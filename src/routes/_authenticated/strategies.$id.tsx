@@ -30,6 +30,7 @@ import { useAuth } from "@/hooks/use-auth";
 import type { Strategy } from "@/lib/strategy/types";
 import { cn } from "@/lib/utils";
 import { routeBoundaries } from "@/lib/route-boundaries";
+import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 
 export const Route = createFileRoute("/_authenticated/strategies/$id")({
   component: StrategyDetail,
