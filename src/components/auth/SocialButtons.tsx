@@ -27,17 +27,6 @@ function GoogleIcon({ className }: { className?: string }) {
   );
 }
 
-function DiscordIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
-      <path
-        fill="#5865F2"
-        d="M20.3 4.4A19 19 0 0 0 15.6 3a13 13 0 0 0-.7 1.4 17.5 17.5 0 0 0-5.3 0A13 13 0 0 0 9 3a19 19 0 0 0-4.7 1.4A20 20 0 0 0 .6 15.8a19.2 19.2 0 0 0 5.8 2.9c.5-.6.9-1.3 1.2-2-.7-.3-1.4-.6-2-1 .2-.1.4-.3.5-.4a13.7 13.7 0 0 0 11.8 0l.5.4a13.4 13.4 0 0 1-2 1c.4.7.8 1.4 1.2 2A19.1 19.1 0 0 0 23.4 15.8a20 20 0 0 0-3.1-11.4zM8.6 13.4c-1.1 0-2-1-2-2.3s.9-2.3 2-2.3 2 1 2 2.3-.9 2.3-2 2.3zm6.8 0c-1.1 0-2-1-2-2.3s.9-2.3 2-2.3 2 1 2 2.3-.9 2.3-2 2.3z"
-      />
-    </svg>
-  );
-}
-
 export function SocialButtons({ mode = "signin" }: { mode?: "signin" | "signup" }) {
   const [busy, setBusy] = useState<string | null>(null);
   const verb = mode === "signup" ? "Sign up" : "Continue";
@@ -59,15 +48,8 @@ export function SocialButtons({ mode = "signin" }: { mode?: "signin" | "signup" 
     }
   };
 
-  const handleDiscord = () => {
-    toast.info("Discord sign-in is coming soon", {
-      description:
-        "We use Lovable Cloud auth which supports Google & Apple natively. Discord will be enabled once the provider is added.",
-    });
-  };
-
   return (
-    <div className="grid gap-2 sm:grid-cols-2">
+    <div className="grid gap-2">
       <Button
         type="button"
         variant="outline"
@@ -83,15 +65,6 @@ export function SocialButtons({ mode = "signin" }: { mode?: "signin" | "signup" 
             {verb} with Google
           </>
         )}
-      </Button>
-      <Button
-        type="button"
-        variant="outline"
-        className="glass h-11 justify-center"
-        onClick={handleDiscord}
-      >
-        <DiscordIcon className="mr-2 h-4 w-4" />
-        {verb} with Discord
       </Button>
     </div>
   );

@@ -93,7 +93,7 @@ function TradeDetailsPage() {
           {data.source === "replay" ? <TabsTrigger value="replay">Replay</TabsTrigger> : null}
           {data.source === "paper" ? <TabsTrigger value="attachments">Attachments</TabsTrigger> : null}
           <TabsTrigger value="related">Related</TabsTrigger>
-          <TabsTrigger value="playbook">Playbook</TabsTrigger>
+          
         </TabsList>
 
         <TabsContent value="timeline" className="mt-3">
@@ -162,12 +162,6 @@ function TradeDetailsPage() {
           <RelatedTradesList items={data.related as any[]} source={data.source} />
         </TabsContent>
 
-        <TabsContent value="playbook" className="mt-3">
-          <EmptyState
-            title="Playbook coming soon"
-            description="Link a strategy playbook to this trade to compare planned vs actual execution."
-          />
-        </TabsContent>
       </Tabs>
 
       {trade.notes ? (

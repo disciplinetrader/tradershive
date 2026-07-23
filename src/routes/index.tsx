@@ -364,18 +364,10 @@ function Hero() {
                 Start Free
               </Link>
             </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              className="glass gap-2"
-              disabled
-              aria-label="Watch demo, coming soon"
-            >
-              <Play className="h-4 w-4" />
-              Watch Demo
-              <span className="ml-1 rounded-full border border-border bg-surface/80 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">
-                Soon
-              </span>
+            <Button asChild variant="outline" size="lg" className="glass gap-2">
+              <Link to="/auth" search={{ mode: "login" }}>
+                Sign in
+              </Link>
             </Button>
           </motion.div>
 
@@ -1302,7 +1294,7 @@ function CommunitySection() {
       <SectionHeader
         eyebrow="Community"
         title="A hive of traders leveling up together."
-        subtitle="The social layer is coming — early members get first access."
+        subtitle="Follow traders, share ideas and climb the global leaderboard."
       />
       <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((it, i) => (
@@ -1314,9 +1306,6 @@ function CommunitySection() {
             transition={{ duration: 0.5, delay: (i % 3) * 0.06 }}
           >
             <GlassCard className="hover-lift relative h-full overflow-hidden p-6">
-              <span className="absolute right-4 top-4 rounded-full border border-border bg-surface/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                Coming Soon
-              </span>
               <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                 <it.icon className="h-5 w-5" />
               </div>
@@ -1601,17 +1590,8 @@ function Footer() {
             <p className="mt-4 max-w-sm text-sm text-muted-foreground">
               Train. Trade. Compete. The gamified arena where traders forge a consistent edge.
             </p>
-            <div className="mt-5 flex items-center gap-2">
-              <SocialLink href="#" label="Discord">
-                <DiscordIcon />
-              </SocialLink>
-              <SocialLink href="#" label="Telegram">
-                <TelegramIcon />
-              </SocialLink>
-              <SocialLink href="#" label="X">
-                <XIcon />
-              </SocialLink>
-            </div>
+            <div className="mt-5 flex items-center gap-2" />
+
           </div>
           <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
             {groups.map((g) => (

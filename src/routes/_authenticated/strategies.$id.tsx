@@ -148,7 +148,7 @@ function StrategyDetail() {
           <TabsTrigger value="examples">Examples</TabsTrigger>
           <TabsTrigger value="flow">Flow</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
-          <TabsTrigger value="ai" disabled>AI</TabsTrigger>
+          
         </TabsList>
 
         <TabsContent value="overview" className="mt-4 grid gap-4 md:grid-cols-2">
@@ -205,13 +205,6 @@ function StrategyDetail() {
           <VersionTimeline strategyId={id} versions={versions as any} />
         </TabsContent>
 
-        <TabsContent value="ai" className="mt-4">
-          <GlassCard className="p-6 text-center space-y-2">
-            <Sparkles className="mx-auto h-8 w-8 text-primary" />
-            <div className="text-sm">AI strategy assistance is coming soon.</div>
-            <div className="text-xs text-muted-foreground">Review rules · find weaknesses · optimize risk · generate checklists.</div>
-          </GlassCard>
-        </TabsContent>
       </Tabs>
     </div>
   );

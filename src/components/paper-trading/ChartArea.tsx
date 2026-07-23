@@ -214,7 +214,7 @@ export function ChartArea() {
           <ToolButton icon={Crosshair} label="Crosshair" />
           <ToolButton icon={Camera} label="Screenshot" onClick={captureScreenshot} />
           <ToolButton icon={Expand} label="Fullscreen" onClick={() => containerRef.current?.requestFullscreen?.()} />
-          <ToolButton icon={Play} label="Replay (coming soon)" disabled />
+          
         </div>
       </div>
 
