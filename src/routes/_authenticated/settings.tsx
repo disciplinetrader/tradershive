@@ -29,6 +29,7 @@ import {
 } from "@/lib/constants";
 import { passwordSchema, usernameSchema } from "@/lib/auth-schemas";
 import { cn } from "@/lib/utils";
+import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Settings — TradersHIVE Arena" }] }),
