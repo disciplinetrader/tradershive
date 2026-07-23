@@ -373,7 +373,7 @@ function ManualForm({
         user_id: user.id,
         symbol: instrument.symbol,
         market: instrument.market,
-        direction: (prefill?.direction ?? null) as EntryInsert["direction"],
+        direction: (direction || prefill?.direction || null) as EntryInsert["direction"],
         entry_price: prefill?.entry_price ?? null,
         exit_price: prefill?.exit_price ?? null,
         pnl: prefill?.pnl ?? pnlProxy,
