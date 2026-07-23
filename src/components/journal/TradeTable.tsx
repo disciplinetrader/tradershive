@@ -178,23 +178,38 @@ export function TradeTable({
         <Table>
           <TableHeader>
             <TableRow>
-              {COLUMNS.filter((c) => visible[c.key]).map((c) => (
-                <TableHead
-                  key={c.key}
-                  className="whitespace-nowrap"
-                  onClick={() => toggleSort(c.key)}
-                  role={c.key === "actions" ? undefined : "button"}
-                >
-                  <span className="inline-flex items-center gap-1">
-                    {c.label}
-                    {c.key === "actions" ? null : sort.key === c.key ? (
-                      sort.dir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
-                    ) : (
-                      <ChevronsUpDown className="h-3 w-3 opacity-40" />
-                    )}
-                  </span>
-                </TableHead>
-              ))}
+              {COLUMNS.filter((c) => visible[c.key]).map((c) => {
+                const isSortable = c.key !== "actions";
+                const isActive = isSortable && sort.key === c.key;
+                return (
+                  <TableHead
+                    key={c.key}
+                    className="whitespace-nowrap"
+                    onClick={() => toggleSort(c.key)}
+                    role={isSortable ? "button" : undefined}
+                    tabIndex={isSortable ? 0 : undefined}
+                    onKeyDown={(e) => {
+                      if (!isSortable) return;
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        toggleSort(c.key);
+                      }
+                    }}
+                    aria-sort={
+                      !isSortable ? undefined : isActive ? (sort.dir === "asc" ? "ascending" : "descending") : "none"
+                    }
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      {c.label}
+                      {!isSortable ? null : isActive ? (
+                        sort.dir === "asc" ? <ArrowUp className="h-3 w-3" aria-hidden /> : <ArrowDown className="h-3 w-3" aria-hidden />
+                      ) : (
+                        <ChevronsUpDown className="h-3 w-3 opacity-40" aria-hidden />
+                      )}
+                    </span>
+                  </TableHead>
+                );
+              })}
             </TableRow>
           </TableHeader>
           <TableBody>
