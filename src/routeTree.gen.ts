@@ -139,6 +139,7 @@ import { Route as AuthenticatedAdminAnnouncementsRouteImport } from './routes/_a
 import { Route as AuthenticatedAdminAchievementsRouteImport } from './routes/_authenticated/admin.achievements'
 import { Route as AuthenticatedAiCoachIndexRouteImport } from './routes/_authenticated/ai.coach.index'
 import { Route as ApiPublicHooksHistoricalSyncRouteImport } from './routes/api/public/hooks/historical-sync'
+import { Route as ApiPublicHooksBattleSettlementRouteImport } from './routes/api/public/hooks/battle-settlement'
 import { Route as AuthenticatedCommunityProfileUsernameRouteImport } from './routes/_authenticated/community.profile.$username'
 import { Route as AuthenticatedCommunityPostIdRouteImport } from './routes/_authenticated/community.post.$id'
 import { Route as AuthenticatedCommunityIdeasNewRouteImport } from './routes/_authenticated/community.ideas.new'
@@ -891,6 +892,12 @@ const ApiPublicHooksHistoricalSyncRoute =
     path: '/api/public/hooks/historical-sync',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksBattleSettlementRoute =
+  ApiPublicHooksBattleSettlementRouteImport.update({
+    id: '/api/public/hooks/battle-settlement',
+    path: '/api/public/hooks/battle-settlement',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedCommunityProfileUsernameRoute =
   AuthenticatedCommunityProfileUsernameRouteImport.update({
     id: '/profile/$username',
@@ -1083,6 +1090,7 @@ export interface FileRoutesByFullPath {
   '/community/ideas/new': typeof AuthenticatedCommunityIdeasNewRoute
   '/community/post/$id': typeof AuthenticatedCommunityPostIdRoute
   '/community/profile/$username': typeof AuthenticatedCommunityProfileUsernameRoute
+  '/api/public/hooks/battle-settlement': typeof ApiPublicHooksBattleSettlementRoute
   '/api/public/hooks/historical-sync': typeof ApiPublicHooksHistoricalSyncRoute
   '/ai/coach/': typeof AuthenticatedAiCoachIndexRoute
 }
@@ -1212,6 +1220,7 @@ export interface FileRoutesByTo {
   '/community/ideas/new': typeof AuthenticatedCommunityIdeasNewRoute
   '/community/post/$id': typeof AuthenticatedCommunityPostIdRoute
   '/community/profile/$username': typeof AuthenticatedCommunityProfileUsernameRoute
+  '/api/public/hooks/battle-settlement': typeof ApiPublicHooksBattleSettlementRoute
   '/api/public/hooks/historical-sync': typeof ApiPublicHooksHistoricalSyncRoute
   '/ai/coach': typeof AuthenticatedAiCoachIndexRoute
 }
@@ -1354,6 +1363,7 @@ export interface FileRoutesById {
   '/_authenticated/community/ideas/new': typeof AuthenticatedCommunityIdeasNewRoute
   '/_authenticated/community/post/$id': typeof AuthenticatedCommunityPostIdRoute
   '/_authenticated/community/profile/$username': typeof AuthenticatedCommunityProfileUsernameRoute
+  '/api/public/hooks/battle-settlement': typeof ApiPublicHooksBattleSettlementRoute
   '/api/public/hooks/historical-sync': typeof ApiPublicHooksHistoricalSyncRoute
   '/_authenticated/ai/coach/': typeof AuthenticatedAiCoachIndexRoute
 }
@@ -1496,6 +1506,7 @@ export interface FileRouteTypes {
     | '/community/ideas/new'
     | '/community/post/$id'
     | '/community/profile/$username'
+    | '/api/public/hooks/battle-settlement'
     | '/api/public/hooks/historical-sync'
     | '/ai/coach/'
   fileRoutesByTo: FileRoutesByTo
@@ -1625,6 +1636,7 @@ export interface FileRouteTypes {
     | '/community/ideas/new'
     | '/community/post/$id'
     | '/community/profile/$username'
+    | '/api/public/hooks/battle-settlement'
     | '/api/public/hooks/historical-sync'
     | '/ai/coach'
   id:
@@ -1766,6 +1778,7 @@ export interface FileRouteTypes {
     | '/_authenticated/community/ideas/new'
     | '/_authenticated/community/post/$id'
     | '/_authenticated/community/profile/$username'
+    | '/api/public/hooks/battle-settlement'
     | '/api/public/hooks/historical-sync'
     | '/_authenticated/ai/coach/'
   fileRoutesById: FileRoutesById
@@ -1782,6 +1795,7 @@ export interface RootRouteChildren {
   VerifyEmailRoute: typeof VerifyEmailRoute
   ApiAiChatRoute: typeof ApiAiChatRoute
   JournalShareTokenRoute: typeof JournalShareTokenRoute
+  ApiPublicHooksBattleSettlementRoute: typeof ApiPublicHooksBattleSettlementRoute
   ApiPublicHooksHistoricalSyncRoute: typeof ApiPublicHooksHistoricalSyncRoute
 }
 
@@ -2697,6 +2711,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksHistoricalSyncRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/battle-settlement': {
+      id: '/api/public/hooks/battle-settlement'
+      path: '/api/public/hooks/battle-settlement'
+      fullPath: '/api/public/hooks/battle-settlement'
+      preLoaderRoute: typeof ApiPublicHooksBattleSettlementRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/community/profile/$username': {
       id: '/_authenticated/community/profile/$username'
       path: '/profile/$username'
@@ -3231,6 +3252,7 @@ const rootRouteChildren: RootRouteChildren = {
   VerifyEmailRoute: VerifyEmailRoute,
   ApiAiChatRoute: ApiAiChatRoute,
   JournalShareTokenRoute: JournalShareTokenRoute,
+  ApiPublicHooksBattleSettlementRoute: ApiPublicHooksBattleSettlementRoute,
   ApiPublicHooksHistoricalSyncRoute: ApiPublicHooksHistoricalSyncRoute,
 }
 export const routeTree = rootRouteImport
