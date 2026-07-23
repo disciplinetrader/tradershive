@@ -203,15 +203,8 @@ function JournalEntryPage() {
     onError: (err) => toast.error((err as Error)?.message ?? "Save failed"),
   });
 
-  useEffect(() => {
-    if (!dirty) return;
-    const handler = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = "";
-    };
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
-  }, [dirty]);
+  // beforeunload guard is delivered via useBlocker's enableBeforeUnload below.
+
 
   const blocker = useBlocker({
     shouldBlockFn: () => dirty,
