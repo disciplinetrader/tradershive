@@ -380,6 +380,7 @@ function ManualForm({
         closed_tz: tz,
         session: (session || null) as EntryInsert["session"],
         session_auto_detected: true,
+        trade_type: (tradeType || null) as EntryInsert["trade_type"],
         strategy: strategyTags[0] ?? null,
         strategy_tags: strategyTags,
         emotions,
