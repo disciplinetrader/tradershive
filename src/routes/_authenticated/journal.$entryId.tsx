@@ -196,7 +196,9 @@ function JournalEntryPage() {
               <Field label="Session" value={sessionLabel} />
               <Field label="Confidence" value={entry.confidence != null ? `${entry.confidence}%` : "—"} />
               <Field label="Position size" value={entry.lot_size != null ? String(entry.lot_size) : "—"} />
-              <Field label="Duration" value={formatDuration(entry.duration_seconds)} />
+              <Field label="Risk %" value={(entry as any).risk_pct != null ? `${formatNumber(Number((entry as any).risk_pct), 2)}%` : "—"} />
+              <Field label="Trade duration" value={(entry as any).trade_type ? String((entry as any).trade_type).replace(/_/g, " ") : "—"} />
+              <Field label="Hold time" value={formatDuration(entry.duration_seconds)} />
             </div>
             {entryTags.length ? (
               <>
