@@ -534,42 +534,7 @@ function ManualForm({
           </div>
         </Field>
 
-        {/* Trade Result */}
-        <Field label="Trade Result" required>
-          <div className="grid grid-cols-3 gap-2">
-            {RESULT_BUTTONS.map((b) => {
-              const active = result === b.value;
-              return (
-                <button
-                  key={b.value}
-                  type="button"
-                  onClick={() => setResult(b.value)}
-                  aria-pressed={active}
-                  className={cn(
-                    "flex h-11 items-center justify-center gap-2 rounded-md border text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                    active
-                      ? b.tone === "success"
-                        ? "border-success bg-success/10 text-success"
-                        : b.tone === "danger"
-                          ? "border-danger bg-danger/10 text-danger"
-                          : "border-foreground/40 bg-muted text-foreground"
-                      : "border-border/70 bg-background/40 text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "h-2 w-2 rounded-full",
-                      b.tone === "success" && "bg-success",
-                      b.tone === "danger" && "bg-danger",
-                      b.tone === "muted" && "bg-muted-foreground/60",
-                    )}
-                  />
-                  {b.label}
-                </button>
-              );
-            })}
-          </div>
-        </Field>
+        {/* Trade Outcome is auto-derived from Trade Result (R) below. */}
 
         {/* Trade Result (R) */}
         <Field
@@ -578,34 +543,57 @@ function ManualForm({
           error={attempted && missing.risk ? "Enter a valid R multiple (e.g. +2, -1, 0)" : undefined}
         >
           <div className="space-y-1.5">
-            <div className="relative max-w-xs">
-              <Input
-                ref={riskRef}
-                value={rMultiple}
-                onChange={(e) => {
-                  const cleaned = sanitizeSignedR(e.target.value);
-                  setRMultiple(cleaned);
-                  const v = parseSignedR(cleaned);
-                  if (v != null) {
-                    setResult(v > 0 ? "win" : v < 0 ? "loss" : "breakeven");
-                  }
-                }}
-                inputMode="decimal"
-                placeholder="+2.0"
-                aria-describedby="trade-result-help"
-                className={cn(
-                  "h-11 pr-8 font-medium tabular-nums",
-                  attempted && missing.risk && "border-danger",
-                  rValue != null && rValue > 0 && "text-success",
-                  rValue != null && rValue < 0 && "text-danger",
-                )}
-              />
-              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
-                R
-              </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative w-full max-w-xs">
+                <Input
+                  ref={riskRef}
+                  value={rMultiple}
+                  onChange={(e) => {
+                    const cleaned = sanitizeSignedR(e.target.value);
+                    setRMultiple(cleaned);
+                    const v = parseSignedR(cleaned);
+                    if (v != null) {
+                      setResult(v > 0 ? "win" : v < 0 ? "loss" : "breakeven");
+                    }
+                  }}
+                  inputMode="decimal"
+                  placeholder="+2.0"
+                  aria-describedby="trade-result-help"
+                  className={cn(
+                    "h-11 pr-8 font-medium tabular-nums",
+                    attempted && missing.risk && "border-danger",
+                    rValue != null && rValue > 0 && "text-success",
+                    rValue != null && rValue < 0 && "text-danger",
+                  )}
+                />
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
+                  R
+                </span>
+              </div>
+              {rValue != null ? (
+                <span
+                  aria-live="polite"
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
+                    rValue > 0 && "border-success/40 bg-success/10 text-success",
+                    rValue < 0 && "border-danger/40 bg-danger/10 text-danger",
+                    rValue === 0 && "border-border bg-muted text-foreground",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "h-2 w-2 rounded-full",
+                      rValue > 0 && "bg-success",
+                      rValue < 0 && "bg-danger",
+                      rValue === 0 && "bg-muted-foreground/60",
+                    )}
+                  />
+                  {rValue > 0 ? "Win" : rValue < 0 ? "Loss" : "Breakeven"}
+                </span>
+              ) : null}
             </div>
             <p id="trade-result-help" className="text-xs leading-relaxed text-muted-foreground">
-              Enter the realized result in R multiples. Examples:{" "}
+              Enter the realized result in R multiples. Trade Outcome is calculated automatically. Examples:{" "}
               <span className="text-success">+2R</span> = won 2× your initial risk ·{" "}
               <span className="text-success">+1R</span> = won 1R · <span>0R</span> = breakeven ·{" "}
               <span className="text-danger">-1R</span> = full stop loss ·{" "}
