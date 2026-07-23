@@ -730,11 +730,13 @@ function Field({
   label,
   required,
   error,
+  hint,
   children,
 }: {
   label: string;
   required?: boolean;
   error?: string;
+  hint?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -742,6 +744,7 @@ function Field({
       <Label className="flex items-center gap-1 text-sm font-medium">
         {label}
         {required ? <span className="text-danger">*</span> : null}
+        {hint ? <span className="ml-1 inline-flex">{hint}</span> : null}
       </Label>
       {children}
       {error ? (
