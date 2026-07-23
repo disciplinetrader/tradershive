@@ -612,13 +612,8 @@ function ManualForm({
           <p className="mt-1 text-[11px] text-muted-foreground">Markdown supported.</p>
         </Field>
 
-        {/* Optional divider */}
         <div className="pt-2">
-          <div className="mb-3 flex items-center gap-3">
-            <div className="h-px flex-1 bg-border/60" />
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Optional</span>
-            <div className="h-px flex-1 bg-border/60" />
-          </div>
+
 
           <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
