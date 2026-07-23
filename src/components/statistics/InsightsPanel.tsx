@@ -7,7 +7,7 @@ import { fmtCurrency } from "@/lib/statistics/format";
 import { SESSION_LABEL } from "@/lib/statistics/session";
 
 export function InsightsPanel() {
-  const { filtered } = useStatistics();
+  const { filtered, loading } = useStatistics();
 
   const insights = useMemo(() => {
     const byPair = groupBy(filtered, (t) => t.symbol);
