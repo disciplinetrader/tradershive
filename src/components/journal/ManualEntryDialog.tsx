@@ -534,42 +534,7 @@ function ManualForm({
           </div>
         </Field>
 
-        {/* Trade Result */}
-        <Field label="Trade Result" required>
-          <div className="grid grid-cols-3 gap-2">
-            {RESULT_BUTTONS.map((b) => {
-              const active = result === b.value;
-              return (
-                <button
-                  key={b.value}
-                  type="button"
-                  onClick={() => setResult(b.value)}
-                  aria-pressed={active}
-                  className={cn(
-                    "flex h-11 items-center justify-center gap-2 rounded-md border text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                    active
-                      ? b.tone === "success"
-                        ? "border-success bg-success/10 text-success"
-                        : b.tone === "danger"
-                          ? "border-danger bg-danger/10 text-danger"
-                          : "border-foreground/40 bg-muted text-foreground"
-                      : "border-border/70 bg-background/40 text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "h-2 w-2 rounded-full",
-                      b.tone === "success" && "bg-success",
-                      b.tone === "danger" && "bg-danger",
-                      b.tone === "muted" && "bg-muted-foreground/60",
-                    )}
-                  />
-                  {b.label}
-                </button>
-              );
-            })}
-          </div>
-        </Field>
+        {/* Trade Outcome is auto-derived from Trade Result (R) below. */}
 
         {/* Trade Result (R) */}
         <Field
