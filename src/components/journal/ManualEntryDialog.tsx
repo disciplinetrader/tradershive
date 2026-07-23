@@ -506,7 +506,7 @@ function ManualForm({
                   onClick={() => setResult(b.value)}
                   aria-pressed={active}
                   className={cn(
-                    "h-11 rounded-md border text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    "flex h-11 items-center justify-center gap-2 rounded-md border text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                     active
                       ? b.tone === "success"
                         ? "border-success bg-success/10 text-success"
@@ -516,6 +516,14 @@ function ManualForm({
                       : "border-border/70 bg-background/40 text-muted-foreground hover:text-foreground",
                   )}
                 >
+                  <span
+                    className={cn(
+                      "h-2 w-2 rounded-full",
+                      b.tone === "success" && "bg-success",
+                      b.tone === "danger" && "bg-danger",
+                      b.tone === "muted" && "bg-muted-foreground/60",
+                    )}
+                  />
                   {b.label}
                 </button>
               );
