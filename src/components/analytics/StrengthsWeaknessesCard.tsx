@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { Award, TrendingDown, TrendingUp } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useStatistics } from "@/components/statistics/context";
 import { computeKpis } from "@/lib/statistics/calculations";
 import { fmtCurrency, fmtNumber, fmtPercent } from "@/lib/statistics/format";
@@ -10,8 +11,25 @@ import { fmtCurrency, fmtNumber, fmtPercent } from "@/lib/statistics/format";
  * Uses simple thresholds to keep the recommendations deterministic.
  */
 export function StrengthsWeaknessesCard() {
-  const { filtered } = useStatistics();
+  const { filtered, loading } = useStatistics();
   const k = useMemo(() => computeKpis(filtered), [filtered]);
+
+  if (loading && filtered.length === 0) {
+    return (
+      <GlassCard className="p-4 space-y-3">
+        <Skeleton className="h-4 w-48" />
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-10 rounded-lg" />)}
+          </div>
+          <div className="space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-10 rounded-lg" />)}
+          </div>
+        </div>
+      </GlassCard>
+    );
+  }
+
 
   const strengths: string[] = [];
   const weaknesses: string[] = [];

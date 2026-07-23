@@ -59,7 +59,15 @@ export function GoalsPanel() {
         </Dialog>
       </div>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {(goals.data ?? []).length === 0 ? (
+        {goals.isPending ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="rounded-xl border border-border/40 bg-background/40 p-4 space-y-3">
+              <div className="h-4 w-32 rounded bg-muted animate-shimmer" />
+              <div className="h-3 w-24 rounded bg-muted animate-shimmer" />
+              <div className="h-2 w-full rounded bg-muted animate-shimmer" />
+            </div>
+          ))
+        ) : (goals.data ?? []).length === 0 ? (
           <div className="rounded-xl border border-dashed border-border/40 p-6 text-center text-xs text-muted-foreground col-span-full">
             <Target className="h-6 w-6 mx-auto text-muted-foreground/60 mb-2" />
             Define your first goal to start tracking progress.

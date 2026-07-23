@@ -305,7 +305,7 @@ function ReplayDashboard() {
         {sessions.isPending ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="rounded-[3px] border border-border/60 h-28 animate-pulse bg-muted/30" />
+              <div key={i} className="rounded-[3px] border border-border/60 h-28 bg-muted animate-shimmer" />
             ))}
           </div>
         ) : filtered.length === 0 ? (

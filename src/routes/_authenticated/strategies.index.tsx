@@ -75,7 +75,7 @@ function StrategiesDashboard() {
         </div>
         {strategies.isPending ? (
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, i) => <div key={i} className="glass rounded-3xl h-32 animate-pulse" />)}
+            {Array.from({ length: 4 }).map((_, i) => <div key={i} className="rounded-3xl h-32 bg-muted animate-shimmer" />)}
           </div>
         ) : recent.length === 0 ? (
           <GlassCard className="p-8 text-center space-y-3">
