@@ -245,19 +245,12 @@ function JournalPage() {
         <GlassCard className="p-8">
           <EmptyState
             icon={LineChart}
-            title="Your journal is empty"
-            description="Every closed paper trade auto-creates a draft entry. Or add one manually to get started."
-            action={{
-              label: "Go to Paper Trading",
-              onClick: () => {
-                // simple hard-nav preserves layout context
-                window.location.href = "/paper-trading";
-              },
-            }}
+            title="Start documenting your trading journey"
+            description="Create your first journal entry to improve your trading discipline and unlock performance insights."
           />
           <div className="mt-4 grid place-items-center">
             <ManualEntryDialog
-              trigger={<Button variant="outline"><Plus className="mr-1.5 h-4 w-4" /> Add manual entry</Button>}
+              trigger={<Button className="gradient-primary text-primary-foreground"><Plus className="mr-1.5 h-4 w-4" /> Create Journal</Button>}
             />
           </div>
         </GlassCard>
