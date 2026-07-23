@@ -209,6 +209,17 @@ function StrategyDetail() {
         </TabsContent>
 
       </Tabs>
+
+      <ConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Delete this strategy?"
+        description="This will permanently remove the strategy, its rules, checklists, examples, and version history. This can't be undone."
+        confirmLabel="Delete strategy"
+        destructive
+        loading={delMut.isPending}
+        onConfirm={() => delMut.mutate()}
+      />
     </div>
   );
 }
