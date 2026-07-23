@@ -74,6 +74,7 @@ function OverviewPage() {
     );
   }
 
+  return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
       <GlassCard className="p-5 space-y-4 lg:col-span-2">
         <div className="flex items-start justify-between">
