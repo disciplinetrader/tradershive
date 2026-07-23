@@ -436,7 +436,6 @@ function ManualForm({
     setStrategyTags(d.strategyTags ?? []);
     setEmotions(d.emotions ?? []);
     setNotes(d.postTradeNotes ?? "");
-    setRiskPercent(d.riskPercent ?? "");
     setRMultiple(d.rr ?? "");
     setRestorePrompt(null);
     toast.success("Draft restored");
