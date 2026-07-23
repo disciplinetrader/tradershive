@@ -4,6 +4,7 @@ import {
   DollarSign, Percent, Sigma, Target, TrendingDown, TrendingUp, Trophy, Wallet,
 } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useStatistics } from "./context";
 import { computeExecutiveMetrics } from "@/lib/statistics/advanced";
 import { fmtCurrency, fmtNumber, fmtPercent } from "@/lib/statistics/format";
