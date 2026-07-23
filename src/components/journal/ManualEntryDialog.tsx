@@ -900,3 +900,32 @@ function sanitizeDecimal(v: string): string {
   if (firstDot === -1) return cleaned;
   return cleaned.slice(0, firstDot + 1) + cleaned.slice(firstDot + 1).replace(/\./g, "");
 }
+
+/** Accepts "+2", "-1", "0.5R", "+1.5r", " 2 ", "-.5", etc. Filters other chars. */
+function sanitizeSignedR(v: string): string {
+  const upper = v.replace(/r/gi, "").trim();
+  // keep leading sign, digits, single dot
+  let cleaned = upper.replace(/[^0-9.\-+]/g, "");
+  // sign only at position 0
+  const sign = cleaned.startsWith("-") ? "-" : cleaned.startsWith("+") ? "+" : "";
+  cleaned = cleaned.replace(/[+\-]/g, "");
+  const firstDot = cleaned.indexOf(".");
+  if (firstDot !== -1) {
+    cleaned = cleaned.slice(0, firstDot + 1) + cleaned.slice(firstDot + 1).replace(/\./g, "");
+  }
+  return sign + cleaned;
+}
+
+/** Parses a signed R string to a number. Returns null when not a finite number. */
+function parseSignedR(v: string): number | null {
+  const s = (v ?? "").trim().replace(/r/gi, "").replace(/^\+/, "");
+  if (s === "" || s === "-" || s === ".") return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+
+function formatSignedR(n: number): string {
+  if (!Number.isFinite(n)) return "";
+  const s = n > 0 ? `+${n}` : `${n}`;
+  return s;
+}
