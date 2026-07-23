@@ -294,6 +294,7 @@ function ManualForm({
 
   /* --------------------------- Validation refs --------------------------- */
   const instrumentRef = useRef<HTMLDivElement>(null);
+  const directionRef = useRef<HTMLDivElement>(null);
   const riskRef = useRef<HTMLInputElement>(null);
   const dateRef = useRef<HTMLInputElement>(null);
   const strategyRef = useRef<HTMLDivElement>(null);
@@ -303,12 +304,13 @@ function ManualForm({
   const riskValue = riskType === "risk_percent" ? Number(riskPercent) : Number(rMultiple);
   const missing = {
     instrument: !instrument,
+    direction: !direction,
     risk: !Number.isFinite(riskValue) || riskValue <= 0,
     date: !tradeDate,
     strategy: strategyTags.length === 0,
     notes: !notes.trim(),
   };
-  const canSubmit = Boolean(user) && !missing.instrument && !missing.risk && !missing.date && !missing.strategy && !missing.notes;
+  const canSubmit = Boolean(user) && !missing.instrument && !missing.direction && !missing.risk && !missing.date && !missing.strategy && !missing.notes;
 
   /* ----------------------------- Autosave -------------------------------- */
   const isDirty = Boolean(
