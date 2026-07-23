@@ -251,6 +251,17 @@ function BattleDetail() {
           <RulesPanel battle={battle!} />
         </div>
       </div>
+
+      <ConfirmDialog
+        open={cancelOpen}
+        onOpenChange={setCancelOpen}
+        title="Cancel this battle?"
+        description="All participants will be removed and the battle will end for everyone. This can't be undone."
+        confirmLabel="Cancel battle"
+        destructive
+        loading={cancelling}
+        onConfirm={doCancel}
+      />
     </div>
   );
 }
