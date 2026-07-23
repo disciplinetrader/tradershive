@@ -513,8 +513,8 @@ function ManualForm({
             )}
           >
             {([
-              { value: "long", label: "Long (Buy)", tone: "success" as const },
-              { value: "short", label: "Short (Sell)", tone: "danger" as const },
+              { value: "long" as const, label: "Long (Buy)", tone: "success" as const },
+              { value: "short" as const, label: "Short (Sell)", tone: "danger" as const },
             ]).map((b) => {
               const active = direction === b.value;
               return (
