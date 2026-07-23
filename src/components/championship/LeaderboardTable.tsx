@@ -223,7 +223,7 @@ function RowView({
       <td className="px-3 py-2">
         <div className="flex items-center gap-2">
           {profile?.avatar_url ? (
-            <img src={profile.avatar_url} className="h-6 w-6 rounded-full" alt="" />
+            <img src={profile.avatar_url} loading="lazy" decoding="async" className="h-6 w-6 rounded-full" alt="" />
           ) : (
             <div className="h-6 w-6 rounded-full bg-muted" />
           )}
