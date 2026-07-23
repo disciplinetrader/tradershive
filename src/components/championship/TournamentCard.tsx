@@ -85,7 +85,7 @@ export function TournamentCard({
       {/* Banner */}
       <div className="relative h-24 overflow-hidden bg-gradient-to-br from-primary/15 via-warning/10 to-background">
         {champ.banner_url ? (
-          <img src={champ.banner_url} alt="" className="h-full w-full object-cover opacity-70" />
+          <img src={champ.banner_url} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover opacity-70" />
         ) : (
           <div
             className="absolute inset-0 opacity-30"
