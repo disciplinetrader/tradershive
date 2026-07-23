@@ -374,7 +374,7 @@ export function OrderPanel() {
       <div className="flex gap-2">
         <Button variant="outline" onClick={reset}><RotateCcw className="mr-1.5 h-4 w-4" /> Reset</Button>
         <Button
-          onClick={() => openMut.mutate()}
+          onClick={attemptPlace}
           disabled={openMut.isPending || !accountId || !symbolMeta || (validation != null && !validation.ok)}
           className={cn("flex-1 shadow-elegant",
             side === "long"
