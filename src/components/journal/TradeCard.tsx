@@ -117,26 +117,29 @@ export function TradeCard({
               <div
                 role="button"
                 tabIndex={0}
-                onClick={onView}
+                onClick={() => (screenshotUrl ? setLightboxOpen(true) : onView())}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
-                    onView();
+                    if (screenshotUrl) setLightboxOpen(true);
+                    else onView();
                   }
                 }}
-                className="relative block aspect-video w-full cursor-pointer overflow-hidden bg-gradient-to-br from-primary/10 via-transparent to-transparent text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                aria-label={`Open trade ${entry.symbol ?? ""} details`}
+                className="relative block aspect-video w-full cursor-zoom-in overflow-hidden bg-gradient-to-br from-primary/10 via-transparent to-transparent text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                aria-label={screenshotUrl ? `Preview chart for ${entry.symbol ?? "trade"}` : `Open trade ${entry.symbol ?? ""} details`}
               >
                 {screenshotUrl ? (
                   <img
                     src={screenshotUrl}
                     alt={entry.symbol ?? "Trade screenshot"}
                     loading="lazy"
-                    className="h-full w-full object-cover"
+                    decoding="async"
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
                   />
                 ) : (
-                  <div className="grid h-full w-full place-items-center text-xs uppercase tracking-widest text-muted-foreground">
-                    No screenshot
+                  <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-[10px] uppercase tracking-widest text-muted-foreground">
+                    <ImageIcon className="h-5 w-5 opacity-40" />
+                    No chart uploaded
                   </div>
                 )}
                 <div className="absolute left-3 top-3 flex items-center gap-2">
