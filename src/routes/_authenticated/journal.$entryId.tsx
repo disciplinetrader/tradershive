@@ -69,7 +69,7 @@ function JournalEntryPage() {
     mutationFn: () => deleteEntry(entryId),
     onSuccess: () => {
       toast.success("Journal entry deleted");
-      qc.invalidateQueries({ queryKey: journalKeys.entries() });
+      qc.invalidateQueries({ queryKey: journalKeys.list() });
       navigate({ to: "/journal" });
     },
     onError: (err) => toast.error((err as Error)?.message ?? "Delete failed"),
