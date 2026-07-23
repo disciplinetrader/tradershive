@@ -247,6 +247,7 @@
       transition-duration: 0.001ms !important;
       scroll-behavior: auto !important;
     }
+    .hover-lift:hover, .press:active, .card-interactive:hover { transform: none !important; }
   }
   ::-webkit-scrollbar { width: 10px; height: 10px; }
   ::-webkit-scrollbar-track { background: transparent; }
