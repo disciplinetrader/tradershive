@@ -19,6 +19,16 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/use-auth";
 import {
   deleteEntry,
@@ -336,11 +346,7 @@ function JournalPage() {
                       onEdit={setDrawerId}
                       onDuplicate={(id) => duplicateMut.mutate(id)}
                       onShare={(id) => shareMut.mutate(id)}
-                      onDelete={(id) => {
-                        if (window.confirm("Delete this journal entry? The linked trade is preserved.")) {
-                          deleteMut.mutate(id);
-                        }
-                      }}
+                      onDelete={(id) => setPendingDeleteId(id)}
                     />
                   </GlassCard>
                 ) : null}

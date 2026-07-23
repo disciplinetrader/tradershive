@@ -93,8 +93,10 @@ export function CalendarView({
               key={day}
               onClick={() => bucket && onDayClick(key, bucket.ids)}
               className={cn(
-                "group relative aspect-square rounded-lg border border-border/60 p-1.5 text-left text-xs transition",
-                "hover:border-primary/50",
+                "group relative aspect-square rounded-lg border border-border/60 p-1.5 text-left text-xs transition-all duration-150",
+                bucket
+                  ? "cursor-pointer hover:-translate-y-0.5 hover:border-primary/60 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+                  : "cursor-default opacity-70",
                 isToday && "ring-1 ring-primary",
               )}
               style={{
