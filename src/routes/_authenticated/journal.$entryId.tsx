@@ -76,6 +76,7 @@ function JournalEntryPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [lightbox, setLightbox] = useState<string | null>(null);
 
   const deleteMutation = useMutation({
     mutationFn: () => deleteEntry(entryId),
