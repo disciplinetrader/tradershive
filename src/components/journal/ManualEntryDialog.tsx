@@ -5,12 +5,14 @@ import {
   AlertCircle,
   CheckCircle2,
   Clock,
+  Info,
   Loader2,
   Plus,
   RotateCcw,
   Sparkles,
   X,
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -541,6 +543,34 @@ function ManualForm({
           label="Trade Result (R)"
           required
           error={attempted && missing.risk ? "Enter a valid R multiple (e.g. +2, -1, 0)" : undefined}
+          hint={
+            <TooltipProvider delayDuration={100}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="What is Trade Result (R)?"
+                    className="inline-flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <Info className="h-3.5 w-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" align="start" className="max-w-xs space-y-1.5 text-xs leading-relaxed">
+                  <p className="font-semibold text-sm">Trade Result (R)</p>
+                  <p>Enter the realized result of your trade measured in R multiples.</p>
+                  <p className="font-medium">Examples:</p>
+                  <ul className="space-y-0.5">
+                    <li><span className="text-success font-medium">+2R</span> = Won 2 times your initial risk</li>
+                    <li><span className="text-success font-medium">+1R</span> = Won 1R</li>
+                    <li><span>0R</span> = Breakeven</li>
+                    <li><span className="text-danger font-medium">-1R</span> = Full stop loss</li>
+                    <li><span className="text-danger font-medium">-0.5R</span> = Half-R loss</li>
+                  </ul>
+                  <p className="pt-1 text-muted-foreground">This value automatically determines whether the trade is recorded as a Win, Loss, or Breakeven.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          }
         >
           <div className="space-y-1.5">
             <div className="flex flex-wrap items-center gap-2">
@@ -558,7 +588,6 @@ function ManualForm({
                   }}
                   inputMode="decimal"
                   placeholder="+2.0"
-                  aria-describedby="trade-result-help"
                   className={cn(
                     "h-11 pr-8 font-medium tabular-nums",
                     attempted && missing.risk && "border-danger",
@@ -592,13 +621,6 @@ function ManualForm({
                 </span>
               ) : null}
             </div>
-            <p id="trade-result-help" className="text-xs leading-relaxed text-muted-foreground">
-              Enter the realized result in R multiples. Trade Outcome is calculated automatically. Examples:{" "}
-              <span className="text-success">+2R</span> = won 2× your initial risk ·{" "}
-              <span className="text-success">+1R</span> = won 1R · <span>0R</span> = breakeven ·{" "}
-              <span className="text-danger">-1R</span> = full stop loss ·{" "}
-              <span className="text-danger">-0.5R</span> = half-R loss.
-            </p>
           </div>
         </Field>
 
@@ -728,11 +750,13 @@ function Field({
   label,
   required,
   error,
+  hint,
   children,
 }: {
   label: string;
   required?: boolean;
   error?: string;
+  hint?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -740,6 +764,7 @@ function Field({
       <Label className="flex items-center gap-1 text-sm font-medium">
         {label}
         {required ? <span className="text-danger">*</span> : null}
+        {hint ? <span className="ml-1 inline-flex">{hint}</span> : null}
       </Label>
       {children}
       {error ? (
