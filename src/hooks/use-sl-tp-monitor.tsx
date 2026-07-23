@@ -77,18 +77,9 @@ export function useSlTpMonitor(account: Account) {
 
       const sl = t.stop_loss != null ? Number(t.stop_loss) : null;
       const tp = t.take_profit != null ? Number(t.take_profit) : null;
-
-      let hit: { price: number; reason: "stop_loss" | "take_profit" } | null = null;
-
-      if (t.direction === "long") {
-        if (sl != null && price <= sl) hit = { price: sl, reason: "stop_loss" };
-        else if (tp != null && price >= tp) hit = { price: tp, reason: "take_profit" };
-      } else {
-        if (sl != null && price >= sl) hit = { price: sl, reason: "stop_loss" };
-        else if (tp != null && price <= tp) hit = { price: tp, reason: "take_profit" };
-      }
-
+      const hit = evaluateSlTpOnTick(t.direction, price, sl, tp);
       if (!hit) continue;
+
 
       firing.current.add(t.id);
       const label = hit.reason === "stop_loss" ? "Stop Loss" : "Take Profit";
