@@ -154,6 +154,11 @@ function JournalEntryPage() {
             <Button asChild variant="outline" size="sm">
               <Link to="/journal"><ArrowLeft className="mr-1.5 h-4 w-4" /> Back</Link>
             </Button>
+            <Button asChild size="sm" className="gradient-primary text-primary-foreground">
+              <Link to="/journal" search={{ edit: entry.id } as never}>
+                <Pencil className="mr-1.5 h-4 w-4" /> Edit entry
+              </Link>
+            </Button>
           </div>
         }
       />
