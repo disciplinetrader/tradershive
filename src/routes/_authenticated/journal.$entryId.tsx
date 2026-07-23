@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -7,6 +7,7 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   Camera,
+  Check,
   Clock,
   ExternalLink,
   Gauge,
@@ -15,6 +16,7 @@ import {
   Target,
   Tag as TagIcon,
   Trash2,
+  X,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { GlassCard } from "@/components/ui/glass-card";
@@ -22,6 +24,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -40,6 +52,8 @@ import {
   fetchTags,
   fetchAllEntryTagLinks,
   journalKeys,
+  updateEntry,
+  type EntryUpdate,
   type JournalEntry,
 } from "@/lib/journal/api";
 import { batchSignUrls, JOURNAL_IMAGES_BUCKET } from "@/lib/journal/storage";
@@ -52,7 +66,11 @@ import {
   shortId,
   tradeResult,
 } from "@/lib/journal/format";
-import { GRADE_COLOR, SESSION_OPTIONS } from "@/lib/journal/constants";
+import {
+  DEFAULT_SETUPS,
+  GRADE_COLOR,
+  SESSION_OPTIONS,
+} from "@/lib/journal/constants";
 import { cn } from "@/lib/utils";
 import { routeBoundaries } from "@/lib/route-boundaries";
 
@@ -72,12 +90,52 @@ export const Route = createFileRoute("/_authenticated/journal/$entryId")({
   }),
 });
 
+const TRADE_TYPE_OPTIONS = [
+  { value: "intraday", label: "Intraday" },
+  { value: "swing", label: "Swing" },
+  { value: "long_term", label: "Long term" },
+];
+
+type Draft = {
+  session: string;
+  setup: string;
+  strategy: string;
+  trade_type: string;
+  entry_reason_text: string;
+  notes_text: string;
+};
+
+function toDraft(e: JournalEntry): Draft {
+  return {
+    session: e.session ?? "",
+    setup: e.setup ?? "",
+    strategy: e.strategy ?? "",
+    trade_type: ((e as unknown as { trade_type?: string | null }).trade_type ?? "") as string,
+    entry_reason_text: e.entry_reason_text ?? "",
+    notes_text: e.notes_text ?? "",
+  };
+}
+
+function draftsEqual(a: Draft, b: Draft) {
+  return (
+    a.session === b.session &&
+    a.setup === b.setup &&
+    a.strategy === b.strategy &&
+    a.trade_type === b.trade_type &&
+    a.entry_reason_text === b.entry_reason_text &&
+    a.notes_text === b.notes_text
+  );
+}
+
 function JournalEntryPage() {
   const { entryId } = Route.useParams();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [mode, setMode] = useState<"view" | "edit">("view");
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const [discardOpen, setDiscardOpen] = useState(false);
 
   const deleteMutation = useMutation({
     mutationFn: () => deleteEntry(entryId),
@@ -105,6 +163,62 @@ function JournalEntryPage() {
   });
 
   const entry = entryQuery.data ?? null;
+  const original = useMemo(() => (entry ? toDraft(entry) : null), [entry]);
+  const dirty = !!(mode === "edit" && draft && original && !draftsEqual(draft, original));
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      if (!draft) throw new Error("Nothing to save");
+      const patch: EntryUpdate = {
+        session: draft.session || null,
+        setup: draft.setup || null,
+        strategy: draft.strategy.trim() || null,
+        entry_reason_text: draft.entry_reason_text.trim() || null,
+        notes_text: draft.notes_text.trim() || null,
+        // trade_type is a project-added column; cast to satisfy generated types
+        ...(draft.trade_type
+          ? ({ trade_type: draft.trade_type } as unknown as EntryUpdate)
+          : ({ trade_type: null } as unknown as EntryUpdate)),
+      };
+      return updateEntry(entryId, patch);
+    },
+    onSuccess: () => {
+      toast.success("Journal updated");
+      qc.invalidateQueries({ queryKey: journalKeys.entry(entryId) });
+      qc.invalidateQueries({ queryKey: journalKeys.list() });
+      setMode("view");
+    },
+    onError: (err) => toast.error((err as Error)?.message ?? "Save failed"),
+  });
+
+  // Warn on browser unload with unsaved edits.
+  useEffect(() => {
+    if (!dirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [dirty]);
+
+  const enterEdit = () => {
+    if (!entry) return;
+    setDraft(toDraft(entry));
+    setMode("edit");
+  };
+  const requestCancel = () => {
+    if (dirty) setDiscardOpen(true);
+    else {
+      setMode("view");
+      setDraft(null);
+    }
+  };
+  const discardChanges = () => {
+    setDiscardOpen(false);
+    setMode("view");
+    setDraft(entry ? toDraft(entry) : null);
+  };
 
   const entryTags = useMemo(() => {
     if (!entry) return [];
@@ -144,9 +258,15 @@ function JournalEntryPage() {
     );
   }
 
+  const editing = mode === "edit" && draft;
   const tone = pnlTone(entry.pnl);
   const result = tradeResult(entry.pnl);
   const sessionLabel = SESSION_OPTIONS.find((s) => s.value === entry.session)?.label ?? entry.session ?? "—";
+  const setupLabel = entry.setup ? (DEFAULT_SETUPS.find((s) => s.value === entry.setup)?.label ?? entry.setup.replace(/_/g, " ")) : "—";
+  const tradeTypeRaw = (entry as unknown as { trade_type?: string | null }).trade_type ?? null;
+  const tradeTypeLabel = tradeTypeRaw
+    ? (TRADE_TYPE_OPTIONS.find((t) => t.value === tradeTypeRaw)?.label ?? String(tradeTypeRaw).replace(/_/g, " "))
+    : "—";
 
   return (
     <div className="space-y-6">
@@ -155,17 +275,45 @@ function JournalEntryPage() {
         description={`${entry.market ?? ""} · #${shortId(entry.id)} · ${formatDate(entry.closed_at ?? entry.created_at)}`}
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <Button asChild variant="outline" size="sm">
-              <Link to="/journal"><ArrowLeft className="mr-1.5 h-4 w-4" /> Back</Link>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (editing && dirty) setDiscardOpen(true);
+                else navigate({ to: "/journal" });
+              }}
+            >
+              <ArrowLeft className="mr-1.5 h-4 w-4" /> Back
             </Button>
-            <Button asChild size="sm" className="gradient-primary text-primary-foreground">
-              <Link to="/journal" search={{ edit: entry.id } as never}>
-                <Pencil className="mr-1.5 h-4 w-4" /> Edit entry
-              </Link>
-            </Button>
+            {editing ? (
+              <>
+                <Button variant="outline" size="sm" onClick={requestCancel} disabled={saveMutation.isPending}>
+                  <X className="mr-1.5 h-4 w-4" /> Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  className="gradient-primary text-primary-foreground"
+                  disabled={!dirty || saveMutation.isPending}
+                  onClick={() => saveMutation.mutate()}
+                >
+                  <Check className="mr-1.5 h-4 w-4" />
+                  {saveMutation.isPending ? "Saving…" : "Save changes"}
+                </Button>
+              </>
+            ) : (
+              <Button size="sm" className="gradient-primary text-primary-foreground" onClick={enterEdit}>
+                <Pencil className="mr-1.5 h-4 w-4" /> Edit journal
+              </Button>
+            )}
           </div>
         }
       />
+
+      {editing ? (
+        <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-primary">
+          Editing — changes save only when you click <span className="font-semibold">Save changes</span>.
+        </div>
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-3">
         {/* Left column */}
@@ -209,20 +357,68 @@ function JournalEntryPage() {
 
           <GlassCard className="p-5">
             <SectionTitle icon={<Target className="h-4 w-4" />} title="Strategy & setup" />
-            <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
-              <Field label="Setup" value={entry.setup?.replace(/_/g, " ") ?? "—"} />
-              <Field label="Strategy" value={entry.strategy ?? "—"} />
-              <Field label="Session" value={sessionLabel} />
-              <Field label="Confidence" value={entry.confidence != null ? `${entry.confidence}%` : "—"} />
-              <Field label="Position size" value={entry.lot_size != null ? String(entry.lot_size) : "—"} />
-              <Field label="Risk %" value={(entry as any).risk_pct != null ? `${formatNumber(Number((entry as any).risk_pct), 2)}%` : "—"} />
-              <Field label="Trade duration" value={(entry as any).trade_type ? String((entry as any).trade_type).replace(/_/g, " ") : "—"} />
-              <Field label="Hold time" value={formatDuration(entry.duration_seconds)} />
-            </div>
-            {entryTags.length ? (
+            {editing ? (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-setup" className="text-[10px] uppercase tracking-widest text-muted-foreground">Setup</Label>
+                  <Select value={draft!.setup || undefined} onValueChange={(v) => setDraft((d) => (d ? { ...d, setup: v } : d))}>
+                    <SelectTrigger id="edit-setup"><SelectValue placeholder="Choose setup" /></SelectTrigger>
+                    <SelectContent>
+                      {DEFAULT_SETUPS.map((s) => (
+                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-strategy" className="text-[10px] uppercase tracking-widest text-muted-foreground">Strategy</Label>
+                  <Input
+                    id="edit-strategy"
+                    maxLength={120}
+                    value={draft!.strategy}
+                    onChange={(e) => setDraft((d) => (d ? { ...d, strategy: e.target.value } : d))}
+                    placeholder="e.g. London breakout"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-session" className="text-[10px] uppercase tracking-widest text-muted-foreground">Trading session</Label>
+                  <Select value={draft!.session || undefined} onValueChange={(v) => setDraft((d) => (d ? { ...d, session: v } : d))}>
+                    <SelectTrigger id="edit-session"><SelectValue placeholder="Choose session" /></SelectTrigger>
+                    <SelectContent>
+                      {SESSION_OPTIONS.map((s) => (
+                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-trade-type" className="text-[10px] uppercase tracking-widest text-muted-foreground">Trade duration</Label>
+                  <Select value={draft!.trade_type || undefined} onValueChange={(v) => setDraft((d) => (d ? { ...d, trade_type: v } : d))}>
+                    <SelectTrigger id="edit-trade-type"><SelectValue placeholder="Choose duration" /></SelectTrigger>
+                    <SelectContent>
+                      {TRADE_TYPE_OPTIONS.map((t) => (
+                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
+                <Field label="Setup" value={setupLabel} />
+                <Field label="Strategy" value={entry.strategy ?? "—"} />
+                <Field label="Session" value={sessionLabel} />
+                <Field label="Confidence" value={entry.confidence != null ? `${entry.confidence}%` : "—"} />
+                <Field label="Position size" value={entry.lot_size != null ? String(entry.lot_size) : "—"} />
+                <Field label="Risk %" value={(entry as any).risk_pct != null ? `${formatNumber(Number((entry as any).risk_pct), 2)}%` : "—"} />
+                <Field label="Trade duration" value={tradeTypeLabel} />
+                <Field label="Hold time" value={formatDuration(entry.duration_seconds)} />
+              </div>
+            )}
+            {!editing && entryTags.length ? (
               <>
                 <Separator className="my-4" />
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap items-center gap-1.5">
                   <TagIcon className="h-3.5 w-3.5 text-muted-foreground" />
                   {entryTags.map((t) => (
                     <span
@@ -240,16 +436,36 @@ function JournalEntryPage() {
 
           <GlassCard className="p-5">
             <SectionTitle icon={<Sparkles className="h-4 w-4" />} title="Entry reason" />
-            <p className="whitespace-pre-wrap text-sm text-muted-foreground">
-              {entry.entry_reason_text?.trim() || "No entry reason recorded."}
-            </p>
+            {editing ? (
+              <Textarea
+                rows={4}
+                maxLength={4000}
+                value={draft!.entry_reason_text}
+                onChange={(e) => setDraft((d) => (d ? { ...d, entry_reason_text: e.target.value } : d))}
+                placeholder="Why did you take this trade?"
+              />
+            ) : (
+              <p className="whitespace-pre-wrap text-sm text-muted-foreground">
+                {entry.entry_reason_text?.trim() || "No entry reason recorded."}
+              </p>
+            )}
           </GlassCard>
 
           <GlassCard className="p-5">
-            <SectionTitle icon={<Sparkles className="h-4 w-4" />} title="Post-trade notes" />
-            <p className="whitespace-pre-wrap text-sm text-muted-foreground">
-              {entry.notes_text?.trim() || "No notes captured."}
-            </p>
+            <SectionTitle icon={<Sparkles className="h-4 w-4" />} title="Trade review" />
+            {editing ? (
+              <Textarea
+                rows={6}
+                maxLength={8000}
+                value={draft!.notes_text}
+                onChange={(e) => setDraft((d) => (d ? { ...d, notes_text: e.target.value } : d))}
+                placeholder="Lessons, execution notes, follow-ups…"
+              />
+            ) : (
+              <p className="whitespace-pre-wrap text-sm text-muted-foreground">
+                {entry.notes_text?.trim() || "No notes captured."}
+              </p>
+            )}
           </GlassCard>
 
           {screenshotPaths.length ? (
@@ -274,6 +490,11 @@ function JournalEntryPage() {
                   );
                 })}
               </div>
+              {editing ? (
+                <p className="mt-3 text-[11px] text-muted-foreground">
+                  Manage screenshots from the full editor in the Journal list.
+                </p>
+              ) : null}
             </GlassCard>
           ) : null}
         </div>
@@ -297,8 +518,6 @@ function JournalEntryPage() {
             <Field label="Mistakes" value={(entry.mistakes ?? []).join(", ") || "—"} multiline />
           </GlassCard>
 
-          {null}
-
           {attachmentsQuery.data?.length ? (
             <GlassCard className="p-5">
               <SectionTitle icon={<Camera className="h-4 w-4" />} title={`Attachments (${attachmentsQuery.data.length})`} />
@@ -310,15 +529,17 @@ function JournalEntryPage() {
             </GlassCard>
           ) : null}
 
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full text-danger hover:text-danger"
-            disabled={deleteMutation.isPending}
-            onClick={() => setConfirmOpen(true)}
-          >
-            <Trash2 className="mr-1.5 h-4 w-4" /> {deleteMutation.isPending ? "Deleting…" : "Delete entry"}
-          </Button>
+          {!editing ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-danger hover:text-danger"
+              disabled={deleteMutation.isPending}
+              onClick={() => setConfirmOpen(true)}
+            >
+              <Trash2 className="mr-1.5 h-4 w-4" /> {deleteMutation.isPending ? "Deleting…" : "Delete entry"}
+            </Button>
+          ) : null}
         </div>
       </div>
 
@@ -340,6 +561,24 @@ function JournalEntryPage() {
               className="bg-danger text-danger-foreground hover:bg-danger/90"
             >
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={discardOpen} onOpenChange={setDiscardOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>You have unsaved changes</AlertDialogTitle>
+            <AlertDialogDescription>Do you want to discard them?</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={discardChanges}
+              className="bg-danger text-danger-foreground hover:bg-danger/90"
+            >
+              Discard changes
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
