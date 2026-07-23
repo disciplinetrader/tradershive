@@ -213,22 +213,34 @@ function JournalEntryPage() {
     return () => window.removeEventListener("beforeunload", handler);
   }, [dirty]);
 
+  const blocker = useBlocker({
+    shouldBlockFn: () => dirty,
+    withResolver: true,
+    enableBeforeUnload: () => dirty,
+  });
+  const discardOpen = blocker.status === "blocked" || discardOpenLocal;
+
   const enterEdit = () => {
     if (!entry) return;
     setDraft(toDraft(entry));
     setMode("edit");
   };
   const requestCancel = () => {
-    if (dirty) setDiscardOpen(true);
+    if (dirty) setDiscardOpenLocal(true);
     else {
       setMode("view");
       setDraft(null);
     }
   };
+  const continueEditing = () => {
+    setDiscardOpenLocal(false);
+    if (blocker.status === "blocked") blocker.reset();
+  };
   const discardChanges = () => {
-    setDiscardOpen(false);
     setMode("view");
     setDraft(entry ? toDraft(entry) : null);
+    setDiscardOpenLocal(false);
+    if (blocker.status === "blocked") blocker.proceed();
   };
 
   const entryTags = useMemo(() => {
