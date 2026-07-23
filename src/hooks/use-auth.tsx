@@ -82,6 +82,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const hydrate = useCallback(async (nextSession: Session | null) => {
     setSession(nextSession);
+    // Tag observability events with the authenticated user id (or clear on sign-out).
+    void import("@/lib/observability").then(({ setTelemetryUser }) =>
+      setTelemetryUser(nextSession?.user?.id),
+    );
     if (!nextSession?.user) {
       setProfile(null);
       setRoles([]);
