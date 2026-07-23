@@ -170,15 +170,15 @@ function JournalEntryPage() {
     mutationFn: async () => {
       if (!draft) throw new Error("Nothing to save");
       const patch: EntryUpdate = {
-        session: draft.session || null,
-        setup: draft.setup || null,
+        session: (draft.session || null) as EntryUpdate["session"],
+        setup: (draft.setup || null) as EntryUpdate["setup"],
         strategy: draft.strategy.trim() || null,
         entry_reason_text: draft.entry_reason_text.trim() || null,
         notes_text: draft.notes_text.trim() || null,
         // trade_type is a project-added column; cast to satisfy generated types
-        ...(draft.trade_type
-          ? ({ trade_type: draft.trade_type } as unknown as EntryUpdate)
-          : ({ trade_type: null } as unknown as EntryUpdate)),
+        ...((draft.trade_type
+          ? { trade_type: draft.trade_type }
+          : { trade_type: null }) as unknown as EntryUpdate),
       };
       return updateEntry(entryId, patch);
     },
