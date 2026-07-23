@@ -132,8 +132,10 @@ export function OrderPanel() {
     setEntry(livePrice != null ? String(livePrice) : "");
   };
 
+  const [riskDialogOpen, setRiskDialogOpen] = useState(false);
+
   const openMut = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (opts?: { bypassWarnings?: boolean }) => {
       if (!accountId || !symbolMeta) throw new Error("Select an account first");
       const stopsMsg = validateStops(side, entryNum, slNum, tpNum);
       if (stopsMsg) throw new Error(stopsMsg);
@@ -142,13 +144,6 @@ export function OrderPanel() {
       // Hard errors block regardless of user choice — server enforces these too.
       if (validation && !validation.ok) {
         throw new Error(validation.errors[0] ?? "Order rejected");
-      }
-      // Soft warnings require an explicit confirm (broker-style).
-      if (validation && validation.warnings.length > 0) {
-        const proceed = window.confirm(
-          `${validation.warnings.join("\n")}\n\nProceed anyway?`,
-        );
-        if (!proceed) throw new Error("Cancelled");
       }
 
       const base = {
@@ -159,6 +154,7 @@ export function OrderPanel() {
         risk_amount: calc?.riskAmount ?? null, reward_amount: calc?.rewardAmount ?? null,
         rr_planned: calc?.rr ?? null,
       };
+      void opts;
       if (orderType === "market") {
         return openFn({ data: { ...base, order_type: "market", entry_price: livePrice ?? entryNum } });
       }
@@ -171,6 +167,21 @@ export function OrderPanel() {
     },
     onError: (e) => toast.error((e as Error).message),
   });
+
+  // Broker-style intent: soft warnings surface a themed AlertDialog before we
+  // actually submit. Hard errors fall through to the mutation which throws.
+  const attemptPlace = () => {
+    if (validation && validation.ok && validation.warnings.length > 0) {
+      setRiskDialogOpen(true);
+      return;
+    }
+    openMut.mutate({});
+  };
+
+  const confirmRiskyPlace = () => {
+    setRiskDialogOpen(false);
+    openMut.mutate({ bypassWarnings: true });
+  };
 
   // Keyboard shortcuts
   useEffect(() => {
