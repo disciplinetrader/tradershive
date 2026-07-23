@@ -571,41 +571,46 @@ function ManualForm({
           </div>
         </Field>
 
-        {/* Risk */}
-        <Field label="Risk" required error={attempted && missing.risk ? "Enter a positive value" : undefined}>
-          <div className="grid gap-2 sm:grid-cols-[180px_1fr]">
-            <Select value={riskType} onValueChange={(v) => setRiskType(v as RiskType)}>
-              <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="risk_percent">Risk %</SelectItem>
-                <SelectItem value="r_multiple">R Multiple</SelectItem>
-              </SelectContent>
-            </Select>
-            {riskType === "risk_percent" ? (
-              <div className="relative">
-                <Input
-                  ref={riskRef}
-                  value={riskPercent}
-                  onChange={(e) => setRiskPercent(sanitizeDecimal(e.target.value))}
-                  inputMode="decimal"
-                  placeholder="1.0"
-                  className={cn("h-11 pr-8", attempted && missing.risk && "border-danger")}
-                />
-                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
-              </div>
-            ) : (
-              <div className="relative">
-                <Input
-                  ref={riskRef}
-                  value={rMultiple}
-                  onChange={(e) => setRMultiple(sanitizeDecimal(e.target.value))}
-                  inputMode="decimal"
-                  placeholder="2.5"
-                  className={cn("h-11 pr-8", attempted && missing.risk && "border-danger")}
-                />
-                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R</span>
-              </div>
-            )}
+        {/* Trade Result (R) */}
+        <Field
+          label="Trade Result (R)"
+          required
+          error={attempted && missing.risk ? "Enter a valid R multiple (e.g. +2, -1, 0)" : undefined}
+        >
+          <div className="space-y-1.5">
+            <div className="relative max-w-xs">
+              <Input
+                ref={riskRef}
+                value={rMultiple}
+                onChange={(e) => {
+                  const cleaned = sanitizeSignedR(e.target.value);
+                  setRMultiple(cleaned);
+                  const v = parseSignedR(cleaned);
+                  if (v != null) {
+                    setResult(v > 0 ? "win" : v < 0 ? "loss" : "breakeven");
+                  }
+                }}
+                inputMode="decimal"
+                placeholder="+2.0"
+                aria-describedby="trade-result-help"
+                className={cn(
+                  "h-11 pr-8 font-medium tabular-nums",
+                  attempted && missing.risk && "border-danger",
+                  rValue != null && rValue > 0 && "text-success",
+                  rValue != null && rValue < 0 && "text-danger",
+                )}
+              />
+              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
+                R
+              </span>
+            </div>
+            <p id="trade-result-help" className="text-xs leading-relaxed text-muted-foreground">
+              Enter the realized result in R multiples. Examples:{" "}
+              <span className="text-success">+2R</span> = won 2× your initial risk ·{" "}
+              <span className="text-success">+1R</span> = won 1R · <span>0R</span> = breakeven ·{" "}
+              <span className="text-danger">-1R</span> = full stop loss ·{" "}
+              <span className="text-danger">-0.5R</span> = half-R loss.
+            </p>
           </div>
         </Field>
 
