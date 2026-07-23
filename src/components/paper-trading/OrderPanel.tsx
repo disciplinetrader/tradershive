@@ -190,7 +190,7 @@ export function OrderPanel() {
       const inField = tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement)?.isContentEditable;
       if (e.key === "b" && !inField) { setSide("long"); }
       if (e.key === "s" && !inField) { setSide("short"); }
-      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); openMut.mutate(); }
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); attemptPlace(); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
