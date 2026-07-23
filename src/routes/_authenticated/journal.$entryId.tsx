@@ -305,10 +305,7 @@ function JournalEntryPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                if (editing && dirty) setDiscardOpen(true);
-                else navigate({ to: "/journal" });
-              }}
+              onClick={() => navigate({ to: "/journal" })}
             >
               <ArrowLeft className="mr-1.5 h-4 w-4" /> Back
             </Button>
