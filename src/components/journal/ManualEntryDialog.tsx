@@ -620,13 +620,13 @@ function ManualForm({
 
           <div className="space-y-4">
             <Field label="Trading session">
-              <Select value={session || "__none"} onValueChange={(v) => setSession(v === "__none" ? "" : v)}>
+              <Select value={session || "__auto"} onValueChange={(v) => setSession(v === "__auto" ? "" : v)}>
                 <SelectTrigger className="h-11 max-w-xs">
-                  <SelectValue placeholder="Auto-detected" />
+                  <SelectValue placeholder="Auto Detect" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__none">— None —</SelectItem>
-                  {SESSION_OPTIONS.map((s) => (
+                  <SelectItem value="__auto">Auto Detect</SelectItem>
+                  {SESSION_OPTIONS.filter((s) => s.value !== "asia").map((s) => (
                     <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
                   ))}
                 </SelectContent>
