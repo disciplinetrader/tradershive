@@ -112,8 +112,10 @@ export function TradeCard({
             onHoverEnd={() => setHovered(false)}
             transition={{ duration: 0.25 }}
             onDoubleClick={openDetails}
+            className="cursor-pointer"
           >
-            <GlassCard className="group flex h-full flex-col overflow-hidden p-0">
+            <GlassCard interactive className="group flex h-full flex-col overflow-hidden p-0 transition-colors hover:border-primary/40">
+
               <div
                 role="button"
                 tabIndex={0}
