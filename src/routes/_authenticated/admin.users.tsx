@@ -97,7 +97,7 @@ function AdminUsers() {
                       <td className="p-3">
                         <div className="flex items-center gap-2">
                           <div className="grid h-7 w-7 place-items-center rounded-full bg-primary/10 text-primary">
-                            {u.avatar_url ? <img src={u.avatar_url} alt="" className="h-7 w-7 rounded-full object-cover" /> : <User className="h-3.5 w-3.5" />}
+                            {u.avatar_url ? <img src={u.avatar_url} alt="" loading="lazy" decoding="async" className="h-7 w-7 rounded-full object-cover" /> : <User className="h-3.5 w-3.5" />}
                           </div>
                           <div className="min-w-0">
                             <div className="truncate text-sm font-semibold">{u.display_name ?? u.username}</div>
