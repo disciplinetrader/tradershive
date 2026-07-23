@@ -258,19 +258,18 @@ function JournalEntryPage() {
                 {screenshotPaths.map((p) => {
                   const url = shotUrls.data?.[p];
                   return (
-                    <a
+                    <button
                       key={p}
-                      href={url ?? "#"}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="group relative block aspect-video overflow-hidden rounded-lg border border-border/60 bg-surface-2/30"
+                      type="button"
+                      onClick={() => url && setLightbox(url)}
+                      className="group relative block aspect-video overflow-hidden rounded-lg border border-border/60 bg-surface-2/30 cursor-zoom-in focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                     >
                       {url ? (
-                        <img src={url} alt="Screenshot" loading="lazy" className="h-full w-full object-cover transition group-hover:scale-105" />
+                        <img src={url} alt="Screenshot" loading="lazy" decoding="async" className="h-full w-full object-cover transition group-hover:scale-105" />
                       ) : (
                         <div className="grid h-full w-full place-items-center text-[10px] text-muted-foreground">Loading…</div>
                       )}
-                    </a>
+                    </button>
                   );
                 })}
               </div>
