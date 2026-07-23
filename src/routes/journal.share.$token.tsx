@@ -122,7 +122,7 @@ function SharedEntry({ entry, urls }: { entry: JournalEntry; urls: Record<string
 
       <GlassCard className="overflow-hidden p-0">
         {primary ? (
-          <img src={primary} alt="Trade screenshot" className="w-full object-contain" />
+          <img src={primary} alt="Trade screenshot" loading="lazy" decoding="async" className="w-full object-contain" />
         ) : (
           <div className="grid h-64 place-items-center text-sm text-muted-foreground">
             <div className="flex flex-col items-center gap-2">
