@@ -194,6 +194,35 @@ export function NotesEditor({
         )}
         style={{ minHeight }}
       />
+
+      <Dialog open={linkOpen} onOpenChange={setLinkOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Insert link</DialogTitle>
+            <DialogDescription>Add a URL to link the selected text to.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="notes-link-url">URL</Label>
+            <Input
+              id="notes-link-url"
+              autoFocus
+              placeholder="https://example.com"
+              value={linkUrl}
+              onChange={(e) => { setLinkUrl(e.target.value); if (linkError) setLinkError(null); }}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); confirmLink(); } }}
+              aria-invalid={!!linkError}
+              aria-describedby={linkError ? "notes-link-url-error" : undefined}
+            />
+            {linkError ? (
+              <p id="notes-link-url-error" className="text-xs text-danger">{linkError}</p>
+            ) : null}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setLinkOpen(false)}>Cancel</Button>
+            <Button onClick={confirmLink}>Insert link</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
