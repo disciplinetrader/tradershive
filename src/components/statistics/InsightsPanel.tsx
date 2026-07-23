@@ -7,7 +7,7 @@ import { fmtCurrency } from "@/lib/statistics/format";
 import { SESSION_LABEL } from "@/lib/statistics/session";
 
 export function InsightsPanel() {
-  const { filtered } = useStatistics();
+  const { filtered, loading } = useStatistics();
 
   const insights = useMemo(() => {
     const byPair = groupBy(filtered, (t) => t.symbol);
@@ -60,6 +60,13 @@ export function InsightsPanel() {
   return (
     <GlassCard className="p-4">
       <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Automated insights</div>
+      {loading && filtered.length === 0 ? (
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 9 }).map((_, i) => (
+            <div key={i} className="h-14 rounded-xl bg-muted animate-shimmer" />
+          ))}
+        </div>
+      ) : (
       <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
         {items.map((it, i) => (
           <div key={i} className="flex items-center gap-3 rounded-xl border border-border/40 bg-background/40 p-3">
@@ -73,6 +80,7 @@ export function InsightsPanel() {
           </div>
         ))}
       </div>
+      )}
     </GlassCard>
   );
 }

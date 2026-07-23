@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { AlertTriangle, CheckCircle2, Info } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useStatistics } from "./context";
 import { computeBehaviourFlags, type BehaviourFlag } from "@/lib/statistics/advanced";
@@ -24,8 +25,21 @@ function IconFor({ f }: { f: BehaviourFlag }) {
  * Serves as the data foundation for the AI Trading Coach (Phase 8+).
  */
 export function BehaviouralPanel() {
-  const { filtered } = useStatistics();
+  const { filtered, loading } = useStatistics();
   const flags = useMemo(() => computeBehaviourFlags(filtered), [filtered]);
+
+  if (loading && filtered.length === 0) {
+    return (
+      <GlassCard className="p-4 space-y-3">
+        <Skeleton className="h-4 w-40" />
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-24 rounded-2xl" />
+          ))}
+        </div>
+      </GlassCard>
+    );
+  }
 
   const measurable = flags.filter((f) => f.measurable);
   const healthy = measurable.filter((f) => f.severity === "info").length;

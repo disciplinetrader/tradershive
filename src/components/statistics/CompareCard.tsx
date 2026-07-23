@@ -8,7 +8,7 @@ import { ArrowDown, ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function CompareCard() {
-  const { raw, filters } = useStatistics();
+  const { raw, filters, loading } = useStatistics();
   const cur = resolveDateRange(filters.preset, filters.from, filters.to);
   const prev = previousPeriodRange(cur);
 
@@ -39,7 +39,13 @@ export function CompareCard() {
   return (
     <GlassCard className="p-4">
       <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Compare with previous period</div>
-      {!prev ? (
+      {loading && raw.length === 0 ? (
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="rounded-xl border border-border/40 bg-background/40 p-3 h-20 bg-muted animate-shimmer" />
+          ))}
+        </div>
+      ) : !prev ? (
         <div className="grid h-24 place-items-center text-xs text-muted-foreground">Pick a bounded date range to compare.</div>
       ) : (
         <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">

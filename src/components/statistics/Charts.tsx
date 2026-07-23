@@ -4,6 +4,7 @@ import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Line, Line
 import { GlassCard } from "@/components/ui/glass-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useStatistics } from "./context";
 import {
   computeEquityCurve, computeKpis, groupBy, groupByDay, groupByMonth,
@@ -36,7 +37,7 @@ function ChartCard({ title, subtitle, actions, height = 260, children }: { title
 
 /* Equity curve with brush zoom */
 export function EquityCurveCard() {
-  const { filtered, accounts, filters } = useStatistics();
+  const { filtered, accounts, filters, loading } = useStatistics();
   const startingBalance = useMemo(() => {
     if (filters.accounts.length === 1) {
       const a = accounts.find((x) => x.id === filters.accounts[0]);
@@ -48,6 +49,16 @@ export function EquityCurveCard() {
   const last = data[data.length - 1]?.equity ?? startingBalance;
   const pnl = last - startingBalance;
   const up = pnl >= 0;
+
+  if (loading && filtered.length === 0) {
+    return (
+      <GlassCard className="p-4 space-y-3">
+        <Skeleton className="h-4 w-40" />
+        <Skeleton className="h-[320px] w-full rounded-xl" />
+      </GlassCard>
+    );
+  }
+
 
   return (
     <ChartCard

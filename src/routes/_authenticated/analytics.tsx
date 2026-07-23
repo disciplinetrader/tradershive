@@ -76,7 +76,7 @@ function DatasetStatus() {
     return (
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="glass rounded-3xl h-24 animate-pulse" />
+          <div key={i} className="rounded-3xl h-24 bg-muted animate-shimmer" />
         ))}
       </div>
     );
