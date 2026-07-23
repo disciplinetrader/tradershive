@@ -10,7 +10,8 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
-import { reportLovableError, installGlobalErrorHandlers } from "../lib/lovable-error-reporting";
+import { reportLovableError } from "../lib/lovable-error-reporting";
+import { initObservability } from "../lib/observability";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ThemeProvider } from "@/hooks/use-theme";
@@ -142,7 +143,7 @@ function RootComponent() {
   // Forward uncaught browser errors and unhandled rejections to Lovable
   // reporting so React-boundary escapes and async throws still get captured.
   useEffect(() => {
-    installGlobalErrorHandlers();
+    initObservability();
   }, []);
 
   return (
