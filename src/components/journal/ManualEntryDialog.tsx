@@ -79,7 +79,6 @@ export type PrefillTrade = Partial<{
 }>;
 
 type TradeResult = "win" | "loss" | "breakeven";
-type RiskType = "risk_percent" | "r_multiple";
 
 const RESULT_BUTTONS: { value: TradeResult; label: string; tone: "success" | "danger" | "muted" }[] = [
   { value: "win", label: "Win", tone: "success" },
@@ -229,14 +228,8 @@ function ManualForm({
   );
 
   const [result, setResult] = useState<TradeResult>(inferResult(prefill?.pnl));
-  const [riskType, setRiskType] = useState<RiskType>(
-    prefill?.rr != null ? "r_multiple" : "risk_percent",
-  );
-  const [riskPercent, setRiskPercent] = useState<string>(
-    prefill?.rr != null ? "" : (defaults.riskPercent ?? ""),
-  );
   const [rMultiple, setRMultiple] = useState<string>(
-    prefill?.rr != null ? String(Math.abs(prefill.rr)) : "",
+    prefill?.rr != null ? formatSignedR(prefill.rr) : "",
   );
 
   const [tradeDate, setTradeDate] = useState<string>(
@@ -301,11 +294,11 @@ function ManualForm({
   const notesRef = useRef<HTMLTextAreaElement>(null);
   const [attempted, setAttempted] = useState(false);
 
-  const riskValue = riskType === "risk_percent" ? Number(riskPercent) : Number(rMultiple);
+  const rValue = parseSignedR(rMultiple);
   const missing = {
     instrument: !instrument,
     direction: !direction,
-    risk: !Number.isFinite(riskValue) || riskValue <= 0,
+    risk: rValue == null,
     date: !tradeDate,
     strategy: strategyTags.length === 0,
     notes: !notes.trim(),
@@ -314,7 +307,7 @@ function ManualForm({
 
   /* ----------------------------- Autosave -------------------------------- */
   const isDirty = Boolean(
-    symbol || riskPercent || rMultiple || strategyTags.length ||
+    symbol || rMultiple || strategyTags.length ||
     emotions.length || notes.trim() || screenshots.length,
   );
   useEffect(() => { onDirtyChange(isDirty); }, [isDirty, onDirtyChange]);
@@ -331,8 +324,8 @@ function ManualForm({
     confidence: 0,
     strategyTags, emotions, mistakes: [],
     entryReason: "", postTradeNotes: notes,
-    riskPercent, accountBalance: "",
-  }), [symbol, market, direction, tradeDate, session, strategyTags, emotions, notes, riskPercent, rMultiple]);
+    riskPercent: "", accountBalance: "",
+  }), [symbol, market, direction, tradeDate, session, strategyTags, emotions, notes, rMultiple]);
 
   const draftRef = useRef(draftSnapshot());
   useEffect(() => { draftRef.current = draftSnapshot(); }, [draftSnapshot]);
@@ -361,11 +354,8 @@ function ManualForm({
       if (!user) throw new Error("Not authenticated");
       if (!instrument) throw new Error("Pick an instrument");
 
-      const sign = result === "win" ? 1 : result === "loss" ? -1 : 0;
-      const rrSigned = riskType === "r_multiple"
-        ? sign * Math.abs(Number(rMultiple))
-        : sign * 1; // 1R proxy when only risk % is given
-      const pnlProxy = result === "breakeven" ? 0 : rrSigned;
+      const rrSigned = rValue ?? 0;
+      const pnlProxy = rrSigned;
 
       const openedISO = new Date(`${tradeDate}T12:00:00`).toISOString();
 
@@ -378,7 +368,7 @@ function ManualForm({
         exit_price: prefill?.exit_price ?? null,
         pnl: prefill?.pnl ?? pnlProxy,
         rr: rrSigned,
-        risk_pct: riskType === "risk_percent" ? Number(riskPercent) : null,
+        risk_pct: null,
         opened_at: openedISO,
         closed_at: openedISO,
         opened_tz: tz,
@@ -404,7 +394,7 @@ function ManualForm({
       saveDefaults({
         strategy: strategyTags[0],
         session,
-        riskPercent: riskType === "risk_percent" ? riskPercent : loadDefaults().riskPercent,
+        riskPercent: loadDefaults().riskPercent,
       });
       clearDraft();
       toast.success("Journal entry created");
@@ -446,7 +436,6 @@ function ManualForm({
     setStrategyTags(d.strategyTags ?? []);
     setEmotions(d.emotions ?? []);
     setNotes(d.postTradeNotes ?? "");
-    setRiskPercent(d.riskPercent ?? "");
     setRMultiple(d.rr ?? "");
     setRestorePrompt(null);
     toast.success("Draft restored");
@@ -582,41 +571,46 @@ function ManualForm({
           </div>
         </Field>
 
-        {/* Risk */}
-        <Field label="Risk" required error={attempted && missing.risk ? "Enter a positive value" : undefined}>
-          <div className="grid gap-2 sm:grid-cols-[180px_1fr]">
-            <Select value={riskType} onValueChange={(v) => setRiskType(v as RiskType)}>
-              <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="risk_percent">Risk %</SelectItem>
-                <SelectItem value="r_multiple">R Multiple</SelectItem>
-              </SelectContent>
-            </Select>
-            {riskType === "risk_percent" ? (
-              <div className="relative">
-                <Input
-                  ref={riskRef}
-                  value={riskPercent}
-                  onChange={(e) => setRiskPercent(sanitizeDecimal(e.target.value))}
-                  inputMode="decimal"
-                  placeholder="1.0"
-                  className={cn("h-11 pr-8", attempted && missing.risk && "border-danger")}
-                />
-                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
-              </div>
-            ) : (
-              <div className="relative">
-                <Input
-                  ref={riskRef}
-                  value={rMultiple}
-                  onChange={(e) => setRMultiple(sanitizeDecimal(e.target.value))}
-                  inputMode="decimal"
-                  placeholder="2.5"
-                  className={cn("h-11 pr-8", attempted && missing.risk && "border-danger")}
-                />
-                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R</span>
-              </div>
-            )}
+        {/* Trade Result (R) */}
+        <Field
+          label="Trade Result (R)"
+          required
+          error={attempted && missing.risk ? "Enter a valid R multiple (e.g. +2, -1, 0)" : undefined}
+        >
+          <div className="space-y-1.5">
+            <div className="relative max-w-xs">
+              <Input
+                ref={riskRef}
+                value={rMultiple}
+                onChange={(e) => {
+                  const cleaned = sanitizeSignedR(e.target.value);
+                  setRMultiple(cleaned);
+                  const v = parseSignedR(cleaned);
+                  if (v != null) {
+                    setResult(v > 0 ? "win" : v < 0 ? "loss" : "breakeven");
+                  }
+                }}
+                inputMode="decimal"
+                placeholder="+2.0"
+                aria-describedby="trade-result-help"
+                className={cn(
+                  "h-11 pr-8 font-medium tabular-nums",
+                  attempted && missing.risk && "border-danger",
+                  rValue != null && rValue > 0 && "text-success",
+                  rValue != null && rValue < 0 && "text-danger",
+                )}
+              />
+              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
+                R
+              </span>
+            </div>
+            <p id="trade-result-help" className="text-xs leading-relaxed text-muted-foreground">
+              Enter the realized result in R multiples. Examples:{" "}
+              <span className="text-success">+2R</span> = won 2× your initial risk ·{" "}
+              <span className="text-success">+1R</span> = won 1R · <span>0R</span> = breakeven ·{" "}
+              <span className="text-danger">-1R</span> = full stop loss ·{" "}
+              <span className="text-danger">-0.5R</span> = half-R loss.
+            </p>
           </div>
         </Field>
 
@@ -905,4 +899,33 @@ function sanitizeDecimal(v: string): string {
   const firstDot = cleaned.indexOf(".");
   if (firstDot === -1) return cleaned;
   return cleaned.slice(0, firstDot + 1) + cleaned.slice(firstDot + 1).replace(/\./g, "");
+}
+
+/** Accepts "+2", "-1", "0.5R", "+1.5r", " 2 ", "-.5", etc. Filters other chars. */
+function sanitizeSignedR(v: string): string {
+  const upper = v.replace(/r/gi, "").trim();
+  // keep leading sign, digits, single dot
+  let cleaned = upper.replace(/[^0-9.\-+]/g, "");
+  // sign only at position 0
+  const sign = cleaned.startsWith("-") ? "-" : cleaned.startsWith("+") ? "+" : "";
+  cleaned = cleaned.replace(/[+\-]/g, "");
+  const firstDot = cleaned.indexOf(".");
+  if (firstDot !== -1) {
+    cleaned = cleaned.slice(0, firstDot + 1) + cleaned.slice(firstDot + 1).replace(/\./g, "");
+  }
+  return sign + cleaned;
+}
+
+/** Parses a signed R string to a number. Returns null when not a finite number. */
+function parseSignedR(v: string): number | null {
+  const s = (v ?? "").trim().replace(/r/gi, "").replace(/^\+/, "");
+  if (s === "" || s === "-" || s === ".") return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+
+function formatSignedR(n: number): string {
+  if (!Number.isFinite(n)) return "";
+  const s = n > 0 ? `+${n}` : `${n}`;
+  return s;
 }
