@@ -344,6 +344,27 @@ function JournalEntryPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!lightbox} onOpenChange={(o) => !o && setLightbox(null)}>
+        <DialogContent className="max-w-5xl border-border/60 bg-background/95 p-3">
+          <div className="flex items-center justify-between pb-2">
+            <p className="text-sm font-semibold">{entry.symbol ?? "Trade"} · Chart preview</p>
+            {lightbox ? (
+              <a
+                href={lightbox}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+              >
+                <ExternalLink className="h-3.5 w-3.5" /> Open in new tab
+              </a>
+            ) : null}
+          </div>
+          {lightbox ? (
+            <img src={lightbox} alt="Screenshot" className="max-h-[80vh] w-full rounded-lg object-contain" />
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
