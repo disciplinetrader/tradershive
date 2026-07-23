@@ -228,14 +228,8 @@ function ManualForm({
   );
 
   const [result, setResult] = useState<TradeResult>(inferResult(prefill?.pnl));
-  const [riskType, setRiskType] = useState<RiskType>(
-    prefill?.rr != null ? "r_multiple" : "risk_percent",
-  );
-  const [riskPercent, setRiskPercent] = useState<string>(
-    prefill?.rr != null ? "" : (defaults.riskPercent ?? ""),
-  );
   const [rMultiple, setRMultiple] = useState<string>(
-    prefill?.rr != null ? String(Math.abs(prefill.rr)) : "",
+    prefill?.rr != null ? formatSignedR(prefill.rr) : "",
   );
 
   const [tradeDate, setTradeDate] = useState<string>(
