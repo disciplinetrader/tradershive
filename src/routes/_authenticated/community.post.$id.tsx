@@ -75,12 +75,7 @@ function Page() {
             <ArrowLeft className="mr-1.5 h-4 w-4" /> Back to feed
           </Button>
           {isAuthor ? (
-            <Button size="sm" variant="ghost" className="text-danger" onClick={async () => {
-              if (!confirm("Delete this post?")) return;
-              await del({ data: { id } });
-              toast.success("Post deleted");
-              navigate({ to: "/community" });
-            }}>
+            <Button size="sm" variant="ghost" className="text-danger" onClick={() => setDeleteOpen(true)}>
               <Trash2 className="mr-1.5 h-4 w-4" /> Delete
             </Button>
           ) : null}
