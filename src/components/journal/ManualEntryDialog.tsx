@@ -249,6 +249,7 @@ function ManualForm({
 
   // Optional
   const [session, setSession] = useState<string>(defaults.session ?? "");
+  const [tradeType, setTradeType] = useState<"" | "scalp" | "intraday" | "swing" | "long_term">("");
   const [emotions, setEmotions] = useState<string[]>([]);
   const [screenshots, setScreenshots] = useState<StagedScreenshot[]>([]);
 
@@ -379,6 +380,7 @@ function ManualForm({
         closed_tz: tz,
         session: (session || null) as EntryInsert["session"],
         session_auto_detected: true,
+        trade_type: (tradeType || null) as EntryInsert["trade_type"],
         strategy: strategyTags[0] ?? null,
         strategy_tags: strategyTags,
         emotions,
@@ -619,19 +621,37 @@ function ManualForm({
           </div>
 
           <div className="space-y-4">
-            <Field label="Trading session">
-              <Select value={session || "__auto"} onValueChange={(v) => setSession(v === "__auto" ? "" : v)}>
-                <SelectTrigger className="h-11 max-w-xs">
-                  <SelectValue placeholder="Auto Detect" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__auto">Auto Detect</SelectItem>
-                  {SESSION_OPTIONS.filter((s) => s.value !== "asia").map((s) => (
-                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Trading session">
+                <Select value={session || "__auto"} onValueChange={(v) => setSession(v === "__auto" ? "" : v)}>
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Auto Detect" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__auto">Auto Detect</SelectItem>
+                    {SESSION_OPTIONS.filter((s) => s.value !== "asia").map((s) => (
+                      <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+
+              <Field label="Trade duration">
+                <Select value={tradeType || "__none"} onValueChange={(v) => setTradeType(v === "__none" ? "" : v as typeof tradeType)}>
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Select duration" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none">Not set</SelectItem>
+                    <SelectItem value="scalp">Scalp · minutes</SelectItem>
+                    <SelectItem value="intraday">Intraday · same-day</SelectItem>
+                    <SelectItem value="swing">Swing · days to weeks</SelectItem>
+                    <SelectItem value="long_term">Long term · weeks+</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
+
 
             <Field label="How did it feel?">
               <ChipMulti
