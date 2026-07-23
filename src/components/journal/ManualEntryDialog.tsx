@@ -619,7 +619,7 @@ function ManualForm({
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Trading session">
                 <Select value={session || "__auto"} onValueChange={(v) => setSession(v === "__auto" ? "" : v)}>
-                  <SelectTrigger className="h-11">
+                  <SelectTrigger className="h-11 hover:border-primary/50 hover:bg-accent/30">
                     <SelectValue placeholder="Auto Detect" />
                   </SelectTrigger>
                   <SelectContent>
@@ -633,7 +633,7 @@ function ManualForm({
 
               <Field label="Trade duration">
                 <Select value={tradeType || "__none"} onValueChange={(v) => setTradeType(v === "__none" ? "" : v as typeof tradeType)}>
-                  <SelectTrigger className="h-11">
+                  <SelectTrigger className="h-11 hover:border-primary/50 hover:bg-accent/30">
                     <SelectValue placeholder="Select duration" />
                   </SelectTrigger>
                   <SelectContent>
@@ -645,6 +645,7 @@ function ManualForm({
                   </SelectContent>
                 </Select>
               </Field>
+
             </div>
 
 
