@@ -85,6 +85,7 @@ function JournalPage() {
   const [filters, setFilters] = useState<JournalFiltersState>(EMPTY_FILTERS);
   const [drawerId, setDrawerId] = useState<string | null>(null);
   const [dayFilterIds, setDayFilterIds] = useState<Set<string> | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   useEffect(() => setFilters(loadStoredFilters()), []);
   useEffect(() => {
