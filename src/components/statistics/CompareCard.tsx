@@ -8,7 +8,7 @@ import { ArrowDown, ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function CompareCard() {
-  const { raw, filters } = useStatistics();
+  const { raw, filters, loading } = useStatistics();
   const cur = resolveDateRange(filters.preset, filters.from, filters.to);
   const prev = previousPeriodRange(cur);
 
