@@ -5,6 +5,16 @@ import { motion } from "framer-motion";
 import { AlertTriangle, Calculator, RotateCcw, Send } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -122,8 +132,10 @@ export function OrderPanel() {
     setEntry(livePrice != null ? String(livePrice) : "");
   };
 
+  const [riskDialogOpen, setRiskDialogOpen] = useState(false);
+
   const openMut = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (opts?: { bypassWarnings?: boolean }) => {
       if (!accountId || !symbolMeta) throw new Error("Select an account first");
       const stopsMsg = validateStops(side, entryNum, slNum, tpNum);
       if (stopsMsg) throw new Error(stopsMsg);
@@ -132,13 +144,6 @@ export function OrderPanel() {
       // Hard errors block regardless of user choice — server enforces these too.
       if (validation && !validation.ok) {
         throw new Error(validation.errors[0] ?? "Order rejected");
-      }
-      // Soft warnings require an explicit confirm (broker-style).
-      if (validation && validation.warnings.length > 0) {
-        const proceed = window.confirm(
-          `${validation.warnings.join("\n")}\n\nProceed anyway?`,
-        );
-        if (!proceed) throw new Error("Cancelled");
       }
 
       const base = {
@@ -149,6 +154,7 @@ export function OrderPanel() {
         risk_amount: calc?.riskAmount ?? null, reward_amount: calc?.rewardAmount ?? null,
         rr_planned: calc?.rr ?? null,
       };
+      void opts;
       if (orderType === "market") {
         return openFn({ data: { ...base, order_type: "market", entry_price: livePrice ?? entryNum } });
       }
@@ -162,6 +168,21 @@ export function OrderPanel() {
     onError: (e) => toast.error((e as Error).message),
   });
 
+  // Broker-style intent: soft warnings surface a themed AlertDialog before we
+  // actually submit. Hard errors fall through to the mutation which throws.
+  const attemptPlace = () => {
+    if (validation && validation.ok && validation.warnings.length > 0) {
+      setRiskDialogOpen(true);
+      return;
+    }
+    openMut.mutate({});
+  };
+
+  const confirmRiskyPlace = () => {
+    setRiskDialogOpen(false);
+    openMut.mutate({ bypassWarnings: true });
+  };
+
   // Keyboard shortcuts
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -169,7 +190,7 @@ export function OrderPanel() {
       const inField = tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement)?.isContentEditable;
       if (e.key === "b" && !inField) { setSide("long"); }
       if (e.key === "s" && !inField) { setSide("short"); }
-      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); openMut.mutate(); }
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); attemptPlace(); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -186,7 +207,7 @@ export function OrderPanel() {
       if (i.sl != null) setSl(String(i.sl));
       if (i.tp != null) setTp(String(i.tp));
       if (i.lot != null) setLot(String(i.lot));
-      if (isSubmit) setTimeout(() => openMut.mutate(), 0);
+      if (isSubmit) setTimeout(() => attemptPlace(), 0);
     });
     return () => { unsub(); };
   }, [openMut]);
@@ -353,7 +374,7 @@ export function OrderPanel() {
       <div className="flex gap-2">
         <Button variant="outline" onClick={reset}><RotateCcw className="mr-1.5 h-4 w-4" /> Reset</Button>
         <Button
-          onClick={() => openMut.mutate()}
+          onClick={attemptPlace}
           disabled={openMut.isPending || !accountId || !symbolMeta || (validation != null && !validation.ok)}
           className={cn("flex-1 shadow-elegant",
             side === "long"
@@ -365,6 +386,57 @@ export function OrderPanel() {
         </Button>
       </div>
       <p className="text-[10px] text-muted-foreground">Shortcuts — <kbd>B</kbd> buy · <kbd>S</kbd> sell · <kbd>⌘/Ctrl</kbd>+<kbd>↵</kbd> place</p>
+
+      <AlertDialog open={riskDialogOpen} onOpenChange={setRiskDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-warning">
+              <AlertTriangle className="h-5 w-5" /> High risk trade
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              You&apos;re about to place a trade that exceeds your configured risk limits.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <ul className="space-y-2 rounded-lg border border-warning/30 bg-warning/5 p-3 text-sm">
+            {calc && (
+              <li className="flex items-start gap-2">
+                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-warning" />
+                <span>
+                  Risk: <strong className="text-warning">{calc.riskPct.toFixed(2)}%</strong>
+                  {account?.max_trade_risk_pct != null && (
+                    <> (Maximum: <strong>{Number(account.max_trade_risk_pct)}%</strong>)</>
+                  )}
+                </span>
+              </li>
+            )}
+            <li className="flex items-start gap-2">
+              <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-warning" />
+              <span>Leverage: <strong className="text-warning">{leverage}×</strong></span>
+            </li>
+            {validation?.warnings.map((msg, i) => (
+              <li key={i} className="flex items-start gap-2">
+                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-warning" />
+                <span>{msg}</span>
+              </li>
+            ))}
+            <li className="flex items-start gap-2 text-danger">
+              <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-danger" />
+              <span>Small price movements may result in liquidation.</span>
+            </li>
+          </ul>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmRiskyPlace}
+              className="bg-danger text-white hover:bg-danger/90 focus-visible:ring-danger"
+            >
+              Place trade anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
