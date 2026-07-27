@@ -11,7 +11,18 @@
 
 import { useMemo, type ComponentType, type ReactNode } from "react";
 import { motion } from "framer-motion";
-import { ChevronDown, Clock, Hash, Info, Percent, Sigma, Target } from "lucide-react";
+import {
+  ArrowDownRight,
+  ArrowUpRight,
+  ChevronDown,
+  Clock,
+  Hash,
+  Heart,
+  Info,
+  Percent,
+  Sigma,
+  Target,
+} from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import {
   Tooltip,
@@ -21,6 +32,8 @@ import {
 import type { JournalEntry } from "@/lib/journal/api";
 import { formatNumber } from "@/lib/journal/format";
 import { usePersistentDisclosure } from "@/hooks/use-persistent-disclosure";
+import { normalizeEmotions, emotionMeta } from "@/lib/journal/emotions";
+import { DEFAULT_EMOTIONS } from "@/lib/journal/constants";
 import { cn } from "@/lib/utils";
 
 
