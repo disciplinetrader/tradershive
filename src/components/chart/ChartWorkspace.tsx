@@ -18,6 +18,8 @@ import type { ChartSettings, DrawingTool, IndicatorConfig, IndicatorKey } from "
 import { saveLayout, pushRecentSymbol, uploadChartScreenshot } from "@/lib/chart/storage";
 import { ChevronDown, ChevronUp, Plus, MoreHorizontal, LayoutGrid } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { usePersistentDisclosure } from "@/hooks/use-persistent-disclosure";
+
 
 interface Props {
   fullscreen?: boolean;
@@ -46,13 +48,14 @@ export function ChartWorkspace({ fullscreen, initial }: Props) {
   const [alertsOpen, setAlertsOpen] = useState(false);
   const [chartApi, setChartApi] = useState<ChartHandle | null>(null);
   const [livePrice, setLivePrice] = useState<number | null>(null);
-  const [rightOpen, setRightOpen] = useState(true);
+  // Right panel + bottom tabs default collapsed for first-time users so the
+  // chart itself is the primary focus; choice is persisted after first toggle.
+  const [rightOpen, setRightOpen] = usePersistentDisclosure("chart-right", false);
   const [rightTab, setRightTab] = useState<RightTab>("watchlist");
-  const [bottomOpen, setBottomOpen] = useState(true);
-
-
+  const [bottomOpen, setBottomOpen] = usePersistentDisclosure("chart-bottom", false);
 
   const updateSettings = useCallback((patch: Partial<ChartSettings>) => setSettings((s) => ({ ...s, ...patch })), []);
+
 
   // Persist recent symbol
   useEffect(() => {
