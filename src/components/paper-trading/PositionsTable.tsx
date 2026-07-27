@@ -45,7 +45,7 @@ export function PositionsTable() {
     queryKey: ["paper", "trades", accountId, "open"],
     queryFn: () => fetch({ data: { account_id: accountId!, status: "open" } }) as unknown as Promise<Trade[]>,
     enabled: !!accountId,
-    refetchInterval: 5000,
+    refetchInterval: 2000,
   });
 
   const [closing, setClosing] = useState<Trade | null>(null);
