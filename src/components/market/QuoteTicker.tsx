@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { useLiveQuote } from "@/lib/market-data/hooks";
 import { cn } from "@/lib/utils";
-import { ArrowDown, ArrowUp } from "lucide-react";
+import { AlertCircle, ArrowDown, ArrowUp } from "lucide-react";
 
 export function QuoteTicker({ symbol, className }: { symbol: string; className?: string }) {
   const quote = useLiveQuote(symbol);
   const [flash, setFlash] = useState<"up" | "down" | null>(null);
   const [prev, setPrev] = useState<number | null>(null);
+  const [unavailable, setUnavailable] = useState(false);
 
   useEffect(() => {
     if (!quote) return;
@@ -18,7 +19,21 @@ export function QuoteTicker({ symbol, className }: { symbol: string; className?:
     setPrev(quote.last);
   }, [quote, prev]);
 
-  if (!quote) return <span className={cn("text-xs text-muted-foreground", className)}>—</span>;
+  useEffect(() => {
+    if (quote) { setUnavailable(false); return; }
+    const t = setTimeout(() => setUnavailable(true), 20_000);
+    return () => clearTimeout(t);
+  }, [quote]);
+
+  if (!quote) {
+    return unavailable ? (
+      <span className={cn("inline-flex items-center gap-1 text-xs font-medium text-danger", className)} title="Live data unavailable">
+        <AlertCircle className="h-3 w-3" /> Live data unavailable
+      </span>
+    ) : (
+      <span className={cn("text-xs text-muted-foreground", className)}>—</span>
+    );
+  }
   const up = (quote.changePct ?? 0) >= 0;
   return (
     <div className={cn("inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-mono tabular-nums transition-colors",
@@ -33,3 +48,4 @@ export function QuoteTicker({ symbol, className }: { symbol: string; className?:
     </div>
   );
 }
+
