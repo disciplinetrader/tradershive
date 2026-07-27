@@ -17,6 +17,7 @@ import { AuthProvider } from "@/hooks/use-auth";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { QaModePanel } from "@/components/qa/QaModePanel";
 import { APP_DESCRIPTION, APP_NAME } from "@/lib/constants";
 
 function NotFoundComponent() {
@@ -154,6 +155,7 @@ function RootComponent() {
             <ErrorBoundary name="root_outlet">
               <Outlet />
             </ErrorBoundary>
+            <QaModePanel />
             <Toaster
               position="top-right"
               richColors
