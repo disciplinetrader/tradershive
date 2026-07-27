@@ -527,6 +527,138 @@ export function JournalStats({
               ))}
             </div>
           </div>
+
+          {/* Emotion analytics */}
+          {stats.emotions.length ? (
+            <div>
+              <div className="mb-2 flex items-center gap-2">
+                <Heart className="h-3.5 w-3.5 text-muted-foreground" />
+                <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  Emotion Analytics
+                </h3>
+              </div>
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
+                {stats.emotions.map((em, i) => {
+                  const clickable = !!onFilterEmotion && em.value !== "unknown";
+                  return (
+                    <motion.button
+                      key={em.value}
+                      type="button"
+                      disabled={!clickable}
+                      onClick={() => clickable && onFilterEmotion?.(em.value)}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2, delay: i * 0.03 }}
+                      className={cn(
+                        "group rounded-lg border border-border/60 bg-card/40 p-3 text-left transition",
+                        clickable && "cursor-pointer hover:border-primary/60 hover:bg-card/60",
+                      )}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold">{em.label}</span>
+                        <span className="text-[10px] font-medium tabular-nums text-muted-foreground">
+                          {formatNumber(em.share, 0)}%
+                        </span>
+                      </div>
+                      <div className="mt-1 text-[11px] text-muted-foreground tabular-nums">
+                        {em.trades} trade{em.trades === 1 ? "" : "s"} · Win {formatNumber(em.winRate, 0)}%
+                      </div>
+                      <div className="mt-2 flex items-center justify-between border-t border-border/40 pt-2">
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Net R</span>
+                        <span
+                          className={cn(
+                            "text-sm font-bold tabular-nums",
+                            em.netR > 0 && "text-success",
+                            em.netR < 0 && "text-danger",
+                          )}
+                        >
+                          {em.netR >= 0 ? "+" : ""}{formatNumber(em.netR, 2)}R
+                        </span>
+                      </div>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+
+          {/* Position analytics */}
+          {stats.positions.some((p) => p.trades > 0) ? (
+            <div>
+              <div className="mb-2 flex items-center gap-2">
+                <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  Position Analytics
+                </h3>
+              </div>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                {stats.positions.map((p, i) => {
+                  const isLong = p.key === "long";
+                  const Icon = isLong ? ArrowUpRight : ArrowDownRight;
+                  const tone = isLong ? "text-success" : "text-danger";
+                  const clickable = !!onFilterPosition && p.trades > 0;
+                  return (
+                    <motion.button
+                      key={p.key}
+                      type="button"
+                      disabled={!clickable}
+                      onClick={() => clickable && onFilterPosition?.(p.key)}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2, delay: i * 0.05 }}
+                      className={cn(
+                        "rounded-lg border border-border/60 bg-card/40 p-4 text-left transition",
+                        clickable && "cursor-pointer hover:border-primary/60 hover:bg-card/60",
+                      )}
+                    >
+                      <div className="mb-3 flex items-center justify-between">
+                        <div className={cn("flex items-center gap-2 text-sm font-semibold uppercase tracking-wider", tone)}>
+                          <Icon className="h-4 w-4" />
+                          {isLong ? "Buy · Long" : "Sell · Short"}
+                        </div>
+                        <span className="text-[11px] tabular-nums text-muted-foreground">
+                          {p.trades} trade{p.trades === 1 ? "" : "s"}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-[11px] text-muted-foreground">
+                        <div>
+                          <div className="uppercase tracking-wider">Wins</div>
+                          <div className="mt-0.5 text-sm font-semibold text-foreground tabular-nums">{p.wins}</div>
+                        </div>
+                        <div>
+                          <div className="uppercase tracking-wider">Losses</div>
+                          <div className="mt-0.5 text-sm font-semibold text-foreground tabular-nums">{p.losses}</div>
+                        </div>
+                        <div>
+                          <div className="uppercase tracking-wider">Win Rate</div>
+                          <div className="mt-0.5 text-sm font-semibold text-foreground tabular-nums">
+                            {formatNumber(p.winRate, 0)}%
+                          </div>
+                        </div>
+                        <div>
+                          <div className="uppercase tracking-wider">Avg R</div>
+                          <div className={cn("mt-0.5 text-sm font-semibold tabular-nums", p.avgR > 0 && "text-success", p.avgR < 0 && "text-danger")}>
+                            {p.avgR >= 0 ? "+" : ""}{formatNumber(p.avgR, 2)}R
+                          </div>
+                        </div>
+                        <div>
+                          <div className="uppercase tracking-wider">Net R</div>
+                          <div className={cn("mt-0.5 text-sm font-semibold tabular-nums", p.netR > 0 && "text-success", p.netR < 0 && "text-danger")}>
+                            {p.netR >= 0 ? "+" : ""}{formatNumber(p.netR, 2)}R
+                          </div>
+                        </div>
+                        <div>
+                          <div className="uppercase tracking-wider">Profit Factor</div>
+                          <div className="mt-0.5 text-sm font-semibold text-foreground tabular-nums">
+                            {p.profitFactor == null ? "—" : p.profitFactor === Infinity ? "∞" : formatNumber(p.profitFactor, 2)}
+                          </div>
+                        </div>
+                      </div>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>
