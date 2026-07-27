@@ -8126,6 +8126,7 @@ export type Database = {
         Row: {
           archived_at: string | null
           category: string | null
+          checklist_required_ids: string[]
           color: string | null
           cover_url: string | null
           created_at: string
@@ -8142,6 +8143,7 @@ export type Database = {
           market: string | null
           market_conditions: string[] | null
           markets: string[] | null
+          mistakes: Json
           name: string
           notes: string | null
           position_sizing: Json | null
@@ -8161,6 +8163,7 @@ export type Database = {
         Insert: {
           archived_at?: string | null
           category?: string | null
+          checklist_required_ids?: string[]
           color?: string | null
           cover_url?: string | null
           created_at?: string
@@ -8177,6 +8180,7 @@ export type Database = {
           market?: string | null
           market_conditions?: string[] | null
           markets?: string[] | null
+          mistakes?: Json
           name: string
           notes?: string | null
           position_sizing?: Json | null
@@ -8196,6 +8200,7 @@ export type Database = {
         Update: {
           archived_at?: string | null
           category?: string | null
+          checklist_required_ids?: string[]
           color?: string | null
           cover_url?: string | null
           created_at?: string
@@ -8212,6 +8217,7 @@ export type Database = {
           market?: string | null
           market_conditions?: string[] | null
           markets?: string[] | null
+          mistakes?: Json
           name?: string
           notes?: string | null
           position_sizing?: Json | null
@@ -8311,6 +8317,50 @@ export type Database = {
             columns: ["checklist_id"]
             isOneToOne: false
             referencedRelation: "strategy_checklists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      strategy_checklist_runs: {
+        Row: {
+          all_required_passed: boolean
+          context: string
+          context_ref_id: string | null
+          created_at: string
+          id: string
+          items: Json
+          notes: string | null
+          strategy_id: string
+          user_id: string
+        }
+        Insert: {
+          all_required_passed?: boolean
+          context?: string
+          context_ref_id?: string | null
+          created_at?: string
+          id?: string
+          items?: Json
+          notes?: string | null
+          strategy_id: string
+          user_id: string
+        }
+        Update: {
+          all_required_passed?: boolean
+          context?: string
+          context_ref_id?: string | null
+          created_at?: string
+          id?: string
+          items?: Json
+          notes?: string | null
+          strategy_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategy_checklist_runs_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "strategies"
             referencedColumns: ["id"]
           },
         ]
