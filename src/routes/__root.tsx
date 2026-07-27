@@ -22,7 +22,7 @@ import { APP_DESCRIPTION, APP_NAME } from "@/lib/constants";
 
 function NotFoundComponent() {
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4">
+    <div className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-background px-4">
       <div className="pointer-events-none absolute inset-0 gradient-radial-glow opacity-60" />
       <div className="pointer-events-none absolute inset-0 grid-bg opacity-40" />
       <div className="relative max-w-md text-center">
@@ -53,7 +53,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   }, [error]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="flex min-h-dvh items-center justify-center bg-background px-4">
       <div className="max-w-md rounded-3xl glass p-8 text-center">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
           Something went sideways
