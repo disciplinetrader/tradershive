@@ -158,8 +158,8 @@ function DatasetStatus() {
     const hasAnyForSource = source === "all"
       ? raw.length > 0
       : raw.some((t) => t.source === source);
-    const copy = SOURCE_EMPTY[source];
-    if (!hasAnyForSource && source !== "all") {
+    if (source !== "all" && !hasAnyForSource) {
+      const copy = SOURCE_EMPTY[source];
       return (
         <GlassCard className="p-8 text-center space-y-3">
           <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
