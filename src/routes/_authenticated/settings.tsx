@@ -423,3 +423,25 @@ function NotificationsSection() {
     </GlassCard>
   );
 }
+
+/* ---------------- Product Tour ---------------- */
+
+function ProductTourSection() {
+  const { start } = useProductTour();
+  return (
+    <GlassCard className="p-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="text-base font-semibold">Onboarding</h2>
+          <p className="text-xs text-muted-foreground">
+            Replay the guided product tour to revisit the core features of TradersHIVE.
+          </p>
+        </div>
+        <Button variant="outline" onClick={start} className="gap-2">
+          <Play className="h-4 w-4" />
+          Replay Product Tour
+        </Button>
+      </div>
+    </GlassCard>
+  );
+}
