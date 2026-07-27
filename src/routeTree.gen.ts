@@ -24,6 +24,7 @@ import { Route as AuthenticatedSupportRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedStrategiesRouteImport } from './routes/_authenticated/strategies'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedReplayRouteImport } from './routes/_authenticated/replay'
+import { Route as AuthenticatedPropChallengesRouteImport } from './routes/_authenticated/prop-challenges'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedPaperTradingRouteImport } from './routes/_authenticated/paper-trading'
 import { Route as AuthenticatedMistakesRouteImport } from './routes/_authenticated/mistakes'
@@ -47,6 +48,7 @@ import { Route as AuthenticatedAchievementsRouteImport } from './routes/_authent
 import { Route as AuthenticatedTradingIndexRouteImport } from './routes/_authenticated/trading.index'
 import { Route as AuthenticatedStrategiesIndexRouteImport } from './routes/_authenticated/strategies.index'
 import { Route as AuthenticatedReplayIndexRouteImport } from './routes/_authenticated/replay.index'
+import { Route as AuthenticatedPropChallengesIndexRouteImport } from './routes/_authenticated/prop-challenges.index'
 import { Route as AuthenticatedMarketIndexRouteImport } from './routes/_authenticated/market.index'
 import { Route as AuthenticatedLeaderboardIndexRouteImport } from './routes/_authenticated/leaderboard.index'
 import { Route as AuthenticatedCommunityIndexRouteImport } from './routes/_authenticated/community.index'
@@ -72,6 +74,8 @@ import { Route as AuthenticatedReplaySessionRouteImport } from './routes/_authen
 import { Route as AuthenticatedReplayPerformanceRouteImport } from './routes/_authenticated/replay.performance'
 import { Route as AuthenticatedReplayLibraryRouteImport } from './routes/_authenticated/replay.library'
 import { Route as AuthenticatedReplayChallengesRouteImport } from './routes/_authenticated/replay.challenges'
+import { Route as AuthenticatedPropChallengesNewRouteImport } from './routes/_authenticated/prop-challenges.new'
+import { Route as AuthenticatedPropChallengesIdRouteImport } from './routes/_authenticated/prop-challenges.$id'
 import { Route as AuthenticatedProfileUsernameRouteImport } from './routes/_authenticated/profile.$username'
 import { Route as AuthenticatedMarketSymbolsRouteImport } from './routes/_authenticated/market.symbols'
 import { Route as AuthenticatedMarketSettingsRouteImport } from './routes/_authenticated/market.settings'
@@ -227,6 +231,12 @@ const AuthenticatedReplayRoute = AuthenticatedReplayRouteImport.update({
   path: '/replay',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPropChallengesRoute =
+  AuthenticatedPropChallengesRouteImport.update({
+    id: '/prop-challenges',
+    path: '/prop-challenges',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -350,6 +360,12 @@ const AuthenticatedReplayIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedReplayRoute,
+  } as any)
+const AuthenticatedPropChallengesIndexRoute =
+  AuthenticatedPropChallengesIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedPropChallengesRoute,
   } as any)
 const AuthenticatedMarketIndexRoute =
   AuthenticatedMarketIndexRouteImport.update({
@@ -497,6 +513,18 @@ const AuthenticatedReplayChallengesRoute =
     id: '/challenges',
     path: '/challenges',
     getParentRoute: () => AuthenticatedReplayRoute,
+  } as any)
+const AuthenticatedPropChallengesNewRoute =
+  AuthenticatedPropChallengesNewRouteImport.update({
+    id: '/new',
+    path: '/new',
+    getParentRoute: () => AuthenticatedPropChallengesRoute,
+  } as any)
+const AuthenticatedPropChallengesIdRoute =
+  AuthenticatedPropChallengesIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => AuthenticatedPropChallengesRoute,
   } as any)
 const AuthenticatedProfileUsernameRoute =
   AuthenticatedProfileUsernameRouteImport.update({
@@ -1001,6 +1029,7 @@ export interface FileRoutesByFullPath {
   '/mistakes': typeof AuthenticatedMistakesRoute
   '/paper-trading': typeof AuthenticatedPaperTradingRoute
   '/profile': typeof AuthenticatedProfileRouteWithChildren
+  '/prop-challenges': typeof AuthenticatedPropChallengesRouteWithChildren
   '/replay': typeof AuthenticatedReplayRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
   '/strategies': typeof AuthenticatedStrategiesRouteWithChildren
@@ -1074,6 +1103,8 @@ export interface FileRoutesByFullPath {
   '/market/settings': typeof AuthenticatedMarketSettingsRoute
   '/market/symbols': typeof AuthenticatedMarketSymbolsRoute
   '/profile/$username': typeof AuthenticatedProfileUsernameRoute
+  '/prop-challenges/$id': typeof AuthenticatedPropChallengesIdRoute
+  '/prop-challenges/new': typeof AuthenticatedPropChallengesNewRoute
   '/replay/challenges': typeof AuthenticatedReplayChallengesRoute
   '/replay/library': typeof AuthenticatedReplayLibraryRoute
   '/replay/performance': typeof AuthenticatedReplayPerformanceRoute
@@ -1099,6 +1130,7 @@ export interface FileRoutesByFullPath {
   '/community/': typeof AuthenticatedCommunityIndexRoute
   '/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
   '/market/': typeof AuthenticatedMarketIndexRoute
+  '/prop-challenges/': typeof AuthenticatedPropChallengesIndexRoute
   '/replay/': typeof AuthenticatedReplayIndexRoute
   '/strategies/': typeof AuthenticatedStrategiesIndexRoute
   '/trading/': typeof AuthenticatedTradingIndexRoute
@@ -1207,6 +1239,8 @@ export interface FileRoutesByTo {
   '/market/settings': typeof AuthenticatedMarketSettingsRoute
   '/market/symbols': typeof AuthenticatedMarketSymbolsRoute
   '/profile/$username': typeof AuthenticatedProfileUsernameRoute
+  '/prop-challenges/$id': typeof AuthenticatedPropChallengesIdRoute
+  '/prop-challenges/new': typeof AuthenticatedPropChallengesNewRoute
   '/replay/challenges': typeof AuthenticatedReplayChallengesRoute
   '/replay/library': typeof AuthenticatedReplayLibraryRoute
   '/replay/performance': typeof AuthenticatedReplayPerformanceRoute
@@ -1232,6 +1266,7 @@ export interface FileRoutesByTo {
   '/community': typeof AuthenticatedCommunityIndexRoute
   '/leaderboard': typeof AuthenticatedLeaderboardIndexRoute
   '/market': typeof AuthenticatedMarketIndexRoute
+  '/prop-challenges': typeof AuthenticatedPropChallengesIndexRoute
   '/replay': typeof AuthenticatedReplayIndexRoute
   '/strategies': typeof AuthenticatedStrategiesIndexRoute
   '/trading': typeof AuthenticatedTradingIndexRoute
@@ -1280,6 +1315,7 @@ export interface FileRoutesById {
   '/_authenticated/mistakes': typeof AuthenticatedMistakesRoute
   '/_authenticated/paper-trading': typeof AuthenticatedPaperTradingRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRouteWithChildren
+  '/_authenticated/prop-challenges': typeof AuthenticatedPropChallengesRouteWithChildren
   '/_authenticated/replay': typeof AuthenticatedReplayRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/strategies': typeof AuthenticatedStrategiesRouteWithChildren
@@ -1353,6 +1389,8 @@ export interface FileRoutesById {
   '/_authenticated/market/settings': typeof AuthenticatedMarketSettingsRoute
   '/_authenticated/market/symbols': typeof AuthenticatedMarketSymbolsRoute
   '/_authenticated/profile/$username': typeof AuthenticatedProfileUsernameRoute
+  '/_authenticated/prop-challenges/$id': typeof AuthenticatedPropChallengesIdRoute
+  '/_authenticated/prop-challenges/new': typeof AuthenticatedPropChallengesNewRoute
   '/_authenticated/replay/challenges': typeof AuthenticatedReplayChallengesRoute
   '/_authenticated/replay/library': typeof AuthenticatedReplayLibraryRoute
   '/_authenticated/replay/performance': typeof AuthenticatedReplayPerformanceRoute
@@ -1378,6 +1416,7 @@ export interface FileRoutesById {
   '/_authenticated/community/': typeof AuthenticatedCommunityIndexRoute
   '/_authenticated/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
   '/_authenticated/market/': typeof AuthenticatedMarketIndexRoute
+  '/_authenticated/prop-challenges/': typeof AuthenticatedPropChallengesIndexRoute
   '/_authenticated/replay/': typeof AuthenticatedReplayIndexRoute
   '/_authenticated/strategies/': typeof AuthenticatedStrategiesIndexRoute
   '/_authenticated/trading/': typeof AuthenticatedTradingIndexRoute
@@ -1426,6 +1465,7 @@ export interface FileRouteTypes {
     | '/mistakes'
     | '/paper-trading'
     | '/profile'
+    | '/prop-challenges'
     | '/replay'
     | '/settings'
     | '/strategies'
@@ -1499,6 +1539,8 @@ export interface FileRouteTypes {
     | '/market/settings'
     | '/market/symbols'
     | '/profile/$username'
+    | '/prop-challenges/$id'
+    | '/prop-challenges/new'
     | '/replay/challenges'
     | '/replay/library'
     | '/replay/performance'
@@ -1524,6 +1566,7 @@ export interface FileRouteTypes {
     | '/community/'
     | '/leaderboard/'
     | '/market/'
+    | '/prop-challenges/'
     | '/replay/'
     | '/strategies/'
     | '/trading/'
@@ -1632,6 +1675,8 @@ export interface FileRouteTypes {
     | '/market/settings'
     | '/market/symbols'
     | '/profile/$username'
+    | '/prop-challenges/$id'
+    | '/prop-challenges/new'
     | '/replay/challenges'
     | '/replay/library'
     | '/replay/performance'
@@ -1657,6 +1702,7 @@ export interface FileRouteTypes {
     | '/community'
     | '/leaderboard'
     | '/market'
+    | '/prop-challenges'
     | '/replay'
     | '/strategies'
     | '/trading'
@@ -1704,6 +1750,7 @@ export interface FileRouteTypes {
     | '/_authenticated/mistakes'
     | '/_authenticated/paper-trading'
     | '/_authenticated/profile'
+    | '/_authenticated/prop-challenges'
     | '/_authenticated/replay'
     | '/_authenticated/settings'
     | '/_authenticated/strategies'
@@ -1777,6 +1824,8 @@ export interface FileRouteTypes {
     | '/_authenticated/market/settings'
     | '/_authenticated/market/symbols'
     | '/_authenticated/profile/$username'
+    | '/_authenticated/prop-challenges/$id'
+    | '/_authenticated/prop-challenges/new'
     | '/_authenticated/replay/challenges'
     | '/_authenticated/replay/library'
     | '/_authenticated/replay/performance'
@@ -1802,6 +1851,7 @@ export interface FileRouteTypes {
     | '/_authenticated/community/'
     | '/_authenticated/leaderboard/'
     | '/_authenticated/market/'
+    | '/_authenticated/prop-challenges/'
     | '/_authenticated/replay/'
     | '/_authenticated/strategies/'
     | '/_authenticated/trading/'
@@ -1941,6 +1991,13 @@ declare module '@tanstack/react-router' {
       path: '/replay'
       fullPath: '/replay'
       preLoaderRoute: typeof AuthenticatedReplayRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/prop-challenges': {
+      id: '/_authenticated/prop-challenges'
+      path: '/prop-challenges'
+      fullPath: '/prop-challenges'
+      preLoaderRoute: typeof AuthenticatedPropChallengesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/profile': {
@@ -2103,6 +2160,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/replay/'
       preLoaderRoute: typeof AuthenticatedReplayIndexRouteImport
       parentRoute: typeof AuthenticatedReplayRoute
+    }
+    '/_authenticated/prop-challenges/': {
+      id: '/_authenticated/prop-challenges/'
+      path: '/'
+      fullPath: '/prop-challenges/'
+      preLoaderRoute: typeof AuthenticatedPropChallengesIndexRouteImport
+      parentRoute: typeof AuthenticatedPropChallengesRoute
     }
     '/_authenticated/market/': {
       id: '/_authenticated/market/'
@@ -2278,6 +2342,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/replay/challenges'
       preLoaderRoute: typeof AuthenticatedReplayChallengesRouteImport
       parentRoute: typeof AuthenticatedReplayRoute
+    }
+    '/_authenticated/prop-challenges/new': {
+      id: '/_authenticated/prop-challenges/new'
+      path: '/new'
+      fullPath: '/prop-challenges/new'
+      preLoaderRoute: typeof AuthenticatedPropChallengesNewRouteImport
+      parentRoute: typeof AuthenticatedPropChallengesRoute
+    }
+    '/_authenticated/prop-challenges/$id': {
+      id: '/_authenticated/prop-challenges/$id'
+      path: '/$id'
+      fullPath: '/prop-challenges/$id'
+      preLoaderRoute: typeof AuthenticatedPropChallengesIdRouteImport
+      parentRoute: typeof AuthenticatedPropChallengesRoute
     }
     '/_authenticated/profile/$username': {
       id: '/_authenticated/profile/$username'
@@ -3170,6 +3248,25 @@ const AuthenticatedProfileRouteChildren: AuthenticatedProfileRouteChildren = {
 const AuthenticatedProfileRouteWithChildren =
   AuthenticatedProfileRoute._addFileChildren(AuthenticatedProfileRouteChildren)
 
+interface AuthenticatedPropChallengesRouteChildren {
+  AuthenticatedPropChallengesIdRoute: typeof AuthenticatedPropChallengesIdRoute
+  AuthenticatedPropChallengesNewRoute: typeof AuthenticatedPropChallengesNewRoute
+  AuthenticatedPropChallengesIndexRoute: typeof AuthenticatedPropChallengesIndexRoute
+}
+
+const AuthenticatedPropChallengesRouteChildren: AuthenticatedPropChallengesRouteChildren =
+  {
+    AuthenticatedPropChallengesIdRoute: AuthenticatedPropChallengesIdRoute,
+    AuthenticatedPropChallengesNewRoute: AuthenticatedPropChallengesNewRoute,
+    AuthenticatedPropChallengesIndexRoute:
+      AuthenticatedPropChallengesIndexRoute,
+  }
+
+const AuthenticatedPropChallengesRouteWithChildren =
+  AuthenticatedPropChallengesRoute._addFileChildren(
+    AuthenticatedPropChallengesRouteChildren,
+  )
+
 interface AuthenticatedReplayRouteChildren {
   AuthenticatedReplayChallengesRoute: typeof AuthenticatedReplayChallengesRoute
   AuthenticatedReplayLibraryRoute: typeof AuthenticatedReplayLibraryRoute
@@ -3275,6 +3372,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMistakesRoute: typeof AuthenticatedMistakesRoute
   AuthenticatedPaperTradingRoute: typeof AuthenticatedPaperTradingRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRouteWithChildren
+  AuthenticatedPropChallengesRoute: typeof AuthenticatedPropChallengesRouteWithChildren
   AuthenticatedReplayRoute: typeof AuthenticatedReplayRouteWithChildren
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedStrategiesRoute: typeof AuthenticatedStrategiesRouteWithChildren
@@ -3305,6 +3403,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMistakesRoute: AuthenticatedMistakesRoute,
   AuthenticatedPaperTradingRoute: AuthenticatedPaperTradingRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRouteWithChildren,
+  AuthenticatedPropChallengesRoute:
+    AuthenticatedPropChallengesRouteWithChildren,
   AuthenticatedReplayRoute: AuthenticatedReplayRouteWithChildren,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedStrategiesRoute: AuthenticatedStrategiesRouteWithChildren,
