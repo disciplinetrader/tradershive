@@ -501,3 +501,4 @@ function MarketDataDiagnostics() {
       </div>
     </div>
   );
+}
