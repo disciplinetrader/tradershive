@@ -214,200 +214,227 @@ function TradingWorkspaceInner() {
     onCancelOrders: () => toast.info("Cancel all pending orders: coming in next phase"),
   });
 
+  const [rightOpen, setRightOpen] = useState(true);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="flex min-h-0 flex-col gap-3 p-2 pb-3 sm:p-3">
-        <TopToolbar />
-        <TodayPnLWidget
-          dailyTargetPct={Number(account?.max_daily_risk_pct ?? 5)}
-          dailyLossLimitPct={Number(account?.max_daily_risk_pct ?? 5)}
-        />
-        <AccountSummary />
+      <div className="flex min-h-0 flex-col">
+        {/* ── Compact unified toolbar (single row) ────────────────────────── */}
+        <div className="flex flex-wrap items-center gap-2 border-b border-border/50 bg-card/40 px-2 py-1.5 backdrop-blur sm:px-3">
+          <button
+            onClick={() => setSymbolSearchOpen(true)}
+            className="group flex min-w-0 items-baseline gap-2 rounded-md border border-border/60 bg-background/60 px-2 py-1 text-sm font-bold tracking-wide transition hover:border-primary/40"
+            title="Change symbol (⌘F)"
+          >
+            <span className="truncate">{symbol}</span>
+            <span className="hidden truncate text-[10px] font-normal uppercase text-muted-foreground md:inline">{meta?.name}</span>
+            <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground opacity-60 group-hover:opacity-100" />
+          </button>
 
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_280px] lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_360px]">
-          <GlassCard className="relative flex h-[55vh] min-h-[360px] flex-col overflow-hidden p-0 md:h-[520px] lg:h-[560px] xl:h-[620px]">
+          <div className="flex items-baseline gap-2 tabular-nums">
+            <motion.span
+              key={last} initial={{ opacity: 0.4 }} animate={{ opacity: 1 }}
+              className={cn("text-sm font-bold sm:text-base", quote?.last && quote.last >= bid ? "text-success" : "text-danger")}
+            >{last.toFixed(decimals)}</motion.span>
+            <span className="hidden text-[10px] text-muted-foreground xl:inline">B <span className="text-foreground">{bid.toFixed(decimals)}</span></span>
+            <span className="hidden text-[10px] text-muted-foreground xl:inline">A <span className="text-foreground">{ask.toFixed(decimals)}</span></span>
+            <Badge variant="outline" className="hidden h-4 px-1 text-[9px] xl:inline-flex">Sp {spread.toFixed(decimals)}</Badge>
+          </div>
 
+          <div className="mx-1 hidden h-5 w-px bg-border/60 md:block" />
 
-
-
-            {/* Chart header */}
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/50 px-2 py-2 sm:px-3">
-              <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-                <button
-                  onClick={() => setSymbolSearchOpen(true)}
-                  className="group flex min-w-0 items-baseline gap-2 rounded-md border border-transparent px-1.5 py-1 transition hover:border-border/60 hover:bg-background/60"
-                  title="Change symbol"
-                >
-                  <span className="truncate text-sm font-bold tracking-wide">{symbol}</span>
-                  <span className="hidden truncate text-[11px] uppercase text-muted-foreground sm:inline">{meta?.name}</span>
-                  <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground opacity-60 group-hover:opacity-100" />
-                </button>
-                <div className="flex min-w-0 items-baseline gap-2 tabular-nums sm:gap-3">
-                  <motion.span
-                    key={last} initial={{ opacity: 0.4 }} animate={{ opacity: 1 }}
-                    className={cn("text-base font-bold sm:text-lg", quote?.last && quote.last >= bid ? "text-success" : "text-danger")}
-                  >{last.toFixed(decimals)}</motion.span>
-                  <span className="hidden text-[11px] text-muted-foreground sm:inline">Bid <span className="text-foreground">{bid.toFixed(decimals)}</span></span>
-                  <span className="hidden text-[11px] text-muted-foreground sm:inline">Ask <span className="text-foreground">{ask.toFixed(decimals)}</span></span>
-                  <Badge variant="outline" className="hidden text-[10px] sm:inline-flex">Spread {spread.toFixed(decimals)}</Badge>
-                </div>
+          {/* Timeframe */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-7 gap-1.5 px-2 text-[11px] font-semibold">
+                <Clock className="h-3.5 w-3.5" /> {activeTf}
+                <ChevronDown className="h-3 w-3 opacity-60" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-40">
+              <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Timeframe</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <div className="grid grid-cols-4 gap-1 p-1">
+                {CHART_TIMEFRAMES.map((tf) => (
+                  <button
+                    key={tf}
+                    onClick={() => setTimeframe(tf)}
+                    className={cn(
+                      "rounded-md px-2 py-1 text-[11px] font-medium transition",
+                      activeTf === tf ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+                    )}
+                  >{tf}</button>
+                ))}
               </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
+          {/* Chart type */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-7 gap-1.5 px-2 text-[11px]">
+                <CandlestickChart className="h-3.5 w-3.5" />
+                <span className="hidden md:inline">{activeChartTypeLabel}</span>
+                <ChevronDown className="h-3 w-3 opacity-60" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-48">
+              <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Chart Type</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {CHART_TYPE_OPTIONS.map((c) => (
+                <DropdownMenuItem key={c.key} onSelect={() => setChartType(c.key)} className="text-xs">
+                  <span className="flex-1">{c.label}</span>
+                  {chartType === c.key && <Check className="h-3.5 w-3.5 text-primary" />}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-              <div className="flex items-center gap-2">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant={plannerActive ? "default" : "ghost"} size="sm"
-                      className="h-7 gap-1 px-2 text-[11px]"
-                      onClick={() => setPlannerActive((v) => !v)}
-                    >
-                      <Target className="h-3.5 w-3.5" /> Plan Trade
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Click a point on the chart to place Entry, then drag SL / TP (T)</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-7 gap-1 px-2 text-[11px]" onClick={screenshot}>
-                      <Camera className="h-3.5 w-3.5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Screenshot (P)</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-7 gap-1 px-2 text-[11px]" onClick={() => setShortcutsHelp((v) => !v)}>
-                      <Keyboard className="h-3.5 w-3.5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Keyboard shortcuts</TooltipContent>
-                </Tooltip>
-                {/* Timeframe */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-7 gap-1.5 px-2.5 text-[11px] font-semibold">
-                      <Clock className="h-3.5 w-3.5" /> {activeTf}
-                      <ChevronDown className="h-3 w-3 opacity-60" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-40">
-                    <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Timeframe</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <div className="grid grid-cols-4 gap-1 p-1">
-                      {CHART_TIMEFRAMES.map((tf) => (
-                        <button
-                          key={tf}
-                          onClick={() => setTimeframe(tf)}
-                          className={cn(
-                            "rounded-md px-2 py-1 text-[11px] font-medium transition",
-                            activeTf === tf ? "bg-primary text-primary-foreground" : "hover:bg-muted",
-                          )}
-                        >{tf}</button>
-                      ))}
-                    </div>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                {/* Chart type */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-7 gap-1.5 px-2.5 text-[11px]">
-                      <CandlestickChart className="h-3.5 w-3.5" /> {activeChartTypeLabel}
-                      <ChevronDown className="h-3 w-3 opacity-60" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Chart Type</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {CHART_TYPE_OPTIONS.map((c) => (
-                      <DropdownMenuItem key={c.key} onSelect={() => setChartType(c.key)} className="text-xs">
-                        <span className="flex-1">{c.label}</span>
-                        {chartType === c.key && <Check className="h-3.5 w-3.5 text-primary" />}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                {/* Indicators */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-7 gap-1.5 px-2.5 text-[11px]">
-                      <BarChart3 className="h-3.5 w-3.5" /> Indicators
-                      {activeIndicatorCount > 0 && (
-                        <Badge variant="secondary" className="h-4 px-1 text-[10px]">{activeIndicatorCount}</Badge>
-                      )}
-                      <ChevronDown className="h-3 w-3 opacity-60" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-72">
-                    <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                      Indicators & Studies
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {["Overlays", "Oscillators", "Sessions & Levels"].map((group) => (
-                      <div key={group}>
-                        <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{group}</div>
-                        {INDICATOR_TOGGLES.filter((i) => i.group === group).map((i) => (
-                          <DropdownMenuCheckboxItem
-                            key={i.key}
-                            checked={!!enabled[i.key]}
-                            onCheckedChange={(v) => setEnabled((s) => ({ ...s, [i.key]: !!v }))}
-                            onSelect={(e) => e.preventDefault()}
-                            className="text-xs"
-                          >
-                            {i.label}
-                          </DropdownMenuCheckboxItem>
-                        ))}
-                      </div>
-                    ))}
-                    <DropdownMenuSeparator />
-                    <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      Smart Money Concepts
-                    </div>
+          {/* Indicators */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-7 gap-1.5 px-2 text-[11px]">
+                <BarChart3 className="h-3.5 w-3.5" />
+                <span className="hidden md:inline">Indicators</span>
+                {activeIndicatorCount > 0 && (
+                  <Badge variant="secondary" className="h-4 px-1 text-[10px]">{activeIndicatorCount}</Badge>
+                )}
+                <ChevronDown className="h-3 w-3 opacity-60" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-72">
+              <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                Indicators & Studies
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {["Overlays", "Oscillators", "Sessions & Levels"].map((group) => (
+                <div key={group}>
+                  <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{group}</div>
+                  {INDICATOR_TOGGLES.filter((i) => i.group === group).map((i) => (
                     <DropdownMenuCheckboxItem
-                      checked={smcOn}
-                      onCheckedChange={(v) => setSmcOn(!!v)}
+                      key={i.key}
+                      checked={!!enabled[i.key]}
+                      onCheckedChange={(v) => setEnabled((s) => ({ ...s, [i.key]: !!v }))}
                       onSelect={(e) => e.preventDefault()}
-                      className="text-xs font-medium"
+                      className="text-xs"
                     >
-                      SMC / ICT Toolkit
+                      {i.label}
                     </DropdownMenuCheckboxItem>
-                    <DropdownMenuSub>
-                      <DropdownMenuSubTrigger className="text-xs" disabled={!smcOn}>
-                        <span className="flex-1 pl-6">Configure setups…</span>
-                      </DropdownMenuSubTrigger>
-                      <DropdownMenuSubContent className="w-64">
-                        <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                          SMC / ICT Setups
-                        </DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        {SMC_SUB_OPTIONS.map((p) => (
-                          <DropdownMenuCheckboxItem
-                            key={p.key}
-                            checked={!!smcParts[p.key]}
-                            onCheckedChange={(v) => setSmcParts((s) => ({ ...s, [p.key]: !!v }))}
-                            onSelect={(e) => e.preventDefault()}
-                            className="items-start gap-2 py-2 text-xs"
-                          >
-                            <div className="flex flex-col">
-                              <span className="font-medium">{p.label}</span>
-                              <span className="text-[10px] text-muted-foreground">{p.desc}</span>
-                            </div>
-                          </DropdownMenuCheckboxItem>
-                        ))}
-                      </DropdownMenuSubContent>
-                    </DropdownMenuSub>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                  ))}
+                </div>
+              ))}
+              <DropdownMenuSeparator />
+              <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Smart Money Concepts
               </div>
-            </div>
+              <DropdownMenuCheckboxItem
+                checked={smcOn}
+                onCheckedChange={(v) => setSmcOn(!!v)}
+                onSelect={(e) => e.preventDefault()}
+                className="text-xs font-medium"
+              >
+                SMC / ICT Toolkit
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger className="text-xs" disabled={!smcOn}>
+                  <span className="flex-1 pl-6">Configure setups…</span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent className="w-64">
+                  <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    SMC / ICT Setups
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {SMC_SUB_OPTIONS.map((p) => (
+                    <DropdownMenuCheckboxItem
+                      key={p.key}
+                      checked={!!smcParts[p.key]}
+                      onCheckedChange={(v) => setSmcParts((s) => ({ ...s, [p.key]: !!v }))}
+                      onSelect={(e) => e.preventDefault()}
+                      className="items-start gap-2 py-2 text-xs"
+                    >
+                      <div className="flex flex-col">
+                        <span className="font-medium">{p.label}</span>
+                        <span className="text-[10px] text-muted-foreground">{p.desc}</span>
+                      </div>
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-            {/* Live indicator strip */}
-            <div className="flex items-center gap-2 border-b border-border/50 px-3 py-1.5 text-[11px] text-muted-foreground">
-              <LineChartIcon className="h-3.5 w-3.5" />
+          {/* Right-aligned quick actions */}
+          <div className="ml-auto flex items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={plannerActive ? "default" : "ghost"} size="sm"
+                  className="h-7 gap-1 px-2 text-[11px]"
+                  onClick={() => setPlannerActive((v) => !v)}
+                >
+                  <Target className="h-3.5 w-3.5" /> <span className="hidden lg:inline">Plan</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Plan Trade — click chart to place entry</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-7 gap-1 px-2 text-[11px]" onClick={screenshot}>
+                  <Camera className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Screenshot (P)</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-7 gap-1 px-2 text-[11px]" onClick={() => setShortcutsHelp((v) => !v)}>
+                  <Keyboard className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Keyboard shortcuts</TooltipContent>
+            </Tooltip>
+            <Button
+              variant="ghost" size="sm"
+              className="h-7 gap-1 px-2 text-[11px]"
+              onClick={() => setDetailsOpen((v) => !v)}
+              aria-expanded={detailsOpen}
+              title="Toggle account & market details"
+            >
+              <Activity className="h-3.5 w-3.5" />
+              <span className="hidden md:inline">Details</span>
+              <ChevronDown className={cn("h-3 w-3 opacity-60 transition-transform", detailsOpen && "rotate-180")} />
+            </Button>
+          </div>
+        </div>
+
+        {/* Collapsible account + session details (progressive disclosure) */}
+        {detailsOpen && (
+          <div className="border-b border-border/40 bg-background/40 px-2 py-2 sm:px-3 space-y-2">
+            <TopToolbar />
+            <TodayPnLWidget
+              dailyTargetPct={Number(account?.max_daily_risk_pct ?? 5)}
+              dailyLossLimitPct={Number(account?.max_daily_risk_pct ?? 5)}
+            />
+            <AccountSummary />
+          </div>
+        )}
+
+        {/* ── Main workspace: chart dominates; right rail collapses ─────── */}
+        <div
+          className={cn(
+            "grid min-h-0 flex-1 grid-cols-1 gap-0",
+            rightOpen
+              ? "md:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_360px]"
+              : "md:grid-cols-[minmax(0,1fr)_44px]",
+          )}
+        >
+          <div className="relative flex min-h-[calc(100dvh-4.5rem)] flex-col border-r border-border/40">
+            {/* Live indicator strip (thin) */}
+            <div className="flex items-center gap-2 border-b border-border/40 bg-background/30 px-3 py-1 text-[10px] text-muted-foreground">
+              <LineChartIcon className="h-3 w-3" />
               <span className="truncate">
-                {activeIndicatorCount === 0 ? "No indicators — open the Indicators menu to add studies" : (
+                {activeIndicatorCount === 0 ? "No indicators active" : (
                   <>
                     {INDICATOR_TOGGLES.filter((i) => enabled[i.key]).map((i) => i.label).join(" · ")}
                     {smcOn && (activeIndicatorCount > 1 ? " · " : "") + "SMC/ICT"}
@@ -419,8 +446,7 @@ function TradingWorkspaceInner() {
               </div>
             </div>
 
-
-            {/* Chart canvas + overlays */}
+            {/* Chart canvas + overlays (fills remaining space) */}
             <div className="relative min-h-0 flex-1">
               <ChartEngine
                 settings={chartSettings} indicators={indicators}
@@ -502,38 +528,58 @@ function TradingWorkspaceInner() {
                 </div>
               )}
             </div>
-          </GlassCard>
-
-          <div className="flex min-h-0 flex-col gap-3">
-            <OrderPanel />
           </div>
 
+          {/* Right rail: collapsible order/trade panel */}
+          {rightOpen ? (
+            <div className="relative flex min-h-0 flex-col overflow-hidden bg-card/30">
+              <button
+                onClick={() => setRightOpen(false)}
+                className="absolute right-1 top-1 z-10 grid h-7 w-7 place-items-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                aria-label="Collapse trade panel"
+                title="Collapse trade panel"
+              >
+                <ChevronDown className="h-4 w-4 -rotate-90" />
+              </button>
+              <div className="min-h-0 flex-1 overflow-auto p-2 sm:p-3">
+                <OrderPanel />
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setRightOpen(true)}
+              className="hidden md:flex flex-col items-center gap-2 border-l border-border/40 bg-card/20 py-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground transition hover:bg-card/40 hover:text-foreground"
+              aria-label="Expand trade panel"
+              title="Expand trade panel"
+            >
+              <ChevronDown className="h-4 w-4 rotate-90" />
+              <span className="rotate-180 [writing-mode:vertical-rl]">Trade</span>
+            </button>
+          )}
         </div>
 
-        <div className="block">
-          <MultiChartStrip panes={multiPanes} onChange={setMultiPanes} primarySymbol={symbol} />
-        </div>
-
-        <GlassCard className="min-h-[240px] p-0">
+        {/* Bottom tabbed dock — positions, orders, history, watchlist */}
+        <div className="border-t border-border/40 bg-card/30">
+          <div className="hidden md:block">
+            <MultiChartStrip panes={multiPanes} onChange={setMultiPanes} primarySymbol={symbol} />
+          </div>
           <Tabs defaultValue="positions" className="w-full">
-            <div className="border-b border-border/50 px-3 pt-2">
-              <TabsList className="bg-background/60 w-full justify-start overflow-x-auto no-scrollbar">
+            <div className="border-t border-border/40 px-3 pt-1">
+              <TabsList className="bg-transparent w-full justify-start overflow-x-auto no-scrollbar h-8">
                 <TabsTrigger value="positions" className="text-xs">Positions</TabsTrigger>
                 <TabsTrigger value="orders" className="text-xs">Orders</TabsTrigger>
                 <TabsTrigger value="history" className="text-xs">History</TabsTrigger>
                 <TabsTrigger value="watchlist" className="text-xs">Watchlist</TabsTrigger>
               </TabsList>
             </div>
-            <TabsContent value="positions" className="p-2 sm:p-3"><PositionsTable /></TabsContent>
-            <TabsContent value="orders" className="p-2 sm:p-3"><OrdersTable /></TabsContent>
-            <TabsContent value="history" className="p-2 sm:p-3"><HistoryTable /></TabsContent>
-            <TabsContent value="watchlist" className="p-2 sm:p-3"><WatchlistPanel /></TabsContent>
+            <TabsContent value="positions" className="p-2 sm:p-3 max-h-[280px] overflow-auto"><PositionsTable /></TabsContent>
+            <TabsContent value="orders" className="p-2 sm:p-3 max-h-[280px] overflow-auto"><OrdersTable /></TabsContent>
+            <TabsContent value="history" className="p-2 sm:p-3 max-h-[280px] overflow-auto"><HistoryTable /></TabsContent>
+            <TabsContent value="watchlist" className="p-2 sm:p-3 max-h-[280px] overflow-auto"><WatchlistPanel /></TabsContent>
           </Tabs>
-        </GlassCard>
+        </div>
 
         <SymbolSearch open={symbolSearchOpen} onOpenChange={setSymbolSearchOpen} />
-
-        {/* Same desktop layout across breakpoints — no mobile-only dock */}
       </div>
     </TooltipProvider>
   );

@@ -82,14 +82,24 @@ void Users; void ShoppingBag; void UserIcon; void LifeBuoy;
 export function AppShell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [railHovered, setRailHovered] = useState(false);
   const { isAdmin, profile, loading } = useAuth();
   const { open, setOpen } = useCommandPalette();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
 
+  // Immersive workspaces: chart is the hero; sidebar shrinks to icon rail
+  // (hover-to-expand overlay) and page chrome is minimized.
+  const immersive =
+    pathname === "/trading" ||
+    pathname.startsWith("/trading/") ||
+    pathname === "/replay/session" ||
+    pathname.startsWith("/replay/session/");
+
   // Close mobile drawer on route change
   useEffect(() => {
     setMobileOpen(false);
+    setRailHovered(false);
   }, [pathname]);
 
   // Redirect users who haven't completed onboarding
@@ -100,6 +110,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
   }, [loading, profile, pathname, navigate]);
 
+  const effectiveCollapsed = immersive ? !railHovered : collapsed;
+
   return (
     <ProductTourProvider>
     <div className="relative flex min-h-dvh w-full bg-background">
@@ -109,19 +121,30 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="pointer-events-none fixed inset-0 z-0 grid-bg opacity-30 [mask-image:radial-gradient(60%_50%_at_50%_20%,black,transparent)]" aria-hidden />
 
 
-      {/* Desktop sidebar */}
+      {/* Desktop sidebar — sticky on standard routes, floating icon rail with hover-expand on immersive routes */}
       <aside
+        onMouseEnter={immersive ? () => setRailHovered(true) : undefined}
+        onMouseLeave={immersive ? () => setRailHovered(false) : undefined}
         className={cn(
-          "sticky top-0 z-30 hidden h-dvh shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-300 md:block",
-          collapsed ? "w-[72px]" : "w-[248px]",
+          "hidden border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 md:block",
+          immersive
+            ? cn(
+                "fixed left-0 top-0 z-40 h-dvh",
+                railHovered ? "w-[248px] shadow-2xl" : "w-[64px]",
+              )
+            : cn(
+                "sticky top-0 z-30 h-dvh shrink-0",
+                collapsed ? "w-[72px]" : "w-[248px]",
+              ),
         )}
         aria-label="Primary"
       >
         <SidebarInner
-          collapsed={collapsed}
+          collapsed={effectiveCollapsed}
           onToggle={() => setCollapsed((v) => !v)}
           showAdmin={isAdmin}
           currentPath={pathname}
+          hideToggle={immersive}
         />
       </aside>
 
@@ -159,14 +182,27 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       ) : null}
 
-      {/* Main column */}
-      <div className="relative z-10 flex min-w-0 flex-1 flex-col">
-        <Topbar
-          onMenuClick={() => setMobileOpen(true)}
-          onSearchClick={() => setOpen(true)}
-        />
-        <main id="main" className="flex-1 page-x page-y pb-28 md:pb-10">
-          <div className="mx-auto w-full max-w-[1600px]">{children}</div>
+      {/* Main column — pushed right by the icon rail on immersive routes */}
+      <div
+        className={cn(
+          "relative z-10 flex min-w-0 flex-1 flex-col",
+          immersive && "md:pl-[64px]",
+        )}
+      >
+        {!immersive && (
+          <Topbar
+            onMenuClick={() => setMobileOpen(true)}
+            onSearchClick={() => setOpen(true)}
+          />
+        )}
+        <main
+          id="main"
+          className={cn(
+            "flex-1",
+            immersive ? "pb-20 md:pb-0" : "page-x page-y pb-28 md:pb-10",
+          )}
+        >
+          <div className={cn("mx-auto w-full", immersive ? "max-w-none" : "max-w-[1600px]")}>{children}</div>
         </main>
         {/* Mobile bottom nav */}
         <MobileBottomNav currentPath={pathname} onMenuClick={() => setMobileOpen(true)} />
