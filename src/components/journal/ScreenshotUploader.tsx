@@ -192,14 +192,19 @@ export function ScreenshotUploader({
   );
 }
 
-/** Upload staged screenshots and persist attachment rows in order. */
+/**
+ * Upload staged screenshots, persist attachment rows in order, and return the
+ * uploaded storage paths so the parent can persist them onto
+ * `journal_entries.screenshots` (which drives card thumbnails / previews).
+ */
 export async function persistStagedScreenshots(
   userId: string,
   entryId: string,
   staged: StagedScreenshot[],
-): Promise<void> {
-  if (!staged.length) return;
+): Promise<string[]> {
+  if (!staged.length) return [];
   const { recordAttachment } = await import("@/lib/journal/api");
+  const paths: string[] = [];
   let sortOrder = 0;
   for (const s of staged) {
     try {
@@ -216,12 +221,14 @@ export async function persistStagedScreenshots(
         category: s.category || null,
         sort_order: sortOrder,
       });
+      paths.push(uploaded.path);
       sortOrder += 1;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Upload failed";
       toast.error(`${s.file.name}: ${message}`);
     }
   }
+  return paths;
 }
 
 /** Small utility used by loader indicator. */
