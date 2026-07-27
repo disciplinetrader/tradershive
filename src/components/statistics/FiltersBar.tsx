@@ -90,7 +90,8 @@ export function FiltersBar() {
     filters.strategies.length + filters.sessions.length + filters.directions.length + filters.emotions.length;
 
   return (
-    <div className="glass rounded-2xl p-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+    <div className="glass rounded-md p-2 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8">
+
       <Select value={filters.preset} onValueChange={(v) => setFilters({ ...filters, preset: v as StatisticsFilters["preset"] })}>
         <SelectTrigger className="h-9 w-full"><SelectValue /></SelectTrigger>
         <SelectContent>

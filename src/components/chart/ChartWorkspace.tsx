@@ -125,8 +125,9 @@ export function ChartWorkspace({ fullscreen, initial }: Props) {
       />
 
       <div className="flex min-h-0 flex-1">
-        {/* Left drawing tool rail */}
-        {!fullscreen ? <LeftToolRail active={tool} onChange={setTool} /> : null}
+        {/* Left drawing tool rail — hidden on small screens */}
+        {!fullscreen ? <div className="hidden md:block"><LeftToolRail active={tool} onChange={setTool} /></div> : null}
+
 
         {/* Chart + right panel */}
         <div className="flex min-h-0 flex-1">
@@ -174,7 +175,8 @@ export function ChartWorkspace({ fullscreen, initial }: Props) {
 
           {/* Right panel: Watchlist (default) with tab to Trade */}
           {!fullscreen && rightOpen ? (
-            <aside className="flex min-h-0 w-[260px] shrink-0 flex-col border-l border-border/60 bg-surface">
+            <aside className="hidden min-h-0 w-[240px] shrink-0 flex-col border-l border-border/60 bg-surface md:flex lg:w-[260px] xl:w-[280px]">
+
               <div className="flex h-9 items-center gap-1 border-b border-border/60 px-2 text-[11px]">
                 <RightTabButton active={rightTab === "watchlist"} onClick={() => setRightTab("watchlist")}>
                   <span className="mr-1 inline-block h-2 w-2 rounded-full bg-danger" />
@@ -205,22 +207,26 @@ export function ChartWorkspace({ fullscreen, initial }: Props) {
         </div>
 
         {/* Right icon rail */}
+        {/* Right icon rail — hidden on small screens */}
         {!fullscreen ? (
-          <RightIconRail
-            active={rightTab}
-            onSelect={(k) => {
-              if (k === "watchlist") { setRightOpen(true); setRightTab("watchlist"); }
-              else if (k === "alerts") setAlertsOpen(true);
-              else if (k === "ai") navigate({ to: "/ai/chat" });
-              else if (k === "notes") { setRightOpen(true); setRightTab("trade"); }
-            }}
-          />
+          <div className="hidden md:block">
+            <RightIconRail
+              active={rightTab}
+              onSelect={(k) => {
+                if (k === "watchlist") { setRightOpen(true); setRightTab("watchlist"); }
+                else if (k === "alerts") setAlertsOpen(true);
+                else if (k === "ai") navigate({ to: "/ai/chat" });
+                else if (k === "notes") { setRightOpen(true); setRightTab("trade"); }
+              }}
+            />
+          </div>
         ) : null}
+
       </div>
 
       {/* Bottom tabs */}
       {!fullscreen ? (
-        <div className={cn("shrink-0 border-t border-border/60 bg-surface", bottomOpen ? "h-[220px]" : "h-8")}>
+        <div className={cn("shrink-0 border-t border-border/60 bg-surface hidden md:block", bottomOpen ? "h-[220px]" : "h-8")}>
           <div className="flex h-8 items-center gap-2 border-b border-border/60 px-2 text-[11px] text-muted-foreground">
             <span className="font-semibold uppercase tracking-wider">Trading Panel</span>
             <button

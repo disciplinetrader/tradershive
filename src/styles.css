@@ -316,6 +316,35 @@
   overflow-x: hidden;
 }
 
+/* Tabular numerics for prices, R-multiples, KPIs — Linear-style */
+@utility mono-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "cv11" 1;
+}
+
+/* Hairline border that adapts to theme — used for dense modern tables/cards */
+@utility hairline {
+  border: 1px solid color-mix(in oklab, var(--foreground) 8%, transparent);
+}
+@utility hairline-b {
+  border-bottom: 1px solid color-mix(in oklab, var(--foreground) 8%, transparent);
+}
+@utility hairline-t {
+  border-top: 1px solid color-mix(in oklab, var(--foreground) 8%, transparent);
+}
+
+/* Horizontal scroll strip — used for filter chips / toolbar overflow on mobile */
+@utility h-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+}
+@utility h-scroll::-webkit-scrollbar { display: none;
+
+
 /* =========================================================
  * Responsive design system — fluid tokens.
  * =======================================================*/
