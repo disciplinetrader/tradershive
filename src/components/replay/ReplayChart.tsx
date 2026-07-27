@@ -77,29 +77,49 @@ export function ReplayChart({ onCapture }: Props) {
   }, [candles, cursorIdx]);
 
   // Open-trade price lines (entry / SL / TP). Rebuild whenever the set changes.
+  // The entry line is drawn solid + thick and includes the numeric entry price
+  // in its title so it cannot be visually confused with the SL/TP lines that
+  // sit above/below it (a common source of "wrong entry price" reports).
   useEffect(() => {
     const a = adapterRef.current;
     if (!a) return;
     priceLinesRef.current.forEach((l) => l.remove());
     const next: PriceLineHandle[] = [];
+    const fmt = (n: number) => {
+      const abs = Math.abs(n);
+      const digits = abs >= 100 ? 2 : abs >= 1 ? 4 : 5;
+      return n.toFixed(digits);
+    };
     for (const t of openTrades) {
       next.push(
         a.addPriceLine({
           price: t.entry_price,
-          color: "var(--info)",
-          title: `${t.direction.toUpperCase()} ${t.lot_size}`,
-          lineStyle: 2,
-          lineWidth: 1,
+          color: t.direction === "long" ? "var(--success)" : "var(--danger)",
+          title: `${t.direction === "long" ? "▲" : "▼"} ${t.direction.toUpperCase()} ${t.lot_size} @ ${fmt(t.entry_price)}`,
+          lineStyle: 0, // solid — distinct from dashed SL/TP
+          lineWidth: 2,
         }),
       );
       if (t.stop_loss != null) {
         next.push(
-          a.addPriceLine({ price: t.stop_loss, color: "var(--danger)", title: "SL", lineStyle: 2, lineWidth: 1 }),
+          a.addPriceLine({
+            price: t.stop_loss,
+            color: "var(--danger)",
+            title: `SL @ ${fmt(t.stop_loss)}`,
+            lineStyle: 2,
+            lineWidth: 1,
+          }),
         );
       }
       if (t.take_profit != null) {
         next.push(
-          a.addPriceLine({ price: t.take_profit, color: "var(--success)", title: "TP", lineStyle: 2, lineWidth: 1 }),
+          a.addPriceLine({
+            price: t.take_profit,
+            color: "var(--success)",
+            title: `TP @ ${fmt(t.take_profit)}`,
+            lineStyle: 2,
+            lineWidth: 1,
+          }),
         );
       }
     }
