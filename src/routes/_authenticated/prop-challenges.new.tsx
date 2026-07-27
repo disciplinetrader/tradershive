@@ -68,8 +68,9 @@ function NewChallengePage() {
     }));
   }
 
+  type CreatePayload = Parameters<typeof createPropChallenge>[0];
   const m = useMutation({
-    mutationFn: (payload: Parameters<typeof create>[0]["data"]) => create({ data: payload }),
+    mutationFn: (payload: CreatePayload) => create({ data: payload } as unknown as Parameters<typeof create>[0]),
     onSuccess: (row) => {
       toast.success("Challenge created");
       qc.invalidateQueries({ queryKey: ["prop-challenges"] });
