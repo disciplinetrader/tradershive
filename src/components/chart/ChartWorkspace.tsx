@@ -123,7 +123,7 @@ export function ChartWorkspace({ fullscreen, initial }: Props) {
         onFullscreen={() => navigate({ to: "/trading/fullscreen" })}
         onOpenAlerts={() => setAlertsOpen(true)}
         onOpenReplay={() => navigate({ to: "/replay" })}
-        onToggleRightPanel={() => setRightOpen((v) => !v)}
+        onToggleRightPanel={() => setRightOpen(!rightOpen)}
         rightPanelOpen={rightOpen}
       />
 
@@ -233,7 +233,7 @@ export function ChartWorkspace({ fullscreen, initial }: Props) {
           <div className="flex h-8 items-center gap-2 border-b border-border/60 px-2 text-[11px] text-muted-foreground">
             <span className="font-semibold uppercase tracking-wider">Trading Panel</span>
             <button
-              onClick={() => setBottomOpen((v) => !v)}
+              onClick={() => setBottomOpen(!bottomOpen)}
               className="ml-auto grid h-6 w-6 place-items-center rounded hover:bg-background/60 hover:text-foreground"
               title={bottomOpen ? "Collapse" : "Expand"}
             >
