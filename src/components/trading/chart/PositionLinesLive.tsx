@@ -1,8 +1,21 @@
 /**
- * Live position overlay: draws Entry/SL/TP for each open trade on the
- * current symbol, plus a floating PnL badge that follows the current
- * price. SL/TP handles are draggable — releasing calls modifyTrade to
- * persist. Debounced via pointerup so the server sees one write per drag.
+ * Live position overlay — professional trade visualization.
+ *
+ * For every open position on the active symbol this component draws:
+ *   • Solid, thick ENTRY line with a rich floating label (direction, size,
+ *     entry price, floating R multiple, floating $ P/L, floating points).
+ *   • Dashed red STOP-LOSS line with the potential $ loss.
+ *   • Dashed green TAKE-PROFIT line with the potential $ reward.
+ *   • Translucent red risk zone between entry ↔ SL.
+ *   • Translucent green reward zone between entry ↔ TP.
+ *
+ * While the trader drags SL or TP a floating tooltip shows the live price,
+ * updated R:R, potential profit and potential loss so the trade impact is
+ * understood before releasing the mouse.
+ *
+ * All persistence still flows through the existing paper-trading server
+ * functions (`modifyTrade`, `closeTrade`, `moveToBreakEven`,
+ * `partialCloseTrade`) — visualization only, no trading-logic changes.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -12,6 +25,7 @@ import type { ChartAdapter } from "@/lib/chart/adapter";
 import type { SymbolMeta } from "@/lib/paper-trading/symbols";
 import { modifyTrade, closeTrade, moveToBreakEven, partialCloseTrade } from "@/lib/paper-trading.functions";
 import { floatingPnl, fmtPrice } from "@/lib/trading/plan-math";
+import { pnl as computePnl } from "@/lib/paper-trading/calculations";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel,
@@ -36,6 +50,25 @@ interface Props {
 }
 
 type DragState = { tradeId: string; handle: "sl" | "tp"; price: number };
+
+/** Signed points delta between entry and current price, in symbol units. */
+function pointsDelta(direction: "long" | "short", entry: number, current: number): number {
+  return direction === "long" ? current - entry : entry - current;
+}
+
+/** Format money compactly; keeps sign for display. */
+function fmtMoney(v: number, currency = "USD"): string {
+  const sign = v > 0 ? "+" : v < 0 ? "−" : "";
+  const abs = Math.abs(v);
+  const digits = abs >= 1000 ? 0 : 2;
+  try {
+    return sign + new Intl.NumberFormat(undefined, {
+      style: "currency", currency, maximumFractionDigits: digits, minimumFractionDigits: digits,
+    }).format(abs);
+  } catch {
+    return `${sign}$${abs.toFixed(digits)}`;
+  }
+}
 
 export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Props) {
   const qc = useQueryClient();
@@ -130,6 +163,13 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
       const ov = overrides[t.id] ?? {};
       const sl = ov.sl ?? t.stop_loss;
       const tp = ov.tp ?? t.take_profit;
+      // Money math is renderer-independent — just needs symbol contract
+      const riskAmt = sl != null ? Math.abs(computePnl(sym, t.direction, t.entry_price, sl, t.lot_size)) : 0;
+      const rewardAmt = tp != null ? Math.abs(computePnl(sym, t.direction, t.entry_price, tp, t.lot_size)) : 0;
+      const pnl = livePrice != null ? floatingPnl(sym, t.direction, t.entry_price, livePrice, t.lot_size) : 0;
+      const rMult = riskAmt > 0 ? pnl / riskAmt : 0;
+      const pts = livePrice != null ? pointsDelta(t.direction, t.entry_price, livePrice) : 0;
+      const rr = riskAmt > 0 && rewardAmt > 0 ? rewardAmt / riskAmt : 0;
       return {
         t,
         entryY: adapter.priceToY(t.entry_price),
@@ -138,43 +178,130 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
         slPrice: sl,
         tpPrice: tp,
         priceY: livePrice != null ? adapter.priceToY(livePrice) : null,
-        pnl: livePrice != null ? floatingPnl(sym, t.direction, t.entry_price, livePrice, t.lot_size) : 0,
+        pnl, rMult, pts, riskAmt, rewardAmt, rr,
       };
     });
   }, [adapter, sym, trades, overrides, livePrice]);
+
+  // Anti-collision: stack entry labels vertically when two positions sit
+  // within 44px of each other so the rich labels stay readable.
+  const labelOffsets = useMemo(() => {
+    const items = rendered
+      .map((r, i) => ({ i, y: r.entryY ?? Number.POSITIVE_INFINITY }))
+      .sort((a, b) => a.y - b.y);
+    const offsets = new Array(items.length).fill(0);
+    let lastY = -Infinity;
+    for (const it of items) {
+      if (!Number.isFinite(it.y)) continue;
+      if (it.y - lastY < 44) {
+        offsets[it.i] = 44 - (it.y - lastY);
+        lastY = it.y + offsets[it.i];
+      } else {
+        lastY = it.y;
+      }
+    }
+    return offsets;
+  }, [rendered]);
 
   if (!sym) return null;
 
   return (
     <div ref={hostRef} className="pointer-events-none absolute inset-0 z-10 select-none">
-      {rendered.map(({ t, entryY, slY, tpY, slPrice, tpPrice, pnl }) => {
+      {rendered.map((row, idx) => {
+        const { t, entryY, slY, tpY, slPrice, tpPrice, pnl, rMult, pts, riskAmt, rewardAmt, rr } = row;
         if (entryY == null) return null;
         const slActive = drag?.tradeId === t.id && drag.handle === "sl";
         const tpActive = drag?.tradeId === t.id && drag.handle === "tp";
+        const yOffset = labelOffsets[idx] ?? 0;
+        const isLong = t.direction === "long";
+        const winning = pnl >= 0;
+
         return (
           <div key={t.id}>
-            {/* Entry line + PnL badge */}
-            <div className="absolute left-0 right-16 flex items-center" style={{ top: entryY - 10, height: 20 }}>
-              <div className="h-px flex-1 bg-blue-500" style={{ boxShadow: "0 0 6px #3b82f6" }} />
-              <div className="pointer-events-auto ml-2 flex select-none items-center gap-1 rounded-md border border-blue-500 bg-blue-500 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white shadow-sm">
-                {t.direction === "long" ? "▲" : "▼"} {t.lot_size} · {fmtPrice(sym, t.entry_price)}
+            {/* Reward zone — entry ↔ TP (green) */}
+            {tpY != null && (
+              <div
+                className="absolute left-0 right-16 bg-success/[0.08] transition-all duration-150 ease-out animate-fade-in"
+                style={{
+                  top: Math.min(entryY, tpY),
+                  height: Math.max(0, Math.abs(tpY - entryY)),
+                }}
+              />
+            )}
+            {/* Risk zone — entry ↔ SL (red) */}
+            {slY != null && (
+              <div
+                className="absolute left-0 right-16 bg-danger/[0.08] transition-all duration-150 ease-out animate-fade-in"
+                style={{
+                  top: Math.min(entryY, slY),
+                  height: Math.max(0, Math.abs(slY - entryY)),
+                }}
+              />
+            )}
+
+            {/* ENTRY — solid, thick, side-tinted with rich live label */}
+            <div className="absolute left-0 right-16 flex items-center" style={{ top: entryY - 1, height: 2 }}>
+              <div
+                className="h-[2px] flex-1"
+                style={{
+                  background: isLong ? "#3b82f6" : "#3b82f6",
+                  boxShadow: "0 0 8px rgba(59,130,246,0.55)",
+                }}
+              />
+            </div>
+            <div
+              className="absolute right-16 flex items-stretch overflow-hidden rounded-md shadow-lg backdrop-blur transition-[top] duration-150 ease-out"
+              style={{ top: entryY + yOffset - 12 }}
+            >
+              {/* Side pill */}
+              <div
+                className={cn(
+                  "flex items-center gap-1 px-1.5 text-[10px] font-bold uppercase text-white",
+                  isLong ? "bg-success" : "bg-danger",
+                )}
+              >
+                {isLong ? "▲" : "▼"} {isLong ? "LONG" : "SHORT"} · {t.lot_size}
+              </div>
+              {/* Data strip */}
+              <div className="pointer-events-auto flex items-center gap-2 border-y border-r border-blue-500/60 bg-background/90 px-2 py-0.5 font-mono text-[10px]">
+                <span className="text-muted-foreground">Entry</span>
+                <span className="tabular-nums text-foreground">{fmtPrice(sym, t.entry_price)}</span>
+                <span className="text-border">│</span>
                 <span
                   className={cn(
-                    "ml-1 rounded px-1 py-0.5 tabular-nums transition-colors duration-200",
-                    pnl >= 0 ? "bg-success" : "bg-danger",
+                    "tabular-nums font-bold transition-colors duration-200",
+                    winning ? "text-success" : "text-danger",
+                  )}
+                >
+                  {rMult >= 0 ? "+" : ""}{rMult.toFixed(2)}R
+                </span>
+                <span
+                  className={cn(
+                    "rounded px-1 py-[1px] font-bold tabular-nums text-white transition-colors duration-200",
+                    winning ? "bg-success" : "bg-danger",
                   )}
                   style={{ willChange: "background-color" }}
                 >
-                  {pnl >= 0 ? "+" : ""}{pnl.toFixed(2)}
+                  {fmtMoney(pnl)}
                 </span>
+                <span className={cn("tabular-nums", winning ? "text-success" : "text-danger")}>
+                  {pts >= 0 ? "+" : ""}{pts.toFixed(sym.decimals)} pts
+                </span>
+                {rr > 0 && (
+                  <>
+                    <span className="text-border">│</span>
+                    <span className="text-muted-foreground">R:R</span>
+                    <span className="tabular-nums text-foreground">1:{rr.toFixed(2)}</span>
+                  </>
+                )}
                 <button
                   title="Close position"
                   onClick={() => livePrice != null && close.mutate({ id: t.id, exit_price: livePrice })}
-                  className="ml-1 cursor-pointer rounded bg-white/20 px-1 transition-colors hover:bg-white/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+                  className="ml-1 cursor-pointer rounded bg-muted px-1 text-muted-foreground transition hover:bg-danger hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/40"
                 >×</button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button title="Quick actions" className="ml-0.5 cursor-pointer rounded bg-white/20 px-1 transition-colors hover:bg-white/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
+                    <button title="Quick actions" className="cursor-pointer rounded bg-muted px-1 text-muted-foreground transition hover:bg-primary hover:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
                       <MoreHorizontal className="h-3 w-3" />
                     </button>
                   </DropdownMenuTrigger>
@@ -202,56 +329,136 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
               </div>
             </div>
 
-            {/* SL — larger invisible hit area for easier dragging */}
+            {/* SL — red dashed line + label with potential loss */}
             {slY != null && slPrice != null && (
-              <div
-                className="pointer-events-auto absolute left-0 right-16 flex items-center"
-                style={{ top: slY - 12, height: 24, cursor: "ns-resize", touchAction: "none" }}
-                onPointerDown={(e) => {
-                  (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-                  setDrag({ tradeId: t.id, handle: "sl", price: slPrice });
-                }}
-                title="Drag to move Stop Loss"
-              >
-                <div className="pointer-events-none h-px flex-1 bg-danger transition-shadow" style={{ boxShadow: slActive ? "0 0 10px #ef4444" : "0 0 6px #ef4444" }} />
+              <>
                 <div
-                  className={cn(
-                    "ml-2 flex select-none items-center gap-1 rounded-md border border-danger bg-danger px-1.5 py-0.5 text-[10px] font-bold uppercase text-white shadow-sm transition-all duration-150 hover:scale-105",
-                    slActive && "scale-110 shadow-md ring-2 ring-danger/40",
-                  )}
-                  style={{ willChange: "transform" }}
+                  className="pointer-events-none absolute left-0 right-16 h-px transition-shadow"
+                  style={{
+                    top: slY,
+                    backgroundImage: "repeating-linear-gradient(to right, #ef4444 0 6px, transparent 6px 12px)",
+                    boxShadow: slActive ? "0 0 10px rgba(239,68,68,0.7)" : "0 0 6px rgba(239,68,68,0.35)",
+                  }}
+                />
+                <div
+                  className="pointer-events-auto absolute left-0 right-16 flex items-center"
+                  style={{ top: slY - 12, height: 24, cursor: "ns-resize", touchAction: "none" }}
+                  onPointerDown={(e) => {
+                    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+                    setDrag({ tradeId: t.id, handle: "sl", price: slPrice });
+                  }}
+                  title="Drag to move Stop Loss"
                 >
-                  SL · <span className="tabular-nums">{fmtPrice(sym, slPrice)}</span>
+                  <div className="flex-1" />
+                  <div
+                    className={cn(
+                      "flex select-none items-stretch overflow-hidden rounded-md shadow-md transition-transform duration-150 hover:scale-105",
+                      slActive && "scale-110 ring-2 ring-danger/40",
+                    )}
+                    style={{ willChange: "transform" }}
+                  >
+                    <div className="flex items-center gap-1 bg-danger px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">
+                      SL
+                    </div>
+                    <div className="flex items-center gap-1.5 border-y border-r border-danger/60 bg-background/90 px-1.5 py-0.5 font-mono text-[10px]">
+                      <span className="tabular-nums text-foreground">{fmtPrice(sym, slPrice)}</span>
+                      <span className="text-border">│</span>
+                      <span className="tabular-nums text-danger">{fmtMoney(-riskAmt)}</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </>
             )}
 
-            {/* TP */}
+            {/* TP — green dashed line + label with potential reward */}
             {tpY != null && tpPrice != null && (
-              <div
-                className="pointer-events-auto absolute left-0 right-16 flex items-center"
-                style={{ top: tpY - 12, height: 24, cursor: "ns-resize", touchAction: "none" }}
-                onPointerDown={(e) => {
-                  (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-                  setDrag({ tradeId: t.id, handle: "tp", price: tpPrice });
-                }}
-                title="Drag to move Take Profit"
-              >
-                <div className="pointer-events-none h-px flex-1 bg-success transition-shadow" style={{ boxShadow: tpActive ? "0 0 10px #22c55e" : "0 0 6px #22c55e" }} />
+              <>
                 <div
-                  className={cn(
-                    "ml-2 flex select-none items-center gap-1 rounded-md border border-success bg-success px-1.5 py-0.5 text-[10px] font-bold uppercase text-white shadow-sm transition-all duration-150 hover:scale-105",
-                    tpActive && "scale-110 shadow-md ring-2 ring-success/40",
-                  )}
-                  style={{ willChange: "transform" }}
+                  className="pointer-events-none absolute left-0 right-16 h-px transition-shadow"
+                  style={{
+                    top: tpY,
+                    backgroundImage: "repeating-linear-gradient(to right, #22c55e 0 6px, transparent 6px 12px)",
+                    boxShadow: tpActive ? "0 0 10px rgba(34,197,94,0.7)" : "0 0 6px rgba(34,197,94,0.35)",
+                  }}
+                />
+                <div
+                  className="pointer-events-auto absolute left-0 right-16 flex items-center"
+                  style={{ top: tpY - 12, height: 24, cursor: "ns-resize", touchAction: "none" }}
+                  onPointerDown={(e) => {
+                    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+                    setDrag({ tradeId: t.id, handle: "tp", price: tpPrice });
+                  }}
+                  title="Drag to move Take Profit"
                 >
-                  TP · <span className="tabular-nums">{fmtPrice(sym, tpPrice)}</span>
+                  <div className="flex-1" />
+                  <div
+                    className={cn(
+                      "flex select-none items-stretch overflow-hidden rounded-md shadow-md transition-transform duration-150 hover:scale-105",
+                      tpActive && "scale-110 ring-2 ring-success/40",
+                    )}
+                    style={{ willChange: "transform" }}
+                  >
+                    <div className="flex items-center gap-1 bg-success px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">
+                      TP
+                    </div>
+                    <div className="flex items-center gap-1.5 border-y border-r border-success/60 bg-background/90 px-1.5 py-0.5 font-mono text-[10px]">
+                      <span className="tabular-nums text-foreground">{fmtPrice(sym, tpPrice)}</span>
+                      <span className="text-border">│</span>
+                      <span className="tabular-nums text-success">{fmtMoney(rewardAmt)}</span>
+                    </div>
+                  </div>
                 </div>
+              </>
+            )}
+
+            {/* Drag tooltip — floats near cursor with live impact math */}
+            {(slActive || tpActive) && (
+              <div
+                className="pointer-events-none absolute z-30 min-w-[180px] rounded-lg border border-border/60 bg-background/95 p-2 text-[10px] font-mono shadow-2xl backdrop-blur animate-fade-in"
+                style={{
+                  top: ((slActive ? slY : tpY) ?? 0) + 16,
+                  right: 96,
+                }}
+              >
+                <div className="mb-1 flex items-center justify-between border-b border-border/40 pb-1">
+                  <span
+                    className={cn(
+                      "rounded px-1.5 py-[1px] text-[9px] font-bold uppercase text-white",
+                      slActive ? "bg-danger" : "bg-success",
+                    )}
+                  >
+                    {slActive ? "Moving SL" : "Moving TP"}
+                  </span>
+                  <span className="tabular-nums text-foreground">
+                    {fmtPrice(sym, (slActive ? slPrice : tpPrice) ?? 0)}
+                  </span>
+                </div>
+                <Row label="R:R" value={rr > 0 ? `1 : ${rr.toFixed(2)}` : "—"} />
+                <Row label="Potential profit" value={fmtMoney(rewardAmt)} tone="success" />
+                <Row label="Potential loss" value={fmtMoney(-riskAmt)} tone="danger" />
+                <Row label="Floating P/L" value={fmtMoney(pnl)} tone={winning ? "success" : "danger"} />
               </div>
             )}
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function Row({ label, value, tone }: { label: string; value: string; tone?: "success" | "danger" }) {
+  return (
+    <div className="flex items-center justify-between py-[1px]">
+      <span className="text-muted-foreground">{label}</span>
+      <span
+        className={cn(
+          "tabular-nums font-bold",
+          tone === "success" && "text-success",
+          tone === "danger" && "text-danger",
+        )}
+      >
+        {value}
+      </span>
     </div>
   );
 }
