@@ -400,21 +400,24 @@ export function OrderPanel() {
 
       <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Trade notes / thesis" rows={2} />
 
-      <div className="flex gap-2">
-        <Button variant="outline" onClick={reset} className="cursor-pointer transition-all duration-150 active:scale-[0.98]"><RotateCcw className="mr-1.5 h-4 w-4" /> Reset</Button>
-        <Button
-          onClick={attemptPlace}
-          disabled={openMut.isPending || !accountId || !symbolMeta || (validation != null && !validation.ok)}
-          className={cn("flex-1 cursor-pointer shadow-elegant transition-all duration-150 hover:shadow-md active:scale-[0.98] focus-visible:ring-2",
-            side === "long"
-              ? "bg-success text-white hover:bg-success/90 focus-visible:ring-success/60"
-              : "bg-danger text-white hover:bg-danger/90 focus-visible:ring-danger/60")}
-        >
-          <Send className="mr-1.5 h-4 w-4" />
-          {validation && !validation.ok ? "Insufficient margin" : (orderType === "market" ? (side === "long" ? "Buy market" : "Sell market") : "Place order")}
-        </Button>
+      <div className="flex flex-wrap items-center gap-2">
+        <PlaybookQuickAttach context="paper" />
+        <div className="ml-auto flex flex-1 justify-end gap-2">
+          <Button variant="outline" onClick={reset} className="cursor-pointer transition-all duration-150 active:scale-[0.98]"><RotateCcw className="mr-1.5 h-4 w-4" /> Reset</Button>
+          <Button
+            onClick={attemptPlace}
+            disabled={openMut.isPending || !accountId || !symbolMeta || (validation != null && !validation.ok)}
+            className={cn("flex-1 cursor-pointer shadow-elegant transition-all duration-150 hover:shadow-md active:scale-[0.98] focus-visible:ring-2",
+              side === "long"
+                ? "bg-success text-white hover:bg-success/90 focus-visible:ring-success/60"
+                : "bg-danger text-white hover:bg-danger/90 focus-visible:ring-danger/60")}
+          >
+            <Send className="mr-1.5 h-4 w-4" />
+            {validation && !validation.ok ? "Insufficient margin" : (orderType === "market" ? (side === "long" ? "Buy market" : "Sell market") : "Place order")}
+          </Button>
+        </div>
       </div>
-      <p className="text-[10px] text-muted-foreground">Shortcuts — <kbd>B</kbd> buy · <kbd>S</kbd> sell · <kbd>⌘/Ctrl</kbd>+<kbd>↵</kbd> place</p>
+      <p className="text-[10px] text-muted-foreground">Shortcuts — <kbd>B</kbd> buy · <kbd>S</kbd> sell · <kbd>⌘/Ctrl</kbd>+<kbd>↵</kbd> place · Run a playbook checklist before entry.</p>
 
       <AlertDialog open={riskDialogOpen} onOpenChange={setRiskDialogOpen}>
         <AlertDialogContent>
