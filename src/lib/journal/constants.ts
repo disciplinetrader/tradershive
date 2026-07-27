@@ -19,17 +19,16 @@ export const DEFAULT_SETUPS: Option[] = [
   { value: "momentum", label: "Momentum" },
 ];
 
+/**
+ * Canonical emotion catalog — 5 values only.
+ * Legacy DB values are mapped via `mapLegacyEmotion` in `./emotions.ts`.
+ */
 export const DEFAULT_EMOTIONS: Option[] = [
-  { value: "confident", label: "Confident", color: "#10b981" },
-  { value: "fear", label: "Fear", color: "#ef4444" },
-  { value: "greed", label: "Greed", color: "#f97316" },
-  { value: "fomo", label: "FOMO", color: "#f59e0b" },
-  { value: "revenge", label: "Revenge", color: "#dc2626" },
-  { value: "patient", label: "Patient", color: "#22c55e" },
-  { value: "disciplined", label: "Disciplined", color: "#3b82f6" },
-  { value: "overconfident", label: "Overconfident", color: "#a855f7" },
-  { value: "calm", label: "Calm", color: "#06b6d4" },
-  { value: "impulsive", label: "Impulsive", color: "#f43f5e" },
+  { value: "calm",        label: "😌 Calm",        emoji: "😌", color: "#06b6d4" },
+  { value: "disciplined", label: "✅ Disciplined", emoji: "✅", color: "#3b82f6" },
+  { value: "fear",        label: "😨 Fear",        emoji: "😨", color: "#ef4444" },
+  { value: "fomo",        label: "⚡ FOMO",        emoji: "⚡", color: "#f59e0b" },
+  { value: "revenge",     label: "😡 Revenge",     emoji: "😡", color: "#dc2626" },
 ];
 
 export const DEFAULT_MISTAKES: Option[] = [
