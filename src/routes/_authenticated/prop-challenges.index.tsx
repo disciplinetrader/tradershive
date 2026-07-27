@@ -39,14 +39,10 @@ function PropChallengesIndex() {
         <h2 className="text-sm font-medium text-muted-foreground">Active</h2>
         {active.length === 0 ? (
           <EmptyState
-            icon={<Trophy className="h-6 w-6" />}
+            icon={Trophy}
             title="No active challenge"
             description="Kick off an FTMO-style evaluation to practise trading under real prop firm rules."
-            action={
-              <Button asChild>
-                <Link to="/prop-challenges/new">Start a challenge</Link>
-              </Button>
-            }
+            action={{ label: "Start a challenge", href: "/prop-challenges/new" }}
           />
         ) : (
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
