@@ -98,6 +98,7 @@ export function ReplayHUD() {
         <span className="text-muted-foreground">
           {openTrades.length} open
         </span>
+        <PlaybookQuickAttach context="replay" contextRefId={session?.id ?? null} />
         {!playing && (
           <button
             onClick={toggle}
