@@ -189,6 +189,7 @@ export const createReplaySession = createServerFn({ method: "POST" })
         tags: data.tags,
         cursor_ts: cursor,
         last_opened_at: new Date().toISOString(),
+        ...(data.initial_balance ? { initial_balance: data.initial_balance } : {}),
       })
       .select()
       .single();
