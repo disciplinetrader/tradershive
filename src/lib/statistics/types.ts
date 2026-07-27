@@ -6,8 +6,13 @@ export type PaperAccountRow = Database["public"]["Tables"]["paper_accounts"]["Ro
 export type GoalRow = Database["public"]["Tables"]["goal_tracking"]["Row"];
 export type SavedFilterRow = Database["public"]["Tables"]["statistics_saved_filters"]["Row"];
 
+/** Where a trade originated so Analytics can be scoped per source. */
+export type TradeSource = "paper" | "journal" | "imported";
+export type TradeSourceTab = "all" | TradeSource;
+
 /** Unified analytics trade shape merging paper_trades + journal_entries. */
 export interface AnalyticsTrade {
+  source: TradeSource;
   id: string;
   trade_id: string | null;
   account_id: string | null;
