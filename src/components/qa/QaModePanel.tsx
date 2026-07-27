@@ -11,6 +11,7 @@ import {
   AlertTriangle,
   Bug,
   ChevronDown,
+  Database,
   Gauge,
   ImageOff,
   Link2Off,
@@ -20,6 +21,9 @@ import {
 } from "lucide-react";
 import { getRecentEvents, type TelemetryEvent } from "@/lib/observability/sink";
 import { useQaMode } from "@/lib/qa-mode";
+import { twelveDataUsage } from "@/lib/market-data/twelvedata.functions";
+import { marketData } from "@/lib/market-data/engine";
+import { getProvider } from "@/lib/market-data/providers/registry";
 import { cn } from "@/lib/utils";
 
 type ConsoleEntry = { level: "warn" | "error"; message: string; at: number };
@@ -29,7 +33,7 @@ export function QaModePanel() {
   const { enabled, toggle } = useQaMode();
   const [open, setOpen] = useState(true);
   const [, force] = useState(0);
-  const [tab, setTab] = useState<"perf" | "api" | "console" | "assets">("perf");
+  const [tab, setTab] = useState<"perf" | "api" | "console" | "assets" | "market">("perf");
   const consoleRef = useRef<ConsoleEntry[]>([]);
   const assetsRef = useRef<AssetEntry[]>([]);
 
@@ -146,7 +150,7 @@ export function QaModePanel() {
 
             {/* Tabs */}
             <div className="flex border-b border-border/60 text-[10px] uppercase tracking-wider">
-              {(["perf", "api", "console", "assets"] as const).map((t) => (
+              {(["perf", "api", "console", "assets", "market"] as const).map((t) => (
                 <button
                   key={t}
                   type="button"
@@ -169,6 +173,7 @@ export function QaModePanel() {
               {tab === "api" && <ApiList events={apiEvents} />}
               {tab === "console" && <ConsoleList entries={consoleRef.current} />}
               {tab === "assets" && <AssetList entries={assetsRef.current} />}
+              {tab === "market" && <MarketDataDiagnostics />}
             </div>
           </>
         )}
@@ -399,4 +404,102 @@ function safeJson(v: unknown) {
   } catch {
     return String(v);
   }
+}
+
+type UsageSnap = {
+  configured: boolean;
+  day?: string;
+  daily?: number;
+  dailyLimit?: number;
+  dailyRemaining?: number;
+  minute?: number;
+  minuteLimit?: number;
+  lastRequestTs?: number;
+  lastError?: string | null;
+  cooldownRemainingMs?: number;
+  quoteCacheSize?: number;
+  softThrottle?: boolean;
+  exhausted?: boolean;
+};
+
+function MarketDataDiagnostics() {
+  const [usage, setUsage] = useState<UsageSnap | null>(null);
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      try {
+        const res = (await twelveDataUsage()) as UsageSnap;
+        if (!cancelled) setUsage(res);
+      } catch {
+        // ignore
+      }
+    };
+    run();
+    const id = window.setInterval(() => setTick((n) => n + 1), 5000);
+    return () => { cancelled = true; window.clearInterval(id); };
+  }, [tick]);
+
+  const health = useMemo(() => marketData.health(), []);
+  const twelve = getProvider("twelvedata");
+  const binance = getProvider("binance");
+
+  return (
+    <div className="space-y-2 text-[11px]">
+      <div className="rounded-md border border-border/60 p-2">
+        <div className="flex items-center gap-1.5 font-semibold">
+          <Database className="h-3 w-3" /> Twelve Data
+        </div>
+        {!usage?.configured ? (
+          <p className="mt-1 text-muted-foreground">Not configured.</p>
+        ) : (
+          <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-0.5 text-muted-foreground">
+            <span>Today</span><span className="text-right text-foreground">{usage.daily ?? 0} / {usage.dailyLimit ?? 800}</span>
+            <span>This minute</span><span className="text-right text-foreground">{usage.minute ?? 0} / {usage.minuteLimit ?? 8}</span>
+            <span>Remaining</span><span className="text-right text-foreground">{usage.dailyRemaining ?? 0}</span>
+            <span>Cache size</span><span className="text-right text-foreground">{usage.quoteCacheSize ?? 0}</span>
+            <span>Status</span>
+            <span className={cn("text-right", usage.exhausted ? "text-destructive" : usage.softThrottle ? "text-amber-500" : "text-emerald-500")}>
+              {usage.exhausted ? "exhausted" : usage.softThrottle ? "throttled" : "healthy"}
+            </span>
+            {usage.cooldownRemainingMs ? (
+              <>
+                <span>Cooldown</span>
+                <span className="text-right text-foreground">{Math.ceil(usage.cooldownRemainingMs / 1000)}s</span>
+              </>
+            ) : null}
+            {usage.lastError ? (
+              <>
+                <span>Last error</span>
+                <span className="col-span-1 truncate text-right text-destructive">{usage.lastError}</span>
+              </>
+            ) : null}
+            <span>Last sync</span>
+            <span className="text-right text-foreground">
+              {usage.lastRequestTs ? fmtTime(usage.lastRequestTs) : "—"}
+            </span>
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-md border border-border/60 p-2">
+        <div className="font-semibold">Providers</div>
+        <div className="mt-1 space-y-0.5">
+          {health.map((h) => (
+            <div key={h.code} className="flex justify-between text-muted-foreground">
+              <span>{h.name}</span>
+              <span className={cn(
+                h.status === "connected" ? "text-emerald-500" :
+                h.status === "connecting" ? "text-amber-500" :
+                h.status === "error" || h.status === "disconnected" ? "text-destructive" :
+                "text-muted-foreground",
+              )}>{h.status}</span>
+            </div>
+          ))}
+          {!twelve && <div className="text-muted-foreground">twelvedata: not registered</div>}
+          {!binance && <div className="text-muted-foreground">binance: not registered</div>}
+        </div>
+      </div>
+    </div>
+  );
 }

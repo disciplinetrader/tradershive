@@ -585,7 +585,9 @@ function TradingWorkspaceInner() {
   );
 }
 
+import { useMarketCadence } from "@/lib/market-data/hooks";
 export function TradingWorkspace({ fullscreen: _fullscreen }: { fullscreen?: boolean } = {}) {
+  useMarketCadence("workspace");
   return (
     <PaperTradingProvider>
       <TradingWorkspaceInner />
