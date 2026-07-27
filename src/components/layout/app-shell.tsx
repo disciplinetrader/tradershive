@@ -44,6 +44,7 @@ const TRADING: NavItem[] = [
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/mistakes", label: "Trading Mistakes", icon: Shield },
   { to: "/goals", label: "Goals & Progress", icon: Target },
+  { to: "/prop-challenges", label: "Prop Firm Mode", icon: GraduationCap },
 ];
 
 const COMPETE: NavItem[] = [
