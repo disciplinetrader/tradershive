@@ -44,6 +44,7 @@ export const getAnalyticsDataset = createServerFn({ method: "GET" })
     for (const t of tradesRes.data ?? []) {
       const j = journalByTrade.get(t.id);
       trades.push({
+        source: "paper",
         id: t.id,
         trade_id: t.id,
         account_id: t.account_id,
