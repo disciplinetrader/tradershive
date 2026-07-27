@@ -77,7 +77,7 @@ const TOUR_TARGETS: Record<string, string | undefined> = {
 
 
 // Kept as valid routes but not surfaced in the reorganized sidebar.
-void Users; void ShoppingBag; void GraduationCap; void UserIcon; void LifeBuoy;
+void Users; void ShoppingBag; void UserIcon; void LifeBuoy;
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
