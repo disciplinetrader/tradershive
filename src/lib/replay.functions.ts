@@ -161,6 +161,7 @@ const createSessionSchema = z.object({
   source_journal_id: z.string().uuid().optional().nullable(),
   provider: z.string().default("synthetic"),
   tags: z.array(z.string()).default([]),
+  initial_balance: z.number().positive().optional(),
 });
 
 export const createReplaySession = createServerFn({ method: "POST" })
