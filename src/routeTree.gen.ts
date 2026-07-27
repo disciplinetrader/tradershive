@@ -141,6 +141,7 @@ import { Route as AuthenticatedAdminAchievementsRouteImport } from './routes/_au
 import { Route as AuthenticatedAiCoachIndexRouteImport } from './routes/_authenticated/ai.coach.index'
 import { Route as ApiPublicHooksHistoricalSyncRouteImport } from './routes/api/public/hooks/historical-sync'
 import { Route as ApiPublicHooksBattleSettlementRouteImport } from './routes/api/public/hooks/battle-settlement'
+import { Route as AuthenticatedStrategiesPlaybooksIdRouteImport } from './routes/_authenticated/strategies.playbooks.$id'
 import { Route as AuthenticatedCommunityProfileUsernameRouteImport } from './routes/_authenticated/community.profile.$username'
 import { Route as AuthenticatedCommunityPostIdRouteImport } from './routes/_authenticated/community.post.$id'
 import { Route as AuthenticatedCommunityIdeasNewRouteImport } from './routes/_authenticated/community.ideas.new'
@@ -904,6 +905,12 @@ const ApiPublicHooksBattleSettlementRoute =
     path: '/api/public/hooks/battle-settlement',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AuthenticatedStrategiesPlaybooksIdRoute =
+  AuthenticatedStrategiesPlaybooksIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => AuthenticatedStrategiesPlaybooksRoute,
+  } as any)
 const AuthenticatedCommunityProfileUsernameRoute =
   AuthenticatedCommunityProfileUsernameRouteImport.update({
     id: '/profile/$username',
@@ -1070,7 +1077,7 @@ export interface FileRoutesByFullPath {
   '/strategies/backtests': typeof AuthenticatedStrategiesBacktestsRoute
   '/strategies/create': typeof AuthenticatedStrategiesCreateRoute
   '/strategies/library': typeof AuthenticatedStrategiesLibraryRoute
-  '/strategies/playbooks': typeof AuthenticatedStrategiesPlaybooksRoute
+  '/strategies/playbooks': typeof AuthenticatedStrategiesPlaybooksRouteWithChildren
   '/strategies/settings': typeof AuthenticatedStrategiesSettingsRoute
   '/strategies/shared': typeof AuthenticatedStrategiesSharedRoute
   '/strategies/templates': typeof AuthenticatedStrategiesTemplatesRoute
@@ -1097,6 +1104,7 @@ export interface FileRoutesByFullPath {
   '/community/ideas/new': typeof AuthenticatedCommunityIdeasNewRoute
   '/community/post/$id': typeof AuthenticatedCommunityPostIdRoute
   '/community/profile/$username': typeof AuthenticatedCommunityProfileUsernameRoute
+  '/strategies/playbooks/$id': typeof AuthenticatedStrategiesPlaybooksIdRoute
   '/api/public/hooks/battle-settlement': typeof ApiPublicHooksBattleSettlementRoute
   '/api/public/hooks/historical-sync': typeof ApiPublicHooksHistoricalSyncRoute
   '/ai/coach/': typeof AuthenticatedAiCoachIndexRoute
@@ -1201,7 +1209,7 @@ export interface FileRoutesByTo {
   '/strategies/backtests': typeof AuthenticatedStrategiesBacktestsRoute
   '/strategies/create': typeof AuthenticatedStrategiesCreateRoute
   '/strategies/library': typeof AuthenticatedStrategiesLibraryRoute
-  '/strategies/playbooks': typeof AuthenticatedStrategiesPlaybooksRoute
+  '/strategies/playbooks': typeof AuthenticatedStrategiesPlaybooksRouteWithChildren
   '/strategies/settings': typeof AuthenticatedStrategiesSettingsRoute
   '/strategies/shared': typeof AuthenticatedStrategiesSharedRoute
   '/strategies/templates': typeof AuthenticatedStrategiesTemplatesRoute
@@ -1228,6 +1236,7 @@ export interface FileRoutesByTo {
   '/community/ideas/new': typeof AuthenticatedCommunityIdeasNewRoute
   '/community/post/$id': typeof AuthenticatedCommunityPostIdRoute
   '/community/profile/$username': typeof AuthenticatedCommunityProfileUsernameRoute
+  '/strategies/playbooks/$id': typeof AuthenticatedStrategiesPlaybooksIdRoute
   '/api/public/hooks/battle-settlement': typeof ApiPublicHooksBattleSettlementRoute
   '/api/public/hooks/historical-sync': typeof ApiPublicHooksHistoricalSyncRoute
   '/ai/coach': typeof AuthenticatedAiCoachIndexRoute
@@ -1345,7 +1354,7 @@ export interface FileRoutesById {
   '/_authenticated/strategies/backtests': typeof AuthenticatedStrategiesBacktestsRoute
   '/_authenticated/strategies/create': typeof AuthenticatedStrategiesCreateRoute
   '/_authenticated/strategies/library': typeof AuthenticatedStrategiesLibraryRoute
-  '/_authenticated/strategies/playbooks': typeof AuthenticatedStrategiesPlaybooksRoute
+  '/_authenticated/strategies/playbooks': typeof AuthenticatedStrategiesPlaybooksRouteWithChildren
   '/_authenticated/strategies/settings': typeof AuthenticatedStrategiesSettingsRoute
   '/_authenticated/strategies/shared': typeof AuthenticatedStrategiesSharedRoute
   '/_authenticated/strategies/templates': typeof AuthenticatedStrategiesTemplatesRoute
@@ -1372,6 +1381,7 @@ export interface FileRoutesById {
   '/_authenticated/community/ideas/new': typeof AuthenticatedCommunityIdeasNewRoute
   '/_authenticated/community/post/$id': typeof AuthenticatedCommunityPostIdRoute
   '/_authenticated/community/profile/$username': typeof AuthenticatedCommunityProfileUsernameRoute
+  '/_authenticated/strategies/playbooks/$id': typeof AuthenticatedStrategiesPlaybooksIdRoute
   '/api/public/hooks/battle-settlement': typeof ApiPublicHooksBattleSettlementRoute
   '/api/public/hooks/historical-sync': typeof ApiPublicHooksHistoricalSyncRoute
   '/_authenticated/ai/coach/': typeof AuthenticatedAiCoachIndexRoute
@@ -1516,6 +1526,7 @@ export interface FileRouteTypes {
     | '/community/ideas/new'
     | '/community/post/$id'
     | '/community/profile/$username'
+    | '/strategies/playbooks/$id'
     | '/api/public/hooks/battle-settlement'
     | '/api/public/hooks/historical-sync'
     | '/ai/coach/'
@@ -1647,6 +1658,7 @@ export interface FileRouteTypes {
     | '/community/ideas/new'
     | '/community/post/$id'
     | '/community/profile/$username'
+    | '/strategies/playbooks/$id'
     | '/api/public/hooks/battle-settlement'
     | '/api/public/hooks/historical-sync'
     | '/ai/coach'
@@ -1790,6 +1802,7 @@ export interface FileRouteTypes {
     | '/_authenticated/community/ideas/new'
     | '/_authenticated/community/post/$id'
     | '/_authenticated/community/profile/$username'
+    | '/_authenticated/strategies/playbooks/$id'
     | '/api/public/hooks/battle-settlement'
     | '/api/public/hooks/historical-sync'
     | '/_authenticated/ai/coach/'
@@ -2737,6 +2750,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksBattleSettlementRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/strategies/playbooks/$id': {
+      id: '/_authenticated/strategies/playbooks/$id'
+      path: '/$id'
+      fullPath: '/strategies/playbooks/$id'
+      preLoaderRoute: typeof AuthenticatedStrategiesPlaybooksIdRouteImport
+      parentRoute: typeof AuthenticatedStrategiesPlaybooksRoute
+    }
     '/_authenticated/community/profile/$username': {
       id: '/_authenticated/community/profile/$username'
       path: '/profile/$username'
@@ -3154,12 +3174,27 @@ const AuthenticatedReplayRouteChildren: AuthenticatedReplayRouteChildren = {
 const AuthenticatedReplayRouteWithChildren =
   AuthenticatedReplayRoute._addFileChildren(AuthenticatedReplayRouteChildren)
 
+interface AuthenticatedStrategiesPlaybooksRouteChildren {
+  AuthenticatedStrategiesPlaybooksIdRoute: typeof AuthenticatedStrategiesPlaybooksIdRoute
+}
+
+const AuthenticatedStrategiesPlaybooksRouteChildren: AuthenticatedStrategiesPlaybooksRouteChildren =
+  {
+    AuthenticatedStrategiesPlaybooksIdRoute:
+      AuthenticatedStrategiesPlaybooksIdRoute,
+  }
+
+const AuthenticatedStrategiesPlaybooksRouteWithChildren =
+  AuthenticatedStrategiesPlaybooksRoute._addFileChildren(
+    AuthenticatedStrategiesPlaybooksRouteChildren,
+  )
+
 interface AuthenticatedStrategiesRouteChildren {
   AuthenticatedStrategiesIdRoute: typeof AuthenticatedStrategiesIdRoute
   AuthenticatedStrategiesBacktestsRoute: typeof AuthenticatedStrategiesBacktestsRoute
   AuthenticatedStrategiesCreateRoute: typeof AuthenticatedStrategiesCreateRoute
   AuthenticatedStrategiesLibraryRoute: typeof AuthenticatedStrategiesLibraryRoute
-  AuthenticatedStrategiesPlaybooksRoute: typeof AuthenticatedStrategiesPlaybooksRoute
+  AuthenticatedStrategiesPlaybooksRoute: typeof AuthenticatedStrategiesPlaybooksRouteWithChildren
   AuthenticatedStrategiesSettingsRoute: typeof AuthenticatedStrategiesSettingsRoute
   AuthenticatedStrategiesSharedRoute: typeof AuthenticatedStrategiesSharedRoute
   AuthenticatedStrategiesTemplatesRoute: typeof AuthenticatedStrategiesTemplatesRoute
@@ -3174,7 +3209,7 @@ const AuthenticatedStrategiesRouteChildren: AuthenticatedStrategiesRouteChildren
     AuthenticatedStrategiesCreateRoute: AuthenticatedStrategiesCreateRoute,
     AuthenticatedStrategiesLibraryRoute: AuthenticatedStrategiesLibraryRoute,
     AuthenticatedStrategiesPlaybooksRoute:
-      AuthenticatedStrategiesPlaybooksRoute,
+      AuthenticatedStrategiesPlaybooksRouteWithChildren,
     AuthenticatedStrategiesSettingsRoute: AuthenticatedStrategiesSettingsRoute,
     AuthenticatedStrategiesSharedRoute: AuthenticatedStrategiesSharedRoute,
     AuthenticatedStrategiesTemplatesRoute:

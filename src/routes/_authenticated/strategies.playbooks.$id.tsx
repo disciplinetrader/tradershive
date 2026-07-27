@@ -116,13 +116,13 @@ function PlaybookDetailPage() {
 
         <TabsContent value="rules" className="space-y-4">
           <SectionCard title="Entry rules" icon={<ListChecks className="h-4 w-4" />}>
-            <RuleReadOnly items={strategy.entry_rules ?? []} emptyLabel="No entry rules yet." />
+            <RuleReadOnly items={(strategy.entry_rules as any) ?? []} emptyLabel="No entry rules yet." />
           </SectionCard>
           <SectionCard title="Exit rules" icon={<ListChecks className="h-4 w-4" />}>
-            <RuleReadOnly items={strategy.exit_rules ?? []} emptyLabel="No exit rules yet." />
+            <RuleReadOnly items={(strategy.exit_rules as any) ?? []} emptyLabel="No exit rules yet." />
           </SectionCard>
           <SectionCard title="Risk rules" icon={<ListChecks className="h-4 w-4" />}>
-            <RuleReadOnly items={strategy.risk_rules ?? []} emptyLabel="No risk rules yet." />
+            <RuleReadOnly items={(strategy.risk_rules as any) ?? []} emptyLabel="No risk rules yet." />
           </SectionCard>
           <SectionCard title="Pre-trade checklist" icon={<ClipboardCheck className="h-4 w-4" />}>
             {pb.data.checklists.length === 0 ? (
