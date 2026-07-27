@@ -141,8 +141,9 @@ function DashboardPage() {
 
       {/* Section 4 — Continuous Improvement */}
       {visible("coach") && (
-        <motion.div variants={item}>
+        <motion.div variants={item} className="grid gap-4 lg:grid-cols-2">
           {isPending || !home ? <CoachSkeleton /> : <CoachTipsCard tips={home.tips} />}
+          <TopMistakeWidget />
         </motion.div>
       )}
 
