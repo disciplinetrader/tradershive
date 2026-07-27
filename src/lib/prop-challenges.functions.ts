@@ -207,7 +207,7 @@ export const tickPropChallenge = createServerFn({ method: "POST" })
       .eq("challenge_id", chal.id).gt("trades_count", 0);
     const daysUsed = (distinctDays ?? 0) + (tradesToday > 0 && !existingDay?.trades_count ? 1 : 0);
 
-    let nextStatus = chal.status;
+    let nextStatus: PropChallengeRow["status"] = chal.status;
     let result: string | null = null;
     let breachReason: string | null = null;
     let completedAt: string | null = null;
