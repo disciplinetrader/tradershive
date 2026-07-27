@@ -153,7 +153,7 @@ function ReplayDashboard() {
               <Compass className="mr-2 h-4 w-4" />Scenario Picker
             </Button>
             <Button size="default" onClick={() => setWiz(true)} className="w-full sm:w-auto shadow-elegant">
-              <Sparkles className="mr-2 h-4 w-4" />New Replay
+              <Sparkles className="mr-2 h-4 w-4" />Create Backtest
             </Button>
             <Button variant="ghost" size="sm" onClick={() => randomM.mutate()} disabled={randomM.isPending} className="w-full sm:w-auto">
               <Dices className="mr-2 h-4 w-4" />{randomM.isPending ? "Rolling…" : "Surprise Me"}
