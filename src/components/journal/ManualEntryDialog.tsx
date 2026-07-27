@@ -387,7 +387,13 @@ function ManualForm({
 
       const entry = await createEntry(insert);
       if (screenshots.length) {
-        await persistStagedScreenshots(user.id, entry.id, screenshots);
+        const paths = await persistStagedScreenshots(user.id, entry.id, screenshots);
+        if (paths.length) {
+          // Persist storage paths on the entry so card thumbnails / preview
+          // / details page show the image immediately without a second upload.
+          const { updateEntry } = await import("@/lib/journal/api");
+          try { await updateEntry(entry.id, { screenshots: paths }); } catch { /* non-fatal */ }
+        }
       }
       return entry;
     },

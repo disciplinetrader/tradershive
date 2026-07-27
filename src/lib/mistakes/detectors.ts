@@ -179,7 +179,7 @@ const detectors: Record<MistakeKind, Detector> = {
 
   fomo_entry: (trades) =>
     trades
-      .filter((t) => hasEmotion(t, ["fomo", "greed", "excited"]) || hasFlag(t, ["fomo"]))
+      .filter((t) => hasEmotion(t, ["fomo"]) || hasFlag(t, ["fomo"]))
       .map((t) => occ(t, IS_LOSS(t) ? R_OF(t) : 0, "FOMO tagged")),
 
   fear_exit: (trades) =>

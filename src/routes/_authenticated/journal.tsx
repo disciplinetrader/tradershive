@@ -269,7 +269,13 @@ function JournalPage() {
         </GlassCard>
       ) : (
         <>
-          <JournalStats entries={filtered} />
+          <JournalStats
+            entries={filtered}
+            onFilterEmotion={(value) => setFilters((p) => ({ ...p, emotion: value }))}
+            onFilterPosition={(pos) =>
+              setFilters((p) => ({ ...p, direction: pos === "long" ? "long" : "short" }))
+            }
+          />
 
           <GlassCard className="p-2 sm:p-3">
             <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
