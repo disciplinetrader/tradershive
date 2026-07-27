@@ -10169,6 +10169,33 @@ export type Database = {
         }
         Relationships: []
       }
+      profile_customization_public: {
+        Row: {
+          banner_url: string | null
+          created_at: string | null
+          favorite_pair: string | null
+          headline: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          banner_url?: string | null
+          created_at?: string | null
+          favorite_pair?: string | null
+          headline?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          banner_url?: string | null
+          created_at?: string | null
+          favorite_pair?: string | null
+          headline?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       bump_ai_rate_limit: {
