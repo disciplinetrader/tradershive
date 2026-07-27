@@ -221,8 +221,8 @@ export function OrderPanel() {
     <div className="flex flex-col gap-3">
       <Tabs value={side} onValueChange={(v) => setSide(v as Side)}>
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="long" className="data-[state=active]:bg-success/20 data-[state=active]:text-success">Buy</TabsTrigger>
-          <TabsTrigger value="short" className="data-[state=active]:bg-danger/20 data-[state=active]:text-danger">Sell</TabsTrigger>
+          <TabsTrigger value="long" className="cursor-pointer transition-all duration-150 data-[state=active]:bg-success/20 data-[state=active]:text-success data-[state=active]:shadow-sm">Buy</TabsTrigger>
+          <TabsTrigger value="short" className="cursor-pointer transition-all duration-150 data-[state=active]:bg-danger/20 data-[state=active]:text-danger data-[state=active]:shadow-sm">Sell</TabsTrigger>
         </TabsList>
       </Tabs>
 
