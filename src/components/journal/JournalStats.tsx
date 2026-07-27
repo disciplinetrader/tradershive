@@ -11,7 +11,7 @@
 
 import { useMemo, type ComponentType, type ReactNode } from "react";
 import { motion } from "framer-motion";
-import { Clock, Hash, Info, Percent, Sigma, Target } from "lucide-react";
+import { ChevronDown, Clock, Hash, Info, Percent, Sigma, Target } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import {
   Tooltip,
@@ -20,7 +20,9 @@ import {
 } from "@/components/ui/tooltip";
 import type { JournalEntry } from "@/lib/journal/api";
 import { formatNumber } from "@/lib/journal/format";
+import { usePersistentDisclosure } from "@/hooks/use-persistent-disclosure";
 import { cn } from "@/lib/utils";
+
 
 type Tone = "up" | "down" | "neutral";
 
@@ -283,78 +285,131 @@ function SessionCard({
 
 export function JournalStats({ entries }: { entries: JournalEntry[] }) {
   const stats = useMemo(() => computeStats(entries), [entries]);
+  const [open, , toggle] = usePersistentDisclosure("journal-stats", false);
 
   const rTone = (v: number): Tone => (v > 0 ? "up" : v < 0 ? "down" : "neutral");
   const signed = (v: number, digits = 2) =>
     `${v >= 0 ? "+" : ""}${formatNumber(v, digits)}R`;
 
+  // Compact 1-line summary — always visible.
+  const summary = (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+      <span>
+        <span className="font-semibold text-foreground tabular-nums">{stats.total}</span> trades
+      </span>
+      <span>
+        Win rate{" "}
+        <span className="font-semibold text-foreground tabular-nums">
+          {stats.total ? `${formatNumber(stats.winRate, 0)}%` : "—"}
+        </span>
+      </span>
+      <span>
+        Net R{" "}
+        <span
+          className={cn(
+            "font-semibold tabular-nums",
+            stats.hasR && stats.netR > 0 && "text-success",
+            stats.hasR && stats.netR < 0 && "text-danger",
+            !stats.hasR && "text-foreground",
+          )}
+        >
+          {stats.hasR ? signed(stats.netR) : "—"}
+        </span>
+      </span>
+      <span>
+        Avg R{" "}
+        <span className="font-semibold text-foreground tabular-nums">
+          {stats.hasR ? signed(stats.avgR) : "—"}
+        </span>
+      </span>
+    </div>
+  );
+
   return (
-    <div className="space-y-4">
-      {stats.isSparse ? (
-        <p className="rounded-lg border border-dashed border-border/60 bg-muted/20 px-4 py-2 text-xs text-muted-foreground">
-          Complete more trades to unlock meaningful statistics.
-        </p>
-      ) : null}
-
-      {/* Top KPI row */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
-        <SummaryCard
-          index={0}
-          label="Net R"
-          icon={Sigma}
-          tooltip="The total R multiple earned across all completed trades."
-          tone={stats.hasR ? rTone(stats.netR) : "neutral"}
-          value={stats.hasR ? signed(stats.netR) : "—"}
-        />
-        <SummaryCard
-          index={1}
-          label="Win Rate"
-          icon={Percent}
-          tooltip="Percentage of completed trades that finished profitable."
-          value={stats.total ? `${formatNumber(stats.winRate, 0)}%` : "—"}
-        />
-        <SummaryCard
-          index={2}
-          label="Average R"
-          icon={Target}
-          tooltip="The average R multiple earned per completed trade."
-          tone={stats.hasR ? rTone(stats.avgR) : "neutral"}
-          value={stats.hasR ? signed(stats.avgR) : "—"}
-        />
-        <SummaryCard
-          index={3}
-          label="Total Trades"
-          icon={Hash}
-          tooltip="Number of completed trades logged in the journal."
-          value={stats.total}
-        />
-        <SummaryCard
-          index={4}
-          label="Average Hold"
-          icon={Clock}
-          tooltip="The average amount of time trades remain open."
-          value={stats.hasHold ? formatHoldTime(stats.avgHold) : "—"}
-        />
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/60 bg-card/40 px-4 py-2.5">
+        {summary}
+        <button
+          type="button"
+          onClick={toggle}
+          aria-expanded={open}
+          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground transition hover:text-foreground"
+        >
+          {open ? "Hide stats" : "View stats"}
+          <ChevronDown className={`h-3 w-3 transition-transform ${open ? "rotate-180" : ""}`} />
+        </button>
       </div>
 
-      {/* Session performance */}
-      <div>
-        <div className="mb-2 flex items-center gap-2">
-          <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-            Session Performance
-          </h3>
-        </div>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-          {stats.sessions.map((s, i) => (
-            <SessionCard
-              key={s.key}
-              stat={s}
-              best={!stats.isSparse && stats.bestSessionKey === s.key && s.trades > 0}
-              index={i}
+      {open ? (
+        <div className="space-y-4">
+          {stats.isSparse ? (
+            <p className="rounded-lg border border-dashed border-border/60 bg-muted/20 px-4 py-2 text-xs text-muted-foreground">
+              Complete more trades to unlock meaningful statistics.
+            </p>
+          ) : null}
+
+          {/* Top KPI row */}
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
+            <SummaryCard
+              index={0}
+              label="Net R"
+              icon={Sigma}
+              tooltip="The total R multiple earned across all completed trades."
+              tone={stats.hasR ? rTone(stats.netR) : "neutral"}
+              value={stats.hasR ? signed(stats.netR) : "—"}
             />
-          ))}
+            <SummaryCard
+              index={1}
+              label="Win Rate"
+              icon={Percent}
+              tooltip="Percentage of completed trades that finished profitable."
+              value={stats.total ? `${formatNumber(stats.winRate, 0)}%` : "—"}
+            />
+            <SummaryCard
+              index={2}
+              label="Average R"
+              icon={Target}
+              tooltip="The average R multiple earned per completed trade."
+              tone={stats.hasR ? rTone(stats.avgR) : "neutral"}
+              value={stats.hasR ? signed(stats.avgR) : "—"}
+            />
+            <SummaryCard
+              index={3}
+              label="Total Trades"
+              icon={Hash}
+              tooltip="Number of completed trades logged in the journal."
+              value={stats.total}
+            />
+            <SummaryCard
+              index={4}
+              label="Average Hold"
+              icon={Clock}
+              tooltip="The average amount of time trades remain open."
+              value={stats.hasHold ? formatHoldTime(stats.avgHold) : "—"}
+            />
+          </div>
+
+          {/* Session performance */}
+          <div>
+            <div className="mb-2 flex items-center gap-2">
+              <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Session Performance
+              </h3>
+            </div>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              {stats.sessions.map((s, i) => (
+                <SessionCard
+                  key={s.key}
+                  stat={s}
+                  best={!stats.isSparse && stats.bestSessionKey === s.key && s.trades > 0}
+                  index={i}
+                />
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
+      ) : null}
     </div>
   );
 }
+

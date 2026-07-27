@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import {
   Activity,
   ArrowUpRight,
+  ChevronDown,
   Eye,
   Flame,
   Sparkles,
@@ -13,6 +14,8 @@ import {
   Trophy,
   Zap,
 } from "lucide-react";
+import { usePersistentDisclosure } from "@/hooks/use-persistent-disclosure";
+
 import { useCommandPalette } from "@/components/command-palette";
 import { HeaderGreeting } from "@/components/dashboard/HeaderGreeting";
 import { QuickActions } from "@/components/dashboard/QuickActions";
@@ -52,7 +55,9 @@ const item = { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transiti
 
 function DashboardPage() {
   const { setOpen } = useCommandPalette();
+  const [moreOpen, , toggleMore] = usePersistentDisclosure("dashboard-more", false);
   const fetchLayout = useServerFn(getDashboardLayout);
+
   const saveLayout = useServerFn(saveDashboardLayout);
   const { data: layout } = useQuery({
     queryKey: ["dashboard_layout"],
@@ -156,35 +161,56 @@ function DashboardPage() {
         </motion.div>
       )}
 
-      {/* XP + streak */}
-      {(visible("xp") || visible("streak")) && (
-        <motion.div variants={item} className="grid gap-4 md:grid-cols-2">
-          {visible("xp") && (
-            <WidgetShell {...wProps("xp")} title="XP & rank" icon={Trophy}>
-              <XPWidget />
-            </WidgetShell>
-          )}
-          {visible("streak") && (
-            <WidgetShell {...wProps("streak")} title="Streaks" icon={Flame}>
-              <StreakWidget />
-            </WidgetShell>
-          )}
-        </motion.div>
-      )}
+      {/* Secondary widgets — collapsed by default so first-time users focus
+          on Welcome / Challenge / Analytics. Toggle persisted per user. */}
+      {(visible("xp") || visible("streak") || visible("trades") || visible("watchlist")) && (
+        <motion.div variants={item} className="space-y-4">
+          <button
+            type="button"
+            onClick={toggleMore}
+            aria-expanded={moreOpen}
+            className="group flex w-full items-center justify-between rounded-lg border border-border/60 bg-card/40 px-4 py-2.5 text-left transition hover:border-primary/40 hover:bg-card/70"
+          >
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">More insights</p>
+              <p className="text-[11px] text-muted-foreground/70">XP, streaks, recent trades &amp; watchlist</p>
+            </div>
+            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${moreOpen ? "rotate-180" : ""}`} />
+          </button>
 
-      {/* Recent trades + watchlist */}
-      {(visible("trades") || visible("watchlist")) && (
-        <motion.div variants={item} className="grid gap-4 lg:grid-cols-3">
-          {visible("trades") && (
-            <WidgetShell {...wProps("trades")} title="Recent trades" description="Last 10 executions" icon={Activity} className="lg:col-span-2">
-              <RecentTrades />
-            </WidgetShell>
-          )}
-          {visible("watchlist") && (
-            <WidgetShell {...wProps("watchlist")} title="Watchlist" description="Symbols you're tracking" icon={Star}>
-              <Watchlist />
-            </WidgetShell>
-          )}
+          {moreOpen ? (
+            <div className="space-y-4">
+              {(visible("xp") || visible("streak")) && (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {visible("xp") && (
+                    <WidgetShell {...wProps("xp")} title="XP & rank" icon={Trophy}>
+                      <XPWidget />
+                    </WidgetShell>
+                  )}
+                  {visible("streak") && (
+                    <WidgetShell {...wProps("streak")} title="Streaks" icon={Flame}>
+                      <StreakWidget />
+                    </WidgetShell>
+                  )}
+                </div>
+              )}
+
+              {(visible("trades") || visible("watchlist")) && (
+                <div className="grid gap-4 lg:grid-cols-3">
+                  {visible("trades") && (
+                    <WidgetShell {...wProps("trades")} title="Recent trades" description="Last 10 executions" icon={Activity} className="lg:col-span-2">
+                      <RecentTrades />
+                    </WidgetShell>
+                  )}
+                  {visible("watchlist") && (
+                    <WidgetShell {...wProps("watchlist")} title="Watchlist" description="Symbols you're tracking" icon={Star}>
+                      <Watchlist />
+                    </WidgetShell>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : null}
         </motion.div>
       )}
 
@@ -197,3 +223,4 @@ function DashboardPage() {
     </motion.div>
   );
 }
+
