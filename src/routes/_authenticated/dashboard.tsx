@@ -122,6 +122,10 @@ function DashboardPage() {
         <QuickActions />
       </motion.div>
 
+      <motion.div variants={item}>
+        <TodaysProgress />
+      </motion.div>
+
       {/* Row 1: welcome + challenge */}
       {(visible("welcome") || visible("challenge")) && (
         <motion.div variants={item} className="grid gap-4 lg:grid-cols-2">
