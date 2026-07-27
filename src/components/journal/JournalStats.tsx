@@ -394,7 +394,16 @@ function SessionCard({
 
 /* ---------------------------------------------------------- main entry */
 
-export function JournalStats({ entries }: { entries: JournalEntry[] }) {
+export type JournalStatsHandlers = {
+  onFilterEmotion?: (value: string) => void;
+  onFilterPosition?: (position: "long" | "short") => void;
+};
+
+export function JournalStats({
+  entries,
+  onFilterEmotion,
+  onFilterPosition,
+}: { entries: JournalEntry[] } & JournalStatsHandlers) {
   const stats = useMemo(() => computeStats(entries), [entries]);
   const [open, , toggle] = usePersistentDisclosure("journal-stats", false);
 
