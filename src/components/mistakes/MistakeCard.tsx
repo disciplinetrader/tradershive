@@ -111,7 +111,7 @@ function TradeOpenLink({ source, id }: { source: "journal" | "paper"; id: string
     );
   }
   return (
-    <Link to="/trades/$tradeId" params={{ tradeId: id }} className="ml-auto inline-flex items-center gap-0.5 text-primary hover:underline">
+    <Link to="/trades/$tradeId" params={{ tradeId: id }} search={{ source: "paper" }} className="ml-auto inline-flex items-center gap-0.5 text-primary hover:underline">
       Open <ArrowUpRight className="h-3 w-3" />
     </Link>
   );
