@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
-import { Pencil, X, Split, Sliders, Shield } from "lucide-react";
+import { Pencil, X, Split, Sliders, Shield, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -45,7 +45,7 @@ export function PositionsTable() {
     queryKey: ["paper", "trades", accountId, "open"],
     queryFn: () => fetch({ data: { account_id: accountId!, status: "open" } }) as unknown as Promise<Trade[]>,
     enabled: !!accountId,
-    refetchInterval: 5000,
+    refetchInterval: 2000,
   });
 
   const [closing, setClosing] = useState<Trade | null>(null);
@@ -150,8 +150,12 @@ export function PositionsTable() {
                 return (
                   <motion.tr
                     key={t.id}
-                    layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                    className="border-b border-border/50"
+                    layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                    exit={{ opacity: 0, x: 20, transition: { duration: 0.18 } }}
+                    className={cn(
+                      "group border-b border-border/50 transition-colors hover:bg-muted/40",
+                      closingIds.has(t.id) && "opacity-50",
+                    )}
                   >
                     <TableCell className="font-semibold">{t.symbol}</TableCell>
                     <TableCell>
@@ -161,37 +165,37 @@ export function PositionsTable() {
                       </span>
                     </TableCell>
                     <TableCell><SessionBadge at={t.opened_at} /></TableCell>
-                    <TableCell className="text-right font-mono">{formatNumber(Number(t.entry_price), sym?.decimals ?? 2)}</TableCell>
-                    <TableCell className="text-right font-mono">{formatNumber(current, sym?.decimals ?? 2)}</TableCell>
-                    <TableCell className="text-right font-mono">{Number(t.lot_size).toFixed(2)}</TableCell>
-                    <TableCell className="text-right font-mono text-muted-foreground">{t.stop_loss ? formatNumber(Number(t.stop_loss), sym?.decimals ?? 2) : "—"}</TableCell>
-                    <TableCell className="text-right font-mono text-muted-foreground">{t.take_profit ? formatNumber(Number(t.take_profit), sym?.decimals ?? 2) : "—"}</TableCell>
+                    <TableCell className="text-right font-mono tabular-nums">{formatNumber(Number(t.entry_price), sym?.decimals ?? 2)}</TableCell>
+                    <TableCell className="text-right font-mono tabular-nums">{formatNumber(current, sym?.decimals ?? 2)}</TableCell>
+                    <TableCell className="text-right font-mono tabular-nums">{Number(t.lot_size).toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-mono tabular-nums text-muted-foreground">{t.stop_loss ? formatNumber(Number(t.stop_loss), sym?.decimals ?? 2) : "—"}</TableCell>
+                    <TableCell className="text-right font-mono tabular-nums text-muted-foreground">{t.take_profit ? formatNumber(Number(t.take_profit), sym?.decimals ?? 2) : "—"}</TableCell>
                     <TableCell className={cn("text-right font-mono tabular-nums", rr >= 0 ? "text-success" : "text-danger")}>
                       {rr ? `${rr.toFixed(2)}R` : "—"}
                     </TableCell>
-                    <TableCell className={cn("text-right font-mono tabular-nums font-semibold", up ? "text-success" : "text-danger")}>
+                    <TableCell className={cn("text-right font-mono tabular-nums font-semibold transition-colors", up ? "text-success" : "text-danger")}>
                       {up ? "+" : ""}{formatCurrency(floating, account?.currency)}
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">{duration}</TableCell>
                     <TableCell className="sticky right-0 z-10 bg-background/95 text-right shadow-[-8px_0_12px_-8px_rgba(0,0,0,0.4)]">
-                      <div className="flex justify-end gap-1">
+                      <div className="flex justify-end gap-1 opacity-70 transition-opacity group-hover:opacity-100">
                         <Button
-                          variant="ghost" size="icon" className="h-7 w-7"
+                          variant="ghost" size="icon" className="h-7 w-7 transition-transform active:scale-95"
                           onClick={() => breakEven(t)} disabled={beDisabled}
                           aria-label="Move stop-loss to break-even"
                           title={beDisabled ? "Already at break-even" : "Move SL to entry (break-even)"}
                         >
                           <Shield className="h-3.5 w-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setModifying(t)} aria-label="Modify SL/TP" title="Modify SL/TP">
+                        <Button variant="ghost" size="icon" className="h-7 w-7 transition-transform active:scale-95" onClick={() => setModifying(t)} aria-label="Modify SL/TP" title="Modify SL/TP (E)">
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setClosing(t)} aria-label="Close with custom price" title="Close at custom price…">
+                        <Button variant="ghost" size="icon" className="h-7 w-7 transition-transform active:scale-95" onClick={() => setClosing(t)} aria-label="Close with custom price" title="Close at custom price…">
                           <Sliders className="h-3.5 w-3.5" />
                         </Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Partial close" title="Partial close">
+                            <Button variant="ghost" size="icon" className="h-7 w-7 transition-transform active:scale-95" aria-label="Partial close" title="Partial close">
                               <Split className="h-3.5 w-3.5" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -206,14 +210,14 @@ export function PositionsTable() {
                         <Button
                           variant="default"
                           size="sm"
-                          className="h-7 gap-1 bg-danger/90 px-2 text-[11px] font-semibold text-white hover:bg-danger"
+                          className="h-7 gap-1 bg-danger/90 px-2 text-[11px] font-semibold text-white transition-all hover:bg-danger active:scale-95"
                           onClick={() => instantClose(t)}
                           disabled={closingIds.has(t.id)}
                           aria-label="Close at market"
                           title="Close at market (instant)"
                         >
-                          <X className="h-3.5 w-3.5" />
-                          {closingIds.has(t.id) ? "…" : "Close"}
+                          {closingIds.has(t.id) ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
+                          {closingIds.has(t.id) ? "Closing" : "Close"}
                         </Button>
                       </div>
                     </TableCell>
@@ -235,6 +239,8 @@ export function PositionsTable() {
 
 function ModifyDialog({ trade, onClose }: { trade: Trade; onClose: () => void }) {
   const qc = useQueryClient();
+  const sym = findSymbol(trade.symbol);
+  const step = sym ? Math.pow(10, -(sym.decimals ?? 2)) * 10 : 0.0001; // ~1 pip
   const [sl, setSl] = useState(trade.stop_loss ? String(trade.stop_loss) : "");
   const [tp, setTp] = useState(trade.take_profit ? String(trade.take_profit) : "");
   const modify = useServerFn(modifyTrade);
@@ -243,18 +249,45 @@ function ModifyDialog({ trade, onClose }: { trade: Trade; onClose: () => void })
     onSuccess: () => { toast.success("Trade updated"); qc.invalidateQueries({ queryKey: ["paper"] }); onClose(); },
     onError: (e) => toast.error((e as Error).message),
   });
+  const decimals = sym?.decimals ?? 2;
+  const nudge = (set: (v: string) => void, cur: string, dir: 1 | -1) => {
+    const n = Number(cur) || Number(trade.entry_price);
+    set((n + dir * step).toFixed(decimals));
+  };
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
         <DialogHeader><DialogTitle>Modify {trade.symbol}</DialogTitle></DialogHeader>
-        <div className="grid grid-cols-2 gap-3">
-          <div><Label>Stop loss</Label><Input value={sl} onChange={(e) => setSl(e.target.value)} className="font-mono" /></div>
-          <div><Label>Take profit</Label><Input value={tp} onChange={(e) => setTp(e.target.value)} className="font-mono" /></div>
-        </div>
-        <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button onClick={() => mut.mutate()} disabled={mut.isPending}>Save</Button>
-        </DialogFooter>
+        <form
+          onSubmit={(e) => { e.preventDefault(); if (!mut.isPending) mut.mutate(); }}
+          className="space-y-3"
+        >
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Stop loss</Label>
+              <div className="mt-1 flex gap-1">
+                <Button type="button" variant="outline" size="icon" className="h-9 w-8 shrink-0" onClick={() => nudge(setSl, sl, -1)} tabIndex={-1}>−</Button>
+                <Input autoFocus value={sl} onChange={(e) => setSl(e.target.value)} className="font-mono" inputMode="decimal" placeholder="—" />
+                <Button type="button" variant="outline" size="icon" className="h-9 w-8 shrink-0" onClick={() => nudge(setSl, sl, 1)} tabIndex={-1}>+</Button>
+              </div>
+            </div>
+            <div>
+              <Label>Take profit</Label>
+              <div className="mt-1 flex gap-1">
+                <Button type="button" variant="outline" size="icon" className="h-9 w-8 shrink-0" onClick={() => nudge(setTp, tp, -1)} tabIndex={-1}>−</Button>
+                <Input value={tp} onChange={(e) => setTp(e.target.value)} className="font-mono" inputMode="decimal" placeholder="—" />
+                <Button type="button" variant="outline" size="icon" className="h-9 w-8 shrink-0" onClick={() => nudge(setTp, tp, 1)} tabIndex={-1}>+</Button>
+              </div>
+            </div>
+          </div>
+          <p className="text-[10px] text-muted-foreground">Tip — press <kbd className="rounded bg-muted px-1">Enter</kbd> to save, <kbd className="rounded bg-muted px-1">Esc</kbd> to cancel.</p>
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
+            <Button type="submit" disabled={mut.isPending} className="min-w-[80px]">
+              {mut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

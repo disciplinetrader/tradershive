@@ -50,10 +50,24 @@ export function ClosePositionDialog({ trade, onClose }: { trade: Trade; onClose:
         <DialogHeader>
           <DialogTitle>Close {trade.symbol}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-3">
+        <form
+          onSubmit={(e) => { e.preventDefault(); if (!mut.isPending && exitNum > 0) mut.mutate(); }}
+          className="space-y-3"
+        >
           <div>
-            <Label>Exit price</Label>
-            <Input value={exit} onChange={(e) => setExit(e.target.value)} className="mt-1 font-mono" inputMode="decimal" />
+            <div className="flex items-center justify-between">
+              <Label>Exit price</Label>
+              {live != null && (
+                <button
+                  type="button"
+                  onClick={() => setExit(String(live))}
+                  className="text-[10px] font-semibold uppercase tracking-wider text-primary transition-colors hover:text-primary/80"
+                >
+                  Use live · {formatNumber(live, sym?.decimals ?? 2)}
+                </button>
+              )}
+            </div>
+            <Input autoFocus value={exit} onChange={(e) => setExit(e.target.value)} className="mt-1 font-mono" inputMode="decimal" />
           </div>
           <div className="grid grid-cols-2 gap-2 rounded-xl border border-border/60 bg-background/40 p-3 text-sm">
             <Row label="Entry" value={formatNumber(Number(trade.entry_price), sym?.decimals ?? 2)} />
@@ -63,17 +77,18 @@ export function ClosePositionDialog({ trade, onClose }: { trade: Trade; onClose:
             <Row label="RR"    value={rr ? `${rr.toFixed(2)}R` : "—"} accent={rr >= 0 ? "emerald" : "rose"} />
             <Row label="P / L" value={`${pnl >= 0 ? "+" : ""}${formatCurrency(pnl, account?.currency)}`} accent={pnl >= 0 ? "emerald" : "rose"} />
           </div>
-        </div>
-        <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button
-            onClick={() => mut.mutate()}
-            disabled={mut.isPending || exitNum <= 0}
-            className={cn(pnl >= 0 ? "bg-success hover:bg-success/90" : "bg-danger hover:bg-danger/90", "text-white")}
-          >
-            Confirm close
-          </Button>
-        </DialogFooter>
+          <p className="text-[10px] text-muted-foreground">Tip — <kbd className="rounded bg-muted px-1">Enter</kbd> to confirm, <kbd className="rounded bg-muted px-1">Esc</kbd> to cancel.</p>
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
+            <Button
+              type="submit"
+              disabled={mut.isPending || exitNum <= 0}
+              className={cn(pnl >= 0 ? "bg-success hover:bg-success/90" : "bg-danger hover:bg-danger/90", "min-w-[130px] text-white transition-all active:scale-95")}
+            >
+              {mut.isPending ? "Closing…" : "Confirm close"}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

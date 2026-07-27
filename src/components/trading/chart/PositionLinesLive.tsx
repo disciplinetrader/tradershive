@@ -199,12 +199,16 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
               <div className="absolute left-0 right-16 flex items-center" style={{ top: slY - 10, height: 20 }}>
                 <div className="h-px flex-1 bg-danger" style={{ boxShadow: "0 0 6px #ef4444" }} />
                 <div
-                  className="pointer-events-auto ml-2 flex select-none items-center gap-1 rounded-md border border-danger bg-danger px-1.5 py-0.5 text-[10px] font-bold uppercase text-white"
-                  style={{ cursor: "ns-resize" }}
+                  className={cn(
+                    "pointer-events-auto ml-2 flex select-none items-center gap-1 rounded-md border border-danger bg-danger px-1.5 py-0.5 text-[10px] font-bold uppercase text-white shadow-sm transition-transform hover:scale-105",
+                    drag?.tradeId === t.id && drag.handle === "sl" && "scale-110 ring-2 ring-danger/40",
+                  )}
+                  style={{ cursor: "ns-resize", touchAction: "none" }}
                   onPointerDown={(e) => {
                     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
                     setDrag({ tradeId: t.id, handle: "sl", price: slPrice });
                   }}
+                  title="Drag to move Stop Loss"
                 >
                   SL · {fmtPrice(sym, slPrice)}
                 </div>
@@ -216,12 +220,16 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
               <div className="absolute left-0 right-16 flex items-center" style={{ top: tpY - 10, height: 20 }}>
                 <div className="h-px flex-1 bg-success" style={{ boxShadow: "0 0 6px #22c55e" }} />
                 <div
-                  className="pointer-events-auto ml-2 flex select-none items-center gap-1 rounded-md border border-success bg-success px-1.5 py-0.5 text-[10px] font-bold uppercase text-white"
-                  style={{ cursor: "ns-resize" }}
+                  className={cn(
+                    "pointer-events-auto ml-2 flex select-none items-center gap-1 rounded-md border border-success bg-success px-1.5 py-0.5 text-[10px] font-bold uppercase text-white shadow-sm transition-transform hover:scale-105",
+                    drag?.tradeId === t.id && drag.handle === "tp" && "scale-110 ring-2 ring-success/40",
+                  )}
+                  style={{ cursor: "ns-resize", touchAction: "none" }}
                   onPointerDown={(e) => {
                     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
                     setDrag({ tradeId: t.id, handle: "tp", price: tpPrice });
                   }}
+                  title="Drag to move Take Profit"
                 >
                   TP · {fmtPrice(sym, tpPrice)}
                 </div>
