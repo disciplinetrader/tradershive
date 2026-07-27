@@ -86,7 +86,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [loading, profile, pathname, navigate]);
 
   return (
+    <ProductTourProvider>
     <div className="relative flex min-h-dvh w-full bg-background">
+
       <a href="#main" className="skip-link">Skip to content</a>
       <div className="pointer-events-none fixed inset-x-0 top-0 z-0 h-[700px] app-aurora opacity-90" aria-hidden />
       <div className="pointer-events-none fixed inset-0 z-0 grid-bg opacity-30 [mask-image:radial-gradient(60%_50%_at_50%_20%,black,transparent)]" aria-hidden />
@@ -157,8 +159,11 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <CommandPalette open={open} onOpenChange={setOpen} />
     </div>
+    </ProductTourProvider>
   );
 }
+
+
 
 function SidebarInner({
   collapsed,
