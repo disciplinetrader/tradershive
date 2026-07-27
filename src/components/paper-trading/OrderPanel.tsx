@@ -29,6 +29,7 @@ import { validateNewOrder, liquidationPrice, type OpenTradeInput } from "@/lib/p
 import { onTradeIntent } from "@/lib/trading/trade-intent";
 import { cn } from "@/lib/utils";
 import { usePaper } from "./context";
+import { PlaybookQuickAttach } from "@/components/playbook/PlaybookQuickAttach";
 
 type Side = "long" | "short";
 type OrderType = "market" | "limit" | "stop" | "stop_limit";
