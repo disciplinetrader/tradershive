@@ -302,7 +302,15 @@ export function ChartArea() {
 
 function ToolButton({ icon: Icon, label, onClick, disabled }: { icon: typeof LineChartIcon; label: string; onClick?: () => void; disabled?: boolean }) {
   return (
-    <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={label} title={label} onClick={onClick} disabled={disabled}>
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-8 w-8 cursor-pointer transition-all duration-150 hover:bg-accent hover:text-foreground active:scale-95 focus-visible:ring-2 focus-visible:ring-primary/50"
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      disabled={disabled}
+    >
       <Icon className="h-4 w-4" />
     </Button>
   );
