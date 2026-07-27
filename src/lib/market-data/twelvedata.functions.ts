@@ -142,7 +142,7 @@ export const twelveDataCandles = createServerFn({ method: "POST" })
         const { data: rows } = await supabaseAdmin
           .from("historical_candles")
           .select("ts, open, high, low, close, volume")
-          .eq("symbol", data.symbol).eq("timeframe", data.timeframe)
+          .eq("symbol", data.symbol).eq("timeframe", data.timeframe as any)
           .gte("ts", new Date(from).toISOString())
           .lte("ts", new Date(to).toISOString())
           .order("ts", { ascending: true }).limit(Math.min(5000, data.count ?? 5000));
