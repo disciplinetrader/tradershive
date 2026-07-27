@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Play } from "lucide-react";
 import { toast } from "sonner";
+import { useProductTour } from "@/components/tour/ProductTour";
+
 import { PageHeader } from "@/components/ui/page-header";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Label } from "@/components/ui/label";
@@ -90,6 +92,9 @@ function SettingsPage() {
       <TradingSection />
       <SecuritySection email={user?.email ?? ""} />
       <NotificationsSection />
+      <ProductTourSection />
+
+
 
       <GlassCard className="border-danger/30 p-6">
         <h2 className="text-base font-semibold text-danger">Danger zone</h2>
@@ -414,6 +419,28 @@ function NotificationsSection() {
             </div>
           ))
         )}
+      </div>
+    </GlassCard>
+  );
+}
+
+/* ---------------- Product Tour ---------------- */
+
+function ProductTourSection() {
+  const { start } = useProductTour();
+  return (
+    <GlassCard className="p-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="text-base font-semibold">Onboarding</h2>
+          <p className="text-xs text-muted-foreground">
+            Replay the guided product tour to revisit the core features of TradersHIVE.
+          </p>
+        </div>
+        <Button variant="outline" onClick={start} className="gap-2">
+          <Play className="h-4 w-4" />
+          Replay Product Tour
+        </Button>
       </div>
     </GlassCard>
   );

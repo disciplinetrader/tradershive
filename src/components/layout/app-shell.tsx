@@ -30,6 +30,8 @@ import { Topbar } from "./topbar";
 import { CommandPalette, useCommandPalette } from "@/components/command-palette";
 import { APP_NAME } from "@/lib/constants";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ProductTourProvider } from "@/components/tour/ProductTour";
+
 
 type NavItem = { to: string; label: string; icon: typeof Home; admin?: boolean };
 
@@ -59,6 +61,17 @@ const SYSTEM_ITEMS: NavItem[] = [
 
 const ADMIN_ITEMS: NavItem[] = [{ to: "/admin", label: "Admin", icon: Shield, admin: true }];
 
+/** Sidebar links tagged so the product tour can spotlight them. */
+const TOUR_TARGETS: Record<string, string | undefined> = {
+  "/replay": "nav-replay",
+  "/trading": "nav-trading",
+  "/journal": "nav-journal",
+  "/analytics": "nav-analytics",
+  "/community": "nav-community",
+};
+
+
+
 // Kept as valid routes but not surfaced in the reorganized sidebar.
 void Users; void ShoppingBag; void GraduationCap; void UserIcon; void LifeBuoy;
 
@@ -84,7 +97,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [loading, profile, pathname, navigate]);
 
   return (
+    <ProductTourProvider>
     <div className="relative flex min-h-dvh w-full bg-background">
+
       <a href="#main" className="skip-link">Skip to content</a>
       <div className="pointer-events-none fixed inset-x-0 top-0 z-0 h-[700px] app-aurora opacity-90" aria-hidden />
       <div className="pointer-events-none fixed inset-0 z-0 grid-bg opacity-30 [mask-image:radial-gradient(60%_50%_at_50%_20%,black,transparent)]" aria-hidden />
@@ -155,8 +170,11 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <CommandPalette open={open} onOpenChange={setOpen} />
     </div>
+    </ProductTourProvider>
   );
 }
+
+
 
 function SidebarInner({
   collapsed,
@@ -287,10 +305,13 @@ function SidebarLink({
   active: boolean;
 }) {
   const Icon = item.icon;
+  const tourId = TOUR_TARGETS[item.to];
   const link = (
     <Link
       to={item.to}
+      data-tour={tourId}
       aria-current={active ? "page" : undefined}
+
       className={cn(
         "group relative flex items-center gap-3 rounded-md text-sm font-medium outline-none transition-colors duration-150",
         "focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-0",
