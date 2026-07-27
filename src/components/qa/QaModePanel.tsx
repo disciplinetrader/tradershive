@@ -490,8 +490,9 @@ function MarketDataDiagnostics() {
               <span>{h.name}</span>
               <span className={cn(
                 h.status === "connected" ? "text-emerald-500" :
-                h.status === "degraded" ? "text-amber-500" :
-                h.status === "disconnected" ? "text-destructive" : "text-muted-foreground",
+                h.status === "connecting" ? "text-amber-500" :
+                h.status === "error" || h.status === "disconnected" ? "text-destructive" :
+                "text-muted-foreground",
               )}>{h.status}</span>
             </div>
           ))}
