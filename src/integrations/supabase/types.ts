@@ -6301,6 +6301,187 @@ export type Database = {
         }
         Relationships: []
       }
+      prop_challenge_days: {
+        Row: {
+          breach_code: string | null
+          breached: boolean
+          challenge_id: string
+          created_at: string
+          day_date: string
+          end_equity: number
+          high_equity: number
+          id: string
+          low_equity: number
+          realized_pnl: number
+          start_equity: number
+          trades_count: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          breach_code?: string | null
+          breached?: boolean
+          challenge_id: string
+          created_at?: string
+          day_date: string
+          end_equity: number
+          high_equity: number
+          id?: string
+          low_equity: number
+          realized_pnl?: number
+          start_equity: number
+          trades_count?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          breach_code?: string | null
+          breached?: boolean
+          challenge_id?: string
+          created_at?: string
+          day_date?: string
+          end_equity?: number
+          high_equity?: number
+          id?: string
+          low_equity?: number
+          realized_pnl?: number
+          start_equity?: number
+          trades_count?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prop_challenge_days_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "prop_challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prop_challenges: {
+        Row: {
+          account_size: number
+          breach_at: string | null
+          breach_reason: string | null
+          commission_per_lot: number
+          completed_at: string | null
+          created_at: string
+          currency: string
+          current_equity: number
+          duration_days: number
+          ends_at: string | null
+          id: string
+          leverage: number
+          lowest_equity: number
+          max_daily_loss_pct: number
+          max_position_size: number | null
+          max_total_drawdown_pct: number
+          min_trading_days: number
+          name: string
+          news_trading_allowed: boolean
+          notes: string | null
+          paper_account_id: string | null
+          peak_equity: number
+          preset: string
+          profit_target_pct: number
+          realized_pnl: number
+          result: string | null
+          slippage_profile: string
+          spread_profile: string
+          started_at: string
+          starting_equity: number
+          status: string
+          trading_days_used: number
+          updated_at: string
+          user_id: string
+          weekend_hold_allowed: boolean
+        }
+        Insert: {
+          account_size: number
+          breach_at?: string | null
+          breach_reason?: string | null
+          commission_per_lot?: number
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          current_equity: number
+          duration_days?: number
+          ends_at?: string | null
+          id?: string
+          leverage?: number
+          lowest_equity: number
+          max_daily_loss_pct?: number
+          max_position_size?: number | null
+          max_total_drawdown_pct?: number
+          min_trading_days?: number
+          name: string
+          news_trading_allowed?: boolean
+          notes?: string | null
+          paper_account_id?: string | null
+          peak_equity: number
+          preset?: string
+          profit_target_pct?: number
+          realized_pnl?: number
+          result?: string | null
+          slippage_profile?: string
+          spread_profile?: string
+          started_at?: string
+          starting_equity: number
+          status?: string
+          trading_days_used?: number
+          updated_at?: string
+          user_id: string
+          weekend_hold_allowed?: boolean
+        }
+        Update: {
+          account_size?: number
+          breach_at?: string | null
+          breach_reason?: string | null
+          commission_per_lot?: number
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          current_equity?: number
+          duration_days?: number
+          ends_at?: string | null
+          id?: string
+          leverage?: number
+          lowest_equity?: number
+          max_daily_loss_pct?: number
+          max_position_size?: number | null
+          max_total_drawdown_pct?: number
+          min_trading_days?: number
+          name?: string
+          news_trading_allowed?: boolean
+          notes?: string | null
+          paper_account_id?: string | null
+          peak_equity?: number
+          preset?: string
+          profit_target_pct?: number
+          realized_pnl?: number
+          result?: string | null
+          slippage_profile?: string
+          spread_profile?: string
+          started_at?: string
+          starting_equity?: number
+          status?: string
+          trading_days_used?: number
+          updated_at?: string
+          user_id?: string
+          weekend_hold_allowed?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prop_challenges_paper_account_id_fkey"
+            columns: ["paper_account_id"]
+            isOneToOne: false
+            referencedRelation: "paper_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       provider_connections: {
         Row: {
           connected_at: string | null
