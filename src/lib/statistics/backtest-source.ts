@@ -43,6 +43,7 @@ export function mapReplayTradesToAnalytics(
           ? Math.max(0, Math.floor((new Date(closed).getTime() - new Date(opened).getTime()) / 1000))
           : null;
       return {
+        source: "paper",
         id: t.id,
         trade_id: t.id,
         account_id: sessionMeta?.id ?? t.session_id,
