@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Bookmark, Brain, ExternalLink, FileText, Sparkles, TrendingDown, TrendingUp } from "lucide-react";
+import { ArrowLeft, Bookmark, ExternalLink, FileText, TrendingDown, TrendingUp } from "lucide-react";
 import { z } from "zod";
 import { GlassCard } from "@/components/ui/glass-card";
 import { PageHeader } from "@/components/ui/page-header";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ShareToCommunityButton } from "@/components/sharing/ShareToCommunityButton";
+import { AiTradeReviewPanel, type AiTradeReview } from "@/components/ai/AiTradeReviewPanel";
 import { getTradeDetails, type TradeSource } from "@/lib/trade-details.functions";
 import { findSymbol } from "@/lib/paper-trading/symbols";
 import { formatCurrency, formatNumber } from "@/lib/paper-trading/calculations";
