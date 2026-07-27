@@ -16,7 +16,8 @@ export function KpiGrid() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6">
+
         {Array.from({ length: 12 }).map((_, i) => (
           <GlassCard key={i} className="p-4 space-y-3">
             <Skeleton className="h-3 w-16" />
@@ -45,7 +46,7 @@ export function KpiGrid() {
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6">
       {items.map((it, i) => <KpiTile key={it.label} {...it} delay={i * 0.02} />)}
     </div>
   );

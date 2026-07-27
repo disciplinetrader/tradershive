@@ -271,25 +271,30 @@ function JournalPage() {
         <>
           <JournalStats entries={filtered} />
 
-          <GlassCard className="p-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <JournalFilters
-                filters={filters}
-                onChange={setFilters}
-                tags={tagsQuery.data ?? []}
-                taxonomy={taxonomyQuery.data ?? []}
-              />
-              <ViewSwitcher value={view} onChange={setView} />
+          <GlassCard className="p-2 sm:p-3">
+            <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+              <div className="min-w-0 flex-1 h-scroll">
+                <JournalFilters
+                  filters={filters}
+                  onChange={setFilters}
+                  tags={tagsQuery.data ?? []}
+                  taxonomy={taxonomyQuery.data ?? []}
+                />
+              </div>
+              <div className="shrink-0">
+                <ViewSwitcher value={view} onChange={setView} />
+              </div>
             </div>
             {dayFilterIds ? (
-              <div className="mt-3 flex items-center justify-between rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-primary">
-                <span>Filtered to {dayFilterIds.size} trade{dayFilterIds.size === 1 ? "" : "s"} from selected day.</span>
-                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setDayFilterIds(null)}>
+              <div className="mt-3 flex items-center justify-between rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-primary">
+                <span className="truncate">Filtered to {dayFilterIds.size} trade{dayFilterIds.size === 1 ? "" : "s"} from selected day.</span>
+                <Button variant="ghost" size="sm" className="h-7 shrink-0 text-xs" onClick={() => setDayFilterIds(null)}>
                   Clear
                 </Button>
               </div>
             ) : null}
           </GlassCard>
+
 
           {isLoading ? (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -312,7 +317,7 @@ function JournalPage() {
               transition={{ duration: 0.2 }}
             >
               {view === "card" ? (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
                   {filtered.map((entry) => {
                     const tagIds = Array.from(entryTagMap.get(entry.id) ?? []);
                     const tags = (tagsQuery.data ?? []).filter((t) => tagIds.includes(t.id));
