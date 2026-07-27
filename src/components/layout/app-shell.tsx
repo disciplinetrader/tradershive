@@ -42,6 +42,7 @@ const TRADING: NavItem[] = [
   { to: "/replay", label: "Replay Studio", icon: Film },
   { to: "/journal", label: "Journal", icon: BookOpen },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
+  { to: "/mistakes", label: "Trading Mistakes", icon: Shield },
   { to: "/goals", label: "Goals & Progress", icon: Target },
 ];
 

@@ -20,6 +20,7 @@ import { TodayFocusCard } from "@/components/dashboard/TodayFocusCard";
 import { PerformanceSnapshot } from "@/components/dashboard/PerformanceSnapshot";
 import { ActionItemsList } from "@/components/dashboard/ActionItemsList";
 import { CoachTipsCard } from "@/components/dashboard/CoachTipsCard";
+import { TopMistakeWidget } from "@/components/dashboard/TopMistakeWidget";
 import { BetaBanner } from "@/components/beta/BetaBanner";
 import { usePersistentDisclosure } from "@/hooks/use-persistent-disclosure";
 
@@ -140,8 +141,9 @@ function DashboardPage() {
 
       {/* Section 4 — Continuous Improvement */}
       {visible("coach") && (
-        <motion.div variants={item}>
+        <motion.div variants={item} className="grid gap-4 lg:grid-cols-2">
           {isPending || !home ? <CoachSkeleton /> : <CoachTipsCard tips={home.tips} />}
+          <TopMistakeWidget />
         </motion.div>
       )}
 
