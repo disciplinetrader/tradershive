@@ -1,7 +1,7 @@
 // Default taxonomies + feature flags for the Journal module.
 // User custom values live in the `journal_taxonomy` table.
 
-export type Option = { value: string; label: string; color?: string };
+export type Option = { value: string; label: string; color?: string; emoji?: string };
 
 export const DEFAULT_SETUPS: Option[] = [
   { value: "breakout", label: "Breakout" },
