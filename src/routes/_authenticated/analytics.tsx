@@ -171,7 +171,7 @@ function DatasetStatus() {
           </div>
           <div className="flex items-center justify-center gap-2 pt-1">
             {copy.cta ? (
-              <Button size="sm" onClick={() => navigate({ to: copy.cta!.to })}>{copy.cta.label}</Button>
+              <Button size="sm" onClick={() => navigate({ to: copy.cta!.to as any })}>{copy.cta.label}</Button>
             ) : null}
             <Button
               size="sm"
