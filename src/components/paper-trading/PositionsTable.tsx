@@ -239,6 +239,8 @@ export function PositionsTable() {
 
 function ModifyDialog({ trade, onClose }: { trade: Trade; onClose: () => void }) {
   const qc = useQueryClient();
+  const sym = findSymbol(trade.symbol);
+  const step = sym ? Math.pow(10, -(sym.decimals ?? 2)) * 10 : 0.0001; // ~1 pip
   const [sl, setSl] = useState(trade.stop_loss ? String(trade.stop_loss) : "");
   const [tp, setTp] = useState(trade.take_profit ? String(trade.take_profit) : "");
   const modify = useServerFn(modifyTrade);
@@ -247,18 +249,45 @@ function ModifyDialog({ trade, onClose }: { trade: Trade; onClose: () => void })
     onSuccess: () => { toast.success("Trade updated"); qc.invalidateQueries({ queryKey: ["paper"] }); onClose(); },
     onError: (e) => toast.error((e as Error).message),
   });
+  const decimals = sym?.decimals ?? 2;
+  const nudge = (set: (v: string) => void, cur: string, dir: 1 | -1) => {
+    const n = Number(cur) || Number(trade.entry_price);
+    set((n + dir * step).toFixed(decimals));
+  };
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
         <DialogHeader><DialogTitle>Modify {trade.symbol}</DialogTitle></DialogHeader>
-        <div className="grid grid-cols-2 gap-3">
-          <div><Label>Stop loss</Label><Input value={sl} onChange={(e) => setSl(e.target.value)} className="font-mono" /></div>
-          <div><Label>Take profit</Label><Input value={tp} onChange={(e) => setTp(e.target.value)} className="font-mono" /></div>
-        </div>
-        <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button onClick={() => mut.mutate()} disabled={mut.isPending}>Save</Button>
-        </DialogFooter>
+        <form
+          onSubmit={(e) => { e.preventDefault(); if (!mut.isPending) mut.mutate(); }}
+          className="space-y-3"
+        >
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Stop loss</Label>
+              <div className="mt-1 flex gap-1">
+                <Button type="button" variant="outline" size="icon" className="h-9 w-8 shrink-0" onClick={() => nudge(setSl, sl, -1)} tabIndex={-1}>−</Button>
+                <Input autoFocus value={sl} onChange={(e) => setSl(e.target.value)} className="font-mono" inputMode="decimal" placeholder="—" />
+                <Button type="button" variant="outline" size="icon" className="h-9 w-8 shrink-0" onClick={() => nudge(setSl, sl, 1)} tabIndex={-1}>+</Button>
+              </div>
+            </div>
+            <div>
+              <Label>Take profit</Label>
+              <div className="mt-1 flex gap-1">
+                <Button type="button" variant="outline" size="icon" className="h-9 w-8 shrink-0" onClick={() => nudge(setTp, tp, -1)} tabIndex={-1}>−</Button>
+                <Input value={tp} onChange={(e) => setTp(e.target.value)} className="font-mono" inputMode="decimal" placeholder="—" />
+                <Button type="button" variant="outline" size="icon" className="h-9 w-8 shrink-0" onClick={() => nudge(setTp, tp, 1)} tabIndex={-1}>+</Button>
+              </div>
+            </div>
+          </div>
+          <p className="text-[10px] text-muted-foreground">Tip — press <kbd className="rounded bg-muted px-1">Enter</kbd> to save, <kbd className="rounded bg-muted px-1">Esc</kbd> to cancel.</p>
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
+            <Button type="submit" disabled={mut.isPending} className="min-w-[80px]">
+              {mut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
