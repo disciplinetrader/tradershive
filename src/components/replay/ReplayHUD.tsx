@@ -1,6 +1,7 @@
 import { Activity, CalendarClock, Circle, Layers, Pause, Play, TrendingDown, TrendingUp } from "lucide-react";
 import { useReplay } from "./context";
 import { cn } from "@/lib/utils";
+import { PlaybookQuickAttach } from "@/components/playbook/PlaybookQuickAttach";
 
 /**
  * Compact HUD strip shown above the Replay chart. Surfaces live session
