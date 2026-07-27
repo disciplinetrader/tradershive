@@ -1,114 +1,93 @@
-import { useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { toast } from "sonner";
-import { Plus, Save, Trash2 } from "lucide-react";
+import { BookMarked, Plus } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
-import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { PlaybookCard } from "@/components/strategy/PlaybookCard";
-import { RuleList } from "@/components/strategy/RuleList";
-import { deletePlaybook, listPlaybooks, upsertPlaybook, listStrategies } from "@/lib/strategy.functions";
-import { nextRuleId } from "@/lib/strategy/calculations";
-import type { Playbook, Rule, Strategy } from "@/lib/strategy/types";
+import { PlaybookCard, type PlaybookRow } from "@/components/playbook/PlaybookCard";
+import { PlaybookFilters, type PlaybookFilterState } from "@/components/playbook/PlaybookFilters";
+import { listPlaybookLibrary } from "@/lib/playbook.functions";
 
 export const Route = createFileRoute("/_authenticated/strategies/playbooks")({
-  component: PlaybooksPage,
+  component: PlaybookLibraryPage,
+  head: () => ({
+    meta: [
+      { title: "Playbook Library · TradersHIVE" },
+      { name: "description", content: "Your personal trading setup library — rules, checklists, mistakes and live performance for every playbook." },
+      { property: "og:title", content: "Playbook Library · TradersHIVE" },
+      { property: "og:description", content: "Codify, run and refine every trading setup." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
 });
 
-function PlaybooksPage() {
-  const list = useServerFn(listPlaybooks);
-  const listS = useServerFn(listStrategies);
-  const save = useServerFn(upsertPlaybook);
-  const del = useServerFn(deletePlaybook);
-  const qc = useQueryClient();
-
-  const pbs = useQuery({ queryKey: ["playbooks"], queryFn: () => list() });
-  const strategies = useQuery({ queryKey: ["strategies"], queryFn: () => listS() });
-
-  const [editing, setEditing] = useState<Partial<Playbook> | null>(null);
-
-  const saveMut = useMutation({
-    mutationFn: async (p: any) => save({ data: p }),
-    onSuccess: () => { toast.success("Playbook saved"); qc.invalidateQueries({ queryKey: ["playbooks"] }); setEditing(null); },
-    onError: (e: any) => toast.error(e?.message ?? "Failed"),
-  });
-  const delMut = useMutation({
-    mutationFn: async (id: string) => del({ data: { id } }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["playbooks"] }),
+function PlaybookLibraryPage() {
+  const list = useServerFn(listPlaybookLibrary);
+  const [filters, setFilters] = useState<PlaybookFilterState>({
+    search: "", market: "", timeframe: "", tag: "", favoritesOnly: false, hasTradesOnly: false,
   });
 
-  const startNew = () => setEditing({ name: "New Playbook", overview: "", rules: [], checklist: [], mistakes: [], examples: [], color: "#22c55e", icon: "BookMarked" });
+  const q = useQuery({
+    queryKey: ["playbook-library", filters],
+    queryFn: () => list({ data: filters }),
+    staleTime: 30_000,
+  });
+
+  const rows = (q.data ?? []) as PlaybookRow[];
+  const tagOptions = useMemo(() => {
+    const s = new Set<string>();
+    rows.forEach((r) => (r.tags ?? []).forEach((t) => s.add(t)));
+    return Array.from(s).sort();
+  }, [rows]);
+
+  const patch = (p: Partial<PlaybookFilterState>) => setFilters((prev) => ({ ...prev, ...p }));
 
   return (
-    <div className="space-y-4">
-      <PageHeader title="Playbooks" description="Deep dives into specific setups: rules, mistakes, examples." actions={
-        <Button onClick={startNew}><Plus className="mr-2 h-4 w-4" />New Playbook</Button>
-      } />
-      {editing ? (
-        <PlaybookEditor
-          initial={editing}
-          strategies={(strategies.data ?? []) as unknown as Strategy[]}
-          onCancel={() => setEditing(null)}
-          onSave={(p) => saveMut.mutate(p)}
-          saving={saveMut.isPending}
-        />
-      ) : null}
-      {pbs.isPending ? (
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, i) => <div key={i} className="glass rounded-3xl h-32 animate-pulse" />)}
-        </div>
-      ) : (pbs.data ?? []).length === 0 && !editing ? (
-        <GlassCard className="p-8 text-center text-sm text-muted-foreground">No playbooks yet. Create one to codify a repeatable setup.</GlassCard>
-      ) : (
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-          {((pbs.data ?? []) as any[]).map((p) => (
-            <div key={p.id} className="relative group">
-              <PlaybookCard pb={p} />
-              <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 flex gap-1 transition">
-                <Button size="icon" variant="secondary" className="h-7 w-7" aria-label="Edit playbook" onClick={() => setEditing(p)}>✎</Button>
-                <Button size="icon" variant="secondary" className="h-7 w-7" aria-label="Delete playbook" onClick={() => delMut.mutate(p.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
-              </div>
-            </div>
+    <div className="space-y-5">
+      <PageHeader
+        title="Playbook Library"
+        description="Every setup you trade — codified with rules, checklists, and live performance from your journal & paper trading."
+        actions={
+          <Button asChild>
+            <Link to="/strategies/create"><Plus className="mr-2 h-4 w-4" />New Playbook</Link>
+          </Button>
+        }
+      />
+
+      <PlaybookFilters value={filters} onChange={patch} tagOptions={tagOptions} count={rows.length} />
+
+      {q.isPending ? (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-64 animate-pulse rounded-2xl border border-border/50 bg-card/40" />
           ))}
+        </div>
+      ) : rows.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {rows.map((p) => (<PlaybookCard key={p.id} pb={p} />))}
         </div>
       )}
     </div>
   );
 }
 
-function PlaybookEditor({ initial, strategies, onCancel, onSave, saving }: { initial: Partial<Playbook>; strategies: Strategy[]; onCancel: () => void; onSave: (p: any) => void; saving: boolean }) {
-  const [name, setName] = useState(initial.name ?? "");
-  const [overview, setOverview] = useState(initial.overview ?? "");
-  const [strategy_id, setStrategyId] = useState<string | null>(initial.strategy_id ?? null);
-  const [rules, setRules] = useState<Rule[]>((initial.rules as Rule[]) ?? []);
-  const [checklist, setChecklist] = useState<Rule[]>((initial.checklist as Rule[]) ?? []);
-  const [mistakes, setMistakes] = useState<Rule[]>((initial.mistakes as Rule[]) ?? []);
-
+function EmptyState() {
   return (
-    <GlassCard className="p-4 space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <Input value={name} onChange={(e) => setName(e.target.value)} className="max-w-sm" placeholder="Playbook name" />
-        <select value={strategy_id ?? ""} onChange={(e) => setStrategyId(e.target.value || null)} className="h-9 rounded-md border border-border/60 bg-background/40 px-2 text-xs">
-          <option value="">No linked strategy</option>
-          {strategies.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-        </select>
-        <div className="ml-auto flex gap-2">
-          <Button variant="ghost" onClick={onCancel}>Cancel</Button>
-          <Button onClick={() => onSave({ ...initial, name, overview, strategy_id, rules, checklist, mistakes })} disabled={saving}>
-            <Save className="mr-1 h-4 w-4" />{saving ? "Saving…" : "Save Playbook"}
-          </Button>
-        </div>
+    <div className="rounded-2xl border border-dashed border-border/60 bg-card/40 p-12 text-center">
+      <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-primary/10 text-primary">
+        <BookMarked className="h-7 w-7" />
       </div>
-      <Textarea rows={3} value={overview} onChange={(e) => setOverview(e.target.value)} placeholder="Overview of this setup: context, why it works, when to avoid it." />
-      <div className="grid gap-4 md:grid-cols-3">
-        <div><div className="text-xs font-semibold mb-2">Rules</div><RuleList rules={rules} onChange={setRules} placeholder="Add a rule…" /></div>
-        <div><div className="text-xs font-semibold mb-2">Checklist</div><RuleList rules={checklist} onChange={setChecklist} placeholder="Checklist item…" /></div>
-        <div><div className="text-xs font-semibold mb-2">Common Mistakes</div><RuleList rules={mistakes} onChange={setMistakes} placeholder="Mistake to avoid…" /></div>
-      </div>
-    </GlassCard>
+      <h3 className="mt-4 text-lg font-semibold">Build your first playbook</h3>
+      <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+        Turn your best setups into repeatable systems: define rules, run a pre-trade checklist, and track exactly how each playbook performs across every trade.
+      </p>
+      <Button className="mt-5" asChild>
+        <Link to="/strategies/create"><Plus className="mr-2 h-4 w-4" />Create playbook</Link>
+      </Button>
+    </div>
   );
 }
