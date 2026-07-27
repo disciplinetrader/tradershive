@@ -68,7 +68,7 @@ export function QaModePanel() {
         url = (el as HTMLScriptElement).src;
       }
       if (!kind || !url) return;
-      assetsRef.current = [{ kind: "link" as const, url: href, at: Date.now() }, ...assetsRef.current].slice(0, 100);
+      assetsRef.current = [{ kind, url, at: Date.now() }, ...assetsRef.current].slice(0, 100);
     };
     // Capture-phase to catch bubble-less error events on img/link/script.
     window.addEventListener("error", onAssetError, true);
@@ -82,7 +82,7 @@ export function QaModePanel() {
       if (!/^https?:/i.test(href)) return;
       // Fire-and-forget probe.
       void fetch(href, { method: "HEAD", mode: "no-cors" }).catch(() => {
-        assetsRef.current = [{ kind: "link", url: href, at: Date.now() }, ...assetsRef.current].slice(0, 100);
+        assetsRef.current = [{ kind: "link" as const, url: href, at: Date.now() }, ...assetsRef.current].slice(0, 100);
       });
     };
     document.addEventListener("click", onClick, true);
