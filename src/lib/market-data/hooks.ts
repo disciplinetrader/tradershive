@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { marketData } from "./engine";
+import { getProvider } from "./providers/registry";
+import { twelveDataCandles } from "./twelvedata.functions";
 import type { Candle, MarketKind, Quote, Timeframe } from "./types";
 
 export function useLiveQuote(symbol: string | null | undefined, market?: MarketKind) {
@@ -42,4 +44,64 @@ export function useMarketStatus(market: MarketKind) {
     return () => { cancelled = true; clearInterval(t); };
   }, [market]);
   return status;
+}
+
+/**
+ * Register a poll cadence with the Twelve Data provider. Mount this once per
+ * screen (dashboard, watchlist, workspace) and the central poller will tune
+ * itself to the fastest requested cadence. Automatically pauses when the
+ * browser tab is hidden.
+ *
+ *   useMarketCadence("workspace")   // 7s  — active trading
+ *   useMarketCadence("watchlist")   // 20s
+ *   useMarketCadence("dashboard")   // 30s
+ */
+export function useMarketCadence(tier: "workspace" | "watchlist" | "dashboard" | "idle") {
+  const id = useId();
+  useEffect(() => {
+    marketData.init();
+    const p = getProvider("twelvedata") as any;
+    if (!p || typeof p.requestCadence !== "function") return;
+    const ms = tier === "workspace" ? 7_000
+             : tier === "watchlist" ? 20_000
+             : tier === "dashboard" ? 30_000
+             : 60_000;
+    return p.requestCadence(`${tier}:${id}`, ms);
+  }, [tier, id]);
+}
+
+/**
+ * Preload historical candles for a Replay session before opening the workspace.
+ * Returns `{ ready, progress, error }`. If the window is already in cache the
+ * promise resolves near-instantly.
+ */
+export function usePreloadReplay(
+  symbol: string | null,
+  timeframe: Timeframe,
+  from: number | null,
+  to: number | null,
+) {
+  const [ready, setReady] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    if (!symbol || !from || !to) return;
+    let cancelled = false;
+    setReady(false); setProgress(0.1); setError(null);
+    (async () => {
+      try {
+        const res = (await twelveDataCandles({
+          data: { symbol, timeframe, from, to, buffer: true },
+        })) as any;
+        if (cancelled) return;
+        if (res?.error) { setError(res.error); return; }
+        setProgress(1);
+        setReady(true);
+      } catch (e) {
+        if (!cancelled) setError((e as Error).message);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [symbol, timeframe, from, to]);
+  return { ready, progress, error };
 }

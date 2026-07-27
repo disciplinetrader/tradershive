@@ -17,11 +17,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { InstrumentSearchInput } from "@/components/journal/InstrumentSearchInput";
 import { findInstrument, type InstrumentRecord, type JournalMarket } from "@/lib/journal/instruments";
 import type { Timeframe } from "@/lib/replay/types";
 import { TIMEFRAMES } from "@/lib/replay/constants";
 import { createReplaySession } from "@/lib/replay.functions";
+import { twelveDataCandles } from "@/lib/market-data/twelvedata.functions";
 import { cn } from "@/lib/utils";
 
 const REPLAY_MARKETS = new Set<JournalMarket>(["forex", "crypto", "stocks", "indices", "futures", "metals"]);
@@ -61,6 +63,7 @@ export function CreatorWizard({ open, onOpenChange }: { open: boolean; onOpenCha
   const [from, setFrom] = useState(daysAgoISO(30));
   const [to, setTo] = useState(todayISO());
   const [tf, setTf] = useState<Timeframe>("5m");
+  const [preload, setPreload] = useState<{ progress: number; status: "idle" | "loading" | "cached" | "downloaded" | "error"; message?: string }>({ progress: 0, status: "idle" });
   const navigate = useNavigate();
 
   const createFn = useServerFn(createReplaySession);
@@ -89,13 +92,32 @@ export function CreatorWizard({ open, onOpenChange }: { open: boolean; onOpenCha
     setTitle(`🎲 ${pick.symbol} · ${day}`);
   };
 
-  const submit = () => {
+  const submit = async () => {
     if (!instrument || !canSubmit) return;
     const balanceNum = Math.max(100, Math.round(Number(balance) || 10000));
     const label = title.trim() || `${instrument.symbol} · ${from}`;
     const market = REPLAY_MARKETS.has(instrument.market as JournalMarket)
       ? instrument.market
       : "forex";
+
+    // Preload candles (+buffer) so the replay opens instantly.
+    setPreload({ progress: 0.1, status: "loading" });
+    const fromMs = new Date(`${from}T00:00:00Z`).getTime();
+    const toMs = new Date(`${to}T23:59:59Z`).getTime();
+    try {
+      const res = (await twelveDataCandles({
+        data: { symbol: instrument.symbol, timeframe: tf, from: fromMs, to: toMs, buffer: true },
+      })) as { candles?: unknown[]; cached?: boolean; error?: string };
+      if (res?.error) {
+        setPreload({ progress: 0, status: "error", message: res.error });
+        // Non-fatal for crypto/synthetic — proceed anyway.
+      } else {
+        setPreload({ progress: 1, status: res?.cached ? "cached" : "downloaded" });
+      }
+    } catch (e) {
+      setPreload({ progress: 0, status: "error", message: (e as Error).message });
+    }
+
     create.mutate({
       data: {
         title: label,
@@ -189,17 +211,29 @@ export function CreatorWizard({ open, onOpenChange }: { open: boolean; onOpenCha
           </div>
         </div>
 
+        {preload.status !== "idle" && (
+          <div className="mt-2 space-y-1">
+            <Progress value={Math.round(preload.progress * 100)} className="h-1.5" />
+            <p className="text-[11px] text-muted-foreground">
+              {preload.status === "loading" && "Downloading candles…"}
+              {preload.status === "cached" && "Loaded from cache — opening instantly."}
+              {preload.status === "downloaded" && "Downloaded and cached for next time."}
+              {preload.status === "error" && `Preload skipped: ${preload.message ?? "unavailable"}`}
+            </p>
+          </div>
+        )}
+
         <div className="mt-2 flex items-center justify-between gap-3">
           <p className="text-xs text-muted-foreground">
             Launches instantly — chart, workspace and session appear together.
           </p>
-          <Button onClick={submit} disabled={!canSubmit} className="min-w-[160px]">
-            {create.isPending ? (
+          <Button onClick={submit} disabled={!canSubmit || preload.status === "loading"} className="min-w-[160px]">
+            {create.isPending || preload.status === "loading" ? (
               <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
             ) : (
               <Play className="mr-1.5 h-4 w-4" />
             )}
-            {create.isPending ? "Launching…" : "Start Backtest"}
+            {preload.status === "loading" ? "Preloading…" : create.isPending ? "Launching…" : "Start Backtest"}
           </Button>
         </div>
       </DialogContent>

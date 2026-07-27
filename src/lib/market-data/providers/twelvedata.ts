@@ -7,7 +7,7 @@
  * free-tier request quota is respected. Historical candles use /time_series.
  */
 import { DESCRIPTORS_BY_CODE } from "../descriptors";
-import { twelveDataCandles, twelveDataQuote, twelveDataStatus } from "../twelvedata.functions";
+import { twelveDataCandles, twelveDataQuote, twelveDataStatus, twelveDataUsage } from "../twelvedata.functions";
 import { DEFAULT_SESSIONS } from "../sessions";
 import type {
   Candle, CandleQuery, MarketDataProvider, MarketKind, MarketStatusInfo,
@@ -15,7 +15,17 @@ import type {
   SessionWindow, StatusHandler, SubscriptionHandle, SymbolMeta,
 } from "../types";
 
-const POLL_MS = 8000; // 7.5 req/min — safe for Twelve Data free tier.
+/** Poll cadence tiers, chosen so the busiest route (trading) is well within
+ *  the free-tier 8 req/min ceiling. See product spec. */
+const CADENCE: Record<string, number> = {
+  workspace: 7_000,
+  watchlist: 20_000,
+  dashboard: 30_000,
+  idle:      60_000,
+  hidden:    0,
+  throttled: 45_000,
+};
+const DEFAULT_POLL_MS = CADENCE.workspace;
 
 // Static catalog for the symbols we officially support out of the box.
 // The engine symbol on the left is what the rest of the app uses; the
@@ -60,8 +70,16 @@ export class TwelveDataProvider implements MarketDataProvider {
   private _status: ProviderStatus = "disconnected";
   private handlers = new Set<StatusHandler>();
   private subs = new Map<string, Set<QuoteHandler>>();
-  private pollTimer: ReturnType<typeof setInterval> | null = null;
+  private pollTimer: ReturnType<typeof setTimeout> | null = null;
   private booted = false;
+  private cadenceRequests = new Map<string, number>(); // consumer key → desired ms
+  private currentPollMs = DEFAULT_POLL_MS;
+  private failureCount = 0;
+  private nextAllowedPoll = 0;
+  private lastQuotaWarn = 0;
+  private visibilityBound = false;
+  private lastUsage: any = null;
+  private lastUsageAt = 0;
 
   status() { return this._status; }
   onStatus(h: StatusHandler) { this.handlers.add(h); return () => this.handlers.delete(h); }
@@ -69,6 +87,46 @@ export class TwelveDataProvider implements MarketDataProvider {
     if (this._status === s) return;
     this._status = s;
     for (const h of this.handlers) { try { h(s, meta); } catch { /* noop */ } }
+  }
+
+  /** External consumers register the cadence they need. Provider polls at the
+   *  MIN of all requested cadences (fastest wins), tempered by throttle/hidden.
+   *  Returns an unregister function. */
+  requestCadence(key: string, ms: number): () => void {
+    this.cadenceRequests.set(key, ms);
+    this.retunePoller();
+    return () => { this.cadenceRequests.delete(key); this.retunePoller(); };
+  }
+
+  private computeCadence(): number {
+    if (typeof document !== "undefined" && document.visibilityState === "hidden") return CADENCE.hidden;
+    const requested = [...this.cadenceRequests.values()];
+    let base = requested.length ? Math.min(...requested) : CADENCE.idle;
+    if (this.lastUsage?.softThrottle) base = Math.max(base, CADENCE.throttled);
+    if (this.lastUsage?.exhausted) return 0;
+    return Math.max(3_000, base);
+  }
+
+  private retunePoller() {
+    const ms = this.computeCadence();
+    if (ms === this.currentPollMs && this.pollTimer) return;
+    this.currentPollMs = ms;
+    if (this.pollTimer) { clearTimeout(this.pollTimer); this.pollTimer = null; }
+    if (ms > 0 && this._status === "connected") this.schedulePoll(ms);
+  }
+
+  private schedulePoll(delayMs: number) {
+    if (this.pollTimer) clearTimeout(this.pollTimer);
+    this.pollTimer = setTimeout(() => { void this.pollOnce(); }, delayMs);
+  }
+
+  private bindVisibility() {
+    if (this.visibilityBound || typeof document === "undefined") return;
+    this.visibilityBound = true;
+    document.addEventListener("visibilitychange", () => {
+      this.retunePoller();
+      if (document.visibilityState === "visible") void this.pollOnce();
+    });
   }
 
   async connect() {
@@ -79,11 +137,12 @@ export class TwelveDataProvider implements MarketDataProvider {
       const probe = (await twelveDataStatus()) as { configured: boolean; plan?: string };
       if (!probe?.configured) {
         this.setStatus("disabled", { reason: "twelvedata_not_configured" });
-        console.warn("[twelvedata] provider disabled — Forex provider not configured. Set TWELVE_DATA_API_KEY to enable.");
+        console.warn("[twelvedata] provider disabled — set TWELVE_DATA_API_KEY to enable.");
         return;
       }
       this.setStatus("connected", { plan: probe.plan });
       console.info(`[twelvedata] connected — plan=${probe.plan ?? "unknown"}`);
+      this.bindVisibility();
       this.ensurePoller();
     } catch (e) {
       this.setStatus("error", { message: (e as Error).message });
@@ -92,38 +151,82 @@ export class TwelveDataProvider implements MarketDataProvider {
   }
 
   async disconnect() {
-    if (this.pollTimer) { clearInterval(this.pollTimer); this.pollTimer = null; }
+    if (this.pollTimer) { clearTimeout(this.pollTimer); this.pollTimer = null; }
     this.subs.clear();
     this.setStatus("disconnected");
   }
 
   private ensurePoller() {
     if (this.pollTimer) return;
-    this.pollTimer = setInterval(() => { void this.pollOnce(); }, POLL_MS);
+    this.schedulePoll(this.computeCadence() || CADENCE.workspace);
+  }
+
+  /** Public snapshot used by the QA diagnostics panel. */
+  getUsageSnapshot() { return { usage: this.lastUsage, currentPollMs: this.currentPollMs, subs: this.subs.size, failures: this.failureCount }; }
+
+  private async refreshUsage() {
+    // Cheap server call, throttle to once every 20s.
+    if (Date.now() - this.lastUsageAt < 20_000) return;
+    this.lastUsageAt = Date.now();
+    try {
+      const u = await twelveDataUsage();
+      this.lastUsage = u;
+      if ((u as any)?.softThrottle && Date.now() - this.lastQuotaWarn > 60_000) {
+        this.lastQuotaWarn = Date.now();
+        console.warn(`[twelvedata] approaching daily quota (${(u as any).daily}/${(u as any).dailyLimit}) — reducing cadence.`);
+      }
+    } catch { /* noop */ }
   }
 
   private async pollOnce() {
-    if (this._status !== "connected" || this.subs.size === 0) return;
+    this.pollTimer = null;
+    if (this._status !== "connected") return;
+    if (this.currentPollMs === 0) return; // paused
+    if (Date.now() < this.nextAllowedPoll) { this.schedulePoll(this.nextAllowedPoll - Date.now()); return; }
+
+    void this.refreshUsage();
+
+    if (this.subs.size === 0) { this.schedulePoll(this.computeCadence() || CADENCE.idle); return; }
+
     const engineSyms = [...this.subs.keys()];
     const tdSyms = engineSyms.map(toTd);
     try {
       const res = (await twelveDataQuote({ data: { symbols: tdSyms } })) as any;
-      if (res?.error) { console.warn("[twelvedata] quote:", res.error); return; }
-      const byTd = new Map<string, any>();
-      for (const q of res.quotes ?? []) byTd.set(q.symbol, q);
-      for (const engineSym of engineSyms) {
-        const q = byTd.get(toTd(engineSym));
-        if (!q) continue;
-        const quote: Quote = {
-          symbol: engineSym, providerCode: this.code, ts: q.ts,
-          bid: q.bid, ask: q.ask, last: q.last, spread: q.spread,
-        };
-        for (const h of this.subs.get(engineSym) ?? []) { try { h(quote); } catch { /* noop */ } }
+      if (res?.error) {
+        this.failureCount += 1;
+        // Exponential backoff up to 5min. Hard-stop if quota is exhausted.
+        if (/quota_exhausted/.test(res.error)) {
+          this.nextAllowedPoll = Date.now() + 15 * 60_000;
+          console.warn("[twelvedata] daily quota exhausted — pausing polling until refresh.");
+        } else {
+          const backoff = Math.min(300_000, 5_000 * 2 ** Math.min(this.failureCount, 6));
+          this.nextAllowedPoll = Date.now() + backoff;
+        }
+      } else {
+        this.failureCount = 0;
+        const byTd = new Map<string, any>();
+        for (const q of res.quotes ?? []) byTd.set(q.symbol, q);
+        for (const engineSym of engineSyms) {
+          const q = byTd.get(toTd(engineSym));
+          if (!q) continue;
+          const quote: Quote = {
+            symbol: engineSym, providerCode: this.code, ts: q.ts,
+            bid: q.bid, ask: q.ask, last: q.last, spread: q.spread,
+          };
+          for (const h of this.subs.get(engineSym) ?? []) { try { h(quote); } catch { /* noop */ } }
+        }
       }
     } catch (e) {
-      console.warn("[twelvedata] poll failed:", e);
+      this.failureCount += 1;
+      const backoff = Math.min(300_000, 5_000 * 2 ** Math.min(this.failureCount, 6));
+      this.nextAllowedPoll = Date.now() + backoff;
+      console.warn("[twelvedata] poll failed:", (e as Error).message);
+    } finally {
+      const next = this.computeCadence();
+      if (next > 0) this.schedulePoll(Math.max(next, this.nextAllowedPoll - Date.now()));
     }
   }
+
 
   async getSymbols(market?: MarketKind): Promise<SymbolMeta[]> {
     return CATALOG
