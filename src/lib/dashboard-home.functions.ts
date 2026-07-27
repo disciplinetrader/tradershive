@@ -273,7 +273,7 @@ export const getHomeSummary = createServerFn({ method: "GET" })
     const noNotes = journal.filter((j) => {
       if (!j.closed_at) return false;
       if (new Date(j.closed_at).getTime() < daysAgo(3, now).getTime()) return false;
-      const n = (j.notes ?? "").toString().trim();
+      const n = (j.notes_text ?? "").toString().trim();
       return n.length < 12;
     });
     if (noNotes.length > 0) {
