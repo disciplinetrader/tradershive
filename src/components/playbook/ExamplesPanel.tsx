@@ -146,6 +146,7 @@ function TradeLink({ trade }: { trade: PlaybookTradeExample }) {
     <Link
       to="/trades/$tradeId"
       params={{ tradeId: trade.id }}
+      search={{ source: "paper" }}
       className="inline-flex items-center gap-0.5 text-[11px] text-primary hover:underline"
     >
       Open <ArrowUpRight className="h-3 w-3" />
