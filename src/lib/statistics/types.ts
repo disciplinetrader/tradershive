@@ -67,6 +67,8 @@ export interface StatisticsFilters {
   directions: ("long" | "short")[];
   tags: string[];
   challengeId?: string | null;
+  /** Analytics Center source tab (paper/journal/imported or all). */
+  source?: TradeSourceTab;
 }
 
 export const EMPTY_FILTERS: StatisticsFilters = {
@@ -83,4 +85,5 @@ export const EMPTY_FILTERS: StatisticsFilters = {
   directions: [],
   tags: [],
   challengeId: null,
+  source: "all",
 };
