@@ -104,7 +104,10 @@ export const getMistakeAnalysis = createServerFn({ method: "POST" })
       })),
     ];
 
-    const limits = extractLimits(prefs?.preferences);
+    const limits: UserRiskLimits = {
+      ...DEFAULT_LIMITS,
+      max_risk_per_trade_pct: Number(prefs?.risk_per_trade_pct ?? DEFAULT_LIMITS.max_risk_per_trade_pct),
+    };
     return analyseMistakes(normalized, limits, rangeDays);
   });
 
