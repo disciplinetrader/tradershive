@@ -266,41 +266,31 @@ function JournalPanel({ entry }: { entry: any }) {
   );
 }
 
-function AiReviewPanel({ review }: { review: any }) {
-  const sections: [string, any][] = [
-    ["Summary", review.summary],
-    ["Execution", review.execution_review],
-    ["Risk", review.risk_review],
-    ["Psychology", review.psychology_review],
-    ["Better Stop", review.better_stop],
-    ["Suggested TP", review.suggested_take_profit],
-  ];
-  return (
-    <GlassCard className="p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="text-xs uppercase tracking-wider text-muted-foreground">AI Trade Review</div>
-        {review.grade ? (
-          <div className="text-sm font-bold text-primary">Grade: {review.grade}</div>
-        ) : null}
-      </div>
-      {sections.map(([label, body]) =>
-        body ? (
-          <div key={label}>
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
-            <p className="text-sm text-foreground/90 whitespace-pre-wrap">{String(body)}</p>
-          </div>
-        ) : null,
-      )}
-      {Array.isArray(review.mistakes) && review.mistakes.length > 0 ? (
-        <div>
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Mistakes</div>
-          <ul className="list-disc pl-4 text-sm text-danger space-y-0.5">
-            {review.mistakes.map((m: any, i: number) => <li key={i}>{typeof m === "string" ? m : (m.title ?? JSON.stringify(m))}</li>)}
-          </ul>
-        </div>
-      ) : null}
-    </GlassCard>
-  );
+function mapAiReview(review: any): AiTradeReview | null {
+  if (!review) return null;
+  const gradeToScore: Record<string, number> = { "A+": 95, A: 88, B: 78, C: 65, D: 50, F: 30 };
+  const score =
+    typeof review.overall_score === "number"
+      ? review.overall_score
+      : typeof review.confidence === "number"
+        ? Math.round(review.confidence * 100)
+        : review.grade
+          ? gradeToScore[String(review.grade)] ?? null
+          : null;
+  const toBullets = (arr: any): string[] => (Array.isArray(arr) ? arr.map((x) => (typeof x === "string" ? x : x?.title ?? JSON.stringify(x))) : []);
+  return {
+    overall_score: score,
+    grade: review.grade ?? null,
+    summary: review.summary ?? null,
+    strengths: toBullets(review.strengths),
+    improvements: [...toBullets(review.mistakes), ...toBullets(review.alternative_exits)],
+    risk_management: review.risk_review ?? null,
+    psychology: review.psychology_review ?? null,
+    execution: review.execution_review ?? null,
+    next_practice_goal: review.next_practice_goal ?? (toBullets(review.alternative_entries)[0] ?? null),
+    generated_at: review.created_at ?? review.updated_at ?? null,
+    model: review.model ?? null,
+  };
 }
 
 function AttachmentsPanel({ items }: { items: any[] }) {
