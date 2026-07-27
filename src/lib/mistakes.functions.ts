@@ -37,7 +37,7 @@ export const getMistakeAnalysis = createServerFn({ method: "POST" })
         .eq("user_id", context.userId),
       context.supabase
         .from("user_preferences")
-        .select("preferences")
+        .select("risk_per_trade_pct")
         .eq("user_id", context.userId)
         .maybeSingle(),
     ]);
