@@ -178,39 +178,40 @@ export function PositionsTable() {
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">{duration}</TableCell>
                     <TableCell className="sticky right-0 z-10 bg-background/95 text-right shadow-[-8px_0_12px_-8px_rgba(0,0,0,0.4)]">
-                      <div className="flex justify-end gap-1 opacity-70 transition-opacity group-hover:opacity-100">
+                      <div className="flex justify-end gap-1 opacity-70 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
                         <Button
-                          variant="ghost" size="icon" className="h-7 w-7 transition-transform active:scale-95"
+                          variant="ghost" size="icon"
+                          className="h-7 w-7 cursor-pointer transition-transform duration-150 hover:bg-accent active:scale-90 focus-visible:ring-2 focus-visible:ring-primary/50"
                           onClick={() => breakEven(t)} disabled={beDisabled}
                           aria-label="Move stop-loss to break-even"
                           title={beDisabled ? "Already at break-even" : "Move SL to entry (break-even)"}
                         >
                           <Shield className="h-3.5 w-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 transition-transform active:scale-95" onClick={() => setModifying(t)} aria-label="Modify SL/TP" title="Modify SL/TP (E)">
+                        <Button variant="ghost" size="icon" className="h-7 w-7 cursor-pointer transition-transform duration-150 hover:bg-accent active:scale-90 focus-visible:ring-2 focus-visible:ring-primary/50" onClick={() => setModifying(t)} aria-label="Modify SL/TP" title="Modify SL/TP (E)">
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 transition-transform active:scale-95" onClick={() => setClosing(t)} aria-label="Close with custom price" title="Close at custom price…">
+                        <Button variant="ghost" size="icon" className="h-7 w-7 cursor-pointer transition-transform duration-150 hover:bg-accent active:scale-90 focus-visible:ring-2 focus-visible:ring-primary/50" onClick={() => setClosing(t)} aria-label="Close with custom price" title="Close at custom price…">
                           <Sliders className="h-3.5 w-3.5" />
                         </Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 transition-transform active:scale-95" aria-label="Partial close" title="Partial close">
+                            <Button variant="ghost" size="icon" className="h-7 w-7 cursor-pointer transition-transform duration-150 hover:bg-accent active:scale-90 focus-visible:ring-2 focus-visible:ring-primary/50" aria-label="Partial close" title="Partial close">
                               <Split className="h-3.5 w-3.5" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-40">
                             <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Partial close</DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onSelect={() => partialClose(t, 0.25)}>Close 25%</DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => partialClose(t, 0.5)}>Close 50%</DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => partialClose(t, 0.75)}>Close 75%</DropdownMenuItem>
+                            <DropdownMenuItem className="cursor-pointer" onSelect={() => partialClose(t, 0.25)}>Close 25%</DropdownMenuItem>
+                            <DropdownMenuItem className="cursor-pointer" onSelect={() => partialClose(t, 0.5)}>Close 50%</DropdownMenuItem>
+                            <DropdownMenuItem className="cursor-pointer" onSelect={() => partialClose(t, 0.75)}>Close 75%</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                         <Button
                           variant="default"
                           size="sm"
-                          className="h-7 gap-1 bg-danger/90 px-2 text-[11px] font-semibold text-white transition-all hover:bg-danger active:scale-95"
+                          className="h-7 min-w-[72px] cursor-pointer justify-center gap-1 bg-danger/90 px-2 text-[11px] font-semibold text-white shadow-sm transition-all duration-150 hover:bg-danger active:scale-95 focus-visible:ring-2 focus-visible:ring-danger/60"
                           onClick={() => instantClose(t)}
                           disabled={closingIds.has(t.id)}
                           aria-label="Close at market"
