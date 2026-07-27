@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Play } from "lucide-react";
 import { toast } from "sonner";
+import { useProductTour } from "@/components/tour/ProductTour";
+
 import { PageHeader } from "@/components/ui/page-header";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Label } from "@/components/ui/label";
@@ -90,6 +92,9 @@ function SettingsPage() {
       <TradingSection />
       <SecuritySection email={user?.email ?? ""} />
       <NotificationsSection />
+      <ProductTourSection />
+
+
 
       <GlassCard className="border-danger/30 p-6">
         <h2 className="text-base font-semibold text-danger">Danger zone</h2>
