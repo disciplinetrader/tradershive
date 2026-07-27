@@ -86,6 +86,30 @@ type SessionStat = {
   netR: number;
 };
 
+type EmotionStat = {
+  value: string;
+  label: string;
+  emoji: string;
+  trades: number;
+  wins: number;
+  winRate: number;
+  avgR: number;
+  netR: number;
+  share: number;
+};
+
+type PositionKey = "long" | "short";
+type PositionStat = {
+  key: PositionKey;
+  trades: number;
+  wins: number;
+  losses: number;
+  winRate: number;
+  avgR: number;
+  netR: number;
+  profitFactor: number | null;
+};
+
 function computeStats(entries: JournalEntry[]) {
   const completed = entries.filter((e) => e.pnl != null);
   const total = completed.length;
@@ -101,6 +125,15 @@ function computeStats(entries: JournalEntry[]) {
     london: { key: "london", trades: 0, wins: 0, losses: 0, winRate: 0, netR: 0 },
     new_york: { key: "new_york", trades: 0, wins: 0, losses: 0, winRate: 0, netR: 0 },
     asian: { key: "asian", trades: 0, wins: 0, losses: 0, winRate: 0, netR: 0 },
+  };
+
+  type EmoAcc = { trades: number; wins: number; rSum: number; rCount: number };
+  const emoAcc = new Map<string, EmoAcc>();
+
+  type PosAcc = { trades: number; wins: number; losses: number; rSum: number; rCount: number; grossWin: number; grossLoss: number };
+  const posAcc: Record<PositionKey, PosAcc> = {
+    long: { trades: 0, wins: 0, losses: 0, rSum: 0, rCount: 0, grossWin: 0, grossLoss: 0 },
+    short: { trades: 0, wins: 0, losses: 0, rSum: 0, rCount: 0, grossWin: 0, grossLoss: 0 },
   };
 
   for (const e of completed) {
@@ -128,6 +161,35 @@ function computeStats(entries: JournalEntry[]) {
       if (isLoss) s.losses += 1;
       if (r != null && Number.isFinite(r)) s.netR += r;
     }
+
+    // Emotions — normalize legacy values onto canonical set (+ "unknown").
+    const canonicalEmos = normalizeEmotions(
+      (e.emotions as readonly (string | null | undefined)[] | null | undefined) ?? null,
+    );
+    const emos = canonicalEmos.length ? canonicalEmos : ["unknown"];
+    for (const em of emos) {
+      const acc = emoAcc.get(em) ?? { trades: 0, wins: 0, rSum: 0, rCount: 0 };
+      acc.trades += 1;
+      if (isWin) acc.wins += 1;
+      if (r != null && Number.isFinite(r)) { acc.rSum += r; acc.rCount += 1; }
+      emoAcc.set(em, acc);
+    }
+
+    // Position type — derived from trade_type if present.
+    const tt = String((e as { trade_type?: string | null }).trade_type ?? "").toLowerCase();
+    const pk: PositionKey | null = tt === "long" || tt === "buy" ? "long"
+      : tt === "short" || tt === "sell" ? "short" : null;
+    if (pk) {
+      const p = posAcc[pk];
+      p.trades += 1;
+      if (isWin) p.wins += 1;
+      if (isLoss) p.losses += 1;
+      if (r != null && Number.isFinite(r)) {
+        p.rSum += r; p.rCount += 1;
+        if (r > 0) p.grossWin += r;
+        if (r < 0) p.grossLoss += Math.abs(r);
+      }
+    }
   }
 
   (Object.keys(sessions) as SessionKey[]).forEach((k) => {
@@ -149,6 +211,40 @@ function computeStats(entries: JournalEntry[]) {
     (eligible.length ? eligible : sessionList.filter((s) => s.trades > 0))
       .sort((a, b) => b.netR - a.netR)[0]?.key ?? null;
 
+  // Build emotion list — canonical order first, then any leftovers (e.g. unknown).
+  const emotionOrder = [...DEFAULT_EMOTIONS.map((o) => o.value), "unknown"];
+  const emotions: EmotionStat[] = [];
+  for (const value of emotionOrder) {
+    const acc = emoAcc.get(value);
+    if (!acc || acc.trades === 0) continue;
+    const meta = emotionMeta(value);
+    emotions.push({
+      value,
+      label: meta.label,
+      emoji: meta.emoji ?? "",
+      trades: acc.trades,
+      wins: acc.wins,
+      winRate: acc.trades ? (acc.wins / acc.trades) * 100 : 0,
+      avgR: acc.rCount ? acc.rSum / acc.rCount : 0,
+      netR: acc.rSum,
+      share: total ? (acc.trades / total) * 100 : 0,
+    });
+  }
+
+  const positions: PositionStat[] = (Object.keys(posAcc) as PositionKey[]).map((k) => {
+    const p = posAcc[k];
+    return {
+      key: k,
+      trades: p.trades,
+      wins: p.wins,
+      losses: p.losses,
+      winRate: p.trades ? (p.wins / p.trades) * 100 : 0,
+      avgR: p.rCount ? p.rSum / p.rCount : 0,
+      netR: p.rSum,
+      profitFactor: p.grossLoss > 0 ? p.grossWin / p.grossLoss : (p.grossWin > 0 ? Infinity : null),
+    };
+  });
+
   return {
     total,
     winRate,
@@ -159,6 +255,8 @@ function computeStats(entries: JournalEntry[]) {
     hasHold,
     sessions: sessionList,
     bestSessionKey,
+    emotions,
+    positions,
     isSparse: total < MIN_TRADES_FOR_MEANING,
   };
 }
