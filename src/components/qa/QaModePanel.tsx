@@ -11,6 +11,7 @@ import {
   AlertTriangle,
   Bug,
   ChevronDown,
+  Database,
   Gauge,
   ImageOff,
   Link2Off,
@@ -20,6 +21,9 @@ import {
 } from "lucide-react";
 import { getRecentEvents, type TelemetryEvent } from "@/lib/observability/sink";
 import { useQaMode } from "@/lib/qa-mode";
+import { twelveDataUsage } from "@/lib/market-data/twelvedata.functions";
+import { marketData } from "@/lib/market-data/engine";
+import { getProvider } from "@/lib/market-data/providers/registry";
 import { cn } from "@/lib/utils";
 
 type ConsoleEntry = { level: "warn" | "error"; message: string; at: number };
@@ -29,7 +33,7 @@ export function QaModePanel() {
   const { enabled, toggle } = useQaMode();
   const [open, setOpen] = useState(true);
   const [, force] = useState(0);
-  const [tab, setTab] = useState<"perf" | "api" | "console" | "assets">("perf");
+  const [tab, setTab] = useState<"perf" | "api" | "console" | "assets" | "market">("perf");
   const consoleRef = useRef<ConsoleEntry[]>([]);
   const assetsRef = useRef<AssetEntry[]>([]);
 
