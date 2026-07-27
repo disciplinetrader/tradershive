@@ -173,7 +173,7 @@ export function PositionsTable() {
                     <TableCell className={cn("text-right font-mono tabular-nums", rr >= 0 ? "text-success" : "text-danger")}>
                       {rr ? `${rr.toFixed(2)}R` : "—"}
                     </TableCell>
-                    <TableCell className={cn("text-right font-mono tabular-nums font-semibold transition-colors", up ? "text-success" : "text-danger")}>
+                    <TableCell className={cn("min-w-[110px] text-right font-mono tabular-nums font-semibold transition-colors duration-200", up ? "text-success" : "text-danger")}>
                       {up ? "+" : ""}{formatCurrency(floating, account?.currency)}
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">{duration}</TableCell>
