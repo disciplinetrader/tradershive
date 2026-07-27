@@ -2,24 +2,23 @@ import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router"
 import {
   BarChart3,
   Film,
-  LayoutGrid,
+  Home,
   Library,
   Play,
   Settings2,
-  Target,
 } from "lucide-react";
 import { SegmentedTabs } from "@/components/ui/segmented-tabs";
 
-// Reorganized around the four core Replay Studio workflows:
-// Practice · Saved Sessions · Trade Review · Performance.
-// Workspace and utilities remain reachable but visually secondary.
+// Natural trading workflow ordering: Home → Trading Workspace → Saved
+// Sessions → Trade Review → Performance → Settings. Challenge Mode lives
+// elsewhere in the platform and no longer interrupts the core backtesting
+// workflow.
 const TABS = [
-  { to: "/replay", label: "Practice", icon: LayoutGrid, exact: true },
-  { to: "/replay/session", label: "Workspace", icon: Play },
+  { to: "/replay", label: "Home", icon: Home, exact: true },
+  { to: "/replay/session", label: "Trading Workspace", icon: Play },
   { to: "/replay/library", label: "Saved Sessions", icon: Library },
   { to: "/replay/trades", label: "Trade Review", icon: Film },
   { to: "/replay/performance", label: "Performance", icon: BarChart3 },
-  { to: "/replay/challenges", label: "Challenges", icon: Target },
   { to: "/replay/settings", label: "Settings", icon: Settings2 },
 ];
 
