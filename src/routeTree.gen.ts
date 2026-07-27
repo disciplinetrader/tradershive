@@ -26,6 +26,7 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedReplayRouteImport } from './routes/_authenticated/replay'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedPaperTradingRouteImport } from './routes/_authenticated/paper-trading'
+import { Route as AuthenticatedMistakesRouteImport } from './routes/_authenticated/mistakes'
 import { Route as AuthenticatedMarketplaceRouteImport } from './routes/_authenticated/marketplace'
 import { Route as AuthenticatedMarketRouteImport } from './routes/_authenticated/market'
 import { Route as AuthenticatedLeaderboardRouteImport } from './routes/_authenticated/leaderboard'
@@ -237,6 +238,11 @@ const AuthenticatedPaperTradingRoute =
     path: '/paper-trading',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedMistakesRoute = AuthenticatedMistakesRouteImport.update({
+  id: '/mistakes',
+  path: '/mistakes',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedMarketplaceRoute =
   AuthenticatedMarketplaceRouteImport.update({
     id: '/marketplace',
@@ -992,6 +998,7 @@ export interface FileRoutesByFullPath {
   '/leaderboard': typeof AuthenticatedLeaderboardRouteWithChildren
   '/market': typeof AuthenticatedMarketRouteWithChildren
   '/marketplace': typeof AuthenticatedMarketplaceRoute
+  '/mistakes': typeof AuthenticatedMistakesRoute
   '/paper-trading': typeof AuthenticatedPaperTradingRoute
   '/profile': typeof AuthenticatedProfileRouteWithChildren
   '/replay': typeof AuthenticatedReplayRouteWithChildren
@@ -1128,6 +1135,7 @@ export interface FileRoutesByTo {
   '/guilds': typeof AuthenticatedGuildsRoute
   '/journal': typeof AuthenticatedJournalRouteWithChildren
   '/marketplace': typeof AuthenticatedMarketplaceRoute
+  '/mistakes': typeof AuthenticatedMistakesRoute
   '/paper-trading': typeof AuthenticatedPaperTradingRoute
   '/profile': typeof AuthenticatedProfileRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
@@ -1269,6 +1277,7 @@ export interface FileRoutesById {
   '/_authenticated/leaderboard': typeof AuthenticatedLeaderboardRouteWithChildren
   '/_authenticated/market': typeof AuthenticatedMarketRouteWithChildren
   '/_authenticated/marketplace': typeof AuthenticatedMarketplaceRoute
+  '/_authenticated/mistakes': typeof AuthenticatedMistakesRoute
   '/_authenticated/paper-trading': typeof AuthenticatedPaperTradingRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRouteWithChildren
   '/_authenticated/replay': typeof AuthenticatedReplayRouteWithChildren
@@ -1414,6 +1423,7 @@ export interface FileRouteTypes {
     | '/leaderboard'
     | '/market'
     | '/marketplace'
+    | '/mistakes'
     | '/paper-trading'
     | '/profile'
     | '/replay'
@@ -1550,6 +1560,7 @@ export interface FileRouteTypes {
     | '/guilds'
     | '/journal'
     | '/marketplace'
+    | '/mistakes'
     | '/paper-trading'
     | '/profile'
     | '/settings'
@@ -1690,6 +1701,7 @@ export interface FileRouteTypes {
     | '/_authenticated/leaderboard'
     | '/_authenticated/market'
     | '/_authenticated/marketplace'
+    | '/_authenticated/mistakes'
     | '/_authenticated/paper-trading'
     | '/_authenticated/profile'
     | '/_authenticated/replay'
@@ -1943,6 +1955,13 @@ declare module '@tanstack/react-router' {
       path: '/paper-trading'
       fullPath: '/paper-trading'
       preLoaderRoute: typeof AuthenticatedPaperTradingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/mistakes': {
+      id: '/_authenticated/mistakes'
+      path: '/mistakes'
+      fullPath: '/mistakes'
+      preLoaderRoute: typeof AuthenticatedMistakesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/marketplace': {
@@ -3253,6 +3272,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedLeaderboardRoute: typeof AuthenticatedLeaderboardRouteWithChildren
   AuthenticatedMarketRoute: typeof AuthenticatedMarketRouteWithChildren
   AuthenticatedMarketplaceRoute: typeof AuthenticatedMarketplaceRoute
+  AuthenticatedMistakesRoute: typeof AuthenticatedMistakesRoute
   AuthenticatedPaperTradingRoute: typeof AuthenticatedPaperTradingRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRouteWithChildren
   AuthenticatedReplayRoute: typeof AuthenticatedReplayRouteWithChildren
@@ -3282,6 +3302,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedLeaderboardRoute: AuthenticatedLeaderboardRouteWithChildren,
   AuthenticatedMarketRoute: AuthenticatedMarketRouteWithChildren,
   AuthenticatedMarketplaceRoute: AuthenticatedMarketplaceRoute,
+  AuthenticatedMistakesRoute: AuthenticatedMistakesRoute,
   AuthenticatedPaperTradingRoute: AuthenticatedPaperTradingRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRouteWithChildren,
   AuthenticatedReplayRoute: AuthenticatedReplayRouteWithChildren,
