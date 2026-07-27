@@ -66,7 +66,7 @@ function SharedTradePage() {
   }, [token]);
 
   return (
-    <div className="min-h-screen bg-background px-4 py-10">
+    <div className="min-h-dvh bg-background px-4 py-10">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[400px] gradient-radial-glow opacity-40" />
       <div className="relative mx-auto max-w-3xl space-y-6">
         <div className="flex items-center justify-between">
