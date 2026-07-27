@@ -250,7 +250,9 @@ export const getPublicProfile = createServerFn({ method: "POST" })
     if (!profile) throw new Error("Not found");
 
     const [customRes, privRes, achRes, followers, following, myFollow, viewsRes] = await Promise.all([
-      supabase.from("profile_customization").select("*").eq("user_id", profile.id).maybeSingle(),
+      (profile.id === userId
+        ? supabase.from("profile_customization").select("*").eq("user_id", profile.id).maybeSingle()
+        : (supabase as any).from("profile_customization_public").select("*").eq("user_id", profile.id).maybeSingle()),
       supabase.from("profile_privacy").select("*").eq("user_id", profile.id).maybeSingle(),
       supabase.from("user_achievements").select("id, achievement_id, unlocked_at, achievements(name, description, icon, category, rarity, xp_reward)").eq("user_id", profile.id),
       supabase.from("social_follows").select("id", { count: "exact", head: true }).eq("following_id", profile.id),
