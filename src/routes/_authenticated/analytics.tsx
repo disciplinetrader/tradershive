@@ -1,13 +1,17 @@
-import { createFileRoute, Outlet, useLocation } from "@tanstack/react-router";
-import { AlertCircle } from "lucide-react";
+import { createFileRoute, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
+import { AlertCircle, LineChart, BookOpen, Upload, Layers } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { PageHeader } from "@/components/ui/page-header";
 import { GlassCard } from "@/components/ui/glass-card";
+import { Button } from "@/components/ui/button";
 import { FiltersBar } from "@/components/statistics/FiltersBar";
 import { useStatistics } from "@/components/statistics/context";
 import { AnalyticsProvider } from "@/components/analytics/AnalyticsProvider";
 import { BacktestSelector } from "@/components/analytics/BacktestSelector";
 import { AnalyticsSearch } from "@/components/analytics/AnalyticsSearch";
 import { SegmentedTabs } from "@/components/ui/segmented-tabs";
+import { cn } from "@/lib/utils";
+import type { TradeSourceTab } from "@/lib/statistics/types";
 
 export const Route = createFileRoute("/_authenticated/analytics")({
   head: () => ({
@@ -35,6 +39,13 @@ const TABS = [
   { to: "/analytics/reports", label: "Reports" },
 ];
 
+const SOURCE_TABS: { id: TradeSourceTab; label: string; icon: typeof Layers }[] = [
+  { id: "all", label: "All Trades", icon: Layers },
+  { id: "journal", label: "Journal", icon: BookOpen },
+  { id: "paper", label: "Paper Trading", icon: LineChart },
+  { id: "imported", label: "Imported", icon: Upload },
+];
+
 function AnalyticsLayout() {
   const loc = useLocation();
   return (
@@ -44,6 +55,8 @@ function AnalyticsLayout() {
           title="Analytics Center"
           description="Your performance laboratory — analyse live trades, replay backtests, and coach scores in one place."
         />
+
+        <SourceTabs />
 
         <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
           <SegmentedTabs tabs={TABS} pathname={loc.pathname} className="min-w-0 flex-1" />
@@ -56,14 +69,73 @@ function AnalyticsLayout() {
         <FiltersBar />
 
         <DatasetStatus />
-        <Outlet />
+        <SourceOutlet pathname={loc.pathname} />
       </div>
     </AnalyticsProvider>
   );
 }
 
+function SourceTabs() {
+  const { filters, setFilters } = useStatistics();
+  const active = (filters.source ?? "all") as TradeSourceTab;
+  return (
+    <div
+      role="tablist"
+      aria-label="Trade source"
+      className="no-scrollbar -mx-1 overflow-x-auto px-1"
+    >
+      <div className="inline-flex snap-x snap-mandatory items-center gap-1 rounded-lg border border-border/60 bg-card/60 p-1">
+        {SOURCE_TABS.map((t) => {
+          const isActive = active === t.id;
+          const Icon = t.icon;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              onClick={() => setFilters((prev) => ({ ...prev, source: t.id }))}
+              className={cn(
+                "inline-flex shrink-0 snap-start cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition-colors sm:text-[13px]",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
+                isActive
+                  ? "bg-primary/15 text-primary shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--primary)_30%,transparent)]"
+                  : "text-muted-foreground hover:bg-background/40 hover:text-foreground",
+              )}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function SourceOutlet({ pathname }: { pathname: string }) {
+  const { filters } = useStatistics();
+  const key = `${filters.source ?? "all"}::${pathname}`;
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        key={key}
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -4 }}
+        transition={{ duration: 0.16, ease: "easeOut" }}
+      >
+        <Outlet />
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
 function DatasetStatus() {
-  const { loading, error, filtered } = useStatistics();
+  const navigate = useNavigate();
+  const { loading, error, filtered, raw, filters, setFilters } = useStatistics();
+  const source = (filters.source ?? "all") as TradeSourceTab;
+
   if (error) {
     return (
       <GlassCard className="p-4 flex items-center gap-2 text-sm text-danger">
@@ -82,6 +154,36 @@ function DatasetStatus() {
     );
   }
   if (filtered.length === 0) {
+    // Source-specific empty state so the tester's request is obvious.
+    const hasAnyForSource = source === "all"
+      ? raw.length > 0
+      : raw.some((t) => t.source === source);
+    const copy = SOURCE_EMPTY[source];
+    if (!hasAnyForSource && source !== "all") {
+      return (
+        <GlassCard className="p-8 text-center space-y-3">
+          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <copy.icon className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="text-base font-semibold">{copy.title}</div>
+            <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">{copy.body}</p>
+          </div>
+          <div className="flex items-center justify-center gap-2 pt-1">
+            {copy.cta ? (
+              <Button size="sm" onClick={() => navigate({ to: copy.cta!.to })}>{copy.cta.label}</Button>
+            ) : null}
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setFilters((prev) => ({ ...prev, source: "all" }))}
+            >
+              View all trades
+            </Button>
+          </div>
+        </GlassCard>
+      );
+    }
     return (
       <GlassCard className="p-6 text-center text-sm text-muted-foreground">
         No trades match your filters or the selected backtest. Adjust filters, pick a different backtest, or close some paper trades.
@@ -90,3 +192,29 @@ function DatasetStatus() {
   }
   return null;
 }
+
+const SOURCE_EMPTY: Record<Exclude<TradeSourceTab, "all">, {
+  title: string;
+  body: string;
+  icon: typeof Layers;
+  cta?: { label: string; to: string };
+}> = {
+  paper: {
+    title: "No Paper Trades yet.",
+    body: "Open your first simulated position to start building live Paper Trading analytics.",
+    icon: LineChart,
+    cta: { label: "Go to Paper Trading", to: "/paper-trading" },
+  },
+  journal: {
+    title: "Your Journal is empty.",
+    body: "Log a trade in the Journal to see setup, session, and emotion analytics here.",
+    icon: BookOpen,
+    cta: { label: "Open Journal", to: "/journal" },
+  },
+  imported: {
+    title: "No imported trades yet.",
+    body: "Imported broker trades will appear here so you can compare real performance against Paper and Journal.",
+    icon: Upload,
+    cta: { label: "Import from Journal", to: "/journal" },
+  },
+};
