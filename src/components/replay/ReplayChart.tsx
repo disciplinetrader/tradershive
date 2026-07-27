@@ -17,12 +17,13 @@ type Props = { onCapture?: (dataUrl: string) => void };
  * exactly at the pace the replay context advances.
  */
 export function ReplayChart({ onCapture }: Props) {
-  const { session, candles, cursorIdx, openTrades, bookmarks } = useReplay();
+  const { session, candles, cursorIdx, openTrades, bookmarks, playing, speed } = useReplay();
   const hostRef = useRef<HTMLDivElement | null>(null);
   const adapterRef = useRef<ChartAdapter | null>(null);
   const priceLinesRef = useRef<PriceLineHandle[]>([]);
   const didFitRef = useRef(false);
   const currentPriceLineRef = useRef<PriceLineHandle | null>(null);
+
 
   const settings: ChartSettings = useMemo(
     () => ({
@@ -144,6 +145,17 @@ export function ReplayChart({ onCapture }: Props) {
     return () => window.removeEventListener("replay-capture", handler);
   }, [onCapture]);
 
+  const currentTs = candles[cursorIdx]?.time;
+  const dateLabel = currentTs
+    ? new Date(currentTs).toLocaleString(undefined, {
+        month: "short",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "UTC",
+      })
+    : "—";
+
   return (
     <div className="relative h-full w-full overflow-hidden rounded-[3px] border border-border bg-card">
       <div ref={hostRef} className="absolute inset-0" />
@@ -152,9 +164,28 @@ export function ReplayChart({ onCapture }: Props) {
           Loading candles…
         </div>
       ) : null}
-      <div className="pointer-events-none absolute left-3 top-3 rounded-[3px] border border-border/60 bg-background/70 px-2 py-1 text-xs font-medium text-foreground backdrop-blur">
-        {session?.symbol ?? "—"} · {session?.timeframe ?? ""} · {candles[cursorIdx]?.close?.toFixed(4) ?? "—"}
+      {/* Chart info chip — symbol / timeframe / price / date */}
+      <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-2 rounded-[3px] border border-border/60 bg-background/70 px-2 py-1 text-xs backdrop-blur">
+        <span className="font-semibold text-foreground">{session?.symbol ?? "—"}</span>
+        <span className="text-muted-foreground">·</span>
+        <span className="uppercase text-muted-foreground">{session?.timeframe ?? ""}</span>
+        <span className="text-muted-foreground">·</span>
+        <span className="tabular-nums font-medium text-primary">
+          {candles[cursorIdx]?.close?.toFixed(4) ?? "—"}
+        </span>
+        <span className="text-muted-foreground">·</span>
+        <span className="tabular-nums text-muted-foreground">{dateLabel} UTC</span>
+      </div>
+      {/* Replay mode badge — pulses while playing so the state is unmistakable */}
+      <div className="pointer-events-none absolute right-3 top-3 flex items-center gap-1.5 rounded-[3px] border border-primary/40 bg-primary/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-primary backdrop-blur">
+        <span
+          className={`h-1.5 w-1.5 rounded-full ${
+            playing ? "bg-success animate-pulse" : "bg-warning"
+          }`}
+        />
+        Replay · {speed}x
       </div>
     </div>
   );
 }
+
