@@ -132,12 +132,3 @@ function outcomeOf(r: number | null, pnl: number | null): "win" | "loss" | "brea
   if (v < 0) return "loss";
   return "breakeven";
 }
-function extractLimits(prefs: any): UserRiskLimits {
-  if (!prefs || typeof prefs !== "object") return DEFAULT_LIMITS;
-  const p = prefs as Record<string, any>;
-  return {
-    max_risk_per_trade_pct: Number(p.max_risk_per_trade_pct ?? DEFAULT_LIMITS.max_risk_per_trade_pct),
-    daily_loss_limit_r: Number(p.daily_loss_limit_r ?? DEFAULT_LIMITS.daily_loss_limit_r),
-    max_consecutive_losses: Number(p.max_consecutive_losses ?? DEFAULT_LIMITS.max_consecutive_losses),
-  };
-}
