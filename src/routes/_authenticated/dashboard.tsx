@@ -28,6 +28,7 @@ import { XPWidget } from "@/components/dashboard/XPWidget";
 import { WidgetShell } from "@/components/dashboard/WidgetShell";
 import { CustomizeSheet, type WidgetDef } from "@/components/dashboard/CustomizeSheet";
 import { getDashboardLayout, saveDashboardLayout } from "@/lib/dashboard.functions";
+import { TodaysProgress } from "@/components/dashboard/TodaysProgress";
 import { BetaBanner } from "@/components/beta/BetaBanner";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -119,6 +120,10 @@ function DashboardPage() {
 
       <motion.div variants={item}>
         <QuickActions />
+      </motion.div>
+
+      <motion.div variants={item}>
+        <TodaysProgress />
       </motion.div>
 
       {/* Row 1: welcome + challenge */}
