@@ -1,65 +1,103 @@
-# First-Time UX Simplification
+# Playbook Builder
 
-Goal: every screen answers one question up front; advanced surfaces stay one click away.
+Turn the existing Strategies module into TradersHIVE's Playbook Builder. Reuse existing DB (strategies, strategy_checklists / checklist_items, strategy_examples, strategy_versions, strategy_attachments) so the work is a UI/logic overhaul, not a rewrite. Every journal/paper trade already carries `strategy_id`, so linking is free.
 
-## Guiding rules
-- **One primary answer** per screen, in the first viewport.
-- **Two tiers**: Essentials (default) + Advanced (collapsible / behind a toggle).
-- **No feature removal** — only reorganize, collapse, or defer.
-- Persist each user's expand/collapse choice in `localStorage` so power users aren't nagged.
+## Scope
 
-## Dashboard — "How am I performing?"
-Essentials (default view):
-1. Greeting + streak (compact, one row)
-2. Today's P&L / Equity / Win rate (3-tile hero)
-3. Equity curve (single primary chart)
-4. Quick actions (Trade, Journal, Replay) — max 3 buttons
+**In**
+- Playbook Library (grid + search/filter/favorites)
+- Playbook Detail page (structured sections, cover, collapsibles)
+- Playbook Editor (create/edit rules, checklist, mistakes, screenshots)
+- Checklist Mode (pre-trade run, required-items gate, "mark as followed")
+- Example Trades panel: pulls journal + paper trades by `strategy_id`, shows KPIs (Win Rate, Avg R, PF, Avg Hold, best/worst)
+- Setup Evolution: last 30/90 days trend, version-over-version compare
+- AI-ready empty section (locked/placeholder card, no provider wiring)
+- Integration hooks: OrderPanel (paper), Replay session, Journal entry — "Attach playbook & run checklist"
 
-Move behind a **"Show more" toggle** (collapsed by default):
-- Achievements grid, Leaderboard preview, Notifications, Quick Notes, Calendar heatmap, Productivity, Watchlist duplicate, Market Overview (already lives in /market)
+**Out (this pass)**
+- No AI generation
+- No community sharing changes (existing strategies.shared stays)
+- No new tables unless strictly needed
+- Doesn't touch Auth, Landing, Dashboard, Paper engine, Journal engine, Statistics engine
 
-Implementation: wrap secondary widgets in a single `<Collapsible defaultOpen={false}>` labeled "More insights". Keep the existing `CustomizeSheet` for power users.
+## Data model
 
-## Journal — "What happened in this trade?"
-List view: already good after recent pass. One tweak — collapse `JournalStats` KPI row into a compact 1-line summary bar with a "View stats" expander.
+Reuse existing tables. Small additive migration only:
 
-Detail view: keep current View/Edit mode. Move the Psychology + Performance cards below the fold on mobile (already stacked); on desktop reorder so Chart + Trade Summary are the first column, Psychology/Review collapsed under "Reflection" accordion by default only when empty.
+- `strategies`: add `mistakes jsonb default '[]'`, `checklist_required_ids text[] default '{}'` (which items gate "followed"), `cover_url` already exists.
+- `strategy_checklist_runs` (NEW): logs each pre-trade checklist execution
+  - `id, user_id, strategy_id, context` ('paper'|'replay'|'journal'|'manual'), `context_ref_id uuid null`, `items jsonb` ([{id,label,checked,required}]), `all_required_passed boolean`, `notes text`, `created_at`.
+  - Owner-only RLS, GRANT to authenticated + service_role.
+- No changes to journal/paper schemas — link via existing `strategy_id`.
 
-## Replay — "How do I place and manage a trade?"
-`replay.index.tsx` (339 lines) is the biggest offender. Currently shows library + challenges + performance + settings tiles all at once.
+Server aggregator (`src/lib/playbook.functions.ts`, protected):
+- `listPlaybooks({ search, tags, market, timeframe, favoritesOnly })`
+- `getPlaybook(id)` → strategy + checklist + attachments + latest run
+- `getPlaybookStats(id, rangeDays)` → aggregates from `journal_entries` + `paper_trades` where `strategy_id = id AND user_id = auth.uid()`: trades, wins/losses/BE, win rate, avg R, PF, avg hold time, best/worst trade ids
+- `getPlaybookEvolution(id)` → 30d vs previous 30d deltas + per-version snapshots from `strategy_versions`
+- `savePlaybook`, `toggleFavorite`, `logChecklistRun`, `uploadCover` (Storage bucket `playbook-covers`, owner-scoped policies)
 
-Restructure landing to a **single primary CTA**: "Start a replay session" with 3 recommended scenarios. Move Library / Challenges / Performance / Trades / Settings into secondary tabs (they already exist as routes — just demote them from the landing grid).
+## UI
 
-## Paper Trading — "Place a trade with clear risk"
-Chart workspace already dense. Changes:
-- Collapse `BottomTabs` by default on first visit (Positions/Orders/History) — remember state.
-- Collapse right Watchlist panel by default on first visit.
-- Toolbar: group Indicators / Alerts / Replay / Fullscreen into a single "Tools" popover on <lg widths (already partly done responsively).
+Routes (rework, no new top-level nav item — "Strategies" in sidebar renamed to "Playbooks"):
 
-## Analytics — "What can I learn?"
-`analytics.tsx` has 14 sub-routes as tabs. Group them:
-- **Overview** (index) — hero KPIs + equity + calendar
-- **Performance** — performance, sessions, symbols, trades
-- **Behavior** — behaviour, risk, ai
-- **Compare & Reports** — compare, reports, championships, replay
+- `/_authenticated/strategies` → keep; redirect landing to `/strategies/playbooks`
+- `/_authenticated/strategies/playbooks` → Library grid (cards with cover, name, category, market badges, tags, favorite star, KPI mini-row: Trades · WR · Avg R)
+- `/_authenticated/strategies/playbooks/$id` → Detail with tabs: Overview · Rules · Checklist · Examples · Evolution · AI (locked)
+- `/_authenticated/strategies/playbooks/$id/edit` → Editor
+- Checklist Mode → drawer/modal component `PlaybookChecklistDialog`, usable from OrderPanel, Replay HUD, and Journal entry form
 
-Two-level nav: 4 primary tabs, each with a secondary strip. Keeps URLs stable; only the tabbar UI changes.
+Components (new/rewritten under `src/components/playbook/`):
+- `PlaybookCard`, `PlaybookGrid`, `PlaybookFilters`
+- `PlaybookDetailHeader` (cover, favorite, edit)
+- `SectionCard` (collapsible, large heading)
+- `RulesEditor` (entry/exit/SL/risk — reuses existing `RuleList`)
+- `MistakesList`, `TagsInput`, `CoverUploader`
+- `ChecklistBuilder` (edit) + `ChecklistRunner` (run mode with required-gate)
+- `ExamplesPanel` (KPI row + trade table linking to `/journal/$id` and `/paper/trades/$id`)
+- `EvolutionPanel` (sparkline + 30d/prev-30d comparison + version diff)
+- `AiInsightsPlaceholder` (locked-card empty state)
 
-Also: KPI grid — show 4 primary tiles, hide remaining behind "Show all KPIs".
+Design: reuses existing design tokens (dark theme, semantic colors). Cards use `Card`, tabs from shadcn, collapsibles from Radix. Large H1/H2, generous spacing, minimal chrome. Cover displayed as 16:9 top band with gradient overlay.
 
-## Implementation order (this turn)
-Quick wins I'll ship now:
-1. Dashboard: wrap secondary widgets in "More insights" collapsible, persisted.
-2. Journal list: compact `JournalStats` bar with expander.
-3. Paper Trading: `bottomOpen` / `rightOpen` default false + `localStorage` persistence.
-4. Analytics: KPI grid — show 4, expand for the rest.
-5. Replay landing: promote "Start session" CTA, demote grid to secondary section.
+## Integrations
 
-Larger restructures I'd like sign-off on before touching:
-- Analytics tab regrouping (4 primary groups) — changes navigation muscle memory.
-- Journal detail Psychology/Review accordion behavior (only when empty vs always).
+- **Paper Trading OrderPanel**: existing `strategy_id` selector — add "Run checklist" button that opens `ChecklistRunner`; on submit stores `strategy_checklist_runs` and, if `all_required_passed=false`, shows a confirm dialog before submit.
+- **Replay Studio**: HUD "Playbook" pill → open runner; run is logged with `context='replay'`, `context_ref_id=session_id`.
+- **Journal ManualEntryDialog**: when `strategy_id` chosen, show a mini-checklist snapshot; auto-attaches last run for that strategy within 15 min.
+- **Analytics**: no engine change; existing per-strategy stats now surface via Playbook detail (uses the same server aggregator so numbers stay consistent).
 
-## Technical notes
-- New tiny hook `usePersistentDisclosure(key, defaultOpen)` in `src/hooks/` returning `[open, setOpen]` backed by `localStorage`.
-- Use existing `Collapsible` from shadcn (`src/components/ui/collapsible.tsx`) — already installed.
-- No schema, no server changes; presentation only.
+## Search
+
+Library search combines: text over `name/description/tags`, filter chips for Market, Timeframe, Category, Favorites, "Has trades". Server-side via `.functions.ts` using `ilike` + array overlap; sorted by `is_favorite desc, updated_at desc`.
+
+## Technical
+
+Files:
+```text
+supabase/migrations/<ts>_playbook_builder.sql
+src/lib/playbook.functions.ts
+src/lib/playbook/stats.ts
+src/lib/playbook/types.ts
+src/components/playbook/*                      (new)
+src/routes/_authenticated/strategies.playbooks.tsx        (rewrite → library)
+src/routes/_authenticated/strategies.playbooks.$id.tsx    (detail)
+src/routes/_authenticated/strategies.playbooks.$id.edit.tsx (editor)
+src/components/paper-trading/OrderPanel.tsx    (add "Run checklist" hook)
+src/components/replay/ReplayHUD.tsx            (add playbook pill)
+src/components/journal/ManualEntryDialog.tsx   (attach recent run)
+src/components/app-shell.tsx                   (rename nav "Strategies" → "Playbooks")
+```
+
+- All reads/writes through `createServerFn` with `requireSupabaseAuth`; RLS scoped to `auth.uid()`.
+- Storage bucket `playbook-covers` (private) with owner-only policies; signed URLs served through a server fn.
+- TanStack Query with `ensureQueryData` in loaders; mutations invalidate keys `['playbook', id]` and `['playbooks']`.
+- Optimistic favorite toggle.
+- Console logs stripped by existing Vite config.
+- Accessibility: focus rings, keyboard-navigable checklist, dialog labelled with playbook name.
+
+## Verification
+
+- Type check the codebase.
+- Manual walk: create playbook → add checklist → run from Paper OrderPanel → close trade → detail shows the trade in Examples with correct KPIs.
+- Confirm evolution numbers match Analytics for the same strategy.
