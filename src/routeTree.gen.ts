@@ -31,6 +31,7 @@ import { Route as AuthenticatedMarketRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedLeaderboardRouteImport } from './routes/_authenticated/leaderboard'
 import { Route as AuthenticatedJournalRouteImport } from './routes/_authenticated/journal'
 import { Route as AuthenticatedGuildsRouteImport } from './routes/_authenticated/guilds'
+import { Route as AuthenticatedGoalsRouteImport } from './routes/_authenticated/goals'
 import { Route as AuthenticatedEducationRouteImport } from './routes/_authenticated/education'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCommunityRouteImport } from './routes/_authenticated/community'
@@ -260,6 +261,11 @@ const AuthenticatedJournalRoute = AuthenticatedJournalRouteImport.update({
 const AuthenticatedGuildsRoute = AuthenticatedGuildsRouteImport.update({
   id: '/guilds',
   path: '/guilds',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedGoalsRoute = AuthenticatedGoalsRouteImport.update({
+  id: '/goals',
+  path: '/goals',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedEducationRoute = AuthenticatedEducationRouteImport.update({
@@ -973,6 +979,7 @@ export interface FileRoutesByFullPath {
   '/community': typeof AuthenticatedCommunityRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/education': typeof AuthenticatedEducationRoute
+  '/goals': typeof AuthenticatedGoalsRoute
   '/guilds': typeof AuthenticatedGuildsRoute
   '/journal': typeof AuthenticatedJournalRouteWithChildren
   '/leaderboard': typeof AuthenticatedLeaderboardRouteWithChildren
@@ -1109,6 +1116,7 @@ export interface FileRoutesByTo {
   '/charts': typeof AuthenticatedChartsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/education': typeof AuthenticatedEducationRoute
+  '/goals': typeof AuthenticatedGoalsRoute
   '/guilds': typeof AuthenticatedGuildsRoute
   '/journal': typeof AuthenticatedJournalRouteWithChildren
   '/marketplace': typeof AuthenticatedMarketplaceRoute
@@ -1246,6 +1254,7 @@ export interface FileRoutesById {
   '/_authenticated/community': typeof AuthenticatedCommunityRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/education': typeof AuthenticatedEducationRoute
+  '/_authenticated/goals': typeof AuthenticatedGoalsRoute
   '/_authenticated/guilds': typeof AuthenticatedGuildsRoute
   '/_authenticated/journal': typeof AuthenticatedJournalRouteWithChildren
   '/_authenticated/leaderboard': typeof AuthenticatedLeaderboardRouteWithChildren
@@ -1389,6 +1398,7 @@ export interface FileRouteTypes {
     | '/community'
     | '/dashboard'
     | '/education'
+    | '/goals'
     | '/guilds'
     | '/journal'
     | '/leaderboard'
@@ -1525,6 +1535,7 @@ export interface FileRouteTypes {
     | '/charts'
     | '/dashboard'
     | '/education'
+    | '/goals'
     | '/guilds'
     | '/journal'
     | '/marketplace'
@@ -1661,6 +1672,7 @@ export interface FileRouteTypes {
     | '/_authenticated/community'
     | '/_authenticated/dashboard'
     | '/_authenticated/education'
+    | '/_authenticated/goals'
     | '/_authenticated/guilds'
     | '/_authenticated/journal'
     | '/_authenticated/leaderboard'
@@ -1953,6 +1965,13 @@ declare module '@tanstack/react-router' {
       path: '/guilds'
       fullPath: '/guilds'
       preLoaderRoute: typeof AuthenticatedGuildsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/goals': {
+      id: '/_authenticated/goals'
+      path: '/goals'
+      fullPath: '/goals'
+      preLoaderRoute: typeof AuthenticatedGoalsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/education': {
@@ -3193,6 +3212,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCommunityRoute: typeof AuthenticatedCommunityRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEducationRoute: typeof AuthenticatedEducationRoute
+  AuthenticatedGoalsRoute: typeof AuthenticatedGoalsRoute
   AuthenticatedGuildsRoute: typeof AuthenticatedGuildsRoute
   AuthenticatedJournalRoute: typeof AuthenticatedJournalRouteWithChildren
   AuthenticatedLeaderboardRoute: typeof AuthenticatedLeaderboardRouteWithChildren
@@ -3221,6 +3241,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCommunityRoute: AuthenticatedCommunityRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEducationRoute: AuthenticatedEducationRoute,
+  AuthenticatedGoalsRoute: AuthenticatedGoalsRoute,
   AuthenticatedGuildsRoute: AuthenticatedGuildsRoute,
   AuthenticatedJournalRoute: AuthenticatedJournalRouteWithChildren,
   AuthenticatedLeaderboardRoute: AuthenticatedLeaderboardRouteWithChildren,
