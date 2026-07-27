@@ -190,7 +190,7 @@ export const twelveDataCandles = createServerFn({ method: "POST" })
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
           const rows = fetched.map((c) => ({
             symbol: data.symbol,
-            timeframe: data.timeframe,
+            timeframe: data.timeframe as any,
             ts: new Date(c.time).toISOString(),
             open: c.open, high: c.high, low: c.low, close: c.close, volume: c.volume,
             source_code: "twelvedata",
