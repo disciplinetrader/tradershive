@@ -168,16 +168,18 @@ export function ReplayControls() {
               <button
                 key={s}
                 onClick={() => setSpeed(s)}
+                aria-pressed={speed === s}
                 className={cn(
-                  "rounded-md px-2 py-1 text-[10px] font-semibold tabular-nums transition border",
+                  "rounded-md px-2 py-1 text-[10px] font-semibold tabular-nums transition border cursor-pointer active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                   speed === s
-                    ? "bg-primary text-primary-foreground border-primary"
+                    ? "bg-primary text-primary-foreground border-primary shadow-sm"
                     : "text-muted-foreground border-transparent hover:text-foreground hover:bg-background/60",
                 )}
               >
                 {s}x
               </button>
             ))}
+
           </div>
 
           <div className="ml-2 flex-1 min-w-[160px]">
