@@ -100,13 +100,27 @@ export class YahooProvider implements MarketDataProvider {
     this.pollTimer = setInterval(() => { void this.pollOnce(); }, POLL_MS);
   }
 
+  private lastQuoteError: string | null = null;
+  private quoteErrorCount = 0;
+
   private async pollOnce() {
     if (this._status !== "connected" || this.subs.size === 0) return;
     const engineSyms = [...this.subs.keys()];
     const ySyms = engineSyms.map(toYahoo);
     try {
       const res = (await yahooQuote({ data: { symbols: ySyms } })) as any;
-      if (res?.error) { console.warn("[yahoo] quote:", res.error); return; }
+      if (res?.error) {
+        // Rate-limit repeat warnings for the same error (e.g. yahoo_401).
+        if (res.error !== this.lastQuoteError) {
+          console.warn("[yahoo] quote:", res.error);
+          this.lastQuoteError = res.error;
+          this.quoteErrorCount = 1;
+        } else if (++this.quoteErrorCount % 60 === 0) {
+          console.warn(`[yahoo] quote: ${res.error} (repeated ${this.quoteErrorCount}× — suppressing further logs)`);
+        }
+        return;
+      }
+      if (this.lastQuoteError) { this.lastQuoteError = null; this.quoteErrorCount = 0; }
       const byY = new Map<string, any>();
       for (const q of res.quotes ?? []) byY.set(q.symbol, q);
       for (const engineSym of engineSyms) {
@@ -119,9 +133,14 @@ export class YahooProvider implements MarketDataProvider {
         for (const h of this.subs.get(engineSym) ?? []) { try { h(quote); } catch { /* noop */ } }
       }
     } catch (e) {
-      console.warn("[yahoo] poll failed:", e);
+      const msg = (e as Error)?.message ?? String(e);
+      if (msg !== this.lastQuoteError) {
+        console.warn("[yahoo] poll failed:", e);
+        this.lastQuoteError = msg;
+      }
     }
   }
+
 
   async getSymbols(market?: MarketKind): Promise<SymbolMeta[]> {
     return CATALOG

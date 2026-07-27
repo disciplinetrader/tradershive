@@ -77,10 +77,18 @@ export class BinanceProvider implements MarketDataProvider {
       this.heartbeat = setInterval(() => { try { this.ws?.send("{}"); } catch { /* noop */ } }, 15_000);
     };
     this.ws.onmessage = (ev) => this.handleMessage(ev.data);
-    this.ws.onerror = (e) => { console.warn("[binance] WS error:", e); this.setStatus("error"); };
+    this.ws.onerror = () => {
+      // WS `error` events carry no diagnostic info in browsers — the useful
+      // signal is the `close` event that follows. Just mark status; don't
+      // spam the console every reconnect.
+      this.setStatus("error");
+    };
     this.ws.onclose = (ev) => {
       this.setStatus("disconnected");
-      if (!ev.wasClean) console.warn(`[binance] WS closed unexpectedly (code=${ev.code}); scheduling reconnect`);
+      // Only warn the first time; subsequent reconnects are expected.
+      if (!ev.wasClean && this.reconnectAttempt === 0) {
+        console.warn(`[binance] WS closed (code=${ev.code}); reconnecting with backoff`);
+      }
       this.scheduleReconnect();
     };
   }
