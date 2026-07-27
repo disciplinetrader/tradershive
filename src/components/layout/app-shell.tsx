@@ -30,6 +30,8 @@ import { Topbar } from "./topbar";
 import { CommandPalette, useCommandPalette } from "@/components/command-palette";
 import { APP_NAME } from "@/lib/constants";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ProductTourProvider } from "@/components/tour/ProductTour";
+
 
 type NavItem = { to: string; label: string; icon: typeof Home; admin?: boolean };
 
