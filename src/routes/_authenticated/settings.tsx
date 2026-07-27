@@ -32,6 +32,7 @@ import {
 import { passwordSchema, usernameSchema } from "@/lib/auth-schemas";
 import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
+import { QaModeSection } from "@/components/qa/QaModeSection";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Settings — TradersHIVE Arena" }] }),
@@ -93,6 +94,7 @@ function SettingsPage() {
       <SecuritySection email={user?.email ?? ""} />
       <NotificationsSection />
       <ProductTourSection />
+      <QaModeSection />
 
 
 
