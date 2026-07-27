@@ -256,7 +256,7 @@ export const getHomeSummary = createServerFn({ method: "GET" })
     const noScreenshots = journal.filter((j) => {
       if (!j.closed_at) return false;
       if (new Date(j.closed_at).getTime() < daysAgo(3, now).getTime()) return false;
-      return !j.screenshot_url;
+      return !(Array.isArray(j.screenshots) && j.screenshots.length > 0);
     });
     if (noScreenshots.length > 0) {
       actions.push({
