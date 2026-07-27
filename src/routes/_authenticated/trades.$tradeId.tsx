@@ -118,16 +118,9 @@ function TradeDetailsPage() {
         </TabsContent>
 
         <TabsContent value="ai" className="mt-3">
-          {data.source === "paper" && data.ai_review ? (
-            <AiReviewPanel review={data.ai_review} />
-          ) : (
-            <EmptyState
-              icon={Brain}
-              title="No AI review yet"
-              description="Generate an AI review to see execution, risk and psychology analysis."
-              action={{ label: "Generate Review", href: `/ai/trade-review?tradeId=${tradeId}` }}
-            />
-          )}
+          <AiTradeReviewPanel
+            review={data.source === "paper" ? mapAiReview(data.ai_review) : null}
+          />
         </TabsContent>
 
         {data.source === "replay" ? (
