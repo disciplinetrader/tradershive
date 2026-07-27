@@ -100,7 +100,7 @@ export function OrdersTable() {
                     {r.status === "pending" && (
                       <Button
                         variant="ghost" size="icon"
-                        className="h-7 w-7 text-danger opacity-70 transition-all hover:bg-danger/10 hover:opacity-100 active:scale-95 group-hover:opacity-100"
+                        className="h-7 w-7 cursor-pointer text-danger opacity-70 transition-all duration-150 hover:bg-danger/10 hover:opacity-100 active:scale-90 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-danger/50"
                         onClick={() => cancelMut.mutate(r.id)}
                         disabled={isCancelling}
                         aria-label="Cancel order"

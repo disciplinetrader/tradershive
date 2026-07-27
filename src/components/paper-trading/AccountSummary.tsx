@@ -125,7 +125,7 @@ export function AccountSummary() {
         <Stat label="Balance" value={formatCurrency(Number(account.balance), account.currency)} />
         <Stat label="Equity" value={formatCurrency(equity, account.currency)} accent />
         <Stat label="Floating P/L" value={
-          <span className={floating >= 0 ? "text-success" : "text-danger"}>
+          <span className={cn("transition-colors duration-200", floating >= 0 ? "text-success" : "text-danger")}>
             {floating >= 0 ? "+" : ""}{formatCurrency(floating, account.currency)}
           </span>
         } icon={floating >= 0 ? <TrendingUp className="h-3.5 w-3.5"/> : <TrendingDown className="h-3.5 w-3.5"/>} />

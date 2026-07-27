@@ -176,8 +176,10 @@ export function ChartArea() {
               key={tf}
               onClick={() => setTimeframe(tf)}
               className={cn(
-                "rounded-md px-2 py-1 text-xs font-medium transition",
-                tf === timeframe ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                "cursor-pointer rounded-md px-2 py-1 text-xs font-medium transition-all duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+                tf === timeframe
+                  ? "bg-primary/15 text-primary shadow-sm ring-1 ring-primary/30"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground",
               )}
               aria-pressed={tf === timeframe}
               aria-label={`Timeframe ${tf}`}
@@ -300,7 +302,15 @@ export function ChartArea() {
 
 function ToolButton({ icon: Icon, label, onClick, disabled }: { icon: typeof LineChartIcon; label: string; onClick?: () => void; disabled?: boolean }) {
   return (
-    <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={label} title={label} onClick={onClick} disabled={disabled}>
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-8 w-8 cursor-pointer transition-all duration-150 hover:bg-accent hover:text-foreground active:scale-95 focus-visible:ring-2 focus-visible:ring-primary/50"
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      disabled={disabled}
+    >
       <Icon className="h-4 w-4" />
     </Button>
   );

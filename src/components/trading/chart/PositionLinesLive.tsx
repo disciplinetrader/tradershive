@@ -146,27 +146,35 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
   if (!sym) return null;
 
   return (
-    <div ref={hostRef} className="pointer-events-none absolute inset-0 z-10">
+    <div ref={hostRef} className="pointer-events-none absolute inset-0 z-10 select-none">
       {rendered.map(({ t, entryY, slY, tpY, slPrice, tpPrice, pnl }) => {
         if (entryY == null) return null;
+        const slActive = drag?.tradeId === t.id && drag.handle === "sl";
+        const tpActive = drag?.tradeId === t.id && drag.handle === "tp";
         return (
           <div key={t.id}>
             {/* Entry line + PnL badge */}
             <div className="absolute left-0 right-16 flex items-center" style={{ top: entryY - 10, height: 20 }}>
               <div className="h-px flex-1 bg-blue-500" style={{ boxShadow: "0 0 6px #3b82f6" }} />
-              <div className="pointer-events-auto ml-2 flex select-none items-center gap-1 rounded-md border border-blue-500 bg-blue-500 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">
+              <div className="pointer-events-auto ml-2 flex select-none items-center gap-1 rounded-md border border-blue-500 bg-blue-500 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white shadow-sm">
                 {t.direction === "long" ? "▲" : "▼"} {t.lot_size} · {fmtPrice(sym, t.entry_price)}
-                <span className={cn("ml-1 rounded px-1 py-0.5", pnl >= 0 ? "bg-success" : "bg-danger")}>
+                <span
+                  className={cn(
+                    "ml-1 rounded px-1 py-0.5 tabular-nums transition-colors duration-200",
+                    pnl >= 0 ? "bg-success" : "bg-danger",
+                  )}
+                  style={{ willChange: "background-color" }}
+                >
                   {pnl >= 0 ? "+" : ""}{pnl.toFixed(2)}
                 </span>
                 <button
                   title="Close position"
                   onClick={() => livePrice != null && close.mutate({ id: t.id, exit_price: livePrice })}
-                  className="ml-1 rounded bg-white/20 px-1 hover:bg-white/40"
+                  className="ml-1 cursor-pointer rounded bg-white/20 px-1 transition-colors hover:bg-white/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
                 >×</button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button title="Quick actions" className="ml-0.5 rounded bg-white/20 px-1 hover:bg-white/40">
+                    <button title="Quick actions" className="ml-0.5 cursor-pointer rounded bg-white/20 px-1 transition-colors hover:bg-white/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
                       <MoreHorizontal className="h-3 w-3" />
                     </button>
                   </DropdownMenuTrigger>
@@ -194,44 +202,50 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
               </div>
             </div>
 
-            {/* SL */}
+            {/* SL — larger invisible hit area for easier dragging */}
             {slY != null && slPrice != null && (
-              <div className="absolute left-0 right-16 flex items-center" style={{ top: slY - 10, height: 20 }}>
-                <div className="h-px flex-1 bg-danger" style={{ boxShadow: "0 0 6px #ef4444" }} />
+              <div
+                className="pointer-events-auto absolute left-0 right-16 flex items-center"
+                style={{ top: slY - 12, height: 24, cursor: "ns-resize", touchAction: "none" }}
+                onPointerDown={(e) => {
+                  (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+                  setDrag({ tradeId: t.id, handle: "sl", price: slPrice });
+                }}
+                title="Drag to move Stop Loss"
+              >
+                <div className="pointer-events-none h-px flex-1 bg-danger transition-shadow" style={{ boxShadow: slActive ? "0 0 10px #ef4444" : "0 0 6px #ef4444" }} />
                 <div
                   className={cn(
-                    "pointer-events-auto ml-2 flex select-none items-center gap-1 rounded-md border border-danger bg-danger px-1.5 py-0.5 text-[10px] font-bold uppercase text-white shadow-sm transition-transform hover:scale-105",
-                    drag?.tradeId === t.id && drag.handle === "sl" && "scale-110 ring-2 ring-danger/40",
+                    "ml-2 flex select-none items-center gap-1 rounded-md border border-danger bg-danger px-1.5 py-0.5 text-[10px] font-bold uppercase text-white shadow-sm transition-all duration-150 hover:scale-105",
+                    slActive && "scale-110 shadow-md ring-2 ring-danger/40",
                   )}
-                  style={{ cursor: "ns-resize", touchAction: "none" }}
-                  onPointerDown={(e) => {
-                    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-                    setDrag({ tradeId: t.id, handle: "sl", price: slPrice });
-                  }}
-                  title="Drag to move Stop Loss"
+                  style={{ willChange: "transform" }}
                 >
-                  SL · {fmtPrice(sym, slPrice)}
+                  SL · <span className="tabular-nums">{fmtPrice(sym, slPrice)}</span>
                 </div>
               </div>
             )}
 
             {/* TP */}
             {tpY != null && tpPrice != null && (
-              <div className="absolute left-0 right-16 flex items-center" style={{ top: tpY - 10, height: 20 }}>
-                <div className="h-px flex-1 bg-success" style={{ boxShadow: "0 0 6px #22c55e" }} />
+              <div
+                className="pointer-events-auto absolute left-0 right-16 flex items-center"
+                style={{ top: tpY - 12, height: 24, cursor: "ns-resize", touchAction: "none" }}
+                onPointerDown={(e) => {
+                  (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+                  setDrag({ tradeId: t.id, handle: "tp", price: tpPrice });
+                }}
+                title="Drag to move Take Profit"
+              >
+                <div className="pointer-events-none h-px flex-1 bg-success transition-shadow" style={{ boxShadow: tpActive ? "0 0 10px #22c55e" : "0 0 6px #22c55e" }} />
                 <div
                   className={cn(
-                    "pointer-events-auto ml-2 flex select-none items-center gap-1 rounded-md border border-success bg-success px-1.5 py-0.5 text-[10px] font-bold uppercase text-white shadow-sm transition-transform hover:scale-105",
-                    drag?.tradeId === t.id && drag.handle === "tp" && "scale-110 ring-2 ring-success/40",
+                    "ml-2 flex select-none items-center gap-1 rounded-md border border-success bg-success px-1.5 py-0.5 text-[10px] font-bold uppercase text-white shadow-sm transition-all duration-150 hover:scale-105",
+                    tpActive && "scale-110 shadow-md ring-2 ring-success/40",
                   )}
-                  style={{ cursor: "ns-resize", touchAction: "none" }}
-                  onPointerDown={(e) => {
-                    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-                    setDrag({ tradeId: t.id, handle: "tp", price: tpPrice });
-                  }}
-                  title="Drag to move Take Profit"
+                  style={{ willChange: "transform" }}
                 >
-                  TP · {fmtPrice(sym, tpPrice)}
+                  TP · <span className="tabular-nums">{fmtPrice(sym, tpPrice)}</span>
                 </div>
               </div>
             )}

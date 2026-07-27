@@ -170,31 +170,36 @@ export function WatchlistPanel() {
                 layout
                 initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                 className={cn(
-                  "group flex items-center gap-2 rounded-lg border border-transparent px-2 py-1.5 transition hover:border-border hover:bg-accent/40",
-                  selected && "border-primary/40 bg-primary/5",
+                  "group flex items-center gap-2 rounded-lg border border-transparent px-2 py-1.5 transition-all duration-150 hover:border-border hover:bg-accent/40",
+                  selected && "border-primary/40 bg-primary/5 shadow-sm",
                 )}
               >
-                <button onClick={() => favMut.mutate(r)} className="shrink-0 text-muted-foreground hover:text-warning" aria-label="Toggle favorite">
+                <button
+                  onClick={() => favMut.mutate(r)}
+                  className="shrink-0 cursor-pointer rounded p-0.5 text-muted-foreground transition-colors hover:text-warning focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warning/50"
+                  aria-label="Toggle favorite"
+                >
                   {r.is_favorite ? <Star className="h-3.5 w-3.5 fill-warning text-warning" /> : <StarOff className="h-3.5 w-3.5" />}
                 </button>
                 <button
                   onClick={() => setSymbol(r.symbol)}
-                  className="flex min-w-0 flex-1 items-center justify-between text-left"
+                  className="flex min-w-0 flex-1 cursor-pointer items-center justify-between rounded text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold">{r.symbol}</p>
                     <p className="truncate text-[10px] text-muted-foreground">{meta?.name ?? r.market}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-mono text-xs tabular-nums">{q ? q.price.toFixed(meta?.decimals ?? 2) : "—"}</p>
-                    <p className={cn("font-mono text-[10px] tabular-nums", up ? "text-success" : "text-danger")}>
+                    <p className="font-mono text-xs tabular-nums transition-colors">{q ? q.price.toFixed(meta?.decimals ?? 2) : "—"}</p>
+                    <p className={cn("font-mono text-[10px] tabular-nums transition-colors", up ? "text-success" : "text-danger")}>
                       {q ? `${up ? "+" : ""}${q.change.toFixed(2)}%` : "—"}
                     </p>
                   </div>
                 </button>
                 <button
                   onClick={() => removeMut.mutate(r.id)}
-                  className="opacity-0 transition group-hover:opacity-100" aria-label="Remove"
+                  className="cursor-pointer rounded p-0.5 opacity-0 transition-opacity duration-150 hover:text-danger focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/40 group-hover:opacity-100"
+                  aria-label="Remove"
                 >
                   <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-danger" />
                 </button>
