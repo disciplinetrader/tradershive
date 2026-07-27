@@ -150,7 +150,7 @@ export function QaModePanel() {
 
             {/* Tabs */}
             <div className="flex border-b border-border/60 text-[10px] uppercase tracking-wider">
-              {(["perf", "api", "console", "assets"] as const).map((t) => (
+              {(["perf", "api", "console", "assets", "market"] as const).map((t) => (
                 <button
                   key={t}
                   type="button"
@@ -173,6 +173,7 @@ export function QaModePanel() {
               {tab === "api" && <ApiList events={apiEvents} />}
               {tab === "console" && <ConsoleList entries={consoleRef.current} />}
               {tab === "assets" && <AssetList entries={assetsRef.current} />}
+              {tab === "market" && <MarketDataDiagnostics />}
             </div>
           </>
         )}
