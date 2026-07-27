@@ -57,6 +57,7 @@ export function StatisticsProvider({ children, overrideTrades, disableFetch }: P
       if (filters.strategies.length && (!t.strategy || !filters.strategies.includes(t.strategy))) return false;
       if (filters.sessions.length && (!t.session || !filters.sessions.includes(t.session))) return false;
       if (filters.emotions.length && !filters.emotions.some((e) => t.emotions?.includes(e))) return false;
+      if (filters.source && filters.source !== "all" && t.source !== filters.source) return false;
       return true;
     });
   }, [raw, filters]);
