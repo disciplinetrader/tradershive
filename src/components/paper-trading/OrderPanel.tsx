@@ -401,14 +401,14 @@ export function OrderPanel() {
       <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Trade notes / thesis" rows={2} />
 
       <div className="flex gap-2">
-        <Button variant="outline" onClick={reset}><RotateCcw className="mr-1.5 h-4 w-4" /> Reset</Button>
+        <Button variant="outline" onClick={reset} className="cursor-pointer transition-all duration-150 active:scale-[0.98]"><RotateCcw className="mr-1.5 h-4 w-4" /> Reset</Button>
         <Button
           onClick={attemptPlace}
           disabled={openMut.isPending || !accountId || !symbolMeta || (validation != null && !validation.ok)}
-          className={cn("flex-1 shadow-elegant",
+          className={cn("flex-1 cursor-pointer shadow-elegant transition-all duration-150 hover:shadow-md active:scale-[0.98] focus-visible:ring-2",
             side === "long"
-              ? "bg-success text-white hover:bg-success/90"
-              : "bg-danger text-white hover:bg-danger/90")}
+              ? "bg-success text-white hover:bg-success/90 focus-visible:ring-success/60"
+              : "bg-danger text-white hover:bg-danger/90 focus-visible:ring-danger/60")}
         >
           <Send className="mr-1.5 h-4 w-4" />
           {validation && !validation.ok ? "Insufficient margin" : (orderType === "market" ? (side === "long" ? "Buy market" : "Sell market") : "Place order")}
