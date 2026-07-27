@@ -238,23 +238,52 @@ export function OrderPanel() {
 
       <div className="grid grid-cols-2 gap-2">
         <Field label={orderType === "market" ? "Entry (live)" : "Trigger price"}>
-          <Input inputMode="decimal" value={entry} onChange={(e) => setEntry(e.target.value)} className="h-8 font-mono" />
+          <div className="flex gap-1">
+            <Input inputMode="decimal" value={entry} onChange={(e) => setEntry(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); attemptPlace(); } }}
+              className="h-8 font-mono" />
+            {livePrice != null && (
+              <Button
+                type="button" size="sm" variant="outline" className="h-8 shrink-0 px-2 text-[10px] font-semibold uppercase"
+                onClick={() => setEntry(String(livePrice))} title="Use live price"
+              >Live</Button>
+            )}
+          </div>
         </Field>
         <Field label="Lot size">
-          <Input inputMode="decimal" value={lot} onChange={(e) => setLot(e.target.value)} className="h-8 font-mono" />
+          <Input inputMode="decimal" value={lot} onChange={(e) => setLot(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); attemptPlace(); } }}
+            className="h-8 font-mono" />
         </Field>
         <Field label="Stop loss">
-          <Input inputMode="decimal" value={sl} onChange={(e) => setSl(e.target.value)} className="h-8 font-mono" placeholder="—" />
+          <Input inputMode="decimal" value={sl} onChange={(e) => setSl(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); attemptPlace(); } }}
+            className="h-8 font-mono" placeholder="—" />
         </Field>
         <Field label="Take profit">
-          <Input inputMode="decimal" value={tp} onChange={(e) => setTp(e.target.value)} className="h-8 font-mono" placeholder="—" />
+          <Input inputMode="decimal" value={tp} onChange={(e) => setTp(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); attemptPlace(); } }}
+            className="h-8 font-mono" placeholder="—" />
         </Field>
         <Field label="Risk %">
           <div className="flex gap-1">
             <Input inputMode="decimal" value={riskPct} onChange={(e) => setRiskPct(e.target.value)} className="h-8 font-mono" />
-            <Button size="icon" variant="outline" className="h-8 w-8" aria-label="Calculate lot from risk" title="Calculate lot from risk" onClick={calculateSizeFromRisk}>
+            <Button size="icon" variant="outline" className="h-8 w-8 transition-transform active:scale-95" aria-label="Calculate lot from risk" title="Calculate lot from risk" onClick={calculateSizeFromRisk}>
               <Calculator className="h-3.5 w-3.5" />
             </Button>
+          </div>
+          <div className="mt-1 flex gap-1">
+            {["0.25", "0.5", "1", "2"].map((r) => (
+              <button
+                key={r} type="button"
+                onClick={() => { setRiskPct(r); setTimeout(calculateSizeFromRisk, 0); }}
+                className={cn(
+                  "flex-1 rounded-md border border-border/60 px-1 py-0.5 text-[10px] font-semibold transition-colors",
+                  riskPct === r ? "border-primary/60 bg-primary/10 text-primary" : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                )}
+                title={`Size for ${r}% risk`}
+              >{r}%</button>
+            ))}
           </div>
         </Field>
         <Field label="Commission">
