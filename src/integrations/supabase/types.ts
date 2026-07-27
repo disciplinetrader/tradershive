@@ -6149,6 +6149,7 @@ export type Database = {
           hide_stats: boolean
           show_country: boolean
           show_league: boolean
+          show_socials: boolean
           updated_at: string
           user_id: string
         }
@@ -6161,6 +6162,7 @@ export type Database = {
           hide_stats?: boolean
           show_country?: boolean
           show_league?: boolean
+          show_socials?: boolean
           updated_at?: string
           user_id: string
         }
@@ -6173,6 +6175,7 @@ export type Database = {
           hide_stats?: boolean
           show_country?: boolean
           show_league?: boolean
+          show_socials?: boolean
           updated_at?: string
           user_id?: string
         }
