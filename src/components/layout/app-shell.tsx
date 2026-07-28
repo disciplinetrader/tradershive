@@ -322,15 +322,15 @@ function NavSection({
   currentPath,
   className,
 }: {
-  label: string;
+  label?: string;
   items: NavItem[];
   collapsed: boolean;
   currentPath: string;
   className?: string;
 }) {
   return (
-    <div className={cn(collapsed ? "" : "border-t border-sidebar-border/60 first:border-t-0 first:pt-0 pt-3", className)}>
-      <SectionLabel collapsed={collapsed}>{label}</SectionLabel>
+    <div className={cn(collapsed ? "" : "pt-1", className)}>
+      {label ? <SectionLabel collapsed={collapsed}>{label}</SectionLabel> : null}
       <ul className="space-y-0.5">
         {items.map((item) => (
           <SidebarLink key={item.to} item={item} collapsed={collapsed} active={isActive(currentPath, item.to)} />
