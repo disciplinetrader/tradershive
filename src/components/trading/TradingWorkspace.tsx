@@ -1,7 +1,11 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChartHandle } from "@/components/chart/ChartEngine";
-import { motion } from "framer-motion";
-import { Activity, BarChart3, Camera, CandlestickChart, Check, ChevronDown, Clock, Keyboard, LineChart as LineChartIcon, Target } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Activity, BarChart3, BookMarked, Camera, CandlestickChart, Check, ChevronDown, ChevronRight,
+  Clock, Focus, Keyboard, LineChart as LineChartIcon, Maximize2, Minimize2, NotebookPen,
+  StickyNote, Target,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { PaperTradingProvider, usePaper } from "@/components/paper-trading/context";
