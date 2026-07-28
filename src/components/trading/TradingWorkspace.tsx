@@ -51,6 +51,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { closeTrade, listTrades } from "@/lib/paper-trading.functions";
 import { useRiskMonitor } from "@/hooks/use-risk-monitor";
 import { useSlTpMonitor } from "@/hooks/use-sl-tp-monitor";
+import { useWorkspacePrefs, type WorkspaceTab } from "@/hooks/use-workspace-prefs";
+import { QuickJournalPanel } from "@/components/trading/QuickJournalPanel";
+import { WorkspaceNotes } from "@/components/trading/WorkspaceNotes";
+import { PlaybookQuickAttach } from "@/components/playbook/PlaybookQuickAttach";
 
 const CHART_TIMEFRAMES: Timeframe[] = ["1m", "5m", "15m", "30m", "1H", "4H", "1D", "1W"];
 
