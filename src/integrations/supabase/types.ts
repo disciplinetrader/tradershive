@@ -4023,6 +4023,194 @@ export type Database = {
         }
         Relationships: []
       }
+      email_events: {
+        Row: {
+          category: string
+          created_at: string
+          error: string | null
+          id: string
+          metadata: Json
+          provider: string
+          provider_message_id: string | null
+          queue_id: string | null
+          status: string
+          subject: string | null
+          template: string
+          to_email: string
+          user_id: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          metadata?: Json
+          provider?: string
+          provider_message_id?: string | null
+          queue_id?: string | null
+          status: string
+          subject?: string | null
+          template: string
+          to_email: string
+          user_id?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          metadata?: Json
+          provider?: string
+          provider_message_id?: string | null
+          queue_id?: string | null
+          status?: string
+          subject?: string | null
+          template?: string
+          to_email?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_events_queue_id_fkey"
+            columns: ["queue_id"]
+            isOneToOne: false
+            referencedRelation: "email_queue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_preferences: {
+        Row: {
+          achievements: boolean
+          billing: boolean
+          created_at: string
+          marketing: boolean
+          master_enabled: boolean
+          monthly_report: boolean
+          product_updates: boolean
+          reengagement: boolean
+          unsubscribe_token: string
+          updated_at: string
+          user_id: string
+          weekly_report: boolean
+          welcome_series: boolean
+        }
+        Insert: {
+          achievements?: boolean
+          billing?: boolean
+          created_at?: string
+          marketing?: boolean
+          master_enabled?: boolean
+          monthly_report?: boolean
+          product_updates?: boolean
+          reengagement?: boolean
+          unsubscribe_token?: string
+          updated_at?: string
+          user_id: string
+          weekly_report?: boolean
+          welcome_series?: boolean
+        }
+        Update: {
+          achievements?: boolean
+          billing?: boolean
+          created_at?: string
+          marketing?: boolean
+          master_enabled?: boolean
+          monthly_report?: boolean
+          product_updates?: boolean
+          reengagement?: boolean
+          unsubscribe_token?: string
+          updated_at?: string
+          user_id?: string
+          weekly_report?: boolean
+          welcome_series?: boolean
+        }
+        Relationships: []
+      }
+      email_queue: {
+        Row: {
+          attempts: number
+          category: string
+          created_at: string
+          dedupe_key: string | null
+          id: string
+          last_error: string | null
+          locked_at: string | null
+          max_attempts: number
+          payload: Json
+          priority: number
+          scheduled_for: string
+          sent_at: string | null
+          status: string
+          subject: string
+          template: string
+          to_email: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          category: string
+          created_at?: string
+          dedupe_key?: string | null
+          id?: string
+          last_error?: string | null
+          locked_at?: string | null
+          max_attempts?: number
+          payload?: Json
+          priority?: number
+          scheduled_for?: string
+          sent_at?: string | null
+          status?: string
+          subject: string
+          template: string
+          to_email: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          category?: string
+          created_at?: string
+          dedupe_key?: string | null
+          id?: string
+          last_error?: string | null
+          locked_at?: string | null
+          max_attempts?: number
+          payload?: Json
+          priority?: number
+          scheduled_for?: string
+          sent_at?: string | null
+          status?: string
+          subject?: string
+          template?: string
+          to_email?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      email_suppressions: {
+        Row: {
+          created_at: string
+          email: string
+          reason: string
+          source: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          reason: string
+          source?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          reason?: string
+          source?: string | null
+        }
+        Relationships: []
+      }
       favorite_symbols: {
         Row: {
           created_at: string
