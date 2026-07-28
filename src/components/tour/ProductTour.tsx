@@ -59,9 +59,15 @@ const STEPS: TourStep[] = [
   },
   {
     id: "analytics",
-    title: "Analytics",
+    title: "Performance Analytics",
     body: "See where you're making or losing money. Sessions, symbols and behaviour patterns broken out.",
     target: '[data-tour="nav-analytics"]',
+  },
+  {
+    id: "coach",
+    title: "AI Trading Coach",
+    body: "Personalised feedback grounded in your actual trades — strengths, weaknesses and a weekly plan.",
+    target: '[data-tour="nav-ai"]',
   },
   {
     id: "community",
