@@ -8,6 +8,7 @@ export type PropChallengeRow = {
   id: string;
   name: string;
   preset: string;
+  paper_account_id: string | null;
   account_size: number;
   currency: string;
   profit_target_pct: number;
