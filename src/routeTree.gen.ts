@@ -68,6 +68,7 @@ import { Route as AuthenticatedStrategiesLibraryRouteImport } from './routes/_au
 import { Route as AuthenticatedStrategiesCreateRouteImport } from './routes/_authenticated/strategies.create'
 import { Route as AuthenticatedStrategiesBacktestsRouteImport } from './routes/_authenticated/strategies.backtests'
 import { Route as AuthenticatedStrategiesIdRouteImport } from './routes/_authenticated/strategies.$id'
+import { Route as AuthenticatedSettingsEmailRouteImport } from './routes/_authenticated/settings.email'
 import { Route as AuthenticatedReplayTradesRouteImport } from './routes/_authenticated/replay.trades'
 import { Route as AuthenticatedReplaySettingsRouteImport } from './routes/_authenticated/replay.settings'
 import { Route as AuthenticatedReplaySessionRouteImport } from './routes/_authenticated/replay.session'
@@ -143,6 +144,7 @@ import { Route as AuthenticatedAdminJournalRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminHistoricalRouteImport } from './routes/_authenticated/admin.historical'
 import { Route as AuthenticatedAdminHealthRouteImport } from './routes/_authenticated/admin.health'
 import { Route as AuthenticatedAdminFeatureFlagsRouteImport } from './routes/_authenticated/admin.feature-flags'
+import { Route as AuthenticatedAdminEmailsRouteImport } from './routes/_authenticated/admin.emails'
 import { Route as AuthenticatedAdminDatabaseRouteImport } from './routes/_authenticated/admin.database'
 import { Route as AuthenticatedAdminDashboardRouteImport } from './routes/_authenticated/admin.dashboard'
 import { Route as AuthenticatedAdminContentRouteImport } from './routes/_authenticated/admin.content'
@@ -153,6 +155,10 @@ import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminAchievementsRouteImport } from './routes/_authenticated/admin.achievements'
 import { Route as AuthenticatedAiCoachIndexRouteImport } from './routes/_authenticated/ai.coach.index'
 import { Route as ApiPublicHooksHistoricalSyncRouteImport } from './routes/api/public/hooks/historical-sync'
+import { Route as ApiPublicHooksEmailWeeklyReportRouteImport } from './routes/api/public/hooks/email-weekly-report'
+import { Route as ApiPublicHooksEmailReengagementRouteImport } from './routes/api/public/hooks/email-reengagement'
+import { Route as ApiPublicHooksEmailQueueRouteImport } from './routes/api/public/hooks/email-queue'
+import { Route as ApiPublicHooksEmailMonthlyReportRouteImport } from './routes/api/public/hooks/email-monthly-report'
 import { Route as ApiPublicHooksBattleSettlementRouteImport } from './routes/api/public/hooks/battle-settlement'
 import { Route as AuthenticatedStrategiesPlaybooksIdRouteImport } from './routes/_authenticated/strategies.playbooks.$id'
 import { Route as AuthenticatedCommunityProfileUsernameRouteImport } from './routes/_authenticated/community.profile.$username'
@@ -485,6 +491,12 @@ const AuthenticatedStrategiesIdRoute =
     id: '/$id',
     path: '/$id',
     getParentRoute: () => AuthenticatedStrategiesRoute,
+  } as any)
+const AuthenticatedSettingsEmailRoute =
+  AuthenticatedSettingsEmailRouteImport.update({
+    id: '/email',
+    path: '/email',
+    getParentRoute: () => AuthenticatedSettingsRoute,
   } as any)
 const AuthenticatedReplayTradesRoute =
   AuthenticatedReplayTradesRouteImport.update({
@@ -929,6 +941,12 @@ const AuthenticatedAdminFeatureFlagsRoute =
     path: '/feature-flags',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminEmailsRoute =
+  AuthenticatedAdminEmailsRouteImport.update({
+    id: '/emails',
+    path: '/emails',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminDatabaseRoute =
   AuthenticatedAdminDatabaseRouteImport.update({
     id: '/database',
@@ -987,6 +1005,30 @@ const ApiPublicHooksHistoricalSyncRoute =
   ApiPublicHooksHistoricalSyncRouteImport.update({
     id: '/api/public/hooks/historical-sync',
     path: '/api/public/hooks/historical-sync',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicHooksEmailWeeklyReportRoute =
+  ApiPublicHooksEmailWeeklyReportRouteImport.update({
+    id: '/api/public/hooks/email-weekly-report',
+    path: '/api/public/hooks/email-weekly-report',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicHooksEmailReengagementRoute =
+  ApiPublicHooksEmailReengagementRouteImport.update({
+    id: '/api/public/hooks/email-reengagement',
+    path: '/api/public/hooks/email-reengagement',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicHooksEmailQueueRoute =
+  ApiPublicHooksEmailQueueRouteImport.update({
+    id: '/api/public/hooks/email-queue',
+    path: '/api/public/hooks/email-queue',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicHooksEmailMonthlyReportRoute =
+  ApiPublicHooksEmailMonthlyReportRouteImport.update({
+    id: '/api/public/hooks/email-monthly-report',
+    path: '/api/public/hooks/email-monthly-report',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicHooksBattleSettlementRoute =
@@ -1087,7 +1129,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof AuthenticatedProfileRouteWithChildren
   '/prop-challenges': typeof AuthenticatedPropChallengesRouteWithChildren
   '/replay': typeof AuthenticatedReplayRouteWithChildren
-  '/settings': typeof AuthenticatedSettingsRoute
+  '/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/strategies': typeof AuthenticatedStrategiesRouteWithChildren
   '/support': typeof AuthenticatedSupportRoute
   '/trading': typeof AuthenticatedTradingRouteWithChildren
@@ -1100,6 +1142,7 @@ export interface FileRoutesByFullPath {
   '/admin/content': typeof AuthenticatedAdminContentRoute
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/admin/database': typeof AuthenticatedAdminDatabaseRoute
+  '/admin/emails': typeof AuthenticatedAdminEmailsRoute
   '/admin/feature-flags': typeof AuthenticatedAdminFeatureFlagsRoute
   '/admin/health': typeof AuthenticatedAdminHealthRoute
   '/admin/historical': typeof AuthenticatedAdminHistoricalRoute
@@ -1175,6 +1218,7 @@ export interface FileRoutesByFullPath {
   '/replay/session': typeof AuthenticatedReplaySessionRoute
   '/replay/settings': typeof AuthenticatedReplaySettingsRoute
   '/replay/trades': typeof AuthenticatedReplayTradesRoute
+  '/settings/email': typeof AuthenticatedSettingsEmailRoute
   '/strategies/$id': typeof AuthenticatedStrategiesIdRoute
   '/strategies/backtests': typeof AuthenticatedStrategiesBacktestsRoute
   '/strategies/create': typeof AuthenticatedStrategiesCreateRoute
@@ -1209,6 +1253,10 @@ export interface FileRoutesByFullPath {
   '/community/profile/$username': typeof AuthenticatedCommunityProfileUsernameRoute
   '/strategies/playbooks/$id': typeof AuthenticatedStrategiesPlaybooksIdRoute
   '/api/public/hooks/battle-settlement': typeof ApiPublicHooksBattleSettlementRoute
+  '/api/public/hooks/email-monthly-report': typeof ApiPublicHooksEmailMonthlyReportRoute
+  '/api/public/hooks/email-queue': typeof ApiPublicHooksEmailQueueRoute
+  '/api/public/hooks/email-reengagement': typeof ApiPublicHooksEmailReengagementRoute
+  '/api/public/hooks/email-weekly-report': typeof ApiPublicHooksEmailWeeklyReportRoute
   '/api/public/hooks/historical-sync': typeof ApiPublicHooksHistoricalSyncRoute
   '/ai/coach/': typeof AuthenticatedAiCoachIndexRoute
 }
@@ -1234,7 +1282,7 @@ export interface FileRoutesByTo {
   '/mistakes': typeof AuthenticatedMistakesRoute
   '/paper-trading': typeof AuthenticatedPaperTradingRoute
   '/profile': typeof AuthenticatedProfileRouteWithChildren
-  '/settings': typeof AuthenticatedSettingsRoute
+  '/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/support': typeof AuthenticatedSupportRoute
   '/users': typeof AuthenticatedUsersRoute
   '/admin/achievements': typeof AuthenticatedAdminAchievementsRoute
@@ -1245,6 +1293,7 @@ export interface FileRoutesByTo {
   '/admin/content': typeof AuthenticatedAdminContentRoute
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/admin/database': typeof AuthenticatedAdminDatabaseRoute
+  '/admin/emails': typeof AuthenticatedAdminEmailsRoute
   '/admin/feature-flags': typeof AuthenticatedAdminFeatureFlagsRoute
   '/admin/health': typeof AuthenticatedAdminHealthRoute
   '/admin/historical': typeof AuthenticatedAdminHistoricalRoute
@@ -1319,6 +1368,7 @@ export interface FileRoutesByTo {
   '/replay/session': typeof AuthenticatedReplaySessionRoute
   '/replay/settings': typeof AuthenticatedReplaySettingsRoute
   '/replay/trades': typeof AuthenticatedReplayTradesRoute
+  '/settings/email': typeof AuthenticatedSettingsEmailRoute
   '/strategies/$id': typeof AuthenticatedStrategiesIdRoute
   '/strategies/backtests': typeof AuthenticatedStrategiesBacktestsRoute
   '/strategies/create': typeof AuthenticatedStrategiesCreateRoute
@@ -1353,6 +1403,10 @@ export interface FileRoutesByTo {
   '/community/profile/$username': typeof AuthenticatedCommunityProfileUsernameRoute
   '/strategies/playbooks/$id': typeof AuthenticatedStrategiesPlaybooksIdRoute
   '/api/public/hooks/battle-settlement': typeof ApiPublicHooksBattleSettlementRoute
+  '/api/public/hooks/email-monthly-report': typeof ApiPublicHooksEmailMonthlyReportRoute
+  '/api/public/hooks/email-queue': typeof ApiPublicHooksEmailQueueRoute
+  '/api/public/hooks/email-reengagement': typeof ApiPublicHooksEmailReengagementRoute
+  '/api/public/hooks/email-weekly-report': typeof ApiPublicHooksEmailWeeklyReportRoute
   '/api/public/hooks/historical-sync': typeof ApiPublicHooksHistoricalSyncRoute
   '/ai/coach': typeof AuthenticatedAiCoachIndexRoute
 }
@@ -1389,7 +1443,7 @@ export interface FileRoutesById {
   '/_authenticated/profile': typeof AuthenticatedProfileRouteWithChildren
   '/_authenticated/prop-challenges': typeof AuthenticatedPropChallengesRouteWithChildren
   '/_authenticated/replay': typeof AuthenticatedReplayRouteWithChildren
-  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/_authenticated/strategies': typeof AuthenticatedStrategiesRouteWithChildren
   '/_authenticated/support': typeof AuthenticatedSupportRoute
   '/_authenticated/trading': typeof AuthenticatedTradingRouteWithChildren
@@ -1402,6 +1456,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/content': typeof AuthenticatedAdminContentRoute
   '/_authenticated/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/_authenticated/admin/database': typeof AuthenticatedAdminDatabaseRoute
+  '/_authenticated/admin/emails': typeof AuthenticatedAdminEmailsRoute
   '/_authenticated/admin/feature-flags': typeof AuthenticatedAdminFeatureFlagsRoute
   '/_authenticated/admin/health': typeof AuthenticatedAdminHealthRoute
   '/_authenticated/admin/historical': typeof AuthenticatedAdminHistoricalRoute
@@ -1477,6 +1532,7 @@ export interface FileRoutesById {
   '/_authenticated/replay/session': typeof AuthenticatedReplaySessionRoute
   '/_authenticated/replay/settings': typeof AuthenticatedReplaySettingsRoute
   '/_authenticated/replay/trades': typeof AuthenticatedReplayTradesRoute
+  '/_authenticated/settings/email': typeof AuthenticatedSettingsEmailRoute
   '/_authenticated/strategies/$id': typeof AuthenticatedStrategiesIdRoute
   '/_authenticated/strategies/backtests': typeof AuthenticatedStrategiesBacktestsRoute
   '/_authenticated/strategies/create': typeof AuthenticatedStrategiesCreateRoute
@@ -1511,6 +1567,10 @@ export interface FileRoutesById {
   '/_authenticated/community/profile/$username': typeof AuthenticatedCommunityProfileUsernameRoute
   '/_authenticated/strategies/playbooks/$id': typeof AuthenticatedStrategiesPlaybooksIdRoute
   '/api/public/hooks/battle-settlement': typeof ApiPublicHooksBattleSettlementRoute
+  '/api/public/hooks/email-monthly-report': typeof ApiPublicHooksEmailMonthlyReportRoute
+  '/api/public/hooks/email-queue': typeof ApiPublicHooksEmailQueueRoute
+  '/api/public/hooks/email-reengagement': typeof ApiPublicHooksEmailReengagementRoute
+  '/api/public/hooks/email-weekly-report': typeof ApiPublicHooksEmailWeeklyReportRoute
   '/api/public/hooks/historical-sync': typeof ApiPublicHooksHistoricalSyncRoute
   '/_authenticated/ai/coach/': typeof AuthenticatedAiCoachIndexRoute
 }
@@ -1560,6 +1620,7 @@ export interface FileRouteTypes {
     | '/admin/content'
     | '/admin/dashboard'
     | '/admin/database'
+    | '/admin/emails'
     | '/admin/feature-flags'
     | '/admin/health'
     | '/admin/historical'
@@ -1635,6 +1696,7 @@ export interface FileRouteTypes {
     | '/replay/session'
     | '/replay/settings'
     | '/replay/trades'
+    | '/settings/email'
     | '/strategies/$id'
     | '/strategies/backtests'
     | '/strategies/create'
@@ -1669,6 +1731,10 @@ export interface FileRouteTypes {
     | '/community/profile/$username'
     | '/strategies/playbooks/$id'
     | '/api/public/hooks/battle-settlement'
+    | '/api/public/hooks/email-monthly-report'
+    | '/api/public/hooks/email-queue'
+    | '/api/public/hooks/email-reengagement'
+    | '/api/public/hooks/email-weekly-report'
     | '/api/public/hooks/historical-sync'
     | '/ai/coach/'
   fileRoutesByTo: FileRoutesByTo
@@ -1705,6 +1771,7 @@ export interface FileRouteTypes {
     | '/admin/content'
     | '/admin/dashboard'
     | '/admin/database'
+    | '/admin/emails'
     | '/admin/feature-flags'
     | '/admin/health'
     | '/admin/historical'
@@ -1779,6 +1846,7 @@ export interface FileRouteTypes {
     | '/replay/session'
     | '/replay/settings'
     | '/replay/trades'
+    | '/settings/email'
     | '/strategies/$id'
     | '/strategies/backtests'
     | '/strategies/create'
@@ -1813,6 +1881,10 @@ export interface FileRouteTypes {
     | '/community/profile/$username'
     | '/strategies/playbooks/$id'
     | '/api/public/hooks/battle-settlement'
+    | '/api/public/hooks/email-monthly-report'
+    | '/api/public/hooks/email-queue'
+    | '/api/public/hooks/email-reengagement'
+    | '/api/public/hooks/email-weekly-report'
     | '/api/public/hooks/historical-sync'
     | '/ai/coach'
   id:
@@ -1861,6 +1933,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/content'
     | '/_authenticated/admin/dashboard'
     | '/_authenticated/admin/database'
+    | '/_authenticated/admin/emails'
     | '/_authenticated/admin/feature-flags'
     | '/_authenticated/admin/health'
     | '/_authenticated/admin/historical'
@@ -1936,6 +2009,7 @@ export interface FileRouteTypes {
     | '/_authenticated/replay/session'
     | '/_authenticated/replay/settings'
     | '/_authenticated/replay/trades'
+    | '/_authenticated/settings/email'
     | '/_authenticated/strategies/$id'
     | '/_authenticated/strategies/backtests'
     | '/_authenticated/strategies/create'
@@ -1970,6 +2044,10 @@ export interface FileRouteTypes {
     | '/_authenticated/community/profile/$username'
     | '/_authenticated/strategies/playbooks/$id'
     | '/api/public/hooks/battle-settlement'
+    | '/api/public/hooks/email-monthly-report'
+    | '/api/public/hooks/email-queue'
+    | '/api/public/hooks/email-reengagement'
+    | '/api/public/hooks/email-weekly-report'
     | '/api/public/hooks/historical-sync'
     | '/_authenticated/ai/coach/'
   fileRoutesById: FileRoutesById
@@ -1987,6 +2065,10 @@ export interface RootRouteChildren {
   ApiAiChatRoute: typeof ApiAiChatRoute
   JournalShareTokenRoute: typeof JournalShareTokenRoute
   ApiPublicHooksBattleSettlementRoute: typeof ApiPublicHooksBattleSettlementRoute
+  ApiPublicHooksEmailMonthlyReportRoute: typeof ApiPublicHooksEmailMonthlyReportRoute
+  ApiPublicHooksEmailQueueRoute: typeof ApiPublicHooksEmailQueueRoute
+  ApiPublicHooksEmailReengagementRoute: typeof ApiPublicHooksEmailReengagementRoute
+  ApiPublicHooksEmailWeeklyReportRoute: typeof ApiPublicHooksEmailWeeklyReportRoute
   ApiPublicHooksHistoricalSyncRoute: typeof ApiPublicHooksHistoricalSyncRoute
 }
 
@@ -2404,6 +2486,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/strategies/$id'
       preLoaderRoute: typeof AuthenticatedStrategiesIdRouteImport
       parentRoute: typeof AuthenticatedStrategiesRoute
+    }
+    '/_authenticated/settings/email': {
+      id: '/_authenticated/settings/email'
+      path: '/email'
+      fullPath: '/settings/email'
+      preLoaderRoute: typeof AuthenticatedSettingsEmailRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
     }
     '/_authenticated/replay/trades': {
       id: '/_authenticated/replay/trades'
@@ -2930,6 +3019,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminFeatureFlagsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/emails': {
+      id: '/_authenticated/admin/emails'
+      path: '/emails'
+      fullPath: '/admin/emails'
+      preLoaderRoute: typeof AuthenticatedAdminEmailsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/database': {
       id: '/_authenticated/admin/database'
       path: '/database'
@@ -2998,6 +3094,34 @@ declare module '@tanstack/react-router' {
       path: '/api/public/hooks/historical-sync'
       fullPath: '/api/public/hooks/historical-sync'
       preLoaderRoute: typeof ApiPublicHooksHistoricalSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/email-weekly-report': {
+      id: '/api/public/hooks/email-weekly-report'
+      path: '/api/public/hooks/email-weekly-report'
+      fullPath: '/api/public/hooks/email-weekly-report'
+      preLoaderRoute: typeof ApiPublicHooksEmailWeeklyReportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/email-reengagement': {
+      id: '/api/public/hooks/email-reengagement'
+      path: '/api/public/hooks/email-reengagement'
+      fullPath: '/api/public/hooks/email-reengagement'
+      preLoaderRoute: typeof ApiPublicHooksEmailReengagementRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/email-queue': {
+      id: '/api/public/hooks/email-queue'
+      path: '/api/public/hooks/email-queue'
+      fullPath: '/api/public/hooks/email-queue'
+      preLoaderRoute: typeof ApiPublicHooksEmailQueueRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/email-monthly-report': {
+      id: '/api/public/hooks/email-monthly-report'
+      path: '/api/public/hooks/email-monthly-report'
+      fullPath: '/api/public/hooks/email-monthly-report'
+      preLoaderRoute: typeof ApiPublicHooksEmailMonthlyReportRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/hooks/battle-settlement': {
@@ -3089,6 +3213,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminContentRoute: typeof AuthenticatedAdminContentRoute
   AuthenticatedAdminDashboardRoute: typeof AuthenticatedAdminDashboardRoute
   AuthenticatedAdminDatabaseRoute: typeof AuthenticatedAdminDatabaseRoute
+  AuthenticatedAdminEmailsRoute: typeof AuthenticatedAdminEmailsRoute
   AuthenticatedAdminFeatureFlagsRoute: typeof AuthenticatedAdminFeatureFlagsRoute
   AuthenticatedAdminHealthRoute: typeof AuthenticatedAdminHealthRoute
   AuthenticatedAdminHistoricalRoute: typeof AuthenticatedAdminHistoricalRoute
@@ -3119,6 +3244,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminContentRoute: AuthenticatedAdminContentRoute,
   AuthenticatedAdminDashboardRoute: AuthenticatedAdminDashboardRoute,
   AuthenticatedAdminDatabaseRoute: AuthenticatedAdminDatabaseRoute,
+  AuthenticatedAdminEmailsRoute: AuthenticatedAdminEmailsRoute,
   AuthenticatedAdminFeatureFlagsRoute: AuthenticatedAdminFeatureFlagsRoute,
   AuthenticatedAdminHealthRoute: AuthenticatedAdminHealthRoute,
   AuthenticatedAdminHistoricalRoute: AuthenticatedAdminHistoricalRoute,
@@ -3466,6 +3592,19 @@ const AuthenticatedReplayRouteChildren: AuthenticatedReplayRouteChildren = {
 const AuthenticatedReplayRouteWithChildren =
   AuthenticatedReplayRoute._addFileChildren(AuthenticatedReplayRouteChildren)
 
+interface AuthenticatedSettingsRouteChildren {
+  AuthenticatedSettingsEmailRoute: typeof AuthenticatedSettingsEmailRoute
+}
+
+const AuthenticatedSettingsRouteChildren: AuthenticatedSettingsRouteChildren = {
+  AuthenticatedSettingsEmailRoute: AuthenticatedSettingsEmailRoute,
+}
+
+const AuthenticatedSettingsRouteWithChildren =
+  AuthenticatedSettingsRoute._addFileChildren(
+    AuthenticatedSettingsRouteChildren,
+  )
+
 interface AuthenticatedStrategiesPlaybooksRouteChildren {
   AuthenticatedStrategiesPlaybooksIdRoute: typeof AuthenticatedStrategiesPlaybooksIdRoute
 }
@@ -3550,7 +3689,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRouteWithChildren
   AuthenticatedPropChallengesRoute: typeof AuthenticatedPropChallengesRouteWithChildren
   AuthenticatedReplayRoute: typeof AuthenticatedReplayRouteWithChildren
-  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRouteWithChildren
   AuthenticatedStrategiesRoute: typeof AuthenticatedStrategiesRouteWithChildren
   AuthenticatedSupportRoute: typeof AuthenticatedSupportRoute
   AuthenticatedTradingRoute: typeof AuthenticatedTradingRouteWithChildren
@@ -3582,7 +3721,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPropChallengesRoute:
     AuthenticatedPropChallengesRouteWithChildren,
   AuthenticatedReplayRoute: AuthenticatedReplayRouteWithChildren,
-  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRouteWithChildren,
   AuthenticatedStrategiesRoute: AuthenticatedStrategiesRouteWithChildren,
   AuthenticatedSupportRoute: AuthenticatedSupportRoute,
   AuthenticatedTradingRoute: AuthenticatedTradingRouteWithChildren,
@@ -3606,6 +3745,10 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAiChatRoute: ApiAiChatRoute,
   JournalShareTokenRoute: JournalShareTokenRoute,
   ApiPublicHooksBattleSettlementRoute: ApiPublicHooksBattleSettlementRoute,
+  ApiPublicHooksEmailMonthlyReportRoute: ApiPublicHooksEmailMonthlyReportRoute,
+  ApiPublicHooksEmailQueueRoute: ApiPublicHooksEmailQueueRoute,
+  ApiPublicHooksEmailReengagementRoute: ApiPublicHooksEmailReengagementRoute,
+  ApiPublicHooksEmailWeeklyReportRoute: ApiPublicHooksEmailWeeklyReportRoute,
   ApiPublicHooksHistoricalSyncRoute: ApiPublicHooksHistoricalSyncRoute,
 }
 export const routeTree = rootRouteImport

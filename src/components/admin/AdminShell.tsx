@@ -3,7 +3,7 @@ import { ReactNode } from "react";
 import {
   Activity, AlertTriangle, Award, BarChart3, Bell, BookOpen, Boxes,
   Cog, CreditCard, Database, DollarSign, FileText, Flag, HeartPulse,
-  LayoutDashboard, LineChart, LifeBuoy, Megaphone, Shield, ShieldAlert,
+  LayoutDashboard, LineChart, LifeBuoy, Mail, Megaphone, Shield, ShieldAlert,
   Sparkles, Trophy, Users, Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -21,6 +21,7 @@ const GROUPS: { label: string; items: Item[] }[] = [
       { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
       { to: "/admin/notifications", label: "Notifications", icon: Bell },
+      { to: "/admin/emails", label: "Emails", icon: Mail },
     ],
   },
   {
