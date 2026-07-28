@@ -48,26 +48,32 @@ export function useMarketStatus(market: MarketKind) {
 
 /**
  * Register a poll cadence with the Twelve Data provider. Mount this once per
- * screen (dashboard, watchlist, workspace) and the central poller will tune
- * itself to the fastest requested cadence. Automatically pauses when the
- * browser tab is hidden.
+ * screen and the central poller tunes itself to the fastest requested cadence.
+ * Automatically pauses when the browser tab is hidden. Pass `enabled=false`
+ * to skip the registration entirely — e.g. when the current view only shows
+ * crypto (Binance) so no forex/index poller is needed.
  *
- *   useMarketCadence("workspace")   // 7s  — active trading
- *   useMarketCadence("watchlist")   // 20s
- *   useMarketCadence("dashboard")   // 30s
+ *   useMarketCadence("workspace")           // 12s — active trading
+ *   useMarketCadence("watchlist")           // 30s
+ *   useMarketCadence("dashboard")           // 45s
+ *   useMarketCadence("workspace", isForex)  // skipped when isForex=false
  */
-export function useMarketCadence(tier: "workspace" | "watchlist" | "dashboard" | "idle") {
+export function useMarketCadence(
+  tier: "workspace" | "watchlist" | "dashboard" | "idle",
+  enabled: boolean = true,
+) {
   const id = useId();
   useEffect(() => {
+    if (!enabled) return;
     marketData.init();
     const p = getProvider("twelvedata") as any;
     if (!p || typeof p.requestCadence !== "function") return;
-    const ms = tier === "workspace" ? 7_000
-             : tier === "watchlist" ? 20_000
-             : tier === "dashboard" ? 30_000
+    const ms = tier === "workspace" ? 12_000
+             : tier === "watchlist" ? 30_000
+             : tier === "dashboard" ? 45_000
              : 60_000;
     return p.requestCadence(`${tier}:${id}`, ms);
-  }, [tier, id]);
+  }, [tier, id, enabled]);
 }
 
 /**

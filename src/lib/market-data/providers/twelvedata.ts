@@ -18,14 +18,14 @@ import type {
 /** Poll cadence tiers, chosen so the busiest route (trading) is well within
  *  the free-tier 8 req/min ceiling. See product spec. */
 const CADENCE: Record<string, number> = {
-  workspace: 7_000,
-  watchlist: 20_000,
-  dashboard: 30_000,
+  workspace: 12_000,
+  watchlist: 30_000,
+  dashboard: 45_000,
   idle:      60_000,
   hidden:    0,
-  throttled: 45_000,
+  throttled: 60_000,
 };
-const DEFAULT_POLL_MS = CADENCE.workspace;
+const DEFAULT_POLL_MS = CADENCE.idle;
 
 // Static catalog for the symbols we officially support out of the box.
 // The engine symbol on the left is what the rest of the app uses; the
@@ -158,7 +158,8 @@ export class TwelveDataProvider implements MarketDataProvider {
 
   private ensurePoller() {
     if (this.pollTimer) return;
-    this.schedulePoll(this.computeCadence() || CADENCE.workspace);
+    if (this.subs.size === 0 && this.cadenceRequests.size === 0) return; // idle
+    this.schedulePoll(this.computeCadence() || CADENCE.idle);
   }
 
   /** Public snapshot used by the QA diagnostics panel. */
@@ -181,12 +182,14 @@ export class TwelveDataProvider implements MarketDataProvider {
   private async pollOnce() {
     this.pollTimer = null;
     if (this._status !== "connected") return;
-    if (this.currentPollMs === 0) return; // paused
+    if (this.currentPollMs === 0) return; // paused (tab hidden / quota exhausted)
     if (Date.now() < this.nextAllowedPoll) { this.schedulePoll(this.nextAllowedPoll - Date.now()); return; }
 
-    void this.refreshUsage();
+    // No visible consumers → don't poll AND don't burn a usage probe. Wake
+    // up again once a subscription is added (subscribe() calls ensurePoller).
+    if (this.subs.size === 0) { return; }
 
-    if (this.subs.size === 0) { this.schedulePoll(this.computeCadence() || CADENCE.idle); return; }
+    void this.refreshUsage();
 
     const engineSyms = [...this.subs.keys()];
     const tdSyms = engineSyms.map(toTd);
