@@ -98,9 +98,10 @@ function TradingWorkspaceInner() {
   const { symbol, symbolMeta, market, timeframe, setTimeframe, accountId, account } = usePaper();
   useSlTpMonitor(account);
   useRiskMonitor(account);
-  const [enabled, setEnabled] = useState<Record<string, boolean>>({ ema: true, volume: true });
-  const [chartType, setChartType] = useState<ChartType>("candles");
-  const [smcOn, setSmcOn] = useState(false);
+  const { prefs, update, hydrated } = useWorkspacePrefs();
+  const [enabled, setEnabled] = useState<Record<string, boolean>>(prefs.indicators);
+  const [chartType, setChartType] = useState<ChartType>(prefs.chartType as ChartType);
+  const [smcOn, setSmcOn] = useState(prefs.smcOn);
   const [smcParts, setSmcParts] = useState<Record<string, boolean>>({
     show_swings: true, show_bos: true, show_fvg: true, show_ob: true,
   });
@@ -113,6 +114,22 @@ function TradingWorkspaceInner() {
   const [drawingsHidden, setDrawingsHidden] = useState(false);
   const [shortcutsHelp, setShortcutsHelp] = useState(false);
   const [multiPanes, setMultiPanes] = useState<MultiChartPane[]>([]);
+
+  // Rehydrate persisted UI state once localStorage has been read.
+  useEffect(() => {
+    if (!hydrated) return;
+    setEnabled(prefs.indicators);
+    setChartType(prefs.chartType as ChartType);
+    setSmcOn(prefs.smcOn);
+    if (prefs.timeframe && prefs.timeframe !== timeframe) setTimeframe(prefs.timeframe);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated]);
+
+  // Persist toolbar-driven changes.
+  useEffect(() => { if (hydrated) update("indicators", enabled); }, [enabled, hydrated, update]);
+  useEffect(() => { if (hydrated) update("chartType", chartType); }, [chartType, hydrated, update]);
+  useEffect(() => { if (hydrated) update("smcOn", smcOn); }, [smcOn, hydrated, update]);
+  useEffect(() => { if (hydrated && timeframe) update("timeframe", timeframe); }, [timeframe, hydrated, update]);
 
   const handleReady = useCallback((api: ChartHandle) => {
     chartApi.current = api;
