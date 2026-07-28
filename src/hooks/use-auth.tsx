@@ -52,23 +52,18 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-// Note: `email` is intentionally omitted here — column-level SELECT is revoked
-// for the `authenticated` role to prevent PII leakage across users. The email
-// is populated from the authenticated Supabase session below.
-const PROFILE_COLUMNS =
-  "id, username, display_name, avatar_url, first_name, last_name, country, timezone, experience, preferred_market, trading_style, preferred_markets, goals, level, xp, coins, league, streak, rank, onboarded, is_premium";
-
+// Sensitive columns (email, first_name, last_name, admin_notes, ...) have their
+// column-level SELECT grant revoked for the `authenticated` role to prevent PII
+// leakage across users. Owner-side reads flow through the `get_my_profile()`
+// security-definer RPC below.
 async function loadUserData(userId: string, email: string | null) {
-  const [{ data: profile }, { data: roles }] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select(PROFILE_COLUMNS)
-      .eq("id", userId)
-      .maybeSingle(),
+  const [{ data: profileRows }, { data: roles }] = await Promise.all([
+    supabase.rpc("get_my_profile"),
     supabase.from("user_roles").select("role").eq("user_id", userId),
   ]);
+  const profile = Array.isArray(profileRows) ? (profileRows[0] as any) : (profileRows as any);
   return {
-    profile: profile ? ({ ...(profile as any), email } as Profile) : null,
+    profile: profile ? ({ ...profile, email: profile.email ?? email } as Profile) : null,
     roles: (roles?.map((r) => r.role) ?? []) as AppRole[],
   };
 }
