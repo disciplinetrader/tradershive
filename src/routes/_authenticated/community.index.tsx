@@ -198,7 +198,7 @@ function HomePage() {
                     </div>
                   </li>
                 ))}
-                {!d?.recentAchievements?.length ? <div className="text-xs text-muted-foreground">No unlocks yet.</div> : null}
+                {!d?.recentAchievements?.length ? <div className="text-xs text-muted-foreground">Log trades and win battles to unlock achievements.</div> : null}
               </ul>
             </GlassCard>
 
