@@ -56,6 +56,8 @@ const SURPRISE_POOL: { symbol: string; market: JournalMarket }[] = [
   { symbol: "SPX500", market: "indices" },
 ];
 
+type StartPosition = "beginning" | "random" | "before_end";
+
 export function CreatorWizard({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const [title, setTitle] = useState("");
   const [balance, setBalance] = useState("10000");
@@ -63,6 +65,7 @@ export function CreatorWizard({ open, onOpenChange }: { open: boolean; onOpenCha
   const [from, setFrom] = useState(daysAgoISO(30));
   const [to, setTo] = useState(todayISO());
   const [tf, setTf] = useState<Timeframe>("5m");
+  const [startPos, setStartPos] = useState<StartPosition>("beginning");
   const [preload, setPreload] = useState<{ progress: number; status: "idle" | "loading" | "cached" | "downloaded" | "error"; message?: string }>({ progress: 0, status: "idle" });
   const navigate = useNavigate();
 
@@ -82,14 +85,17 @@ export function CreatorWizard({ open, onOpenChange }: { open: boolean; onOpenCha
     return !create.isPending;
   }, [instrument, from, to, create.isPending]);
 
+  const surpriseDates = () => {
+    const day = randomHistoricalDate();
+    setFrom(day);
+    setTo(day);
+  };
+
   const surprise = () => {
     const pick = SURPRISE_POOL[Math.floor(Math.random() * SURPRISE_POOL.length)];
     const found = findInstrument(pick.symbol);
     if (found) setInstrument(found);
-    const day = randomHistoricalDate();
-    setFrom(day);
-    setTo(day);
-    setTitle(`🎲 ${pick.symbol} · ${day}`);
+    surpriseDates();
   };
 
   const submit = async () => {
@@ -129,7 +135,7 @@ export function CreatorWizard({ open, onOpenChange }: { open: boolean; onOpenCha
         range_start: from !== to ? new Date(`${from}T00:00:00Z`).toISOString() : undefined,
         range_end: from !== to ? new Date(`${to}T23:59:59Z`).toISOString() : undefined,
         provider: "synthetic",
-        tags: [],
+        tags: startPos !== "beginning" ? [`start:${startPos}`] : [],
         initial_balance: balanceNum,
       } as never,
     });
@@ -149,12 +155,12 @@ export function CreatorWizard({ open, onOpenChange }: { open: boolean; onOpenCha
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2 space-y-1.5">
-            <Label htmlFor="bt-name">Backtest Name</Label>
+            <Label htmlFor="bt-name">Strategy Name <span className="text-muted-foreground font-normal">(optional)</span></Label>
             <Input
               id="bt-name"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder={instrument ? `${instrument.symbol} · ${from}` : "e.g. EUR/USD · morning session"}
+              placeholder="My London Breakout"
               autoFocus
             />
           </div>
@@ -206,8 +212,27 @@ export function CreatorWizard({ open, onOpenChange }: { open: boolean; onOpenCha
             <Input id="bt-from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="bt-to">Backtest To</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="bt-to">Backtest To</Label>
+              <button type="button" onClick={surpriseDates} className="text-[10px] text-primary hover:underline">
+                Surprise Me
+              </button>
+            </div>
             <Input id="bt-to" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+          </div>
+
+          <div className="sm:col-span-2 space-y-1.5">
+            <Label htmlFor="bt-start">Start Position</Label>
+            <select
+              id="bt-start"
+              value={startPos}
+              onChange={(e) => setStartPos(e.target.value as StartPosition)}
+              className="w-full rounded-lg border border-border/60 bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+            >
+              <option value="beginning">Beginning of range</option>
+              <option value="random">Random candle</option>
+              <option value="before_end">Last portion of range</option>
+            </select>
           </div>
         </div>
 
