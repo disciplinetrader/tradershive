@@ -27,7 +27,16 @@ export function LeaderboardPreview() {
   if (isLoading) return <Skeleton className="h-52 w-full rounded-2xl" />;
   const rows = (data as any)?.rows ?? [];
   if (rows.length === 0) {
-    return <EmptyState icon={Trophy} title="Leaderboard empty" description="No ranked traders yet." />;
+    return (
+      <EmptyState
+        compact
+        icon={Trophy}
+        title="Be the first on the leaderboard"
+        description="Earn XP by trading, journaling and completing battles — the top 100 land here."
+        action={{ label: "Start Trading", href: "/trading" }}
+        secondaryAction={{ label: "Join a Battle", href: "/battle-arena" }}
+      />
+    );
   }
   return (
     <div>

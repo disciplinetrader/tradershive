@@ -25,7 +25,16 @@ export function Achievements() {
   }
   const items = ((data as any[]) ?? []).slice(0, 8);
   if (items.length === 0) {
-    return <EmptyState icon={Award} title="No achievements yet" description="Trade, journal, and complete challenges to unlock them." />;
+    return (
+      <EmptyState
+        compact
+        icon={Award}
+        title="Unlock your first achievement"
+        description="Log a trade, complete a replay or win a battle — badges appear here as you hit milestones."
+        action={{ label: "Log a Trade", href: "/journal" }}
+        secondaryAction={{ label: "Start a Replay", href: "/replay" }}
+      />
+    );
   }
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">

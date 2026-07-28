@@ -43,7 +43,13 @@ function ChallengesPage() {
       </div>
 
       {q.isLoading ? <Skeleton className="h-40" /> : (q.data?.challenges ?? []).length === 0 ? (
-        <EmptyState icon={Trophy} title="No challenges" description="Check back soon for new events." />
+        <EmptyState
+          icon={Trophy}
+          title="No community challenges right now"
+          description="Community challenges launch weekly. Meanwhile, jump into a live Battle or Championship."
+          action={{ label: "Battle Arena", href: "/battle-arena" }}
+          secondaryAction={{ label: "Championships", href: "/championship" }}
+        />
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {q.data!.challenges.map((c: any) => <ChallengeCard key={c.id} c={c} />)}

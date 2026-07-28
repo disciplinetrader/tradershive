@@ -78,7 +78,13 @@ export function RecentTrades() {
       </div>
 
       {rows.length === 0 ? (
-        <EmptyState icon={Search} title="No matches" description="Try a different filter." />
+        <EmptyState
+          compact
+          icon={Search}
+          title="No trades match your filters"
+          description="Try clearing the search or switching status back to All."
+          action={{ label: "Clear filters", onClick: () => { setQ(""); setStatus("all"); setPage(0); } }}
+        />
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-border/40">
           <Table>

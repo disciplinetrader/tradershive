@@ -175,18 +175,26 @@ function ChampionshipIndex() {
               </div>
             ) : (
               <EmptyState
+                icon={Trophy}
                 title={
-                  tab === "live" ? "No live tournaments" :
-                  tab === "upcoming" ? "No upcoming tournaments" :
-                  tab === "past" ? "No past tournaments" :
-                  "You haven't joined any tournaments yet"
+                  tab === "live" ? "No live tournaments right now" :
+                  tab === "upcoming" ? "No upcoming tournaments scheduled" :
+                  tab === "past" ? "No past tournaments to review" :
+                  "You haven't joined a tournament yet"
                 }
                 description={
                   tab === "mine"
-                    ? "Join a live tournament to see it here."
-                    : "A new tournament will appear here as soon as one is scheduled."
+                    ? "Join a live or upcoming tournament to compete against other traders."
+                    : "Championships run weekly. Jump into the Battle Arena while you wait for the next one."
                 }
+                action={
+                  tab === "mine"
+                    ? { label: "Browse Tournaments", href: "/championship" }
+                    : { label: "Open Battle Arena", href: "/battle-arena" }
+                }
+                secondaryAction={{ label: "Practice in Replay", href: "/replay" }}
               />
+
             )}
           </TabsContent>
         </Tabs>

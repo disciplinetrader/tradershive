@@ -65,16 +65,38 @@ function BattleArenaHome() {
 
       <MyBattleStats data={stats.data} />
 
-      <Section title="Featured" icon={Flame} items={featured.data} loading={featured.isLoading} empty="No featured battles right now." />
-      <Section title="Live now" icon={Swords} items={live.data} loading={live.isLoading} empty="No battles running." pulse />
-      <Section title="Upcoming" icon={Clock} items={upcoming.data} loading={upcoming.isLoading} empty="No upcoming battles — be the first to create one." />
-      <Section title="My battles" icon={Swords} items={mine.data} loading={mine.isLoading} empty="You haven't joined any battles yet." />
-      <Section title="Recent results" icon={History} items={history.data} loading={history.isLoading} empty="No completed battles yet." />
+      <Section
+        title="Featured" icon={Flame} items={featured.data} loading={featured.isLoading}
+        empty={{ title: "No featured battles right now", body: "Featured battles are curated by staff — check back soon or start one yourself.", cta: { label: "Create Battle", to: "/battle-arena/create" } }}
+      />
+      <Section
+        title="Live now" icon={Swords} items={live.data} loading={live.isLoading} pulse
+        empty={{ title: "No battles running", body: "Kick off a live battle and invite others to join.", cta: { label: "Create Battle", to: "/battle-arena/create" } }}
+      />
+      <Section
+        title="Upcoming" icon={Clock} items={upcoming.data} loading={upcoming.isLoading}
+        empty={{ title: "No upcoming battles", body: "Be the first to schedule one — set entry, duration and prize pool.", cta: { label: "Create Battle", to: "/battle-arena/create" } }}
+      />
+      <Section
+        title="My battles" icon={Swords} items={mine.data} loading={mine.isLoading}
+        empty={{ title: "You haven't joined any battles yet", body: "Join a live battle or create your own to start competing.", cta: { label: "Browse Live", to: "/battle-arena" }, secondary: { label: "Create Battle", to: "/battle-arena/create" } }}
+      />
+      <Section
+        title="Recent results" icon={History} items={history.data} loading={history.isLoading}
+        empty={{ title: "No completed battles yet", body: "Results appear here after your first battle ends.", cta: { label: "Create Battle", to: "/battle-arena/create" } }}
+      />
     </div>
   );
 }
 
-function Section({ title, icon: Icon, items, loading, empty, pulse }: { title: string; icon: React.ComponentType<{ className?: string }>; items?: any[]; loading?: boolean; empty: string; pulse?: boolean }) {
+type EmptyCopy = {
+  title: string;
+  body?: string;
+  cta?: { label: string; to: string };
+  secondary?: { label: string; to: string };
+};
+
+function Section({ title, icon: Icon, items, loading, empty, pulse }: { title: string; icon: React.ComponentType<{ className?: string }>; items?: any[]; loading?: boolean; empty: EmptyCopy; pulse?: boolean }) {
   return (
     <section className="space-y-3">
       <div className="flex items-center gap-2">
@@ -84,7 +106,19 @@ function Section({ title, icon: Icon, items, loading, empty, pulse }: { title: s
       {loading && !items ? (
         <CardGridSkeleton count={3} cardClassName="h-48" />
       ) : !items?.length ? (
-        <div className="rounded-2xl border border-dashed border-border/60 bg-card/30 p-6 text-center text-sm text-muted-foreground">{empty}</div>
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border/60 bg-card/30 px-6 py-8 text-center">
+          <div className="grid h-11 w-11 place-items-center rounded-xl bg-primary/10 text-primary"><Icon className="h-5 w-5" /></div>
+          <div>
+            <div className="text-sm font-semibold text-foreground">{empty.title}</div>
+            {empty.body ? <p className="mt-1 max-w-sm text-xs text-muted-foreground">{empty.body}</p> : null}
+          </div>
+          {empty.cta || empty.secondary ? (
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {empty.cta ? <Button asChild size="sm"><Link to={empty.cta.to}>{empty.cta.label}</Link></Button> : null}
+              {empty.secondary ? <Button asChild size="sm" variant="outline"><Link to={empty.secondary.to}>{empty.secondary.label}</Link></Button> : null}
+            </div>
+          ) : null}
+        </div>
       ) : (
         <div className="animate-content-in grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {items.map((b) => <BattleCard key={b.id} battle={b} />)}
@@ -93,4 +127,5 @@ function Section({ title, icon: Icon, items, loading, empty, pulse }: { title: s
     </section>
   );
 }
+
 

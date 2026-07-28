@@ -90,7 +90,7 @@ function HomePage() {
                     </li>
                   ))}
                 </ul>
-              ) : <EmptyState title="No posts yet" description="Be the first to share something." />}
+              ) : <EmptyState icon={MessageSquare} title="Start the conversation" description="No posts yet — share a chart, an idea or a lesson learned." action={{ label: "Create Post", href: "/community" }} />}
             </GlassCard>
 
             <GlassCard className="p-4">
@@ -109,7 +109,7 @@ function HomePage() {
                     </Link>
                   ))}
                 </div>
-              ) : <EmptyState title="No ideas yet" description="Share your first trade idea." />}
+              ) : <EmptyState icon={Lightbulb} title="No trade ideas yet" description="Share your first setup — publish targets, invalidation and R:R." action={{ label: "Post an Idea", href: "/community/ideas" }} />}
             </GlassCard>
 
             <GlassCard className="p-4">
@@ -128,7 +128,7 @@ function HomePage() {
                     </Link>
                   ))}
                 </div>
-              ) : <EmptyState title="Nothing scheduled" description="Host a session for the community." />}
+              ) : <EmptyState icon={Video} title="Nothing scheduled" description="Host a session to teach, review setups or run a live trade with the community." action={{ label: "Host a Session", href: "/community/live" }} />}
             </GlassCard>
 
             <GlassCard className="p-4">
@@ -144,7 +144,7 @@ function HomePage() {
                     </Link>
                   ))}
                 </div>
-              ) : <EmptyState title="No active challenges" description="New events launch weekly." />}
+              ) : <EmptyState icon={Trophy} title="No active challenges" description="Practise in the Battle Arena or Championships while the next community challenge is scheduled." action={{ label: "Battle Arena", href: "/battle-arena" }} secondaryAction={{ label: "Championships", href: "/championship" }} />}
             </GlassCard>
           </div>
 
@@ -178,7 +178,7 @@ function HomePage() {
                     </Link>
                   </li>
                 ))}
-                {!d?.topContributors?.length ? <div className="text-xs text-muted-foreground">No contributors yet.</div> : null}
+                {!d?.topContributors?.length ? <div className="text-xs text-muted-foreground">Post, comment or share ideas to appear here.</div> : null}
               </ul>
             </GlassCard>
 
@@ -198,7 +198,7 @@ function HomePage() {
                     </div>
                   </li>
                 ))}
-                {!d?.recentAchievements?.length ? <div className="text-xs text-muted-foreground">No unlocks yet.</div> : null}
+                {!d?.recentAchievements?.length ? <div className="text-xs text-muted-foreground">Log trades and win battles to unlock achievements.</div> : null}
               </ul>
             </GlassCard>
 

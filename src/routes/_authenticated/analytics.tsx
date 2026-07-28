@@ -185,8 +185,22 @@ function DatasetStatus() {
       );
     }
     return (
-      <GlassCard className="p-6 text-center text-sm text-muted-foreground">
-        No trades match your filters or the selected backtest. Adjust filters, pick a different backtest, or close some paper trades.
+      <GlassCard className="p-8 text-center space-y-3">
+        <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <Layers className="h-5 w-5" />
+        </div>
+        <div>
+          <div className="text-base font-semibold">No trades match your filters</div>
+          <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+            Try widening the date range, clearing tags, or switching source to All.
+          </p>
+        </div>
+        <div className="flex items-center justify-center gap-2 pt-1">
+          <Button size="sm" onClick={() => setFilters((prev) => ({ ...prev, source: "all", tag: undefined as any }))}>
+            Reset filters
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => navigate({ to: "/journal" })}>Open Journal</Button>
+        </div>
       </GlassCard>
     );
   }

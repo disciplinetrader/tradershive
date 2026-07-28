@@ -50,7 +50,12 @@ function MentorsPage() {
           {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-48" />)}
         </div>
       ) : (list.data?.mentors ?? []).length === 0 ? (
-        <EmptyState icon={GraduationCap} title="No mentors yet" description="Be the first — apply above." />
+        <EmptyState
+          icon={GraduationCap}
+          title="No mentors match your search"
+          description="Try clearing your search, or apply to become a mentor and be the first listed."
+          action={q ? { label: "Clear search", onClick: () => setQ("") } : undefined}
+        />
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {list.data!.mentors.map((m: any) => <MentorCard key={m.user_id} mentor={m} />)}
