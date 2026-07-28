@@ -121,6 +121,9 @@ function DashboardPage() {
 
       <motion.div variants={item}><QuickActions /></motion.div>
 
+      <motion.div variants={item}><OnboardingChecklist /></motion.div>
+
+
       {/* Section 1 — Today's Focus */}
       {visible("focus") && (
         <motion.div variants={item}>
