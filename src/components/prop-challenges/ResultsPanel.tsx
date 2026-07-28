@@ -1,6 +1,8 @@
-import { AlertTriangle, Sparkles, Trophy } from "lucide-react";
+import { AlertTriangle, BarChart3, Plus, RotateCcw, Sparkles, Trophy } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import type { ChallengeProgress, PropChallengeRow, PropChallengeDayRow } from "@/lib/prop-challenges/evaluator";
 import { formatCurrency } from "@/lib/prop-challenges/evaluator";
 
