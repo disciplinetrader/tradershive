@@ -24,21 +24,23 @@ function AuthenticatedLayout() {
   const router = useRouter();
   return (
     <AppShell>
-      <ErrorBoundary
-        name="authenticated_outlet"
-        fallback={({ error, reset }) => (
-          <RouteError
-            error={error}
-            reset={() => {
-              router.invalidate();
-              reset();
-            }}
-            boundary="authenticated_outlet"
-          />
-        )}
-      >
-        <Outlet />
-      </ErrorBoundary>
+      <FeedbackProvider>
+        <ErrorBoundary
+          name="authenticated_outlet"
+          fallback={({ error, reset }) => (
+            <RouteError
+              error={error}
+              reset={() => {
+                router.invalidate();
+                reset();
+              }}
+              boundary="authenticated_outlet"
+            />
+          )}
+        >
+          <Outlet />
+        </ErrorBoundary>
+      </FeedbackProvider>
     </AppShell>
   );
 }
