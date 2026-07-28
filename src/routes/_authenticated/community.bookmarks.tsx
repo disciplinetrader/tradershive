@@ -21,7 +21,12 @@ function Page() {
       {q.isLoading ? (
         <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-40 rounded-2xl" />)}</div>
       ) : !q.data?.posts.length ? (
-        <EmptyState title="No bookmarks yet" description="Save posts you want to revisit — they'll show up here." />
+        <EmptyState
+          icon={Bookmark}
+          title="No bookmarks yet"
+          description="Tap the bookmark on any post, idea or strategy to save it here for later."
+          action={{ label: "Browse Community", href: "/community" }}
+        />
       ) : (
         <div className="space-y-3">{q.data.posts.map((p: any) => <PostCard key={p.id} post={p} />)}</div>
       )}
