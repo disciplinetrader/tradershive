@@ -55,6 +55,8 @@ import { useWorkspacePrefs, type WorkspaceTab } from "@/hooks/use-workspace-pref
 import { QuickJournalPanel } from "@/components/trading/QuickJournalPanel";
 import { WorkspaceNotes } from "@/components/trading/WorkspaceNotes";
 import { PlaybookQuickAttach } from "@/components/playbook/PlaybookQuickAttach";
+import { ChallengePanel } from "@/components/prop-challenges/ChallengePanel";
+import { useActivePropChallenge } from "@/lib/prop-challenges/active-session";
 
 const CHART_TIMEFRAMES: Timeframe[] = ["1m", "5m", "15m", "30m", "1H", "4H", "1D", "1W"];
 
@@ -95,10 +97,19 @@ const SMC_SUB_OPTIONS: { key: "show_swings" | "show_bos" | "show_fvg" | "show_ob
 
 function TradingWorkspaceInner() {
   const qc = useQueryClient();
-  const { symbol, symbolMeta, market, timeframe, setTimeframe, accountId, account } = usePaper();
+  const { symbol, symbolMeta, market, timeframe, setTimeframe, accountId, setAccountId, account } = usePaper();
   useSlTpMonitor(account);
   useRiskMonitor(account);
   const { prefs, update, hydrated } = useWorkspacePrefs();
+  const { active: activeChallenge } = useActivePropChallenge();
+
+  // Auto-bind the workspace to the challenge's paper account so every closed
+  // trade updates the challenge in real time — no manual linking required.
+  useEffect(() => {
+    if (!activeChallenge?.paper_account_id) return;
+    if (accountId === activeChallenge.paper_account_id) return;
+    setAccountId(activeChallenge.paper_account_id);
+  }, [activeChallenge?.paper_account_id, accountId, setAccountId]);
   const [enabled, setEnabled] = useState<Record<string, boolean>>(prefs.indicators);
   const [chartType, setChartType] = useState<ChartType>(prefs.chartType as ChartType);
   const [smcOn, setSmcOn] = useState(prefs.smcOn);
@@ -696,7 +707,8 @@ function TradingWorkspaceInner() {
                     <ChevronRight className="h-4 w-4" />
                   </button>
                 </div>
-                <div className="min-h-0 flex-1 overflow-auto p-2 sm:p-3">
+                <div className="min-h-0 flex-1 overflow-auto p-2 sm:p-3 space-y-3">
+                  {activeChallenge?.id && <ChallengePanel />}
                   {activeTab === "trade" && <OrderPanel />}
                   {activeTab === "journal" && <QuickJournalPanel symbol={symbol} />}
                   {activeTab === "notes" && <WorkspaceNotes symbol={symbol} />}

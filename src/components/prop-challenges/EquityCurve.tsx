@@ -28,8 +28,9 @@ export function EquityCurve({ days, startingEquity, drawdownLimit }: {
 
   if (points.length < 2) {
     return (
-      <div className="flex h-[200px] items-center justify-center text-xs text-muted-foreground">
-        Equity curve appears after your first trading day.
+      <div className="flex h-[200px] flex-col items-center justify-center gap-1 text-xs text-muted-foreground">
+        <span className="font-medium text-foreground">Start your first trading session</span>
+        <span>Your equity curve builds itself as trades close.</span>
       </div>
     );
   }

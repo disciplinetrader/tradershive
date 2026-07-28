@@ -1,6 +1,8 @@
-import { AlertTriangle, Sparkles, Trophy } from "lucide-react";
+import { AlertTriangle, BarChart3, Plus, RotateCcw, Sparkles, Trophy } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import type { ChallengeProgress, PropChallengeRow, PropChallengeDayRow } from "@/lib/prop-challenges/evaluator";
 import { formatCurrency } from "@/lib/prop-challenges/evaluator";
 
@@ -67,6 +69,20 @@ export function ResultsPanel({ challenge, days, progress }: {
           A personalised review of this attempt (rule adherence, risk decisions, psychology and a next-attempt plan)
           will appear here once the AI coach is enabled for prop challenges.
         </p>
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <Button asChild size="sm">
+          <Link to="/prop-challenges/new">
+            {passed ? <Plus className="mr-1.5 h-3.5 w-3.5" /> : <RotateCcw className="mr-1.5 h-3.5 w-3.5" />}
+            {passed ? "Start a new challenge" : "Retry challenge"}
+          </Link>
+        </Button>
+        <Button asChild size="sm" variant="outline">
+          <Link to="/analytics">
+            <BarChart3 className="mr-1.5 h-3.5 w-3.5" /> View analytics
+          </Link>
+        </Button>
       </div>
     </GlassCard>
   );

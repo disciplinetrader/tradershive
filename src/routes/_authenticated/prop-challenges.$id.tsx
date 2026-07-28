@@ -2,8 +2,9 @@ import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, MoreHorizontal, RefreshCw } from "lucide-react";
+import { ArrowLeft, MoreHorizontal, PlayCircle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { useActivePropChallenge } from "@/lib/prop-challenges/active-session";
 import { PageHeader } from "@/components/ui/page-header";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ function ChallengeDetail() {
   const tick = useServerFn(tickPropChallenge);
   const abandon = useServerFn(abandonPropChallenge);
   const remove = useServerFn(deletePropChallenge);
+  const { active: activeSession, setActive } = useActivePropChallenge();
 
   const [confirmAbandon, setConfirmAbandon] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -92,6 +94,24 @@ function ChallengeDetail() {
         actions={
           <div className="flex items-center gap-2">
             {statusBadge}
+            {challenge.status === "active" && (
+              <Button
+                size="sm"
+                className="bg-primary hover:bg-primary/90"
+                onClick={() => {
+                  setActive({ id: challenge.id, paper_account_id: challenge.paper_account_id });
+                  toast.success(
+                    activeSession?.id === challenge.id
+                      ? "Resuming trading session"
+                      : "Trading session started — challenge linked to workspace",
+                  );
+                  navigate({ to: "/trading" });
+                }}
+              >
+                <PlayCircle className="mr-2 h-4 w-4" />
+                {activeSession?.id === challenge.id ? "Resume Trading" : "Start Trading"}
+              </Button>
+            )}
             <Button size="sm" variant="outline" onClick={() => tickM.mutate()} disabled={tickM.isPending}>
               <RefreshCw className={`mr-2 h-4 w-4 ${tickM.isPending ? "animate-spin" : ""}`} /> Recheck
             </Button>
@@ -138,7 +158,20 @@ function ChallengeDetail() {
       <GlassCard className="p-4">
         <div className="mb-3 text-sm font-semibold">Daily log</div>
         {days.length === 0 ? (
-          <div className="text-xs text-muted-foreground">No trading days yet. Place your first trade to populate this log.</div>
+          <div className="flex flex-col items-start gap-2 text-xs text-muted-foreground">
+            <span>Start your first trading session — closed trades appear here automatically.</span>
+            {challenge.status === "active" && (
+              <Button
+                size="sm"
+                onClick={() => {
+                  setActive({ id: challenge.id, paper_account_id: challenge.paper_account_id });
+                  navigate({ to: "/trading" });
+                }}
+              >
+                <PlayCircle className="mr-1.5 h-3.5 w-3.5" /> Start trading
+              </Button>
+            )}
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
