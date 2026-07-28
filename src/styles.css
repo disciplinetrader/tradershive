@@ -588,3 +588,30 @@
 @utility animate-shake {
   animation: th-shake 320ms var(--ease-in-out-soft) both;
 }
+
+/* ────────────────────────────────────────────────────────────────
+   Trading Workspace 3.0 — Focus Mode
+   When body.workspace-focus is set, the app collapses all chrome
+   around the chart. Sidebar, topbar and mobile bottom nav all hide;
+   the workspace itself opts back in with data-focus-visible.
+   ──────────────────────────────────────────────────────────────── */
+body.workspace-focus [data-app-shell-sidebar],
+body.workspace-focus [data-app-shell-topbar],
+body.workspace-focus [data-app-shell-mobilenav] {
+  display: none !important;
+}
+body.workspace-focus [data-app-shell-main] {
+  padding-left: 0 !important;
+}
+body.workspace-focus [data-app-shell-main] main {
+  padding-bottom: 0 !important;
+}
+
+/* Floating panel entry animation used by workspace side rail. */
+@keyframes th-workspace-slide {
+  from { opacity: 0; transform: translateX(8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@utility animate-workspace-slide {
+  animation: th-workspace-slide 160ms var(--ease-in-out-soft) both;
+}
