@@ -207,9 +207,26 @@ export function OrderPanel() {
       if (e.key === "b" && !inField) { setSide("long"); }
       if (e.key === "s" && !inField) { setSide("short"); }
       if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); attemptPlace(); }
+      if (e.key === "Escape" && armed) { setArmed(null); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
+  }, [openMut, armed]);
+
+  // Listen for chart-side intents (right-click menu, planner "Send", B/S shortcuts).
+  useEffect(() => {
+    const unsub = onTradeIntent((i) => {
+      if (i.kind === "focus_side") { setSide(i.side); setArmed(i.side); return; }
+      const isSubmit = i.kind === "submit";
+      setSide(i.side);
+      setOrderType(i.orderType);
+      if (i.price != null) setEntry(String(i.price));
+      if (i.sl != null) setSl(String(i.sl));
+      if (i.tp != null) setTp(String(i.tp));
+      if (i.lot != null) setLot(String(i.lot));
+      if (isSubmit) setTimeout(() => attemptPlace(), 0);
+    });
+    return () => { unsub(); };
   }, [openMut]);
 
   // Listen for chart-side intents (right-click menu, planner "Send")
