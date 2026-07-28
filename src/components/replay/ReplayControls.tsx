@@ -62,6 +62,7 @@ export function ReplayControls() {
     playing, toggle, restart, replayAgain, step, skip, speed, setSpeed,
     candles, cursorIdx, setCursorIdx, jumpTo, fastForwardUntil, addCheckpoint,
   } = useReplay();
+  const [helpOpen, setHelpOpen] = useState(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -74,6 +75,7 @@ export function ReplayControls() {
       else if (e.key === "B") { jumpTo("prev_bookmark"); }
       else if (e.key === "t") { jumpTo("next_trade"); }
       else if (e.key === "T") { jumpTo("prev_trade"); }
+      else if (e.key === "?") { e.preventDefault(); setHelpOpen((v) => !v); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
