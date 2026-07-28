@@ -18,6 +18,31 @@ import { ema, sma, bollinger, vwap, atr, donchian, heikinAshi, fibonacci, suppor
 
 const INDICATOR_COLORS = ["#22d3ee", "#a78bfa", "#f472b6", "#f59e0b", "#34d399", "#f87171", "#60a5fa"];
 
+function safeLocale() {
+  if (typeof navigator === "undefined") return "en-US";
+  const fallback = "en-US";
+  const candidates = [navigator.language, ...(Array.isArray(navigator.languages) ? navigator.languages : [])]
+    .filter((value): value is string => typeof value === "string" && value.length > 0)
+    .map((value) => value.replace(/@.*$/, ""));
+  for (const candidate of candidates) {
+    try {
+      Intl.DateTimeFormat(candidate);
+      return candidate;
+    } catch {
+      /* try next */
+    }
+  }
+  return fallback;
+}
+
+function containerSize(container: HTMLElement) {
+  const rect = container.getBoundingClientRect();
+  return {
+    width: Math.max(1, Math.floor(rect.width || container.clientWidth || 800)),
+    height: Math.max(1, Math.floor(rect.height || container.clientHeight || 480)),
+  };
+}
+
 export const createLightweightAdapter: ChartAdapterFactory = ({ container, settings, onCrosshair }) => {
   // lightweight-charts' color parser doesn't accept oklch()/color-mix(). Resolve any
   // CSS color to a concrete rgb()/rgba() via a canvas — getComputedStyle keeps
@@ -55,8 +80,10 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
     return { textColor, gridColor, borderColor, bgColor };
   };
   let themeColors = readThemeColors();
+  const initialSize = containerSize(container);
   const chart = createChart(container, {
-    autoSize: true,
+    width: initialSize.width,
+    height: initialSize.height,
     layout: {
       background: { type: ColorType.Solid, color: themeColors.bgColor },
       textColor: themeColors.textColor,
@@ -73,9 +100,35 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
       autoScale: settings.autoScale,
       invertScale: settings.priceScale === "inverted",
     },
+    localization: { locale: safeLocale() },
     timeScale: { borderColor: themeColors.borderColor, timeVisible: true, secondsVisible: false },
     crosshair: { mode: crosshairMode(settings) },
   });
+
+  let destroyed = false;
+  let resizeFrame: number | null = null;
+  const resizeToContainer = () => {
+    if (destroyed) return;
+    const next = containerSize(container);
+    chart.resize(next.width, next.height);
+  };
+  const scheduleResize = () => {
+    if (typeof requestAnimationFrame === "undefined") {
+      resizeToContainer();
+      return;
+    }
+    if (resizeFrame !== null) cancelAnimationFrame(resizeFrame);
+    resizeFrame = requestAnimationFrame(() => {
+      resizeFrame = null;
+      resizeToContainer();
+    });
+  };
+  const resizeObserver = typeof ResizeObserver !== "undefined"
+    ? new ResizeObserver(() => scheduleResize())
+    : null;
+  resizeObserver?.observe(container);
+  scheduleResize();
+  if (typeof window !== "undefined") window.setTimeout(scheduleResize, 100);
 
   // React to light/dark theme changes without remounting the chart. The theme
   // provider toggles the `dark` class on <html>; watch it and re-apply layout
@@ -130,6 +183,7 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
   return {
     kind: "lightweight-charts",
     setCandles(candles) {
+      resizeToContainer();
       applyCandles(priceSeries, currentType, candles);
       // Only fit on the very first data push. Later updates must preserve
       // the user's zoom/pan — otherwise every tick or indicator toggle
@@ -382,7 +436,7 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
       const canvas = chart.takeScreenshot();
       return await new Promise<Blob | null>((r) => canvas.toBlob((b) => r(b), "image/png"));
     },
-    fitContent() { chart.timeScale().fitContent(); },
+    fitContent() { resizeToContainer(); chart.timeScale().fitContent(); },
     resetPriceScale() { chart.priceScale("right").applyOptions({ autoScale: true }); },
     addPriceLine(opts) {
       const line = priceSeries.createPriceLine({
@@ -416,6 +470,9 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
       else externalMarkers.setMarkers(mapped);
     },
     destroy() {
+      destroyed = true;
+      if (resizeFrame !== null && typeof cancelAnimationFrame !== "undefined") cancelAnimationFrame(resizeFrame);
+      resizeObserver?.disconnect();
       themeObserver?.disconnect();
       chart.remove();
       overlays.clear(); subPanes.clear(); sessionSeries.clear(); smcBoxSeries.clear();
