@@ -73,8 +73,10 @@ export class BinanceProvider implements MarketDataProvider {
       this.reconnectAttempt = 0;
       this.setStatus("connected");
       console.info(`[binance] WS connected (${this.subs.size} symbols)`);
-      if (this.heartbeat) clearInterval(this.heartbeat);
-      this.heartbeat = setInterval(() => { try { this.ws?.send("{}"); } catch { /* noop */ } }, 15_000);
+      // Binance sends WS ping frames every ~3 min; the browser auto-responds
+      // with a pong. Do NOT send app-level heartbeats — Binance treats
+      // unsolicited text frames as protocol violations and closes with 1006.
+      if (this.heartbeat) { clearInterval(this.heartbeat); this.heartbeat = null; }
     };
     this.ws.onmessage = (ev) => this.handleMessage(ev.data);
     this.ws.onerror = () => {
