@@ -13,6 +13,13 @@ import { COACH_SYSTEM_PROMPT } from "@/lib/ai/prompts";
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "@/lib/ai/constants";
 import { Errors, guardRoute } from "@/lib/server-errors";
 import { enforceAiRateLimit } from "@/lib/ai/rate-limit.server";
+import {
+  buildIntelligence,
+  summarizeForPrompt,
+  type RawJournal,
+  type RawTrade,
+  type StrategyRef,
+} from "@/lib/ai/intelligence";
 
 const chatBodySchema = z.object({
   messages: z.array(z.any()).min(1).max(200),
