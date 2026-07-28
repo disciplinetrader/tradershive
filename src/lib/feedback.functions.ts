@@ -99,7 +99,7 @@ export const submitBugReport = createServerFn({ method: "POST" })
     };
     const { data: row, error } = await context.supabase
       .from("bug_reports")
-      .insert(payload)
+      .insert(payload as any)
       .select("id, reference_code, type, status, created_at")
       .single();
     if (error) throw new Error(error.message);
