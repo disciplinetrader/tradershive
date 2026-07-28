@@ -2130,58 +2130,85 @@ export type Database = {
       }
       bug_reports: {
         Row: {
+          actual_behavior: string | null
           assignee_id: string | null
           attachments: Json
           browser: string | null
+          category: string | null
           created_at: string
           description: string
           device: string | null
+          expected_behavior: string | null
           id: string
           internal_notes: string | null
+          metadata: Json
           priority: string
+          rating_comment: string | null
+          reference_code: string | null
+          reproduction_steps: Json
           resolved_at: string | null
+          satisfaction_rating: number | null
           severity: string
           status: string
           tags: string[]
           title: string
+          type: string
           updated_at: string
           url: string | null
           user_id: string | null
         }
         Insert: {
+          actual_behavior?: string | null
           assignee_id?: string | null
           attachments?: Json
           browser?: string | null
+          category?: string | null
           created_at?: string
           description: string
           device?: string | null
+          expected_behavior?: string | null
           id?: string
           internal_notes?: string | null
+          metadata?: Json
           priority?: string
+          rating_comment?: string | null
+          reference_code?: string | null
+          reproduction_steps?: Json
           resolved_at?: string | null
+          satisfaction_rating?: number | null
           severity?: string
           status?: string
           tags?: string[]
           title: string
+          type?: string
           updated_at?: string
           url?: string | null
           user_id?: string | null
         }
         Update: {
+          actual_behavior?: string | null
           assignee_id?: string | null
           attachments?: Json
           browser?: string | null
+          category?: string | null
           created_at?: string
           description?: string
           device?: string | null
+          expected_behavior?: string | null
           id?: string
           internal_notes?: string | null
+          metadata?: Json
           priority?: string
+          rating_comment?: string | null
+          reference_code?: string | null
+          reproduction_steps?: Json
           resolved_at?: string | null
+          satisfaction_rating?: number | null
           severity?: string
           status?: string
           tags?: string[]
           title?: string
+          type?: string
           updated_at?: string
           url?: string | null
           user_id?: string | null
@@ -4271,48 +4298,90 @@ export type Database = {
       feature_requests: {
         Row: {
           assignee_id: string | null
+          attachments: Json
           category: string | null
           created_at: string
           description: string
           id: string
           internal_notes: string | null
+          metadata: Json
           priority: string
+          reference_code: string | null
           status: string
           tags: string[]
           title: string
           updated_at: string
           user_id: string | null
+          user_priority: string | null
           vote_count: number
+          why_valuable: string | null
         }
         Insert: {
           assignee_id?: string | null
+          attachments?: Json
           category?: string | null
           created_at?: string
           description: string
           id?: string
           internal_notes?: string | null
+          metadata?: Json
           priority?: string
+          reference_code?: string | null
           status?: string
           tags?: string[]
           title: string
           updated_at?: string
           user_id?: string | null
+          user_priority?: string | null
           vote_count?: number
+          why_valuable?: string | null
         }
         Update: {
           assignee_id?: string | null
+          attachments?: Json
           category?: string | null
           created_at?: string
           description?: string
           id?: string
           internal_notes?: string | null
+          metadata?: Json
           priority?: string
+          reference_code?: string | null
           status?: string
           tags?: string[]
           title?: string
           updated_at?: string
           user_id?: string | null
+          user_priority?: string | null
           vote_count?: number
+          why_valuable?: string | null
+        }
+        Relationships: []
+      }
+      feedback_notes: {
+        Row: {
+          author_id: string | null
+          body: string
+          created_at: string
+          id: string
+          parent_id: string
+          parent_type: string
+        }
+        Insert: {
+          author_id?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          parent_id: string
+          parent_type: string
+        }
+        Update: {
+          author_id?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          parent_id?: string
+          parent_type?: string
         }
         Relationships: []
       }
