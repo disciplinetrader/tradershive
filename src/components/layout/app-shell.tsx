@@ -264,11 +264,12 @@ function SidebarInner({
         </div>
 
         <nav className={cn("flex-1 overflow-y-auto", collapsed ? "px-2 py-3" : "p-3")}>
-          <NavSection label="Trading" items={TRADING} collapsed={collapsed} currentPath={currentPath} />
+          <NavSection items={PRIMARY} collapsed={collapsed} currentPath={currentPath} />
+          <NavSection label="Trading" items={TRADING} collapsed={collapsed} currentPath={currentPath} className="mt-5" />
+          <NavSection items={WORK} collapsed={collapsed} currentPath={currentPath} className="mt-5" />
           <NavSection label="Compete" items={COMPETE} collapsed={collapsed} currentPath={currentPath} className="mt-5" />
-          <NavSection label="Community" items={COMMUNITY} collapsed={collapsed} currentPath={currentPath} className="mt-5" />
+          <NavSection items={COMMUNITY} collapsed={collapsed} currentPath={currentPath} className="mt-5" />
           <NavSection
-            label="System"
             items={showAdmin ? [...SYSTEM_ITEMS, ...ADMIN_ITEMS] : SYSTEM_ITEMS}
             collapsed={collapsed}
             currentPath={currentPath}
