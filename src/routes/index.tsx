@@ -502,13 +502,19 @@ function HeroMockup() {
 
 function MockChart() {
   const bars = useMemo(() => {
+    // Deterministic PRNG so SSR and client render identical SVG (no hydration mismatch).
+    let seed = 1337;
+    const rand = () => {
+      seed = (seed * 1664525 + 1013904223) % 4294967296;
+      return seed / 4294967296;
+    };
     const arr: { x: number; o: number; h: number; l: number; c: number; up: boolean }[] = [];
     let price = 40;
     for (let i = 0; i < 44; i++) {
       const o = price;
-      const c = price + (Math.sin(i * 0.6) + (Math.random() - 0.5)) * 4;
-      const h = Math.max(o, c) + Math.random() * 3;
-      const l = Math.min(o, c) - Math.random() * 3;
+      const c = price + (Math.sin(i * 0.6) + (rand() - 0.5)) * 4;
+      const h = Math.max(o, c) + rand() * 3;
+      const l = Math.min(o, c) - rand() * 3;
       arr.push({ x: i, o, h, l, c, up: c >= o });
       price = c;
     }
