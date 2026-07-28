@@ -239,8 +239,59 @@ function TradingWorkspaceInner() {
     onCancelOrders: () => toast.info("Cancel all pending orders: coming in next phase"),
   });
 
-  const [rightOpen, setRightOpen] = useState(true);
-  const [detailsOpen, setDetailsOpen] = useState(false);
+  const rightOpen = prefs.rightOpen;
+  const setRightOpen = useCallback((v: boolean) => update("rightOpen", v), [update]);
+  const detailsOpen = prefs.detailsOpen;
+  const setDetailsOpen = useCallback((v: boolean) => update("detailsOpen", v), [update]);
+  const activeTab: WorkspaceTab = prefs.activeTab;
+  const setActiveTab = useCallback((v: WorkspaceTab) => update("activeTab", v), [update]);
+  const focusMode = prefs.focusMode;
+  const setFocusMode = useCallback((v: boolean) => update("focusMode", v), [update]);
+  const rightWidth = Math.min(560, Math.max(280, prefs.rightWidth));
+
+  // Reflect Focus Mode on the document body so app-shell chrome can hide via CSS.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.body.classList.toggle("workspace-focus", focusMode);
+    return () => { document.body.classList.remove("workspace-focus"); };
+  }, [focusMode]);
+
+  // Workspace-scoped keyboard shortcuts. Registered in capture phase so we
+  // can intercept single-letter keys before the global `useTradingShortcuts`
+  // handler consumes them (T especially).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const k = e.key.toLowerCase();
+      if (k === "f") { setFocusMode(!focusMode); e.preventDefault(); e.stopPropagation(); }
+      else if (k === "escape" && focusMode) { setFocusMode(false); e.preventDefault(); }
+      else if (k === "j") { setRightOpen(true); setActiveTab("journal"); e.preventDefault(); e.stopPropagation(); }
+      else if (k === "?") { setShortcutsHelp((v) => !v); e.preventDefault(); }
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [focusMode, setFocusMode, setRightOpen, setActiveTab]);
+
+  // Live drag-to-resize for the right rail. Persists on pointerup.
+  const dragState = useRef<{ startX: number; startW: number } | null>(null);
+  const onResizeStart = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    dragState.current = { startX: e.clientX, startW: rightWidth };
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    const onMove = (ev: PointerEvent) => {
+      const s = dragState.current; if (!s) return;
+      const next = Math.min(560, Math.max(280, s.startW - (ev.clientX - s.startX)));
+      update("rightWidth", next);
+    };
+    const onUp = () => {
+      dragState.current = null;
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  }, [rightWidth, update]);
 
   return (
     <TooltipProvider delayDuration={200}>
