@@ -183,7 +183,7 @@ function AdminEmails() {
                       <div className="text-[10px] text-muted-foreground">{e.category}</div>
                     </td>
                     <td className="max-w-[280px] truncate px-3 py-2">{e.subject ?? "—"}</td>
-                    <td className="px-3 py-2"><StatusPill status={e.status} /></td>
+                    <td className="px-3 py-2"><StatusPill value={e.status} /></td>
                   </tr>
                 ))}
                 {!events.isLoading && (events.data ?? []).length === 0 && (
@@ -219,7 +219,7 @@ function AdminEmails() {
                       <div className="text-[10px] text-muted-foreground">{q.category}</div>
                     </td>
                     <td className="px-3 py-2 text-xs">{q.attempts}/{q.max_attempts}</td>
-                    <td className="px-3 py-2"><StatusPill status={q.status} /></td>
+                    <td className="px-3 py-2"><StatusPill value={q.status} /></td>
                     <td className="px-3 py-2 text-right">
                       <div className="flex justify-end gap-1">
                         <Button size="sm" variant="ghost" onClick={() => retry.mutate(q.id)}>
