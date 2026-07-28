@@ -1,32 +1,39 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { motion, useScroll, useTransform, type Variants } from "framer-motion";
+import { motion, useScroll, useTransform, AnimatePresence, type Variants } from "framer-motion";
 import {
   ArrowRight,
-  Award,
   BarChart3,
   BookOpen,
+  Brain,
   Check,
-  ChevronRight,
-  Coins,
-  Flame,
-  Gamepad2,
+  ChevronDown,
+  CircleDot,
+  Clock,
+  Code2,
+  Compass,
+  Cpu,
+  Film,
+  Gauge,
+  Github,
   LineChart,
+  Linkedin,
+  Mail,
   Menu,
-  
+  MessageCircle,
+  Play,
+  Rocket,
   Shield,
   Sparkles,
-  Star,
-  Swords,
   Target,
-  Trophy,
-  Users,
+  TrendingUp,
+  Twitter,
+  Video,
   X,
   Zap,
 } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { GlassCard } from "@/components/ui/glass-card";
 import {
   Accordion,
   AccordionContent,
@@ -37,43 +44,52 @@ import { useAuth } from "@/hooks/use-auth";
 import { APP_NAME } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
+/* ================================================================== */
+/* Route                                                                */
+/* ================================================================== */
+
+const HEADLINE = "Become the Trader You Were Meant to Be";
+const SUBHEAD =
+  "Replay markets, journal every trade, analyse your performance and get AI-powered coaching — one professional workspace built for serious traders.";
+
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "TradersHIVE Arena — Train. Trade. Compete." },
+      { title: "TradersHIVE — The Professional Trader's Workspace" },
       {
         name: "description",
         content:
-          "The gamified arena for serious traders. Risk-free paper trading, an automated journal, daily challenges, XP, leagues and global leaderboards — everything you need to become consistently profitable.",
+          "TradersHIVE is the all-in-one trading workspace: market replay, journal, analytics and an AI coach that learns from every trade. Join the closed beta.",
       },
-      { property: "og:title", content: "TradersHIVE Arena — Train. Trade. Compete." },
+      { property: "og:title", content: "TradersHIVE — The Professional Trader's Workspace" },
       {
         property: "og:description",
         content:
-          "The gamified arena for serious traders. Risk-free paper trading, an automated journal, daily challenges, XP, leagues and global leaderboards — everything you need to become consistently profitable.",
+          "Replay markets, journal every trade, analyse performance and get AI coaching. Join the closed beta.",
       },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: "/" },
+      { property: "og:url", content: "https://tradershive.lovable.app/" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "TradersHIVE Arena — Train. Trade. Compete." },
+      { name: "twitter:title", content: "TradersHIVE — The Professional Trader's Workspace" },
       {
         name: "twitter:description",
         content:
-          "The gamified arena for serious traders. Risk-free paper trading, an automated journal, daily challenges, XP, leagues and global leaderboards — everything you need to become consistently profitable.",
+          "Replay, journal, analyse and coach — one workspace for serious traders. Join the closed beta.",
       },
+      { name: "theme-color", content: "#0b0f13" },
     ],
-    links: [{ rel: "canonical", href: "/" }],
+    links: [{ rel: "canonical", href: "https://tradershive.lovable.app/" }],
     scripts: [
       {
         type: "application/ld+json",
         children: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "SoftwareApplication",
-          name: "TradersHIVE Arena",
+          name: "TradersHIVE",
           applicationCategory: "FinanceApplication",
           operatingSystem: "Web",
           description:
-            "Gamified paper trading, journaling, challenges and leaderboards for serious traders.",
+            "Professional trading workspace with market replay, journal, analytics and AI coach.",
           offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
         }),
       },
@@ -82,34 +98,34 @@ export const Route = createFileRoute("/")({
   component: LandingPage,
 });
 
-/* ------------------------------------------------------------------ */
-/* Page                                                                */
-/* ------------------------------------------------------------------ */
+/* ================================================================== */
+/* Page                                                                 */
+/* ================================================================== */
 
 function LandingPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && user) {
-      void navigate({ to: "/dashboard", replace: true });
-    }
+    if (!loading && user) void navigate({ to: "/dashboard", replace: true });
   }, [loading, user, navigate]);
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-background text-foreground">
+    <div className="relative min-h-dvh overflow-x-hidden bg-background text-foreground antialiased">
       <AmbientBackground />
       <Navbar />
-      <main>
+      <main id="main">
         <Hero />
-        <SocialProof />
-        <WhySection />
-        <HowItWorks />
-        <FeatureShowcase />
-        <GamificationSection />
-        <CommunitySection />
-        <PricingSection />
-        <FAQSection />
+        <TrustBar />
+        <FeatureOverview />
+        <ReplayShowcase />
+        <AICoachShowcase />
+        <AnalyticsShowcase />
+        <WorkspaceShowcase />
+        <Comparison />
+        <BetaSection />
+        <Roadmap />
+        <FAQ />
         <FinalCTA />
       </main>
       <Footer />
@@ -117,78 +133,48 @@ function LandingPage() {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Ambient background                                                  */
-/* ------------------------------------------------------------------ */
+/* ================================================================== */
+/* Ambient background                                                   */
+/* ================================================================== */
 
 function AmbientBackground() {
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-      <div className="absolute inset-0 grid-bg opacity-[0.35]" />
-      <div className="absolute inset-x-0 top-0 h-[820px] gradient-radial-glow opacity-90" />
-      <div className="absolute -left-40 top-[18%] h-[420px] w-[420px] rounded-full bg-primary/20 blur-[140px] animate-float" />
+      <div className="absolute -top-40 left-1/2 h-[720px] w-[1200px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,hsl(var(--primary)/0.22),transparent_70%)] blur-3xl" />
+      <div className="absolute top-[40%] -left-32 h-[520px] w-[520px] rounded-full bg-[radial-gradient(closest-side,hsl(var(--info)/0.18),transparent_70%)] blur-3xl" />
+      <div className="absolute top-[70%] right-[-10%] h-[520px] w-[520px] rounded-full bg-[radial-gradient(closest-side,hsl(var(--success)/0.16),transparent_70%)] blur-3xl" />
       <div
-        className="absolute right-[-10%] top-[45%] h-[520px] w-[520px] rounded-full bg-info/15 blur-[160px] animate-float"
-        style={{ animationDelay: "2s" }}
+        className="absolute inset-0 opacity-[0.35] mix-blend-overlay"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle at 1px 1px, hsl(var(--foreground)/0.08) 1px, transparent 0)",
+          backgroundSize: "28px 28px",
+        }}
       />
-      <div
-        className="absolute left-1/3 bottom-[10%] h-[380px] w-[380px] rounded-full bg-primary-glow/10 blur-[140px] animate-float"
-        style={{ animationDelay: "4s" }}
-      />
-      <Particles />
     </div>
   );
 }
 
-function Particles() {
-  // Deterministic pseudo-random positions so SSR/CSR match.
-  const particles = Array.from({ length: 28 }, (_, i) => {
-    const x = ((i * 97) % 100) + ((i * 13) % 7) / 10;
-    const y = ((i * 53) % 100) + ((i * 7) % 9) / 10;
-    const size = 1 + (i % 3);
-    const delay = (i % 10) * 0.4;
-    const duration = 6 + (i % 6);
-    return { x, y, size, delay, duration, id: i };
-  });
-  return (
-    <div className="absolute inset-0">
-      {particles.map((p) => (
-        <motion.span
-          key={p.id}
-          className="absolute rounded-full bg-primary/40"
-          style={{ left: `${p.x}%`, top: `${p.y}%`, width: p.size, height: p.size }}
-          animate={{ y: [0, -30, 0], opacity: [0.15, 0.7, 0.15] }}
-          transition={{
-            duration: p.duration,
-            delay: p.delay,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-      ))}
-    </div>
-  );
-}
+/* ================================================================== */
+/* Navbar                                                               */
+/* ================================================================== */
 
-/* ------------------------------------------------------------------ */
-/* Navbar                                                              */
-/* ------------------------------------------------------------------ */
-
-const navLinks = [
+const NAV_LINKS: { label: string; href: string; badge?: string }[] = [
   { label: "Features", href: "#features" },
-  { label: "Arena", href: "#arena" },
-  { label: "Challenges", href: "#challenges" },
-  { label: "Pricing", href: "#pricing" },
+  { label: "Replay Studio", href: "#replay" },
+  { label: "AI Coach", href: "#ai" },
+  { label: "Pricing", href: "#pricing", badge: "Soon" },
+  { label: "Roadmap", href: "#roadmap" },
   { label: "FAQ", href: "#faq" },
-  { label: "Blog", href: "#blog", soon: true },
 ];
 
 function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 12);
+    const onScroll = () => setScrolled(window.scrollY > 8);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -197,57 +183,57 @@ function Navbar() {
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 w-full transition-all duration-300",
+        "fixed inset-x-0 top-0 z-50 transition-all duration-300",
         scrolled
-          ? "border-b border-border/60 bg-background/70 backdrop-blur-xl backdrop-saturate-150"
+          ? "border-b border-border/50 bg-background/70 backdrop-blur-xl supports-[backdrop-filter]:bg-background/50"
           : "border-b border-transparent bg-transparent",
       )}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link to="/" className="flex items-center gap-2 group" aria-label={APP_NAME}>
+        <Link to="/" className="group flex items-center gap-2" aria-label={APP_NAME}>
           <LogoMark />
-          <span className="text-sm font-bold tracking-tight sm:text-base">{APP_NAME}</span>
+          <span className="text-sm font-semibold tracking-tight sm:text-base">
+            {APP_NAME}
+          </span>
         </Link>
 
-        <nav
-          className="hidden items-center gap-8 text-sm text-muted-foreground lg:flex"
-          aria-label="Primary"
-        >
-          {navLinks.map((l) => (
+        <nav className="hidden items-center gap-1 lg:flex" aria-label="Primary">
+          {NAV_LINKS.map((l) => (
             <a
-              key={l.label}
+              key={l.href}
               href={l.href}
-              className="relative inline-flex items-center gap-1.5 transition hover:text-foreground"
+              className="group inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               {l.label}
-              {l.soon && (
-                <span className="rounded-full border border-border bg-surface/70 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                  Soon
+              {l.badge ? (
+                <span className="rounded-full border border-border/60 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                  {l.badge}
                 </span>
-              )}
+              ) : null}
             </a>
           ))}
         </nav>
 
         <div className="hidden items-center gap-2 lg:flex">
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/auth">Login</Link>
-          </Button>
-          <Button
-            asChild
-            size="sm"
-            className="gradient-primary text-primary-foreground shadow-elegant"
-          >
-            <Link to="/auth" search={{ mode: "register" }}>
-              Get Started
-              <ArrowRight className="ml-1 h-4 w-4" />
-            </Link>
-          </Button>
+          {user ? (
+            <Button asChild size="sm" className="rounded-full">
+              <Link to="/dashboard">Open App <ArrowRight className="ml-1.5 h-3.5 w-3.5" /></Link>
+            </Button>
+          ) : (
+            <>
+              <Button asChild variant="ghost" size="sm" className="rounded-full">
+                <Link to="/login">Sign in</Link>
+              </Button>
+              <Button asChild size="sm" className="rounded-full shadow-lg shadow-primary/20">
+                <Link to="/register">Join Closed Beta <ArrowRight className="ml-1.5 h-3.5 w-3.5" /></Link>
+              </Button>
+            </>
+          )}
         </div>
 
         <button
-          className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-surface/60 text-foreground lg:hidden"
-          aria-label={open ? "Close menu" : "Open menu"}
+          className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-border/60 bg-background/60 lg:hidden"
+          aria-label="Toggle menu"
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
         >
@@ -255,1428 +241,1251 @@ function Navbar() {
         </button>
       </div>
 
-      {open && (
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="border-t border-border/60 bg-background/95 backdrop-blur-xl lg:hidden"
-        >
-          <div className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-4 sm:px-6">
-            {navLinks.map((l) => (
-              <a
-                key={l.label}
-                href={l.href}
-                className="flex items-center justify-between rounded-xl px-3 py-3 text-sm text-foreground/90 hover:bg-accent"
-                onClick={() => setOpen(false)}
-              >
-                {l.label}
-                {l.soon && (
-                  <span className="rounded-full border border-border bg-surface/70 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">
-                    Soon
-                  </span>
-                )}
-              </a>
-            ))}
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              <Button asChild variant="outline" className="glass">
-                <Link to="/auth">Login</Link>
-              </Button>
-              <Button asChild className="gradient-primary text-primary-foreground">
-                <Link to="/auth" search={{ mode: "register" }}>
-                  Get Started
-                </Link>
-              </Button>
+      <AnimatePresence>
+        {open ? (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+            className="border-t border-border/60 bg-background/95 backdrop-blur-xl lg:hidden"
+          >
+            <div className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-4">
+              {NAV_LINKS.map((l) => (
+                <a
+                  key={l.href}
+                  href={l.href}
+                  onClick={() => setOpen(false)}
+                  className="flex items-center justify-between rounded-lg px-3 py-3 text-sm hover:bg-muted"
+                >
+                  <span>{l.label}</span>
+                  {l.badge ? (
+                    <span className="rounded-full border border-border/60 px-1.5 py-0.5 text-[10px]">
+                      {l.badge}
+                    </span>
+                  ) : null}
+                </a>
+              ))}
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <Button asChild variant="outline" className="rounded-full">
+                  <Link to="/login">Sign in</Link>
+                </Button>
+                <Button asChild className="rounded-full">
+                  <Link to="/register">Join Beta</Link>
+                </Button>
+              </div>
             </div>
-          </div>
-        </motion.div>
-      )}
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </header>
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Hero                                                                */
-/* ------------------------------------------------------------------ */
+function LogoMark() {
+  return (
+    <div className="relative grid h-8 w-8 place-items-center overflow-hidden rounded-xl bg-gradient-to-br from-primary to-primary/60 shadow-lg shadow-primary/25">
+      <svg viewBox="0 0 24 24" className="h-4 w-4 text-primary-foreground" fill="currentColor" aria-hidden>
+        <path d="M12 2l3.5 6.1L22 9.3l-5 4.9 1.2 7L12 17.9 5.8 21.2 7 14.2l-5-4.9 6.5-1.2L12 2z" />
+      </svg>
+    </div>
+  );
+}
+
+/* ================================================================== */
+/* Section primitives                                                   */
+/* ================================================================== */
+
+function Section({
+  id,
+  className,
+  children,
+}: {
+  id?: string;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section id={id} className={cn("relative z-10 scroll-mt-24 py-24 sm:py-32", className)}>
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">{children}</div>
+    </section>
+  );
+}
+
+function EyebrowBadge({ children, icon: Icon }: { children: ReactNode; icon?: typeof Sparkles }) {
+  return (
+    <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/60 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur">
+      {Icon ? <Icon className="h-3.5 w-3.5 text-primary" /> : null}
+      {children}
+    </div>
+  );
+}
+
+function SectionHeading({
+  eyebrow,
+  title,
+  description,
+  center = true,
+}: {
+  eyebrow?: string;
+  title: ReactNode;
+  description?: ReactNode;
+  center?: boolean;
+}) {
+  return (
+    <div className={cn("mx-auto max-w-3xl", center && "text-center")}>
+      {eyebrow ? (
+        <div className={cn("mb-4", center && "flex justify-center")}>
+          <EyebrowBadge icon={Sparkles}>{eyebrow}</EyebrowBadge>
+        </div>
+      ) : null}
+      <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
+        {title}
+      </h2>
+      {description ? (
+        <p className="mt-5 text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">
+          {description}
+        </p>
+      ) : null}
+    </div>
+  );
+}
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 24 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } },
+  show: (i: number = 0) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, delay: i * 0.06, ease: [0.22, 1, 0.36, 1] },
+  }),
 };
 
-const container: Variants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.08, delayChildren: 0.05 } },
-};
+/* ================================================================== */
+/* Hero                                                                 */
+/* ================================================================== */
 
 function Hero() {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
-  const y = useTransform(scrollYProgress, [0, 1], [0, 80]);
+  const y = useTransform(scrollYProgress, [0, 1], [0, 60]);
 
   return (
-    <section ref={ref} className="relative z-10 mx-auto max-w-7xl px-4 pt-14 pb-24 sm:px-6 md:pt-20 lg:px-8 lg:pt-24">
-      <motion.div
-        variants={container}
-        initial="hidden"
-        animate="show"
-        className="grid items-center gap-12 lg:grid-cols-[1.1fr_1fr]"
-      >
-        <div className="text-center lg:text-left">
-          <motion.div variants={fadeUp}>
-            <Badge
-              variant="outline"
-              className="inline-flex items-center gap-2 border-border/60 bg-surface/60 px-3 py-1 text-xs backdrop-blur"
-            >
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
-              </span>
-              Season 1 · Now live
-            </Badge>
-          </motion.div>
-
-          <motion.h1
-            variants={fadeUp}
-            className="mt-6 text-balance text-4xl font-black leading-[1.05] tracking-tight sm:text-5xl md:text-6xl lg:text-[68px]"
-          >
-            Become the <span className="text-gradient">Trader</span> You Always Wanted to Be.
-          </motion.h1>
-
-          <motion.p
-            variants={fadeUp}
-            className="mx-auto mt-6 max-w-xl text-pretty text-base text-muted-foreground sm:text-lg lg:mx-0"
-          >
-            Practice with realistic paper trading, complete daily challenges, improve through
-            journaling, climb global leaderboards and become consistently profitable.
-          </motion.p>
-
-          <motion.div
-            variants={fadeUp}
-            className="mt-8 flex flex-wrap items-center justify-center gap-3 lg:justify-start"
-          >
-            <Button
-              asChild
-              size="lg"
-              className="gradient-primary text-primary-foreground shadow-elegant"
-            >
-              <Link to="/auth" search={{ mode: "register" }}>
-                <Zap className="mr-2 h-4 w-4" />
-                Start Free
-              </Link>
-            </Button>
-            <Button asChild variant="outline" size="lg" className="glass gap-2">
-              <Link to="/auth" search={{ mode: "login" }}>
-                Sign in
-              </Link>
-            </Button>
-          </motion.div>
-
-          <motion.ul
-            variants={fadeUp}
-            className="mx-auto mt-8 flex max-w-md flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs uppercase tracking-widest text-muted-foreground lg:mx-0 lg:justify-start"
-          >
-            <li className="inline-flex items-center gap-1.5">
-              <Check className="h-3.5 w-3.5 text-primary" /> Zero risk
-            </li>
-            <li className="inline-flex items-center gap-1.5">
-              <Check className="h-3.5 w-3.5 text-primary" /> Real market data
-            </li>
-            <li className="inline-flex items-center gap-1.5">
-              <Check className="h-3.5 w-3.5 text-primary" /> Free forever
-            </li>
-          </motion.ul>
-        </div>
-
-        <motion.div style={{ y }} variants={fadeUp} className="relative">
-          <HeroDashboard />
-        </motion.div>
-      </motion.div>
-    </section>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Hero dashboard mockup                                               */
-/* ------------------------------------------------------------------ */
-
-function HeroDashboard() {
-  return (
-    <div className="relative">
-      <div className="absolute -inset-6 rounded-[36px] bg-gradient-to-br from-primary/20 via-info/10 to-transparent blur-2xl" />
-      <div className="relative rounded-3xl border border-border bg-surface/70 p-3 shadow-elegant backdrop-blur-xl">
-        <div className="rounded-2xl bg-gradient-to-br from-surface to-background p-4 sm:p-5">
-          {/* Top bar */}
-          <div className="flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <span className="h-2.5 w-2.5 rounded-full bg-danger/70" />
-              <span className="h-2.5 w-2.5 rounded-full bg-warning/70" />
-              <span className="h-2.5 w-2.5 rounded-full bg-primary/80" />
-              <span className="ml-2 font-mono text-[11px]">arena / dashboard</span>
-            </div>
-            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
-              Live
-            </span>
-          </div>
-
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            <MiniStat label="Equity" value="$128,420" delta="+4.2%" positive />
-            <MiniStat label="Win Rate" value="61%" delta="+2.1%" positive />
-            <MiniStat label="Level" value="Lv 24" delta="Gold II" positive />
-          </div>
-
-          <div className="mt-4 grid gap-3 lg:grid-cols-[1.6fr_1fr]">
-            <div className="glass rounded-2xl p-4">
-              <div className="flex items-center justify-between text-xs">
-                <div>
-                  <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
-                    Equity Curve
-                  </p>
-                  <p className="mt-0.5 font-mono text-sm text-foreground">30d · +$8,240</p>
-                </div>
-                <span className="text-xs font-semibold text-primary">+6.85%</span>
-              </div>
-              <div className="mt-3 h-40">
-                <EquityCurve />
-              </div>
-            </div>
-            <div className="space-y-3">
-              <XPWidget />
-              <ChallengeWidget />
-            </div>
-          </div>
-
-          <div className="mt-3 glass rounded-2xl p-4">
-            <div className="flex items-center justify-between">
-              <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
-                Recent Trades
-              </p>
-              <span className="text-[11px] text-muted-foreground">Today</span>
-            </div>
-            <ul className="mt-3 divide-y divide-border">
-              {[
-                { sym: "BTCUSD", side: "LONG", pnl: "+$412.30", pct: "+1.24%", pos: true },
-                { sym: "EURUSD", side: "SHORT", pnl: "+$186.50", pct: "+0.48%", pos: true },
-                { sym: "NAS100", side: "LONG", pnl: "-$92.10", pct: "-0.21%", pos: false },
-              ].map((t) => (
-                <li key={t.sym} className="flex items-center justify-between py-2 text-xs">
-                  <div className="flex items-center gap-2 font-mono">
-                    <span className="text-foreground">{t.sym}</span>
-                    <span
-                      className={cn(
-                        "rounded-md px-1.5 py-0.5 text-[10px] font-semibold",
-                        t.side === "LONG"
-                          ? "bg-primary/15 text-primary"
-                          : "bg-info/15 text-info",
-                      )}
-                    >
-                      {t.side}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3 font-mono">
-                    <span className={t.pos ? "text-primary" : "text-danger"}>{t.pnl}</span>
-                    <span className="text-muted-foreground">{t.pct}</span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      {/* Floating cards */}
-      <motion.div
-        className="absolute -left-4 top-24 hidden rounded-2xl border border-border bg-surface/90 p-3 shadow-elegant backdrop-blur-xl sm:block"
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.6, delay: 0.4 }}
-      >
-        <div className="flex items-center gap-2">
-          <div className="grid h-8 w-8 place-items-center rounded-xl bg-primary/15 text-primary">
-            <Flame className="h-4 w-4" />
-          </div>
+    <section ref={ref} className="relative z-10 pt-32 sm:pt-40">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="grid gap-12 lg:grid-cols-[1.1fr_1fr] lg:items-center lg:gap-16">
           <div>
-            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Streak</p>
-            <p className="text-sm font-semibold">7 days</p>
-          </div>
-        </div>
-      </motion.div>
-
-      <motion.div
-        className="absolute -right-3 bottom-16 hidden rounded-2xl border border-border bg-surface/90 p-3 shadow-elegant backdrop-blur-xl sm:block"
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.6, delay: 0.6 }}
-      >
-        <div className="flex items-center gap-2">
-          <div className="grid h-8 w-8 place-items-center rounded-xl bg-warning/15 text-warning">
-            <Trophy className="h-4 w-4" />
-          </div>
-          <div>
-            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Rank</p>
-            <p className="text-sm font-semibold">#128 Global</p>
-          </div>
-        </div>
-      </motion.div>
-    </div>
-  );
-}
-
-function MiniStat({
-  label,
-  value,
-  delta,
-  positive,
-}: {
-  label: string;
-  value: string;
-  delta: string;
-  positive: boolean;
-}) {
-  return (
-    <div className="glass rounded-2xl p-3.5">
-      <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</p>
-      <div className="mt-1 flex items-baseline justify-between gap-2">
-        <span className="font-mono text-lg font-semibold">{value}</span>
-        <span className={cn("text-[11px] font-semibold", positive ? "text-primary" : "text-danger")}>
-          {delta}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function XPWidget() {
-  return (
-    <div className="glass rounded-2xl p-4">
-      <div className="flex items-center justify-between text-xs">
-        <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Current XP</p>
-        <span className="font-mono text-[11px] text-muted-foreground">2,840 / 3,600</span>
-      </div>
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
-        <motion.div
-          initial={{ width: 0 }}
-          whileInView={{ width: "78%" }}
-          viewport={{ once: true }}
-          transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-          className="h-full gradient-primary"
-        />
-      </div>
-      <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
-        <span>Level 24</span>
-        <span className="text-primary">760 XP to next</span>
-      </div>
-    </div>
-  );
-}
-
-function ChallengeWidget() {
-  return (
-    <div className="glass rounded-2xl p-4">
-      <div className="flex items-center justify-between">
-        <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
-          Today's Challenge
-        </p>
-        <Target className="h-3.5 w-3.5 text-primary" />
-      </div>
-      <p className="mt-1.5 text-sm font-semibold">3 A+ setups journaled</p>
-      <div className="mt-3 flex items-center justify-between text-[11px] text-muted-foreground">
-        <span>Progress</span>
-        <span className="font-mono">2 / 3</span>
-      </div>
-      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
-        <motion.div
-          initial={{ width: 0 }}
-          whileInView={{ width: "66%" }}
-          viewport={{ once: true }}
-          transition={{ duration: 1, delay: 0.2 }}
-          className="h-full gradient-primary"
-        />
-      </div>
-    </div>
-  );
-}
-
-function EquityCurve() {
-  const points = [
-    12, 18, 16, 22, 26, 24, 30, 28, 35, 33, 40, 38, 46, 44, 52, 50, 58, 55, 64, 62, 70, 68, 76,
-    74, 82, 80, 88, 84, 92, 90,
-  ];
-  const max = Math.max(...points);
-  const min = Math.min(...points);
-  const path = points
-    .map((p, i) => {
-      const x = (i / (points.length - 1)) * 100;
-      const y = 100 - ((p - min) / (max - min || 1)) * 100;
-      return `${i === 0 ? "M" : "L"}${x.toFixed(2)},${y.toFixed(2)}`;
-    })
-    .join(" ");
-  return (
-    <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-full w-full">
-      <defs>
-        <linearGradient id="equityGlow" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.45" />
-          <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <motion.path
-        d={`${path} L100,100 L0,100 Z`}
-        fill="url(#equityGlow)"
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        transition={{ duration: 1 }}
-      />
-      <motion.path
-        d={path}
-        stroke="var(--primary)"
-        strokeWidth="1.4"
-        fill="none"
-        vectorEffect="non-scaling-stroke"
-        initial={{ pathLength: 0 }}
-        whileInView={{ pathLength: 1 }}
-        viewport={{ once: true }}
-        transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1] }}
-      />
-    </svg>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Social proof                                                        */
-/* ------------------------------------------------------------------ */
-
-function SocialProof() {
-  const stats = [
-    { label: "Members", value: 24380, suffix: "+" },
-    { label: "Trades Practiced", value: 1240000, suffix: "+", format: "compact" as const },
-    { label: "Challenges Completed", value: 186420, suffix: "+" },
-    { label: "Countries", value: 92, suffix: "" },
-  ];
-  return (
-    <section className="relative z-10 mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((s, i) => (
-          <motion.div
-            key={s.label}
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.5, delay: i * 0.05 }}
-          >
-            <GlassCard className="p-5">
-              <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
-                {s.label}
-              </p>
-              <p className="mt-2 font-mono text-3xl font-bold text-gradient sm:text-4xl">
-                <Counter to={s.value} format={s.format} />
-                {s.suffix}
-              </p>
-            </GlassCard>
-          </motion.div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function Counter({ to, format }: { to: number; format?: "compact" }) {
-  const [n, setN] = useState(0);
-  const ref = useRef<HTMLSpanElement>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    let started = false;
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting && !started) {
-            started = true;
-            const start = performance.now();
-            const dur = 1600;
-            const step = (t: number) => {
-              const p = Math.min(1, (t - start) / dur);
-              const eased = 1 - Math.pow(1 - p, 3);
-              setN(Math.round(to * eased));
-              if (p < 1) requestAnimationFrame(step);
-            };
-            requestAnimationFrame(step);
-          }
-        });
-      },
-      { threshold: 0.3 },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [to]);
-
-  const display =
-    format === "compact"
-      ? n >= 1_000_000
-        ? `${(n / 1_000_000).toFixed(2)}M`
-        : n >= 1_000
-          ? `${(n / 1_000).toFixed(1)}K`
-          : `${n}`
-      : n.toLocaleString();
-
-  return <span ref={ref}>{display}</span>;
-}
-
-/* ------------------------------------------------------------------ */
-/* Why TradersHIVE                                                     */
-/* ------------------------------------------------------------------ */
-
-function WhySection() {
-  const features = [
-    {
-      icon: LineChart,
-      title: "Practice Trading",
-      desc: "Trade risk-free with realistic paper trading on real market data, spreads and slippage.",
-    },
-    {
-      icon: BookOpen,
-      title: "Trading Journal",
-      desc: "Every trade is journaled automatically with entries, exits, R-multiples and screenshots.",
-    },
-    {
-      icon: Target,
-      title: "Daily Challenges",
-      desc: "Improve discipline every day with focused missions built around real trader habits.",
-    },
-    {
-      icon: BarChart3,
-      title: "Statistics",
-      desc: "Professional analytics on edge, expectancy, drawdown, win-rate and consistency.",
-    },
-    {
-      icon: Trophy,
-      title: "Leaderboards",
-      desc: "Compete globally across regions and leagues from Bronze all the way to Grandmaster.",
-    },
-    {
-      icon: Sparkles,
-      title: "XP System",
-      desc: "Gamified progression that turns deliberate practice into levels, streaks and rewards.",
-    },
-  ];
-  return (
-    <section id="features" className="relative z-10 mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
-      <SectionHeader
-        eyebrow="Why TradersHIVE"
-        title="Everything a serious trader needs, in one arena."
-        subtitle="Deliberate practice, measurable growth, and a community that pushes you to level up."
-      />
-      <div className="mt-14 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {features.map((f, i) => (
-          <motion.div
-            key={f.title}
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.55, delay: (i % 3) * 0.06 }}
-          >
-            <GlassCard className="group hover-lift h-full p-6">
-              <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-elegant transition group-hover:bg-primary/15">
-                <f.icon className="h-5 w-5" />
-              </div>
-              <h3 className="text-lg font-semibold">{f.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{f.desc}</p>
-            </GlassCard>
-          </motion.div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function SectionHeader({
-  eyebrow,
-  title,
-  subtitle,
-  center = true,
-}: {
-  eyebrow: string;
-  title: string;
-  subtitle?: string;
-  center?: boolean;
-}) {
-  return (
-    <div className={cn("mx-auto max-w-2xl", center && "text-center")}>
-      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-primary">{eyebrow}</p>
-      <h2 className="mt-3 text-balance text-3xl font-bold sm:text-4xl md:text-5xl">{title}</h2>
-      {subtitle && (
-        <p className="mt-4 text-pretty text-muted-foreground sm:text-lg">{subtitle}</p>
-      )}
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* How it works                                                        */
-/* ------------------------------------------------------------------ */
-
-function HowItWorks() {
-  const steps = [
-    {
-      n: "01",
-      title: "Create Account",
-      desc: "Sign up in seconds and land in your personal arena dashboard.",
-      icon: Shield,
-    },
-    {
-      n: "02",
-      title: "Practice Trading",
-      desc: "Open your first paper trades on live markets with zero risk.",
-      icon: LineChart,
-    },
-    {
-      n: "03",
-      title: "Review Journal",
-      desc: "Turn every trade into a lesson with tags, notes and analytics.",
-      icon: BookOpen,
-    },
-    {
-      n: "04",
-      title: "Become Consistent",
-      desc: "Complete challenges, climb leagues and forge a repeatable edge.",
-      icon: Trophy,
-    },
-  ];
-  return (
-    <section id="arena" className="relative z-10 mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
-      <SectionHeader
-        eyebrow="How It Works"
-        title="From first trade to consistent edge."
-        subtitle="A clear path from complete beginner to disciplined, data-driven trader."
-      />
-      <div className="relative mt-14">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute left-1/2 top-0 hidden h-full w-px -translate-x-1/2 bg-gradient-to-b from-transparent via-primary/40 to-transparent lg:block"
-        />
-        <ol className="grid gap-6 lg:grid-cols-2">
-          {steps.map((s, i) => (
-            <motion.li
-              key={s.n}
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.55, delay: i * 0.08 }}
-              className={cn(
-                "relative",
-                i % 2 === 1 && "lg:mt-16",
-              )}
+            <motion.div initial="hidden" animate="show" variants={fadeUp} custom={0}>
+              <EyebrowBadge icon={Sparkles}>Now in Closed Beta · Free to join</EyebrowBadge>
+            </motion.div>
+            <motion.h1
+              initial="hidden"
+              animate="show"
+              variants={fadeUp}
+              custom={1}
+              className="mt-6 text-balance text-4xl font-semibold leading-[1.05] tracking-tight sm:text-6xl md:text-7xl"
             >
-              <GlassCard className="p-6 md:p-7">
-                <div className="flex items-start gap-4">
-                  <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl gradient-primary text-primary-foreground shadow-elegant">
-                    <s.icon className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <p className="font-mono text-xs font-semibold uppercase tracking-widest text-primary">
-                      Step {s.n}
-                    </p>
-                    <h3 className="mt-1 text-xl font-semibold">{s.title}</h3>
-                    <p className="mt-1.5 text-sm text-muted-foreground">{s.desc}</p>
-                  </div>
-                </div>
-              </GlassCard>
-            </motion.li>
-          ))}
-        </ol>
-      </div>
-    </section>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Feature showcase — alternating                                      */
-/* ------------------------------------------------------------------ */
-
-function FeatureShowcase() {
-  const items: {
-    tag: string;
-    title: string;
-    desc: string;
-    bullets: string[];
-    mock: ReactNode;
-  }[] = [
-    {
-      tag: "Paper Trading",
-      title: "A TradingView-grade arena, fully paper.",
-      desc: "Professional charts, real spreads, market and limit orders — practice like the pros without risking a cent.",
-      bullets: ["Live market data", "Market · Limit · Stop orders", "Position + P&L tracking"],
-      mock: <ChartMock />,
-    },
-    {
-      tag: "Trading Journal",
-      title: "A journal that writes itself.",
-      desc: "Every fill is captured with entry, exit, R-multiple, tags and screenshots — searchable in seconds.",
-      bullets: ["Auto-imported trades", "Tags, notes, screenshots", "Setup + mistake analytics"],
-      mock: <JournalMock />,
-    },
-    {
-      tag: "Statistics",
-      title: "See your edge in one glance.",
-      desc: "Deep analytics on expectancy, drawdown, consistency and behavior — the metrics prop firms actually care about.",
-      bullets: ["Equity + drawdown", "By-setup win-rate", "Discipline score"],
-      mock: <StatsMock />,
-    },
-    {
-      tag: "Challenges",
-      title: "Missions built around real trader habits.",
-      desc: "Daily and weekly challenges shape discipline, risk management and journaling into muscle memory.",
-      bullets: ["Daily missions", "Weekly objectives", "Prop-firm scoring"],
-      mock: <ChallengeMock />,
-    },
-  ];
-  return (
-    <section id="challenges" className="relative z-10 mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
-      <SectionHeader
-        eyebrow="Feature Showcase"
-        title="Built for traders who are done losing."
-      />
-      <div className="mt-16 space-y-24">
-        {items.map((it, i) => (
-          <div
-            key={it.title}
-            className={cn(
-              "grid items-center gap-10 lg:grid-cols-2 lg:gap-16",
-              i % 2 === 1 && "lg:[&>div:first-child]:order-2",
-            )}
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.6 }}
-            >
-              <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-primary">
-                {it.tag}
+              {HEADLINE.split(" You Were Meant to Be")[0]}{" "}
+              <span className="bg-gradient-to-br from-primary via-primary to-primary/60 bg-clip-text text-transparent">
+                You Were Meant to Be
               </span>
-              <h3 className="mt-4 text-3xl font-bold sm:text-4xl">{it.title}</h3>
-              <p className="mt-3 text-muted-foreground sm:text-lg">{it.desc}</p>
-              <ul className="mt-6 space-y-2 text-sm">
-                {it.bullets.map((b) => (
-                  <li key={b} className="flex items-center gap-2 text-foreground/90">
-                    <Check className="h-4 w-4 text-primary" />
-                    {b}
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.7 }}
-              className="relative"
+              .
+            </motion.h1>
+            <motion.p
+              initial="hidden"
+              animate="show"
+              variants={fadeUp}
+              custom={2}
+              className="mt-6 max-w-xl text-pretty text-lg leading-relaxed text-muted-foreground"
             >
-              <div className="absolute -inset-6 rounded-[36px] bg-gradient-to-br from-primary/20 via-info/10 to-transparent blur-2xl" />
-              <div className="relative rounded-3xl border border-border bg-surface/70 p-3 shadow-elegant backdrop-blur-xl">
-                <div className="rounded-2xl bg-gradient-to-br from-surface to-background p-4">
-                  {it.mock}
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function ChartMock() {
-  return (
-    <div>
-      <div className="flex items-center justify-between text-xs">
-        <div className="flex items-center gap-2">
-          <span className="rounded-md bg-primary/15 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-primary">
-            BTCUSD
-          </span>
-          <span className="font-mono text-muted-foreground">1H · Bybit</span>
-        </div>
-        <span className="font-mono text-primary">$68,412.30 +2.48%</span>
-      </div>
-      <div className="mt-3 h-52">
-        <Candles />
-      </div>
-      <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">
-        {[
-          { l: "Bid", v: "68,410.10" },
-          { l: "Ask", v: "68,414.50" },
-          { l: "Spread", v: "0.006%" },
-        ].map((x) => (
-          <div key={x.l} className="glass rounded-xl p-2">
-            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{x.l}</p>
-            <p className="font-mono text-sm">{x.v}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function Candles() {
-  const candles = [
-    [10, 22, 8, 20],
-    [20, 30, 18, 24],
-    [24, 28, 20, 22],
-    [22, 26, 16, 18],
-    [18, 34, 16, 32],
-    [32, 40, 28, 36],
-    [36, 44, 30, 34],
-    [34, 42, 32, 40],
-    [40, 46, 34, 36],
-    [36, 50, 34, 48],
-    [48, 56, 44, 50],
-    [50, 54, 40, 44],
-    [44, 60, 42, 58],
-    [58, 66, 54, 62],
-    [62, 68, 56, 60],
-    [60, 74, 58, 72],
-    [72, 78, 66, 68],
-    [68, 82, 64, 80],
-    [80, 86, 74, 78],
-    [78, 90, 76, 88],
-  ];
-  const flat = candles.flat();
-  const max = Math.max(...flat);
-  const min = Math.min(...flat);
-  const scale = (v: number) => 100 - ((v - min) / (max - min)) * 100;
-  const w = 100 / candles.length;
-  return (
-    <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-full w-full">
-      {candles.map(([o, h, l, c], i) => {
-        const up = c >= o;
-        const x = i * w + w / 2;
-        return (
-          <g key={i}>
-            <line
-              x1={x}
-              x2={x}
-              y1={scale(h)}
-              y2={scale(l)}
-              stroke={up ? "var(--primary)" : "var(--danger)"}
-              strokeWidth="0.4"
-              vectorEffect="non-scaling-stroke"
-            />
-            <rect
-              x={x - w * 0.3}
-              y={scale(Math.max(o, c))}
-              width={w * 0.6}
-              height={Math.max(0.6, Math.abs(scale(o) - scale(c)))}
-              fill={up ? "var(--primary)" : "var(--danger)"}
-              opacity={0.9}
-            />
-          </g>
-        );
-      })}
-    </svg>
-  );
-}
-
-function JournalMock() {
-  const rows = [
-    { pair: "BTCUSD", side: "LONG", setup: "Breakout", r: "+2.4R", pnl: "+$612", pos: true },
-    { pair: "EURUSD", side: "SHORT", setup: "Fakeout", r: "+1.6R", pnl: "+$188", pos: true },
-    { pair: "GOLD", side: "LONG", setup: "Trend pullback", r: "-1R", pnl: "-$120", pos: false },
-    { pair: "NAS100", side: "LONG", setup: "Opening drive", r: "+3.1R", pnl: "+$942", pos: true },
-  ];
-  return (
-    <div>
-      <div className="flex items-center justify-between">
-        <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Journal</p>
-        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
-          This week
-        </span>
-      </div>
-      <div className="mt-3 overflow-hidden rounded-xl border border-border">
-        <table className="w-full text-xs">
-          <thead className="bg-surface/60 text-[10px] uppercase tracking-widest text-muted-foreground">
-            <tr>
-              <th className="px-3 py-2 text-left font-medium">Pair</th>
-              <th className="px-3 py-2 text-left font-medium">Setup</th>
-              <th className="px-3 py-2 text-right font-medium">R</th>
-              <th className="px-3 py-2 text-right font-medium">P&L</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.pair} className="border-t border-border">
-                <td className="px-3 py-2 font-mono">
-                  <div className="flex items-center gap-2">
-                    {r.pair}
-                    <span
-                      className={cn(
-                        "rounded px-1 text-[10px] font-semibold",
-                        r.side === "LONG"
-                          ? "bg-primary/15 text-primary"
-                          : "bg-info/15 text-info",
-                      )}
-                    >
-                      {r.side}
-                    </span>
-                  </div>
-                </td>
-                <td className="px-3 py-2 text-muted-foreground">{r.setup}</td>
-                <td className="px-3 py-2 text-right font-mono">{r.r}</td>
-                <td
-                  className={cn(
-                    "px-3 py-2 text-right font-mono",
-                    r.pos ? "text-primary" : "text-danger",
-                  )}
-                >
-                  {r.pnl}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-function StatsMock() {
-  const stats = [
-    { l: "Expectancy", v: "0.82R" },
-    { l: "Win rate", v: "61%" },
-    { l: "Avg R", v: "1.42" },
-    { l: "Max DD", v: "-6.4%" },
-  ];
-  const bars = [40, 62, 55, 78, 48, 82, 70, 64, 88, 74, 60, 92];
-  return (
-    <div>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {stats.map((s) => (
-          <div key={s.l} className="glass rounded-xl p-3">
-            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{s.l}</p>
-            <p className="mt-1 font-mono text-lg font-semibold">{s.v}</p>
-          </div>
-        ))}
-      </div>
-      <div className="mt-4 rounded-xl border border-border p-3">
-        <div className="flex items-end justify-between gap-1.5" style={{ height: 120 }}>
-          {bars.map((b, i) => (
+              {SUBHEAD}
+            </motion.p>
             <motion.div
-              key={i}
-              initial={{ height: 0 }}
-              whileInView={{ height: `${b}%` }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8, delay: i * 0.04 }}
-              className="w-full rounded-t-md gradient-primary opacity-90"
-            />
-          ))}
-        </div>
-        <div className="mt-2 flex justify-between text-[10px] font-mono text-muted-foreground">
-          <span>Jan</span>
-          <span>Jun</span>
-          <span>Dec</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ChallengeMock() {
-  const items = [
-    { title: "Journal 3 A+ setups", xp: 120, done: true },
-    { title: "Keep risk under 1% all day", xp: 200, done: true },
-    { title: "No trades in the first 15m", xp: 150, done: false },
-    { title: "Close every position before 10pm", xp: 100, done: false },
-  ];
-  return (
-    <div>
-      <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Today's Missions</p>
-      <ul className="mt-3 space-y-2">
-        {items.map((it) => (
-          <li
-            key={it.title}
-            className="flex items-center justify-between rounded-xl border border-border bg-surface/60 p-3"
-          >
-            <div className="flex items-center gap-3">
-              <div
-                className={cn(
-                  "grid h-8 w-8 place-items-center rounded-lg",
-                  it.done ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground",
-                )}
-              >
-                {it.done ? <Check className="h-4 w-4" /> : <Target className="h-4 w-4" />}
-              </div>
-              <p
-                className={cn(
-                  "text-sm",
-                  it.done ? "text-foreground line-through opacity-70" : "text-foreground",
-                )}
-              >
-                {it.title}
-              </p>
-            </div>
-            <span className="font-mono text-xs text-primary">+{it.xp} XP</span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Gamification                                                        */
-/* ------------------------------------------------------------------ */
-
-function GamificationSection() {
-  const cards = [
-    { icon: Zap, title: "XP", value: "2,840", sub: "78% to next level", progress: 78 },
-    { icon: Star, title: "Level", value: "Lv 24", sub: "Gold II · Top 12%", progress: 40 },
-    { icon: Flame, title: "Daily Streak", value: "7 days", sub: "Elite streak tier", progress: 70 },
-    { icon: Award, title: "Achievements", value: "38 / 120", sub: "New: Ice Cold", progress: 32 },
-    { icon: Coins, title: "Coins", value: "12,480", sub: "Shop unlocks: 4", progress: 55 },
-    { icon: Shield, title: "Badges", value: "16", sub: "Season 1 rewards", progress: 60 },
-  ];
-  return (
-    <section className="relative z-10 mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
-      <SectionHeader
-        eyebrow="Gamification"
-        title="Every rep counts. Every rep is rewarded."
-        subtitle="Turn deliberate practice into progression: level up, unlock badges and climb the ranks."
-      />
-      <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {cards.map((c, i) => (
-          <motion.div
-            key={c.title}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.55, delay: (i % 3) * 0.06 }}
-          >
-            <GlassCard className="hover-lift h-full p-6">
-              <div className="flex items-start justify-between">
-                <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                  <c.icon className="h-5 w-5" />
-                </div>
-                <span className="font-mono text-2xl font-bold text-gradient">{c.value}</span>
-              </div>
-              <h3 className="mt-4 text-base font-semibold">{c.title}</h3>
-              <p className="mt-1 text-xs text-muted-foreground">{c.sub}</p>
-              <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-muted">
-                <motion.div
-                  initial={{ width: 0 }}
-                  whileInView={{ width: `${c.progress}%` }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
-                  className="h-full gradient-primary"
-                />
-              </div>
-            </GlassCard>
-          </motion.div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Community                                                           */
-/* ------------------------------------------------------------------ */
-
-function CommunitySection() {
-  const items = [
-    { icon: Users, title: "Guilds", desc: "Team up with traders that share your style and hours." },
-    { icon: Swords, title: "Battle Arena", desc: "Head-to-head trading duels with XP and coin stakes." },
-    { icon: Sparkles, title: "Friends", desc: "Add mentors and rivals, follow their trades in real time." },
-    { icon: Trophy, title: "Leaderboards", desc: "Global, regional and guild boards updated live." },
-    { icon: Gamepad2, title: "Profiles", desc: "Show off your stats, badges and season achievements." },
-  ];
-  return (
-    <section className="relative z-10 mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
-      <SectionHeader
-        eyebrow="Community"
-        title="A hive of traders leveling up together."
-        subtitle="Follow traders, share ideas and climb the global leaderboard."
-      />
-      <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {items.map((it, i) => (
-          <motion.div
-            key={it.title}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.5, delay: (i % 3) * 0.06 }}
-          >
-            <GlassCard className="hover-lift relative h-full overflow-hidden p-6">
-              <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                <it.icon className="h-5 w-5" />
-              </div>
-              <h3 className="mt-4 text-lg font-semibold">{it.title}</h3>
-              <p className="mt-1.5 text-sm text-muted-foreground">{it.desc}</p>
-            </GlassCard>
-          </motion.div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Pricing                                                             */
-/* ------------------------------------------------------------------ */
-
-function PricingSection() {
-  const tiers = [
-    {
-      name: "Free",
-      price: "$0",
-      cadence: "forever",
-      desc: "Everything you need to start practicing with intent.",
-      features: [
-        "Paper trading (spot + FX)",
-        "Basic journal & analytics",
-        "3 daily challenges",
-        "Global leaderboards",
-        "Community access",
-      ],
-      highlight: false,
-    },
-    {
-      name: "Pro",
-      price: "$19",
-      cadence: "/month",
-      desc: "For serious traders building a repeatable edge.",
-      features: [
-        "Everything in Free",
-        "Unlimited challenges",
-        "Advanced analytics + drawdown",
-        "Screenshots & tag rules",
-        "Priority community",
-        "Custom XP goals",
-      ],
-      highlight: true,
-    },
-    {
-      name: "Elite",
-      price: "$49",
-      cadence: "/month",
-      desc: "Prop-firm scoring, coaching and everything unlocked.",
-      features: [
-        "Everything in Pro",
-        "Prop-firm scoring engine",
-        "AI trading coach",
-        "Season prize pools",
-        "Guilds & battle arena access",
-        "Early access to new modules",
-      ],
-      highlight: false,
-    },
-  ];
-  return (
-    <section id="pricing" className="relative z-10 mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
-      <SectionHeader
-        eyebrow="Pricing"
-        title="Simple pricing. Serious upside."
-        subtitle="Start free forever. Upgrade when you're ready for the full arena."
-      />
-      <div className="mt-14 grid gap-6 lg:grid-cols-3">
-        {tiers.map((t, i) => (
-          <motion.div
-            key={t.name}
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.55, delay: i * 0.06 }}
-            className={cn("relative", t.highlight && "lg:-mt-4")}
-          >
-            {t.highlight && (
-              <div className="pointer-events-none absolute -inset-px rounded-3xl bg-gradient-to-br from-primary/40 via-primary-glow/30 to-info/30 blur-lg" />
-            )}
-            <GlassCard
-              className={cn(
-                "relative flex h-full flex-col p-7",
-                t.highlight && "border-primary/40 shadow-elegant",
-              )}
+              initial="hidden"
+              animate="show"
+              variants={fadeUp}
+              custom={3}
+              className="mt-8 flex flex-wrap items-center gap-3"
             >
-              {t.highlight && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full gradient-primary px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-primary-foreground">
-                  Most Popular
-                </span>
-              )}
-              <h3 className="text-lg font-semibold">{t.name}</h3>
-              <p className="mt-1 text-sm text-muted-foreground">{t.desc}</p>
-              <div className="mt-6 flex items-baseline gap-1">
-                <span className="text-4xl font-black tracking-tight">{t.price}</span>
-                <span className="text-sm text-muted-foreground">{t.cadence}</span>
-              </div>
-              <Button
-                asChild
-                className={cn(
-                  "mt-6",
-                  t.highlight
-                    ? "gradient-primary text-primary-foreground shadow-elegant"
-                    : "bg-surface text-foreground hover:bg-accent",
-                )}
-              >
-                <Link to="/auth" search={{ mode: "register" }}>
-                  Get Started
-                  <ArrowRight className="ml-1 h-4 w-4" />
+              <Button asChild size="lg" className="h-12 rounded-full px-6 shadow-xl shadow-primary/25">
+                <Link to="/register">
+                  Join Closed Beta <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
-              <ul className="mt-6 space-y-2.5 text-sm">
-                {t.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-foreground/90">
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                    <span>{f}</span>
-                  </li>
-                ))}
-              </ul>
-            </GlassCard>
+              <Button
+                asChild
+                variant="outline"
+                size="lg"
+                className="h-12 rounded-full border-border/70 bg-background/50 px-6 backdrop-blur"
+              >
+                <a href="#replay">
+                  <Play className="mr-2 h-4 w-4" /> Watch Demo
+                </a>
+              </Button>
+            </motion.div>
+            <motion.ul
+              initial="hidden"
+              animate="show"
+              variants={fadeUp}
+              custom={4}
+              className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground"
+            >
+              {["No credit card", "Forex · Crypto · Stocks", "Cancel anytime"].map((t) => (
+                <li key={t} className="inline-flex items-center gap-2">
+                  <Check className="h-4 w-4 text-success" /> {t}
+                </li>
+              ))}
+            </motion.ul>
+          </div>
+
+          <motion.div style={{ y }} className="relative">
+            <HeroMockup />
           </motion.div>
-        ))}
+        </div>
       </div>
     </section>
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* FAQ                                                                 */
-/* ------------------------------------------------------------------ */
+function HeroMockup() {
+  return (
+    <div className="relative mx-auto w-full max-w-2xl">
+      <div className="absolute -inset-6 rounded-[32px] bg-gradient-to-br from-primary/30 via-info/20 to-success/20 blur-3xl" />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+        className="relative overflow-hidden rounded-2xl border border-border/60 bg-background/70 shadow-2xl backdrop-blur-xl"
+      >
+        <div className="flex items-center gap-2 border-b border-border/60 bg-muted/40 px-4 py-2.5">
+          <div className="flex gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-full bg-danger/60" />
+            <span className="h-2.5 w-2.5 rounded-full bg-warning/60" />
+            <span className="h-2.5 w-2.5 rounded-full bg-success/60" />
+          </div>
+          <div className="ml-3 flex items-center gap-2 text-xs text-muted-foreground">
+            <CircleDot className="h-3 w-3 text-success" /> EURUSD · 5m · Live
+          </div>
+          <div className="ml-auto text-xs text-muted-foreground">Trading Workspace</div>
+        </div>
 
-function FAQSection() {
-  const faqs = [
-    {
-      q: "What is TradersHIVE Arena?",
-      a: "TradersHIVE Arena is a gamified training platform for traders. You practice with realistic paper trading on live market data, journal every trade automatically, complete daily challenges and climb global leaderboards — all designed to help you become consistently profitable.",
-    },
-    {
-      q: "Is it real trading?",
-      a: "No. All trading inside the arena is paper trading using real live market data. You keep every lesson without risking a single dollar of real capital.",
-    },
-    {
-      q: "Can I connect a broker?",
-      a: "Live broker connections are on our roadmap. For now, the arena focuses on deliberate practice, journaling and scoring — the exact skills that translate directly to live accounts.",
-    },
-    {
-      q: "Do you support crypto?",
-      a: "Yes. You can paper-trade major crypto pairs alongside FX, indices and commodities, using real live prices and spreads.",
-    },
-    {
-      q: "Can beginners use it?",
-      a: "Absolutely. The onboarding assumes zero prior experience, and daily challenges guide you from your very first trade to disciplined, journaled execution.",
-    },
-    {
-      q: "Is there a free plan?",
-      a: "Yes. The Free tier is free forever and includes paper trading, journaling, leaderboards and daily challenges. Upgrade to Pro or Elite when you're ready for advanced analytics and prop-firm scoring.",
-    },
+        <div className="grid grid-cols-[1fr_180px] gap-0">
+          <div className="relative aspect-[16/10] bg-gradient-to-br from-background to-muted/30 p-4">
+            <MockChart />
+            <FloatingCard className="absolute left-4 top-4" tone="up">
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Session P&L</div>
+              <div className="text-lg font-semibold text-success">+$1,284.50</div>
+              <div className="text-[10px] text-success/80">▲ +2.14% · 7 trades</div>
+            </FloatingCard>
+            <FloatingCard className="absolute bottom-4 right-4" tone="neutral">
+              <div className="flex items-center gap-2 text-[10px] uppercase tracking-wide text-muted-foreground">
+                <Brain className="h-3 w-3 text-primary" /> AI Coach
+              </div>
+              <div className="mt-1 text-xs font-medium">You're strongest on London open.</div>
+              <div className="text-[10px] text-muted-foreground">Ranked #1 of 4 sessions</div>
+            </FloatingCard>
+          </div>
+          <div className="border-l border-border/60 bg-muted/20 p-3 text-xs">
+            <div className="mb-2 text-[10px] uppercase tracking-wide text-muted-foreground">Positions</div>
+            <MockRow ticker="EURUSD" side="long" pnl="+$412" up />
+            <MockRow ticker="XAUUSD" side="long" pnl="+$680" up />
+            <MockRow ticker="BTCUSD" side="short" pnl="-$92" />
+            <div className="my-3 h-px bg-border/60" />
+            <div className="mb-2 text-[10px] uppercase tracking-wide text-muted-foreground">Playbook</div>
+            <MockRow ticker="Liquidity Sweep" side="setup" pnl="72% WR" up />
+            <MockRow ticker="London Reversal" side="setup" pnl="61% WR" up />
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+function MockChart() {
+  const bars = useMemo(() => {
+    const arr: { x: number; o: number; h: number; l: number; c: number; up: boolean }[] = [];
+    let price = 40;
+    for (let i = 0; i < 44; i++) {
+      const o = price;
+      const c = price + (Math.sin(i * 0.6) + (Math.random() - 0.5)) * 4;
+      const h = Math.max(o, c) + Math.random() * 3;
+      const l = Math.min(o, c) - Math.random() * 3;
+      arr.push({ x: i, o, h, l, c, up: c >= o });
+      price = c;
+    }
+    return arr;
+  }, []);
+
+  return (
+    <svg viewBox="0 0 440 240" className="h-full w-full">
+      <defs>
+        <linearGradient id="g" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.4" />
+          <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {Array.from({ length: 6 }).map((_, i) => (
+        <line
+          key={i}
+          x1="0"
+          x2="440"
+          y1={40 * i + 20}
+          y2={40 * i + 20}
+          stroke="hsl(var(--border))"
+          strokeOpacity="0.4"
+          strokeDasharray="2 4"
+        />
+      ))}
+      <motion.path
+        initial={{ pathLength: 0, opacity: 0 }}
+        animate={{ pathLength: 1, opacity: 1 }}
+        transition={{ duration: 1.5, ease: "easeOut" }}
+        d={bars
+          .map((b, i) => `${i === 0 ? "M" : "L"} ${i * 10 + 5} ${220 - b.c * 3}`)
+          .join(" ")}
+        fill="none"
+        stroke="hsl(var(--primary))"
+        strokeWidth="1.5"
+      />
+      <path
+        d={
+          bars.map((b, i) => `${i === 0 ? "M" : "L"} ${i * 10 + 5} ${220 - b.c * 3}`).join(" ") +
+          ` L 440 240 L 0 240 Z`
+        }
+        fill="url(#g)"
+      />
+      {bars.map((b, i) => (
+        <g key={i}>
+          <line
+            x1={i * 10 + 5}
+            x2={i * 10 + 5}
+            y1={220 - b.h * 3}
+            y2={220 - b.l * 3}
+            stroke={b.up ? "hsl(var(--success))" : "hsl(var(--danger))"}
+            strokeWidth="1"
+          />
+          <rect
+            x={i * 10 + 2}
+            y={220 - Math.max(b.o, b.c) * 3}
+            width="6"
+            height={Math.max(1.5, Math.abs(b.c - b.o) * 3)}
+            fill={b.up ? "hsl(var(--success))" : "hsl(var(--danger))"}
+            opacity="0.85"
+          />
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+function FloatingCard({
+  className,
+  children,
+  tone,
+}: {
+  className?: string;
+  children: ReactNode;
+  tone: "up" | "down" | "neutral";
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.6, duration: 0.6 }}
+      className={cn(
+        "min-w-[168px] rounded-xl border border-border/60 bg-background/85 p-3 shadow-xl backdrop-blur-xl",
+        tone === "up" && "ring-1 ring-success/20",
+        tone === "down" && "ring-1 ring-danger/20",
+        className,
+      )}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+function MockRow({
+  ticker,
+  side,
+  pnl,
+  up,
+}: {
+  ticker: string;
+  side: string;
+  pnl: string;
+  up?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between py-1.5">
+      <div>
+        <div className="font-medium text-foreground">{ticker}</div>
+        <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{side}</div>
+      </div>
+      <div className={cn("font-mono text-xs", up ? "text-success" : "text-danger")}>{pnl}</div>
+    </div>
+  );
+}
+
+/* ================================================================== */
+/* Trust bar                                                            */
+/* ================================================================== */
+
+function TrustBar() {
+  const stats = [
+    { label: "Total backtests", value: "—", hint: "unlocks at launch" },
+    { label: "Trades reviewed", value: "—", hint: "unlocks at launch" },
+    { label: "Hours replayed", value: "—", hint: "unlocks at launch" },
+    { label: "Avg. user rating", value: "—", hint: "closed beta" },
   ];
   return (
-    <section id="faq" className="relative z-10 mx-auto max-w-3xl px-4 py-24 sm:px-6 lg:px-8">
-      <SectionHeader
-        eyebrow="FAQ"
-        title="Answers before you ask."
+    <Section className="!py-14">
+      <div className="text-center text-xs uppercase tracking-[0.2em] text-muted-foreground">
+        Trusted by early beta traders across Forex, Crypto & Stocks
+      </div>
+      <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {stats.map((s) => (
+          <div
+            key={s.label}
+            className="rounded-2xl border border-border/60 bg-background/40 p-5 text-center backdrop-blur"
+          >
+            <div className="text-2xl font-semibold tracking-tight">{s.value}</div>
+            <div className="mt-1 text-xs text-muted-foreground">{s.label}</div>
+            <div className="mt-2 text-[10px] uppercase tracking-wider text-muted-foreground/70">
+              {s.hint}
+            </div>
+          </div>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+/* ================================================================== */
+/* Feature Overview                                                     */
+/* ================================================================== */
+
+const FEATURES: {
+  icon: typeof Film;
+  title: string;
+  desc: string;
+  href: string;
+  tint: string;
+}[] = [
+  {
+    icon: Film,
+    title: "Replay Studio",
+    desc: "Rewind any market, any timeframe. Practice setups on real historical data.",
+    href: "#replay",
+    tint: "from-primary/20 to-transparent",
+  },
+  {
+    icon: BookOpen,
+    title: "Trading Journal",
+    desc: "Auto-populated entries from every trade with screenshots, tags and R-multiples.",
+    href: "#features",
+    tint: "from-info/20 to-transparent",
+  },
+  {
+    icon: BarChart3,
+    title: "Performance Analytics",
+    desc: "Sharpe, Sortino, drawdown, session heatmaps and strategy-level breakdowns.",
+    href: "#analytics",
+    tint: "from-success/20 to-transparent",
+  },
+  {
+    icon: Brain,
+    title: "AI Trading Coach",
+    desc: "A personal mentor that reads your data, spots leaks and builds your roadmap.",
+    href: "#ai",
+    tint: "from-primary/20 to-transparent",
+  },
+  {
+    icon: LineChart,
+    title: "Paper Trading",
+    desc: "Live-feel execution with realistic spreads, margin, SL/TP and risk controls.",
+    href: "#workspace",
+    tint: "from-warning/20 to-transparent",
+  },
+  {
+    icon: Target,
+    title: "Trade Review",
+    desc: "Grade every trade A+ to F, run checklists, and jump back to the exact chart.",
+    href: "#workspace",
+    tint: "from-danger/20 to-transparent",
+  },
+  {
+    icon: Rocket,
+    title: "Saved Sessions",
+    desc: "Continue where you left off with one click. Favorite, archive and duplicate.",
+    href: "#replay",
+    tint: "from-info/20 to-transparent",
+  },
+];
+
+function FeatureOverview() {
+  return (
+    <Section id="features">
+      <SectionHeading
+        eyebrow="Everything you need"
+        title={
+          <>
+            A complete trading workspace,{" "}
+            <span className="text-muted-foreground">without the tool sprawl</span>
+          </>
+        }
+        description="Stop stitching together five apps. Replay, journal, analytics and coaching live in one professional cockpit."
       />
-      <div className="mt-12">
+
+      <div className="mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {FEATURES.map((f, i) => (
+          <motion.a
+            key={f.title}
+            href={f.href}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-80px" }}
+            variants={fadeUp}
+            custom={i}
+            className="group relative flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-background/50 p-6 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:bg-background/70 hover:shadow-2xl hover:shadow-primary/10"
+          >
+            <div
+              className={cn(
+                "pointer-events-none absolute inset-0 bg-gradient-to-br opacity-0 transition-opacity duration-500 group-hover:opacity-100",
+                f.tint,
+              )}
+            />
+            <div className="relative">
+              <div className="mb-5 inline-flex h-11 w-11 items-center justify-center rounded-xl border border-border/60 bg-background/70 text-primary shadow-sm">
+                <f.icon className="h-5 w-5" />
+              </div>
+              <h3 className="text-lg font-semibold tracking-tight">{f.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{f.desc}</p>
+              <div className="mt-6 inline-flex items-center gap-1 text-sm font-medium text-primary opacity-80 transition group-hover:gap-2 group-hover:opacity-100">
+                Learn more <ArrowRight className="h-3.5 w-3.5" />
+              </div>
+            </div>
+          </motion.a>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+/* ================================================================== */
+/* Showcase blocks                                                      */
+/* ================================================================== */
+
+function Showcase({
+  id,
+  eyebrow,
+  title,
+  description,
+  bullets,
+  reverse,
+  visual,
+}: {
+  id: string;
+  eyebrow: string;
+  title: ReactNode;
+  description: ReactNode;
+  bullets: { icon: typeof Zap; label: string }[];
+  reverse?: boolean;
+  visual: ReactNode;
+}) {
+  return (
+    <Section id={id}>
+      <div
+        className={cn(
+          "grid items-center gap-12 lg:gap-16",
+          reverse ? "lg:grid-cols-[1fr_1.1fr]" : "lg:grid-cols-[1.1fr_1fr]",
+        )}
+      >
+        <div className={cn(reverse && "lg:order-2")}>
+          <EyebrowBadge icon={Sparkles}>{eyebrow}</EyebrowBadge>
+          <h2 className="mt-5 text-balance text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
+            {title}
+          </h2>
+          <p className="mt-5 text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">
+            {description}
+          </p>
+          <ul className="mt-8 grid gap-3 sm:grid-cols-2">
+            {bullets.map((b) => (
+              <li key={b.label} className="flex items-start gap-3 text-sm">
+                <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                  <b.icon className="h-3.5 w-3.5" />
+                </span>
+                <span className="text-muted-foreground">{b.label}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+          className={cn("relative", reverse && "lg:order-1")}
+        >
+          {visual}
+        </motion.div>
+      </div>
+    </Section>
+  );
+}
+
+function MockPanel({ children, title, tag }: { children: ReactNode; title: string; tag?: string }) {
+  return (
+    <div className="relative">
+      <div className="absolute -inset-6 rounded-[32px] bg-gradient-to-br from-primary/25 via-info/15 to-success/15 blur-3xl" />
+      <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-background/70 shadow-2xl backdrop-blur-xl">
+        <div className="flex items-center justify-between border-b border-border/60 bg-muted/40 px-4 py-2.5">
+          <div className="text-xs font-medium text-foreground">{title}</div>
+          {tag ? (
+            <span className="rounded-full border border-border/60 bg-background/60 px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+              {tag}
+            </span>
+          ) : null}
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function ReplayShowcase() {
+  return (
+    <Showcase
+      id="replay"
+      eyebrow="Replay Studio"
+      title={
+        <>
+          Rewind the market.{" "}
+          <span className="bg-gradient-to-br from-primary to-primary/60 bg-clip-text text-transparent">
+            Practice like a pro.
+          </span>
+        </>
+      }
+      description="Load any symbol, jump to any date, and step through the market bar by bar. Save sessions, replay your own trades and turn hindsight into skill."
+      bullets={[
+        { icon: Zap, label: "Instant setup with Surprise-Me dates" },
+        { icon: Clock, label: "Full historical replay across FX, crypto, stocks" },
+        { icon: Gauge, label: "Professional playback controls & speed" },
+        { icon: Rocket, label: "One-click backtesting and saved sessions" },
+      ]}
+      visual={
+        <MockPanel title="Replay Studio · EURUSD" tag="Backtest">
+          <div className="aspect-[16/10] bg-gradient-to-br from-background to-muted/30 p-4">
+            <MockChart />
+          </div>
+          <div className="flex items-center justify-between gap-3 border-t border-border/60 bg-muted/30 px-4 py-3">
+            <div className="flex items-center gap-2">
+              <button className="grid h-9 w-9 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/25">
+                <Play className="h-4 w-4" />
+              </button>
+              <div className="text-xs">
+                <div className="font-medium">Playing · 2× speed</div>
+                <div className="text-muted-foreground">Bar 342 / 5,120</div>
+              </div>
+            </div>
+            <div className="hidden gap-2 sm:flex">
+              {["1x", "2x", "5x", "10x"].map((s) => (
+                <span
+                  key={s}
+                  className={cn(
+                    "rounded-md border border-border/60 px-2 py-1 text-[10px] font-mono",
+                    s === "2x" ? "bg-primary/10 text-primary" : "text-muted-foreground",
+                  )}
+                >
+                  {s}
+                </span>
+              ))}
+            </div>
+          </div>
+        </MockPanel>
+      }
+    />
+  );
+}
+
+function AICoachShowcase() {
+  return (
+    <Showcase
+      id="ai"
+      reverse
+      eyebrow="AI Trading Coach"
+      title={<>Your personal mentor, trained on your trades.</>}
+      description="Every replay, journal entry and paper trade feeds a private coaching model that spots your leaks, celebrates your edges and builds a personalised improvement roadmap."
+      bullets={[
+        { icon: Brain, label: "Behavioural analysis (FOMO, revenge, tilt)" },
+        { icon: TrendingUp, label: "Ranked strengths & weaknesses" },
+        { icon: Compass, label: "Weekly reports & focused roadmap" },
+        { icon: Shield, label: "Evidence-based, never generic advice" },
+      ]}
+      visual={
+        <MockPanel title="AI Coach · Weekly Report" tag="Beta">
+          <div className="space-y-3 p-5">
+            {[
+              {
+                tag: "Strength",
+                title: "London open discipline",
+                body: "You waited for confirmation on 9/11 setups this week.",
+                tone: "success" as const,
+              },
+              {
+                tag: "Leak",
+                title: "Stops moved 4 times",
+                body: "Trades where SL was widened produced −1.7R on average.",
+                tone: "danger" as const,
+              },
+              {
+                tag: "Focus",
+                title: "Cut trading after 8 PM UTC",
+                body: "82% of losses this month came from late US session.",
+                tone: "warning" as const,
+              },
+            ].map((c) => (
+              <div
+                key={c.title}
+                className="rounded-xl border border-border/60 bg-background/60 p-4"
+              >
+                <div className="flex items-center gap-2 text-[10px] uppercase tracking-wide">
+                  <span
+                    className={cn(
+                      "rounded-full px-1.5 py-0.5",
+                      c.tone === "success" && "bg-success/15 text-success",
+                      c.tone === "danger" && "bg-danger/15 text-danger",
+                      c.tone === "warning" && "bg-warning/15 text-warning",
+                    )}
+                  >
+                    {c.tag}
+                  </span>
+                </div>
+                <div className="mt-1.5 text-sm font-medium">{c.title}</div>
+                <div className="text-xs text-muted-foreground">{c.body}</div>
+              </div>
+            ))}
+          </div>
+        </MockPanel>
+      }
+    />
+  );
+}
+
+function AnalyticsShowcase() {
+  const barsWin = [42, 58, 61, 49, 63, 71, 55, 66, 74, 68, 72, 80];
+  return (
+    <Showcase
+      id="analytics"
+      eyebrow="Performance Analytics"
+      title={<>Institution-grade insight. Zero spreadsheets.</>}
+      description="Equity curves with drawdown overlays, session and strategy breakdowns, risk consistency, mistake clustering — every metric a serious desk expects."
+      bullets={[
+        { icon: LineChart, label: "Equity curve with drawdown overlay" },
+        { icon: BarChart3, label: "Session & strategy heatmaps" },
+        { icon: Target, label: "Sharpe, Sortino, profit factor, RR" },
+        { icon: Shield, label: "Risk & consistency scoring" },
+      ]}
+      visual={
+        <MockPanel title="Analytics · Last 30 days" tag="Live">
+          <div className="grid grid-cols-3 divide-x divide-border/60 border-b border-border/60">
+            {[
+              { l: "Win rate", v: "58.4%", up: true },
+              { l: "Profit factor", v: "2.14", up: true },
+              { l: "Max DD", v: "−4.2%", up: false },
+            ].map((k) => (
+              <div key={k.l} className="p-4">
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  {k.l}
+                </div>
+                <div
+                  className={cn(
+                    "mt-1 text-xl font-semibold tabular-nums",
+                    k.up ? "text-success" : "text-danger",
+                  )}
+                >
+                  {k.v}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="aspect-[16/8] p-4">
+            <MockChart />
+          </div>
+          <div className="border-t border-border/60 p-4">
+            <div className="mb-2 flex items-center justify-between text-[10px] uppercase tracking-wide text-muted-foreground">
+              <span>Win rate by month</span>
+              <span>%</span>
+            </div>
+            <div className="flex items-end gap-1.5 h-20">
+              {barsWin.map((v, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ height: 0 }}
+                  whileInView={{ height: `${v}%` }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.7, delay: i * 0.03 }}
+                  className="flex-1 rounded-sm bg-gradient-to-t from-primary/50 to-primary"
+                />
+              ))}
+            </div>
+          </div>
+        </MockPanel>
+      }
+    />
+  );
+}
+
+function WorkspaceShowcase() {
+  return (
+    <Section id="workspace">
+      <SectionHeading
+        eyebrow="Trading Workspace"
+        title={
+          <>
+            The chart is the hero.{" "}
+            <span className="text-muted-foreground">Everything else gets out of the way.</span>
+          </>
+        }
+        description="Focus Mode, floating replay overlay, tabbed side panel and up to 80% chart real-estate — a professional cockpit designed for deep work."
+      />
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-80px" }}
+        transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+        className="mt-16"
+      >
+        <MockPanel title="Trading Workspace · Focus Mode" tag="F">
+          <div className="relative aspect-[21/10] bg-gradient-to-br from-background to-muted/30 p-4">
+            <MockChart />
+            <FloatingCard className="absolute left-4 top-4" tone="up">
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                Risk / Reward
+              </div>
+              <div className="text-lg font-semibold">1 : 2.6</div>
+              <div className="text-[10px] text-success/80">+2.6R at TP</div>
+            </FloatingCard>
+            <FloatingCard className="absolute bottom-4 left-4" tone="neutral">
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Risk</div>
+              <div className="text-lg font-semibold">0.5%</div>
+              <div className="text-[10px] text-muted-foreground">$50 · 0.12 lots</div>
+            </FloatingCard>
+            <FloatingCard className="absolute right-4 top-4" tone="down">
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                Open PnL
+              </div>
+              <div className="text-lg font-semibold text-danger">−$18.20</div>
+              <div className="text-[10px] text-danger/80">−0.36R</div>
+            </FloatingCard>
+          </div>
+        </MockPanel>
+      </motion.div>
+    </Section>
+  );
+}
+
+/* ================================================================== */
+/* Comparison                                                           */
+/* ================================================================== */
+
+function Comparison() {
+  const rows = [
+    { l: "Market replay & backtesting", a: false, b: true },
+    { l: "Auto-populated trade journal", a: false, b: true },
+    { l: "Sharpe, Sortino, drawdown analytics", a: false, b: true },
+    { l: "Personal AI coach on your data", a: false, b: true },
+    { l: "Realistic paper trading engine", a: false, b: true },
+    { l: "Professional trade review workflow", a: false, b: true },
+    { l: "Saved sessions & workspace prefs", a: false, b: true },
+  ];
+  return (
+    <Section id="why">
+      <SectionHeading
+        eyebrow="Why TradersHIVE"
+        title={<>The traditional journal, upgraded to a full trading OS.</>}
+        description="A side-by-side of what serious traders actually need — versus what most journals still ship in 2026."
+      />
+
+      <div className="mt-16 grid gap-5 lg:grid-cols-2">
+        <div className="rounded-2xl border border-border/60 bg-background/40 p-6 backdrop-blur">
+          <div className="mb-1 text-xs uppercase tracking-wider text-muted-foreground">
+            Traditional journal
+          </div>
+          <div className="mb-5 text-xl font-semibold">Legacy trade log</div>
+          <ul className="space-y-3 text-sm">
+            {rows.map((r) => (
+              <li key={r.l} className="flex items-center gap-3">
+                <span className="grid h-6 w-6 place-items-center rounded-md bg-muted text-muted-foreground">
+                  <X className="h-3.5 w-3.5" />
+                </span>
+                <span className="text-muted-foreground">{r.l}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="relative overflow-hidden rounded-2xl border border-primary/40 bg-gradient-to-br from-primary/10 via-background/60 to-background/40 p-6 shadow-xl shadow-primary/10 backdrop-blur">
+          <div className="mb-1 flex items-center gap-2 text-xs uppercase tracking-wider text-primary">
+            <Sparkles className="h-3.5 w-3.5" /> {APP_NAME}
+          </div>
+          <div className="mb-5 text-xl font-semibold">The trading OS</div>
+          <ul className="space-y-3 text-sm">
+            {rows.map((r) => (
+              <li key={r.l} className="flex items-center gap-3">
+                <span className="grid h-6 w-6 place-items-center rounded-md bg-success/15 text-success">
+                  <Check className="h-3.5 w-3.5" />
+                </span>
+                <span>{r.l}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+/* ================================================================== */
+/* Beta section                                                         */
+/* ================================================================== */
+
+function BetaSection() {
+  const benefits = [
+    { icon: Zap, title: "Priority support", desc: "Direct line to the founding team." },
+    { icon: Rocket, title: "Early access", desc: "First to try every new module." },
+    { icon: Compass, title: "Shape the roadmap", desc: "Your feedback becomes the product." },
+    { icon: Shield, title: "Lifetime discount", desc: "Locked-in pricing at launch." },
+  ];
+  return (
+    <Section id="pricing">
+      <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-br from-background/60 via-background/40 to-background/60 p-8 backdrop-blur-xl sm:p-12">
+        <div className="absolute -top-40 left-1/2 h-[400px] w-[800px] -translate-x-1/2 rounded-full bg-primary/20 blur-3xl" />
+        <div className="relative grid gap-10 lg:grid-cols-[1.2fr_1fr] lg:items-center">
+          <div>
+            <EyebrowBadge icon={Sparkles}>Closed Beta · Free while it lasts</EyebrowBadge>
+            <h2 className="mt-5 text-balance text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
+              Join a small circle of serious traders shaping{" "}
+              <span className="bg-gradient-to-br from-primary to-primary/60 bg-clip-text text-transparent">
+                the platform
+              </span>
+              .
+            </h2>
+            <p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground">
+              Access is limited while we polish every corner. Every beta trader gets founder-level
+              support and a lifetime discount when pricing launches.
+            </p>
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <Button asChild size="lg" className="h-12 rounded-full px-6 shadow-xl shadow-primary/25">
+                <Link to="/register">
+                  Join Closed Beta <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                size="lg"
+                className="h-12 rounded-full border-border/70 bg-background/50 px-6"
+              >
+                <a href="#faq">
+                  <MessageCircle className="mr-2 h-4 w-4" /> Have questions?
+                </a>
+              </Button>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {benefits.map((b) => (
+              <div
+                key={b.title}
+                className="rounded-2xl border border-border/60 bg-background/60 p-5 backdrop-blur"
+              >
+                <b.icon className="mb-3 h-5 w-5 text-primary" />
+                <div className="text-sm font-semibold">{b.title}</div>
+                <div className="mt-1 text-xs text-muted-foreground">{b.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+/* ================================================================== */
+/* Roadmap                                                              */
+/* ================================================================== */
+
+type RoadmapStatus = "done" | "now" | "next";
+const ROADMAP: { status: RoadmapStatus; title: string; desc: string }[] = [
+  { status: "done", title: "Replay Studio", desc: "Full historical replay across FX, crypto, stocks." },
+  { status: "done", title: "Trading Workspace", desc: "Professional charting with Focus Mode." },
+  { status: "done", title: "AI Trading Coach", desc: "Personal mentor trained on your trades." },
+  { status: "done", title: "Performance Analytics", desc: "Institution-grade metrics dashboard." },
+  { status: "now", title: "Community & Guilds", desc: "Share setups, follow traders, join guilds." },
+  { status: "next", title: "Billing & Pricing", desc: "Founding-member tiers and lifetime discounts." },
+  { status: "next", title: "Mobile App", desc: "Journal on the go, coach in your pocket." },
+];
+
+function Roadmap() {
+  const map: Record<RoadmapStatus, { label: string; tone: string }> = {
+    done: { label: "Shipped", tone: "bg-success/15 text-success" },
+    now: { label: "In progress", tone: "bg-primary/15 text-primary" },
+    next: { label: "Coming soon", tone: "bg-muted text-muted-foreground" },
+  };
+  return (
+    <Section id="roadmap">
+      <SectionHeading
+        eyebrow="Roadmap"
+        title={<>Built in the open. Shipped every week.</>}
+        description="A living roadmap you can influence directly as a beta member."
+      />
+      <div className="mt-14 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {ROADMAP.map((r, i) => (
+          <motion.div
+            key={r.title}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-80px" }}
+            variants={fadeUp}
+            custom={i}
+            className="group rounded-2xl border border-border/60 bg-background/50 p-6 backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-primary/40"
+          >
+            <div className="flex items-center justify-between">
+              <span
+                className={cn(
+                  "rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider",
+                  map[r.status].tone,
+                )}
+              >
+                {map[r.status].label}
+              </span>
+              {r.status === "done" ? (
+                <Check className="h-4 w-4 text-success" />
+              ) : r.status === "now" ? (
+                <Cpu className="h-4 w-4 text-primary" />
+              ) : (
+                <Clock className="h-4 w-4 text-muted-foreground" />
+              )}
+            </div>
+            <div className="mt-4 text-lg font-semibold tracking-tight">{r.title}</div>
+            <div className="mt-1 text-sm text-muted-foreground">{r.desc}</div>
+          </motion.div>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+/* ================================================================== */
+/* FAQ                                                                  */
+/* ================================================================== */
+
+const FAQS: { q: string; a: string }[] = [
+  {
+    q: "What is TradersHIVE?",
+    a: "TradersHIVE is a professional trading workspace that combines market replay, an auto-populated trading journal, institution-grade analytics and a personal AI coach — all in one place.",
+  },
+  {
+    q: "Who is it for?",
+    a: "Serious retail and prop-firm traders who want to review, backtest and improve systematically. If you're stitching together TradingView, a spreadsheet and a notebook — this is for you.",
+  },
+  {
+    q: "Which markets do you support?",
+    a: "Forex, crypto (via Binance), major indices, commodities and stocks (via Twelve Data). More venues are on the roadmap.",
+  },
+  {
+    q: "How does Replay Studio work?",
+    a: "Pick any symbol and any date, and the Studio streams bars back to you at whatever speed you like. Practice setups, journal trades and save the session to continue later.",
+  },
+  {
+    q: "Is the AI Coach a chatbot?",
+    a: "No. It's a private intelligence engine that reads your actual trades, journals and mistakes, then generates evidence-based reports, strengths, weaknesses and a personalised roadmap.",
+  },
+  {
+    q: "When will pricing launch?",
+    a: "During the closed beta the platform is completely free. Pricing tiers will launch after public release — and every beta member gets a lifetime discount.",
+  },
+  {
+    q: "Is my data private?",
+    a: "Yes. Your trades, journals and coaching data belong to you. RLS is enforced at the database layer and we never sell or share your data.",
+  },
+];
+
+function FAQ() {
+  return (
+    <Section id="faq">
+      <SectionHeading
+        eyebrow="FAQ"
+        title="Answers to the questions traders actually ask."
+      />
+      <div className="mx-auto mt-12 max-w-3xl">
         <Accordion type="single" collapsible className="w-full space-y-3">
-          {faqs.map((f, i) => (
+          {FAQS.map((f, i) => (
             <AccordionItem
               key={f.q}
               value={`item-${i}`}
-              className="rounded-2xl border border-border bg-surface/60 px-5 backdrop-blur"
+              className="overflow-hidden rounded-2xl border border-border/60 bg-background/50 px-5 backdrop-blur"
             >
-              <AccordionTrigger className="py-5 text-left text-base font-semibold hover:no-underline">
-                {f.q}
+              <AccordionTrigger className="py-5 text-left text-base font-medium hover:no-underline">
+                <span className="flex items-center gap-3">
+                  <ChevronDown className="h-4 w-4 shrink-0 text-primary transition-transform group-data-[state=open]:rotate-180" />
+                  {f.q}
+                </span>
               </AccordionTrigger>
-              <AccordionContent className="pb-5 text-sm text-muted-foreground">
+              <AccordionContent className="pb-5 text-sm leading-relaxed text-muted-foreground">
                 {f.a}
               </AccordionContent>
             </AccordionItem>
           ))}
         </Accordion>
       </div>
-    </section>
+    </Section>
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Final CTA                                                           */
-/* ------------------------------------------------------------------ */
+/* ================================================================== */
+/* Final CTA                                                            */
+/* ================================================================== */
 
 function FinalCTA() {
   return (
-    <section className="relative z-10 mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
-      <GlassCard className="relative overflow-hidden p-10 text-center md:p-16">
-        <div className="pointer-events-none absolute inset-0 gradient-radial-glow opacity-100" />
-        <div
-          className="pointer-events-none absolute -inset-20 opacity-60 blur-3xl"
-          style={{
-            background:
-              "radial-gradient(60% 40% at 50% 50%, color-mix(in oklab, var(--primary) 30%, transparent), transparent)",
-          }}
-        />
-        <div className="relative">
-          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-primary">
-            Enter the arena
-          </p>
-          <h2 className="mx-auto mt-3 max-w-3xl text-balance text-4xl font-black leading-[1.05] tracking-tight sm:text-5xl md:text-6xl">
-            Start Building Consistency Today.
+    <Section className="!pt-16">
+      <div className="relative overflow-hidden rounded-[32px] border border-border/60 bg-gradient-to-br from-primary/15 via-background/60 to-background/40 px-6 py-16 text-center backdrop-blur-xl sm:px-12 sm:py-24">
+        <div className="absolute -top-40 left-1/2 h-[520px] w-[900px] -translate-x-1/2 rounded-full bg-primary/25 blur-3xl" />
+        <div className="relative mx-auto max-w-3xl">
+          <EyebrowBadge icon={Sparkles}>Ready when you are</EyebrowBadge>
+          <h2 className="mt-6 text-balance text-4xl font-semibold tracking-tight sm:text-5xl md:text-6xl">
+            Ready to level up your trading?
           </h2>
-          <p className="mx-auto mt-4 max-w-xl text-muted-foreground sm:text-lg">
-            Join thousands of traders sharpening their edge with deliberate, gamified practice.
+          <p className="mx-auto mt-5 max-w-xl text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">
+            Join the closed beta today. Free while it lasts, lifetime discount when we launch.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Button
-              asChild
-              size="lg"
-              className="gradient-primary text-primary-foreground shadow-elegant"
-            >
-              <Link to="/auth" search={{ mode: "register" }}>
-                Create Free Account
-                <ArrowRight className="ml-2 h-4 w-4" />
+            <Button asChild size="lg" className="h-12 rounded-full px-6 shadow-xl shadow-primary/25">
+              <Link to="/register">
+                Join Closed Beta <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
-            <Button asChild size="lg" variant="outline" className="glass">
-              <Link to="/auth">
-                Login
-                <ChevronRight className="ml-1 h-4 w-4" />
-              </Link>
+            <Button
+              asChild
+              variant="outline"
+              size="lg"
+              className="h-12 rounded-full border-border/70 bg-background/50 px-6"
+            >
+              <a href="#replay">
+                <Video className="mr-2 h-4 w-4" /> Watch Demo
+              </a>
             </Button>
           </div>
         </div>
-      </GlassCard>
-    </section>
+      </div>
+    </Section>
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Footer                                                              */
-/* ------------------------------------------------------------------ */
+/* ================================================================== */
+/* Footer                                                               */
+/* ================================================================== */
 
 function Footer() {
-  const groups = [
+  const cols: { title: string; links: { label: string; href: string; external?: boolean }[] }[] = [
     {
       title: "Product",
       links: [
         { label: "Features", href: "#features" },
-        { label: "Pricing", href: "#pricing" },
-        { label: "Arena", href: "#arena" },
-        { label: "Challenges", href: "#challenges" },
+        { label: "Replay Studio", href: "#replay" },
+        { label: "AI Coach", href: "#ai" },
+        { label: "Analytics", href: "#analytics" },
+        { label: "Roadmap", href: "#roadmap" },
       ],
     },
     {
-      title: "Support",
+      title: "Company",
       links: [
+        { label: "Contact", href: "mailto:hello@tradershive.com", external: true },
         { label: "FAQ", href: "#faq" },
-        { label: "Contact", href: "mailto:hello@tradershive.app" },
-        { label: "Status", href: "#" },
+        { label: "Join Beta", href: "/register" },
       ],
     },
     {
       title: "Legal",
       links: [
-        { label: "Privacy", href: "#" },
-        { label: "Terms", href: "#" },
-        { label: "Disclosure", href: "#" },
+        { label: "Privacy", href: "/privacy" },
+        { label: "Terms", href: "/terms" },
       ],
     },
   ];
   return (
-    <footer className="relative z-10 border-t border-border/60">
-      <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
-        <div className="grid gap-10 md:grid-cols-[1.4fr_2fr]">
+    <footer className="relative z-10 mt-16 border-t border-border/60 bg-background/60 backdrop-blur">
+      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+        <div className="grid gap-12 md:grid-cols-[1.3fr_repeat(3,1fr)]">
           <div>
-            <Link to="/" className="flex items-center gap-2" aria-label={APP_NAME}>
+            <Link to="/" className="inline-flex items-center gap-2" aria-label={APP_NAME}>
               <LogoMark />
-              <span className="text-sm font-bold tracking-tight">{APP_NAME}</span>
+              <span className="text-base font-semibold tracking-tight">{APP_NAME}</span>
             </Link>
             <p className="mt-4 max-w-sm text-sm text-muted-foreground">
-              Train. Trade. Compete. The gamified arena where traders forge a consistent edge.
+              The professional trader's workspace — replay, journal, analyse and coach, all in one.
             </p>
-            <div className="mt-5 flex items-center gap-2" />
-
+            <div className="mt-6 flex items-center gap-2">
+              {[
+                { icon: Twitter, href: "https://twitter.com", label: "Twitter / X" },
+                { icon: MessageCircle, href: "https://discord.com", label: "Discord" },
+                { icon: Linkedin, href: "https://linkedin.com", label: "LinkedIn" },
+                { icon: Github, href: "https://github.com", label: "GitHub" },
+                { icon: Mail, href: "mailto:hello@tradershive.com", label: "Email" },
+              ].map((s) => (
+                <a
+                  key={s.label}
+                  href={s.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={s.label}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-background/60 text-muted-foreground transition hover:border-primary/40 hover:text-foreground"
+                >
+                  <s.icon className="h-4 w-4" />
+                </a>
+              ))}
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
-            {groups.map((g) => (
-              <div key={g.title}>
-                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-                  {g.title}
-                </p>
-                <ul className="mt-4 space-y-2 text-sm">
-                  {g.links.map((l) => (
-                    <li key={l.label}>
-                      <a href={l.href} className="text-foreground/80 transition hover:text-foreground">
+          {cols.map((c) => (
+            <div key={c.title}>
+              <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {c.title}
+              </div>
+              <ul className="mt-4 space-y-2.5">
+                {c.links.map((l) => (
+                  <li key={l.label}>
+                    {l.external || l.href.startsWith("#") || l.href.startsWith("mailto:") ? (
+                      <a
+                        href={l.href}
+                        className="text-sm text-muted-foreground transition hover:text-foreground"
+                      >
                         {l.label}
                       </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
+                    ) : (
+                      <Link
+                        to={l.href}
+                        className="text-sm text-muted-foreground transition hover:text-foreground"
+                      >
+                        {l.label}
+                      </Link>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
-        <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-border/60 pt-6 text-xs text-muted-foreground md:flex-row">
-          <p>© {new Date().getFullYear()} {APP_NAME}. All rights reserved.</p>
-          <p className="text-[11px]">
-            Paper trading only. Not financial advice. Trading involves risk.
-          </p>
+        <div className="mt-14 flex flex-col items-start justify-between gap-4 border-t border-border/60 pt-8 text-xs text-muted-foreground sm:flex-row sm:items-center">
+          <div>© {new Date().getFullYear()} {APP_NAME}. All rights reserved.</div>
+          <div className="flex items-center gap-4">
+            <span className="inline-flex items-center gap-1.5">
+              <Code2 className="h-3.5 w-3.5" /> Built for serious traders
+            </span>
+            <Badge variant="outline" className="border-border/60 font-normal">
+              v2.0 · Closed Beta
+            </Badge>
+          </div>
         </div>
       </div>
     </footer>
-  );
-}
-
-function SocialLink({
-  href,
-  label,
-  children,
-}: {
-  href: string;
-  label: string;
-  children: ReactNode;
-}) {
-  return (
-    <a
-      href={href}
-      aria-label={label}
-      className="grid h-10 w-10 place-items-center rounded-xl border border-border bg-surface/60 text-muted-foreground transition hover:text-foreground hover:border-primary/40"
-    >
-      {children}
-    </a>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Logo + brand icons                                                  */
-/* ------------------------------------------------------------------ */
-
-function LogoMark({ className = "h-8 w-8" }: { className?: string }) {
-  return (
-    <img
-      src="/logo.png"
-      alt="TradersHIVE Arena"
-      className={cn("rounded-full object-cover shadow-elegant", className)}
-    />
-  );
-}
-
-function DiscordIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden>
-      <path d="M20.317 4.369A19.79 19.79 0 0 0 16.558 3l-.2.386c1.44.36 2.62.9 3.85 1.68A13.6 13.6 0 0 0 12 3.75c-2.62 0-5.05.5-8.2 1.32.83-.54 2.35-1.29 3.83-1.65L7.44 3A19.7 19.7 0 0 0 3.68 4.37C1.5 8.03.83 11.6 1.16 15.12c1.63 1.2 3.2 1.93 4.75 2.4l.86-1.18c-.84-.31-1.65-.7-2.42-1.19.2-.15.4-.31.6-.48 4.66 2.15 9.7 2.15 14.3 0 .2.17.4.33.6.48-.77.49-1.58.88-2.42 1.19l.86 1.18c1.55-.47 3.12-1.2 4.75-2.4.4-4.1-.63-7.63-2.72-10.75Zm-11.7 8.62c-.95 0-1.72-.87-1.72-1.94 0-1.06.76-1.94 1.72-1.94.97 0 1.74.88 1.72 1.94 0 1.07-.75 1.94-1.72 1.94Zm6.32 0c-.95 0-1.72-.87-1.72-1.94 0-1.06.76-1.94 1.72-1.94.97 0 1.74.88 1.72 1.94 0 1.07-.75 1.94-1.72 1.94Z" />
-    </svg>
-  );
-}
-
-function TelegramIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden>
-      <path d="m9.04 15.47-.36 4.02c.52 0 .75-.22 1.02-.49l2.45-2.34 5.08 3.72c.93.52 1.6.25 1.85-.86l3.36-15.75c.33-1.39-.5-1.94-1.41-1.6L1.28 9.36c-1.36.53-1.34 1.29-.23 1.63l4.94 1.54L17.42 5.9c.54-.36 1.04-.16.63.2" />
-    </svg>
-  );
-}
-
-function XIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden>
-      <path d="M18.244 2H21.5l-7.55 8.63L23 22h-6.844l-5.36-6.99L4.6 22H1.34l8.08-9.23L1 2h7.02l4.84 6.4L18.244 2Zm-1.2 18h1.9L7.05 4H5.02l12.024 16Z" />
-    </svg>
   );
 }
