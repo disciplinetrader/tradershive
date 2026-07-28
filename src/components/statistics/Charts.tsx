@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Brush } from "recharts";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, ComposedChart, Legend, Line, LineChart, Pie, PieChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis, Brush } from "recharts";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,9 +35,10 @@ function ChartCard({ title, subtitle, actions, height = 260, children }: { title
   );
 }
 
-/* Equity curve with brush zoom */
+/* Equity curve with drawdown overlay + brush zoom */
 export function EquityCurveCard() {
   const { filtered, accounts, filters, loading } = useStatistics();
+  const [showDD, setShowDD] = useState(true);
   const startingBalance = useMemo(() => {
     if (filters.accounts.length === 1) {
       const a = accounts.find((x) => x.id === filters.accounts[0]);
@@ -45,7 +46,10 @@ export function EquityCurveCard() {
     }
     return 0;
   }, [accounts, filters.accounts]);
-  const data = useMemo(() => computeEquityCurve(filtered, startingBalance), [filtered, startingBalance]);
+  const data = useMemo(
+    () => computeEquityCurve(filtered, startingBalance).map((p) => ({ ...p, drawdownNeg: -p.drawdown })),
+    [filtered, startingBalance],
+  );
   const last = data[data.length - 1]?.equity ?? startingBalance;
   const pnl = last - startingBalance;
   const up = pnl >= 0;
@@ -59,45 +63,67 @@ export function EquityCurveCard() {
     );
   }
 
-
   return (
     <ChartCard
       title="Equity curve"
-      subtitle="Cumulative P&L across the filtered range"
-      height={320}
+      subtitle="Cumulative equity with drawdown overlay"
+      height={340}
       actions={
-        <Badge variant="outline" className={up ? "border-success/40 bg-success/10 text-success" : "border-danger/40 bg-danger/10 text-danger"}>
-          {fmtCurrency(pnl)}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant={showDD ? "default" : "outline"} className="h-7 px-2 text-[10px]" onClick={() => setShowDD((v) => !v)}>
+            Drawdown
+          </Button>
+          <Badge variant="outline" className={up ? "border-success/40 bg-success/10 text-success" : "border-danger/40 bg-danger/10 text-danger"}>
+            {fmtCurrency(pnl)}
+          </Badge>
+        </div>
       }
     >
       {data.length === 0 ? (
         <EmptyMsg />
       ) : (
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
+          <ComposedChart data={data} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
             <defs>
               <linearGradient id="equityFillStats" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.4} />
                 <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
               </linearGradient>
+              <linearGradient id="ddFillOverlay" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="rgb(244 63 94)" stopOpacity={0} />
+                <stop offset="100%" stopColor="rgb(244 63 94)" stopOpacity={0.35} />
+              </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
             <XAxis dataKey="date" tickFormatter={(v) => new Date(v).toLocaleDateString(undefined, { month: "short", day: "numeric" })} tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} width={64} tickFormatter={(v) => `$${Number(v).toLocaleString()}`} />
+            <YAxis yAxisId="eq" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} width={64} tickFormatter={(v) => `$${Number(v).toLocaleString()}`} />
+            {showDD && (
+              <YAxis yAxisId="dd" orientation="right" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} width={56} tickFormatter={(v) => `$${Math.abs(Number(v)).toLocaleString()}`} />
+            )}
             <Tooltip
               contentStyle={tooltipStyle}
               labelFormatter={(v) => new Date(v).toLocaleString()}
-              formatter={(v: number, name: string) => [`$${Number(v).toLocaleString()}`, name === "equity" ? "Equity" : "Drawdown"]}
+              formatter={(v: number, name: string) => {
+                if (name === "equity") return [`$${Number(v).toLocaleString()}`, "Equity"];
+                if (name === "drawdownNeg") return [`-$${Math.abs(Number(v)).toLocaleString()}`, "Drawdown"];
+                return [v, name];
+              }}
             />
-            <Area type="monotone" dataKey="equity" stroke="var(--primary)" strokeWidth={2} fill="url(#equityFillStats)" isAnimationActive animationDuration={600} />
+            {startingBalance > 0 && (
+              <ReferenceLine yAxisId="eq" y={startingBalance} stroke="var(--muted-foreground)" strokeDasharray="4 4" opacity={0.5} />
+            )}
+            <Area yAxisId="eq" type="monotone" dataKey="equity" stroke="var(--primary)" strokeWidth={2} fill="url(#equityFillStats)" isAnimationActive animationDuration={600} />
+            {showDD && (
+              <Area yAxisId="dd" type="monotone" dataKey="drawdownNeg" stroke="rgb(244 63 94)" strokeWidth={1.5} fill="url(#ddFillOverlay)" isAnimationActive />
+            )}
             <Brush dataKey="date" height={20} stroke="var(--primary)" travellerWidth={8} tickFormatter={() => ""} />
-          </AreaChart>
+          </ComposedChart>
         </ResponsiveContainer>
       )}
     </ChartCard>
   );
 }
+
 
 export function DrawdownCard() {
   const { filtered } = useStatistics();
