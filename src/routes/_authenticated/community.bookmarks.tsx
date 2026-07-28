@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { PageHeader } from "@/components/ui/page-header";
 import { PostCard } from "@/components/community/PostCard";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Bookmark } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { listBookmarks } from "@/lib/community.functions";
 
