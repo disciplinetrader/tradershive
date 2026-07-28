@@ -28,7 +28,6 @@ interface Props {
 export function TodayPnLWidget({ dailyTargetPct = 5, dailyLossLimitPct = 5 }: Props) {
   const { accountId, account } = usePaper();
   const fetchTrades = useServerFn(listTrades);
-  const quotes = useLiveQuotes();
 
   const { data: trades } = useQuery({
     queryKey: ["paper", "trades", accountId, "today"],
@@ -36,6 +35,12 @@ export function TodayPnLWidget({ dailyTargetPct = 5, dailyLossLimitPct = 5 }: Pr
     enabled: !!accountId,
     refetchInterval: 6000,
   });
+
+  const openSymbols = useMemo(
+    () => (trades ?? []).filter((t) => t.status === "open").map((t) => t.symbol),
+    [trades],
+  );
+  const quotes = useLiveQuotes(openSymbols);
 
   const stats = useMemo(() => {
     if (!trades) return { profit: 0, loss: 0, open: 0, net: 0, count: 0 };

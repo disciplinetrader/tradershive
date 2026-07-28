@@ -52,7 +52,6 @@ type Account = { id: string } | null;
 
 export function useSlTpMonitor(account: Account) {
   const qc = useQueryClient();
-  const quotes = useLiveQuotes();
   const fetchTrades = useServerFn(listTrades);
   const closeFn = useServerFn(closeTrade);
   const firing = useRef<Set<string>>(new Set());
@@ -64,6 +63,8 @@ export function useSlTpMonitor(account: Account) {
     enabled: !!account?.id,
     refetchInterval: 3000,
   });
+
+  const quotes = useLiveQuotes(openTrades?.map((t) => t.symbol));
 
   useEffect(() => {
     if (!account || !openTrades?.length) return;
