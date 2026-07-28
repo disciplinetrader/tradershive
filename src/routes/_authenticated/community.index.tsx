@@ -109,7 +109,7 @@ function HomePage() {
                     </Link>
                   ))}
                 </div>
-              ) : <EmptyState title="No ideas yet" description="Share your first trade idea." />}
+              ) : <EmptyState icon={Lightbulb} title="No trade ideas yet" description="Share your first setup — publish targets, invalidation and R:R." action={{ label: "Post an Idea", href: "/community/ideas" }} />}
             </GlassCard>
 
             <GlassCard className="p-4">
