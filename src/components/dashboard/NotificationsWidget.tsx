@@ -40,7 +40,15 @@ export function NotificationsWidget() {
   if (isLoading) return <Skeleton className="h-40 w-full rounded-2xl" />;
   const items = data ?? [];
   if (items.length === 0) {
-    return <EmptyState icon={Bell} title="All caught up" description="No new notifications right now." />;
+    return (
+      <EmptyState
+        compact
+        icon={Bell}
+        title="You're all caught up"
+        description="Trade fills, achievements and community mentions will land here."
+        action={{ label: "Notification settings", href: "/settings/notifications" }}
+      />
+    );
   }
   const unread = items.filter((i) => !i.read).length;
 
