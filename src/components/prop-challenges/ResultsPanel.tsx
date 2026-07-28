@@ -70,6 +70,20 @@ export function ResultsPanel({ challenge, days, progress }: {
           will appear here once the AI coach is enabled for prop challenges.
         </p>
       </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <Button asChild size="sm">
+          <Link to="/prop-challenges/new">
+            {passed ? <Plus className="mr-1.5 h-3.5 w-3.5" /> : <RotateCcw className="mr-1.5 h-3.5 w-3.5" />}
+            {passed ? "Start a new challenge" : "Retry challenge"}
+          </Link>
+        </Button>
+        <Button asChild size="sm" variant="outline">
+          <Link to="/analytics">
+            <BarChart3 className="mr-1.5 h-3.5 w-3.5" /> View analytics
+          </Link>
+        </Button>
+      </div>
     </GlassCard>
   );
 }
