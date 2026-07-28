@@ -21,6 +21,7 @@ const GROUPS: { label: string; items: Item[] }[] = [
       { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
       { to: "/admin/notifications", label: "Notifications", icon: Bell },
+      { to: "/admin/emails", label: "Emails", icon: Mail },
     ],
   },
   {
