@@ -54,8 +54,14 @@ function GroupsPage() {
           {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-32" />)}
         </div>
       ) : (list.data?.groups ?? []).length === 0 ? (
-        <EmptyState icon={Users} title="No groups yet"
-          description={scope === "mine" ? "You haven't joined any groups yet." : "Be the first to create one."} />
+        <EmptyState
+          icon={Users}
+          title={scope === "mine" ? "You haven't joined a group yet" : "No groups yet"}
+          description={scope === "mine"
+            ? "Study groups keep you accountable — browse public groups or start your own."
+            : "Groups are how traders team up on setups, journals and reviews. Create the first one."}
+          action={scope === "mine" ? { label: "Browse Groups", href: "/community/groups" } : undefined}
+        />
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {list.data!.groups.map((g: any) => (
