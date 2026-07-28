@@ -217,6 +217,29 @@ export function ReplayControls() {
           </div>
         </div>
       </div>
+
+      <Dialog open={helpOpen} onOpenChange={setHelpOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <Keyboard className="h-4 w-4 text-primary" /> Keyboard Shortcuts
+            </DialogTitle>
+          </DialogHeader>
+          <ul className="space-y-1.5 text-sm">
+            {SHORTCUTS.map(([keys, label]) => (
+              <li key={keys} className="flex items-center justify-between gap-4">
+                <span className="text-muted-foreground">{label}</span>
+                <kbd className="rounded border border-border/60 bg-background/60 px-2 py-0.5 text-[11px] font-medium tabular-nums text-foreground">
+                  {keys}
+                </kbd>
+              </li>
+            ))}
+          </ul>
+          <p className="text-[11px] text-muted-foreground pt-1">
+            Shortcuts ignore typing in inputs. Press <kbd className="mx-0.5 rounded border border-border/60 bg-background/60 px-1 py-0.5 text-[10px]">?</kbd> anytime to reopen.
+          </p>
+        </DialogContent>
+      </Dialog>
     </TooltipProvider>
   );
 }
