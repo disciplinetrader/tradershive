@@ -4,30 +4,31 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
 import {
+  Activity,
   BarChart3,
   Clock,
   Compass,
   Dices,
   Film,
-  Flame,
-  GraduationCap,
   Library,
+  Percent,
   Play,
   Sparkles,
   Star,
   Target,
+  TrendingUp,
   Trophy,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { CreatorWizard } from "@/components/replay/CreatorWizard";
 import { ScenarioPicker } from "@/components/replay/ScenarioPicker";
 import { LibraryCard } from "@/components/replay/LibraryCard";
 import {
   getReplayStatistics,
   listReplaySessions,
+  listReplayTrades,
 } from "@/lib/replay.functions";
 import { createRandomReplaySession } from "@/lib/replay-studio.functions";
 import type { ReplaySession } from "@/lib/replay/types";
@@ -36,32 +37,31 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated/replay/")({
   head: () => ({
     meta: [
-      { title: "Replay Studio — Practice — TradersHIVE Arena" },
+      { title: "Replay Studio — Home — TradersHIVE Arena" },
       {
         name: "description",
         content:
-          "Practice, resume saved sessions, review trades and track performance in a single professional replay environment.",
+          "Your backtesting command center. Create a backtest, resume last session, and review recent performance in one place.",
       },
     ],
   }),
   component: ReplayDashboard,
 });
 
-const FILTERS = ["all", "active", "paused", "completed", "favorite"] as const;
-type Filter = (typeof FILTERS)[number];
-
 function ReplayDashboard() {
   const [wiz, setWiz] = useState(false);
   const [picker, setPicker] = useState<null | "free" | "day">(null);
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<Filter>("all");
   const navigate = useNavigate();
 
   const list = useServerFn(listReplaySessions);
   const stats = useServerFn(getReplayStatistics);
+  const trades = useServerFn(listReplayTrades);
   const rand = useServerFn(createRandomReplaySession);
+
   const sessions = useQuery({ queryKey: ["replay", "sessions"], queryFn: () => list() });
   const stat = useQuery({ queryKey: ["replay", "statistics"], queryFn: () => stats() });
+  const tradesQ = useQuery({ queryKey: ["replay", "trades"], queryFn: () => trades() });
+
   const randomM = useMutation({
     mutationFn: () => rand(),
     onSuccess: (row: { id: string }) =>
@@ -70,267 +70,328 @@ function ReplayDashboard() {
 
   const all = (sessions.data ?? []) as ReplaySession[];
   const active = all.find((s) => s.status === "active" || s.status === "paused");
+  const recent = all.filter((s) => s.status !== "archived").slice(0, 8);
+  const tradesData = (tradesQ.data ?? []) as Array<{
+    id: string; symbol: string; direction: string; pnl: number | string | null;
+    rr_realized: number | string | null; status: string; opened_at: string | null;
+    replay_sessions?: { title?: string } | null;
+  }>;
 
-  const filtered = useMemo(() => {
-    return all.filter((s) => {
-      if (search && !`${s.title} ${s.symbol}`.toLowerCase().includes(search.toLowerCase())) return false;
-      if (filter === "all") return true;
-      if (filter === "favorite") return s.is_favorite;
-      return s.status === filter;
+  // Performance snapshot from real trade data
+  const perf = useMemo(() => {
+    const closed = tradesData.filter((t) => t.status === "closed");
+    const wins = closed.filter((t) => Number(t.pnl ?? 0) > 0);
+    const losses = closed.filter((t) => Number(t.pnl ?? 0) < 0);
+    const grossWin = wins.reduce((a, t) => a + Number(t.pnl ?? 0), 0);
+    const grossLoss = Math.abs(losses.reduce((a, t) => a + Number(t.pnl ?? 0), 0));
+    const rrValues = closed.map((t) => Number(t.rr_realized ?? 0)).filter((v) => Number.isFinite(v) && v !== 0);
+    const avgRR = rrValues.length ? rrValues.reduce((a, b) => a + b, 0) / rrValues.length : 0;
+    return {
+      winRate: closed.length ? Math.round((wins.length / closed.length) * 100) : 0,
+      totalTrades: closed.length,
+      avgRR,
+      sessionsCompleted: all.filter((s) => s.status === "completed").length,
+      profitFactor: grossLoss > 0 ? grossWin / grossLoss : grossWin > 0 ? 99 : 0,
+    };
+  }, [tradesData, all]);
+
+  // Favorite instruments (from most-traded symbols)
+  const favInstruments = useMemo(() => {
+    const counts = new Map<string, number>();
+    tradesData.forEach((t) => counts.set(t.symbol, (counts.get(t.symbol) ?? 0) + 1));
+    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  }, [tradesData]);
+
+  // Favorite strategies (from favorite sessions & titles)
+  const favStrategies = useMemo(() => {
+    const favs = all.filter((s) => s.is_favorite).slice(0, 5);
+    return favs.length ? favs : all.slice(0, 5);
+  }, [all]);
+
+  // Recent activity timeline from most recent trades + sessions
+  const activity = useMemo(() => {
+    const events: { ts: number; label: string; icon: string; tone?: string }[] = [];
+    tradesData.slice(0, 10).forEach((t) => {
+      const pnl = Number(t.pnl ?? 0);
+      events.push({
+        ts: new Date(t.opened_at ?? Date.now()).getTime(),
+        label: `${t.direction.toUpperCase()} ${t.symbol} · ${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}`,
+        icon: "trade",
+        tone: pnl >= 0 ? "success" : "danger",
+      });
     });
-  }, [all, search, filter]);
+    all.slice(0, 5).forEach((s) => {
+      events.push({
+        ts: new Date(s.last_opened_at ?? s.updated_at).getTime(),
+        label: `${s.status === "completed" ? "Completed" : "Opened"} · ${s.title}`,
+        icon: "session",
+      });
+    });
+    return events.sort((a, b) => b.ts - a.ts).slice(0, 8);
+  }, [tradesData, all]);
 
-  const favorites = all.filter((s) => s.is_favorite).slice(0, 4);
   const s = stat.data;
-  const kpis = [
-    { label: "Hours Practiced", value: s ? (s.total_hours ?? 0).toFixed(1) : "0.0", icon: Clock },
-    { label: "Trades Reviewed", value: s?.total_trades ?? 0, icon: Film },
-    { label: "Avg Replay Score", value: s?.average_score ?? 0, icon: Sparkles },
-    { label: "Practice Streak", value: `${s?.streak_days ?? 0}d`, icon: Flame },
-  ];
-
-  // Four workflow lanes for the redesigned dashboard.
-  const workflows: {
-    id: string;
-    label: string;
-    desc: string;
-    icon: React.ComponentType<{ className?: string }>;
-    accent: string;
-    onClick: () => void;
-    cta: string;
-  }[] = [
-    {
-      id: "practice",
-      label: "Practice",
-      desc: active
-        ? `Resume ${active.symbol} · ${active.timeframe}`
-        : "Start deliberate practice on any market",
-      icon: GraduationCap,
-      accent: "from-primary/20 to-primary/5",
-      cta: active ? "Resume Session" : "Start Practice",
-      onClick: () => {
-        if (active) navigate({ to: "/replay/session", search: { id: active.id } as never });
-        else setPicker("free");
-      },
-    },
-    {
-      id: "saved",
-      label: "Saved Sessions",
-      desc: `${all.length} saved · resume exactly where you left off`,
-      icon: Library,
-      accent: "from-info/20 to-info/5",
-      cta: "Open Library",
-      onClick: () => navigate({ to: "/replay/library" }),
-    },
-    {
-      id: "review",
-      label: "Trade Review",
-      desc: "Every trade you've taken inside a replay",
-      icon: Film,
-      accent: "from-warning/20 to-warning/5",
-      cta: "Review Trades",
-      onClick: () => navigate({ to: "/replay/trades" }),
-    },
-    {
-      id: "performance",
-      label: "Performance",
-      desc: "Win rate, RR, profit factor and improvement",
-      icon: BarChart3,
-      accent: "from-success/20 to-success/5",
-      cta: "View Performance",
-      onClick: () => navigate({ to: "/replay/performance" }),
-    },
+  const perfTiles = [
+    { label: "Win Rate", value: `${perf.winRate}%`, icon: Percent, tone: "success" as const },
+    { label: "Total Trades", value: perf.totalTrades, icon: Activity },
+    { label: "Average RR", value: perf.avgRR.toFixed(2), icon: Target, tone: "info" as const },
+    { label: "Sessions Completed", value: perf.sessionsCompleted, icon: Trophy, tone: "warning" as const },
+    { label: "Profit Factor", value: perf.profitFactor.toFixed(2), icon: TrendingUp, tone: (perf.profitFactor >= 1 ? "success" : "danger") as const },
   ];
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Replay Studio"
-        description="Practice, review, and master execution on real market data."
+        description="Create, execute, review and analyse backtests — your practice command center."
         actions={
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+            <Button variant="ghost" size="sm" onClick={() => randomM.mutate()} disabled={randomM.isPending} className="w-full sm:w-auto">
+              <Dices className="mr-2 h-4 w-4" />{randomM.isPending ? "Rolling…" : "Surprise Me"}
+            </Button>
             <Button variant="outline" size="sm" onClick={() => setPicker("free")} className="w-full sm:w-auto">
               <Compass className="mr-2 h-4 w-4" />Scenario Picker
             </Button>
             <Button size="default" onClick={() => setWiz(true)} className="w-full sm:w-auto shadow-elegant">
               <Sparkles className="mr-2 h-4 w-4" />Create Backtest
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => randomM.mutate()} disabled={randomM.isPending} className="w-full sm:w-auto">
-              <Dices className="mr-2 h-4 w-4" />{randomM.isPending ? "Rolling…" : "Surprise Me"}
-            </Button>
           </div>
         }
       />
 
-      {/* Four core workflow cards */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {workflows.map((w) => {
-          const Icon = w.icon;
-          return (
-            <motion.button
-              key={w.id}
-              whileHover={{ y: -3 }}
-              onClick={w.onClick}
-              className={cn(
-                "group relative flex h-full flex-col overflow-hidden rounded-[3px] border border-border/60 bg-card p-5 text-left transition",
-                "hover:border-primary/60 hover:shadow-elegant",
-              )}
-            >
-              <div className={cn("absolute inset-0 bg-gradient-to-br opacity-70", w.accent)} />
-              <div className="relative flex flex-1 flex-col gap-4">
-                <div className="flex items-start gap-3">
-                  <div className="rounded-[3px] border border-border/60 bg-background/80 p-2 text-primary">
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                      Workflow
-                    </div>
-                    <div className="text-base font-bold">{w.label}</div>
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground">{w.desc}</p>
-                <div className="mt-auto inline-flex items-center gap-1 text-xs font-semibold text-primary">
-                  {w.cta}
-                  <Play className="h-3 w-3" />
-                </div>
-              </div>
-            </motion.button>
-          );
-        })}
-      </div>
+      {/* Primary CTA + Continue Last Session */}
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <motion.button
+          whileHover={{ y: -2 }}
+          onClick={() => setWiz(true)}
+          className="group relative overflow-hidden rounded-2xl border border-primary/40 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent p-6 text-left shadow-elegant transition hover:border-primary/70"
+        >
+          <div className="flex items-start gap-4">
+            <div className="rounded-xl bg-primary/20 p-3 text-primary">
+              <Sparkles className="h-7 w-7" />
+            </div>
+            <div className="flex-1">
+              <div className="text-[10px] font-semibold uppercase tracking-widest text-primary">Start Here</div>
+              <div className="text-2xl font-bold">Create Backtest</div>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Pick an instrument, timeframe and date — trade in under 30 seconds.
+              </p>
+            </div>
+            <Play className="h-6 w-6 text-primary opacity-60 transition group-hover:translate-x-1 group-hover:opacity-100" />
+          </div>
+        </motion.button>
 
-      {/* Live KPIs */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {kpis.map((k) => {
-          const Icon = k.icon;
-          return (
-            <GlassCard key={k.label} className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="rounded-[3px] bg-primary/10 p-2 text-primary"><Icon className="h-4 w-4" /></div>
-                <div>
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{k.label}</div>
-                  <div className="text-xl font-bold tabular-nums">{k.value}</div>
-                </div>
-              </div>
-            </GlassCard>
-          );
-        })}
-      </div>
-
-      {/* Continue lane */}
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <GlassCard className="p-4 space-y-3">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Continue</div>
-              <div className="text-base font-bold">{active ? active.title : "No active session"}</div>
+        <GlassCard className="p-5 space-y-3 flex flex-col justify-between">
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Continue Last Session</div>
+            <div className="mt-1 text-base font-bold truncate">
+              {active ? active.title : "No active session"}
             </div>
             {active ? (
-              <Button size="sm" asChild>
-                <Link to="/replay/session" search={{ id: active.id } as never}>
-                  <Play className="mr-2 h-3.5 w-3.5" />Resume
-                </Link>
-              </Button>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                {active.market} · {active.symbol} · {active.timeframe}
+              </div>
             ) : (
-              <Button size="sm" onClick={() => setPicker("free")}>
-                <Sparkles className="mr-2 h-3.5 w-3.5" />Start
-              </Button>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                Start a backtest to see your resume point here.
+              </div>
             )}
           </div>
-          <div className="text-xs text-muted-foreground">
-            {active
-              ? `${active.market} · ${active.symbol} · ${active.timeframe} · ${active.mode}`
-              : "Kick off a free-form practice replay or take a graded day-trade challenge."}
-          </div>
-        </GlassCard>
-
-        <GlassCard className="p-4 space-y-3">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Compete</div>
-              <div className="text-base font-bold">Replay Challenges & Tournaments</div>
-            </div>
-            <Button size="sm" variant="outline" asChild>
-              <Link to="/replay/challenges">
-                <Target className="mr-2 h-3.5 w-3.5" />Challenges
+          {active ? (
+            <Button size="sm" asChild className="w-full">
+              <Link to="/replay/session" search={{ id: active.id } as never}>
+                <Play className="mr-2 h-3.5 w-3.5" /> Resume Session
               </Link>
             </Button>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Trophy className="h-3.5 w-3.5 text-warning" />
-            Play scored replay challenges or historical tournament setups.
-          </div>
+          ) : (
+            <Button size="sm" onClick={() => setWiz(true)} className="w-full">
+              <Sparkles className="mr-2 h-3.5 w-3.5" /> Create Backtest
+            </Button>
+          )}
         </GlassCard>
       </div>
 
-      {favorites.length > 0 ? (
-        <section>
-          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            <Star className="h-3.5 w-3.5 text-warning" /> Favorite Scenarios
-          </h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {favorites.map((sess) => <LibraryCard key={sess.id} session={sess} />)}
-          </div>
-        </section>
-      ) : null}
-
+      {/* Performance snapshot */}
       <section className="space-y-3">
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground sm:mr-auto">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            Performance Snapshot
+          </h2>
+          <Button asChild variant="ghost" size="sm" className="text-xs">
+            <Link to="/replay/performance"><BarChart3 className="mr-1.5 h-3 w-3" /> View Performance</Link>
+          </Button>
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          {perfTiles.map((t) => {
+            const Icon = t.icon;
+            return (
+              <GlassCard key={t.label} className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "rounded-lg p-2",
+                    t.tone === "success" && "bg-success/10 text-success",
+                    t.tone === "danger" && "bg-danger/10 text-danger",
+                    t.tone === "info" && "bg-info/10 text-info",
+                    t.tone === "warning" && "bg-warning/10 text-warning",
+                    !t.tone && "bg-primary/10 text-primary",
+                  )}>
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.label}</div>
+                    <div className="truncate text-lg font-bold tabular-nums">{t.value}</div>
+                  </div>
+                </div>
+              </GlassCard>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Recent sessions */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
             Recent Sessions
           </h2>
-          <Input
-            placeholder="Search sessions…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="h-8 w-full text-xs sm:w-48"
-          />
-          <div className="flex flex-wrap gap-1 rounded-[3px] border border-border/60 bg-background/60 p-0.5">
-            {FILTERS.map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={cn(
-                  "rounded-[3px] px-2 py-1 text-[11px] capitalize transition",
-                  filter === f ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
+          <Button asChild variant="ghost" size="sm" className="text-xs">
+            <Link to="/replay/library"><Library className="mr-1.5 h-3 w-3" /> View all</Link>
+          </Button>
         </div>
-
         {sessions.isPending ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="rounded-[3px] border border-border/60 h-28 bg-muted animate-shimmer" />
+              <div key={i} className="rounded-lg border border-border/60 h-32 bg-muted animate-pulse" />
             ))}
           </div>
-        ) : filtered.length === 0 ? (
+        ) : recent.length === 0 ? (
           <GlassCard className="p-8 text-center space-y-3">
-            <Star className="mx-auto h-8 w-8 text-primary" />
-            <div className="text-sm text-muted-foreground">No sessions match your filters.</div>
-            <Button onClick={() => setPicker("free")}><Sparkles className="mr-2 h-4 w-4" />Pick a Scenario</Button>
+            <Sparkles className="mx-auto h-8 w-8 text-primary" />
+            <div className="text-sm text-muted-foreground">No sessions yet. Create your first backtest.</div>
+            <Button onClick={() => setWiz(true)}><Sparkles className="mr-2 h-4 w-4" /> Create Backtest</Button>
           </GlassCard>
         ) : (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
-          >
-            {filtered.slice(0, 8).map((sess) => <LibraryCard key={sess.id} session={sess} />)}
-          </motion.div>
-        )}
-        {filtered.length > 8 ? (
-          <div className="text-center">
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/replay/library">View all saved sessions →</Link>
-            </Button>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            {recent.map((sess) => <LibraryCard key={sess.id} session={sess} />)}
           </div>
-        ) : null}
+        )}
       </section>
+
+      {/* Favorites + Activity */}
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+        <GlassCard className="p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Favorite Instruments</h3>
+            <Star className="h-3.5 w-3.5 text-warning" />
+          </div>
+          {favInstruments.length === 0 ? (
+            <div className="py-8 text-center text-xs text-muted-foreground">
+              Take some trades to see your top instruments.
+            </div>
+          ) : (
+            <ul className="space-y-1.5">
+              {favInstruments.map(([sym, n]) => (
+                <li key={sym} className="flex items-center justify-between rounded-md px-2 py-1.5 hover:bg-background/60">
+                  <span className="font-mono text-sm">{sym}</span>
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{n} trades</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </GlassCard>
+
+        <GlassCard className="p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Favorite Strategies</h3>
+            <Star className="h-3.5 w-3.5 text-warning" />
+          </div>
+          {favStrategies.length === 0 ? (
+            <div className="py-8 text-center text-xs text-muted-foreground">
+              Star sessions from the library to pin your strategies.
+            </div>
+          ) : (
+            <ul className="space-y-1.5">
+              {favStrategies.map((sess) => (
+                <li key={sess.id}>
+                  <Link
+                    to="/replay/session"
+                    search={{ id: sess.id } as never}
+                    className="flex items-center justify-between rounded-md px-2 py-1.5 hover:bg-background/60"
+                  >
+                    <span className="truncate text-sm">{sess.title}</span>
+                    <span className="ml-2 shrink-0 text-[10px] uppercase tracking-wider text-muted-foreground">
+                      {sess.timeframe}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </GlassCard>
+
+        <GlassCard className="p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Recent Activity</h3>
+            <Activity className="h-3.5 w-3.5 text-primary" />
+          </div>
+          {activity.length === 0 ? (
+            <div className="py-8 text-center text-xs text-muted-foreground">
+              Your recent trades and sessions will appear here.
+            </div>
+          ) : (
+            <ol className="space-y-2">
+              {activity.map((ev, i) => (
+                <li key={i} className="flex items-start gap-2 text-xs">
+                  <span className={cn(
+                    "mt-1 h-1.5 w-1.5 rounded-full shrink-0",
+                    ev.tone === "success" && "bg-success",
+                    ev.tone === "danger" && "bg-danger",
+                    !ev.tone && "bg-primary",
+                  )} />
+                  <div className="flex-1 min-w-0">
+                    <div className="truncate">{ev.label}</div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {new Date(ev.ts).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          )}
+        </GlassCard>
+      </div>
+
+      {/* KPIs stat strip */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <GlassCard className="p-3">
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Practice Hours</div>
+          <div className="mt-0.5 text-xl font-bold tabular-nums flex items-center gap-1.5">
+            <Clock className="h-4 w-4 text-primary" />
+            {(s?.total_hours ?? 0).toFixed(1)}
+          </div>
+        </GlassCard>
+        <GlassCard className="p-3">
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Trades Reviewed</div>
+          <div className="mt-0.5 text-xl font-bold tabular-nums flex items-center gap-1.5">
+            <Film className="h-4 w-4 text-primary" />
+            {s?.total_trades ?? 0}
+          </div>
+        </GlassCard>
+        <GlassCard className="p-3">
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Avg Replay Score</div>
+          <div className="mt-0.5 text-xl font-bold tabular-nums flex items-center gap-1.5">
+            <Sparkles className="h-4 w-4 text-warning" />
+            {s?.average_score ?? 0}
+          </div>
+        </GlassCard>
+        <GlassCard className="p-3">
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Practice Streak</div>
+          <div className="mt-0.5 text-xl font-bold tabular-nums flex items-center gap-1.5">
+            <TrendingUp className="h-4 w-4 text-success" />
+            {s?.streak_days ?? 0}d
+          </div>
+        </GlassCard>
+      </div>
 
       <CreatorWizard open={wiz} onOpenChange={setWiz} />
       {picker ? <ScenarioPicker open={!!picker} onOpenChange={(o) => !o && setPicker(null)} mode={picker} /> : null}
