@@ -41,6 +41,8 @@ export const ChartEngine = forwardRef<ChartHandle, Props>(function ChartEngine(
   const adapterRef = useRef<ChartAdapter | null>(null);
   const [candles, setCandles] = useState<Candle[]>([]);
   const [quote, setQuote] = useState<Quote | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadNonce, setLoadNonce] = useState(0);
 
   // Mount adapter once
   useEffect(() => {
@@ -69,14 +71,29 @@ export const ChartEngine = forwardRef<ChartHandle, Props>(function ChartEngine(
     const to = Date.now();
     const tfMs = TIMEFRAME_SECONDS[settings.timeframe] * 1000;
     const from = to - tfMs * 500;
+    setLoadError(null);
     marketData
       .getCandles({ symbol: settings.symbol, timeframe: settings.timeframe, from, to, limit: 500 }, settings.market)
       .then((rows) => {
         if (cancelled) return;
+        if (!rows || rows.length === 0) {
+          setLoadError("No data returned by market provider.");
+          return;
+        }
         setCandles(rows);
         adapterRef.current?.setCandles(rows);
       })
-      .catch((e) => console.warn("[chart] history load failed", e));
+      .catch((e) => {
+        if (cancelled) return;
+        const msg = (e as Error)?.message ?? "Unknown error";
+        console.warn("[chart] history load failed", e);
+        const friendly = /rate|429|cooldown|quota/i.test(msg)
+          ? "Market data provider is rate-limited. Retrying shortly…"
+          : /not_configured/i.test(msg)
+          ? "Market data provider is not configured."
+          : `Couldn't load ${settings.symbol}. ${msg}`;
+        setLoadError(friendly);
+      });
 
     const sub = marketData.subscribe(settings.symbol, (q) => {
       setQuote(q); onQuote?.(q);
@@ -97,7 +114,7 @@ export const ChartEngine = forwardRef<ChartHandle, Props>(function ChartEngine(
     }, settings.market);
 
     return () => { cancelled = true; sub.unsubscribe(); };
-  }, [settings.symbol, settings.timeframe, settings.market, onQuote]);
+  }, [settings.symbol, settings.timeframe, settings.market, onQuote, loadNonce]);
 
   // Indicators + volume
   useEffect(() => { adapterRef.current?.syncOverlayIndicators(indicators, candles); }, [indicators, candles]);
@@ -131,9 +148,24 @@ export const ChartEngine = forwardRef<ChartHandle, Props>(function ChartEngine(
     <div className={className ?? "relative h-full w-full"}>
       <div ref={hostRef} className="absolute inset-0" />
       {children}
-      {!candles.length ? (
+      {!candles.length && !loadError ? (
         <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
           Loading {settings.symbol} · {settings.timeframe}…
+        </div>
+      ) : null}
+      {loadError ? (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/40 backdrop-blur-sm">
+          <div className="max-w-sm rounded-lg border border-border bg-background/90 p-4 text-center shadow-lg">
+            <div className="mb-1 text-sm font-semibold text-foreground">Chart unavailable</div>
+            <div className="mb-3 text-xs text-muted-foreground">{loadError}</div>
+            <button
+              type="button"
+              onClick={() => { setLoadError(null); setLoadNonce((n) => n + 1); }}
+              className="rounded-md border border-border bg-muted px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/80"
+            >
+              Retry
+            </button>
+          </div>
         </div>
       ) : null}
       <div className="pointer-events-none absolute left-3 top-3 rounded-md bg-background/60 px-2 py-1 text-xs font-medium text-foreground backdrop-blur">
