@@ -123,6 +123,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* Desktop sidebar — sticky on standard routes, floating icon rail with hover-expand on immersive routes */}
       <aside
+        data-app-shell-sidebar
         onMouseEnter={immersive ? () => setRailHovered(true) : undefined}
         onMouseLeave={immersive ? () => setRailHovered(false) : undefined}
         className={cn(
