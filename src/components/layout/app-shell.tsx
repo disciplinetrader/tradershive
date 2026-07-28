@@ -1,24 +1,19 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
-  Award,
   BarChart3,
+  Bot,
   BookOpen,
   GraduationCap,
   Home,
-  LifeBuoy,
   LineChart,
   Menu,
   MessageSquare,
   Settings,
   Shield,
-  ShoppingBag,
   Sparkles,
   Swords,
-  Target,
   Film,
   Trophy,
-  User as UserIcon,
-  Users,
   ChevronLeft,
   ChevronRight,
   X,
@@ -36,27 +31,38 @@ import { ProductTourProvider } from "@/components/tour/ProductTour";
 
 type NavItem = { to: string; label: string; icon: typeof Home; admin?: boolean };
 
+// UX Sprint 1 — flat, 8-item information architecture.
+// Old destinations that are no longer surfaced in the sidebar remain
+// reachable via deep links, command palette, and in-page entry points:
+//   • /paper-trading  → redirects to /trading (Trading Workspace)
+//   • /goals          → accessible from Dashboard & Analytics
+//   • /mistakes       → accessible from AI Coach
+//   • /playbooks, /strategies/playbooks → accessible from AI Coach
+//   • /achievements   → accessible from Profile / Community
+//   • /education      → moved to Help / Docs surface
+//   • /marketplace    → hidden until production
+const PRIMARY: NavItem[] = [{ to: "/dashboard", label: "Dashboard", icon: Home }];
+
 const TRADING: NavItem[] = [
-  { to: "/dashboard", label: "Dashboard", icon: Home },
   { to: "/trading", label: "Trading Workspace", icon: LineChart },
   { to: "/replay", label: "Replay Studio", icon: Film },
+];
+
+const WORK: NavItem[] = [
   { to: "/journal", label: "Journal", icon: BookOpen },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
-  { to: "/mistakes", label: "Trading Mistakes", icon: Shield },
-  { to: "/goals", label: "Goals & Progress", icon: Target },
-  { to: "/prop-challenges", label: "Prop Firm Mode", icon: GraduationCap },
+  { to: "/ai/coach", label: "AI Coach", icon: Bot },
 ];
 
 const COMPETE: NavItem[] = [
-  { to: "/challenges", label: "Challenges", icon: Sparkles },
-  { to: "/battle-arena", label: "Battle Arena", icon: Swords },
+  { to: "/prop-challenges", label: "Prop Firm", icon: GraduationCap },
   { to: "/championship", label: "Championships", icon: Trophy },
+  { to: "/battle-arena", label: "Battle Arena", icon: Swords },
   { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
 ];
 
 const COMMUNITY: NavItem[] = [
   { to: "/community", label: "Community", icon: MessageSquare },
-  { to: "/achievements", label: "Achievements", icon: Award },
 ];
 
 const SYSTEM_ITEMS: NavItem[] = [
@@ -72,12 +78,8 @@ const TOUR_TARGETS: Record<string, string | undefined> = {
   "/journal": "nav-journal",
   "/analytics": "nav-analytics",
   "/community": "nav-community",
+  "/ai/coach": "nav-ai-coach",
 };
-
-
-
-// Kept as valid routes but not surfaced in the reorganized sidebar.
-void Users; void ShoppingBag; void UserIcon; void LifeBuoy;
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -262,11 +264,12 @@ function SidebarInner({
         </div>
 
         <nav className={cn("flex-1 overflow-y-auto", collapsed ? "px-2 py-3" : "p-3")}>
-          <NavSection label="Trading" items={TRADING} collapsed={collapsed} currentPath={currentPath} />
+          <NavSection items={PRIMARY} collapsed={collapsed} currentPath={currentPath} />
+          <NavSection label="Trading" items={TRADING} collapsed={collapsed} currentPath={currentPath} className="mt-5" />
+          <NavSection items={WORK} collapsed={collapsed} currentPath={currentPath} className="mt-5" />
           <NavSection label="Compete" items={COMPETE} collapsed={collapsed} currentPath={currentPath} className="mt-5" />
-          <NavSection label="Community" items={COMMUNITY} collapsed={collapsed} currentPath={currentPath} className="mt-5" />
+          <NavSection items={COMMUNITY} collapsed={collapsed} currentPath={currentPath} className="mt-5" />
           <NavSection
-            label="System"
             items={showAdmin ? [...SYSTEM_ITEMS, ...ADMIN_ITEMS] : SYSTEM_ITEMS}
             collapsed={collapsed}
             currentPath={currentPath}
@@ -319,15 +322,15 @@ function NavSection({
   currentPath,
   className,
 }: {
-  label: string;
+  label?: string;
   items: NavItem[];
   collapsed: boolean;
   currentPath: string;
   className?: string;
 }) {
   return (
-    <div className={cn(collapsed ? "" : "border-t border-sidebar-border/60 first:border-t-0 first:pt-0 pt-3", className)}>
-      <SectionLabel collapsed={collapsed}>{label}</SectionLabel>
+    <div className={cn(collapsed ? "" : "pt-1", className)}>
+      {label ? <SectionLabel collapsed={collapsed}>{label}</SectionLabel> : null}
       <ul className="space-y-0.5">
         {items.map((item) => (
           <SidebarLink key={item.to} item={item} collapsed={collapsed} active={isActive(currentPath, item.to)} />
