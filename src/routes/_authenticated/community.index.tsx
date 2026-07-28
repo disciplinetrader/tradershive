@@ -178,7 +178,7 @@ function HomePage() {
                     </Link>
                   </li>
                 ))}
-                {!d?.topContributors?.length ? <div className="text-xs text-muted-foreground">No contributors yet.</div> : null}
+                {!d?.topContributors?.length ? <div className="text-xs text-muted-foreground">Post, comment or share ideas to appear here.</div> : null}
               </ul>
             </GlassCard>
 
