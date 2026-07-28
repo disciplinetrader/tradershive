@@ -470,6 +470,21 @@ function TradingWorkspaceInner() {
               </TooltipTrigger>
               <TooltipContent>Keyboard shortcuts</TooltipContent>
             </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={focusMode ? "default" : "ghost"}
+                  size="sm"
+                  className="h-7 gap-1 px-2 text-[11px]"
+                  onClick={() => setFocusMode(!focusMode)}
+                  aria-pressed={focusMode}
+                >
+                  {focusMode ? <Minimize2 className="h-3.5 w-3.5" /> : <Focus className="h-3.5 w-3.5" />}
+                  <span className="hidden lg:inline">{focusMode ? "Exit Focus" : "Focus"}</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{focusMode ? "Exit Focus Mode (Esc)" : "Focus Mode (F)"}</TooltipContent>
+            </Tooltip>
             <Button
               variant="ghost" size="sm"
               className="h-7 gap-1 px-2 text-[11px]"
