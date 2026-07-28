@@ -1,8 +1,9 @@
 import type { BookmarkCategory, ReplayMarket, Timeframe } from "./types";
 
-export const TIMEFRAMES: Timeframe[] = ["1m", "3m", "5m", "15m", "30m", "1H", "4H", "1D"];
+export const TIMEFRAMES: Timeframe[] = ["30s", "1m", "3m", "5m", "15m", "30m", "1H", "4H", "1D"];
 
 export const TIMEFRAME_SECONDS: Record<Timeframe, number> = {
+  "30s": 30,
   "1m": 60,
   "3m": 180,
   "5m": 300,
