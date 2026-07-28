@@ -16,6 +16,8 @@ import { WidgetShell } from "@/components/dashboard/WidgetShell";
 import { CustomizeSheet, type WidgetDef } from "@/components/dashboard/CustomizeSheet";
 import { getDashboardLayout, saveDashboardLayout } from "@/lib/dashboard.functions";
 import { getHomeSummary } from "@/lib/dashboard-home.functions";
+import { getHeroState } from "@/lib/dashboard-hero.functions";
+import { DashboardHero } from "@/components/dashboard/DashboardHero";
 import { useMarketCadence } from "@/lib/market-data/hooks";
 import { TodayFocusCard } from "@/components/dashboard/TodayFocusCard";
 import { PerformanceSnapshot } from "@/components/dashboard/PerformanceSnapshot";
