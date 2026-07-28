@@ -75,6 +75,7 @@ function DashboardPage() {
   const fetchLayout = useServerFn(getDashboardLayout);
   const saveLayout = useServerFn(saveDashboardLayout);
   const fetchHome = useServerFn(getHomeSummary);
+  const fetchHero = useServerFn(getHeroState);
 
   const { data: layout } = useQuery({
     queryKey: ["dashboard_layout"],
@@ -84,6 +85,12 @@ function DashboardPage() {
   const { data: home, isPending } = useQuery({
     queryKey: ["home_summary"],
     queryFn: () => fetchHome(),
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+  });
+  const { data: hero } = useQuery({
+    queryKey: ["dashboard_hero"],
+    queryFn: () => fetchHero(),
     staleTime: 30_000,
     refetchInterval: 60_000,
   });
