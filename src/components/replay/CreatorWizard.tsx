@@ -145,6 +145,17 @@ export function CreatorWizard({ open, onOpenChange }: { open: boolean; onOpenCha
       setPreload({ progress: 0, status: "error", message: (e as Error).message });
     }
 
+    // Persist prefs + push to recents so the next backtest inherits selection.
+    try {
+      localStorage.setItem(
+        PREFS_KEY,
+        JSON.stringify({ symbol: instrument.symbol, timeframe: tf, balance, startPos } satisfies Prefs),
+      );
+      const entry: RecentEntry = { symbol: instrument.symbol, market: market as JournalMarket, timeframe: tf };
+      const next = [entry, ...recents.filter((r) => r.symbol !== entry.symbol)].slice(0, 5);
+      localStorage.setItem(RECENTS_KEY, JSON.stringify(next));
+    } catch { /* ignore quota errors */ }
+
     create.mutate({
       data: {
         title: label,
