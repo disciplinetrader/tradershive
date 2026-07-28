@@ -58,13 +58,18 @@ export function useWorkspacePrefs() {
     hydrated.current = true;
   }, []);
 
+  // Debounced write so rapid toggles (indicator checks, resize drag) don't
+  // storm localStorage. Writes at most every 150 ms after the last change.
   useEffect(() => {
     if (!hydrated.current || typeof window === "undefined") return;
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
-    } catch {
-      /* quota / private mode — silently ignore */
-    }
+    const handle = window.setTimeout(() => {
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+      } catch {
+        /* quota / private mode — silently ignore */
+      }
+    }, 150);
+    return () => window.clearTimeout(handle);
   }, [prefs]);
 
   const update = useCallback(<K extends keyof WorkspacePrefs>(key: K, value: WorkspacePrefs[K]) => {
