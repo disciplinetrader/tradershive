@@ -106,16 +106,21 @@ export const getHeroState = createServerFn({ method: "GET" })
         }
       : null;
 
-    const activeChallenges: HeroChallenge[] = (challengesRes.data ?? []).map((c: any) => ({
-      id: c.id,
-      name: c.name ?? null,
-      status: c.status ?? null,
-      paperAccountId: c.paper_account_id ?? null,
-      profitPct: c.current_profit_pct != null ? Number(c.current_profit_pct) : null,
-      targetPct: c.target_profit_pct != null ? Number(c.target_profit_pct) : null,
-      daysElapsed: c.days_elapsed != null ? Number(c.days_elapsed) : null,
-      daysTotal: c.evaluation_days != null ? Number(c.evaluation_days) : null,
-    }));
+    const activeChallenges: HeroChallenge[] = (challengesRes.data ?? []).map((c: any) => {
+      const start = Number(c.starting_equity ?? 0);
+      const current = Number(c.current_equity ?? 0);
+      const profitPct = start > 0 ? ((current - start) / start) * 100 : null;
+      return {
+        id: c.id,
+        name: c.name ?? null,
+        status: c.status ?? null,
+        paperAccountId: c.paper_account_id ?? null,
+        profitPct,
+        targetPct: c.profit_target_pct != null ? Number(c.profit_target_pct) : null,
+        daysElapsed: c.trading_days_used != null ? Number(c.trading_days_used) : null,
+        daysTotal: c.duration_days != null ? Number(c.duration_days) : null,
+      };
+    });
 
     const lastTrade = lastTradeRes.data?.[0] ?? null;
     const lastTradeAt = lastTrade ? lastTrade.closed_at ?? lastTrade.opened_at ?? null : null;
