@@ -58,16 +58,37 @@ const SURPRISE_POOL: { symbol: string; market: JournalMarket }[] = [
 
 type StartPosition = "beginning" | "random" | "before_end";
 
+const PREFS_KEY = "replay.creator.prefs.v1";
+const RECENTS_KEY = "replay.creator.recents.v1";
+type Prefs = { symbol?: string; timeframe?: Timeframe; balance?: string; startPos?: StartPosition };
+type RecentEntry = { symbol: string; market: JournalMarket; timeframe: Timeframe };
+
+function readPrefs(): Prefs {
+  if (typeof window === "undefined") return {};
+  try { return JSON.parse(localStorage.getItem(PREFS_KEY) ?? "{}") as Prefs; } catch { return {}; }
+}
+function readRecents(): RecentEntry[] {
+  if (typeof window === "undefined") return [];
+  try { return JSON.parse(localStorage.getItem(RECENTS_KEY) ?? "[]") as RecentEntry[]; } catch { return []; }
+}
+
 export function CreatorWizard({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
+  const initial = useMemo(() => readPrefs(), []);
   const [title, setTitle] = useState("");
-  const [balance, setBalance] = useState("10000");
-  const [instrument, setInstrument] = useState<InstrumentRecord | null>(findInstrument("EUR/USD"));
+  const [balance, setBalance] = useState(initial.balance ?? "10000");
+  const [instrument, setInstrument] = useState<InstrumentRecord | null>(
+    findInstrument(initial.symbol ?? "EUR/USD") ?? findInstrument("EUR/USD"),
+  );
   const [from, setFrom] = useState(daysAgoISO(30));
   const [to, setTo] = useState(todayISO());
-  const [tf, setTf] = useState<Timeframe>("5m");
-  const [startPos, setStartPos] = useState<StartPosition>("beginning");
+  const [tf, setTf] = useState<Timeframe>(initial.timeframe ?? "5m");
+  const [startPos, setStartPos] = useState<StartPosition>(initial.startPos ?? "beginning");
+  const [recents, setRecents] = useState<RecentEntry[]>(() => readRecents());
   const [preload, setPreload] = useState<{ progress: number; status: "idle" | "loading" | "cached" | "downloaded" | "error"; message?: string }>({ progress: 0, status: "idle" });
   const navigate = useNavigate();
+
+  // Refresh recents whenever the dialog opens so newly-created sessions surface.
+  useEffect(() => { if (open) setRecents(readRecents()); }, [open]);
 
   const createFn = useServerFn(createReplaySession);
   const create = useMutation({
