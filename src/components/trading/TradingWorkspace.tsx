@@ -707,7 +707,8 @@ function TradingWorkspaceInner() {
                     <ChevronRight className="h-4 w-4" />
                   </button>
                 </div>
-                <div className="min-h-0 flex-1 overflow-auto p-2 sm:p-3">
+                <div className="min-h-0 flex-1 overflow-auto p-2 sm:p-3 space-y-3">
+                  {activeChallenge?.id && <ChallengePanel />}
                   {activeTab === "trade" && <OrderPanel />}
                   {activeTab === "journal" && <QuickJournalPanel symbol={symbol} />}
                   {activeTab === "notes" && <WorkspaceNotes symbol={symbol} />}
