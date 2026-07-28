@@ -148,9 +148,24 @@ export const ChartEngine = forwardRef<ChartHandle, Props>(function ChartEngine(
     <div className={className ?? "relative h-full w-full"}>
       <div ref={hostRef} className="absolute inset-0" />
       {children}
-      {!candles.length ? (
+      {!candles.length && !loadError ? (
         <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
           Loading {settings.symbol} · {settings.timeframe}…
+        </div>
+      ) : null}
+      {loadError ? (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/40 backdrop-blur-sm">
+          <div className="max-w-sm rounded-lg border border-border bg-background/90 p-4 text-center shadow-lg">
+            <div className="mb-1 text-sm font-semibold text-foreground">Chart unavailable</div>
+            <div className="mb-3 text-xs text-muted-foreground">{loadError}</div>
+            <button
+              type="button"
+              onClick={() => { setLoadError(null); setLoadNonce((n) => n + 1); }}
+              className="rounded-md border border-border bg-muted px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/80"
+            >
+              Retry
+            </button>
+          </div>
         </div>
       ) : null}
       <div className="pointer-events-none absolute left-3 top-3 rounded-md bg-background/60 px-2 py-1 text-xs font-medium text-foreground backdrop-blur">
