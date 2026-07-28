@@ -144,7 +144,7 @@ function HomePage() {
                     </Link>
                   ))}
                 </div>
-              ) : <EmptyState title="No active challenges" description="New events launch weekly." />}
+              ) : <EmptyState icon={Trophy} title="No active challenges" description="Practise in the Battle Arena or Championships while the next community challenge is scheduled." action={{ label: "Battle Arena", href: "/battle-arena" }} secondaryAction={{ label: "Championships", href: "/championship" }} />}
             </GlassCard>
           </div>
 
