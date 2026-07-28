@@ -395,8 +395,18 @@ function NotificationsSection() {
 
   return (
     <GlassCard className="p-6">
-      <h2 className="text-base font-semibold">Notifications</h2>
-      <p className="text-xs text-muted-foreground">Choose when we should ping you.</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold">Notifications</h2>
+          <p className="text-xs text-muted-foreground">Choose when we should ping you.</p>
+        </div>
+        <a
+          href="/settings/email"
+          className="text-xs font-medium text-primary underline-offset-4 hover:underline"
+        >
+          Manage email preferences →
+        </a>
+      </div>
       <div className="mt-5 space-y-4">
         {loading || !settings ? (
           <div className="space-y-3">
