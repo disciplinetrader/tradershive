@@ -185,16 +185,19 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* Main column — pushed right by the icon rail on immersive routes */}
       <div
+        data-app-shell-main
         className={cn(
           "relative z-10 flex min-w-0 flex-1 flex-col",
           immersive && "md:pl-[64px]",
         )}
       >
         {!immersive && (
-          <Topbar
-            onMenuClick={() => setMobileOpen(true)}
-            onSearchClick={() => setOpen(true)}
-          />
+          <div data-app-shell-topbar>
+            <Topbar
+              onMenuClick={() => setMobileOpen(true)}
+              onSearchClick={() => setOpen(true)}
+            />
+          </div>
         )}
         <main
           id="main"
@@ -206,7 +209,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className={cn("mx-auto w-full", immersive ? "max-w-none" : "max-w-[1600px]")}>{children}</div>
         </main>
         {/* Mobile bottom nav */}
-        <MobileBottomNav currentPath={pathname} onMenuClick={() => setMobileOpen(true)} />
+        <div data-app-shell-mobilenav>
+          <MobileBottomNav currentPath={pathname} onMenuClick={() => setMobileOpen(true)} />
+        </div>
       </div>
 
       <CommandPalette open={open} onOpenChange={setOpen} />
