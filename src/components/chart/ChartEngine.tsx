@@ -41,6 +41,8 @@ export const ChartEngine = forwardRef<ChartHandle, Props>(function ChartEngine(
   const adapterRef = useRef<ChartAdapter | null>(null);
   const [candles, setCandles] = useState<Candle[]>([]);
   const [quote, setQuote] = useState<Quote | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadNonce, setLoadNonce] = useState(0);
 
   // Mount adapter once
   useEffect(() => {
