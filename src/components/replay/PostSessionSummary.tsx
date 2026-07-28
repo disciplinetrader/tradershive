@@ -137,3 +137,12 @@ function Metric({ label, value, tone }: { label: string; value: React.ReactNode;
     </div>
   );
 }
+
+function formatDuration(sec: number): string {
+  if (!sec || sec <= 0) return "—";
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m`;
+  return `${Math.floor(sec)}s`;
+}
