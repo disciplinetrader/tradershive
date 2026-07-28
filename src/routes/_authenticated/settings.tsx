@@ -400,12 +400,20 @@ function NotificationsSection() {
           <h2 className="text-base font-semibold">Notifications</h2>
           <p className="text-xs text-muted-foreground">Choose when we should ping you.</p>
         </div>
-        <a
-          href="/settings/email"
-          className="text-xs font-medium text-primary underline-offset-4 hover:underline"
-        >
-          Manage email preferences →
-        </a>
+        <div className="flex flex-col items-end gap-1 text-xs">
+          <a
+            href="/settings/email"
+            className="font-medium text-primary underline-offset-4 hover:underline"
+          >
+            Manage email preferences →
+          </a>
+          <a
+            href="/feedback"
+            className="font-medium text-primary underline-offset-4 hover:underline"
+          >
+            Send feedback / report a bug →
+          </a>
+        </div>
       </div>
       <div className="mt-5 space-y-4">
         {loading || !settings ? (

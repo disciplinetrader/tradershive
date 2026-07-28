@@ -55,6 +55,7 @@ const GROUPS: { label: string; items: Item[] }[] = [
     label: "Support",
     items: [
       { to: "/admin/support", label: "Support Centre", icon: LifeBuoy },
+      { to: "/admin/feedback", label: "Feedback", icon: Megaphone },
     ],
   },
   {
