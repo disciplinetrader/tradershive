@@ -256,8 +256,9 @@ export class TwelveDataProvider implements MarketDataProvider {
     const res = (await twelveDataCandles({
       data: { symbol: toTd(q.symbol), timeframe: q.timeframe, from: q.from, to: q.to, count: q.limit },
     })) as any;
-    if (res?.error) throw new Error(res.error);
-    return res.candles ?? [];
+    const candles = res.candles ?? [];
+    if (res?.error && !candles.length) throw new Error(res.error);
+    return candles;
   }
   getHistoricalData(q: CandleQuery) { return this.getCandles(q); }
 
