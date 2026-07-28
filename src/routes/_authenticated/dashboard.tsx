@@ -121,6 +121,11 @@ function DashboardPage() {
         <HeaderGreeting onOpenSearch={() => setOpen(true)} />
       </motion.div>
 
+      <motion.div variants={item}>
+        <DashboardHero state={hero} />
+      </motion.div>
+
+
       <motion.div variants={item} className="flex items-center justify-between">
         <div>
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Quick actions</h2>
