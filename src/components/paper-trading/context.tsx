@@ -82,9 +82,11 @@ export function PaperTradingProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const s = localStorage.getItem(STORAGE.symbol);
+      const meta = s ? findSymbol(s) : null;
       if (s) setSymbolState(s);
       const m = localStorage.getItem(STORAGE.market) as PaperMarket | null;
-      if (m) setMarketState(m);
+      if (meta) setMarketState(meta.market);
+      else if (m) setMarketState(m);
       const t = localStorage.getItem(STORAGE.timeframe);
       if (t) setTimeframeState(t);
     } catch { /* ignore */ }

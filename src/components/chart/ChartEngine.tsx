@@ -5,6 +5,7 @@ import { TIMEFRAME_SECONDS } from "@/lib/market-data/constants";
 import type { ChartSettings, IndicatorConfig } from "@/lib/chart/types";
 import type { ChartAdapter, ChartAdapterFactory } from "@/lib/chart/adapter";
 import { createLightweightAdapter } from "@/lib/chart/adapters/lightweight";
+import { Button } from "@/components/ui/button";
 
 interface Props {
   settings: ChartSettings;
@@ -134,12 +135,13 @@ export const ChartEngine = forwardRef<ChartHandle, Props>(function ChartEngine(
   }), [candles]);
 
   useEffect(() => {
-    if (!adapterRef.current) return;
+    const currentAdapter = adapterRef.current;
+    if (!currentAdapter) return;
     onReady?.({
-      screenshot: () => adapterRef.current!.screenshot(),
-      fitContent: () => adapterRef.current!.fitContent(),
-      resetScale: () => adapterRef.current!.resetPriceScale(),
-      adapter: adapterRef.current,
+      screenshot: () => currentAdapter.screenshot(),
+      fitContent: () => currentAdapter.fitContent(),
+      resetScale: () => currentAdapter.resetPriceScale(),
+      adapter: currentAdapter,
       candles,
     });
   }, [candles, onReady]);
@@ -158,13 +160,14 @@ export const ChartEngine = forwardRef<ChartHandle, Props>(function ChartEngine(
           <div className="max-w-sm rounded-lg border border-border bg-background/90 p-4 text-center shadow-lg">
             <div className="mb-1 text-sm font-semibold text-foreground">Chart unavailable</div>
             <div className="mb-3 text-xs text-muted-foreground">{loadError}</div>
-            <button
+            <Button
               type="button"
+              size="sm"
+              variant="secondary"
               onClick={() => { setLoadError(null); setLoadNonce((n) => n + 1); }}
-              className="rounded-md border border-border bg-muted px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/80"
             >
               Retry
-            </button>
+            </Button>
           </div>
         </div>
       ) : null}
