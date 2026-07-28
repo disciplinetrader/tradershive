@@ -90,7 +90,7 @@ function HomePage() {
                     </li>
                   ))}
                 </ul>
-              ) : <EmptyState title="No posts yet" description="Be the first to share something." />}
+              ) : <EmptyState icon={MessageSquare} title="Start the conversation" description="No posts yet — share a chart, an idea or a lesson learned." action={{ label: "Create Post", href: "/community" }} />}
             </GlassCard>
 
             <GlassCard className="p-4">
