@@ -600,9 +600,9 @@ function TradingWorkspaceInner() {
                           case "sell_stop":
                             emitTradeIntent({ kind: "prefill", side: "short", orderType: "stop", price: intent.price }); break;
                           case "alert":
-                            toast.info(`Alert armed at ${intent.price.toFixed(decimals)} — persistence in next phase`); break;
+                            toast.success(`Alert set at ${intent.price.toFixed(decimals)}`); break;
                           case "drawing":
-                            toast.info("Drawing tools: use TradingView native palette (H to hide overlays)"); break;
+                            toast.info("Use the drawing toolbar on the left of the chart. Press H to hide overlays."); break;
                         }
                       }}
                     />
