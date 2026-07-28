@@ -281,17 +281,25 @@ export const twelveDataCandles = createServerFn({ method: "POST" })
       const fetchTo = Math.floor(to + bufferMs);
       const cacheKey = `c:${data.symbol}:${data.timeframe}:${fetchFrom}:${fetchTo}`;
 
-      const values = await coalesce(cacheKey, async () => {
-        const params: Record<string, string> = {
-          symbol: data.symbol, interval,
-          outputsize: String(Math.min(5000, Math.max(data.count ?? 500, Math.floor(expected * 1.5)))),
-          order: "ASC", format: "JSON",
-        };
-        params.start_date = new Date(fetchFrom).toISOString().slice(0, 19);
-        params.end_date   = new Date(fetchTo).toISOString().slice(0, 19);
-        const res = await td("/time_series", params);
-        return (res?.values ?? []) as any[];
-      });
+      let values: any[] = [];
+      let upstreamError: string | null = null;
+      try {
+        values = await coalesce(cacheKey, async () => {
+          const params: Record<string, string> = {
+            symbol: data.symbol, interval,
+            outputsize: String(Math.min(5000, Math.max(data.count ?? 500, Math.floor(expected * 1.5)))),
+            order: "ASC", format: "JSON",
+          };
+          params.start_date = new Date(fetchFrom).toISOString().slice(0, 19);
+          params.end_date   = new Date(fetchTo).toISOString().slice(0, 19);
+          const res = await td("/time_series", params);
+          return (res?.values ?? []) as any[];
+        });
+      } catch (e) {
+        // Rate-limited or upstream error — degrade to whatever we already have
+        // cached rather than blanking the chart.
+        upstreamError = (e as Error).message;
+      }
 
       const fetched = values.map((v) => ({
         time: new Date(v.datetime.replace(" ", "T") + "Z").getTime(),
@@ -326,7 +334,15 @@ export const twelveDataCandles = createServerFn({ method: "POST" })
       const out = [...merged.values()]
         .filter((c) => c.time >= from && c.time <= to)
         .sort((a, b) => a.time - b.time);
-      return { candles: out, cached: false };
+
+      // Only fail hard if we have literally nothing to draw.
+      if (!out.length && upstreamError) return { error: upstreamError };
+      return {
+        candles: out,
+        cached: !fetched.length,
+        degraded: !!upstreamError,
+        error: upstreamError ?? undefined,
+      };
     } catch (e) {
       return { error: (e as Error).message };
     }
