@@ -69,6 +69,13 @@ export function PostSessionSummary({
               />
               <Metric label="Profit Factor" value={t.profit_factor.toFixed(2)} />
               <Metric label="Max DD" value={`$${t.max_drawdown.toFixed(2)}`} tone="danger" />
+              <Metric label="Duration" value={formatDuration(s?.duration_seconds ?? 0)} />
+              <Metric label="Progress" value={`${s?.completion_pct ?? 0}%`} />
+              <Metric
+                label="Grade"
+                value={debrief?.grade ?? "—"}
+                tone={debrief?.grade && ["A", "B"].includes(String(debrief.grade)[0]) ? "success" : undefined}
+              />
             </div>
 
             <div className="rounded-[3px] border border-primary/30 bg-primary/5 p-3 space-y-2">
@@ -129,4 +136,13 @@ function Metric({ label, value, tone }: { label: string; value: React.ReactNode;
       <div className={`text-sm font-semibold tabular-nums ${color}`}>{value}</div>
     </div>
   );
+}
+
+function formatDuration(sec: number): string {
+  if (!sec || sec <= 0) return "—";
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m`;
+  return `${Math.floor(sec)}s`;
 }

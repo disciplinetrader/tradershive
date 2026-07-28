@@ -8,7 +8,7 @@
  * Trading Workspace — no additional setup screens.
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useNavigate } from "@tanstack/react-router";
@@ -58,16 +58,37 @@ const SURPRISE_POOL: { symbol: string; market: JournalMarket }[] = [
 
 type StartPosition = "beginning" | "random" | "before_end";
 
+const PREFS_KEY = "replay.creator.prefs.v1";
+const RECENTS_KEY = "replay.creator.recents.v1";
+type Prefs = { symbol?: string; timeframe?: Timeframe; balance?: string; startPos?: StartPosition };
+type RecentEntry = { symbol: string; market: JournalMarket; timeframe: Timeframe };
+
+function readPrefs(): Prefs {
+  if (typeof window === "undefined") return {};
+  try { return JSON.parse(localStorage.getItem(PREFS_KEY) ?? "{}") as Prefs; } catch { return {}; }
+}
+function readRecents(): RecentEntry[] {
+  if (typeof window === "undefined") return [];
+  try { return JSON.parse(localStorage.getItem(RECENTS_KEY) ?? "[]") as RecentEntry[]; } catch { return []; }
+}
+
 export function CreatorWizard({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
+  const initial = useMemo(() => readPrefs(), []);
   const [title, setTitle] = useState("");
-  const [balance, setBalance] = useState("10000");
-  const [instrument, setInstrument] = useState<InstrumentRecord | null>(findInstrument("EUR/USD"));
+  const [balance, setBalance] = useState(initial.balance ?? "10000");
+  const [instrument, setInstrument] = useState<InstrumentRecord | null>(
+    findInstrument(initial.symbol ?? "EUR/USD") ?? findInstrument("EUR/USD"),
+  );
   const [from, setFrom] = useState(daysAgoISO(30));
   const [to, setTo] = useState(todayISO());
-  const [tf, setTf] = useState<Timeframe>("5m");
-  const [startPos, setStartPos] = useState<StartPosition>("beginning");
+  const [tf, setTf] = useState<Timeframe>(initial.timeframe ?? "5m");
+  const [startPos, setStartPos] = useState<StartPosition>(initial.startPos ?? "beginning");
+  const [recents, setRecents] = useState<RecentEntry[]>(() => readRecents());
   const [preload, setPreload] = useState<{ progress: number; status: "idle" | "loading" | "cached" | "downloaded" | "error"; message?: string }>({ progress: 0, status: "idle" });
   const navigate = useNavigate();
+
+  // Refresh recents whenever the dialog opens so newly-created sessions surface.
+  useEffect(() => { if (open) setRecents(readRecents()); }, [open]);
 
   const createFn = useServerFn(createReplaySession);
   const create = useMutation({
@@ -123,6 +144,17 @@ export function CreatorWizard({ open, onOpenChange }: { open: boolean; onOpenCha
     } catch (e) {
       setPreload({ progress: 0, status: "error", message: (e as Error).message });
     }
+
+    // Persist prefs + push to recents so the next backtest inherits selection.
+    try {
+      localStorage.setItem(
+        PREFS_KEY,
+        JSON.stringify({ symbol: instrument.symbol, timeframe: tf, balance, startPos } satisfies Prefs),
+      );
+      const entry: RecentEntry = { symbol: instrument.symbol, market: market as JournalMarket, timeframe: tf };
+      const next = [entry, ...recents.filter((r) => r.symbol !== entry.symbol)].slice(0, 5);
+      localStorage.setItem(RECENTS_KEY, JSON.stringify(next));
+    } catch { /* ignore quota errors */ }
 
     create.mutate({
       data: {
@@ -205,6 +237,30 @@ export function CreatorWizard({ open, onOpenChange }: { open: boolean; onOpenCha
               onSelect={(inst) => setInstrument(inst)}
               placeholder="Search instrument (e.g. EU → EURUSD, Gold, BTC…)"
             />
+            {recents.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Recent</span>
+                {recents.map((r) => (
+                  <button
+                    key={r.symbol}
+                    type="button"
+                    onClick={() => {
+                      const inst = findInstrument(r.symbol);
+                      if (inst) setInstrument(inst);
+                      setTf(r.timeframe);
+                    }}
+                    className={cn(
+                      "rounded-full border px-2 py-0.5 text-[10px] transition",
+                      instrument?.symbol === r.symbol
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border/60 bg-background/40 text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {r.symbol} · {r.timeframe}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="space-y-1.5">

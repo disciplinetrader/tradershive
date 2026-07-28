@@ -171,12 +171,30 @@ export function ReplayProvider({ id, children }: { id: string; children: ReactNo
   const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([]);
   const prevCursorRef = useRef(0);
 
-  // Initialize cursor when candles or session change
+  // Initialize cursor when candles or session change. Honours the
+  // `start:random` / `start:before_end` tags set by CreatorWizard so the
+  // "Start Position" control in Create Backtest is not cosmetic.
   useEffect(() => {
     if (!candles.length || !session) return;
-    const target = session.cursor_ts ? new Date(session.cursor_ts).getTime() : candles[0].time;
-    const nearest = Math.max(0, candles.findIndex((c) => c.time >= target));
-    const idx = nearest === -1 ? Math.floor(candles.length / 3) : Math.max(20, nearest);
+    let idx: number;
+    if (session.cursor_ts) {
+      const target = new Date(session.cursor_ts).getTime();
+      const nearest = candles.findIndex((c) => c.time >= target);
+      idx = nearest === -1 ? Math.max(20, Math.floor(candles.length / 3)) : Math.max(20, nearest);
+    } else {
+      const tags = session.tags ?? [];
+      const startTag = tags.find((t) => t.startsWith("start:"))?.slice(6);
+      if (startTag === "random") {
+        // Leave enough tail for meaningful playback (~30% margin).
+        const min = Math.max(20, Math.floor(candles.length * 0.1));
+        const max = Math.max(min + 1, Math.floor(candles.length * 0.7));
+        idx = Math.floor(min + Math.random() * (max - min));
+      } else if (startTag === "before_end") {
+        idx = Math.max(20, Math.floor(candles.length * 0.85));
+      } else {
+        idx = Math.min(candles.length - 1, 20);
+      }
+    }
     setCursorIdx(idx);
     prevCursorRef.current = idx;
     // eslint-disable-next-line react-hooks/exhaustive-deps

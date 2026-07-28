@@ -40,26 +40,28 @@ export function ReplayHUD() {
 
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-[3px] border border-border/60 bg-card/60 px-3 py-1.5 text-[11px] backdrop-blur">
-      {/* Playback status pill (click to toggle) */}
+      {/* Playback status pill (click to toggle). Says REPLAY, not LIVE, so
+          historical playback is never mistaken for a live market feed. */}
       <button
         onClick={toggle}
         aria-label={playing ? "Pause replay" : "Play replay"}
+        aria-pressed={playing}
         className={cn(
           "inline-flex items-center gap-1.5 rounded-[3px] border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
           playing
-            ? "border-success/40 bg-success/10 text-success hover:bg-success/15"
+            ? "border-primary/40 bg-primary/10 text-primary hover:bg-primary/15"
             : "border-warning/40 bg-warning/10 text-warning hover:bg-warning/15",
         )}
       >
         {playing ? (
           <>
             <Circle className="h-2 w-2 fill-current animate-pulse" />
-            Live · {speed}x
+            Replay · {speed}x
           </>
         ) : (
           <>
             <Pause className="h-2.5 w-2.5" />
-            Paused
+            Replay · Paused
           </>
         )}
       </button>

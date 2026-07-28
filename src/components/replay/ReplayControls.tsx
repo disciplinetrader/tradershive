@@ -1,10 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowRightToLine,
   Bookmark,
   ChevronLeft,
   ChevronRight,
   Flag,
+  Keyboard,
   Pause,
   Play,
   RefreshCw,
@@ -25,11 +26,23 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { SPEEDS } from "@/lib/replay/constants";
 import { inferSession, SESSION_LABEL } from "@/lib/statistics/session";
 import { useReplay } from "./context";
 import { cn } from "@/lib/utils";
+
+/** Keyboard shortcut sheet — opens with `?`, closes with Esc. */
+const SHORTCUTS: Array<[string, string]> = [
+  ["Space", "Play / Pause"],
+  ["← / →", "Step 1 candle"],
+  ["Shift + ← / →", "Skip 10 candles"],
+  ["B / Shift+B", "Next / previous bookmark"],
+  ["T / Shift+T", "Next / previous trade"],
+  ["?", "Show this help"],
+  ["Esc", "Close dialogs · exit focus"],
+];
 
 function IconBtn({ label, onClick, children, disabled }: { label: string; onClick: () => void; children: React.ReactNode; disabled?: boolean }) {
   return (
@@ -49,6 +62,7 @@ export function ReplayControls() {
     playing, toggle, restart, replayAgain, step, skip, speed, setSpeed,
     candles, cursorIdx, setCursorIdx, jumpTo, fastForwardUntil, addCheckpoint,
   } = useReplay();
+  const [helpOpen, setHelpOpen] = useState(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -61,6 +75,7 @@ export function ReplayControls() {
       else if (e.key === "B") { jumpTo("prev_bookmark"); }
       else if (e.key === "t") { jumpTo("next_trade"); }
       else if (e.key === "T") { jumpTo("prev_trade"); }
+      else if (e.key === "?") { e.preventDefault(); setHelpOpen((v) => !v); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -156,8 +171,13 @@ export function ReplayControls() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <div className="ml-auto rounded-md border border-border/50 bg-background/50 px-2 py-1 text-[10px] font-medium text-muted-foreground">
-            Session: <span className="text-foreground">{SESSION_LABEL[sessionKey]}</span>
+          <div className="ml-auto flex items-center gap-1.5">
+            <div className="rounded-md border border-border/50 bg-background/50 px-2 py-1 text-[10px] font-medium text-muted-foreground">
+              Session: <span className="text-foreground">{SESSION_LABEL[sessionKey]}</span>
+            </div>
+            <IconBtn label="Keyboard shortcuts (?)" onClick={() => setHelpOpen(true)}>
+              <Keyboard className="h-4 w-4" />
+            </IconBtn>
           </div>
         </div>
 
@@ -197,6 +217,29 @@ export function ReplayControls() {
           </div>
         </div>
       </div>
+
+      <Dialog open={helpOpen} onOpenChange={setHelpOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <Keyboard className="h-4 w-4 text-primary" /> Keyboard Shortcuts
+            </DialogTitle>
+          </DialogHeader>
+          <ul className="space-y-1.5 text-sm">
+            {SHORTCUTS.map(([keys, label]) => (
+              <li key={keys} className="flex items-center justify-between gap-4">
+                <span className="text-muted-foreground">{label}</span>
+                <kbd className="rounded border border-border/60 bg-background/60 px-2 py-0.5 text-[11px] font-medium tabular-nums text-foreground">
+                  {keys}
+                </kbd>
+              </li>
+            ))}
+          </ul>
+          <p className="text-[11px] text-muted-foreground pt-1">
+            Shortcuts ignore typing in inputs. Press <kbd className="mx-0.5 rounded border border-border/60 bg-background/60 px-1 py-0.5 text-[10px]">?</kbd> anytime to reopen.
+          </p>
+        </DialogContent>
+      </Dialog>
     </TooltipProvider>
   );
 }
