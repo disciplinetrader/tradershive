@@ -56,7 +56,15 @@ export function NotesPanel() {
               </button>
             </motion.div>
           ))}
-          {list.length === 0 ? <div className="text-xs text-muted-foreground">No notes yet.</div> : null}
+          {list.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-border/50 bg-background/30 px-3 py-4 text-center">
+              <div className="text-xs font-medium text-foreground">No notes yet</div>
+              <div className="mt-0.5 text-[11px] text-muted-foreground">
+                Press <kbd className="mx-0.5 rounded border border-border/60 bg-background/60 px-1 py-0.5 text-[10px]">Enter</kbd>
+                to log the current candle time and what you're seeing.
+              </div>
+            </div>
+          ) : null}
         </AnimatePresence>
       </div>
     </GlassCard>
