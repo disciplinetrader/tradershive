@@ -36,7 +36,10 @@ export function TradePanel({ symbol, market }: Props) {
     mutationFn: async (side: "long" | "short") => {
       if (!accountId) throw new Error("Select a paper account first");
       if (!meta) throw new Error(`Unknown symbol: ${symbol}`);
-      if (!price) throw new Error("No live price available yet");
+      // Hard guard: server rejects entry_price <= 0. Wait for the live quote
+      // (or a valid ref price) rather than firing a doomed request.
+      const px = Number(price);
+      if (!Number.isFinite(px) || px <= 0) throw new Error("Waiting for live price — try again in a moment");
       const lot = Number(size);
       if (!lot || lot <= 0) throw new Error("Invalid size");
       return submitTrade({
@@ -47,7 +50,7 @@ export function TradePanel({ symbol, market }: Props) {
           direction: side,
           order_type: "market",
           lot_size: lot,
-          entry_price: price,
+          entry_price: px,
           stop_loss: sl ? Number(sl) : null,
           take_profit: tp ? Number(tp) : null,
           commission: 0,

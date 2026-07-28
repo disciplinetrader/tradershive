@@ -51,6 +51,9 @@ export function OrderPanel() {
   const [notes, setNotes] = useState("");
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [tagQuery, setTagQuery] = useState("");
+  // Persistent inline "armed" state — set when the workspace routes a B/S
+  // shortcut or chart intent to the panel; replaces the previous toasts.
+  const [armed, setArmed] = useState<Side | null>(null);
 
   const openFn = useServerFn(openTrade);
   const orderFn = useServerFn(placeOrder);
@@ -147,6 +150,17 @@ export function OrderPanel() {
         throw new Error(validation.errors[0] ?? "Order rejected");
       }
 
+      // Server rejects entry_price <= 0. Guard against submitting a market
+      // order before the first live quote lands (previously produced a raw
+      // "entry_price: Number must be greater than 0" toast).
+      const marketPx = Number(livePrice ?? entryNum);
+      if (orderType === "market" && !(marketPx > 0)) {
+        throw new Error("Waiting for live price — try again in a moment");
+      }
+      if (orderType !== "market" && !(entryNum > 0)) {
+        throw new Error("Enter a trigger price");
+      }
+
       const base = {
         account_id: accountId, symbol, market: symbolMeta.market, direction: side,
         lot_size: lotNum, stop_loss: slNum, take_profit: tpNum,
@@ -157,13 +171,14 @@ export function OrderPanel() {
       };
       void opts;
       if (orderType === "market") {
-        return openFn({ data: { ...base, order_type: "market", entry_price: livePrice ?? entryNum } });
+        return openFn({ data: { ...base, order_type: "market", entry_price: marketPx } });
       }
       return orderFn({ data: { ...base, order_type: orderType, trigger_price: entryNum } });
     },
     onSuccess: () => {
       toast.success(orderType === "market" ? "Trade opened" : "Order placed");
       reset();
+      setArmed(null);
       qc.invalidateQueries({ queryKey: ["paper"] });
     },
     onError: (e) => toast.error((e as Error).message),
@@ -192,15 +207,16 @@ export function OrderPanel() {
       if (e.key === "b" && !inField) { setSide("long"); }
       if (e.key === "s" && !inField) { setSide("short"); }
       if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); attemptPlace(); }
+      if (e.key === "Escape" && armed) { setArmed(null); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [openMut]);
+  }, [openMut, armed]);
 
-  // Listen for chart-side intents (right-click menu, planner "Send")
+  // Listen for chart-side intents (right-click menu, planner "Send", B/S shortcuts).
   useEffect(() => {
     const unsub = onTradeIntent((i) => {
-      if (i.kind === "focus_side") { setSide(i.side); return; }
+      if (i.kind === "focus_side") { setSide(i.side); setArmed(i.side); return; }
       const isSubmit = i.kind === "submit";
       setSide(i.side);
       setOrderType(i.orderType);
@@ -217,13 +233,38 @@ export function OrderPanel() {
   const canCreateTag = tagQuery && !(tags ?? []).some((t) => t.name.toLowerCase() === tagQuery.toLowerCase());
 
   const riskWarn = calc && account?.max_trade_risk_pct != null && calc.riskPct > Number(account.max_trade_risk_pct);
+  const waitingForPrice = orderType === "market" && !(Number(livePrice ?? entryNum) > 0);
 
   return (
     <div className="flex flex-col gap-3">
+      {armed ? (
+        <div
+          role="status"
+          aria-live="polite"
+          className={cn(
+            "flex items-center justify-between gap-2 rounded-md border px-2 py-1.5 text-[11px] font-semibold",
+            armed === "long"
+              ? "border-success/40 bg-success/10 text-success"
+              : "border-danger/40 bg-danger/10 text-danger",
+          )}
+        >
+          <span className="inline-flex items-center gap-1.5">
+            <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-current" />
+            Armed · {armed === "long" ? "BUY" : "SELL"} — <kbd className="rounded bg-background/60 px-1 py-0.5 font-mono text-[10px]">↵</kbd> submit ·
+            <kbd className="rounded bg-background/60 px-1 py-0.5 font-mono text-[10px]">Esc</kbd> cancel
+          </span>
+          <button
+            type="button"
+            onClick={() => setArmed(null)}
+            className="rounded p-0.5 text-current/70 hover:text-current focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current/40"
+            aria-label="Clear armed side"
+          >×</button>
+        </div>
+      ) : null}
       <Tabs value={side} onValueChange={(v) => setSide(v as Side)}>
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="long" className="cursor-pointer transition-all duration-150 data-[state=active]:bg-success/20 data-[state=active]:text-success data-[state=active]:shadow-sm">Buy</TabsTrigger>
-          <TabsTrigger value="short" className="cursor-pointer transition-all duration-150 data-[state=active]:bg-danger/20 data-[state=active]:text-danger data-[state=active]:shadow-sm">Sell</TabsTrigger>
+          <TabsTrigger value="long" aria-pressed={side === "long"} className="cursor-pointer transition-all duration-150 data-[state=active]:bg-success/20 data-[state=active]:text-success data-[state=active]:shadow-sm focus-visible:ring-2 focus-visible:ring-success/50">Buy</TabsTrigger>
+          <TabsTrigger value="short" aria-pressed={side === "short"} className="cursor-pointer transition-all duration-150 data-[state=active]:bg-danger/20 data-[state=active]:text-danger data-[state=active]:shadow-sm focus-visible:ring-2 focus-visible:ring-danger/50">Sell</TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -407,14 +448,21 @@ export function OrderPanel() {
           <Button variant="outline" onClick={reset} className="cursor-pointer transition-all duration-150 active:scale-[0.98]"><RotateCcw className="mr-1.5 h-4 w-4" /> Reset</Button>
           <Button
             onClick={attemptPlace}
-            disabled={openMut.isPending || !accountId || !symbolMeta || (validation != null && !validation.ok)}
+            disabled={openMut.isPending || !accountId || !symbolMeta || (validation != null && !validation.ok) || waitingForPrice}
+            aria-label={waitingForPrice ? "Waiting for live price" : (side === "long" ? "Buy market order" : "Sell market order")}
             className={cn("flex-1 cursor-pointer shadow-elegant transition-all duration-150 hover:shadow-md active:scale-[0.98] focus-visible:ring-2",
               side === "long"
                 ? "bg-success text-white hover:bg-success/90 focus-visible:ring-success/60"
                 : "bg-danger text-white hover:bg-danger/90 focus-visible:ring-danger/60")}
           >
             <Send className="mr-1.5 h-4 w-4" />
-            {validation && !validation.ok ? "Insufficient margin" : (orderType === "market" ? (side === "long" ? "Buy market" : "Sell market") : "Place order")}
+            {validation && !validation.ok
+              ? "Insufficient margin"
+              : waitingForPrice
+              ? "Waiting for price…"
+              : orderType === "market"
+              ? (side === "long" ? "Buy market" : "Sell market")
+              : "Place order"}
           </Button>
         </div>
       </div>

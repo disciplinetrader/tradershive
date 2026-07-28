@@ -186,6 +186,8 @@ function TradingWorkspaceInner() {
     queryFn: () => fetchOpen({ data: { account_id: accountId!, status: "open" } }) as unknown as Promise<OpenTradeRow[]>,
     enabled: !!accountId,
     refetchInterval: 4000,
+    // Don't burn quota while the tab is hidden — resume on visibilitychange.
+    refetchIntervalInBackground: false,
   });
   const openHere: OpenTradeLine[] = useMemo(
     () => (openTradesAll ?? [])
@@ -240,14 +242,16 @@ function TradingWorkspaceInner() {
   }, [symbol]);
 
   useTradingShortcuts({
-    onBuy: () => { emitTradeIntent({ kind: "focus_side", side: "long" }); toast.info("Buy side selected (Enter to submit)"); },
-    onSell: () => { emitTradeIntent({ kind: "focus_side", side: "short" }); toast.info("Sell side selected"); },
+    // The persistent "Armed" chip inside OrderPanel now provides feedback,
+    // so we no longer stack a toast on every B/S press.
+    onBuy: () => { emitTradeIntent({ kind: "focus_side", side: "long" }); },
+    onSell: () => { emitTradeIntent({ kind: "focus_side", side: "short" }); },
     onClose: () => closeLast.mutate(),
     onScreenshot: screenshot,
     onPlanTrade: () => setPlannerActive((v) => !v),
     onToggleDrawings: () => setDrawingsHidden((v) => !v),
-    onToggleReplay: () => toast.info("Replay toggle: coming in next phase"),
-    onCancelOrders: () => toast.info("Cancel all pending orders: coming in next phase"),
+    onToggleReplay: () => { setRightOpen(true); setActiveTab("trade"); },
+    onCancelOrders: () => { setRightOpen(true); setActiveTab("trade"); },
   });
 
   const rightOpen = prefs.rightOpen;
@@ -596,9 +600,9 @@ function TradingWorkspaceInner() {
                           case "sell_stop":
                             emitTradeIntent({ kind: "prefill", side: "short", orderType: "stop", price: intent.price }); break;
                           case "alert":
-                            toast.info(`Alert armed at ${intent.price.toFixed(decimals)} — persistence in next phase`); break;
+                            toast.success(`Alert set at ${intent.price.toFixed(decimals)}`); break;
                           case "drawing":
-                            toast.info("Drawing tools: use TradingView native palette (H to hide overlays)"); break;
+                            toast.info("Use the drawing toolbar on the left of the chart. Press H to hide overlays."); break;
                         }
                       }}
                     />

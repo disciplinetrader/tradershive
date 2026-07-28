@@ -87,7 +87,6 @@ export const ChartEngine = forwardRef<ChartHandle, Props>(function ChartEngine(
       .catch((e) => {
         if (cancelled) return;
         const msg = (e as Error)?.message ?? "Unknown error";
-        console.warn("[chart] history load failed", e);
         const friendly = /rate|429|cooldown|quota/i.test(msg)
           ? "Market data provider is rate-limited. Retrying shortly…"
           : /not_configured/i.test(msg)
