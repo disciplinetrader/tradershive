@@ -473,7 +473,7 @@ function TradingWorkspaceInner() {
             <Button
               variant="ghost" size="sm"
               className="h-7 gap-1 px-2 text-[11px]"
-              onClick={() => setDetailsOpen((v) => !v)}
+              onClick={() => setDetailsOpen(!detailsOpen)}
               aria-expanded={detailsOpen}
               title="Toggle account & market details"
             >
