@@ -262,7 +262,7 @@ export const adminUpdateFeedback = createServerFn({ method: "POST" })
     if (data.internal_notes !== undefined) patch.internal_notes = data.internal_notes;
     if (data.tags !== undefined) patch.tags = data.tags;
     if (data.resolve && data.source === "bugs") patch.resolved_at = new Date().toISOString();
-    const { data: row, error } = await context.supabase.from(table).update(patch).eq("id", data.id).select("*").single();
+    const { data: row, error } = await context.supabase.from(table).update(patch as any).eq("id", data.id).select("*").single();
     if (error) throw new Error(error.message);
     return row;
   });
