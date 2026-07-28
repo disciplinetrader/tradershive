@@ -1,10 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowRightToLine,
   Bookmark,
   ChevronLeft,
   ChevronRight,
   Flag,
+  Keyboard,
   Pause,
   Play,
   RefreshCw,
@@ -25,11 +26,23 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { SPEEDS } from "@/lib/replay/constants";
 import { inferSession, SESSION_LABEL } from "@/lib/statistics/session";
 import { useReplay } from "./context";
 import { cn } from "@/lib/utils";
+
+/** Keyboard shortcut sheet — opens with `?`, closes with Esc. */
+const SHORTCUTS: Array<[string, string]> = [
+  ["Space", "Play / Pause"],
+  ["← / →", "Step 1 candle"],
+  ["Shift + ← / →", "Skip 10 candles"],
+  ["B / Shift+B", "Next / previous bookmark"],
+  ["T / Shift+T", "Next / previous trade"],
+  ["?", "Show this help"],
+  ["Esc", "Close dialogs · exit focus"],
+];
 
 function IconBtn({ label, onClick, children, disabled }: { label: string; onClick: () => void; children: React.ReactNode; disabled?: boolean }) {
   return (
