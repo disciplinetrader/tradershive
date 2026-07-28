@@ -18,7 +18,7 @@ import { getDashboardLayout, saveDashboardLayout } from "@/lib/dashboard.functio
 import { getHomeSummary } from "@/lib/dashboard-home.functions";
 import { getHeroState } from "@/lib/dashboard-hero.functions";
 import { DashboardHero } from "@/components/dashboard/DashboardHero";
-import { useMarketCadence } from "@/lib/market-data/hooks";
+
 import { TodayFocusCard } from "@/components/dashboard/TodayFocusCard";
 import { PerformanceSnapshot } from "@/components/dashboard/PerformanceSnapshot";
 import { ActionItemsList } from "@/components/dashboard/ActionItemsList";

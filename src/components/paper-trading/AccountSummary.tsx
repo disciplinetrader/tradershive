@@ -22,7 +22,6 @@ import { usePaper } from "./context";
 
 export function AccountSummary() {
   const { account, accountId, loading } = usePaper();
-  const quotes = useLiveQuotes();
   const fetchOpen = useServerFn(listTrades);
   const fetchStats = useServerFn(getAccountStats);
 
@@ -32,6 +31,8 @@ export function AccountSummary() {
     enabled: !!accountId,
     refetchInterval: 5000,
   });
+
+  const quotes = useLiveQuotes(openTrades?.map((t) => t.symbol));
 
   const { data: stats } = useQuery({
     queryKey: ["paper", "stats", accountId],
