@@ -66,7 +66,7 @@ function SettingsPage() {
             <Select value={form.default_timeframe} onValueChange={(v) => setForm({ ...form, default_timeframe: v as any })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {["30s","1m","3m","5m","15m","30m","1H","2H","4H","1D","1W","1M"].map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                {["1m","3m","5m","15m","30m","1H","2H","4H","1D","1W","1M"].map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
               </SelectContent>
             </Select>
           </Field>

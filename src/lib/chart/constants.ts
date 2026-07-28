@@ -11,7 +11,7 @@ export const CHART_TYPES: { key: ChartType; label: string }[] = [
   { key: "baseline", label: "Baseline" },
 ];
 
-export const TIMEFRAMES: Timeframe[] = ["30s","1m","3m","5m","15m","30m","1H","2H","4H","1D","1W","1M"];
+export const TIMEFRAMES: Timeframe[] = ["1m","3m","5m","15m","30m","1H","2H","4H","1D","1W","1M"];
 
 export const DRAWING_TOOLS: { key: DrawingTool; label: string; group: string }[] = [
   { key: "cursor", label: "Cursor", group: "cursor" },

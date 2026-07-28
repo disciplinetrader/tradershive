@@ -18,8 +18,6 @@ const REST = "https://api.binance.com";
 const WS = "wss://stream.binance.com:9443/stream";
 
 const TF_MAP: Partial<Record<Timeframe, string>> = {
-  // Binance streams no native 30-second kline; consumers should either use
-  // 1m and downsample client-side or select a provider that supports 30s.
   "1m": "1m", "3m": "3m", "5m": "5m", "15m": "15m", "30m": "30m",
   "1H": "1h", "2H": "2h", "4H": "4h", "1D": "1d", "1W": "1w", "1M": "1M",
 };

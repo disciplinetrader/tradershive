@@ -1,7 +1,7 @@
 export type ReplayMode = "trade" | "session" | "free" | "day" | "range";
 export type ReplayStatus = "active" | "paused" | "completed" | "archived";
 export type ReplayMarket = "forex" | "crypto" | "stocks" | "indices" | "futures" | "metals";
-export type Timeframe = "30s" | "1m" | "3m" | "5m" | "15m" | "30m" | "1H" | "4H" | "1D";
+export type Timeframe = "1m" | "3m" | "5m" | "15m" | "30m" | "1H" | "4H" | "1D";
 export type BookmarkCategory = "good_setup" | "bad_setup" | "mistake" | "lesson" | "question" | "custom";
 export type ReplayTradeStatus = "open" | "closed" | "cancelled";
 export type OrderType = "market" | "limit" | "stop";
