@@ -136,7 +136,7 @@ function ReplayDashboard() {
     { label: "Total Trades", value: perf.totalTrades, icon: Activity },
     { label: "Average RR", value: perf.avgRR.toFixed(2), icon: Target, tone: "info" as const },
     { label: "Sessions Completed", value: perf.sessionsCompleted, icon: Trophy, tone: "warning" as const },
-    { label: "Profit Factor", value: perf.profitFactor.toFixed(2), icon: TrendingUp, tone: (perf.profitFactor >= 1 ? "success" : "danger") as const },
+    { label: "Profit Factor", value: perf.profitFactor.toFixed(2), icon: TrendingUp, tone: perf.profitFactor >= 1 ? ("success" as const) : ("danger" as const) },
   ];
 
   return (
