@@ -122,12 +122,19 @@ export function ProductTourProvider({ children }: { children: ReactNode }) {
   const start = useCallback(() => {
     setStep(0);
     setOpen(true);
+    try {
+      // Lightweight forwarder; ignore if analytics module absent.
+      void import("@/lib/onboarding/analytics").then((m) => m.trackOnboarding("tour_started"));
+    } catch { /* noop */ }
   }, []);
 
   const markCompleted = useCallback(() => {
     try { localStorage.setItem(STORAGE_KEY, "1"); } catch { /* noop */ }
     setHasCompleted(true);
     setOpen(false);
+    try {
+      void import("@/lib/onboarding/analytics").then((m) => m.trackOnboarding("tour_completed"));
+    } catch { /* noop */ }
   }, []);
 
   const value = useMemo<TourCtx>(() => ({ start, hasCompleted }), [start, hasCompleted]);
