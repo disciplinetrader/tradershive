@@ -80,9 +80,9 @@ export const getHeroState = createServerFn({ method: "GET" })
         context.supabase.from("journal_entries").select("trade_id").eq("user_id", uid).not("trade_id", "is", null).limit(2000),
         context.supabase
           .from("prop_challenges")
-          .select("id, name, status, paper_account_id, current_profit_pct, target_profit_pct, days_elapsed, evaluation_days, created_at")
+          .select("id, name, status, paper_account_id, starting_equity, current_equity, profit_target_pct, trading_days_used, duration_days, created_at")
           .eq("user_id", uid)
-          .in("status", ["active", "in_progress"])
+          .eq("status", "active")
           .order("created_at", { ascending: false })
           .limit(5),
       ]);
