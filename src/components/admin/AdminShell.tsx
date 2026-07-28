@@ -3,7 +3,7 @@ import { ReactNode } from "react";
 import {
   Activity, AlertTriangle, Award, BarChart3, Bell, BookOpen, Boxes,
   Cog, CreditCard, Database, DollarSign, FileText, Flag, HeartPulse,
-  LayoutDashboard, LineChart, LifeBuoy, Megaphone, Shield, ShieldAlert,
+  LayoutDashboard, LineChart, LifeBuoy, Mail, Megaphone, Shield, ShieldAlert,
   Sparkles, Trophy, Users, Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
