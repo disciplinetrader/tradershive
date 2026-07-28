@@ -71,14 +71,29 @@ export const ChartEngine = forwardRef<ChartHandle, Props>(function ChartEngine(
     const to = Date.now();
     const tfMs = TIMEFRAME_SECONDS[settings.timeframe] * 1000;
     const from = to - tfMs * 500;
+    setLoadError(null);
     marketData
       .getCandles({ symbol: settings.symbol, timeframe: settings.timeframe, from, to, limit: 500 }, settings.market)
       .then((rows) => {
         if (cancelled) return;
+        if (!rows || rows.length === 0) {
+          setLoadError("No data returned by market provider.");
+          return;
+        }
         setCandles(rows);
         adapterRef.current?.setCandles(rows);
       })
-      .catch((e) => console.warn("[chart] history load failed", e));
+      .catch((e) => {
+        if (cancelled) return;
+        const msg = (e as Error)?.message ?? "Unknown error";
+        console.warn("[chart] history load failed", e);
+        const friendly = /rate|429|cooldown|quota/i.test(msg)
+          ? "Market data provider is rate-limited. Retrying shortly…"
+          : /not_configured/i.test(msg)
+          ? "Market data provider is not configured."
+          : `Couldn't load ${settings.symbol}. ${msg}`;
+        setLoadError(friendly);
+      });
 
     const sub = marketData.subscribe(settings.symbol, (q) => {
       setQuote(q); onQuote?.(q);
@@ -99,7 +114,7 @@ export const ChartEngine = forwardRef<ChartHandle, Props>(function ChartEngine(
     }, settings.market);
 
     return () => { cancelled = true; sub.unsubscribe(); };
-  }, [settings.symbol, settings.timeframe, settings.market, onQuote]);
+  }, [settings.symbol, settings.timeframe, settings.market, onQuote, loadNonce]);
 
   // Indicators + volume
   useEffect(() => { adapterRef.current?.syncOverlayIndicators(indicators, candles); }, [indicators, candles]);
