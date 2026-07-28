@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/layout/app-shell";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { RouteError } from "@/components/common/RouteError";
+import { FeedbackProvider } from "@/components/feedback/FeedbackProvider";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
