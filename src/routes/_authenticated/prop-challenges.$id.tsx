@@ -36,6 +36,7 @@ function ChallengeDetail() {
   const tick = useServerFn(tickPropChallenge);
   const abandon = useServerFn(abandonPropChallenge);
   const remove = useServerFn(deletePropChallenge);
+  const { active: activeSession, setActive } = useActivePropChallenge();
 
   const [confirmAbandon, setConfirmAbandon] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
