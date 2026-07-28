@@ -55,6 +55,8 @@ import { useWorkspacePrefs, type WorkspaceTab } from "@/hooks/use-workspace-pref
 import { QuickJournalPanel } from "@/components/trading/QuickJournalPanel";
 import { WorkspaceNotes } from "@/components/trading/WorkspaceNotes";
 import { PlaybookQuickAttach } from "@/components/playbook/PlaybookQuickAttach";
+import { ChallengePanel } from "@/components/prop-challenges/ChallengePanel";
+import { useActivePropChallenge } from "@/lib/prop-challenges/active-session";
 
 const CHART_TIMEFRAMES: Timeframe[] = ["1m", "5m", "15m", "30m", "1H", "4H", "1D", "1W"];
 
