@@ -128,7 +128,7 @@ function HomePage() {
                     </Link>
                   ))}
                 </div>
-              ) : <EmptyState title="Nothing scheduled" description="Host a session for the community." />}
+              ) : <EmptyState icon={Video} title="Nothing scheduled" description="Host a session to teach, review setups or run a live trade with the community." action={{ label: "Host a Session", href: "/community/live" }} />}
             </GlassCard>
 
             <GlassCard className="p-4">
