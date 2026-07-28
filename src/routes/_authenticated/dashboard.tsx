@@ -16,6 +16,8 @@ import { WidgetShell } from "@/components/dashboard/WidgetShell";
 import { CustomizeSheet, type WidgetDef } from "@/components/dashboard/CustomizeSheet";
 import { getDashboardLayout, saveDashboardLayout } from "@/lib/dashboard.functions";
 import { getHomeSummary } from "@/lib/dashboard-home.functions";
+import { getHeroState } from "@/lib/dashboard-hero.functions";
+import { DashboardHero } from "@/components/dashboard/DashboardHero";
 import { useMarketCadence } from "@/lib/market-data/hooks";
 import { TodayFocusCard } from "@/components/dashboard/TodayFocusCard";
 import { PerformanceSnapshot } from "@/components/dashboard/PerformanceSnapshot";
@@ -73,6 +75,7 @@ function DashboardPage() {
   const fetchLayout = useServerFn(getDashboardLayout);
   const saveLayout = useServerFn(saveDashboardLayout);
   const fetchHome = useServerFn(getHomeSummary);
+  const fetchHero = useServerFn(getHeroState);
 
   const { data: layout } = useQuery({
     queryKey: ["dashboard_layout"],
@@ -82,6 +85,12 @@ function DashboardPage() {
   const { data: home, isPending } = useQuery({
     queryKey: ["home_summary"],
     queryFn: () => fetchHome(),
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+  });
+  const { data: hero } = useQuery({
+    queryKey: ["dashboard_hero"],
+    queryFn: () => fetchHero(),
     staleTime: 30_000,
     refetchInterval: 60_000,
   });
@@ -111,6 +120,11 @@ function DashboardPage() {
       <motion.div variants={item}>
         <HeaderGreeting onOpenSearch={() => setOpen(true)} />
       </motion.div>
+
+      <motion.div variants={item}>
+        <DashboardHero state={hero} />
+      </motion.div>
+
 
       <motion.div variants={item} className="flex items-center justify-between">
         <div>
