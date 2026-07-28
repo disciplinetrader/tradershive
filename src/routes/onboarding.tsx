@@ -121,7 +121,7 @@ function OnboardingPage() {
       ? { onboarded: true }
       : {
           onboarded: true,
-          experience_level: experience,
+          experience: experience,
           preferred_markets: markets,
           preferred_market: markets[0]
             ? (MARKET_TO_PRIMARY[markets[0]] as "forex" | "crypto" | "stocks" | "futures" | "indices")
