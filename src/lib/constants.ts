@@ -39,21 +39,72 @@ export const MARKETS = [
 ] as const;
 export type Market = (typeof MARKETS)[number]["value"];
 
+/**
+ * Extended market list used by onboarding & preferences UI.
+ * Values are stored on `profiles.preferred_markets` (string[]).
+ * The single primary market is mapped through MARKET_TO_PRIMARY.
+ */
+export const MARKETS_EXTENDED = [
+  { value: "forex", label: "Forex", emoji: "💱" },
+  { value: "crypto", label: "Crypto", emoji: "₿" },
+  { value: "indices", label: "Indices", emoji: "📊" },
+  { value: "gold", label: "Gold", emoji: "🥇" },
+  { value: "silver", label: "Silver", emoji: "🥈" },
+  { value: "oil", label: "Oil", emoji: "🛢️" },
+  { value: "stocks", label: "Stocks", emoji: "📈" },
+  { value: "futures", label: "Futures", emoji: "⚡" },
+] as const;
+export type MarketExtended = (typeof MARKETS_EXTENDED)[number]["value"];
+
+export const MARKET_TO_PRIMARY: Record<MarketExtended, "forex" | "crypto" | "stocks" | "futures" | "indices"> = {
+  forex: "forex",
+  crypto: "crypto",
+  indices: "indices",
+  gold: "forex",
+  silver: "forex",
+  oil: "futures",
+  stocks: "stocks",
+  futures: "futures",
+};
+
 export const TRADING_STYLES = [
   { value: "scalper", label: "Scalping", hint: "Minutes" },
-  { value: "day_trader", label: "Intraday", hint: "Same-day" },
+  { value: "day_trader", label: "Day Trading", hint: "Same-day" },
   { value: "swing_trader", label: "Swing", hint: "Days to weeks" },
   { value: "position_trader", label: "Position", hint: "Weeks to months" },
   { value: "algo", label: "Algorithmic", hint: "Systematic / automated" },
 ] as const;
 export type TradingStyle = (typeof TRADING_STYLES)[number]["value"];
 
+export const TRADING_STYLES_EXTENDED = [
+  ...TRADING_STYLES,
+  { value: "options", label: "Options", hint: "Contracts & spreads" },
+] as const;
+export type TradingStyleExtended = (typeof TRADING_STYLES_EXTENDED)[number]["value"];
+
+export const TRADING_STRATEGIES = [
+  { value: "price_action", label: "Price Action" },
+  { value: "ict", label: "ICT" },
+  { value: "smc", label: "SMC" },
+  { value: "breakout", label: "Breakout" },
+  { value: "trend_following", label: "Trend Following" },
+  { value: "mean_reversion", label: "Mean Reversion" },
+  { value: "supply_demand", label: "Supply & Demand" },
+  { value: "vwap", label: "VWAP" },
+  { value: "cpr", label: "CPR" },
+  { value: "ema", label: "EMA Systems" },
+  { value: "custom", label: "Custom / Other" },
+] as const;
+export type TradingStrategy = (typeof TRADING_STRATEGIES)[number]["value"];
+
 export const TRADING_GOALS = [
-  { value: "consistency", label: "Build Consistency", hint: "Repeatable weekly returns" },
-  { value: "prop_firm", label: "Pass a Prop Firm", hint: "FTMO, MFF, Topstep, etc." },
+  { value: "consistency", label: "Become Consistently Profitable", hint: "Repeatable weekly returns" },
+  { value: "discipline", label: "Improve Discipline", hint: "Follow the plan, every day" },
+  { value: "prop_firm", label: "Pass a Prop Firm Challenge", hint: "FTMO, MFF, Topstep, etc." },
+  { value: "master_replay", label: "Master Replay", hint: "Sharpen execution on history" },
+  { value: "improve_rr", label: "Improve Risk Management", hint: "Better R multiples, tighter loss" },
   { value: "learn", label: "Learn Trading", hint: "Master the fundamentals" },
-  { value: "discipline", label: "Build Discipline", hint: "Follow the plan, every day" },
-  { value: "improve_rr", label: "Improve Risk / Reward", hint: "Better R multiples" },
+  { value: "habits", label: "Build Better Habits", hint: "Journal, review, repeat" },
 ] as const;
 export type TradingGoal = (typeof TRADING_GOALS)[number]["value"];
 

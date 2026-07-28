@@ -59,9 +59,15 @@ const STEPS: TourStep[] = [
   },
   {
     id: "analytics",
-    title: "Analytics",
+    title: "Performance Analytics",
     body: "See where you're making or losing money. Sessions, symbols and behaviour patterns broken out.",
     target: '[data-tour="nav-analytics"]',
+  },
+  {
+    id: "coach",
+    title: "AI Trading Coach",
+    body: "Personalised feedback grounded in your actual trades — strengths, weaknesses and a weekly plan.",
+    target: '[data-tour="nav-ai"]',
   },
   {
     id: "community",
@@ -116,12 +122,19 @@ export function ProductTourProvider({ children }: { children: ReactNode }) {
   const start = useCallback(() => {
     setStep(0);
     setOpen(true);
+    try {
+      // Lightweight forwarder; ignore if analytics module absent.
+      void import("@/lib/onboarding/analytics").then((m) => m.trackOnboarding("tour_started"));
+    } catch { /* noop */ }
   }, []);
 
   const markCompleted = useCallback(() => {
     try { localStorage.setItem(STORAGE_KEY, "1"); } catch { /* noop */ }
     setHasCompleted(true);
     setOpen(false);
+    try {
+      void import("@/lib/onboarding/analytics").then((m) => m.trackOnboarding("tour_completed"));
+    } catch { /* noop */ }
   }, []);
 
   const value = useMemo<TourCtx>(() => ({ start, hasCompleted }), [start, hasCompleted]);

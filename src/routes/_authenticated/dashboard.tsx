@@ -23,6 +23,7 @@ import { ActionItemsList } from "@/components/dashboard/ActionItemsList";
 import { CoachTipsCard } from "@/components/dashboard/CoachTipsCard";
 import { TopMistakeWidget } from "@/components/dashboard/TopMistakeWidget";
 import { BetaBanner } from "@/components/beta/BetaBanner";
+import { OnboardingChecklist } from "@/components/onboarding/OnboardingChecklist";
 import { usePersistentDisclosure } from "@/hooks/use-persistent-disclosure";
 
 /**
@@ -119,6 +120,9 @@ function DashboardPage() {
       </motion.div>
 
       <motion.div variants={item}><QuickActions /></motion.div>
+
+      <motion.div variants={item}><OnboardingChecklist /></motion.div>
+
 
       {/* Section 1 — Today's Focus */}
       {visible("focus") && (
