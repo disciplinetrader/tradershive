@@ -30,6 +30,14 @@ export const PERMISSIONS = {
   FlagsManage: "flags:manage",
   NotificationsManage: "notifications:manage",
   SupportManage: "support:manage",
+  RevenueView: "revenue:view",
+  SecurityView: "security:view",
+  DatabaseView: "database:view",
+  SubscriptionsView: "subscriptions:view",
+  SubscriptionsManage: "subscriptions:manage",
+  AiReadConversations: "ai:read_conversations",
+  AiManage: "ai:manage",
+  AiViewUsage: "ai:view_usage",
 } as const;
 
 export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

@@ -2,25 +2,34 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { ReactNode } from "react";
 import {
   Activity, AlertTriangle, Award, BarChart3, Bell, BookOpen, Boxes,
-  Cog, Database, FileText, Flag, LayoutDashboard, LineChart, Megaphone,
-  Package, Shield, Sparkles, Trophy, Users,
+  Cog, CreditCard, Database, DollarSign, FileText, Flag, HeartPulse,
+  LayoutDashboard, LineChart, LifeBuoy, Megaphone, Shield, ShieldAlert,
+  Sparkles, Trophy, Users, Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isPlatformAdmin } from "@/lib/admin/permissions";
 import { useAuth } from "@/hooks/use-auth";
+import { NotificationBell } from "./NotificationBell";
+import { AdminSearchPalette } from "./AdminSearchPalette";
 
 type Item = { to: string; label: string; icon: typeof Users };
 
 const GROUPS: { label: string; items: Item[] }[] = [
   {
     label: "Overview",
-    items: [{ to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard }],
+    items: [
+      { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
+      { to: "/admin/notifications", label: "Notifications", icon: Bell },
+    ],
   },
   {
     label: "People",
     items: [
       { to: "/admin/users", label: "Users", icon: Users },
       { to: "/admin/roles", label: "Roles & Permissions", icon: Shield },
+      { to: "/admin/subscriptions", label: "Subscriptions", icon: CreditCard },
+      { to: "/admin/revenue", label: "Revenue", icon: DollarSign },
     ],
   },
   {
@@ -42,12 +51,21 @@ const GROUPS: { label: string; items: Item[] }[] = [
     ],
   },
   {
+    label: "Support",
+    items: [
+      { to: "/admin/support", label: "Support Centre", icon: LifeBuoy },
+    ],
+  },
+  {
     label: "Operations",
     items: [
       { to: "/admin/reports", label: "Reports", icon: BarChart3 },
       { to: "/admin/logs", label: "Audit Logs", icon: Activity },
+      { to: "/admin/security", label: "Security Centre", icon: ShieldAlert },
+      { to: "/admin/health", label: "System Health", icon: HeartPulse },
+      { to: "/admin/database", label: "Database", icon: Database },
       { to: "/admin/storage", label: "Storage", icon: Boxes },
-      { to: "/admin/market-data", label: "Market Data", icon: Database },
+      { to: "/admin/market-data", label: "Market Data", icon: Zap },
       { to: "/admin/historical", label: "Historical Data", icon: Database },
     ],
   },
@@ -112,23 +130,31 @@ export function AdminShell({ children }: { children: ReactNode }) {
       </aside>
 
       <main className="min-w-0 space-y-5">
-        {/* Mobile nav strip */}
-        <div className="flex gap-2 overflow-x-auto rounded-2xl border border-border/60 bg-surface/40 p-2 md:hidden">
-          {GROUPS.flatMap((g) => g.items).map((it) => {
-            const active = pathname.startsWith(it.to);
-            return (
-              <Link
-                key={it.to}
-                to={it.to}
-                className={cn(
-                  "shrink-0 rounded-xl px-3 py-1.5 text-xs font-medium",
-                  active ? "bg-primary text-primary-foreground" : "text-muted-foreground",
-                )}
-              >
-                {it.label}
-              </Link>
-            );
-          })}
+        <div className="flex items-center justify-between gap-2 rounded-2xl border border-border/60 bg-surface/40 p-2">
+          <div className="flex gap-2 overflow-x-auto md:hidden">
+            {GROUPS.flatMap((g) => g.items).slice(0, 8).map((it) => {
+              const active = pathname.startsWith(it.to);
+              return (
+                <Link
+                  key={it.to}
+                  to={it.to}
+                  className={cn(
+                    "shrink-0 rounded-xl px-3 py-1.5 text-xs font-medium",
+                    active ? "bg-primary text-primary-foreground" : "text-muted-foreground",
+                  )}
+                >
+                  {it.label}
+                </Link>
+              );
+            })}
+          </div>
+          <div className="hidden md:flex text-[11px] text-muted-foreground">
+            Admin console · signed in as {roles?.join(", ")}
+          </div>
+          <div className="ml-auto flex items-center gap-1">
+            <AdminSearchPalette />
+            <NotificationBell />
+          </div>
         </div>
         {children}
       </main>
