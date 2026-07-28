@@ -105,7 +105,7 @@ function ChallengeDetail() {
                       ? "Resuming trading session"
                       : "Trading session started — challenge linked to workspace",
                   );
-                  navigate({ to: "/workspace" });
+                  navigate({ to: "/trading" });
                 }}
               >
                 <PlayCircle className="mr-2 h-4 w-4" />
