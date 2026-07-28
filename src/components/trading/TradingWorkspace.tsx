@@ -513,14 +513,10 @@ function TradingWorkspaceInner() {
 
         {/* ── Main workspace: chart dominates; right rail collapses ─────── */}
         <div
-          className={cn(
-            "grid min-h-0 flex-1 grid-cols-1 gap-0",
-            rightOpen
-              ? "md:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_360px]"
-              : "md:grid-cols-[minmax(0,1fr)_44px]",
-          )}
+          className="flex min-h-0 flex-1"
+          style={{ /* dynamic width for the rail */ }}
         >
-          <div className="relative flex min-h-[calc(100dvh-4.5rem)] flex-col border-r border-border/40">
+          <div className="relative flex min-h-[calc(100dvh-4.5rem)] min-w-0 flex-1 flex-col border-r border-border/40">
             {/* Live indicator strip (thin) */}
             <div className="flex items-center gap-2 border-b border-border/40 bg-background/30 px-3 py-1 text-[10px] text-muted-foreground">
               <LineChartIcon className="h-3 w-3" />
@@ -599,52 +595,138 @@ function TradingWorkspaceInner() {
                 )}
               </ChartEngine>
 
-              {shortcutsHelp && (
-                <div className="absolute bottom-3 right-3 z-40 w-64 rounded-lg border border-border/60 bg-popover p-3 text-xs shadow-xl">
-                  <div className="mb-2 flex items-center justify-between font-semibold">
-                    <span>Shortcuts</span>
-                    <button onClick={() => setShortcutsHelp(false)} className="text-muted-foreground hover:text-foreground">×</button>
-                  </div>
-                  {[
-                    ["B", "Focus Buy"], ["S", "Focus Sell"], ["T", "Plan Trade tool"],
-                    ["X", "Close last position"], ["C", "Cancel pending orders"],
-                    ["R", "Toggle replay"], ["P", "Screenshot"], ["H", "Hide overlays"],
-                    ["Ctrl/⌘+Enter", "Submit order"],
-                  ].map(([k, l]) => (
-                    <div key={k} className="flex items-center justify-between border-b border-border/30 py-1 last:border-b-0">
-                      <span className="text-muted-foreground">{l}</span>
-                      <kbd className="rounded border border-border/60 bg-muted px-1.5 py-0.5 font-mono text-[10px]">{k}</kbd>
+              {/* Floating focus-mode exit pill (only in focus mode) */}
+              <AnimatePresence>
+                {focusMode && (
+                  <motion.button
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    onClick={() => setFocusMode(false)}
+                    className="absolute left-1/2 top-3 z-40 -translate-x-1/2 rounded-full border border-border/60 bg-background/85 px-3 py-1 text-[11px] font-semibold shadow-lg backdrop-blur hover:bg-background"
+                  >
+                    <span className="inline-flex items-center gap-1.5">
+                      <Minimize2 className="h-3 w-3" /> Exit Focus
+                      <kbd className="ml-1 rounded border border-border/60 bg-muted px-1 py-0.5 font-mono text-[9px]">Esc</kbd>
+                    </span>
+                  </motion.button>
+                )}
+              </AnimatePresence>
+
+              <AnimatePresence>
+                {shortcutsHelp && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 8 }}
+                    className="absolute bottom-3 right-3 z-40 w-72 rounded-lg border border-border/60 bg-popover/95 p-3 text-xs shadow-xl backdrop-blur"
+                  >
+                    <div className="mb-2 flex items-center justify-between font-semibold">
+                      <span className="inline-flex items-center gap-1.5"><Keyboard className="h-3.5 w-3.5" /> Keyboard Shortcuts</span>
+                      <button onClick={() => setShortcutsHelp(false)} className="text-muted-foreground hover:text-foreground">×</button>
                     </div>
-                  ))}
-                </div>
-              )}
+                    {[
+                      ["F", "Focus Mode"], ["Esc", "Exit Focus"],
+                      ["B", "Focus Buy"], ["S", "Focus Sell"],
+                      ["J", "Open Journal panel"], ["T", "Plan Trade tool"],
+                      ["X", "Close last position"], ["C", "Cancel pending orders"],
+                      ["R", "Toggle replay"], ["P", "Screenshot"], ["H", "Hide overlays"],
+                      ["?", "Toggle this help"],
+                      ["Ctrl/⌘+Enter", "Submit order"],
+                    ].map(([k, l]) => (
+                      <div key={k} className="flex items-center justify-between border-b border-border/30 py-1 last:border-b-0">
+                        <span className="text-muted-foreground">{l}</span>
+                        <kbd className="rounded border border-border/60 bg-muted px-1.5 py-0.5 font-mono text-[10px]">{k}</kbd>
+                      </div>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
 
-          {/* Right rail: collapsible order/trade panel */}
+          {/* Right rail: tabbed, resizable, collapsible workspace panel */}
           {rightOpen ? (
-            <div className="relative flex min-h-0 flex-col overflow-hidden bg-card/30">
-              <button
-                onClick={() => setRightOpen(false)}
-                className="absolute right-1 top-1 z-10 grid h-7 w-7 place-items-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
-                aria-label="Collapse trade panel"
-                title="Collapse trade panel"
+            <>
+              {/* Resize handle (desktop only) */}
+              <div
+                role="separator"
+                aria-orientation="vertical"
+                aria-label="Resize workspace panel"
+                onPointerDown={onResizeStart}
+                className="hidden md:block w-1 shrink-0 cursor-col-resize bg-border/40 hover:bg-primary/60 active:bg-primary transition-colors"
+              />
+              <aside
+                className="relative flex min-h-0 shrink-0 flex-col overflow-hidden bg-card/30 animate-workspace-slide"
+                style={{ width: `min(100%, ${rightWidth}px)` }}
+                aria-label="Workspace panel"
               >
-                <ChevronDown className="h-4 w-4 -rotate-90" />
-              </button>
-              <div className="min-h-0 flex-1 overflow-auto p-2 sm:p-3">
-                <OrderPanel />
-              </div>
-            </div>
+                <div className="flex items-center justify-between border-b border-border/40 bg-background/40 px-1.5 py-1">
+                  <div role="tablist" className="flex items-center gap-0.5 overflow-x-auto no-scrollbar">
+                    {([
+                      { k: "trade",    label: "Trade",    icon: Target },
+                      { k: "journal",  label: "Journal",  icon: NotebookPen },
+                      { k: "notes",    label: "Notes",    icon: StickyNote },
+                      { k: "playbook", label: "Playbook", icon: BookMarked },
+                      { k: "stats",    label: "Stats",    icon: BarChart3 },
+                    ] as { k: WorkspaceTab; label: string; icon: typeof Target }[]).map(({ k, label, icon: Icon }) => (
+                      <button
+                        key={k}
+                        role="tab"
+                        aria-selected={activeTab === k}
+                        onClick={() => setActiveTab(k)}
+                        className={cn(
+                          "inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold transition",
+                          activeTab === k
+                            ? "bg-primary/15 text-primary"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                        )}
+                      >
+                        <Icon className="h-3.5 w-3.5" />
+                        <span className="hidden sm:inline">{label}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => setRightOpen(false)}
+                    className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                    aria-label="Collapse workspace panel"
+                    title="Collapse (click to expand rail)"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="min-h-0 flex-1 overflow-auto p-2 sm:p-3">
+                  {activeTab === "trade" && <OrderPanel />}
+                  {activeTab === "journal" && <QuickJournalPanel symbol={symbol} />}
+                  {activeTab === "notes" && <WorkspaceNotes symbol={symbol} />}
+                  {activeTab === "playbook" && (
+                    <div className="space-y-3">
+                      <p className="text-xs text-muted-foreground">Attach a playbook to run its pre-trade checklist for this session.</p>
+                      <PlaybookQuickAttach context="paper" />
+                    </div>
+                  )}
+                  {activeTab === "stats" && (
+                    <div className="space-y-3">
+                      <TodayPnLWidget
+                        dailyTargetPct={Number(account?.max_daily_risk_pct ?? 5)}
+                        dailyLossLimitPct={Number(account?.max_daily_risk_pct ?? 5)}
+                      />
+                      <AccountSummary />
+                    </div>
+                  )}
+                </div>
+              </aside>
+            </>
           ) : (
             <button
               onClick={() => setRightOpen(true)}
-              className="hidden md:flex flex-col items-center gap-2 border-l border-border/40 bg-card/20 py-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground transition hover:bg-card/40 hover:text-foreground"
-              aria-label="Expand trade panel"
-              title="Expand trade panel"
+              className="hidden md:flex w-11 shrink-0 flex-col items-center gap-2 border-l border-border/40 bg-card/20 py-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground transition hover:bg-card/40 hover:text-foreground"
+              aria-label="Expand workspace panel"
+              title="Expand panel"
             >
               <ChevronDown className="h-4 w-4 rotate-90" />
-              <span className="rotate-180 [writing-mode:vertical-rl]">Trade</span>
+              <span className="rotate-180 [writing-mode:vertical-rl]">Workspace</span>
             </button>
           )}
         </div>
