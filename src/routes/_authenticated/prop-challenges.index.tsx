@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Plus, Trophy, AlertTriangle, PlayCircle, Archive } from "lucide-react";
@@ -12,14 +13,27 @@ import { formatCurrency } from "@/lib/prop-challenges/evaluator";
 
 export const Route = createFileRoute("/_authenticated/prop-challenges/")({
   component: PropChallengesIndex,
+  validateSearch: (s: Record<string, unknown>) => ({ all: s.all === "1" ? "1" : undefined }),
 });
 
 function PropChallengesIndex() {
+  const navigate = useNavigate();
+  const search = Route.useSearch();
   const list = useServerFn(listPropChallenges);
   const q = useQuery({ queryKey: ["prop-challenges"], queryFn: () => list() });
   const rows = q.data ?? [];
   const active = rows.filter((r) => r.status === "active");
   const past = rows.filter((r) => r.status !== "active");
+
+  // UX shortcut: if exactly one active challenge exists, open it directly.
+  // `?all=1` bypasses the redirect so users can still reach the list view.
+  useEffect(() => {
+    if (search.all === "1") return;
+    if (q.isLoading) return;
+    if (active.length === 1) {
+      navigate({ to: "/prop-challenges/$id", params: { id: active[0].id }, replace: true });
+    }
+  }, [q.isLoading, active, navigate, search.all]);
 
   return (
     <div className="space-y-6">
