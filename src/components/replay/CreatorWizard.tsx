@@ -237,6 +237,30 @@ export function CreatorWizard({ open, onOpenChange }: { open: boolean; onOpenCha
               onSelect={(inst) => setInstrument(inst)}
               placeholder="Search instrument (e.g. EU → EURUSD, Gold, BTC…)"
             />
+            {recents.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Recent</span>
+                {recents.map((r) => (
+                  <button
+                    key={r.symbol}
+                    type="button"
+                    onClick={() => {
+                      const inst = findInstrument(r.symbol);
+                      if (inst) setInstrument(inst);
+                      setTf(r.timeframe);
+                    }}
+                    className={cn(
+                      "rounded-full border px-2 py-0.5 text-[10px] transition",
+                      instrument?.symbol === r.symbol
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border/60 bg-background/40 text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {r.symbol} · {r.timeframe}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="space-y-1.5">
