@@ -448,14 +448,21 @@ export function OrderPanel() {
           <Button variant="outline" onClick={reset} className="cursor-pointer transition-all duration-150 active:scale-[0.98]"><RotateCcw className="mr-1.5 h-4 w-4" /> Reset</Button>
           <Button
             onClick={attemptPlace}
-            disabled={openMut.isPending || !accountId || !symbolMeta || (validation != null && !validation.ok)}
+            disabled={openMut.isPending || !accountId || !symbolMeta || (validation != null && !validation.ok) || waitingForPrice}
+            aria-label={waitingForPrice ? "Waiting for live price" : (side === "long" ? "Buy market order" : "Sell market order")}
             className={cn("flex-1 cursor-pointer shadow-elegant transition-all duration-150 hover:shadow-md active:scale-[0.98] focus-visible:ring-2",
               side === "long"
                 ? "bg-success text-white hover:bg-success/90 focus-visible:ring-success/60"
                 : "bg-danger text-white hover:bg-danger/90 focus-visible:ring-danger/60")}
           >
             <Send className="mr-1.5 h-4 w-4" />
-            {validation && !validation.ok ? "Insufficient margin" : (orderType === "market" ? (side === "long" ? "Buy market" : "Sell market") : "Place order")}
+            {validation && !validation.ok
+              ? "Insufficient margin"
+              : waitingForPrice
+              ? "Waiting for price…"
+              : orderType === "market"
+              ? (side === "long" ? "Buy market" : "Sell market")
+              : "Place order"}
           </Button>
         </div>
       </div>
