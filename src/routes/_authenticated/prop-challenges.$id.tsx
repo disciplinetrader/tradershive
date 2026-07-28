@@ -158,7 +158,20 @@ function ChallengeDetail() {
       <GlassCard className="p-4">
         <div className="mb-3 text-sm font-semibold">Daily log</div>
         {days.length === 0 ? (
-          <div className="text-xs text-muted-foreground">No trading days yet. Place your first trade to populate this log.</div>
+          <div className="flex flex-col items-start gap-2 text-xs text-muted-foreground">
+            <span>Start your first trading session — closed trades appear here automatically.</span>
+            {challenge.status === "active" && (
+              <Button
+                size="sm"
+                onClick={() => {
+                  setActive({ id: challenge.id, paper_account_id: challenge.paper_account_id });
+                  navigate({ to: "/trading" });
+                }}
+              >
+                <PlayCircle className="mr-1.5 h-3.5 w-3.5" /> Start trading
+              </Button>
+            )}
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
