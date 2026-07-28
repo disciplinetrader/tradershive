@@ -51,6 +51,9 @@ export function OrderPanel() {
   const [notes, setNotes] = useState("");
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [tagQuery, setTagQuery] = useState("");
+  // Persistent inline "armed" state — set when the workspace routes a B/S
+  // shortcut or chart intent to the panel; replaces the previous toasts.
+  const [armed, setArmed] = useState<Side | null>(null);
 
   const openFn = useServerFn(openTrade);
   const orderFn = useServerFn(placeOrder);
