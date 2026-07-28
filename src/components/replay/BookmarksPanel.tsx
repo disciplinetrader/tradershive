@@ -65,7 +65,14 @@ export function BookmarksPanel() {
             </div>
           );
         })}
-        {bookmarks.length === 0 ? <div className="text-xs text-muted-foreground">No bookmarks yet.</div> : null}
+        {bookmarks.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-border/50 bg-background/30 px-3 py-4 text-center">
+            <div className="text-xs font-medium text-foreground">No bookmarks yet</div>
+            <div className="mt-0.5 text-[11px] text-muted-foreground">
+              Pick a category, then click the bookmark button to pin this candle. Jump back anytime from the timeline.
+            </div>
+          </div>
+        ) : null}
       </div>
     </GlassCard>
   );
