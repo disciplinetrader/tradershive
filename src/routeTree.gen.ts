@@ -34,6 +34,7 @@ import { Route as AuthenticatedLeaderboardRouteImport } from './routes/_authenti
 import { Route as AuthenticatedJournalRouteImport } from './routes/_authenticated/journal'
 import { Route as AuthenticatedGuildsRouteImport } from './routes/_authenticated/guilds'
 import { Route as AuthenticatedGoalsRouteImport } from './routes/_authenticated/goals'
+import { Route as AuthenticatedFeedbackRouteImport } from './routes/_authenticated/feedback'
 import { Route as AuthenticatedEducationRouteImport } from './routes/_authenticated/education'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCommunityRouteImport } from './routes/_authenticated/community'
@@ -143,6 +144,7 @@ import { Route as AuthenticatedAdminLeaderboardsRouteImport } from './routes/_au
 import { Route as AuthenticatedAdminJournalRouteImport } from './routes/_authenticated/admin.journal'
 import { Route as AuthenticatedAdminHistoricalRouteImport } from './routes/_authenticated/admin.historical'
 import { Route as AuthenticatedAdminHealthRouteImport } from './routes/_authenticated/admin.health'
+import { Route as AuthenticatedAdminFeedbackRouteImport } from './routes/_authenticated/admin.feedback'
 import { Route as AuthenticatedAdminFeatureFlagsRouteImport } from './routes/_authenticated/admin.feature-flags'
 import { Route as AuthenticatedAdminEmailsRouteImport } from './routes/_authenticated/admin.emails'
 import { Route as AuthenticatedAdminDatabaseRouteImport } from './routes/_authenticated/admin.database'
@@ -297,6 +299,11 @@ const AuthenticatedGuildsRoute = AuthenticatedGuildsRouteImport.update({
 const AuthenticatedGoalsRoute = AuthenticatedGoalsRouteImport.update({
   id: '/goals',
   path: '/goals',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedFeedbackRoute = AuthenticatedFeedbackRouteImport.update({
+  id: '/feedback',
+  path: '/feedback',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedEducationRoute = AuthenticatedEducationRouteImport.update({
@@ -935,6 +942,12 @@ const AuthenticatedAdminHealthRoute =
     path: '/health',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminFeedbackRoute =
+  AuthenticatedAdminFeedbackRouteImport.update({
+    id: '/feedback',
+    path: '/feedback',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminFeatureFlagsRoute =
   AuthenticatedAdminFeatureFlagsRouteImport.update({
     id: '/feature-flags',
@@ -1118,6 +1131,7 @@ export interface FileRoutesByFullPath {
   '/community': typeof AuthenticatedCommunityRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/education': typeof AuthenticatedEducationRoute
+  '/feedback': typeof AuthenticatedFeedbackRoute
   '/goals': typeof AuthenticatedGoalsRoute
   '/guilds': typeof AuthenticatedGuildsRoute
   '/journal': typeof AuthenticatedJournalRouteWithChildren
@@ -1144,6 +1158,7 @@ export interface FileRoutesByFullPath {
   '/admin/database': typeof AuthenticatedAdminDatabaseRoute
   '/admin/emails': typeof AuthenticatedAdminEmailsRoute
   '/admin/feature-flags': typeof AuthenticatedAdminFeatureFlagsRoute
+  '/admin/feedback': typeof AuthenticatedAdminFeedbackRoute
   '/admin/health': typeof AuthenticatedAdminHealthRoute
   '/admin/historical': typeof AuthenticatedAdminHistoricalRoute
   '/admin/journal': typeof AuthenticatedAdminJournalRoute
@@ -1275,6 +1290,7 @@ export interface FileRoutesByTo {
   '/charts': typeof AuthenticatedChartsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/education': typeof AuthenticatedEducationRoute
+  '/feedback': typeof AuthenticatedFeedbackRoute
   '/goals': typeof AuthenticatedGoalsRoute
   '/guilds': typeof AuthenticatedGuildsRoute
   '/journal': typeof AuthenticatedJournalRouteWithChildren
@@ -1295,6 +1311,7 @@ export interface FileRoutesByTo {
   '/admin/database': typeof AuthenticatedAdminDatabaseRoute
   '/admin/emails': typeof AuthenticatedAdminEmailsRoute
   '/admin/feature-flags': typeof AuthenticatedAdminFeatureFlagsRoute
+  '/admin/feedback': typeof AuthenticatedAdminFeedbackRoute
   '/admin/health': typeof AuthenticatedAdminHealthRoute
   '/admin/historical': typeof AuthenticatedAdminHistoricalRoute
   '/admin/journal': typeof AuthenticatedAdminJournalRoute
@@ -1432,6 +1449,7 @@ export interface FileRoutesById {
   '/_authenticated/community': typeof AuthenticatedCommunityRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/education': typeof AuthenticatedEducationRoute
+  '/_authenticated/feedback': typeof AuthenticatedFeedbackRoute
   '/_authenticated/goals': typeof AuthenticatedGoalsRoute
   '/_authenticated/guilds': typeof AuthenticatedGuildsRoute
   '/_authenticated/journal': typeof AuthenticatedJournalRouteWithChildren
@@ -1458,6 +1476,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/database': typeof AuthenticatedAdminDatabaseRoute
   '/_authenticated/admin/emails': typeof AuthenticatedAdminEmailsRoute
   '/_authenticated/admin/feature-flags': typeof AuthenticatedAdminFeatureFlagsRoute
+  '/_authenticated/admin/feedback': typeof AuthenticatedAdminFeedbackRoute
   '/_authenticated/admin/health': typeof AuthenticatedAdminHealthRoute
   '/_authenticated/admin/historical': typeof AuthenticatedAdminHistoricalRoute
   '/_authenticated/admin/journal': typeof AuthenticatedAdminJournalRoute
@@ -1596,6 +1615,7 @@ export interface FileRouteTypes {
     | '/community'
     | '/dashboard'
     | '/education'
+    | '/feedback'
     | '/goals'
     | '/guilds'
     | '/journal'
@@ -1622,6 +1642,7 @@ export interface FileRouteTypes {
     | '/admin/database'
     | '/admin/emails'
     | '/admin/feature-flags'
+    | '/admin/feedback'
     | '/admin/health'
     | '/admin/historical'
     | '/admin/journal'
@@ -1753,6 +1774,7 @@ export interface FileRouteTypes {
     | '/charts'
     | '/dashboard'
     | '/education'
+    | '/feedback'
     | '/goals'
     | '/guilds'
     | '/journal'
@@ -1773,6 +1795,7 @@ export interface FileRouteTypes {
     | '/admin/database'
     | '/admin/emails'
     | '/admin/feature-flags'
+    | '/admin/feedback'
     | '/admin/health'
     | '/admin/historical'
     | '/admin/journal'
@@ -1909,6 +1932,7 @@ export interface FileRouteTypes {
     | '/_authenticated/community'
     | '/_authenticated/dashboard'
     | '/_authenticated/education'
+    | '/_authenticated/feedback'
     | '/_authenticated/goals'
     | '/_authenticated/guilds'
     | '/_authenticated/journal'
@@ -1935,6 +1959,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/database'
     | '/_authenticated/admin/emails'
     | '/_authenticated/admin/feature-flags'
+    | '/_authenticated/admin/feedback'
     | '/_authenticated/admin/health'
     | '/_authenticated/admin/historical'
     | '/_authenticated/admin/journal'
@@ -2247,6 +2272,13 @@ declare module '@tanstack/react-router' {
       path: '/goals'
       fullPath: '/goals'
       preLoaderRoute: typeof AuthenticatedGoalsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/feedback': {
+      id: '/_authenticated/feedback'
+      path: '/feedback'
+      fullPath: '/feedback'
+      preLoaderRoute: typeof AuthenticatedFeedbackRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/education': {
@@ -3012,6 +3044,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminHealthRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/feedback': {
+      id: '/_authenticated/admin/feedback'
+      path: '/feedback'
+      fullPath: '/admin/feedback'
+      preLoaderRoute: typeof AuthenticatedAdminFeedbackRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/feature-flags': {
       id: '/_authenticated/admin/feature-flags'
       path: '/feature-flags'
@@ -3215,6 +3254,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminDatabaseRoute: typeof AuthenticatedAdminDatabaseRoute
   AuthenticatedAdminEmailsRoute: typeof AuthenticatedAdminEmailsRoute
   AuthenticatedAdminFeatureFlagsRoute: typeof AuthenticatedAdminFeatureFlagsRoute
+  AuthenticatedAdminFeedbackRoute: typeof AuthenticatedAdminFeedbackRoute
   AuthenticatedAdminHealthRoute: typeof AuthenticatedAdminHealthRoute
   AuthenticatedAdminHistoricalRoute: typeof AuthenticatedAdminHistoricalRoute
   AuthenticatedAdminJournalRoute: typeof AuthenticatedAdminJournalRoute
@@ -3246,6 +3286,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminDatabaseRoute: AuthenticatedAdminDatabaseRoute,
   AuthenticatedAdminEmailsRoute: AuthenticatedAdminEmailsRoute,
   AuthenticatedAdminFeatureFlagsRoute: AuthenticatedAdminFeatureFlagsRoute,
+  AuthenticatedAdminFeedbackRoute: AuthenticatedAdminFeedbackRoute,
   AuthenticatedAdminHealthRoute: AuthenticatedAdminHealthRoute,
   AuthenticatedAdminHistoricalRoute: AuthenticatedAdminHistoricalRoute,
   AuthenticatedAdminJournalRoute: AuthenticatedAdminJournalRoute,
@@ -3678,6 +3719,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCommunityRoute: typeof AuthenticatedCommunityRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEducationRoute: typeof AuthenticatedEducationRoute
+  AuthenticatedFeedbackRoute: typeof AuthenticatedFeedbackRoute
   AuthenticatedGoalsRoute: typeof AuthenticatedGoalsRoute
   AuthenticatedGuildsRoute: typeof AuthenticatedGuildsRoute
   AuthenticatedJournalRoute: typeof AuthenticatedJournalRouteWithChildren
@@ -3709,6 +3751,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCommunityRoute: AuthenticatedCommunityRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEducationRoute: AuthenticatedEducationRoute,
+  AuthenticatedFeedbackRoute: AuthenticatedFeedbackRoute,
   AuthenticatedGoalsRoute: AuthenticatedGoalsRoute,
   AuthenticatedGuildsRoute: AuthenticatedGuildsRoute,
   AuthenticatedJournalRoute: AuthenticatedJournalRouteWithChildren,
