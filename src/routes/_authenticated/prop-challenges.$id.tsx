@@ -94,6 +94,24 @@ function ChallengeDetail() {
         actions={
           <div className="flex items-center gap-2">
             {statusBadge}
+            {challenge.status === "active" && (
+              <Button
+                size="sm"
+                className="bg-primary hover:bg-primary/90"
+                onClick={() => {
+                  setActive({ id: challenge.id, paper_account_id: challenge.paper_account_id });
+                  toast.success(
+                    activeSession?.id === challenge.id
+                      ? "Resuming trading session"
+                      : "Trading session started — challenge linked to workspace",
+                  );
+                  navigate({ to: "/workspace" });
+                }}
+              >
+                <PlayCircle className="mr-2 h-4 w-4" />
+                {activeSession?.id === challenge.id ? "Resume Trading" : "Start Trading"}
+              </Button>
+            )}
             <Button size="sm" variant="outline" onClick={() => tickM.mutate()} disabled={tickM.isPending}>
               <RefreshCw className={`mr-2 h-4 w-4 ${tickM.isPending ? "animate-spin" : ""}`} /> Recheck
             </Button>
