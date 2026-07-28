@@ -4,8 +4,21 @@ import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
 import { AlertTriangle, ArrowRight, LineChart, MessageSquare, RefreshCw, ShieldAlert, Sparkles, Target } from "lucide-react";
 import { getAiDashboard, generateRecommendations, generateReport, updateRecommendationStatus, acknowledgeAlert } from "@/lib/ai.functions";
+import { getTraderIntelligence } from "@/lib/ai-intelligence.functions";
 import { AiScoreCard } from "@/components/ai/AiScoreCard";
 import { AiAvatar } from "@/components/ai/AiAvatar";
+import {
+  BehaviorCard,
+  InstrumentIntelligenceCard,
+  KpiStrip,
+  RoadmapCard,
+  SessionWeekdayCard,
+  StrategyIntelligenceCard,
+  StrengthsCard,
+  TodaysInsightCard,
+  WeaknessesCard,
+  WeeklySummaryCard,
+} from "@/components/ai/IntelligencePanels";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,12 +30,14 @@ function AiDashboardPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const dashFn = useServerFn(getAiDashboard);
+  const intelFn = useServerFn(getTraderIntelligence);
   const recsFn = useServerFn(generateRecommendations);
   const reportFn = useServerFn(generateReport);
   const dismissFn = useServerFn(updateRecommendationStatus);
   const ackFn = useServerFn(acknowledgeAlert);
 
   const q = useQuery({ queryKey: ["ai", "dashboard"], queryFn: () => dashFn() });
+  const intelQ = useQuery({ queryKey: ["ai", "intelligence", 30], queryFn: () => intelFn({ data: { days: 30 } }) });
 
   const genRecs = useMutation({
     mutationFn: () => recsFn(),
@@ -36,10 +51,10 @@ function AiDashboardPage() {
   });
 
   const data = q.data;
+  const intel = intelQ.data;
   const score = data?.score;
   const alerts = data?.alerts ?? [];
   const recs = data?.recommendations ?? [];
-  const topRec = recs[0];
 
   return (
     <div className="grid gap-6 md:grid-cols-3">
@@ -50,22 +65,24 @@ function AiDashboardPage() {
           <div className="flex items-start gap-4">
             <AiAvatar size={72} active />
             <div className="space-y-2 max-w-xl">
-              <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Today&rsquo;s insight</p>
+              <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Your personal trading mentor</p>
               <h2 className="text-xl font-bold leading-snug">
-                {q.isLoading ? "Analyzing your last 30 days…" : (topRec?.title ?? "Log more trades and I'll surface your strongest edge.")}
+                {intelQ.isLoading
+                  ? "Analyzing your last 30 days…"
+                  : (intel?.todaysInsight ?? "Log more trades and I'll surface your strongest edge.")}
               </h2>
               <p className="text-sm text-muted-foreground">
-                {topRec?.description ?? "Your AI Coach analyzes every trade, every journal entry, every habit — and turns them into a single next action."}
+                Every panel below is computed from your real trades and journals — no fabricated numbers.
               </p>
               <div className="flex flex-wrap gap-2 pt-2">
                 <Button onClick={() => navigate({ to: "/ai/chat" })}>
-                  <MessageSquare className="mr-1.5 h-4 w-4" /> Open Coach
+                  <MessageSquare className="mr-1.5 h-4 w-4" /> Ask your coach
                 </Button>
                 <Button variant="outline" onClick={() => navigate({ to: "/ai/trade-review" })}>
-                  Analyze Trades <ArrowRight className="ml-1.5 h-4 w-4" />
+                  Review trades <ArrowRight className="ml-1.5 h-4 w-4" />
                 </Button>
                 <Button variant="outline" onClick={() => genReport.mutate()} disabled={genReport.isPending}>
-                  <LineChart className="mr-1.5 h-4 w-4" /> Weekly Report
+                  <LineChart className="mr-1.5 h-4 w-4" /> Weekly report
                 </Button>
               </div>
             </div>
@@ -79,12 +96,22 @@ function AiDashboardPage() {
         </CardContent>
       </Card>
 
+      {/* Live KPIs from real data */}
+      {intel && (
+        <div className="md:col-span-3">
+          <KpiStrip intel={intel} />
+        </div>
+      )}
+
       <div className="md:col-span-2 space-y-6">
+        {intel && <TodaysInsightCard intel={intel} />}
+        {intel && <WeaknessesCard intel={intel} />}
+        {intel && <RoadmapCard intel={intel} />}
         <AiScoreCard score={score} />
 
         <Card className="bg-card/60 backdrop-blur-md">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-base"><Target className="h-4 w-4 text-primary" /> Recommendations</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-base"><Target className="h-4 w-4 text-primary" /> AI recommendations</CardTitle>
             <Button size="sm" variant="ghost" onClick={() => genRecs.mutate()} disabled={genRecs.isPending}>
               <RefreshCw className={genRecs.isPending ? "mr-1.5 h-3.5 w-3.5 animate-spin" : "mr-1.5 h-3.5 w-3.5"} /> Regenerate
             </Button>
@@ -112,9 +139,13 @@ function AiDashboardPage() {
       </div>
 
       <div className="space-y-6">
+        {intel && <StrengthsCard intel={intel} />}
+        {intel && <WeeklySummaryCard intel={intel} />}
+        {intel && <BehaviorCard intel={intel} />}
+
         <Card className="bg-card/60 backdrop-blur-md">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base"><ShieldAlert className="h-4 w-4 text-warning" /> Smart Alerts</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-base"><ShieldAlert className="h-4 w-4 text-warning" /> Smart alerts</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {alerts.length === 0 && <p className="text-sm text-muted-foreground">All clear. Nothing to worry about.</p>}
@@ -133,7 +164,7 @@ function AiDashboardPage() {
 
         <Card className="bg-card/60 backdrop-blur-md">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base"><Sparkles className="h-4 w-4 text-primary" /> Latest Report</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-base"><Sparkles className="h-4 w-4 text-primary" /> Latest report</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             {data?.latestReport ? (
@@ -150,6 +181,15 @@ function AiDashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Intelligence deep dives — full width */}
+      {intel && (
+        <div className="md:col-span-3 grid gap-6 lg:grid-cols-2">
+          <StrategyIntelligenceCard intel={intel} />
+          <InstrumentIntelligenceCard intel={intel} />
+          <SessionWeekdayCard intel={intel} />
+        </div>
+      )}
     </div>
   );
 }

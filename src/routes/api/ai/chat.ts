@@ -13,6 +13,13 @@ import { COACH_SYSTEM_PROMPT } from "@/lib/ai/prompts";
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "@/lib/ai/constants";
 import { Errors, guardRoute } from "@/lib/server-errors";
 import { enforceAiRateLimit } from "@/lib/ai/rate-limit.server";
+import {
+  buildIntelligence,
+  summarizeForPrompt,
+  type RawJournal,
+  type RawTrade,
+  type StrategyRef,
+} from "@/lib/ai/intelligence";
 
 const chatBodySchema = z.object({
   messages: z.array(z.any()).min(1).max(200),
@@ -25,21 +32,34 @@ type ChatBody = {
 };
 
 async function loadContext(supabase: ReturnType<typeof createClient<Database>>, userId: string) {
-  const [{ data: trades }, { data: journals }, { data: score }, { data: recs }, { data: challenges }, { data: profile }] = await Promise.all([
+  const since = new Date(Date.now() - 30 * 86400000).toISOString();
+  const [
+    { data: tradesFull },
+    { data: journalsFull },
+    { data: strategies },
+    { data: score },
+    { data: recs },
+    { data: challenges },
+    { data: profile },
+  ] = await Promise.all([
     supabase
       .from("paper_trades")
-      .select("symbol, direction, pnl, opened_at, closed_at, rr_realized")
+      .select(
+        "id, symbol, market, direction, status, pnl, rr_realized, rr_planned, risk_amount, stop_loss, take_profit, entry_price, exit_price, opened_at, closed_at, strategy_id, close_reason, notes",
+      )
       .eq("user_id", userId)
-      .eq("status", "closed")
       .is("deleted_at", null)
+      .gte("opened_at", since)
       .order("closed_at", { ascending: false })
-      .limit(20),
+      .limit(500),
     supabase
       .from("journal_entries")
-      .select("notes, rating, mistakes, emotions_pre, emotions_post, created_at")
+      .select("id, trade_id, notes, rating, mistakes, emotions_pre, emotions_post, created_at")
       .eq("user_id", userId)
+      .gte("created_at", since)
       .order("created_at", { ascending: false })
-      .limit(10),
+      .limit(500),
+    supabase.from("strategies").select("id, name").eq("user_id", userId).limit(200),
     supabase
       .from("ai_score_snapshots")
       .select("*")
@@ -53,10 +73,7 @@ async function loadContext(supabase: ReturnType<typeof createClient<Database>>, 
       .eq("user_id", userId)
       .eq("status", "open")
       .limit(10),
-    supabase
-      .from("user_challenges")
-      .select("status")
-      .eq("user_id", userId),
+    supabase.from("user_challenges").select("status").eq("user_id", userId),
     supabase
       .from("profiles")
       .select("display_name, username, experience, preferred_market, trading_style")
@@ -64,15 +81,27 @@ async function loadContext(supabase: ReturnType<typeof createClient<Database>>, 
       .maybeSingle(),
   ]);
 
-  return `# Trader context (data owned by the user)
+  const intel = buildIntelligence(
+    (tradesFull ?? []) as unknown as RawTrade[],
+    (journalsFull ?? []) as unknown as RawJournal[],
+    (strategies ?? []) as unknown as StrategyRef[],
+    30,
+  );
+
+  return `# Trader context (data owned by the user, 30-day window)
 Profile: ${JSON.stringify(profile)}
-AI Score: ${JSON.stringify(score)}
+AI Score snapshot: ${JSON.stringify(score)}
 Open recommendations: ${JSON.stringify(recs)}
-Active challenges: ${(challenges ?? []).filter((c: any) => c.status === "active").length}
-Recent closed trades (20): ${JSON.stringify(trades)}
-Recent journal (10): ${JSON.stringify(journals)}
-`;
+Active challenges: ${(challenges ?? []).filter((c: { status: string | null }) => c.status === "active").length}
+
+${summarizeForPrompt(intel)}
+
+Guidance:
+- Answer using the numbers above. Cite them literally when relevant.
+- If the trader asks about data not shown (e.g. a specific date range or instrument with 0 trades), say so plainly and suggest what to log next.
+- Never invent statistics. Never give generic motivational advice.`;
 }
+
 
 export const Route = createFileRoute("/api/ai/chat")({
   server: {
