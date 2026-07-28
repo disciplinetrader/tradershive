@@ -1,99 +1,110 @@
-# TradersHIVE Admin Dashboard — Full Build Plan
 
-The project already ships a thin admin console under `/admin/*` with 20 routes, a shell, a permissions helper, an audit helper and 475 lines of server functions. This plan **expands what exists** into the professional 19-section console you described — it does not rebuild it from scratch.
+# Trading Workspace — Final Polish Sprint
 
-## Scope decisions (please confirm)
+Scope is polish and stabilization on the live workspace (`src/components/trading/TradingWorkspace.tsx`, its subcomponents, and `useTradingShortcuts`). No new features, no route or data-layer changes. Everything below is bounded to the workspace and its immediate helpers.
 
-1. **Revenue / Stripe (Section 8)** — the codebase has no billing tables yet. I'll ship the UI with clearly-labelled empty states + a `subscriptions` schema stub so it lights up the day Stripe is wired. No fake numbers.
-2. **Support Centre (Section 6)** — `support_tickets` exists (11 cols) but no bugs/feedback tables. I'll add `bug_reports` and `feature_requests` tables and unify the inbox.
-3. **Notifications (Section 10)** — no `admin_notifications` table. I'll add one and seed it from cron/error triggers already present.
-4. **Global search (Section 16)** — server-side ILIKE across users / sessions / trades / tickets / logs behind one `adminGlobalSearch` fn. No new search infra (Meilisearch/pgvector) unless you ask.
-5. **AI conversations viewer (Section 5)** — read-only view of `ai_chat_sessions` / `ai_chat_messages` for admins, gated by a new `ai:read_conversations` permission (privacy-sensitive).
+The audit surfaced one live-blocking bug worth fixing in this pass because it breaks the buy/sell journey:
 
-If any of the above should change, tell me before I start.
+- Runtime error `entry_price: Number must be greater than 0` on `openTrade`. Happens when a market order is submitted before the live quote lands (falls back to `entryNum = 0`). Fix in the order flow, not by adding features.
 
-## What already exists (kept, hardened)
+## Deliverables mapped to the 15 checkpoints
 
-- `AdminShell.tsx`, `admin.tsx` layout, sidebar
-- Routes: dashboard, users, roles, feature-flags, logs, settings, market-data, historical, storage, trades, journal, achievements, challenges, championships, content, leaderboards, reports, announcements
-- `src/lib/admin/permissions.ts`, `audit.server.ts`, `admin.functions.ts`
-- DB: `user_roles`, `role_permissions`, `has_role`, `has_permission`, `is_platform_admin`, `admin_audit_logs`, `feature_flags`, `system_settings`, `support_tickets`, `announcements`, `maintenance_windows`
+1. Toolbar Polish (`TradingWorkspace.tsx` toolbar row)
+   - Introduce three semantic zones with `<Divider />` between: `[Symbol | Price]`  ·  `[Timeframe | Chart type | Indicators]`  ·  `[Plan | Screenshot | Shortcuts | Focus | Details]`.
+   - Normalize icon sizes to `h-3.5 w-3.5`, button heights to `h-7`, gap `gap-1`.
+   - Convert overflow-prone `flex flex-wrap` to `grid-cols-[minmax(0,1fr)_auto] sm:flex` per responsive rules; symbol/price cluster gets `min-w-0` + `truncate`, action cluster `shrink-0`.
+   - No horizontal scroll on the toolbar down to 390 px; secondary text (name, bid/ask/spread badges) already hides at `xl:`; verify break at `md/lg`.
 
-## What gets added / rebuilt
+2. Tooltips (all icon-only buttons in toolbar, left rail, right icon rail)
+   - Replace bare `title=` on Plan/Screenshot/Shortcuts/Focus/Details with `<Tooltip>` from shadcn (already wrapped in `TooltipProvider`), with a two-line body: name + shortcut kbd.
+   - `LeftToolRail.tsx` and `RightIconRail.tsx`: wrap each icon `<button>` in `Tooltip` and add `aria-label` (right-side placement so it doesn't cover the rail).
+   - Tooltip copy comes from a single map so the shortcut sheet and tooltips can't drift.
 
-### Database (one migration)
-- `bug_reports`, `feature_requests`, `contact_messages`, `user_feedback`
-- `admin_notifications` (+ trigger on `admin_audit_logs` severity=error, cron failures)
-- `subscription_plans`, `user_subscriptions`, `subscription_events` (Stripe-shaped, unused for now)
-- `admin_security_events` (failed logins from `auth_logs`, permission changes, rate-limit breaches)
-- `admin_saved_views` (per-admin table filters)
-- New permissions inserted into `role_permissions`: `users:*`, `subs:*`, `ai:read_conversations`, `support:*`, `flags:write`, `security:read`, `db:read`, `notifications:read`. Super Admin gets all; other roles get scoped subsets (Support: users:read + support:*; Analyst: read-only everything; Moderator: users:suspend + support:*; Developer: flags + db + logs; Administrator: everything except super-admin-only destructive ops).
-- Owner-scoped SELECT + admin-scoped SELECT policies on every new table; GRANTs to `authenticated` + `service_role`.
-- Helper RPCs: `admin_kpis()`, `admin_growth_series(days int)`, `admin_ai_usage(days int)`, `admin_top_pages(days int)`, `admin_table_sizes()` — all `SECURITY DEFINER` + `is_platform_admin(auth.uid())` gate at top.
+3. Timeframe UX
+   - Replace the dropdown-only timeframe with an inline pill row `1m 5m 15m 1H` + `More ▼` for the rest (`30m 4H 1D 1W`), matching TradingView. Active pill uses `bg-primary/15 text-primary`, keyboard navigable with left/right arrows and Enter.
+   - Preserve the dropdown as the `More` popover — no state model changes.
 
-### Server functions (`src/lib/admin/*.functions.ts`, split by domain)
-- `overview.functions.ts` — `getAdminKpis`, `getUserGrowth`, `getRecentActivity`
-- `users.functions.ts` — `listUsers` (server pagination, filter, sort), `getUserDetail`, `suspendUser`, `activateUser`, `deleteUser`, `resetTrial`, `grantPremium`, `revokePremium`, `changeRole`, `banUser`, `adminResetPassword` (via `supabaseAdmin.auth.admin`)
-- `subscriptions.functions.ts` — CRUD + `extendSubscription`, `refund` (stub)
-- `replay.functions.ts` — session stats, delete-broken, reprocess (marks queue row)
-- `ai.functions.ts` (admin-scoped) — usage aggregates, failed retries, conversation viewer
-- `support.functions.ts` — unified inbox, assign/resolve/tag/priority
-- `analytics.functions.ts` — DAU/WAU/MAU/retention/churn from `auth.users` + `ai_usage_logs`
-- `revenue.functions.ts` — stubs returning zeros until Stripe
-- `flags.functions.ts` — already exists; add `setFlag` with audit
-- `notifications.functions.ts` — list, ack, dismiss
-- `audit.functions.ts` — search/filter/export CSV
-- `health.functions.ts` — DB size, storage, cron heartbeats, provider status
-- `security.functions.ts` — failed logins (from `auth_logs` via `supabase--analytics_query`-equivalent server call), rate limit breaches
-- `database.functions.ts` — read-only `pg_stat_user_tables`, `pg_indexes`, `pg_stat_statements`
-- `search.functions.ts` — `adminGlobalSearch(term)` fanning to 6 tables
-- Every mutating fn: `.middleware([requireSupabaseAuth])` + explicit `has_permission(userId, '<key>')` check + `logAdminAction()` before returning.
+4. Indicator UX
+   - Toolbar trigger renders `Indicators • N` when N>0, and a sub-count `SMC • M` chip when SMC active (M = enabled SMC parts).
+   - Inside the dropdown, add a compact "Active (N)" section at top with per-indicator remove (×) buttons so users see and manage active items without hunting.
+   - Grouping (Overlays / Oscillators / Sessions & Levels / SMC) already exists — keep, just tighten spacing.
 
-### Routes rebuilt/added under `/admin`
-Rebuilt: `dashboard`, `users`, `users.$userId` (new detail page with 11 tabs), `feature-flags`, `logs`, `settings`, `roles`
-Added: `subscriptions`, `subscriptions.$id`, `replay`, `ai`, `ai.conversations.$sessionId`, `support`, `support.$ticketId`, `analytics`, `revenue`, `notifications`, `health`, `security`, `database`, `search`
+5. Order Experience (`OrderPanel.tsx`, `TradePanel.tsx`, shortcuts)
+   - Fix `entry_price: Number must be greater than 0`: in market orders, only submit when `livePrice ?? entryNum > 0`; if not, disable the CTA and show inline "Waiting for live price…" chip (no toast). Same guard in `TradePanel.tsx`.
+   - Replace the two `toast.info("Buy side selected …")` / `toast.info("Sell side selected")` from `useTradingShortcuts` handlers with a persistent inline "Armed: BUY / SELL — Enter to submit, Esc to cancel" chip inside the OrderPanel header (driven by the existing `emitTradeIntent({kind:"focus_side"})` bus).
+   - Enter already submits; add `Esc` on the panel to clear the armed side and blur the focused field.
+   - `TabsList` Buy/Sell already color-codes; add `aria-pressed` on the active tab for AT clarity.
 
-Each list route: virtualised table via `@tanstack/react-virtual` (already in tree), server-side pagination, saved views, CSV export.
+6. Chart Experience — verification pass (no new code unless a defect surfaces)
+   - Confirm resize (ResizeObserver already installed), symbol switch, timeframe switch, indicator toggle, drawing hide (H), planner overlay, focus mode. Rely on existing screenshot flow.
 
-### Shared components (`src/components/admin/`)
-`DataTable.tsx` (generic, virtualised, sortable, server-paginated) · `Filters.tsx` · `SavedViewsMenu.tsx` · `KpiCard.tsx` (extend) · `TrendChart.tsx` · `StatusPill.tsx` · `PermissionGate.tsx` · `AuditTrailList.tsx` · `AdminSearchPalette.tsx` (⌘K, hooks into `adminGlobalSearch`) · `HealthLight.tsx` · `NotificationBell.tsx`
+7. Right Panel (`Trade | Journal | Notes | Playbook | Stats`)
+   - Consistent tab spacing (`px-2 py-1 gap-1`), icon size `h-3.5 w-3.5`, labels visible from `sm:`.
+   - Add loading states: journal/notes/stats use existing skeletons; add one to Playbook attach panel (empty text-only placeholder today).
+   - Empty states: each tab must answer "why empty / what to do next" with one primary CTA. Trade → "Waiting for a paper account" + `Create account`. Journal → "No entries yet for {symbol}" + `Log this session`. Notes → "Jot ideas that stay pinned to this symbol" + focus textarea. Playbook → existing text becomes an EmptyState card with `Browse playbooks`. Stats → "Trade to see today's stats" + `Focus Buy`.
 
-### RBAC enforcement
-- Route guards via existing `_authenticated` layout + a new `_authenticated/admin/route.tsx` `beforeLoad` calling a `requireAdminPermission(key)` server fn on entry. Individual sensitive sub-routes gate further.
-- Client: `PermissionGate` hides UI it can't call. Server always re-checks — client is decoration.
-- No blanket "admin bypass" — every mutating fn checks the exact permission key.
+8. Keyboard UX
+   - Move the shortcut list into a single `WORKSPACE_SHORTCUTS` const in `useTradingShortcuts.ts` used by both `useTradingShortcuts` and the shortcuts help pop (no drift).
+   - Show a one-time hint "Press ? for shortcuts" toast (using persisted flag `hive.hint.shortcuts.seen` in localStorage) on the third workspace visit, then never again.
+   - Verify `Ctrl/⌘+Enter` submit hint appears in the sheet (already listed).
 
-### Audit & notifications
-- Every mutation calls `logAdminAction({ action, target_type, target_id, before, after, ip })`.
-- Trigger writes to `admin_notifications` on error-severity audit rows, failed cron runs (`historical_sync_logs.status='error'`), and rate-limit breaches. Bell in shell polls `notifications:unread_count` every 60s.
+9. Focus Mode
+   - On enter, show a one-time toast "Focus Mode enabled — Esc or F to exit" via `toast.custom` with `hive.hint.focus.seen` flag; the persistent center pill (already present) remains.
 
-### Performance
-- Server pagination + cursor keyset on `admin_audit_logs`, `ai_chat_messages`, `paper_trades`
-- Materialised `admin_daily_stats` refreshed by a scheduled server route `/api/public/hooks/admin-stats-refresh` (pg_cron every 15m, signed with `WEBHOOK_SECRET`)
-- Virtualised tables · lazy-loaded route chunks · Query caching 30-60s per KPI
+10. Empty States — see item 7 for right-panel; also update `PositionsTable`, `OrdersTable`, `HistoryTable`, `WatchlistPanel` fallbacks to the standard `EmptyState` component from Sprint 2 (they currently render bare rows or blank).
 
-### QA checklist
-- Non-admin hitting `/admin/*` → redirect to `/dashboard`
-- Permission-scoped route reachable only for granted role
-- Every mutation writes an audit row
-- Typecheck clean (`bunx tsgo`)
-- No `SECURITY DEFINER` RPC callable by anon
+11. Responsive Audit
+    - Verify at 390 / 768 / 1024 / 1440. Concrete fixes expected: at 390 collapse right rail to icon-only trigger (already does at `md:`), verify bottom Tabs uses `overflow-x-auto no-scrollbar` (already), ensure `TradePanel` grid gap doesn't overflow.
+    - Toolbar row uses grid at mobile, flex from `sm:` per responsive-layout knowledge.
 
-## Order of work
+12. Accessibility
+    - Every icon-only button in the workspace (`LeftToolRail`, `RightIconRail`, toolbar action cluster, right-panel collapse, resize handle) gets `aria-label`.
+    - `AlertsDialog` and any other `Dialog` used from the workspace: confirm `DialogTitle` + `DialogDescription`; add `VisuallyHidden` where the title is intentionally hidden.
+    - Add visible focus ring: `focus-visible:ring-2 focus-visible:ring-primary/60` on toolbar buttons and tab triggers.
+    - Tooltip content uses `<TooltipContent side="bottom" role="tooltip">` implicit via Radix.
 
-1. Migration (schema + policies + permissions + RPCs) — ships as one migration for review
-2. `admin/*.functions.ts` server layer + audit wiring
-3. Shell + RBAC guard + shared components (DataTable, SearchPalette, NotificationBell)
-4. Overview / Users / User Detail / Roles (highest-value first)
-5. Support / Notifications / Audit / Security / Health / Database
-6. Replay / AI / Analytics / Subscriptions / Revenue (stubs) / Feature Flags / Settings
-7. Typecheck, visual pass, close
+13. Performance (low-risk only)
+    - Memoize `activeIndicatorCount`, `indicators`, `openHere` (already `useMemo`, verify deps).
+    - Move the two `useEffect`s that call `update()` for prefs into a single debounced effect (100 ms) so rapid toggles don't storm localStorage.
+    - Remove the unconditional `refetchInterval: 4000` when the tab is hidden using `document.visibilityState` guard via `refetchIntervalInBackground: false`.
 
-## Non-goals (explicit)
+14. Production Cleanup
+    - Remove `console.warn` in `paper-trading/context.tsx` and `ChartEngine.tsx` (replace with silent toast on user-visible failures only).
+    - Drop the unused `activeTool`/`onToolChange` in `ChartToolbar` `Props` (workspace no longer wires them).
+    - Remove the empty-hint "coming in next phase" toasts from `useTradingShortcuts` (`R`, `C`) — keep no-op or wire to existing planner cancel; either way, no `toast.info("coming in next phase")` in production.
+    - Prune the `Chip P L I B 3 1` decorative row in `ChartToolbar.tsx` (dead placeholder, not wired).
+    - Delete `src/components/chart/TradePanel.tsx` if unreferenced by the shipped workspace (check imports; the live route uses `OrderPanel`).
 
-- No fabricated Stripe/MRR numbers — Revenue is stub UI + real schema
-- No direct SQL execution UI
-- No new external services (Meilisearch, Sentry) unless you ask
-- Auth/Landing/Dashboard/Paper Trading/Journal/Challenges/Statistics remain untouched per your standing rule
+15. Final QA
+    - Rerun the Playwright pass at 390 / 768 / 1440, screenshot each viewport, and confirm: chart canvas non-transparent pixels > 0 for BTC/USDT; Buy/Sell submit succeeds with `entryNum > 0`; Esc clears armed side; `?` toggles help; `F` toggles focus; no console errors, no unmet-a11y warnings.
 
-Approve to start with the migration, or tell me what to change.
+## Files changed (planned)
+
+- `src/components/trading/TradingWorkspace.tsx` — toolbar zones, tooltips, timeframe pills, indicator chip label, armed-side chip, focus/shortcut hints, a11y labels, debounced prefs writer, empty-state wiring, cleanup.
+- `src/components/paper-trading/OrderPanel.tsx` — market-order guard on `entryNum`/`livePrice`, inline armed chip, Esc handler, focus ring.
+- `src/components/chart/TradePanel.tsx` — same market-order guard (in case still referenced); otherwise delete after import check.
+- `src/components/chart/ChartToolbar.tsx` — remove dead `Chip` row, drop unused props.
+- `src/components/chart/LeftToolRail.tsx`, `RightIconRail.tsx` — Tooltip wrappers + `aria-label`.
+- `src/components/paper-trading/PositionsTable.tsx`, `OrdersTable.tsx`, `HistoryTable.tsx`, `WatchlistPanel.tsx` — standardized `EmptyState`.
+- `src/hooks/useTradingShortcuts.ts` — single source-of-truth shortcut map, remove no-op toasts.
+- `src/hooks/use-workspace-prefs.ts` — debounced write.
+- `src/components/paper-trading/context.tsx`, `src/components/chart/ChartEngine.tsx` — drop `console.warn`.
+
+## Explicitly out of scope
+
+- Any Replay Studio changes (next sprint).
+- Right-rail information architecture (already re-done in Sprint 1).
+- Data-provider or market-engine changes (owned by chart-loading sprint).
+- New charts, drawings, indicators, or panels.
+- Any Supabase schema / migration work.
+
+## Deliverables at end of sprint
+
+1. Updated UX score (/100) and comparison to the 74/100 baseline.
+2. Files-changed list.
+3. Improvements completed (checkbox map to the 15 items above).
+4. Remaining issues (if any) and whether they block beta.
+5. Post-beta candidates (things intentionally deferred).
+6. Explicit recommendation: "Trading Workspace Ready for Closed Beta" — only if the QA pass is clean at all four viewports with zero console errors.
+
+Ready to ship this on approval.
