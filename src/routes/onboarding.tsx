@@ -83,7 +83,7 @@ function OnboardingPage() {
   const [launching, setLaunching] = useState(false);
 
   const [experience, setExperience] = useState<ExperienceLevel>(
-    ((profile?.experience_level as ExperienceLevel) ?? "beginner"),
+    ((profile?.experience as ExperienceLevel) ?? "beginner"),
   );
   const [markets, setMarkets] = useState<MarketExtended[]>(
     (profile?.preferred_markets as MarketExtended[])?.length
