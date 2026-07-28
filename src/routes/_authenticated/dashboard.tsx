@@ -18,7 +18,7 @@ import { getDashboardLayout, saveDashboardLayout } from "@/lib/dashboard.functio
 import { getHomeSummary } from "@/lib/dashboard-home.functions";
 import { getHeroState } from "@/lib/dashboard-hero.functions";
 import { DashboardHero } from "@/components/dashboard/DashboardHero";
-import { useMarketCadence } from "@/lib/market-data/hooks";
+
 import { TodayFocusCard } from "@/components/dashboard/TodayFocusCard";
 import { PerformanceSnapshot } from "@/components/dashboard/PerformanceSnapshot";
 import { ActionItemsList } from "@/components/dashboard/ActionItemsList";
@@ -68,7 +68,9 @@ const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { st
 const item = { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transition: { duration: 0.35 } } };
 
 function DashboardPage() {
-  useMarketCadence("dashboard");
+  // Dashboard uses default idle cadence — individual live-quote widgets
+  // (MarketOverview, Watchlist) subscribe on demand and drive the poller.
+
   const { setOpen } = useCommandPalette();
   const [moreOpen, , toggleMore] = usePersistentDisclosure("dashboard-more-v2", false);
 

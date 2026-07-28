@@ -776,10 +776,19 @@ function TradingWorkspaceInner() {
 
 import { useMarketCadence } from "@/lib/market-data/hooks";
 export function TradingWorkspace({ fullscreen: _fullscreen }: { fullscreen?: boolean } = {}) {
-  useMarketCadence("workspace");
   return (
     <PaperTradingProvider>
       <TradingWorkspaceInner />
+      <WorkspaceCadence />
     </PaperTradingProvider>
   );
+}
+
+/** Registers Twelve Data workspace cadence ONLY when the active symbol is a
+ *  Twelve Data market (forex/metals/indices). Crypto workspaces stream from
+ *  Binance and don't need the forex poller. */
+function WorkspaceCadence() {
+  const { market } = usePaper();
+  useMarketCadence("workspace", market !== "crypto");
+  return null;
 }

@@ -60,8 +60,6 @@ export function OrderPanel() {
   const tagsFn = useServerFn(listTradeTags);
   const createTagFn = useServerFn(createTradeTag);
   const listTradesFn = useServerFn(listTrades);
-  const liveQuotes = useLiveQuotes();
-
   const { data: tags } = useQuery({
     queryKey: ["paper", "tags"],
     queryFn: () => tagsFn() as unknown as Promise<Array<{ id: string; name: string; color: string }>>,
@@ -76,6 +74,8 @@ export function OrderPanel() {
     enabled: !!accountId,
     refetchInterval: 5000,
   });
+
+  const liveQuotes = useLiveQuotes(openTrades?.map((t) => t.symbol));
 
   useEffect(() => {
     if (!entry && livePrice != null) setEntry(String(livePrice));

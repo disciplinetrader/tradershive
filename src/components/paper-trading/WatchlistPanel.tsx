@@ -26,7 +26,6 @@ type WatchSym = { id: string; watchlist_id: string; symbol: string; market: Pape
 export function WatchlistPanel() {
   const qc = useQueryClient();
   const { symbol, setSymbol } = usePaper();
-  const quotes = useLiveQuotes();
 
   const fetch = useServerFn(listPaperWatchlists);
   const addSym = useServerFn(addWatchlistSymbol);
@@ -49,6 +48,15 @@ export function WatchlistPanel() {
   const lists = data?.lists ?? [];
   const currentId = activeId ?? lists[0]?.id ?? null;
   const active = lists.find((l) => l.id === currentId) ?? null;
+
+  const visibleSymbols = useMemo(() => {
+    if (!data) return [] as string[];
+    const inList = active
+      ? data.symbols.filter((s) => s.watchlist_id === active.id)
+      : data.symbols.filter((s) => s.is_favorite);
+    return inList.map((s) => s.symbol);
+  }, [data, active]);
+  const quotes = useLiveQuotes(visibleSymbols);
 
   const rows = useMemo(() => {
     if (!data) return [] as WatchSym[];

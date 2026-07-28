@@ -38,7 +38,6 @@ type Account = {
 
 export function useRiskMonitor(account: Account | null) {
   const qc = useQueryClient();
-  const quotes = useLiveQuotes();
   const fetchTrades = useServerFn(listTrades);
   const closeFn = useServerFn(closeTrade);
   const running = useRef(false);
@@ -50,6 +49,8 @@ export function useRiskMonitor(account: Account | null) {
     enabled: !!account?.id,
     refetchInterval: 3000,
   });
+
+  const quotes = useLiveQuotes(openTrades?.map((t) => t.symbol));
 
   useEffect(() => {
     if (!account || running.current) return;

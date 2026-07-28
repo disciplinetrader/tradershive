@@ -34,7 +34,6 @@ type Trade = {
 
 export function PositionsTable() {
   const { accountId, account } = usePaper();
-  const quotes = useLiveQuotes();
   const fetch = useServerFn(listTrades);
   const closeFn = useServerFn(closeTrade);
   const partialFn = useServerFn(partialCloseTrade);
@@ -47,6 +46,8 @@ export function PositionsTable() {
     enabled: !!accountId,
     refetchInterval: 2000,
   });
+
+  const quotes = useLiveQuotes(data?.map((t) => t.symbol));
 
   const [closing, setClosing] = useState<Trade | null>(null);
   const [modifying, setModifying] = useState<Trade | null>(null);

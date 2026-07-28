@@ -26,7 +26,6 @@ export function MobileQuickTradeDock() {
   const qc = useQueryClient();
   const { symbol, symbolMeta, account, accountId } = usePaper();
   const livePrice = useLivePrice(symbol);
-  const liveQuotes = useLiveQuotes();
   const openFn = useServerFn(openTrade);
   const listTradesFn = useServerFn(listTrades);
 
@@ -48,6 +47,8 @@ export function MobileQuickTradeDock() {
     enabled: !!accountId,
     refetchInterval: 5000,
   });
+
+  const liveQuotes = useLiveQuotes(openTrades?.map((t) => t.symbol));
 
   const validation = useMemo(() => {
     if (!account || !symbolMeta || !price || !lotNum) return null;
