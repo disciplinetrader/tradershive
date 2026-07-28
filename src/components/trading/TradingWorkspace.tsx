@@ -250,8 +250,8 @@ function TradingWorkspaceInner() {
     onScreenshot: screenshot,
     onPlanTrade: () => setPlannerActive((v) => !v),
     onToggleDrawings: () => setDrawingsHidden((v) => !v),
-    onToggleReplay: () => setActiveTab("replay"),
-    onCancelOrders: () => setActiveTab("orders"),
+    onToggleReplay: () => { setRightOpen(true); setActiveTab("trade"); },
+    onCancelOrders: () => { setRightOpen(true); setActiveTab("trade"); },
   });
 
   const rightOpen = prefs.rightOpen;
