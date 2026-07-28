@@ -150,6 +150,17 @@ export function OrderPanel() {
         throw new Error(validation.errors[0] ?? "Order rejected");
       }
 
+      // Server rejects entry_price <= 0. Guard against submitting a market
+      // order before the first live quote lands (previously produced a raw
+      // "entry_price: Number must be greater than 0" toast).
+      const marketPx = Number(livePrice ?? entryNum);
+      if (orderType === "market" && !(marketPx > 0)) {
+        throw new Error("Waiting for live price — try again in a moment");
+      }
+      if (orderType !== "market" && !(entryNum > 0)) {
+        throw new Error("Enter a trigger price");
+      }
+
       const base = {
         account_id: accountId, symbol, market: symbolMeta.market, direction: side,
         lot_size: lotNum, stop_loss: slNum, take_profit: tpNum,
@@ -160,13 +171,14 @@ export function OrderPanel() {
       };
       void opts;
       if (orderType === "market") {
-        return openFn({ data: { ...base, order_type: "market", entry_price: livePrice ?? entryNum } });
+        return openFn({ data: { ...base, order_type: "market", entry_price: marketPx } });
       }
       return orderFn({ data: { ...base, order_type: orderType, trigger_price: entryNum } });
     },
     onSuccess: () => {
       toast.success(orderType === "market" ? "Trade opened" : "Order placed");
       reset();
+      setArmed(null);
       qc.invalidateQueries({ queryKey: ["paper"] });
     },
     onError: (e) => toast.error((e as Error).message),
