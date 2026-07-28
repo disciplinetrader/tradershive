@@ -171,8 +171,13 @@ export function ReplayControls() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <div className="ml-auto rounded-md border border-border/50 bg-background/50 px-2 py-1 text-[10px] font-medium text-muted-foreground">
-            Session: <span className="text-foreground">{SESSION_LABEL[sessionKey]}</span>
+          <div className="ml-auto flex items-center gap-1.5">
+            <div className="rounded-md border border-border/50 bg-background/50 px-2 py-1 text-[10px] font-medium text-muted-foreground">
+              Session: <span className="text-foreground">{SESSION_LABEL[sessionKey]}</span>
+            </div>
+            <IconBtn label="Keyboard shortcuts (?)" onClick={() => setHelpOpen(true)}>
+              <Keyboard className="h-4 w-4" />
+            </IconBtn>
           </div>
         </div>
 
