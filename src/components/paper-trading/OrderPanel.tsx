@@ -229,33 +229,42 @@ export function OrderPanel() {
     return () => { unsub(); };
   }, [openMut]);
 
-  // Listen for chart-side intents (right-click menu, planner "Send")
-  useEffect(() => {
-    const unsub = onTradeIntent((i) => {
-      if (i.kind === "focus_side") { setSide(i.side); return; }
-      const isSubmit = i.kind === "submit";
-      setSide(i.side);
-      setOrderType(i.orderType);
-      if (i.price != null) setEntry(String(i.price));
-      if (i.sl != null) setSl(String(i.sl));
-      if (i.tp != null) setTp(String(i.tp));
-      if (i.lot != null) setLot(String(i.lot));
-      if (isSubmit) setTimeout(() => attemptPlace(), 0);
-    });
-    return () => { unsub(); };
-  }, [openMut]);
-
   const filteredTags = (tags ?? []).filter((t) => t.name.toLowerCase().includes(tagQuery.toLowerCase()));
   const canCreateTag = tagQuery && !(tags ?? []).some((t) => t.name.toLowerCase() === tagQuery.toLowerCase());
 
   const riskWarn = calc && account?.max_trade_risk_pct != null && calc.riskPct > Number(account.max_trade_risk_pct);
+  const waitingForPrice = orderType === "market" && !(Number(livePrice ?? entryNum) > 0);
 
   return (
     <div className="flex flex-col gap-3">
+      {armed ? (
+        <div
+          role="status"
+          aria-live="polite"
+          className={cn(
+            "flex items-center justify-between gap-2 rounded-md border px-2 py-1.5 text-[11px] font-semibold",
+            armed === "long"
+              ? "border-success/40 bg-success/10 text-success"
+              : "border-danger/40 bg-danger/10 text-danger",
+          )}
+        >
+          <span className="inline-flex items-center gap-1.5">
+            <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-current" />
+            Armed · {armed === "long" ? "BUY" : "SELL"} — <kbd className="rounded bg-background/60 px-1 py-0.5 font-mono text-[10px]">↵</kbd> submit ·
+            <kbd className="rounded bg-background/60 px-1 py-0.5 font-mono text-[10px]">Esc</kbd> cancel
+          </span>
+          <button
+            type="button"
+            onClick={() => setArmed(null)}
+            className="rounded p-0.5 text-current/70 hover:text-current focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current/40"
+            aria-label="Clear armed side"
+          >×</button>
+        </div>
+      ) : null}
       <Tabs value={side} onValueChange={(v) => setSide(v as Side)}>
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="long" className="cursor-pointer transition-all duration-150 data-[state=active]:bg-success/20 data-[state=active]:text-success data-[state=active]:shadow-sm">Buy</TabsTrigger>
-          <TabsTrigger value="short" className="cursor-pointer transition-all duration-150 data-[state=active]:bg-danger/20 data-[state=active]:text-danger data-[state=active]:shadow-sm">Sell</TabsTrigger>
+          <TabsTrigger value="long" aria-pressed={side === "long"} className="cursor-pointer transition-all duration-150 data-[state=active]:bg-success/20 data-[state=active]:text-success data-[state=active]:shadow-sm focus-visible:ring-2 focus-visible:ring-success/50">Buy</TabsTrigger>
+          <TabsTrigger value="short" aria-pressed={side === "short"} className="cursor-pointer transition-all duration-150 data-[state=active]:bg-danger/20 data-[state=active]:text-danger data-[state=active]:shadow-sm focus-visible:ring-2 focus-visible:ring-danger/50">Sell</TabsTrigger>
         </TabsList>
       </Tabs>
 
