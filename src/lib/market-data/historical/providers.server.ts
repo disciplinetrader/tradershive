@@ -27,7 +27,6 @@ export interface HistoricalDataProvider {
 const BINANCE_REST = "https://api.binance.com";
 
 const BINANCE_TF: Partial<Record<HistoricalTimeframe, string>> = {
-  "30s": undefined as any, // Binance does not expose a native 30s kline
   "1m": "1m", "5m": "5m", "15m": "15m", "30m": "30m",
   "1H": "1h", "4H": "4h", "1D": "1d", "1W": "1w", "1M": "1M",
 };

@@ -168,7 +168,6 @@ async function writeSnapshots(
 ) {
   if (candles.length < 100) return 0;
   const stride =
-    timeframe === "30s" ? 2880 :       // 1 day of 30-sec candles
     timeframe === "1m" ? 1440 :        // 1 day
     timeframe === "5m" ? 288 :
     timeframe === "15m" ? 96 :

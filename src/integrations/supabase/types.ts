@@ -11347,7 +11347,6 @@ export type Database = {
       strategy_status: "draft" | "private" | "public" | "archived"
       timeframe_kind:
         | "tick"
-        | "30s"
         | "1m"
         | "3m"
         | "5m"
@@ -11803,7 +11802,6 @@ export const Constants = {
       strategy_status: ["draft", "private", "public", "archived"],
       timeframe_kind: [
         "tick",
-        "30s",
         "1m",
         "3m",
         "5m",

@@ -25,16 +25,11 @@ const MINUTE_LIMIT = 8;
 const DAILY_SOFT = Math.floor(DAILY_LIMIT * 0.8); // 640 → begin cooldown
 
 const TF_TO_INTERVAL: Record<string, string> = {
-  // Twelve Data has no native 30-second bar — fall back to 1-minute so
-  // charts still render if a user forces 30s on a symbol without native
-  // sub-minute history. The engine will show a friendly notice.
-  "30s": "1min",
   "1m": "1min", "3m": "5min", "5m": "5min", "15m": "15min", "30m": "30min",
   "1H": "1h", "2H": "2h", "4H": "4h", "1D": "1day", "1W": "1week", "1M": "1month",
 };
 
 const TF_MINUTES: Record<string, number> = {
-  "30s": 0.5,
   "1m": 1, "5m": 5, "15m": 15, "30m": 30,
   "1H": 60, "4H": 240, "1D": 1440, "1W": 10080, "1M": 43200,
 };

@@ -1,12 +1,11 @@
 import type { Timeframe, MarketKind } from "./types";
 
 export const TIMEFRAMES: Timeframe[] = [
-  "30s","1m","3m","5m","15m","30m","1H","2H","4H","1D","1W","1M",
+  "1m","3m","5m","15m","30m","1H","2H","4H","1D","1W","1M",
 ];
 
 export const TIMEFRAME_SECONDS: Record<Timeframe, number> = {
   tick: 1,
-  "30s": 30,
   "1m": 60,
   "3m": 180,
   "5m": 300,

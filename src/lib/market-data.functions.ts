@@ -26,7 +26,7 @@ export const upsertMarketSettings = createServerFn({ method: "POST" })
     preferred_timezone: z.string().optional(),
     preferred_market: z.enum(["forex","crypto","indices","metals","commodities","futures","stocks"]).optional(),
     default_symbol: z.string().optional(),
-    default_timeframe: z.enum(["30s","1m","3m","5m","15m","30m","1H","2H","4H","1D","1W","1M"]).optional(),
+    default_timeframe: z.enum(["1m","3m","5m","15m","30m","1H","2H","4H","1D","1W","1M"]).optional(),
     streaming_quality: z.enum(["battery","balanced","realtime"]).optional(),
     auto_refresh_seconds: z.number().int().min(1).max(60).optional(),
   }).parse(d))
