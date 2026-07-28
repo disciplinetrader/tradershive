@@ -66,8 +66,9 @@ export function PaperTradingProvider({ children }: { children: ReactNode }) {
           },
         });
         qc.invalidateQueries({ queryKey: ["paper", "accounts"] });
-      } catch (e) {
-        console.warn("[paper] auto-create default account failed", e);
+      } catch {
+        // Silent — the user can create an account manually from settings
+        // if auto-bootstrap fails (e.g. offline or first render race).
         bootstrappedRef.current = false;
       }
     })();
