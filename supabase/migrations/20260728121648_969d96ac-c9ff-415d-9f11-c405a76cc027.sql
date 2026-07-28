@@ -1,0 +1,1 @@
+ALTER TYPE public.timeframe_kind ADD VALUE IF NOT EXISTS '30s' BEFORE '1m';
