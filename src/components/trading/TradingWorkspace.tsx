@@ -282,7 +282,7 @@ function TradingWorkspaceInner() {
       const k = e.key.toLowerCase();
       if (k === "f") { setFocusMode(!focusMode); e.preventDefault(); e.stopPropagation(); }
       else if (k === "escape" && focusMode) { setFocusMode(false); e.preventDefault(); }
-      else if (k === "j") { setRightOpen(true); setActiveTab("journal"); e.preventDefault(); e.stopPropagation(); }
+      else if (k === "j") { setRightOpen(true); setActiveTab("notes"); e.preventDefault(); e.stopPropagation(); }
       else if (k === "?") { setShortcutsHelp((v: boolean) => !v); e.preventDefault(); }
     };
     window.addEventListener("keydown", onKey, true);
