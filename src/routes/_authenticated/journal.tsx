@@ -285,6 +285,22 @@ function JournalPage() {
         </GlassCard>
       ) : (
         <>
+          <DraftsBanner
+            entries={entriesQuery.data ?? []}
+            onContinue={(id) => setDrawerId(id)}
+          />
+
+          <GlassCard className="p-3 sm:p-4">
+            <JournalSearchBar
+              filters={filters}
+              onChange={setFilters}
+              activeView={savedView}
+              onSelectView={handleSelectView}
+              totalCount={(entriesQuery.data ?? []).length}
+              filteredCount={filtered.length}
+            />
+          </GlassCard>
+
           <JournalStats
             entries={filtered}
             onFilterEmotion={(value) => setFilters((p) => ({ ...p, emotion: value }))}
@@ -307,6 +323,15 @@ function JournalPage() {
                 <ViewSwitcher value={view} onChange={setView} />
               </div>
             </div>
+            {statusFilter || gradeFilter ? (
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                {statusFilter ? <span className="rounded-md border border-primary/30 bg-primary/5 px-2 py-0.5 text-primary">Status: {statusFilter}</span> : null}
+                {gradeFilter ? <span className="rounded-md border border-primary/30 bg-primary/5 px-2 py-0.5 text-primary">Grade: {gradeFilter}</span> : null}
+                <Button variant="ghost" size="sm" className="h-6 text-[11px]" onClick={() => handleSelectView("recent")}>
+                  Clear view
+                </Button>
+              </div>
+            ) : null}
             {dayFilterIds ? (
               <div className="mt-3 flex items-center justify-between rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-primary">
                 <span className="truncate">Filtered to {dayFilterIds.size} trade{dayFilterIds.size === 1 ? "" : "s"} from selected day.</span>
@@ -316,6 +341,8 @@ function JournalPage() {
               </div>
             ) : null}
           </GlassCard>
+
+
 
 
           {isLoading ? (
