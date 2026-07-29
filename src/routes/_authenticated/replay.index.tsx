@@ -188,8 +188,23 @@ function ReplayDashboard() {
               {active ? active.title : "No active session"}
             </div>
             {active ? (
-              <div className="text-xs text-muted-foreground mt-0.5">
-                {active.market} · {active.symbol} · {active.timeframe}
+              <div className="mt-0.5 space-y-1.5">
+                <div className="text-xs text-muted-foreground">
+                  {active.market} · {active.symbol} · {active.timeframe}
+                </div>
+                {typeof (active as any).completion_pct === "number" ? (
+                  <div className="flex items-center gap-2">
+                    <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted/50">
+                      <div
+                        className="h-full bg-primary"
+                        style={{ width: `${Math.max(2, Math.min(100, (active as any).completion_pct))}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] tabular-nums text-muted-foreground">
+                      {Math.round((active as any).completion_pct)}%
+                    </span>
+                  </div>
+                ) : null}
               </div>
             ) : (
               <div className="text-xs text-muted-foreground mt-0.5">
