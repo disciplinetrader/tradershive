@@ -126,10 +126,10 @@ export function ReplayControls() {
       >
         {/* Row 1: transport + jumps */}
         <div className="flex flex-wrap items-center gap-1">
-          <IconBtn label="Restart cursor" onClick={restart}><RotateCcw className="h-4 w-4" /></IconBtn>
-          <IconBtn label="Replay Again (reset progress)" onClick={replayAgain}><RefreshCw className="h-4 w-4" /></IconBtn>
-          <div className="mx-1 h-6 w-px bg-border/60" />
+          {/* Restart / Replay Again live in the More menu to prevent
+              accidental resets adjacent to Play/Step controls. */}
           <IconBtn label="Prev bookmark (Shift+B)" onClick={() => jumpTo("prev_bookmark")}><Bookmark className="h-4 w-4 rotate-180" /></IconBtn>
+
           <IconBtn label="Prev trade (Shift+T)" onClick={() => jumpTo("prev_trade")}><TrendingUp className="h-4 w-4 rotate-180" /></IconBtn>
           <IconBtn label="Skip -10 (Shift+←)" onClick={() => skip(-10)}><SkipBack className="h-4 w-4" /></IconBtn>
           <IconBtn label="Prev candle (←)" onClick={() => step(-1)}><ChevronLeft className="h-4 w-4" /></IconBtn>
