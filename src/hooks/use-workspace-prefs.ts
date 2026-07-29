@@ -10,6 +10,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export type WorkspaceTab = "trade" | "notes" | "insights";
+export type BottomTab = "blotter" | "watchlist";
+export type BlotterFilter = "open" | "pending" | "closed" | "all";
 
 export type WorkspacePrefs = {
   rightOpen: boolean;
@@ -21,10 +23,15 @@ export type WorkspacePrefs = {
   indicators: Record<string, boolean>;
   smcOn: boolean;
   detailsOpen: boolean;
+  bottomTab: BottomTab;
+  blotterFilter: BlotterFilter;
+  dockHeight: number; // px, 180–560
 };
 
 const STORAGE_KEY = "thive.workspace.prefs.v1";
 const VALID_TABS: WorkspaceTab[] = ["trade", "notes", "insights"];
+const VALID_BOTTOM: BottomTab[] = ["blotter", "watchlist"];
+const VALID_FILTERS: BlotterFilter[] = ["open", "pending", "closed", "all"];
 
 const DEFAULTS: WorkspacePrefs = {
   rightOpen: true,
@@ -36,6 +43,9 @@ const DEFAULTS: WorkspacePrefs = {
   indicators: { ema: true, volume: true },
   smcOn: false,
   detailsOpen: false,
+  bottomTab: "blotter",
+  blotterFilter: "open",
+  dockHeight: 280,
 };
 
 function readStorage(): WorkspacePrefs {
@@ -43,10 +53,19 @@ function readStorage(): WorkspacePrefs {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULTS;
-    const parsed = JSON.parse(raw) as Partial<WorkspacePrefs>;
+    const parsed = JSON.parse(raw) as Partial<WorkspacePrefs> & { bottomTab?: string };
     const merged: WorkspacePrefs = { ...DEFAULTS, ...parsed };
-    // Migrate legacy tabs (journal/playbook/stats) → trade.
     if (!VALID_TABS.includes(merged.activeTab)) merged.activeTab = "trade";
+    // Migrate legacy bottom-tab ids (positions/orders/history → blotter+filter).
+    const legacy = parsed.bottomTab as string | undefined;
+    if (legacy && !VALID_BOTTOM.includes(legacy as BottomTab)) {
+      merged.bottomTab = legacy === "watchlist" ? "watchlist" : "blotter";
+      if (legacy === "orders") merged.blotterFilter = "pending";
+      else if (legacy === "history") merged.blotterFilter = "closed";
+      else if (legacy === "positions") merged.blotterFilter = "open";
+    }
+    if (!VALID_FILTERS.includes(merged.blotterFilter)) merged.blotterFilter = "open";
+    merged.dockHeight = Math.min(560, Math.max(180, Number(merged.dockHeight) || DEFAULTS.dockHeight));
     return merged;
   } catch {
     return DEFAULTS;
@@ -62,16 +81,12 @@ export function useWorkspacePrefs() {
     hydrated.current = true;
   }, []);
 
-  // Debounced write so rapid toggles (indicator checks, resize drag) don't
-  // storm localStorage. Writes at most every 150 ms after the last change.
   useEffect(() => {
     if (!hydrated.current || typeof window === "undefined") return;
     const handle = window.setTimeout(() => {
       try {
         window.localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
-      } catch {
-        /* quota / private mode — silently ignore */
-      }
+      } catch { /* quota / private mode — ignore */ }
     }, 150);
     return () => window.clearTimeout(handle);
   }, [prefs]);

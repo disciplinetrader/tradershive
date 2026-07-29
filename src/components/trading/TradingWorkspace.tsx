@@ -48,13 +48,14 @@ import { cn } from "@/lib/utils";
 import { findSymbol } from "@/lib/paper-trading/symbols";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { closeTrade, listTrades } from "@/lib/paper-trading.functions";
+import { closeTrade, listTrades, listOrders } from "@/lib/paper-trading.functions";
 import { useRiskMonitor } from "@/hooks/use-risk-monitor";
 import { useSlTpMonitor } from "@/hooks/use-sl-tp-monitor";
-import { useWorkspacePrefs, type WorkspaceTab } from "@/hooks/use-workspace-prefs";
+import { useWorkspacePrefs, type WorkspaceTab, type BottomTab, type BlotterFilter } from "@/hooks/use-workspace-prefs";
 import { QuickJournalPanel } from "@/components/trading/QuickJournalPanel";
 import { WorkspaceNotes } from "@/components/trading/WorkspaceNotes";
 import { AiInsightsPanel } from "@/components/trading/AiInsightsPanel";
+import { Blotter } from "@/components/trading/Blotter";
 import { PlaybookQuickAttach } from "@/components/playbook/PlaybookQuickAttach";
 import { ChallengePanel } from "@/components/prop-challenges/ChallengePanel";
 import { useActivePropChallenge } from "@/lib/prop-challenges/active-session";
@@ -202,6 +203,19 @@ function TradingWorkspaceInner() {
       })),
     [openTradesAll, symbol],
   );
+  const openCount = openTradesAll?.length ?? 0;
+
+  // Pending orders count for the Trade-tab badge + adaptive section header.
+  // Shares the query key with OrdersTable / Blotter so it dedupes.
+  const fetchOrdersFn = useServerFn(listOrders);
+  const { data: pendingOrdersAll } = useQuery({
+    queryKey: ["paper", "orders", accountId],
+    queryFn: () => fetchOrdersFn({ data: { account_id: accountId! } }) as unknown as Promise<{ id: string }[]>,
+    enabled: !!accountId,
+    staleTime: 4_000,
+    refetchIntervalInBackground: false,
+  });
+  const pendingCount = pendingOrdersAll?.length ?? 0;
 
   const meta = symbolMeta ?? findSymbol(symbol);
   const decimals = meta?.decimals ?? 2;
@@ -735,6 +749,25 @@ function TradingWorkspaceInner() {
                       className="space-y-3 animate-in fade-in duration-150"
                     >
                       <OrderPanel />
+
+                      {/* Adaptive: Positions — always show header, one-line empty state when 0 */}
+                      <AdaptiveSection
+                        title="Positions"
+                        count={openCount}
+                        emptyLabel="No open positions"
+                      >
+                        <PositionsTable />
+                      </AdaptiveSection>
+
+                      {/* Adaptive: Pending orders */}
+                      <AdaptiveSection
+                        title="Pending orders"
+                        count={pendingCount}
+                        emptyLabel="No pending orders"
+                      >
+                        <OrdersTable />
+                      </AdaptiveSection>
+
                       {/* Playbook checklist folds in only when a strategy is attached */}
                       <details className="group rounded-md border border-border/40 bg-background/40">
                         <summary className="flex cursor-pointer list-none items-center gap-1.5 px-2 py-1.5 text-[11px] font-semibold text-muted-foreground hover:text-foreground">
@@ -787,30 +820,133 @@ function TradingWorkspaceInner() {
           )}
         </div>
 
-        {/* Bottom tabbed dock — positions, orders, history, watchlist */}
-        <div className="border-t border-border/40 bg-card/30">
-          <div className="hidden md:block">
-            <MultiChartStrip panes={multiPanes} onChange={setMultiPanes} primarySymbol={symbol} />
-          </div>
-          <Tabs defaultValue="positions" className="w-full">
-            <div className="border-t border-border/40 px-3 pt-1">
-              <TabsList className="bg-transparent w-full justify-start overflow-x-auto no-scrollbar h-8">
-                <TabsTrigger value="positions" className="text-xs">Positions</TabsTrigger>
-                <TabsTrigger value="orders" className="text-xs">Orders</TabsTrigger>
-                <TabsTrigger value="history" className="text-xs">History</TabsTrigger>
-                <TabsTrigger value="watchlist" className="text-xs">Watchlist</TabsTrigger>
-              </TabsList>
-            </div>
-            <TabsContent value="positions" className="p-2 sm:p-3 max-h-[280px] overflow-auto"><PositionsTable /></TabsContent>
-            <TabsContent value="orders" className="p-2 sm:p-3 max-h-[280px] overflow-auto"><OrdersTable /></TabsContent>
-            <TabsContent value="history" className="p-2 sm:p-3 max-h-[280px] overflow-auto"><HistoryTable /></TabsContent>
-            <TabsContent value="watchlist" className="p-2 sm:p-3 max-h-[280px] overflow-auto"><WatchlistPanel /></TabsContent>
-          </Tabs>
-        </div>
+        {/* Bottom dock — Blotter (Open / Pending / Closed / All) + Watchlist */}
+        <BottomDock symbol={symbol} multiPanes={multiPanes} setMultiPanes={setMultiPanes} />
 
         <SymbolSearch open={symbolSearchOpen} onOpenChange={setSymbolSearchOpen} />
       </div>
     </TooltipProvider>
+  );
+}
+
+/**
+ * AdaptiveSection — always renders its header so switching between the empty
+ * and populated state doesn't shift layout. When count is zero, the body is
+ * a single muted line; when > 0, the passed-in table is rendered.
+ */
+function AdaptiveSection({
+  title, count, emptyLabel, children,
+}: { title: string; count: number; emptyLabel: string; children: React.ReactNode }) {
+  return (
+    <section aria-label={title} className="rounded-md border border-border/40 bg-background/30">
+      <header className="flex items-center gap-2 border-b border-border/40 px-2.5 py-1">
+        <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{title}</span>
+        {count > 0 && (
+          <span className="rounded-full bg-primary/15 px-1.5 text-[9px] font-semibold tabular-nums text-primary">{count}</span>
+        )}
+      </header>
+      {count === 0 ? (
+        <p className="px-2.5 py-1.5 text-[11px] text-muted-foreground/80">{emptyLabel}</p>
+      ) : (
+        <div className="p-2">{children}</div>
+      )}
+    </section>
+  );
+}
+
+/**
+ * BottomDock — unified Blotter + Watchlist with resize handle and persisted
+ * tab / filter / height. Only the active dataset is mounted, so inactive
+ * datasets do not fetch or poll.
+ */
+function BottomDock({
+  symbol, multiPanes, setMultiPanes,
+}: {
+  symbol: string;
+  multiPanes: MultiChartPane[];
+  setMultiPanes: (p: MultiChartPane[]) => void;
+}) {
+  const { prefs, update } = useWorkspacePrefs();
+  const bottomTab: BottomTab = prefs.bottomTab;
+  const setBottomTab = (v: BottomTab) => update("bottomTab", v);
+  const blotterFilter: BlotterFilter = prefs.blotterFilter;
+  const setBlotterFilter = (f: BlotterFilter) => update("blotterFilter", f);
+  const dockHeight = Math.min(560, Math.max(180, prefs.dockHeight));
+
+  const dragRef = useRef<{ startY: number; startH: number } | null>(null);
+  const onResizeStart = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    dragRef.current = { startY: e.clientY, startH: dockHeight };
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    const onMove = (ev: PointerEvent) => {
+      const s = dragRef.current; if (!s) return;
+      const next = Math.min(560, Math.max(180, s.startH - (ev.clientY - s.startY)));
+      update("dockHeight", next);
+    };
+    const onUp = () => {
+      dragRef.current = null;
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  }, [dockHeight, update]);
+
+  return (
+    <div className="border-t border-border/40 bg-card/30">
+      <div className="hidden md:block">
+        <MultiChartStrip panes={multiPanes} onChange={setMultiPanes} primarySymbol={symbol} />
+      </div>
+      <div
+        role="separator"
+        aria-orientation="horizontal"
+        aria-label="Resize dock"
+        onPointerDown={onResizeStart}
+        className="h-1 cursor-row-resize bg-border/40 hover:bg-primary/60 active:bg-primary transition-colors"
+      />
+      <div className="flex min-h-0 flex-col" style={{ height: dockHeight }}>
+        <div
+          role="tablist"
+          aria-label="Bottom dock"
+          onKeyDown={(e) => {
+            const tabs: BottomTab[] = ["blotter", "watchlist"];
+            const i = tabs.indexOf(bottomTab);
+            if (e.key === "ArrowRight") { setBottomTab(tabs[(i + 1) % tabs.length]); e.preventDefault(); }
+            else if (e.key === "ArrowLeft") { setBottomTab(tabs[(i - 1 + tabs.length) % tabs.length]); e.preventDefault(); }
+          }}
+          className="flex items-center gap-1 border-b border-border/40 px-3 pt-1 h-8"
+        >
+          {(["blotter", "watchlist"] as BottomTab[]).map((k) => {
+            const active = bottomTab === k;
+            return (
+              <button
+                key={k}
+                role="tab"
+                id={`dock-tab-${k}`}
+                aria-selected={active}
+                aria-controls={`dock-panel-${k}`}
+                tabIndex={active ? 0 : -1}
+                onClick={() => setBottomTab(k)}
+                className={cn(
+                  "px-3 py-1 text-xs font-semibold rounded-t-md transition-colors",
+                  active
+                    ? "bg-background/60 text-foreground"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {k === "blotter" ? "Blotter" : "Watchlist"}
+              </button>
+            );
+          })}
+        </div>
+        <div id={`dock-panel-${bottomTab}`} role="tabpanel" className="min-h-0 flex-1 overflow-hidden">
+          {bottomTab === "blotter" ? (
+            <Blotter filter={blotterFilter} onFilterChange={setBlotterFilter} />
+          ) : (
+            <div className="h-full overflow-auto p-2 sm:p-3"><WatchlistPanel /></div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
