@@ -38,15 +38,20 @@ const SHORTCUTS: Array<[string, string]> = [
   ["Space", "Play / Pause"],
   ["← / →", "Step 1 candle"],
   ["Shift + ← / →", "Skip 10 candles"],
-  ["+ / -", "Faster / slower playback"],
+  ["+ / -", "Faster / slower playback · Zoom chart"],
+  [", / .", "Step backward / forward"],
   ["B / Shift+B", "Next / previous bookmark"],
   ["T / Shift+T", "Next / previous trade"],
   ["M", "Bookmark current candle"],
   ["S", "Snapshot chart"],
   ["F", "Fast-forward to next trade"],
+  ["Del / Backspace", "Delete selected drawing"],
+  ["⌘/Ctrl + Z", "Undo drawing"],
+  ["⌘/Ctrl + ⇧ + Z", "Redo drawing"],
   ["?", "Show this help"],
-  ["Esc", "Close dialogs · exit focus"],
+  ["Esc", "Cancel tool · close dialogs"],
 ];
+
 
 function IconBtn({ label, onClick, children, disabled }: { label: string; onClick: () => void; children: React.ReactNode; disabled?: boolean }) {
   return (
