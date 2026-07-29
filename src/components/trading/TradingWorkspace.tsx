@@ -54,6 +54,7 @@ import { useSlTpMonitor } from "@/hooks/use-sl-tp-monitor";
 import { useWorkspacePrefs, type WorkspaceTab } from "@/hooks/use-workspace-prefs";
 import { QuickJournalPanel } from "@/components/trading/QuickJournalPanel";
 import { WorkspaceNotes } from "@/components/trading/WorkspaceNotes";
+import { AiInsightsPanel } from "@/components/trading/AiInsightsPanel";
 import { PlaybookQuickAttach } from "@/components/playbook/PlaybookQuickAttach";
 import { ChallengePanel } from "@/components/prop-challenges/ChallengePanel";
 import { useActivePropChallenge } from "@/lib/prop-challenges/active-session";
