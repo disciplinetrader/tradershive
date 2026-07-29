@@ -140,10 +140,21 @@ function JournalPage() {
 
   const filtered = useMemo(() => {
     const source = entriesQuery.data ?? [];
-    const applied = applyFilters(source, filters, entryTagMap);
+    let applied = applyFilters(source, filters, entryTagMap);
+    if (statusFilter) applied = applied.filter((e) => e.status === statusFilter);
+    if (gradeFilter) applied = applied.filter((e) => e.grade === gradeFilter);
     if (!dayFilterIds) return applied;
     return applied.filter((e) => dayFilterIds.has(e.id));
-  }, [entriesQuery.data, filters, entryTagMap, dayFilterIds]);
+  }, [entriesQuery.data, filters, entryTagMap, dayFilterIds, statusFilter, gradeFilter]);
+
+  const handleSelectView = (id: string) => {
+    setSavedView(id);
+    const resolved = resolveSavedView(id);
+    setFilters((prev) => ({ ...resolved.filters, q: prev.q }));
+    setStatusFilter(resolved.statusFilter ?? null);
+    setGradeFilter(resolved.gradeFilter ?? null);
+    setDayFilterIds(null);
+  };
 
   // Signed URLs for card / timeline thumbnails
   const allScreenshotPaths = useMemo(() => {
