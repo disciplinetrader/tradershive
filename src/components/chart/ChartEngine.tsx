@@ -44,6 +44,8 @@ export const ChartEngine = forwardRef<ChartHandle, Props>(function ChartEngine(
   const [quote, setQuote] = useState<Quote | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadNonce, setLoadNonce] = useState(0);
+  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
+  const [freshness, setFreshness] = useState<"loading" | "live" | "cached" | "error">("loading");
 
   // Mount adapter once
   useEffect(() => {
@@ -60,8 +62,6 @@ export const ChartEngine = forwardRef<ChartHandle, Props>(function ChartEngine(
     const a = adapterRef.current;
     if (!a) return;
     a.setChartType(settings.chartType);
-    // The adapter rebuilds its price series on type change — re-push the
-    // existing candles so the new series isn't empty until the next bar.
     if (candles.length) a.setCandles(candles);
   }, [settings.chartType, candles]);
 
@@ -73,30 +73,48 @@ export const ChartEngine = forwardRef<ChartHandle, Props>(function ChartEngine(
     const tfMs = TIMEFRAME_SECONDS[settings.timeframe] * 1000;
     const from = to - tfMs * 500;
     setLoadError(null);
+    setFreshness((f) => (candles.length ? f : "loading"));
     marketData
       .getCandles({ symbol: settings.symbol, timeframe: settings.timeframe, from, to, limit: 500 }, settings.market)
       .then((rows) => {
         if (cancelled) return;
         if (!rows || rows.length === 0) {
-          setLoadError("No data returned by market provider.");
+          // Only block the chart when there is truly nothing to show.
+          if (!candles.length) {
+            setLoadError("No historical data is available for this symbol yet.");
+            setFreshness("error");
+          } else {
+            setFreshness("cached");
+          }
           return;
         }
         setCandles(rows);
         adapterRef.current?.setCandles(rows);
+        setLastUpdated(Date.now());
+        setFreshness("live");
       })
       .catch((e) => {
         if (cancelled) return;
         const msg = (e as Error)?.message ?? "Unknown error";
+        // Graceful degradation: keep the last-known chart on screen and
+        // surface a subtle "Cached" chip instead of a red error card.
+        if (candles.length) {
+          setFreshness("cached");
+          return;
+        }
         const friendly = /rate|429|cooldown|quota/i.test(msg)
-          ? "Market data provider is rate-limited. Retrying shortly…"
+          ? "Live market data is briefly unavailable. Retrying automatically…"
           : /not_configured/i.test(msg)
-          ? "Market data provider is not configured."
-          : `Couldn't load ${settings.symbol}. ${msg}`;
+          ? "This market provider isn't configured yet."
+          : "We couldn't reach the market data provider.";
         setLoadError(friendly);
+        setFreshness("error");
       });
 
     const sub = marketData.subscribe(settings.symbol, (q) => {
       setQuote(q); onQuote?.(q);
+      setLastUpdated(Date.now());
+      setFreshness("live");
       setCandles((prev) => {
         if (!prev.length) return prev;
         const stepMs = TIMEFRAME_SECONDS[settings.timeframe] * 1000;
@@ -114,6 +132,7 @@ export const ChartEngine = forwardRef<ChartHandle, Props>(function ChartEngine(
     }, settings.market);
 
     return () => { cancelled = true; sub.unsubscribe(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings.symbol, settings.timeframe, settings.market, onQuote, loadNonce]);
 
   // Indicators + volume
