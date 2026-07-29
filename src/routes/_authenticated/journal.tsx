@@ -59,6 +59,8 @@ import { CalendarView } from "@/components/journal/CalendarView";
 import { TimelineView } from "@/components/journal/TimelineView";
 import { JournalDrawer } from "@/components/journal/JournalDrawer";
 import { ManualEntryDialog } from "@/components/journal/ManualEntryDialog";
+import { DraftsBanner } from "@/components/journal/DraftsBanner";
+import { JournalSearchBar, resolveSavedView } from "@/components/journal/JournalSearchBar";
 import { cn } from "@/lib/utils";
 import { routeBoundaries } from "@/lib/route-boundaries";
 
@@ -96,6 +98,9 @@ function JournalPage() {
   const [drawerId, setDrawerId] = useState<string | null>(null);
   const [dayFilterIds, setDayFilterIds] = useState<Set<string> | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [savedView, setSavedView] = useState<string>("recent");
+  const [statusFilter, setStatusFilter] = useState<"draft" | "published" | null>(null);
+  const [gradeFilter, setGradeFilter] = useState<string | null>(null);
 
   useEffect(() => setFilters(loadStoredFilters()), []);
   useEffect(() => {
@@ -135,10 +140,21 @@ function JournalPage() {
 
   const filtered = useMemo(() => {
     const source = entriesQuery.data ?? [];
-    const applied = applyFilters(source, filters, entryTagMap);
+    let applied = applyFilters(source, filters, entryTagMap);
+    if (statusFilter) applied = applied.filter((e) => e.status === statusFilter);
+    if (gradeFilter) applied = applied.filter((e) => e.grade === gradeFilter);
     if (!dayFilterIds) return applied;
     return applied.filter((e) => dayFilterIds.has(e.id));
-  }, [entriesQuery.data, filters, entryTagMap, dayFilterIds]);
+  }, [entriesQuery.data, filters, entryTagMap, dayFilterIds, statusFilter, gradeFilter]);
+
+  const handleSelectView = (id: string) => {
+    setSavedView(id);
+    const resolved = resolveSavedView(id);
+    setFilters((prev) => ({ ...resolved.filters, q: prev.q }));
+    setStatusFilter(resolved.statusFilter ?? null);
+    setGradeFilter(resolved.gradeFilter ?? null);
+    setDayFilterIds(null);
+  };
 
   // Signed URLs for card / timeline thumbnails
   const allScreenshotPaths = useMemo(() => {
@@ -269,6 +285,22 @@ function JournalPage() {
         </GlassCard>
       ) : (
         <>
+          <DraftsBanner
+            entries={entriesQuery.data ?? []}
+            onContinue={(id) => setDrawerId(id)}
+          />
+
+          <GlassCard className="p-3 sm:p-4">
+            <JournalSearchBar
+              filters={filters}
+              onChange={setFilters}
+              activeView={savedView}
+              onSelectView={handleSelectView}
+              totalCount={(entriesQuery.data ?? []).length}
+              filteredCount={filtered.length}
+            />
+          </GlassCard>
+
           <JournalStats
             entries={filtered}
             onFilterEmotion={(value) => setFilters((p) => ({ ...p, emotion: value }))}
@@ -291,6 +323,15 @@ function JournalPage() {
                 <ViewSwitcher value={view} onChange={setView} />
               </div>
             </div>
+            {statusFilter || gradeFilter ? (
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                {statusFilter ? <span className="rounded-md border border-primary/30 bg-primary/5 px-2 py-0.5 text-primary">Status: {statusFilter}</span> : null}
+                {gradeFilter ? <span className="rounded-md border border-primary/30 bg-primary/5 px-2 py-0.5 text-primary">Grade: {gradeFilter}</span> : null}
+                <Button variant="ghost" size="sm" className="h-6 text-[11px]" onClick={() => handleSelectView("recent")}>
+                  Clear view
+                </Button>
+              </div>
+            ) : null}
             {dayFilterIds ? (
               <div className="mt-3 flex items-center justify-between rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-primary">
                 <span className="truncate">Filtered to {dayFilterIds.size} trade{dayFilterIds.size === 1 ? "" : "s"} from selected day.</span>
@@ -300,6 +341,8 @@ function JournalPage() {
               </div>
             ) : null}
           </GlassCard>
+
+
 
 
           {isLoading ? (
