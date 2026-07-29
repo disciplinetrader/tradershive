@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
-import { ArrowDownRight, ArrowUpRight, BookOpen, LineChart, Search } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, BookOpen, LineChart, PlayCircle, Search, ShieldAlert } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
