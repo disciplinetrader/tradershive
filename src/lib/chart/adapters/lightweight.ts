@@ -438,6 +438,26 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
     },
     fitContent() { resizeToContainer(); chart.timeScale().fitContent(); },
     resetPriceScale() { chart.priceScale("right").applyOptions({ autoScale: true }); },
+    zoomBy(factor: number) {
+      try {
+        const ts = chart.timeScale();
+        const opts: any = (ts as any).options?.() ?? {};
+        const current = opts.barSpacing ?? 8;
+        const next = Math.max(1, Math.min(60, current * factor));
+        ts.applyOptions({ barSpacing: next });
+      } catch { /* ignore */ }
+    },
+    panBy(bars: number) {
+      try {
+        const ts = chart.timeScale();
+        const pos = ts.scrollPosition();
+        ts.scrollToPosition(pos + bars, false);
+      } catch { /* ignore */ }
+    },
+    resetTimeScale() {
+      try { chart.timeScale().resetTimeScale(); chart.timeScale().fitContent(); } catch { /* ignore */ }
+    },
+
     addPriceLine(opts) {
       const line = priceSeries.createPriceLine({
         price: opts.price,
