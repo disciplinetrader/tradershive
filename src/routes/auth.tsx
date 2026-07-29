@@ -305,10 +305,12 @@ function LoginForm({ onForgot }: { onForgot: () => void }) {
 type SignupSuccess = { email: string };
 
 function RegisterForm() {
+  const navigate = useNavigate();
   const [step, setStep] = useState<1 | 2>(1);
   const [showPw, setShowPw] = useState(false);
   const [success, setSuccess] = useState<SignupSuccess | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+
 
   const detectedTz = detectTimezone();
   const timezoneOptions = useMemo(() => getTimezoneOptions(), []);
