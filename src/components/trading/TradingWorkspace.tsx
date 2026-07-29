@@ -532,21 +532,19 @@ function TradingWorkspaceInner() {
           style={{ /* dynamic width for the rail */ }}
         >
           <div className="relative flex min-h-[calc(100dvh-4.5rem)] min-w-0 flex-1 flex-col border-r border-border/40">
-            {/* Live indicator strip (thin) */}
-            <div className="flex items-center gap-2 border-b border-border/40 bg-background/30 px-3 py-1 text-[10px] text-muted-foreground">
-              <LineChartIcon className="h-3 w-3" />
-              <span className="truncate">
-                {activeIndicatorCount === 0 ? "No indicators active" : (
-                  <>
-                    {INDICATOR_TOGGLES.filter((i) => enabled[i.key]).map((i) => i.label).join(" · ")}
-                    {smcOn && (activeIndicatorCount > 1 ? " · " : "") + "SMC/ICT"}
-                  </>
-                )}
-              </span>
-              <div className="ml-auto flex items-center gap-1">
-                <Activity className="h-3 w-3 text-success animate-pulse" /> live
+            {/* Compact active-indicator strip — only shown when indicators
+                are active so the chart owns as much vertical space as possible.
+                The freshness chip lives inside ChartEngine (top-left) and is
+                the single source of truth for data status. */}
+            {activeIndicatorCount > 0 && (
+              <div className="flex items-center gap-2 border-b border-border/40 bg-background/30 px-3 py-1 text-[10px] text-muted-foreground">
+                <LineChartIcon className="h-3 w-3" />
+                <span className="truncate">
+                  {INDICATOR_TOGGLES.filter((i) => enabled[i.key]).map((i) => i.label).join(" · ")}
+                  {smcOn && (activeIndicatorCount > 1 ? " · " : "") + "SMC/ICT"}
+                </span>
               </div>
-            </div>
+            )}
 
             {/* Chart canvas + overlays (fills remaining space) */}
             <div className="relative min-h-0 flex-1">
