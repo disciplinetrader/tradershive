@@ -98,6 +98,9 @@ function JournalPage() {
   const [drawerId, setDrawerId] = useState<string | null>(null);
   const [dayFilterIds, setDayFilterIds] = useState<Set<string> | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [savedView, setSavedView] = useState<string>("recent");
+  const [statusFilter, setStatusFilter] = useState<"draft" | "published" | null>(null);
+  const [gradeFilter, setGradeFilter] = useState<string | null>(null);
 
   useEffect(() => setFilters(loadStoredFilters()), []);
   useEffect(() => {
