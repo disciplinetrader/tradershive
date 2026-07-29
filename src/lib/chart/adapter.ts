@@ -52,6 +52,13 @@ export interface ChartAdapter {
   screenshot(): Promise<Blob | null>;
   fitContent(): void;
   resetPriceScale(): void;
+  /** Zoom around the current visible-range centre. factor >1 = zoom in. */
+  zoomBy?(factor: number): void;
+  /** Pan by N bars. Positive = pan right (forward in time). */
+  panBy?(bars: number): void;
+  /** Reset time-scale bar spacing / visible range to defaults. */
+  resetTimeScale?(): void;
+
 
   /**
    * Add a horizontal price line pinned to the price series (entry, SL, TP,
