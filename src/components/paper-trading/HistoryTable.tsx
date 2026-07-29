@@ -117,7 +117,7 @@ export function HistoryTable({ preset }: { preset?: HistoryPreset } = {}) {
               <SortHeader label="Exit" sortKey="size" state={prefs.blotterSortClosed} onChange={setSort} align="right" />
               <SortHeader label="RR" sortKey="size" state={prefs.blotterSortClosed} onChange={setSort} align="right" />
               <SortHeader label="P/L" sortKey="pnl" state={prefs.blotterSortClosed} onChange={setSort} align="right" />
-              <TableCell as="th" className="w-[60px]" />
+              <th className="w-[60px]" />
             </TableRow>
           </TableHeader>
           <TableBody>
