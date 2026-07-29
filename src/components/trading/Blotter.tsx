@@ -1,9 +1,10 @@
 /**
  * Blotter — unified position/order/history view for the bottom dock.
  *
- * Replaces the separate Positions / Orders / History tabs with one
- * filter-chip surface. Only the table matching the active filter is
- * mounted, so the inactive datasets do not fetch or poll.
+ * Sprint 3.2: lightweight chip filters (Open, Pending, Closed, Winning,
+ * Losing, Today, Week, All). Only the table matching the active filter is
+ * mounted, so inactive datasets do not fetch or poll. Outcome/time chips
+ * pass a `preset` through to the history table.
  */
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -11,7 +12,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { cn } from "@/lib/utils";
 import { PositionsTable } from "@/components/paper-trading/PositionsTable";
 import { OrdersTable } from "@/components/paper-trading/OrdersTable";
-import { HistoryTable } from "@/components/paper-trading/HistoryTable";
+import { HistoryTable, type HistoryPreset } from "@/components/paper-trading/HistoryTable";
 import { usePaper } from "@/components/paper-trading/context";
 import { listTrades, listOrders } from "@/lib/paper-trading.functions";
 import type { BlotterFilter } from "@/hooks/use-workspace-prefs";
@@ -20,8 +21,20 @@ const CHIPS: { k: BlotterFilter; label: string }[] = [
   { k: "open", label: "Open" },
   { k: "pending", label: "Pending" },
   { k: "closed", label: "Closed" },
+  { k: "winning", label: "Winning" },
+  { k: "losing", label: "Losing" },
+  { k: "today", label: "Today" },
+  { k: "week", label: "Week" },
   { k: "all", label: "All" },
 ];
+
+const HISTORY_PRESET: Partial<Record<BlotterFilter, HistoryPreset>> = {
+  closed: {},
+  winning: { outcome: "win" },
+  losing: { outcome: "loss" },
+  today: { range: "today" },
+  week: { range: "week" },
+};
 
 export function Blotter({
   filter,
@@ -34,9 +47,6 @@ export function Blotter({
   const fetchTrades = useServerFn(listTrades);
   const fetchOrders = useServerFn(listOrders);
 
-  // Lightweight badge counts — reuses cached queries other components already
-  // populate (identical query keys), so this does not add new network traffic
-  // when Positions/Orders panels are open elsewhere.
   const openQ = useQuery({
     queryKey: ["paper", "trades", accountId, "open"],
     queryFn: () => fetchTrades({ data: { account_id: accountId!, status: "open" } }) as unknown as Promise<unknown[]>,
@@ -57,12 +67,15 @@ export function Blotter({
     pending: pendingQ.data?.length ?? 0,
   }), [openQ.data, pendingQ.data]);
 
+  const preset = HISTORY_PRESET[filter];
+  const showHistory = preset !== undefined;
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div
         role="tablist"
         aria-label="Blotter filter"
-        className="flex items-center gap-1 border-b border-border/40 px-3 py-1.5"
+        className="flex flex-wrap items-center gap-1 border-b border-border/40 px-3 py-1.5"
       >
         {CHIPS.map((c) => {
           const active = filter === c.k;
@@ -105,12 +118,12 @@ export function Blotter({
       <div id="blotter-panel" role="tabpanel" className="min-h-0 flex-1 overflow-auto p-2 sm:p-3">
         {filter === "open" && <PositionsTable />}
         {filter === "pending" && <OrdersTable />}
-        {filter === "closed" && <HistoryTable />}
+        {showHistory && <HistoryTable preset={preset} />}
         {filter === "all" && (
           <div className="space-y-4">
             <Section title="Open positions"><PositionsTable /></Section>
             <Section title="Pending orders"><OrdersTable /></Section>
-            <Section title="Closed trades"><HistoryTable /></Section>
+            <Section title="Closed trades"><HistoryTable preset={{}} /></Section>
           </div>
         )}
       </div>
