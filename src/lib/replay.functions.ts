@@ -683,3 +683,103 @@ export const getReplayCandles = createServerFn({ method: "POST" })
     });
     return { candles, providerId: provider.id, providerLabel: provider.label, stepSec: TIMEFRAME_SECONDS[data.timeframe as Timeframe] };
   });
+
+/* ============ Replay from an existing trade =========================
+ *
+ * "Replay this trade" — one-click entry from any surface that lists paper
+ * trades (Dashboard, Journal, Analytics, Trade details). Looks up the
+ * paper trade, computes a sensible timeframe/date window (approximately
+ * 20-30 candles of context before entry), and creates a fresh Replay
+ * Session anchored to the trade so users skip the wizard entirely.
+ * ================================================================== */
+
+const MARKET_ALLOWED = new Set(["forex", "crypto", "stocks", "indices", "futures", "metals"]);
+
+function pickTimeframeForDuration(sec: number): Timeframe {
+  if (!sec || sec <= 0) return "5m";
+  if (sec <= 30 * 60) return "1m";        // ≤ 30 min → 1m candles
+  if (sec <= 2 * 3600) return "5m";       // ≤ 2h    → 5m
+  if (sec <= 8 * 3600) return "15m";      // ≤ 8h    → 15m
+  if (sec <= 3 * 86400) return "1H";      // ≤ 3d    → 1H
+  return "4H";
+}
+
+export const createReplayFromTrade = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({
+      trade_id: z.string().uuid(),
+      timeframe: z.enum(["1m", "3m", "5m", "15m", "30m", "1H", "4H", "1D"]).optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: trade, error: tErr } = await context.supabase
+      .from("paper_trades")
+      .select("id, symbol, market, direction, opened_at, closed_at")
+      .eq("id", data.trade_id)
+      .eq("user_id", context.userId)
+      .maybeSingle();
+    if (tErr) throw tErr;
+    if (!trade) throw new Error("Trade not found");
+
+    const openedMs = new Date(trade.opened_at).getTime();
+    const closedMs = trade.closed_at ? new Date(trade.closed_at).getTime() : openedMs + 4 * 3600 * 1000;
+    const durationSec = Math.max(60, Math.round((closedMs - openedMs) / 1000));
+    const tf = (data.timeframe ?? pickTimeframeForDuration(durationSec)) as Timeframe;
+    const stepSec = TIMEFRAME_SECONDS[tf];
+
+    // ~25 candles of context before entry, and continue past exit by the
+    // same margin so the trader can review the aftermath.
+    const contextSec = stepSec * 25;
+    const fromMs = openedMs - contextSec * 1000;
+    const toMs = closedMs + contextSec * 1000;
+    const rangeStart = new Date(fromMs).toISOString();
+    const rangeEnd = new Date(toMs).toISOString();
+
+    const market = MARKET_ALLOWED.has(trade.market) ? trade.market : "forex";
+    const title = `Replay · ${trade.symbol} · ${new Date(openedMs).toISOString().slice(0, 10)}`;
+
+    const { data: row, error } = await context.supabase
+      .from("replay_sessions")
+      .insert({
+        user_id: context.userId,
+        title,
+        mode: "range",
+        market,
+        symbol: trade.symbol,
+        timeframe: tf,
+        replay_date: null,
+        range_start: rangeStart,
+        range_end: rangeEnd,
+        source_trade_id: trade.id,
+        source_journal_id: null,
+        provider: "synthetic",
+        tags: ["from-trade"],
+        cursor_ts: rangeStart,
+        last_opened_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+    if (error) throw error;
+
+    // Seed default checklist so the workspace behaves identically to a fresh session.
+    const { DEFAULT_CHECKLIST } = await import("./replay/constants");
+    await context.supabase.from("replay_checklists").insert(
+      DEFAULT_CHECKLIST.map((label, i) => ({
+        session_id: row.id,
+        user_id: context.userId,
+        label,
+        sort_order: i,
+      })),
+    );
+
+    await context.supabase.from("replay_events").insert({
+      session_id: row.id,
+      user_id: context.userId,
+      event_type: "session_created",
+      event_ts: new Date().toISOString(),
+      payload: { source: "trade", trade_id: trade.id, symbol: trade.symbol, timeframe: tf },
+    });
+
+    return row;
+  });

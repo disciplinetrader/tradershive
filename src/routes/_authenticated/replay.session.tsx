@@ -11,13 +11,11 @@ import {
   ChevronRight,
   Flag,
   NotebookPen,
-  ShieldCheck,
-  Sparkles,
   Trophy,
 } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ReplayProvider, useReplay } from "@/components/replay/context";
 import { ReplayChart } from "@/components/replay/ReplayChart";
@@ -28,8 +26,6 @@ import { TradePanel } from "@/components/replay/TradePanel";
 import { NotesPanel } from "@/components/replay/NotesPanel";
 import { BookmarksPanel } from "@/components/replay/BookmarksPanel";
 import { ChecklistPanel } from "@/components/replay/ChecklistPanel";
-import { ScoreCard } from "@/components/replay/ScoreCard";
-import { AiReviewPanel } from "@/components/replay/AiReviewPanel";
 import { PostSessionSummary } from "@/components/replay/PostSessionSummary";
 import { CheckpointsPanel } from "@/components/replay/CheckpointsPanel";
 import { ReplayTimeline } from "@/components/replay/ReplayTimeline";
@@ -67,10 +63,11 @@ function NoSession() {
   );
 }
 
-const SIDE_TABS: { id: "trade" | "notes" | "review"; icon: typeof NotebookPen; label: string }[] = [
+// AI is intentionally NOT here — Coach output only surfaces post-session in
+// PostSessionSummary. This preserves flow-state during active trading.
+const SIDE_TABS: { id: "trade" | "notes"; icon: typeof NotebookPen; label: string }[] = [
   { id: "trade", icon: Trophy, label: "Trade" },
   { id: "notes", icon: NotebookPen, label: "Journal" },
-  { id: "review", icon: ShieldCheck, label: "Review" },
 ];
 
 function Workspace() {
@@ -80,7 +77,7 @@ function Workspace() {
   const sideOpen = prefs.sideOpen;
   const sideTab = prefs.sideTab;
   const setSideOpen = (v: boolean) => update("sideOpen", v);
-  const setSideTab = (v: "trade" | "notes" | "review") => update("sideTab", v);
+  const setSideTab = (v: "trade" | "notes") => update("sideTab", v);
 
   // Floating controls auto-hide over the chart
   const [controlsVisible, setControlsVisible] = useState(true);
@@ -155,11 +152,8 @@ function Workspace() {
             <Button size="sm" variant="ghost" onClick={takeShot} className="h-7 gap-1 px-2 text-[11px]">
               <Camera className="h-3.5 w-3.5" /> <span className="hidden lg:inline">Snapshot</span>
             </Button>
-            <Button size="sm" variant="secondary" asChild className="h-7 gap-1 px-2 text-[11px]">
-              <Link to="/ai/dashboard"><Sparkles className="h-3.5 w-3.5" /> <span className="hidden lg:inline">Coach</span></Link>
-            </Button>
             <Button size="sm" onClick={finishAndReview} className="h-7 gap-1 px-2 text-[11px]">
-              <CheckCircle2 className="h-3.5 w-3.5" /> Finish
+              <CheckCircle2 className="h-3.5 w-3.5" /> Finish &amp; Review
             </Button>
           </div>
         </div>
@@ -220,7 +214,7 @@ function Workspace() {
                 className="flex min-h-0 flex-1 flex-col"
               >
                 <div className="border-b border-border/40 px-2 pt-1 pr-9">
-                  <TabsList className="grid w-full grid-cols-3 h-8">
+                  <TabsList className="grid w-full grid-cols-2 h-8">
                     {SIDE_TABS.map((t) => (
                       <TabsTrigger key={t.id} value={t.id} className="text-[11px] gap-1">
                         <t.icon className="h-3 w-3" /> {t.label}
@@ -240,13 +234,6 @@ function Workspace() {
                       <CheckpointsPanel />
                       <SectionHeader icon={CheckSquare} label="Checklist" />
                       <ChecklistPanel />
-                    </div>
-                  )}
-                  {sideTab === "review" && (
-                    <div className="space-y-3">
-                      <SectionHeader icon={ShieldCheck} label="Score" />
-                      <ScoreCard />
-                      {session ? <AiReviewPanel sessionId={session.id} /> : null}
                     </div>
                   )}
                 </div>

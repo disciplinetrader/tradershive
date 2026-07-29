@@ -1,11 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Link } from "@tanstack/react-router";
-import { BookOpen, GraduationCap, Play, RotateCcw, Share2, Sparkles, X } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { BookOpen, GraduationCap, NotebookPen, Play, RotateCcw, Share2, Sparkles, X } from "lucide-react";
+import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { getReplaySessionSummary } from "@/lib/replay-studio.functions";
 import { generateReplayDebrief, getReplayDebrief } from "@/lib/replay-coach.functions";
+import { createJournalDraftFromReplay } from "@/lib/replay/journal-draft";
+import { supabase } from "@/integrations/supabase/client";
 
 export function PostSessionSummary({
   sessionId,
@@ -159,18 +162,23 @@ export function PostSessionSummary({
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-2 pt-2">
+            {/* Primary CTA — complete the loop by handing off to the Journal */}
+            <CompleteAndJournal
+              sessionId={sessionId}
+              session={s}
+              totals={t}
+              debrief={debrief}
+            />
+
+            <div className="grid grid-cols-2 gap-2 pt-1">
               <Button variant="secondary" onClick={onReplayAgain}>
                 <RotateCcw className="mr-2 h-3.5 w-3.5" /> Replay Again
               </Button>
               <Button variant="secondary" asChild>
-                <Link to="/journal"><BookOpen className="mr-2 h-3.5 w-3.5" /> Open Journal</Link>
-              </Button>
-              <Button variant="secondary" asChild>
                 <Link to="/analytics"><Play className="mr-2 h-3.5 w-3.5" /> Analytics</Link>
               </Button>
-              <Button variant="secondary" asChild>
-                <Link to="/community"><Share2 className="mr-2 h-3.5 w-3.5" /> Share</Link>
+              <Button variant="secondary" asChild className="col-span-2">
+                <Link to="/community"><Share2 className="mr-2 h-3.5 w-3.5" /> Share Session</Link>
               </Button>
             </div>
 
@@ -201,4 +209,62 @@ function formatDuration(sec: number): string {
   if (h > 0) return `${h}h ${m}m`;
   if (m > 0) return `${m}m`;
   return `${Math.floor(sec)}s`;
+}
+
+/**
+ * "Complete & Journal" — closes the deliberate-practice loop.
+ * Fetches trades/notes/checklist for the session, builds a Journal draft, and
+ * routes the trader to the editor so no data is retyped.
+ */
+function CompleteAndJournal({
+  sessionId,
+  session,
+  totals,
+  debrief,
+}: {
+  sessionId: string;
+  session: any;
+  totals: any;
+  debrief: any;
+}) {
+  const navigate = useNavigate();
+  const m = useMutation({
+    mutationFn: async () => {
+      const [tradesRes, notesRes, checkRes, shotsRes] = await Promise.all([
+        supabase.from("replay_trades").select("*").eq("session_id", sessionId).order("opened_at"),
+        supabase.from("replay_notes").select("body").eq("session_id", sessionId).order("created_at"),
+        supabase.from("replay_checklists").select("label, is_checked").eq("session_id", sessionId).order("sort_order"),
+        supabase.from("replay_screenshots").select("url").eq("session_id", sessionId).order("captured_at"),
+      ]);
+      const trades = (tradesRes.data ?? []) as any[];
+      const notes = (notesRes.data ?? []).map((n: any) => n.body).filter(Boolean);
+      const checklist = (checkRes.data ?? []) as any[];
+      const screenshotUrls = (shotsRes.data ?? []).map((s: any) => s.url).filter(Boolean);
+      return createJournalDraftFromReplay({
+        session,
+        trades,
+        totals,
+        debrief,
+        notes,
+        checklist,
+        screenshotUrls,
+      });
+    },
+    onSuccess: ({ id }) => {
+      toast.success("Journal draft created");
+      navigate({ to: "/journal", search: { entry: id } as never });
+    },
+    onError: (e) => toast.error((e as Error).message ?? "Could not create journal draft"),
+  });
+
+  return (
+    <Button
+      className="w-full gradient-primary text-primary-foreground"
+      onClick={() => m.mutate()}
+      disabled={m.isPending || !session || !totals}
+    >
+      <NotebookPen className="mr-2 h-3.5 w-3.5" />
+      {m.isPending ? "Building journal draft…" : "Complete & Journal"}
+    </Button>
+  );
 }
