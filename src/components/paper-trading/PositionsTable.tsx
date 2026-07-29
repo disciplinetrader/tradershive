@@ -325,3 +325,19 @@ function formatDuration(start: Date): string {
   const d = Math.floor(h / 24);
   return `${d}d ${h % 24}h`;
 }
+
+type Enriched = { t: Trade; sym: ReturnType<typeof findSymbol>; current: number; floating: number; rr: number };
+
+function sortEnriched(rows: Enriched[], s: BlotterSort): Enriched[] {
+  const mul = s.dir === "asc" ? 1 : -1;
+  return [...rows].sort((a, b) => {
+    switch (s.key) {
+      case "symbol": return a.t.symbol.localeCompare(b.t.symbol) * mul;
+      case "pnl":    return (a.floating - b.floating) * mul;
+      case "size":   return (Number(a.t.lot_size) - Number(b.t.lot_size)) * mul;
+      case "status": return a.t.direction.localeCompare(b.t.direction) * mul;
+      case "time":
+      default:       return (new Date(a.t.opened_at).getTime() - new Date(b.t.opened_at).getTime()) * mul;
+    }
+  });
+}
