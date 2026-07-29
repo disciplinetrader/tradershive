@@ -184,12 +184,12 @@ export function PostSessionSummary({
   );
 }
 
-function Metric({ label, value, tone }: { label: string; value: React.ReactNode; tone?: "success" | "danger" }) {
+function Metric({ label, value, tone, hero }: { label: string; value: React.ReactNode; tone?: "success" | "danger"; hero?: boolean }) {
   const color = tone === "success" ? "text-success" : tone === "danger" ? "text-danger" : "text-foreground";
   return (
-    <div className="rounded-[3px] border border-border/60 bg-card/40 p-2">
+    <div className={`rounded-[3px] border p-2 ${hero ? "border-primary/30 bg-primary/5" : "border-border/60 bg-card/40"}`}>
       <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
-      <div className={`text-sm font-semibold tabular-nums ${color}`}>{value}</div>
+      <div className={`${hero ? "text-lg" : "text-sm"} font-semibold tabular-nums ${color}`}>{value}</div>
     </div>
   );
 }
