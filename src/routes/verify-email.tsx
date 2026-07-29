@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { z } from "zod";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
@@ -38,6 +38,7 @@ export const Route = createFileRoute("/verify-email")({
 
 function VerifyEmailPage() {
   const { email } = useSearch({ from: "/verify-email" });
+  const navigate = useNavigate();
   const [verified, setVerified] = useState(false);
   const [cooldown, setCooldown] = useState(30);
   const [sending, setSending] = useState(false);
@@ -53,6 +54,31 @@ function VerifyEmailPage() {
     });
     return () => sub.subscription.unsubscribe();
   }, []);
+
+  // Once verified (or the session confirms email is already good), bounce the user
+  // straight into the app — no manual "Continue" click needed.
+  useEffect(() => {
+    if (!verified) return;
+    const t = setTimeout(async () => {
+      const { data: p } = await supabase.auth.getUser();
+      const uid = p.user?.id;
+      if (!uid) {
+        await navigate({ to: "/auth", search: { mode: "login" }, replace: true });
+        return;
+      }
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("onboarded")
+        .eq("id", uid)
+        .maybeSingle();
+      await navigate({
+        to: prof && !prof.onboarded ? "/onboarding" : "/dashboard",
+        replace: true,
+      });
+    }, 600);
+    return () => clearTimeout(t);
+  }, [verified, navigate]);
+
 
   useEffect(() => {
     if (cooldown <= 0) return;
