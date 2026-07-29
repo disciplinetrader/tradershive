@@ -749,6 +749,25 @@ function TradingWorkspaceInner() {
                       className="space-y-3 animate-in fade-in duration-150"
                     >
                       <OrderPanel />
+
+                      {/* Adaptive: Positions — always show header, one-line empty state when 0 */}
+                      <AdaptiveSection
+                        title="Positions"
+                        count={openCount}
+                        emptyLabel="No open positions"
+                      >
+                        <PositionsTable />
+                      </AdaptiveSection>
+
+                      {/* Adaptive: Pending orders */}
+                      <AdaptiveSection
+                        title="Pending orders"
+                        count={pendingCount}
+                        emptyLabel="No pending orders"
+                      >
+                        <OrdersTable />
+                      </AdaptiveSection>
+
                       {/* Playbook checklist folds in only when a strategy is attached */}
                       <details className="group rounded-md border border-border/40 bg-background/40">
                         <summary className="flex cursor-pointer list-none items-center gap-1.5 px-2 py-1.5 text-[11px] font-semibold text-muted-foreground hover:text-foreground">
