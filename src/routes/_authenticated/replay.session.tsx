@@ -11,13 +11,11 @@ import {
   ChevronRight,
   Flag,
   NotebookPen,
-  ShieldCheck,
-  Sparkles,
   Trophy,
 } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ReplayProvider, useReplay } from "@/components/replay/context";
 import { ReplayChart } from "@/components/replay/ReplayChart";
@@ -28,8 +26,6 @@ import { TradePanel } from "@/components/replay/TradePanel";
 import { NotesPanel } from "@/components/replay/NotesPanel";
 import { BookmarksPanel } from "@/components/replay/BookmarksPanel";
 import { ChecklistPanel } from "@/components/replay/ChecklistPanel";
-import { ScoreCard } from "@/components/replay/ScoreCard";
-import { AiReviewPanel } from "@/components/replay/AiReviewPanel";
 import { PostSessionSummary } from "@/components/replay/PostSessionSummary";
 import { CheckpointsPanel } from "@/components/replay/CheckpointsPanel";
 import { ReplayTimeline } from "@/components/replay/ReplayTimeline";
@@ -67,10 +63,11 @@ function NoSession() {
   );
 }
 
-const SIDE_TABS: { id: "trade" | "notes" | "review"; icon: typeof NotebookPen; label: string }[] = [
+// AI is intentionally NOT here — Coach output only surfaces post-session in
+// PostSessionSummary. This preserves flow-state during active trading.
+const SIDE_TABS: { id: "trade" | "notes"; icon: typeof NotebookPen; label: string }[] = [
   { id: "trade", icon: Trophy, label: "Trade" },
   { id: "notes", icon: NotebookPen, label: "Journal" },
-  { id: "review", icon: ShieldCheck, label: "Review" },
 ];
 
 function Workspace() {
