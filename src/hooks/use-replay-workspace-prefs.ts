@@ -8,7 +8,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export type ReplaySideTab = "trade" | "notes" | "review";
+export type ReplaySideTab = "trade" | "notes";
 
 export type ReplayWorkspacePrefs = {
   sideOpen: boolean;
@@ -17,7 +17,9 @@ export type ReplayWorkspacePrefs = {
 };
 
 const STORAGE_KEY = "thive.replay.workspace.prefs.v1";
-const VALID_TABS: ReplaySideTab[] = ["trade", "notes", "review"];
+// "review" was removed when in-session AI was extracted to Post-Session Summary.
+// Legacy persisted values fall back to "trade" via the validator below.
+const VALID_TABS: ReplaySideTab[] = ["trade", "notes"];
 const VALID_SPEEDS = new Set([0.5, 1, 2, 4, 8, 16, 32, 64]);
 
 const DEFAULTS: ReplayWorkspacePrefs = {
