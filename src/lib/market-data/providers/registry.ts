@@ -3,6 +3,7 @@ import { PROVIDER_DESCRIPTORS } from "../descriptors";
 import { MockMarketDataProvider } from "./mock";
 import { BinanceProvider } from "./binance";
 import { TwelveDataProvider } from "./twelvedata";
+import { FinnhubProvider } from "./finnhub";
 import { PlaceholderProvider } from "./placeholder";
 
 // Client-side registry — dependency-injected in the engine.
@@ -21,6 +22,7 @@ export function bootstrapProviders() {
   registerProvider(new MockMarketDataProvider());
   registerProvider(new BinanceProvider());
   registerProvider(new TwelveDataProvider());
+  registerProvider(new FinnhubProvider());
   // Every other descriptor gets a placeholder so it shows up in the Admin
   // Panel with a configuration form and health tile. Real adapters can be
   // dropped in by replacing the registration below.
