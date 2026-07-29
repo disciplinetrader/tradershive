@@ -9,7 +9,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export type WorkspaceTab = "trade" | "journal" | "notes" | "playbook" | "stats";
+export type WorkspaceTab = "trade" | "notes" | "insights";
 
 export type WorkspacePrefs = {
   rightOpen: boolean;
@@ -24,6 +24,7 @@ export type WorkspacePrefs = {
 };
 
 const STORAGE_KEY = "thive.workspace.prefs.v1";
+const VALID_TABS: WorkspaceTab[] = ["trade", "notes", "insights"];
 
 const DEFAULTS: WorkspacePrefs = {
   rightOpen: true,
@@ -43,7 +44,10 @@ function readStorage(): WorkspacePrefs {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULTS;
     const parsed = JSON.parse(raw) as Partial<WorkspacePrefs>;
-    return { ...DEFAULTS, ...parsed };
+    const merged: WorkspacePrefs = { ...DEFAULTS, ...parsed };
+    // Migrate legacy tabs (journal/playbook/stats) → trade.
+    if (!VALID_TABS.includes(merged.activeTab)) merged.activeTab = "trade";
+    return merged;
   } catch {
     return DEFAULTS;
   }
