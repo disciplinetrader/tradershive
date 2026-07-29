@@ -44,6 +44,25 @@ export function PostSessionSummary({
   const t = (q.data as any)?.totals;
   const s = (q.data as any)?.session;
 
+  // Derive a single "next step" — prefer AI action item, then heuristic.
+  const nextStep: string | null = (() => {
+    if (debrief?.action_items?.length) return String(debrief.action_items[0]);
+    if (!t) return null;
+    if (t.trades === 0) return "Take at least one deliberate trade next session — even a paper commit teaches you your bias.";
+    if (Number(t.max_drawdown) > Math.abs(Number(t.net_profit ?? 0)) * 2)
+      return "Tighten risk: your worst drawdown exceeded your net result. Cap size or move to break-even earlier.";
+    if (Number(t.profit_factor) < 1) return "Refine entries — profit factor under 1 means losers are dominating. Journal each loss before the next session.";
+    if (Number(t.win_rate) < 40) return "Study your losing trades: hit-rate is under 40%. Look for a repeatable setup filter before doubling volume.";
+    return "Keep this rhythm — repeat this playbook on a fresh date to confirm the edge holds.";
+  })();
+
+  const strength: string | null = debrief?.wins?.[0] ?? null;
+  const mistake: string | null = (() => {
+    const m = debrief?.mistakes?.[0];
+    if (!m) return null;
+    return typeof m === "string" ? m : m.description ?? m.kind ?? null;
+  })();
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
@@ -58,25 +77,62 @@ export function PostSessionSummary({
             <div className="text-xs text-muted-foreground">
               {s?.symbol} · {s?.timeframe} · {s?.market}
             </div>
+
+            {/* Next step — the one actionable takeaway. Always visible first. */}
+            {nextStep ? (
+              <div className="rounded-[3px] border border-primary/40 bg-primary/5 p-3">
+                <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                  <Sparkles className="h-3 w-3" /> Next step
+                </div>
+                <p className="mt-1 text-sm text-foreground/90">{nextStep}</p>
+              </div>
+            ) : null}
+
+            {/* Strength / mistake chips */}
+            {(strength || mistake) && (
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {strength ? (
+                  <div className="rounded-[3px] border border-success/30 bg-success/5 p-2">
+                    <div className="text-[10px] uppercase tracking-wider text-success">Biggest strength</div>
+                    <p className="mt-0.5 text-xs text-foreground/85">{strength}</p>
+                  </div>
+                ) : null}
+                {mistake ? (
+                  <div className="rounded-[3px] border border-danger/30 bg-danger/5 p-2">
+                    <div className="text-[10px] uppercase tracking-wider text-danger">Key mistake</div>
+                    <p className="mt-0.5 text-xs text-foreground/85">{mistake}</p>
+                  </div>
+                ) : null}
+              </div>
+            )}
+
+            {/* Hero metrics — the three numbers the trader remembers. */}
             <div className="grid grid-cols-3 gap-2">
-              <Metric label="Trades" value={t.trades} />
-              <Metric label="Win rate" value={`${t.win_rate.toFixed(0)}%`} />
-              <Metric label="Avg RR" value={t.avg_rr.toFixed(2)} />
               <Metric
                 label="Net P&L"
                 value={`$${t.net_profit.toFixed(2)}`}
                 tone={t.net_profit >= 0 ? "success" : "danger"}
+                hero
               />
-              <Metric label="Profit Factor" value={t.profit_factor.toFixed(2)} />
-              <Metric label="Max DD" value={`$${t.max_drawdown.toFixed(2)}`} tone="danger" />
-              <Metric label="Duration" value={formatDuration(s?.duration_seconds ?? 0)} />
-              <Metric label="Progress" value={`${s?.completion_pct ?? 0}%`} />
+              <Metric label="Win rate" value={`${t.win_rate.toFixed(0)}%`} hero />
               <Metric
                 label="Grade"
                 value={debrief?.grade ?? "—"}
                 tone={debrief?.grade && ["A", "B"].includes(String(debrief.grade)[0]) ? "success" : undefined}
+                hero
               />
             </div>
+
+            {/* Secondary tier */}
+            <div className="grid grid-cols-3 gap-2">
+              <Metric label="Trades" value={t.trades} />
+              <Metric label="Avg RR" value={t.avg_rr.toFixed(2)} />
+              <Metric label="Profit Factor" value={t.profit_factor.toFixed(2)} />
+              <Metric label="Max DD" value={`$${t.max_drawdown.toFixed(2)}`} tone="danger" />
+              <Metric label="Duration" value={formatDuration(s?.duration_seconds ?? 0)} />
+              <Metric label="Progress" value={`${s?.completion_pct ?? 0}%`} />
+            </div>
+
 
             <div className="rounded-[3px] border border-primary/30 bg-primary/5 p-3 space-y-2">
               <div className="flex items-center justify-between">
