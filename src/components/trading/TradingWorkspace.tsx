@@ -675,21 +675,32 @@ function TradingWorkspaceInner() {
                 aria-label="Workspace panel"
               >
                 <div className="flex items-center justify-between border-b border-border/40 bg-background/40 px-1.5 py-1">
-                  <div role="tablist" className="flex items-center gap-0.5 overflow-x-auto no-scrollbar">
+                  <div
+                    role="tablist"
+                    aria-label="Workspace"
+                    onKeyDown={(e) => {
+                      const tabs: WorkspaceTab[] = ["trade", "notes", "insights"];
+                      const i = tabs.indexOf(activeTab);
+                      if (e.key === "ArrowRight") { setActiveTab(tabs[(i + 1) % tabs.length]); e.preventDefault(); }
+                      else if (e.key === "ArrowLeft") { setActiveTab(tabs[(i - 1 + tabs.length) % tabs.length]); e.preventDefault(); }
+                    }}
+                    className="flex items-center gap-0.5 overflow-x-auto no-scrollbar"
+                  >
                     {([
-                      { k: "trade",    label: "Trade",    icon: Target },
-                      { k: "journal",  label: "Journal",  icon: NotebookPen },
-                      { k: "notes",    label: "Notes",    icon: StickyNote },
-                      { k: "playbook", label: "Playbook", icon: BookMarked },
-                      { k: "stats",    label: "Stats",    icon: BarChart3 },
-                    ] as { k: WorkspaceTab; label: string; icon: typeof Target }[]).map(({ k, label, icon: Icon }) => (
+                      { k: "trade",    label: "Trade",    icon: Target,      count: openHere.length || undefined },
+                      { k: "notes",    label: "Notes",    icon: NotebookPen },
+                      { k: "insights", label: "Insights", icon: BrainCircuit },
+                    ] as { k: WorkspaceTab; label: string; icon: typeof Target; count?: number }[]).map(({ k, label, icon: Icon, count }) => (
                       <button
                         key={k}
                         role="tab"
+                        id={`ws-tab-${k}`}
                         aria-selected={activeTab === k}
+                        aria-controls={`ws-panel-${k}`}
+                        tabIndex={activeTab === k ? 0 : -1}
                         onClick={() => setActiveTab(k)}
                         className={cn(
-                          "inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold transition",
+                          "inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold transition-colors duration-150",
                           activeTab === k
                             ? "bg-primary/15 text-primary"
                             : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -697,6 +708,9 @@ function TradingWorkspaceInner() {
                       >
                         <Icon className="h-3.5 w-3.5" />
                         <span className="hidden sm:inline">{label}</span>
+                        {count != null && (
+                          <Badge variant="secondary" className="h-4 px-1 text-[9px]">{count}</Badge>
+                        )}
                       </button>
                     ))}
                   </div>
@@ -711,22 +725,49 @@ function TradingWorkspaceInner() {
                 </div>
                 <div className="min-h-0 flex-1 overflow-auto p-2 sm:p-3 space-y-3">
                   {activeChallenge?.id && <ChallengePanel />}
-                  {activeTab === "trade" && <OrderPanel />}
-                  {activeTab === "journal" && <QuickJournalPanel symbol={symbol} />}
-                  {activeTab === "notes" && <WorkspaceNotes symbol={symbol} />}
-                  {activeTab === "playbook" && (
-                    <div className="space-y-3">
-                      <p className="text-xs text-muted-foreground">Attach a playbook to run its pre-trade checklist for this session.</p>
-                      <PlaybookQuickAttach context="paper" />
+
+                  {activeTab === "trade" && (
+                    <div
+                      role="tabpanel"
+                      id="ws-panel-trade"
+                      aria-labelledby="ws-tab-trade"
+                      className="space-y-3 animate-in fade-in duration-150"
+                    >
+                      <OrderPanel />
+                      {/* Playbook checklist folds in only when a strategy is attached */}
+                      <details className="group rounded-md border border-border/40 bg-background/40">
+                        <summary className="flex cursor-pointer list-none items-center gap-1.5 px-2 py-1.5 text-[11px] font-semibold text-muted-foreground hover:text-foreground">
+                          <BookMarked className="h-3.5 w-3.5" />
+                          Playbook
+                          <ChevronDown className="ml-auto h-3 w-3 transition-transform group-open:rotate-180" />
+                        </summary>
+                        <div className="border-t border-border/40 p-2">
+                          <PlaybookQuickAttach context="paper" />
+                        </div>
+                      </details>
                     </div>
                   )}
-                  {activeTab === "stats" && (
-                    <div className="space-y-3">
-                      <TodayPnLWidget
-                        dailyTargetPct={Number(account?.max_daily_risk_pct ?? 5)}
-                        dailyLossLimitPct={Number(account?.max_daily_risk_pct ?? 5)}
-                      />
-                      <AccountSummary />
+
+                  {activeTab === "notes" && (
+                    <div
+                      role="tabpanel"
+                      id="ws-panel-notes"
+                      aria-labelledby="ws-tab-notes"
+                      className="space-y-3 animate-in fade-in duration-150"
+                    >
+                      <QuickJournalPanel symbol={symbol} />
+                      <WorkspaceNotes symbol={symbol} />
+                    </div>
+                  )}
+
+                  {activeTab === "insights" && (
+                    <div
+                      role="tabpanel"
+                      id="ws-panel-insights"
+                      aria-labelledby="ws-tab-insights"
+                      className="space-y-3 animate-in fade-in duration-150"
+                    >
+                      <AiInsightsPanel symbol={symbol} />
                     </div>
                   )}
                 </div>
