@@ -1,5 +1,5 @@
 import { createFileRoute, Link, redirect, useNavigate, useSearch } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,8 +11,11 @@ import {
   CheckCircle2,
   Eye,
   EyeOff,
+  ExternalLink,
   Loader2,
   Mail,
+  Pencil,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -28,8 +31,9 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GlassCard } from "@/components/ui/glass-card";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { BrandPanel } from "@/components/auth/BrandPanel";
-import { PasswordStrength } from "@/components/auth/PasswordStrength";
+import { PasswordStrength, PasswordMatchIndicator } from "@/components/auth/PasswordStrength";
 import { SocialButtons } from "@/components/auth/SocialButtons";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -37,7 +41,6 @@ import {
   COUNTRIES,
   EXPERIENCE_LEVELS,
   MARKETS,
-  TIMEZONES,
   TRADING_STYLES,
 } from "@/lib/constants";
 import {
@@ -49,6 +52,13 @@ import {
   type ForgotValues,
 } from "@/lib/auth-schemas";
 import { cn } from "@/lib/utils";
+import { friendlyAuthError, inboxUrlForEmail } from "@/lib/auth/error-messages";
+import {
+  clearSignupDraft,
+  loadSignupDraft,
+  useSignupDraftPersistence,
+} from "@/lib/auth/draft-storage";
+import { detectTimezone, getTimezoneOptions } from "@/lib/timezones";
 
 const authSearchSchema = z.object({
   mode: z.enum(["login", "register", "forgot"]).optional(),
@@ -69,7 +79,8 @@ export const Route = createFileRoute("/auth")({
       { title: `Sign in — ${APP_NAME}` },
       {
         name: "description",
-        content: "Sign in or create your TradersHIVE Arena account to train, compete, and climb the global leaderboard.",
+        content:
+          "Sign in or create your TradersHIVE account to train, journal your trades, and level up faster.",
       },
       { name: "robots", content: "noindex" },
     ],
@@ -85,7 +96,7 @@ function AuthPage() {
 
   useEffect(() => {
     if (searchParams.mode && searchParams.mode !== mode) setMode(searchParams.mode as Mode);
-     
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams.mode]);
 
   return (
@@ -99,7 +110,7 @@ function AuthPage() {
         <div className="relative z-10 w-full max-w-lg">
           <Link
             to="/"
-            className="mb-6 inline-flex items-center gap-1.5 text-xs text-muted-foreground transition hover:text-foreground"
+            className="mb-6 inline-flex items-center gap-1.5 rounded-md px-1 py-0.5 text-xs text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             Back to home
@@ -111,7 +122,7 @@ function AuthPage() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.25 }}
+              transition={{ duration: 0.22 }}
             >
               <GlassCard className="p-6 sm:p-8">
                 <div className="mb-6">
@@ -124,10 +135,10 @@ function AuthPage() {
                   </h1>
                   <p className="mt-1 text-sm text-muted-foreground">
                     {mode === "register"
-                      ? "Enter the arena and start training risk-free."
+                      ? "Free forever plan. No credit card required."
                       : mode === "forgot"
-                        ? "We'll email you a secure link to reset."
-                        : "Sign in to continue your season."}
+                        ? "Enter your email and we'll send a secure reset link."
+                        : "Sign in to pick up where you left off."}
                   </p>
                 </div>
 
@@ -157,19 +168,30 @@ function AuthPage() {
 
                 <p className="mt-6 text-center text-xs text-muted-foreground">
                   {mode === "register" ? (
-                    <>Already have an account?{" "}
-                      <button className="font-semibold text-primary hover:underline" onClick={() => setMode("login")}>
+                    <>
+                      Already have an account?{" "}
+                      <button
+                        className="rounded font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        onClick={() => setMode("login")}
+                      >
                         Sign in
                       </button>
                     </>
                   ) : mode === "login" ? (
-                    <>Don't have an account?{" "}
-                      <button className="font-semibold text-primary hover:underline" onClick={() => setMode("register")}>
+                    <>
+                      Don't have an account?{" "}
+                      <button
+                        className="rounded font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        onClick={() => setMode("register")}
+                      >
                         Create account
                       </button>
                     </>
                   ) : (
-                    <button className="font-semibold text-primary hover:underline" onClick={() => setMode("login")}>
+                    <button
+                      className="rounded font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      onClick={() => setMode("login")}
+                    >
                       Back to sign in
                     </button>
                   )}
@@ -195,6 +217,7 @@ function LoginForm({ onForgot }: { onForgot: () => void }) {
   const navigate = useNavigate();
   const search = useSearch({ from: "/auth" });
   const [showPw, setShowPw] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -209,16 +232,16 @@ function LoginForm({ onForgot }: { onForgot: () => void }) {
       className="space-y-4"
       noValidate
       onSubmit={handleSubmit(async (values) => {
+        setFormError(null);
         const { data, error } = await supabase.auth.signInWithPassword({
           email: values.email,
           password: values.password,
         });
         if (error) {
-          toast.error(error.message);
+          setFormError(friendlyAuthError(error, "signin"));
           return;
         }
         toast.success("Welcome back");
-        // Route based on onboarded flag
         const uid = data.user?.id;
         if (uid) {
           const { data: p } = await supabase
@@ -234,33 +257,26 @@ function LoginForm({ onForgot }: { onForgot: () => void }) {
         await navigate({ to: (search.redirect as any) || "/dashboard", replace: true });
       })}
     >
+      {formError ? <FormError message={formError} /> : null}
+
       <Field label="Email" htmlFor="login-email" error={errors.email?.message}>
         <Input
           id="login-email"
           type="email"
           autoComplete="email"
-          placeholder="you@arena.io"
+          inputMode="email"
+          placeholder="you@example.com"
           {...register("email")}
         />
       </Field>
       <Field label="Password" htmlFor="login-password" error={errors.password?.message}>
-        <div className="relative">
-          <Input
-            id="login-password"
-            type={showPw ? "text" : "password"}
-            autoComplete="current-password"
-            placeholder="••••••••"
-            {...register("password")}
-          />
-          <button
-            type="button"
-            aria-label={showPw ? "Hide password" : "Show password"}
-            onClick={() => setShowPw((v) => !v)}
-            className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-md text-muted-foreground transition hover:text-foreground"
-          >
-            {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          </button>
-        </div>
+        <PasswordInput
+          id="login-password"
+          autoComplete="current-password"
+          show={showPw}
+          onToggle={() => setShowPw((v) => !v)}
+          {...register("password")}
+        />
       </Field>
       <div className="flex items-center justify-between text-xs">
         <label className="inline-flex cursor-pointer items-center gap-2">
@@ -270,50 +286,55 @@ function LoginForm({ onForgot }: { onForgot: () => void }) {
         <button
           type="button"
           onClick={onForgot}
-          className="font-medium text-muted-foreground transition hover:text-foreground"
+          className="rounded font-medium text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           Forgot password?
         </button>
       </div>
-      <Button
-        type="submit"
-        disabled={isSubmitting}
-        className="h-11 w-full gradient-primary text-primary-foreground shadow-elegant"
-      >
-        {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign in"}
-      </Button>
+      <SubmitButton loading={isSubmitting} loadingText="Signing you in…">
+        Sign in
+      </SubmitButton>
     </form>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/*  Register (2-step)                                                 */
+/*  Register (2-step, draft-persisted)                                */
 /* ------------------------------------------------------------------ */
 
+type SignupSuccess = { email: string };
+
 function RegisterForm() {
-  const navigate = useNavigate();
   const [step, setStep] = useState<1 | 2>(1);
   const [showPw, setShowPw] = useState(false);
+  const [success, setSuccess] = useState<SignupSuccess | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
-  const detectedTz =
-    (typeof Intl !== "undefined" && Intl.DateTimeFormat().resolvedOptions().timeZone) || "UTC";
-  const tzDefault = (TIMEZONES as readonly string[]).includes(detectedTz) ? detectedTz : "UTC";
+  const detectedTz = detectTimezone();
+  const timezoneOptions = useMemo(() => getTimezoneOptions(), []);
+  const countryOptions = useMemo(
+    () => COUNTRIES.map((c) => ({ value: c, label: c, search: c.toLowerCase() })),
+    [],
+  );
+
+  // Load persisted draft (excluding passwords).
+  const draft = useMemo(() => loadSignupDraft() ?? {}, []);
 
   const form = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
-    mode: "onBlur",
+    mode: "onChange",
     defaultValues: {
-      first_name: "",
-      last_name: "",
-      username: "",
-      email: "",
+      first_name: (draft.first_name as string) ?? "",
+      last_name: (draft.last_name as string) ?? "",
+      username: (draft.username as string) ?? "",
+      email: (draft.email as string) ?? "",
       password: "",
       confirm_password: "",
-      country: "United States",
-      timezone: tzDefault as any,
-      experience: "beginner",
-      preferred_markets: [],
-      trading_style: "day_trader",
+      country: (draft.country as any) ?? "United States",
+      timezone: (draft.timezone as any) ?? (detectedTz as any),
+      experience: (draft.experience as any) ?? "beginner",
+      preferred_markets: (draft.preferred_markets as any) ?? [],
+      trading_style: (draft.trading_style as any) ?? "day_trader",
       accept_terms: undefined as unknown as true,
     },
   });
@@ -324,10 +345,16 @@ function RegisterForm() {
     control,
     trigger,
     watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = form;
 
-  const pwValue = watch("password");
+  const allValues = watch();
+  useSignupDraftPersistence(allValues, !success);
+
+  const pwValue = watch("password") ?? "";
+  const confirmValue = watch("confirm_password") ?? "";
+  const emailValue = watch("email") ?? "";
 
   const goNext = async () => {
     const ok = await trigger([
@@ -342,6 +369,7 @@ function RegisterForm() {
   };
 
   const onSubmit = handleSubmit(async (values) => {
+    setFormError(null);
     const { error } = await supabase.auth.signUp({
       email: values.email,
       password: values.password,
@@ -363,16 +391,30 @@ function RegisterForm() {
       },
     });
     if (error) {
-      toast.error(error.message);
+      setFormError(friendlyAuthError(error, "signup"));
       return;
     }
-    toast.success("Account created — check your email to verify.");
-    await navigate({ to: "/verify-email", search: { email: values.email }, replace: true });
+    clearSignupDraft();
+    setSuccess({ email: values.email });
   });
+
+  if (success) {
+    return (
+      <SignupSuccessScreen
+        email={success.email}
+        onEdit={() => {
+          setSuccess(null);
+          setStep(1);
+        }}
+      />
+    );
+  }
 
   return (
     <form className="space-y-4" noValidate onSubmit={onSubmit}>
       <StepDots active={step} />
+
+      {formError ? <FormError message={formError} /> : null}
 
       {step === 1 ? (
         <>
@@ -393,34 +435,38 @@ function RegisterForm() {
             <Input id="reg-username" autoComplete="username" placeholder="satoshi" {...register("username")} />
           </Field>
           <Field label="Email" htmlFor="reg-email" error={errors.email?.message}>
-            <Input id="reg-email" type="email" autoComplete="email" placeholder="you@arena.io" {...register("email")} />
+            <Input
+              id="reg-email"
+              type="email"
+              autoComplete="email"
+              inputMode="email"
+              placeholder="you@example.com"
+              {...register("email")}
+            />
           </Field>
           <Field label="Password" htmlFor="reg-password" error={errors.password?.message}>
-            <div className="relative">
-              <Input
-                id="reg-password"
-                type={showPw ? "text" : "password"}
-                autoComplete="new-password"
-                {...register("password")}
-              />
-              <button
-                type="button"
-                aria-label={showPw ? "Hide password" : "Show password"}
-                onClick={() => setShowPw((v) => !v)}
-                className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-md text-muted-foreground transition hover:text-foreground"
-              >
-                {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-            <PasswordStrength password={pwValue ?? ""} />
-          </Field>
-          <Field label="Confirm password" htmlFor="reg-confirm" error={errors.confirm_password?.message}>
-            <Input
-              id="reg-confirm"
-              type={showPw ? "text" : "password"}
+            <PasswordInput
+              id="reg-password"
               autoComplete="new-password"
+              show={showPw}
+              onToggle={() => setShowPw((v) => !v)}
+              {...register("password")}
+            />
+            <PasswordStrength password={pwValue} />
+          </Field>
+          <Field
+            label="Confirm password"
+            htmlFor="reg-confirm"
+            error={errors.confirm_password?.message}
+          >
+            <PasswordInput
+              id="reg-confirm"
+              autoComplete="new-password"
+              show={showPw}
+              onToggle={() => setShowPw((v) => !v)}
               {...register("confirm_password")}
             />
+            <PasswordMatchIndicator password={pwValue} confirm={confirmValue} />
           </Field>
           <Button
             type="button"
@@ -434,35 +480,37 @@ function RegisterForm() {
       ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Country" error={errors.country?.message}>
+            <Field label="Country" htmlFor="reg-country" error={errors.country?.message}>
               <Controller
                 name="country"
                 control={control}
                 render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent className="max-h-[280px]">
-                      {COUNTRIES.map((c) => (
-                        <SelectItem key={c} value={c}>{c}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    id="reg-country"
+                    value={field.value}
+                    onChange={field.onChange}
+                    options={countryOptions}
+                    placeholder="Select country"
+                    searchPlaceholder="Search countries…"
+                    ariaLabel="Country"
+                  />
                 )}
               />
             </Field>
-            <Field label="Timezone" error={errors.timezone?.message}>
+            <Field label="Timezone" htmlFor="reg-timezone" error={errors.timezone?.message}>
               <Controller
                 name="timezone"
                 control={control}
                 render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent className="max-h-[280px]">
-                      {TIMEZONES.map((c) => (
-                        <SelectItem key={c} value={c}>{c}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    id="reg-timezone"
+                    value={field.value}
+                    onChange={field.onChange}
+                    options={timezoneOptions}
+                    placeholder="Select timezone"
+                    searchPlaceholder="Search e.g. Tokyo, +9…"
+                    ariaLabel="Timezone"
+                  />
                 )}
               />
             </Field>
@@ -510,7 +558,7 @@ function RegisterForm() {
                           field.onChange(next);
                         }}
                         className={cn(
-                          "flex flex-col items-center gap-1 rounded-xl border px-3 py-3 text-sm font-medium transition",
+                          "flex flex-col items-center gap-1 rounded-xl border px-3 py-3 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                           selected
                             ? "border-primary bg-primary/10 text-primary shadow-elegant"
                             : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground",
@@ -584,14 +632,17 @@ function RegisterForm() {
               <ArrowLeft className="h-4 w-4" />
               Back
             </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="h-11 flex-1 gradient-primary text-primary-foreground shadow-elegant"
+            <SubmitButton
+              loading={isSubmitting}
+              loadingText="Creating your account…"
+              className="flex-1"
             >
-              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create account"}
-            </Button>
+              Create account
+            </SubmitButton>
           </div>
+          <p className="text-center text-[11px] text-muted-foreground">
+            We'll never spam you. Your progress is saved as you type.
+          </p>
         </>
       )}
     </form>
@@ -606,9 +657,7 @@ function StepDots({ active }: { active: 1 | 2 }) {
           <div
             className={cn(
               "grid h-6 w-6 place-items-center rounded-full text-[11px] font-semibold transition",
-              active >= n
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground",
+              active >= n ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
             )}
           >
             {active > n ? <CheckCircle2 className="h-3.5 w-3.5" /> : n}
@@ -631,18 +680,152 @@ function StepDots({ active }: { active: 1 | 2 }) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Forgot                                                            */
+/*  Signup success                                                    */
+/* ------------------------------------------------------------------ */
+
+function SignupSuccessScreen({ email, onEdit }: { email: string; onEdit: () => void }) {
+  const [cooldown, setCooldown] = useState(30);
+  const [resending, setResending] = useState(false);
+  const inbox = inboxUrlForEmail(email);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
+
+  const resend = async () => {
+    setResending(true);
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/onboarding` },
+    });
+    setResending(false);
+    if (error) {
+      toast.error(friendlyAuthError(error, "signup"));
+      return;
+    }
+    toast.success("Verification email sent");
+    setCooldown(30);
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25 }}
+      className="space-y-5 text-center"
+    >
+      <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-success/10 text-success">
+        <Mail className="h-6 w-6" />
+      </div>
+      <div>
+        <h2 className="text-xl font-bold">Welcome to {APP_NAME}</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          We sent a verification email to{" "}
+          <span className="font-semibold text-foreground">{email}</span>. Open it to activate your account.
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        {inbox ? (
+          <Button
+            asChild
+            className="h-11 w-full gradient-primary text-primary-foreground shadow-elegant"
+          >
+            <a href={inbox.url} target="_blank" rel="noopener noreferrer">
+              <ExternalLink className="mr-2 h-4 w-4" />
+              {inbox.label}
+            </a>
+          </Button>
+        ) : null}
+
+        <Button
+          type="button"
+          variant="outline"
+          className="glass h-11 w-full"
+          onClick={resend}
+          disabled={resending || cooldown > 0}
+        >
+          {resending ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Sending…
+            </>
+          ) : cooldown > 0 ? (
+            <>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Resend in {cooldown}s
+            </>
+          ) : (
+            <>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Resend email
+            </>
+          )}
+        </Button>
+
+        <Button
+          type="button"
+          variant="ghost"
+          className="h-10 w-full text-muted-foreground hover:text-foreground"
+          onClick={onEdit}
+        >
+          <Pencil className="mr-2 h-3.5 w-3.5" />
+          Wrong email? Edit
+        </Button>
+      </div>
+
+      <div className="rounded-xl border border-border/60 bg-muted/30 p-3 text-left text-[11px] text-muted-foreground">
+        <p className="font-semibold text-foreground">Didn't get the email?</p>
+        <ul className="mt-1 list-disc space-y-0.5 pl-4">
+          <li>Check your spam or promotions folder.</li>
+          <li>Make sure {email} is spelled correctly.</li>
+          <li>Give it a minute — mail delivery can be slow.</li>
+        </ul>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Forgot password                                                   */
 /* ------------------------------------------------------------------ */
 
 function ForgotForm({ onSwitch }: { onSwitch: () => void }) {
   const [sent, setSent] = useState<string | null>(null);
+  const [cooldown, setCooldown] = useState(0);
+  const [resending, setResending] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<ForgotValues>({ resolver: zodResolver(forgotSchema) });
 
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
+
   if (sent) {
+    const inbox = inboxUrlForEmail(sent);
+    const resend = async () => {
+      setResending(true);
+      const { error } = await supabase.auth.resetPasswordForEmail(sent, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      setResending(false);
+      if (error) {
+        toast.error(friendlyAuthError(error, "forgot"));
+        return;
+      }
+      toast.success("Reset link sent again");
+      setCooldown(30);
+    };
+
     return (
       <div className="space-y-4 text-center">
         <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-success/10 text-success">
@@ -652,9 +835,54 @@ function ForgotForm({ onSwitch }: { onSwitch: () => void }) {
           <p className="text-sm font-semibold">Check your inbox</p>
           <p className="mt-1 text-xs text-muted-foreground">
             We sent a password reset link to <span className="text-foreground">{sent}</span>.
+            The link expires in 1 hour.
           </p>
         </div>
-        <Button variant="outline" className="glass w-full" onClick={onSwitch}>
+        <div className="space-y-2">
+          {inbox ? (
+            <Button
+              asChild
+              className="h-11 w-full gradient-primary text-primary-foreground shadow-elegant"
+            >
+              <a href={inbox.url} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="mr-2 h-4 w-4" />
+                {inbox.label}
+              </a>
+            </Button>
+          ) : null}
+          <Button
+            variant="outline"
+            className="glass h-11 w-full"
+            onClick={resend}
+            disabled={resending || cooldown > 0}
+          >
+            {resending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Sending…
+              </>
+            ) : cooldown > 0 ? (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Resend in {cooldown}s
+              </>
+            ) : (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Resend email
+              </>
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            className="h-10 w-full text-muted-foreground hover:text-foreground"
+            onClick={() => setSent(null)}
+          >
+            <Pencil className="mr-2 h-3.5 w-3.5" />
+            Wrong email? Edit
+          </Button>
+        </div>
+        <Button variant="link" className="w-full text-xs" onClick={onSwitch}>
           Back to sign in
         </Button>
       </div>
@@ -666,40 +894,39 @@ function ForgotForm({ onSwitch }: { onSwitch: () => void }) {
       className="space-y-4"
       noValidate
       onSubmit={handleSubmit(async (values) => {
+        setFormError(null);
         const { error } = await supabase.auth.resetPasswordForEmail(values.email, {
           redirectTo: `${window.location.origin}/reset-password`,
         });
         if (error) {
-          toast.error(error.message);
+          setFormError(friendlyAuthError(error, "forgot"));
           return;
         }
         setSent(values.email);
-        toast.success("Password reset email sent");
+        setCooldown(30);
       })}
     >
+      {formError ? <FormError message={formError} /> : null}
       <Field label="Email" htmlFor="fp-email" error={errors.email?.message}>
-        <Input id="fp-email" type="email" autoComplete="email" placeholder="you@arena.io" {...register("email")} />
+        <Input
+          id="fp-email"
+          type="email"
+          autoComplete="email"
+          inputMode="email"
+          placeholder="you@example.com"
+          {...register("email")}
+        />
       </Field>
-      <Button
-        type="submit"
-        disabled={isSubmitting}
-        className="h-11 w-full gradient-primary text-primary-foreground shadow-elegant"
-      >
-        {isSubmitting ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <>
-            <Mail className="mr-2 h-4 w-4" />
-            Send reset link
-          </>
-        )}
-      </Button>
+      <SubmitButton loading={isSubmitting} loadingText="Sending reset link…">
+        <Mail className="mr-2 h-4 w-4" />
+        Send reset link
+      </SubmitButton>
     </form>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/*  Field wrapper                                                     */
+/*  Shared building blocks                                            */
 /* ------------------------------------------------------------------ */
 
 function Field({
@@ -721,11 +948,88 @@ function Field({
       {children}
       {hint && !error ? <p className="text-[11px] text-muted-foreground">{hint}</p> : null}
       {error ? (
-        <p className="flex items-center gap-1 text-xs text-danger">
+        <p className="flex items-center gap-1 text-xs text-danger" role="alert">
           <AlertCircle className="h-3 w-3" />
           {error}
         </p>
       ) : null}
+    </div>
+  );
+}
+
+const PasswordInput = ({
+  id,
+  autoComplete,
+  show,
+  onToggle,
+  ...rest
+}: React.InputHTMLAttributes<HTMLInputElement> & {
+  id: string;
+  show: boolean;
+  onToggle: () => void;
+}) => (
+  <div className="relative">
+    <Input
+      id={id}
+      type={show ? "text" : "password"}
+      autoComplete={autoComplete}
+      className="pr-10"
+      {...rest}
+    />
+    <button
+      type="button"
+      aria-label={show ? "Hide password" : "Show password"}
+      aria-pressed={show}
+      onClick={onToggle}
+      className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-md text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      tabIndex={-1}
+    >
+      {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+    </button>
+  </div>
+);
+
+function SubmitButton({
+  loading,
+  loadingText,
+  children,
+  className,
+}: {
+  loading: boolean;
+  loadingText: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <Button
+      type="submit"
+      aria-busy={loading}
+      disabled={loading}
+      className={cn(
+        "h-11 w-full gradient-primary text-primary-foreground shadow-elegant",
+        className,
+      )}
+    >
+      {loading ? (
+        <>
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          {loadingText}
+        </>
+      ) : (
+        children
+      )}
+    </Button>
+  );
+}
+
+function FormError({ message }: { message: string }) {
+  return (
+    <div
+      role="alert"
+      className="flex items-start gap-2 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger"
+    >
+      <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+      <span>{message}</span>
     </div>
   );
 }
