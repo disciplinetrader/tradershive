@@ -42,11 +42,14 @@ export function PositionsTable() {
   const beFn = useServerFn(moveToBreakEven);
   const qc = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const { prefs, update } = useWorkspacePrefs();
+
+  const { data, isLoading, isError, refetch, isRefetching } = useQuery({
     queryKey: ["paper", "trades", accountId, "open"],
     queryFn: () => fetch({ data: { account_id: accountId!, status: "open" } }) as unknown as Promise<Trade[]>,
     enabled: !!accountId,
     refetchInterval: 2000,
+    placeholderData: (prev) => prev,
   });
 
   const quotes = useLiveQuotes(data?.map((t) => t.symbol));
