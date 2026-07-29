@@ -85,18 +85,34 @@ class MarketDataEngine {
   listProviders(): MarketDataProvider[] { return listProviders(); }
 
   pickProvider(market?: MarketKind, symbol?: string): MarketDataProvider {
+    return this.resolveProvider(market, symbol, /*live*/ false);
+  }
+
+  /** Live quote / subscribe routing. Consults VITE_LIVE_FOREX_PROVIDER
+   *  to swap the forex live-data source (POC — Finnhub eval) without
+   *  affecting historical candles, which always use pickProvider(). */
+  pickLiveQuoteProvider(market?: MarketKind, symbol?: string): MarketDataProvider {
+    return this.resolveProvider(market, symbol, /*live*/ true);
+  }
+
+  private resolveProvider(market: MarketKind | undefined, symbol: string | undefined, live: boolean): MarketDataProvider {
     const effective = market ?? inferMarketFromSymbol(symbol);
     if (!effective) {
-      // Best-effort: any non-disabled provider (connecting/connected/disconnected all OK).
       const any = listProviders().find((p) => p.status() !== "disabled");
       if (any) return any;
       throw new MarketProviderUnavailableError({ reason: "not_assigned" });
     }
-    const a = this.assignments.get(effective);
+    let a = this.assignments.get(effective);
     if (!a) throw new MarketProviderUnavailableError({ market: effective, reason: "not_assigned" });
 
-    // A provider that is "connecting" or "error" is still routable — it will
-    // deliver data as soon as its socket comes up. Only "disabled" is fatal.
+    // POC override: live forex quotes may be routed to Finnhub via env flag.
+    if (live && effective === "forex") {
+      const flag = (import.meta as any).env?.VITE_LIVE_FOREX_PROVIDER as string | undefined;
+      if (flag && flag !== a.primary) {
+        a = { primary: flag, fallback: a.primary };
+      }
+    }
+
     const readable = (p?: MarketDataProvider): p is MarketDataProvider =>
       !!p && p.status() !== "disabled" && p.capabilities.markets.includes(effective);
 
@@ -113,6 +129,7 @@ class MarketDataEngine {
       providerCode: a.primary,
     });
   }
+
 
   async searchSymbols(q: SearchQuery): Promise<SymbolMeta[]> { return this.pickProvider(q.market).searchSymbols(q); }
   async getSymbols(market?: MarketKind): Promise<SymbolMeta[]> { return this.pickProvider(market).getSymbols(market); }
