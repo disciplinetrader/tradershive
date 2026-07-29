@@ -62,6 +62,9 @@ export type HomeSummary = {
     tradesToday: number;
     tradesWeek: number;
     weekDeltaR: number;      // vs previous 7d
+    netPnl30d: number;       // sum of pnl in last 30d
+    trades30d: number;       // count of closed trades in last 30d
+    pnlSpark14d: number[];   // per-day pnl over the last 14 days
   };
   actions: HomeActionItem[];
   tips: HomeCoachTip[];
