@@ -57,6 +57,11 @@ export function useFeedback() {
 }
 
 function FeedbackLauncher({ onClick }: { onClick: () => void }) {
+  // The Trading Workspace is a focused environment — never cover chart or
+  // order controls with a persistent floating button. Feedback stays
+  // reachable via Ctrl+Shift+B and from Settings > Help.
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  if (pathname.startsWith("/trading") || pathname.startsWith("/replay/session")) return null;
   return (
     <button
       type="button"
