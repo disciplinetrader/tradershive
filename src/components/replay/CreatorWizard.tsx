@@ -273,19 +273,65 @@ export function CreatorWizard({ open, onOpenChange }: { open: boolean; onOpenCha
             )}
           </div>
 
+          <div className="sm:col-span-2 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label>Session Length</Label>
+              <button type="button" onClick={surpriseDates} className="text-[10px] text-primary hover:underline">
+                Surprise dates
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {SESSION_PRESETS.map((p) => {
+                const apply = () => {
+                  if (p.id === "custom") return;
+                  const end = new Date();
+                  if (p.days > 0) {
+                    const start = new Date(end.getTime() - p.days * 86_400_000);
+                    setFrom(start.toISOString().slice(0, 10));
+                    setTo(end.toISOString().slice(0, 10));
+                  } else {
+                    // Intraday windows collapse to a single day; the engine
+                    // resolves to 24h of candles around that date.
+                    const day = end.toISOString().slice(0, 10);
+                    setFrom(day);
+                    setTo(day);
+                  }
+                };
+                const spanDays = Math.max(
+                  1,
+                  Math.round((new Date(to).getTime() - new Date(from).getTime()) / 86_400_000) + 1,
+                );
+                const active =
+                  (p.id === "1d" && from === to) ||
+                  (p.days > 0 && spanDays - 1 === p.days);
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={apply}
+                    className={cn(
+                      "cursor-pointer rounded-full border px-2.5 py-1 text-[11px] font-medium transition",
+                      active
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border/50 text-muted-foreground hover:border-primary/40 hover:text-foreground",
+                    )}
+                  >
+                    {p.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="space-y-1.5">
-            <Label htmlFor="bt-from">Backtest From</Label>
+            <Label htmlFor="bt-from">From</Label>
             <Input id="bt-from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
           </div>
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="bt-to">Backtest To</Label>
-              <button type="button" onClick={surpriseDates} className="text-[10px] text-primary hover:underline">
-                Surprise Me
-              </button>
-            </div>
+            <Label htmlFor="bt-to">To</Label>
             <Input id="bt-to" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
           </div>
+
 
           <div className="sm:col-span-2 space-y-1.5">
             <Label htmlFor="bt-start">Start Position</Label>
