@@ -15,7 +15,7 @@ import { detectSession } from "./session-detect";
 
 type Input = {
   symbol?: string | null;
-  direction?: "long" | "short" | null;
+  direction?: string | null;
   session?: string | null;
   opened_at?: string | null;
   rr?: number | string | null;
