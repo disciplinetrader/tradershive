@@ -292,3 +292,56 @@ export function ReplayControls() {
     </TooltipProvider>
   );
 }
+
+/**
+ * Jump-to-Timestamp — accepts an ISO-like datetime, validates it against the
+ * replay dataset range and snaps the cursor to the nearest candle. Invalid
+ * input surfaces the valid range instead of silently clamping.
+ */
+function JumpToTimestamp() {
+  const { candles, setCursorIdx } = useReplay();
+  const [value, setValue] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const range = useMemo(() => {
+    if (!candles.length) return null;
+    return { min: candles[0].time, max: candles[candles.length - 1].time };
+  }, [candles]);
+
+  const submit = () => {
+    if (!range) return;
+    const raw = value.trim();
+    if (!raw) return;
+    const t = new Date(raw).getTime();
+    if (!Number.isFinite(t)) { setError("Enter a date/time like 2024-05-01 09:30"); return; }
+    if (t < range.min || t > range.max) {
+      const fmt = (n: number) => new Date(n).toISOString().slice(0, 16).replace("T", " ");
+      setError(`Outside range · ${fmt(range.min)} → ${fmt(range.max)} UTC`);
+      return;
+    }
+    setError(null);
+    // binary-search nearest candle
+    let lo = 0, hi = candles.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (candles[mid].time < t) lo = mid + 1; else hi = mid;
+    }
+    setCursorIdx(lo);
+  };
+
+  return (
+    <div className="flex items-center gap-1">
+      <Input
+        aria-label="Jump to replay timestamp (UTC)"
+        placeholder="Jump to time…"
+        value={value}
+        onChange={(e) => { setValue(e.target.value); setError(null); }}
+        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); submit(); } }}
+        className="h-7 w-40 text-[11px]"
+      />
+      {error ? (
+        <span role="alert" className="text-[10px] text-danger">{error}</span>
+      ) : null}
+    </div>
+  );
+}
+
