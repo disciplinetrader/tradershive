@@ -6,7 +6,8 @@ import { cn } from "@/lib/utils";
 /**
  * Professional replay timeline. Renders a horizontal bar with
  * proportional markers for bookmarks, trade entries/exits and
- * checkpoints so users can scrub visually across the session.
+ * checkpoints, plus a subtle session-band tint (Asia / London / NY)
+ * so users can scrub visually across the session.
  */
 export function ReplayTimeline() {
   const {
@@ -24,9 +25,13 @@ export function ReplayTimeline() {
   const total = candles.length;
   const cursorPct = total > 1 ? (cursorIdx / (total - 1)) * 100 : 0;
 
+  // Cheap identity signature so memoized markers only recompute when the
+  // underlying candle range or marker count actually changes — not on every
+  // playback tick.
+  const candleSig = candles.length ? `${candles.length}:${candles[0].time}:${candles[total - 1].time}` : "0";
+
   const toPct = (ts: number) => {
     if (total <= 1) return 0;
-    // Binary search for candle index at/after ts.
     let lo = 0, hi = total - 1;
     while (lo < hi) {
       const mid = (lo + hi) >> 1;
@@ -44,7 +49,7 @@ export function ReplayTimeline() {
         category: b.category ?? "custom",
       })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [bookmarks, candles],
+    [candleSig, bookmarks.length, bookmarks],
   );
 
   const cpMarks = useMemo(
@@ -55,7 +60,7 @@ export function ReplayTimeline() {
         label: c.label ?? "Checkpoint",
       })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [checkpoints, candles],
+    [candleSig, checkpoints.length, checkpoints],
   );
 
   const tradeMarks = useMemo(() => {
@@ -85,7 +90,44 @@ export function ReplayTimeline() {
     }
     return rows;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trades, candles]);
+  }, [candleSig, trades.length, trades]);
+
+  // Session bands (Asia / London / NY) painted as % ranges across the bar.
+  const sessionBands = useMemo(() => {
+    if (total < 2) return [] as Array<{ pct: number; width: number; key: string; cls: string }>;
+    const bands: Array<{ pct: number; width: number; key: string; cls: string }> = [];
+    const kindOf = (h: number) =>
+      h >= 22 || h < 6 ? "asia" : h < 12 ? "london" : h < 17 ? "overlap" : "ny";
+    const cls: Record<string, string> = {
+      asia: "bg-info/10",
+      london: "bg-warning/10",
+      overlap: "bg-primary/10",
+      ny: "bg-success/10",
+    };
+    let runStart = 0;
+    let runKind = kindOf(new Date(candles[0].time).getUTCHours());
+    for (let i = 1; i < total; i++) {
+      const k = kindOf(new Date(candles[i].time).getUTCHours());
+      if (k !== runKind) {
+        bands.push({
+          pct: (runStart / (total - 1)) * 100,
+          width: ((i - runStart) / (total - 1)) * 100,
+          key: `${runKind}-${runStart}`,
+          cls: cls[runKind],
+        });
+        runStart = i;
+        runKind = k;
+      }
+    }
+    bands.push({
+      pct: (runStart / (total - 1)) * 100,
+      width: (((total - 1) - runStart) / (total - 1)) * 100,
+      key: `${runKind}-${runStart}`,
+      cls: cls[runKind],
+    });
+    return bands;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [candleSig]);
 
   const seek = (clientX: number) => {
     const el = barRef.current;
@@ -99,6 +141,16 @@ export function ReplayTimeline() {
     hoverPct != null
       ? candles[Math.round((hoverPct / 100) * (total - 1))]?.time
       : null;
+
+  const cursorTs = candles[cursorIdx]?.time;
+  const cursorLabel = cursorTs
+    ? new Date(cursorTs).toLocaleString(undefined, {
+        month: "short",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "—";
 
   return (
     <div className="rounded-[3px] border border-border/60 bg-card/60 p-2 backdrop-blur">
@@ -124,7 +176,18 @@ export function ReplayTimeline() {
         aria-valuemin={0}
         aria-valuemax={Math.max(1, total - 1)}
         aria-valuenow={cursorIdx}
+        aria-valuetext={cursorLabel}
       >
+        {/* Session bands (Asia / London / NY / overlap) — subtle tint layer */}
+        {sessionBands.map((b) => (
+          <div
+            key={b.key}
+            aria-hidden
+            className={cn("absolute inset-y-0 pointer-events-none", b.cls)}
+            style={{ left: `${b.pct}%`, width: `${b.width}%` }}
+          />
+        ))}
+
         {/* Filled progress */}
         <div
           className="absolute inset-y-0 left-0 bg-primary/15"
@@ -199,7 +262,7 @@ export function ReplayTimeline() {
       </div>
 
       {/* Legend */}
-      <div className="mt-1 flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground">
+      <div className="mt-1 flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground/90">
         <span className="inline-flex items-center gap-1">
           <Flag className="h-2.5 w-2.5 text-warning" /> Checkpoints ({cpMarks.length})
         </span>
@@ -208,6 +271,12 @@ export function ReplayTimeline() {
         </span>
         <span className="inline-flex items-center gap-1">
           <Bookmark className="h-2.5 w-2.5 text-info" /> Bookmarks ({bmMarks.length})
+        </span>
+        <span className="ml-auto hidden sm:inline-flex items-center gap-2">
+          <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-info/40" /> Asia</span>
+          <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-warning/40" /> London</span>
+          <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-primary/40" /> Overlap</span>
+          <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-success/40" /> New York</span>
         </span>
       </div>
     </div>
