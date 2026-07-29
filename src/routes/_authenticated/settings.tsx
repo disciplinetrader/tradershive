@@ -90,11 +90,13 @@ function SettingsPage() {
       </GlassCard>
 
       <ProfileSection />
+      <EmailVerificationNotice />
       <TradingSection />
       <SecuritySection email={user?.email ?? ""} />
       <NotificationsSection />
       <ProductTourSection />
       <QaModeSection />
+
 
 
 
