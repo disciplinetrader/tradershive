@@ -2,9 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChartHandle } from "@/components/chart/ChartEngine";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Activity, BarChart3, BookMarked, Camera, CandlestickChart, Check, ChevronDown, ChevronRight,
+  Activity, BarChart3, BookMarked, BrainCircuit, Camera, CandlestickChart, Check, ChevronDown, ChevronRight,
   Clock, Focus, Keyboard, LineChart as LineChartIcon, Maximize2, Minimize2, NotebookPen,
-  StickyNote, Target,
+  Target,
 } from "lucide-react";
 import { toast } from "sonner";
 
