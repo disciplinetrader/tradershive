@@ -245,6 +245,7 @@ export function PositionsTable() {
                 );
               })}
             </AnimatePresence>
+            )}
           </TableBody>
         </Table>
       </div>
