@@ -13,7 +13,9 @@ export type HeroReplay = {
   id: string;
   symbol: string | null;
   status: string | null;
+  timeframe: string | null;
   durationSeconds: number;
+  completionPct: number;
   updatedAt: string;
   hasJournal: boolean;
 };
@@ -73,7 +75,7 @@ export const getHeroState = createServerFn({ method: "GET" })
           .limit(1),
         context.supabase
           .from("replay_sessions")
-          .select("id, symbol, status, duration_seconds, updated_at, created_at")
+          .select("id, symbol, status, timeframe, completion_pct, duration_seconds, updated_at, last_opened_at, created_at")
           .eq("user_id", uid)
           .order("updated_at", { ascending: false })
           .limit(1),
@@ -100,8 +102,10 @@ export const getHeroState = createServerFn({ method: "GET" })
           id: lastReplayRow.id,
           symbol: lastReplayRow.symbol ?? null,
           status: lastReplayRow.status ?? null,
+          timeframe: (lastReplayRow as any).timeframe ?? null,
           durationSeconds: Number(lastReplayRow.duration_seconds ?? 0),
-          updatedAt: lastReplayRow.updated_at ?? lastReplayRow.created_at,
+          completionPct: Number((lastReplayRow as any).completion_pct ?? 0),
+          updatedAt: (lastReplayRow as any).last_opened_at ?? lastReplayRow.updated_at ?? lastReplayRow.created_at,
           hasJournal: (journalCountRes.count ?? 0) > 0 && journalTradeIds.size > 0,
         }
       : null;

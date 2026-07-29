@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
-import { ArrowDownRight, ArrowUpRight, BookOpen, LineChart, Search } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, BookOpen, LineChart, PlayCircle, Search, ShieldAlert } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -124,9 +124,31 @@ export function RecentTrades() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button asChild size="icon" variant="ghost" className="h-7 w-7" aria-label="Open journal">
-                      <Link to="/journal"><BookOpen className="h-3.5 w-3.5" /></Link>
-                    </Button>
+                    {(() => {
+                      // Contextual single action:
+                      //  · Loss  → Review (opens Journal filtered to trades)
+                      //  · Win   → Replay (rerun setup)
+                      //  · else  → Journal
+                      if (t.status === "loss") {
+                        return (
+                          <Button asChild size="sm" variant="ghost" className="h-7 gap-1 px-2 text-xs" aria-label="Review losing trade">
+                            <Link to="/journal"><ShieldAlert className="h-3.5 w-3.5" /> Review</Link>
+                          </Button>
+                        );
+                      }
+                      if (t.status === "win") {
+                        return (
+                          <Button asChild size="sm" variant="ghost" className="h-7 gap-1 px-2 text-xs" aria-label="Replay setup">
+                            <Link to="/replay"><PlayCircle className="h-3.5 w-3.5" /> Replay</Link>
+                          </Button>
+                        );
+                      }
+                      return (
+                        <Button asChild size="sm" variant="ghost" className="h-7 gap-1 px-2 text-xs" aria-label="Open journal">
+                          <Link to="/journal"><BookOpen className="h-3.5 w-3.5" /> Journal</Link>
+                        </Button>
+                      );
+                    })()}
                   </TableCell>
                 </TableRow>
               ))}

@@ -62,6 +62,9 @@ export type HomeSummary = {
     tradesToday: number;
     tradesWeek: number;
     weekDeltaR: number;      // vs previous 7d
+    netPnl30d: number;       // sum of pnl in last 30d
+    trades30d: number;       // count of closed trades in last 30d
+    pnlSpark14d: number[];   // per-day pnl over the last 14 days
   };
   actions: HomeActionItem[];
   tips: HomeCoachTip[];
@@ -214,6 +217,17 @@ export const getHomeSummary = createServerFn({ method: "GET" })
     const profitFactor = grossLoss > 0 ? gross / grossLoss : gross > 0 ? gross : 0;
     const rrs = w30.map(rrOf).filter((x) => Number.isFinite(x));
     const avgR = rrs.length ? rrs.reduce((a, b) => a + b, 0) / rrs.length : 0;
+    const netPnl30d = w30.reduce((s, t) => s + Number(t.pnl ?? 0), 0);
+
+    // 14-day per-day PnL sparkline (oldest → newest)
+    const sparkStart = daysAgo(13, startOfDay(now));
+    const spark: number[] = Array.from({ length: 14 }, () => 0);
+    for (const t of closedAll) {
+      const ts = new Date(t.closed_at!).getTime();
+      if (ts < sparkStart.getTime()) continue;
+      const dayIdx = Math.floor((ts - sparkStart.getTime()) / 86_400_000);
+      if (dayIdx >= 0 && dayIdx < 14) spark[dayIdx] += Number(t.pnl ?? 0);
+    }
 
     // Drawdown in R over last 60 closed (peak-to-trough on cumulative R)
     const last60 = [...closedAll].sort((a, b) => new Date(a.closed_at!).getTime() - new Date(b.closed_at!).getTime()).slice(-60);
@@ -236,6 +250,9 @@ export const getHomeSummary = createServerFn({ method: "GET" })
       tradesToday: closedToday.length,
       tradesWeek: closedWeek.length,
       weekDeltaR: weekR - prevWeekR,
+      netPnl30d,
+      trades30d: w30.length,
+      pnlSpark14d: spark,
     };
 
     // -------- Action items (real)
