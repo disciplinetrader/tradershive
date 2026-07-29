@@ -59,6 +59,8 @@ import { CalendarView } from "@/components/journal/CalendarView";
 import { TimelineView } from "@/components/journal/TimelineView";
 import { JournalDrawer } from "@/components/journal/JournalDrawer";
 import { ManualEntryDialog } from "@/components/journal/ManualEntryDialog";
+import { DraftsBanner } from "@/components/journal/DraftsBanner";
+import { JournalSearchBar, resolveSavedView } from "@/components/journal/JournalSearchBar";
 import { cn } from "@/lib/utils";
 import { routeBoundaries } from "@/lib/route-boundaries";
 
