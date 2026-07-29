@@ -164,33 +164,77 @@ export const ChartEngine = forwardRef<ChartHandle, Props>(function ChartEngine(
     });
   }, [candles, onReady]);
 
+  const freshnessLabel =
+    freshness === "live" ? "Live" :
+    freshness === "cached" ? "Cached" :
+    freshness === "error" ? "Offline" : "Loading";
+  const freshnessDot =
+    freshness === "live" ? "bg-success animate-pulse" :
+    freshness === "cached" ? "bg-warning" :
+    freshness === "error" ? "bg-danger" : "bg-muted-foreground/60";
+  const updatedAgo = lastUpdated
+    ? Math.max(1, Math.round((Date.now() - lastUpdated) / 1000))
+    : null;
+
   return (
     <div className={className ?? "relative h-full w-full"}>
       <div ref={hostRef} className="absolute inset-0" />
       {children}
+
+      {/* Cold-start skeleton — premium shimmer, never a red error card */}
       {!candles.length && !loadError ? (
-        <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
-          Loading {settings.symbol} · {settings.timeframe}…
+        <div className="absolute inset-0 flex flex-col p-6" aria-busy="true" aria-live="polite">
+          <div className="mb-3 h-3 w-40 animate-pulse rounded bg-muted/60" />
+          <div className="flex flex-1 items-end gap-1">
+            {Array.from({ length: 40 }).map((_, i) => (
+              <div
+                key={i}
+                className="flex-1 animate-pulse rounded-sm bg-muted/50"
+                style={{ height: `${25 + ((i * 37) % 55)}%`, animationDelay: `${i * 30}ms` }}
+              />
+            ))}
+          </div>
+          <div className="mt-3 text-center text-xs text-muted-foreground">
+            Loading {settings.symbol} · {settings.timeframe}
+          </div>
         </div>
       ) : null}
-      {loadError ? (
+
+      {/* Cold-start error — friendly, actionable, never a raw stack */}
+      {loadError && !candles.length ? (
         <div className="absolute inset-0 flex items-center justify-center bg-background/40 backdrop-blur-sm">
-          <div className="max-w-sm rounded-lg border border-border bg-background/90 p-4 text-center shadow-lg">
-            <div className="mb-1 text-sm font-semibold text-foreground">Chart unavailable</div>
-            <div className="mb-3 text-xs text-muted-foreground">{loadError}</div>
+          <div className="max-w-sm rounded-lg border border-border bg-background/95 p-5 text-center shadow-lg">
+            <div className="mb-1 text-sm font-semibold text-foreground">Market data paused</div>
+            <div className="mb-4 text-xs text-muted-foreground">{loadError}</div>
             <Button
               type="button"
               size="sm"
-              variant="secondary"
               onClick={() => { setLoadError(null); setLoadNonce((n) => n + 1); }}
             >
-              Retry
+              Try again
             </Button>
           </div>
         </div>
       ) : null}
-      <div className="pointer-events-none absolute left-3 top-3 rounded-md bg-background/60 px-2 py-1 text-xs font-medium text-foreground backdrop-blur">
-        {settings.symbol} · {settings.timeframe} · {quote?.last?.toFixed(4) ?? "—"}
+
+      {/* Symbol + freshness chip (top-left). Data status is honest but calm. */}
+      <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-2">
+        <div className="rounded-md border border-border/40 bg-background/70 px-2 py-1 text-xs font-medium text-foreground backdrop-blur">
+          {settings.symbol} · {settings.timeframe} · {quote?.last?.toFixed(4) ?? "—"}
+        </div>
+        <div
+          className="flex items-center gap-1.5 rounded-md border border-border/40 bg-background/70 px-2 py-1 text-[10px] font-medium text-muted-foreground backdrop-blur"
+          title={
+            freshness === "live" ? `Streaming — updated ${updatedAgo ?? 0}s ago`
+            : freshness === "cached" ? `Cached data — live provider is briefly unavailable`
+            : freshness === "error" ? "No connection to market provider"
+            : "Loading market data"
+          }
+        >
+          <span className={`h-1.5 w-1.5 rounded-full ${freshnessDot}`} />
+          {freshnessLabel}
+          {freshness === "cached" && updatedAgo ? <span className="opacity-70">· {updatedAgo}s</span> : null}
+        </div>
       </div>
     </div>
   );
