@@ -74,10 +74,13 @@ const SIDE_TABS: { id: "trade" | "notes" | "review"; icon: typeof NotebookPen; l
 ];
 
 function Workspace() {
-  const { session, loading, captureScreenshot, finish, replayAgain } = useReplay();
+  const { session, loading, candles, cursorIdx, captureScreenshot, finish, replayAgain } = useReplay();
   const [summaryOpen, setSummaryOpen] = useState(false);
-  const [sideOpen, setSideOpen] = useState(true);
-  const [sideTab, setSideTab] = useState<"trade" | "notes" | "review">("trade");
+  const { prefs, update } = useReplayWorkspacePrefs();
+  const sideOpen = prefs.sideOpen;
+  const sideTab = prefs.sideTab;
+  const setSideOpen = (v: boolean) => update("sideOpen", v);
+  const setSideTab = (v: "trade" | "notes" | "review") => update("sideTab", v);
 
   // Floating controls auto-hide over the chart
   const [controlsVisible, setControlsVisible] = useState(true);
@@ -99,12 +102,34 @@ function Workspace() {
     window.dispatchEvent(new Event("replay-capture"));
   };
 
+  // Wire the global "replay-capture" event (fired by S shortcut in ReplayControls).
+  useEffect(() => {
+    const handler = (dataUrl: string) => { captureScreenshot(dataUrl).catch(() => {}); };
+    const onEvt = () => { (window as any).__replayCaptureHandler = handler; };
+    window.addEventListener("replay-capture", onEvt);
+    return () => window.removeEventListener("replay-capture", onEvt);
+  }, [captureScreenshot]);
+
   const finishAndReview = async () => {
     try { await finish(); } catch { /* score computed even if update fails */ }
     setSummaryOpen(true);
   };
 
-  if (loading) return <div className="glass m-6 rounded-3xl h-[600px] animate-pulse" />;
+  // Auto-open post-session summary when playback reaches the end. Uses a ref
+  // so the user can dismiss and it won't reopen for the same session.
+  const autoOpenedRef = useRef(false);
+  useEffect(() => {
+    if (autoOpenedRef.current) return;
+    if (!candles.length || !session) return;
+    if (cursorIdx >= candles.length - 1) {
+      autoOpenedRef.current = true;
+      finishAndReview();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cursorIdx, candles.length, session?.id]);
+
+  if (loading) return <ReplaySkeleton session={session} />;
+
 
   return (
     <TooltipProvider delayDuration={300}>
