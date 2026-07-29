@@ -23,6 +23,7 @@ import { ReplayProvider, useReplay } from "@/components/replay/context";
 import { ReplayChart } from "@/components/replay/ReplayChart";
 import { ReplayControls } from "@/components/replay/ReplayControls";
 import { ReplayHUD } from "@/components/replay/ReplayHUD";
+import { ReplaySkeleton } from "@/components/replay/ReplaySkeleton";
 import { TradePanel } from "@/components/replay/TradePanel";
 import { NotesPanel } from "@/components/replay/NotesPanel";
 import { BookmarksPanel } from "@/components/replay/BookmarksPanel";
@@ -32,6 +33,7 @@ import { AiReviewPanel } from "@/components/replay/AiReviewPanel";
 import { PostSessionSummary } from "@/components/replay/PostSessionSummary";
 import { CheckpointsPanel } from "@/components/replay/CheckpointsPanel";
 import { ReplayTimeline } from "@/components/replay/ReplayTimeline";
+import { useReplayWorkspacePrefs } from "@/hooks/use-replay-workspace-prefs";
 import { cn } from "@/lib/utils";
 
 const searchSchema = z.object({ id: z.string().optional() });
