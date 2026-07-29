@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
 import { z } from "zod";
 import {
@@ -29,7 +29,11 @@ import { ChecklistPanel } from "@/components/replay/ChecklistPanel";
 import { PostSessionSummary } from "@/components/replay/PostSessionSummary";
 import { CheckpointsPanel } from "@/components/replay/CheckpointsPanel";
 import { ReplayTimeline } from "@/components/replay/ReplayTimeline";
-import { useReplayWorkspacePrefs } from "@/hooks/use-replay-workspace-prefs";
+import { useReplayWorkspacePrefs, RAIL_MIN, RAIL_MAX, RAIL_DEFAULT } from "@/hooks/use-replay-workspace-prefs";
+import { useChartKeyboard } from "@/hooks/use-chart-keyboard";
+import { DrawingProvider, useDrawings } from "@/features/replay/drawings/store";
+import { DrawingToolbar } from "@/features/replay/drawings/DrawingToolbar";
+import type { ChartAdapter } from "@/lib/chart/adapter";
 import { cn } from "@/lib/utils";
 
 const searchSchema = z.object({ id: z.string().optional() });
@@ -44,7 +48,9 @@ function SessionPage() {
   if (!id) return <NoSession />;
   return (
     <ReplayProvider id={id}>
-      <Workspace />
+      <DrawingProvider sessionId={id}>
+        <Workspace />
+      </DrawingProvider>
     </ReplayProvider>
   );
 }
@@ -63,35 +69,47 @@ function NoSession() {
   );
 }
 
-// AI is intentionally NOT here — Coach output only surfaces post-session in
-// PostSessionSummary. This preserves flow-state during active trading.
 const SIDE_TABS: { id: "trade" | "notes"; icon: typeof NotebookPen; label: string }[] = [
   { id: "trade", icon: Trophy, label: "Trade" },
   { id: "notes", icon: NotebookPen, label: "Journal" },
 ];
 
 function Workspace() {
-  const { session, loading, candles, cursorIdx, captureScreenshot, finish, replayAgain } = useReplay();
+  const { session, loading, candles, cursorIdx, captureScreenshot, finish, replayAgain, playing } = useReplay();
   const [summaryOpen, setSummaryOpen] = useState(false);
   const { prefs, update } = useReplayWorkspacePrefs();
   const sideOpen = prefs.sideOpen;
   const sideTab = prefs.sideTab;
+  const railWidth = prefs.railWidth;
   const setSideOpen = (v: boolean) => update("sideOpen", v);
   const setSideTab = (v: "trade" | "notes") => update("sideTab", v);
 
-  // Floating controls auto-hide over the chart
-  const [controlsVisible, setControlsVisible] = useState(true);
+  const { undo, redo } = useDrawings();
+  const adapterRef = useRef<ChartAdapter | null>(null);
+  const onAdapterReady = useCallback((a: ChartAdapter | null) => { adapterRef.current = a; }, []);
+
+  // TradingView-style keyboard navigation. Uses adapter's optional methods.
+  useChartKeyboard({
+    zoomIn: () => adapterRef.current?.zoomBy?.(1.25),
+    zoomOut: () => adapterRef.current?.zoomBy?.(1 / 1.25),
+    panLeft: () => adapterRef.current?.panBy?.(-2),
+    panRight: () => adapterRef.current?.panBy?.(2),
+    undo,
+    redo,
+  });
+
+  // Floating controls — visible when paused, focused, hovered, or menu open.
+  const [pointerInside, setPointerInside] = useState(false);
+  const [focusInside, setFocusInside] = useState(false);
+  const [recentActivity, setRecentActivity] = useState(true);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const bumpControls = () => {
-    setControlsVisible(true);
+  const bumpControls = useCallback(() => {
+    setRecentActivity(true);
     if (hideTimer.current) clearTimeout(hideTimer.current);
-    hideTimer.current = setTimeout(() => setControlsVisible(false), 3200);
-  };
-  useEffect(() => {
-    bumpControls();
-    return () => { if (hideTimer.current) clearTimeout(hideTimer.current); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    hideTimer.current = setTimeout(() => setRecentActivity(false), 3200);
   }, []);
+  useEffect(() => { bumpControls(); return () => { if (hideTimer.current) clearTimeout(hideTimer.current); }; }, [bumpControls]);
+  const controlsVisible = !playing || pointerInside || focusInside || recentActivity;
 
   const takeShot = () => {
     const handler = (dataUrl: string) => { captureScreenshot(dataUrl).catch(() => {}); };
@@ -99,7 +117,6 @@ function Workspace() {
     window.dispatchEvent(new Event("replay-capture"));
   };
 
-  // Wire the global "replay-capture" event (fired by S shortcut in ReplayControls).
   useEffect(() => {
     const handler = (dataUrl: string) => { captureScreenshot(dataUrl).catch(() => {}); };
     const onEvt = () => { (window as any).__replayCaptureHandler = handler; };
@@ -112,8 +129,6 @@ function Workspace() {
     setSummaryOpen(true);
   };
 
-  // Auto-open post-session summary when playback reaches the end. Uses a ref
-  // so the user can dismiss and it won't reopen for the same session.
   const autoOpenedRef = useRef(false);
   useEffect(() => {
     if (autoOpenedRef.current) return;
@@ -125,13 +140,32 @@ function Workspace() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cursorIdx, candles.length, session?.id]);
 
-  if (loading) return <ReplaySkeleton session={session} />;
+  // ── Right-rail resizing (pointer + keyboard) ─────────────────────────
+  const dragRef = useRef<{ startX: number; startW: number } | null>(null);
+  const onResizeStart = (e: React.PointerEvent<HTMLDivElement>) => {
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    dragRef.current = { startX: e.clientX, startW: railWidth };
+  };
+  const onResizeMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragRef.current) return;
+    const delta = dragRef.current.startX - e.clientX; // drag left = widen
+    update("railWidth", dragRef.current.startW + delta);
+  };
+  const onResizeEnd = () => { dragRef.current = null; };
+  const onResizeKey = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const step = e.shiftKey ? 24 : 8;
+    if (e.key === "ArrowLeft") { e.preventDefault(); update("railWidth", railWidth + step); }
+    else if (e.key === "ArrowRight") { e.preventDefault(); update("railWidth", railWidth - step); }
+    else if (e.key === "Home") { e.preventDefault(); update("railWidth", RAIL_MAX); }
+    else if (e.key === "End") { e.preventDefault(); update("railWidth", RAIL_MIN); }
+  };
 
+  if (loading) return <ReplaySkeleton session={session} />;
 
   return (
     <TooltipProvider delayDuration={300}>
       <div className="flex min-h-[calc(100dvh-0px)] flex-col">
-        {/* ── Compact unified toolbar: session identity + HUD + actions ── */}
+        {/* ── Compact unified toolbar ── */}
         <div className="flex flex-wrap items-center gap-2 border-b border-border/50 bg-card/40 px-2 py-1.5 backdrop-blur sm:px-3">
           <div className="flex min-w-0 items-center gap-2">
             <span className="rounded-[3px] border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary">
@@ -158,30 +192,40 @@ function Workspace() {
           </div>
         </div>
 
-        {/* ── Main grid: chart hero + collapsible tabbed rail ──────────── */}
+        {/* ── Main: [drawing toolbar] [chart+timeline] [resizer] [rail] ─ */}
         <div
-          className={cn(
-            "grid min-h-0 flex-1 grid-cols-1",
-            sideOpen ? "xl:grid-cols-[minmax(0,1fr)_360px]" : "xl:grid-cols-[minmax(0,1fr)_44px]",
-          )}
+          className="grid min-h-0 flex-1 grid-cols-1"
+          style={{
+            gridTemplateColumns: sideOpen
+              ? `36px minmax(0, 1fr) 6px ${railWidth}px`
+              : `36px minmax(0, 1fr) 44px`,
+          }}
         >
+          <DrawingToolbar />
+
           <div className="relative flex min-h-0 flex-col border-r border-border/40">
-            {/* Chart fills available space; controls float and auto-hide */}
             <div
               className="relative min-h-0 flex-1"
+              onMouseEnter={() => setPointerInside(true)}
+              onMouseLeave={() => setPointerInside(false)}
               onMouseMove={bumpControls}
-              onMouseLeave={() => setControlsVisible(false)}
             >
               <div className="absolute inset-0">
-                <ReplayChart onCapture={(url) => (window as any).__replayCaptureHandler?.(url)} />
+                <ReplayChart
+                  onCapture={(url) => (window as any).__replayCaptureHandler?.(url)}
+                  onAdapterReady={onAdapterReady}
+                />
               </div>
 
-              {/* Floating replay controls — top-center, auto-hide */}
               <div
                 className={cn(
-                  "pointer-events-none absolute inset-x-0 top-2 z-30 flex justify-center px-2 transition-opacity duration-300",
+                  "pointer-events-none absolute inset-x-0 top-2 z-30 flex justify-center px-2 transition-opacity duration-300 motion-reduce:transition-none",
                   controlsVisible ? "opacity-100" : "opacity-0",
                 )}
+                onFocusCapture={() => setFocusInside(true)}
+                onBlurCapture={(e) => {
+                  if (!(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) setFocusInside(false);
+                }}
               >
                 <div className="pointer-events-auto max-w-[min(96%,980px)] w-full shadow-2xl">
                   <div className="rounded-2xl border border-border/60 bg-background/85 backdrop-blur-lg">
@@ -191,13 +235,34 @@ function Workspace() {
               </div>
             </div>
 
-            {/* Slim timeline strip at bottom of chart column */}
             <div className="border-t border-border/40 bg-card/40 px-2 py-1">
               <ReplayTimeline />
             </div>
           </div>
 
-          {/* Right rail: collapsed = icon strip, expanded = tabs */}
+          {/* Resize handle — only visible when rail is expanded */}
+          {sideOpen ? (
+            <div
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize Replay side panel"
+              aria-valuemin={RAIL_MIN}
+              aria-valuemax={RAIL_MAX}
+              aria-valuenow={railWidth}
+              tabIndex={0}
+              onPointerDown={onResizeStart}
+              onPointerMove={onResizeMove}
+              onPointerUp={onResizeEnd}
+              onPointerCancel={onResizeEnd}
+              onDoubleClick={() => update("railWidth", RAIL_DEFAULT)}
+              onKeyDown={onResizeKey}
+              className="group hidden xl:flex cursor-col-resize items-center justify-center bg-border/40 hover:bg-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition"
+            >
+              <div className="h-8 w-0.5 rounded bg-muted-foreground/40 group-hover:bg-primary/70" />
+            </div>
+          ) : null}
+
+          {/* Right rail */}
           {sideOpen ? (
             <div className="relative flex min-h-0 flex-col bg-card/30">
               <button
