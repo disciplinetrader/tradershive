@@ -48,7 +48,7 @@ import { cn } from "@/lib/utils";
 import { findSymbol } from "@/lib/paper-trading/symbols";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { closeTrade, listTrades } from "@/lib/paper-trading.functions";
+import { closeTrade, listTrades, listOrders } from "@/lib/paper-trading.functions";
 import { useRiskMonitor } from "@/hooks/use-risk-monitor";
 import { useSlTpMonitor } from "@/hooks/use-sl-tp-monitor";
 import { useWorkspacePrefs, type WorkspaceTab, type BottomTab, type BlotterFilter } from "@/hooks/use-workspace-prefs";
