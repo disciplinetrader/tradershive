@@ -56,6 +56,16 @@ const SURPRISE_POOL: { symbol: string; market: JournalMarket }[] = [
   { symbol: "SPX500", market: "indices" },
 ];
 
+type PresetRange = { id: "1h" | "4h" | "1d" | "3d" | "1w" | "custom"; label: string; days: number };
+const SESSION_PRESETS: PresetRange[] = [
+  { id: "1h", label: "1 Hour", days: 0 },
+  { id: "4h", label: "4 Hours", days: 0 },
+  { id: "1d", label: "1 Day", days: 0 },
+  { id: "3d", label: "3 Days", days: 3 },
+  { id: "1w", label: "1 Week", days: 7 },
+  { id: "custom", label: "Custom", days: -1 },
+];
+
 type StartPosition = "beginning" | "random" | "before_end";
 
 const PREFS_KEY = "replay.creator.prefs.v1";
