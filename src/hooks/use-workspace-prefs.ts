@@ -11,7 +11,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 export type WorkspaceTab = "trade" | "notes" | "insights";
 export type BottomTab = "blotter" | "watchlist";
-export type BlotterFilter = "open" | "pending" | "closed" | "all";
+export type BlotterFilter = "open" | "pending" | "closed" | "all" | "winning" | "losing" | "today" | "week";
+export type BlotterSortKey = "symbol" | "pnl" | "time" | "size" | "status";
+export type BlotterSort = { key: BlotterSortKey; dir: "asc" | "desc" };
 
 export type WorkspacePrefs = {
   rightOpen: boolean;
@@ -26,12 +28,14 @@ export type WorkspacePrefs = {
   bottomTab: BottomTab;
   blotterFilter: BlotterFilter;
   dockHeight: number; // px, 180–560
+  blotterSortOpen: BlotterSort;
+  blotterSortClosed: BlotterSort;
 };
 
 const STORAGE_KEY = "thive.workspace.prefs.v1";
 const VALID_TABS: WorkspaceTab[] = ["trade", "notes", "insights"];
 const VALID_BOTTOM: BottomTab[] = ["blotter", "watchlist"];
-const VALID_FILTERS: BlotterFilter[] = ["open", "pending", "closed", "all"];
+const VALID_FILTERS: BlotterFilter[] = ["open", "pending", "closed", "all", "winning", "losing", "today", "week"];
 
 const DEFAULTS: WorkspacePrefs = {
   rightOpen: true,
@@ -46,6 +50,8 @@ const DEFAULTS: WorkspacePrefs = {
   bottomTab: "blotter",
   blotterFilter: "open",
   dockHeight: 280,
+  blotterSortOpen: { key: "time", dir: "desc" },
+  blotterSortClosed: { key: "time", dir: "desc" },
 };
 
 function readStorage(): WorkspacePrefs {
