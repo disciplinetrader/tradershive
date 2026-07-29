@@ -7,6 +7,7 @@
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { MessageSquarePlus } from "lucide-react";
+import { useRouterState } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 import { FeedbackDialog, type FeedbackType } from "./FeedbackDialog";
 
@@ -56,6 +57,11 @@ export function useFeedback() {
 }
 
 function FeedbackLauncher({ onClick }: { onClick: () => void }) {
+  // The Trading Workspace is a focused environment — never cover chart or
+  // order controls with a persistent floating button. Feedback stays
+  // reachable via Ctrl+Shift+B and from Settings > Help.
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  if (pathname.startsWith("/trading") || pathname.startsWith("/replay/session")) return null;
   return (
     <button
       type="button"
