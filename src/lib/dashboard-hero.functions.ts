@@ -13,7 +13,9 @@ export type HeroReplay = {
   id: string;
   symbol: string | null;
   status: string | null;
+  timeframe: string | null;
   durationSeconds: number;
+  completionPct: number;
   updatedAt: string;
   hasJournal: boolean;
 };
