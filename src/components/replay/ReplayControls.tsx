@@ -77,7 +77,8 @@ export function ReplayControls() {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement;
       if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
-      else if (e.code === "Space") { e.preventDefault(); toggle(); }
+      if (e.code === "Space") { e.preventDefault(); toggle(); }
+
       else if (e.code === "ArrowRight") { e.shiftKey ? skip(10) : step(1); }
       else if (e.code === "ArrowLeft") { e.shiftKey ? skip(-10) : step(-1); }
       else if (e.key === "." && !e.shiftKey && !e.metaKey && !e.ctrlKey) { e.preventDefault(); step(1); }
