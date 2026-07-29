@@ -91,12 +91,12 @@ export function ReplayControls() {
       }
       else if (e.key === "+" || e.key === "=") {
         e.preventDefault();
-        const idx = SPEEDS.indexOf(speed);
+        const idx = (SPEEDS as readonly number[]).indexOf(speed);
         if (idx >= 0 && idx < SPEEDS.length - 1) setSpeed(SPEEDS[idx + 1]);
       }
       else if (e.key === "-" || e.key === "_") {
         e.preventDefault();
-        const idx = SPEEDS.indexOf(speed);
+        const idx = (SPEEDS as readonly number[]).indexOf(speed);
         if (idx > 0) setSpeed(SPEEDS[idx - 1]);
       }
       else if (e.key === "?") { e.preventDefault(); setHelpOpen((v) => !v); }
