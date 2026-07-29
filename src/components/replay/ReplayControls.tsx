@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRightToLine,
   Bookmark,
@@ -6,6 +6,7 @@ import {
   ChevronRight,
   Flag,
   Keyboard,
+  MoreHorizontal,
   Pause,
   Play,
   RefreshCw,
@@ -16,6 +17,8 @@ import {
   TrendingUp,
   Zap,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import {
@@ -38,15 +41,20 @@ const SHORTCUTS: Array<[string, string]> = [
   ["Space", "Play / Pause"],
   ["← / →", "Step 1 candle"],
   ["Shift + ← / →", "Skip 10 candles"],
-  ["+ / -", "Faster / slower playback"],
+  ["+ / -", "Faster / slower playback · Zoom chart"],
+  [", / .", "Step backward / forward"],
   ["B / Shift+B", "Next / previous bookmark"],
   ["T / Shift+T", "Next / previous trade"],
   ["M", "Bookmark current candle"],
   ["S", "Snapshot chart"],
   ["F", "Fast-forward to next trade"],
+  ["Del / Backspace", "Delete selected drawing"],
+  ["⌘/Ctrl + Z", "Undo drawing"],
+  ["⌘/Ctrl + ⇧ + Z", "Redo drawing"],
   ["?", "Show this help"],
-  ["Esc", "Close dialogs · exit focus"],
+  ["Esc", "Cancel tool · close dialogs"],
 ];
+
 
 function IconBtn({ label, onClick, children, disabled }: { label: string; onClick: () => void; children: React.ReactNode; disabled?: boolean }) {
   return (
@@ -73,8 +81,11 @@ export function ReplayControls() {
       const t = e.target as HTMLElement;
       if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
       if (e.code === "Space") { e.preventDefault(); toggle(); }
+
       else if (e.code === "ArrowRight") { e.shiftKey ? skip(10) : step(1); }
       else if (e.code === "ArrowLeft") { e.shiftKey ? skip(-10) : step(-1); }
+      else if (e.key === "." && !e.shiftKey && !e.metaKey && !e.ctrlKey) { e.preventDefault(); step(1); }
+      else if (e.key === "," && !e.shiftKey && !e.metaKey && !e.ctrlKey) { e.preventDefault(); step(-1); }
       else if (e.key === "b") { jumpTo("next_bookmark"); }
       else if (e.key === "B") { jumpTo("prev_bookmark"); }
       else if (e.key === "t") { jumpTo("next_trade"); }
@@ -84,6 +95,7 @@ export function ReplayControls() {
         e.preventDefault();
         addCheckpoint("custom", "Bookmark");
       }
+
       else if (e.key === "s" || e.key === "S") {
         e.preventDefault();
         // Reuse the workspace snapshot pipeline set up in replay.session.tsx.
@@ -117,10 +129,10 @@ export function ReplayControls() {
       >
         {/* Row 1: transport + jumps */}
         <div className="flex flex-wrap items-center gap-1">
-          <IconBtn label="Restart cursor" onClick={restart}><RotateCcw className="h-4 w-4" /></IconBtn>
-          <IconBtn label="Replay Again (reset progress)" onClick={replayAgain}><RefreshCw className="h-4 w-4" /></IconBtn>
-          <div className="mx-1 h-6 w-px bg-border/60" />
+          {/* Restart / Replay Again live in the More menu to prevent
+              accidental resets adjacent to Play/Step controls. */}
           <IconBtn label="Prev bookmark (Shift+B)" onClick={() => jumpTo("prev_bookmark")}><Bookmark className="h-4 w-4 rotate-180" /></IconBtn>
+
           <IconBtn label="Prev trade (Shift+T)" onClick={() => jumpTo("prev_trade")}><TrendingUp className="h-4 w-4 rotate-180" /></IconBtn>
           <IconBtn label="Skip -10 (Shift+←)" onClick={() => skip(-10)}><SkipBack className="h-4 w-4" /></IconBtn>
           <IconBtn label="Prev candle (←)" onClick={() => step(-1)}><ChevronLeft className="h-4 w-4" /></IconBtn>
@@ -179,6 +191,8 @@ export function ReplayControls() {
             </DropdownMenuContent>
           </DropdownMenu>
 
+          <JumpToTimestamp />
+
           <div className="ml-auto flex items-center gap-1.5">
             <div className="rounded-md border border-border/50 bg-background/50 px-2 py-1 text-[10px] font-medium text-muted-foreground">
               Session: <span className="text-foreground">{SESSION_LABEL[sessionKey]}</span>
@@ -186,7 +200,29 @@ export function ReplayControls() {
             <IconBtn label="Keyboard shortcuts (?)" onClick={() => setHelpOpen(true)}>
               <Keyboard className="h-4 w-4" />
             </IconBtn>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="icon" variant="ghost" aria-label="More replay actions" className="h-8 w-8">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Session</DropdownMenuLabel>
+                <DropdownMenuItem onClick={restart}>
+                  <RotateCcw className="mr-2 h-3.5 w-3.5" /> Restart cursor
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={replayAgain}>
+                  <RefreshCw className="mr-2 h-3.5 w-3.5" /> Replay again (reset progress)
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Playback</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => setSpeed(1)}>
+                  <Sparkles className="mr-2 h-3.5 w-3.5" /> Reset speed to 1x
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
+
           {/* Live region for playback state announcements */}
           <span aria-live="polite" className="sr-only">
             {playing ? `Playing at ${speed}x` : "Paused"}
@@ -256,3 +292,56 @@ export function ReplayControls() {
     </TooltipProvider>
   );
 }
+
+/**
+ * Jump-to-Timestamp — accepts an ISO-like datetime, validates it against the
+ * replay dataset range and snaps the cursor to the nearest candle. Invalid
+ * input surfaces the valid range instead of silently clamping.
+ */
+function JumpToTimestamp() {
+  const { candles, setCursorIdx } = useReplay();
+  const [value, setValue] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const range = useMemo(() => {
+    if (!candles.length) return null;
+    return { min: candles[0].time, max: candles[candles.length - 1].time };
+  }, [candles]);
+
+  const submit = () => {
+    if (!range) return;
+    const raw = value.trim();
+    if (!raw) return;
+    const t = new Date(raw).getTime();
+    if (!Number.isFinite(t)) { setError("Enter a date/time like 2024-05-01 09:30"); return; }
+    if (t < range.min || t > range.max) {
+      const fmt = (n: number) => new Date(n).toISOString().slice(0, 16).replace("T", " ");
+      setError(`Outside range · ${fmt(range.min)} → ${fmt(range.max)} UTC`);
+      return;
+    }
+    setError(null);
+    // binary-search nearest candle
+    let lo = 0, hi = candles.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (candles[mid].time < t) lo = mid + 1; else hi = mid;
+    }
+    setCursorIdx(lo);
+  };
+
+  return (
+    <div className="flex items-center gap-1">
+      <Input
+        aria-label="Jump to replay timestamp (UTC)"
+        placeholder="Jump to time…"
+        value={value}
+        onChange={(e) => { setValue(e.target.value); setError(null); }}
+        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); submit(); } }}
+        className="h-7 w-40 text-[11px]"
+      />
+      {error ? (
+        <span role="alert" className="text-[10px] text-danger">{error}</span>
+      ) : null}
+    </div>
+  );
+}
+
