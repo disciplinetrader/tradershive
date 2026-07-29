@@ -77,7 +77,7 @@ function Workspace() {
   const sideOpen = prefs.sideOpen;
   const sideTab = prefs.sideTab;
   const setSideOpen = (v: boolean) => update("sideOpen", v);
-  const setSideTab = (v: "trade" | "notes" | "review") => update("sideTab", v);
+  const setSideTab = (v: "trade" | "notes") => update("sideTab", v);
 
   // Floating controls auto-hide over the chart
   const [controlsVisible, setControlsVisible] = useState(true);
@@ -152,11 +152,8 @@ function Workspace() {
             <Button size="sm" variant="ghost" onClick={takeShot} className="h-7 gap-1 px-2 text-[11px]">
               <Camera className="h-3.5 w-3.5" /> <span className="hidden lg:inline">Snapshot</span>
             </Button>
-            <Button size="sm" variant="secondary" asChild className="h-7 gap-1 px-2 text-[11px]">
-              <Link to="/ai/dashboard"><Sparkles className="h-3.5 w-3.5" /> <span className="hidden lg:inline">Coach</span></Link>
-            </Button>
             <Button size="sm" onClick={finishAndReview} className="h-7 gap-1 px-2 text-[11px]">
-              <CheckCircle2 className="h-3.5 w-3.5" /> Finish
+              <CheckCircle2 className="h-3.5 w-3.5" /> Finish &amp; Review
             </Button>
           </div>
         </div>
@@ -217,7 +214,7 @@ function Workspace() {
                 className="flex min-h-0 flex-1 flex-col"
               >
                 <div className="border-b border-border/40 px-2 pt-1 pr-9">
-                  <TabsList className="grid w-full grid-cols-3 h-8">
+                  <TabsList className="grid w-full grid-cols-2 h-8">
                     {SIDE_TABS.map((t) => (
                       <TabsTrigger key={t.id} value={t.id} className="text-[11px] gap-1">
                         <t.icon className="h-3 w-3" /> {t.label}
@@ -237,13 +234,6 @@ function Workspace() {
                       <CheckpointsPanel />
                       <SectionHeader icon={CheckSquare} label="Checklist" />
                       <ChecklistPanel />
-                    </div>
-                  )}
-                  {sideTab === "review" && (
-                    <div className="space-y-3">
-                      <SectionHeader icon={ShieldCheck} label="Score" />
-                      <ScoreCard />
-                      {session ? <AiReviewPanel sessionId={session.id} /> : null}
                     </div>
                   )}
                 </div>
