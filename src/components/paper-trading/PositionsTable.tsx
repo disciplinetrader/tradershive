@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
@@ -24,6 +24,8 @@ import { ClosePositionDialog } from "./ClosePositionDialog";
 import { PostTradeSummary, type ClosedTrade } from "./PostTradeSummary";
 import { SessionBadge } from "./SessionBadge";
 import { cn } from "@/lib/utils";
+import { useWorkspacePrefs, type BlotterSort } from "@/hooks/use-workspace-prefs";
+import { FlashCell, SidePill, SkeletonRows, SortHeader, signed, useRowKeyNav } from "@/components/trading/blotter-shared";
 
 
 type Trade = {
@@ -40,11 +42,14 @@ export function PositionsTable() {
   const beFn = useServerFn(moveToBreakEven);
   const qc = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const { prefs, update } = useWorkspacePrefs();
+
+  const { data, isLoading, isError, refetch, isRefetching } = useQuery({
     queryKey: ["paper", "trades", accountId, "open"],
     queryFn: () => fetch({ data: { account_id: accountId!, status: "open" } }) as unknown as Promise<Trade[]>,
     enabled: !!accountId,
     refetchInterval: 2000,
+    placeholderData: (prev) => prev,
   });
 
   const quotes = useLiveQuotes(data?.map((t) => t.symbol));
@@ -101,50 +106,62 @@ export function PositionsTable() {
     }
   };
 
-  const rows = data ?? [];
+  // Compute enriched rows once, then sort — memoized to avoid re-work per hover.
+  const enriched = useMemo(() => (data ?? []).map((t) => {
+    const sym = findSymbol(t.symbol);
+    const current = quotes[t.symbol]?.price ?? sym?.refPrice ?? Number(t.entry_price);
+    const floating = sym ? computePnl(sym, t.direction, Number(t.entry_price), current, Number(t.lot_size)) : 0;
+    const risk = sym && t.stop_loss ? Math.abs(computePnl(sym, t.direction, Number(t.entry_price), Number(t.stop_loss), Number(t.lot_size))) : 0;
+    const rr = risk > 0 ? floating / risk : 0;
+    return { t, sym, current, floating, rr };
+  }), [data, quotes]);
 
-  if (isLoading) return <div className="p-6 text-sm text-muted-foreground">Loading positions…</div>;
-  if (!rows.length) {
-    return (
-      <>
-        <EmptyState
-          className="py-10"
-          title="No open positions"
-          description="Place your first paper trade from the order panel to see it here."
-        />
-        <PostTradeSummary trade={summary} open={!!summary} onClose={() => setSummary(null)} currency={account?.currency} />
-      </>
-    );
-  }
+  const rows = useMemo(() => sortEnriched(enriched, prefs.blotterSortOpen), [enriched, prefs.blotterSortOpen]);
+  const setSort = (s: BlotterSort) => update("blotterSortOpen", s);
+  const rowKey = useRowKeyNav();
 
   return (
     <>
       <div className="overflow-x-auto">
+        {isError && (
+          <div className="mb-2 flex items-center justify-end gap-2 text-[11px] text-warning">
+            Unable to refresh
+            <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]" onClick={() => refetch()} disabled={isRefetching}>Retry</Button>
+          </div>
+        )}
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Pair</TableHead>
-              <TableHead>Side</TableHead>
+              <SortHeader label="Pair" sortKey="symbol" state={prefs.blotterSortOpen} onChange={setSort} />
+              <SortHeader label="Side" sortKey="status" state={prefs.blotterSortOpen} onChange={setSort} />
               <TableHead>Session</TableHead>
               <TableHead className="text-right">Entry</TableHead>
               <TableHead className="text-right">Current</TableHead>
-              <TableHead className="text-right">Lot</TableHead>
+              <SortHeader label="Lot" sortKey="size" state={prefs.blotterSortOpen} onChange={setSort} align="right" />
               <TableHead className="text-right">SL</TableHead>
               <TableHead className="text-right">TP</TableHead>
-              <TableHead className="text-right">RR (live)</TableHead>
-              <TableHead className="text-right">Floating P/L</TableHead>
-              <TableHead>Duration</TableHead>
+              <TableHead className="text-right">RR</TableHead>
+              <SortHeader label="P/L" sortKey="pnl" state={prefs.blotterSortOpen} onChange={setSort} align="right" />
+              <SortHeader label="Duration" sortKey="time" state={prefs.blotterSortOpen} onChange={setSort} />
               <TableHead className="sticky right-0 z-10 bg-background/95 text-right shadow-[-8px_0_12px_-8px_rgba(0,0,0,0.4)]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
+            {isLoading ? (
+              <SkeletonRows rows={4} cols={12} />
+            ) : rows.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={12} className="p-0">
+                  <EmptyState
+                    className="py-8"
+                    title="No open positions"
+                    description="Place your first paper trade from the order panel to see it here."
+                  />
+                </TableCell>
+              </TableRow>
+            ) : (
             <AnimatePresence initial={false}>
-              {rows.map((t) => {
-                const sym = findSymbol(t.symbol);
-                const current = quotes[t.symbol]?.price ?? sym?.refPrice ?? Number(t.entry_price);
-                const floating = sym ? computePnl(sym, t.direction, Number(t.entry_price), current, Number(t.lot_size)) : 0;
-                const risk = sym && t.stop_loss ? Math.abs(computePnl(sym, t.direction, Number(t.entry_price), Number(t.stop_loss), Number(t.lot_size))) : 0;
-                const rr = risk > 0 ? floating / risk : 0;
+              {rows.map(({ t, sym, current, floating, rr }) => {
                 const duration = formatDuration(new Date(t.opened_at));
                 const up = floating >= 0;
                 const beDisabled = Number(t.stop_loss ?? NaN) === Number(t.entry_price);
@@ -153,31 +170,32 @@ export function PositionsTable() {
                     key={t.id}
                     layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                     exit={{ opacity: 0, x: 20, transition: { duration: 0.18 } }}
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      rowKey(e);
+                      if (e.key === "Enter") { setModifying(t); e.preventDefault(); }
+                      if (e.key === "Delete" || e.key === "Backspace") { instantClose(t); e.preventDefault(); }
+                    }}
                     className={cn(
-                      "group border-b border-border/50 transition-colors hover:bg-muted/40",
+                      "group border-b border-border/50 transition-colors hover:bg-muted/40 focus-visible:bg-muted/50 focus-visible:outline-none",
                       closingIds.has(t.id) && "opacity-50",
                     )}
                   >
-                    <TableCell className="font-semibold">{t.symbol}</TableCell>
-                    <TableCell>
-                      <span className={cn("rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase",
-                        t.direction === "long" ? "bg-success/15 text-success" : "bg-danger/15 text-danger")}>
-                        {t.direction}
-                      </span>
-                    </TableCell>
-                    <TableCell><SessionBadge at={t.opened_at} /></TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">{formatNumber(Number(t.entry_price), sym?.decimals ?? 2)}</TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">{formatNumber(current, sym?.decimals ?? 2)}</TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">{Number(t.lot_size).toFixed(2)}</TableCell>
-                    <TableCell className="text-right font-mono tabular-nums text-muted-foreground">{t.stop_loss ? formatNumber(Number(t.stop_loss), sym?.decimals ?? 2) : "—"}</TableCell>
-                    <TableCell className="text-right font-mono tabular-nums text-muted-foreground">{t.take_profit ? formatNumber(Number(t.take_profit), sym?.decimals ?? 2) : "—"}</TableCell>
-                    <TableCell className={cn("text-right font-mono tabular-nums", rr >= 0 ? "text-success" : "text-danger")}>
+                    <TableCell className="py-1.5 font-semibold">{t.symbol}</TableCell>
+                    <TableCell className="py-1.5"><SidePill side={t.direction} /></TableCell>
+                    <TableCell className="py-1.5"><SessionBadge at={t.opened_at} /></TableCell>
+                    <TableCell className="py-1.5 text-right font-mono tabular-nums">{formatNumber(Number(t.entry_price), sym?.decimals ?? 2)}</TableCell>
+                    <TableCell className="py-1.5 text-right font-mono tabular-nums">{formatNumber(current, sym?.decimals ?? 2)}</TableCell>
+                    <TableCell className="py-1.5 text-right font-mono tabular-nums">{Number(t.lot_size).toFixed(2)}</TableCell>
+                    <TableCell className="py-1.5 text-right font-mono tabular-nums text-muted-foreground">{t.stop_loss ? formatNumber(Number(t.stop_loss), sym?.decimals ?? 2) : "—"}</TableCell>
+                    <TableCell className="py-1.5 text-right font-mono tabular-nums text-muted-foreground">{t.take_profit ? formatNumber(Number(t.take_profit), sym?.decimals ?? 2) : "—"}</TableCell>
+                    <TableCell className={cn("py-1.5 text-right font-mono tabular-nums", rr >= 0 ? "text-success" : "text-danger")}>
                       {rr ? `${rr.toFixed(2)}R` : "—"}
                     </TableCell>
-                    <TableCell className={cn("min-w-[110px] text-right font-mono tabular-nums font-semibold transition-colors duration-200", up ? "text-success" : "text-danger")}>
-                      {up ? "+" : ""}{formatCurrency(floating, account?.currency)}
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{duration}</TableCell>
+                    <FlashCell value={floating} up={up}>
+                      {signed(floating)}{formatCurrency(Math.abs(floating), account?.currency)}
+                    </FlashCell>
+                    <TableCell className="py-1.5 text-xs text-muted-foreground">{duration}</TableCell>
                     <TableCell className="sticky right-0 z-10 bg-background/95 text-right shadow-[-8px_0_12px_-8px_rgba(0,0,0,0.4)]">
                       <div className="flex justify-end gap-1 opacity-70 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
                         <Button
@@ -227,6 +245,7 @@ export function PositionsTable() {
                 );
               })}
             </AnimatePresence>
+            )}
           </TableBody>
         </Table>
       </div>
@@ -305,4 +324,20 @@ function formatDuration(start: Date): string {
   if (h < 24) return `${h}h ${rm}m`;
   const d = Math.floor(h / 24);
   return `${d}d ${h % 24}h`;
+}
+
+type Enriched = { t: Trade; sym: ReturnType<typeof findSymbol>; current: number; floating: number; rr: number };
+
+function sortEnriched(rows: Enriched[], s: BlotterSort): Enriched[] {
+  const mul = s.dir === "asc" ? 1 : -1;
+  return [...rows].sort((a, b) => {
+    switch (s.key) {
+      case "symbol": return a.t.symbol.localeCompare(b.t.symbol) * mul;
+      case "pnl":    return (a.floating - b.floating) * mul;
+      case "size":   return (Number(a.t.lot_size) - Number(b.t.lot_size)) * mul;
+      case "status": return a.t.direction.localeCompare(b.t.direction) * mul;
+      case "time":
+      default:       return (new Date(a.t.opened_at).getTime() - new Date(b.t.opened_at).getTime()) * mul;
+    }
+  });
 }
