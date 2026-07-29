@@ -203,6 +203,19 @@ function TradingWorkspaceInner() {
       })),
     [openTradesAll, symbol],
   );
+  const openCount = openTradesAll?.length ?? 0;
+
+  // Pending orders count for the Trade-tab badge + adaptive section header.
+  // Shares the query key with OrdersTable / Blotter so it dedupes.
+  const fetchOrdersFn = useServerFn(listOrders);
+  const { data: pendingOrdersAll } = useQuery({
+    queryKey: ["paper", "orders", accountId],
+    queryFn: () => fetchOrdersFn({ data: { account_id: accountId! } }) as unknown as Promise<{ id: string }[]>,
+    enabled: !!accountId,
+    staleTime: 4_000,
+    refetchIntervalInBackground: false,
+  });
+  const pendingCount = pendingOrdersAll?.length ?? 0;
 
   const meta = symbolMeta ?? findSymbol(symbol);
   const decimals = meta?.decimals ?? 2;
