@@ -188,6 +188,8 @@ export function ReplayControls() {
             </DropdownMenuContent>
           </DropdownMenu>
 
+          <JumpToTimestamp />
+
           <div className="ml-auto flex items-center gap-1.5">
             <div className="rounded-md border border-border/50 bg-background/50 px-2 py-1 text-[10px] font-medium text-muted-foreground">
               Session: <span className="text-foreground">{SESSION_LABEL[sessionKey]}</span>
@@ -195,7 +197,29 @@ export function ReplayControls() {
             <IconBtn label="Keyboard shortcuts (?)" onClick={() => setHelpOpen(true)}>
               <Keyboard className="h-4 w-4" />
             </IconBtn>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="icon" variant="ghost" aria-label="More replay actions" className="h-8 w-8">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Session</DropdownMenuLabel>
+                <DropdownMenuItem onClick={restart}>
+                  <RotateCcw className="mr-2 h-3.5 w-3.5" /> Restart cursor
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={replayAgain}>
+                  <RefreshCw className="mr-2 h-3.5 w-3.5" /> Replay again (reset progress)
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Playback</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => setSpeed(1)}>
+                  <Sparkles className="mr-2 h-3.5 w-3.5" /> Reset speed to 1x
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
+
           {/* Live region for playback state announcements */}
           <span aria-live="polite" className="sr-only">
             {playing ? `Playing at ${speed}x` : "Paused"}
