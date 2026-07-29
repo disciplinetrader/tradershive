@@ -467,3 +467,63 @@ function ProductTourSection() {
     </GlassCard>
   );
 }
+
+/* ---------------- Email verification (optional, non-blocking) ---------------- */
+
+function EmailVerificationNotice() {
+  const { user } = useAuth();
+  const verified = Boolean(user?.email_confirmed_at);
+  const [sending, setSending] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
+
+  if (!user?.email || verified) return null;
+
+  const resend = async () => {
+    setSending(true);
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: user.email!,
+      options: { emailRedirectTo: `${window.location.origin}/verify-email` },
+    });
+    setSending(false);
+    if (error) return toast.error(error.message);
+    toast.success("Verification email sent");
+    setCooldown(30);
+  };
+
+  return (
+    <GlassCard className="p-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold">Verify your email</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Optional during beta. Verifying{" "}
+            <span className="font-medium text-foreground">{user.email}</span> helps us
+            recover your account and keeps notifications flowing.
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          onClick={resend}
+          disabled={sending || cooldown > 0}
+          className="gap-2"
+        >
+          {sending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : cooldown > 0 ? (
+            `Resend in ${cooldown}s`
+          ) : (
+            "Send verification email"
+          )}
+        </Button>
+      </div>
+    </GlassCard>
+  );
+}
+
