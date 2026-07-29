@@ -137,7 +137,7 @@ class MarketDataEngine {
   async getQuote(symbol: string, market?: MarketKind): Promise<Quote> {
     const cached = this.quoteCache.get(symbol);
     if (cached) return cached;
-    const q = await this.pickProvider(market, symbol).getQuote(symbol);
+    const q = await this.pickLiveQuoteProvider(market, symbol).getQuote(symbol);
     this.quoteCache.set(symbol, q);
     return q;
   }
@@ -157,7 +157,7 @@ class MarketDataEngine {
     let entry = this.fanout.get(symbol);
     if (!entry) {
       let p: MarketDataProvider;
-      try { p = this.pickProvider(market, symbol); }
+      try { p = this.pickLiveQuoteProvider(market, symbol); }
       catch (e) {
         const key = market ?? inferMarketFromSymbol(symbol) ?? "unknown";
         if (!this.warnedMarkets.has(key)) {
