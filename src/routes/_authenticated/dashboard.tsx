@@ -3,10 +3,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { Activity, ChevronDown, Eye, Star } from "lucide-react";
+import { Activity, Eye, Star } from "lucide-react";
 
-import { useCommandPalette } from "@/components/command-palette";
-import { HeaderGreeting } from "@/components/dashboard/HeaderGreeting";
 import { RecentTrades } from "@/components/dashboard/RecentTrades";
 import { Watchlist } from "@/components/dashboard/Watchlist";
 import { WidgetShell } from "@/components/dashboard/WidgetShell";
@@ -15,34 +13,33 @@ import { getDashboardLayout, saveDashboardLayout } from "@/lib/dashboard.functio
 import { getHomeSummary } from "@/lib/dashboard-home.functions";
 import { getHeroState } from "@/lib/dashboard-hero.functions";
 import { DashboardHero } from "@/components/dashboard/DashboardHero";
-
 import { TodayFocusCard } from "@/components/dashboard/TodayFocusCard";
 import { PerformanceSnapshot } from "@/components/dashboard/PerformanceSnapshot";
 import { ActionItemsList } from "@/components/dashboard/ActionItemsList";
-import { CoachTipsCard } from "@/components/dashboard/CoachTipsCard";
-import { TopMistakeWidget } from "@/components/dashboard/TopMistakeWidget";
+import { TodaysInsight } from "@/components/dashboard/TodaysInsight";
 import { BetaBanner } from "@/components/beta/BetaBanner";
 import { OnboardingChecklist } from "@/components/onboarding/OnboardingChecklist";
-import { usePersistentDisclosure } from "@/hooks/use-persistent-disclosure";
+import { resolveDashboardMode } from "@/lib/dashboard-mode";
 
 /**
- * Trader Command Center.
+ * Trader Command Center — Mission Control.
  *
- * Answers, in order, within 5 seconds:
- *   1. How am I performing?      → Hero + Performance
- *   2. What should I do next?    → Hero CTA + Focus + Actions
- *   3. Where do I continue?      → Recent trades + Watchlist
- *
- * Secondary insights (coach tips, top mistake) live behind a collapse.
- * Achievements, XP and streaks moved to the Profile / Community surface.
+ * Answers a single question: "What should I do next?"
+ * Rank order:
+ *   1. Hero          — one recommendation + one primary CTA
+ *   2. Performance   — Net PnL / Win Rate / Profit Factor (guarded)
+ *   3. Today's Focus — action targets for the day
+ *   4. Continue      — Recent trades + Watchlist
+ *   5. Action items  — outstanding follow-ups
+ *   6. Today's Insight (1 tip, 1 CTA)
  */
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
       { title: "Dashboard — TradersHIVE Arena" },
-      { name: "description", content: "Your trading command center: performance, next action, and where to continue working." },
+      { name: "description", content: "Your trading command center: one recommendation, one action, then the numbers." },
       { property: "og:title", content: "Dashboard — TradersHIVE Arena" },
-      { property: "og:description", content: "Your trading command center." },
+      { property: "og:description", content: "Trader command center — what to do next, at a glance." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -56,20 +53,37 @@ const SECTIONS: WidgetDef[] = [
   { id: "trades", label: "Recent trades", group: "Command Center" },
   { id: "watchlist", label: "Watchlist", group: "Command Center" },
   { id: "actions", label: "Action Items", group: "Command Center" },
-  { id: "coach", label: "Coach tips", group: "More insights" },
+  { id: "insight", label: "Today's Insight", group: "Coaching" },
 ];
 
-const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } };
-const item = { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transition: { duration: 0.35 } } };
+const ANIM_SESSION_KEY = "dashboard:animated-once";
+
+/**
+ * Play dashboard entrance animations only on the first visit within a browser
+ * session — subsequent visits render immediately to avoid information delay.
+ */
+function useFirstVisitAnimation(): boolean {
+  const [animate, setAnimate] = useState(false);
+  useEffect(() => {
+    try {
+      const seen = sessionStorage.getItem(ANIM_SESSION_KEY);
+      if (!seen) {
+        sessionStorage.setItem(ANIM_SESSION_KEY, "1");
+        setAnimate(true);
+      }
+    } catch {
+      /* storage unavailable — render without animation */
+    }
+  }, []);
+  return animate;
+}
 
 function DashboardPage() {
-  const { setOpen } = useCommandPalette();
-  const [moreOpen, , toggleMore] = usePersistentDisclosure("dashboard-more-v3", false);
-
   const fetchLayout = useServerFn(getDashboardLayout);
   const saveLayout = useServerFn(saveDashboardLayout);
   const fetchHome = useServerFn(getHomeSummary);
   const fetchHero = useServerFn(getHeroState);
+  const animate = useFirstVisitAnimation();
 
   const { data: layout } = useQuery({
     queryKey: ["dashboard_layout"],
@@ -89,6 +103,10 @@ function DashboardPage() {
     refetchInterval: 60_000,
   });
 
+  // Future dashboard-mode routing (architecture only — no UI branching yet).
+  const _mode = resolveDashboardMode(hero);
+  void _mode;
+
   const [hidden, setHidden] = useState<Set<string>>(new Set());
   useEffect(() => { if (layout) setHidden(new Set(layout.hidden ?? [])); }, [layout]);
 
@@ -107,41 +125,42 @@ function DashboardPage() {
     },
   });
 
+  const Section = animate ? motion.div : "div";
+  const sectionProps = animate
+    ? { initial: { opacity: 0, y: 8 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.3 } }
+    : {};
+
   return (
-    <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
-      <motion.div variants={item}><BetaBanner /></motion.div>
+    <div className="space-y-4">
+      <Section {...(sectionProps as any)}><BetaBanner /></Section>
 
-      {/* 0 — Greeting bar (slim, non-dominant) */}
-      <motion.div variants={item}>
-        <HeaderGreeting onOpenSearch={() => setOpen(true)} />
-      </motion.div>
+      {/* 1 — Hero (greeting embedded) + Performance are tighter together */}
+      <div className="space-y-3">
+        <Section {...(sectionProps as any)}>
+          <DashboardHero state={hero} animate={animate} />
+        </Section>
 
-      {/* 1 — Hero: answers "What should I do next?" with a single primary CTA */}
-      <motion.div variants={item}>
-        <DashboardHero state={hero} />
-      </motion.div>
+        {visible("performance") && (
+          <Section {...(sectionProps as any)}>
+            {isPending || !home ? <KpiSkeleton /> : <PerformanceSnapshot data={home.performance} />}
+          </Section>
+        )}
+      </div>
 
-      <motion.div variants={item}>
+      <Section {...(sectionProps as any)}>
         <OnboardingChecklist />
-      </motion.div>
+      </Section>
 
-      {/* 2 — Performance: answers "How am I performing?" */}
-      {visible("performance") && (
-        <motion.div variants={item}>
-          {isPending || !home ? <KpiSkeleton /> : <PerformanceSnapshot data={home.performance} />}
-        </motion.div>
-      )}
-
-      {/* 3 — Today's Focus: today-only action targets */}
+      {/* 3 — Today's Focus */}
       {visible("focus") && (
-        <motion.div variants={item}>
+        <Section {...(sectionProps as any)}>
           {isPending || !home ? <FocusSkeleton /> : <TodayFocusCard data={home.focus} />}
-        </motion.div>
+        </Section>
       )}
 
-      {/* 4 — Continue working: Recent trades + Watchlist (promoted from behind a fold) */}
+      {/* 4 — Continue working */}
       {(visible("trades") || visible("watchlist")) && (
-        <motion.div variants={item} className="grid gap-4 lg:grid-cols-3">
+        <Section {...(sectionProps as any)} className="grid gap-4 lg:grid-cols-3">
           {visible("trades") && (
             <WidgetShell
               {...wProps("trades")}
@@ -163,44 +182,26 @@ function DashboardPage() {
               <Watchlist />
             </WidgetShell>
           )}
-        </motion.div>
+        </Section>
       )}
 
-      {/* 5 — Action items: things that need attention this week */}
+      {/* 5 — Action items */}
       {visible("actions") && (
-        <motion.div variants={item}>
+        <Section {...(sectionProps as any)}>
           {isPending || !home ? <ActionsSkeleton /> : <ActionItemsList items={home.actions} />}
-        </motion.div>
+        </Section>
       )}
 
-      {/* More insights — coach tips + top mistake, collapsed by default */}
-      {visible("coach") && (
-        <motion.div variants={item} className="space-y-4">
-          <button
-            type="button"
-            onClick={toggleMore}
-            aria-expanded={moreOpen}
-            className="group flex w-full items-center justify-between rounded-lg border border-border/60 bg-card/40 px-4 py-2.5 text-left transition hover:border-primary/40 hover:bg-card/70"
-          >
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Coaching insights</p>
-              <p className="text-[11px] text-muted-foreground/70">AI tips and your most costly mistake</p>
-            </div>
-            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${moreOpen ? "rotate-180" : ""}`} />
-          </button>
-
-          {moreOpen && (
-            <div className="grid gap-4 lg:grid-cols-2">
-              {isPending || !home ? <CoachSkeleton /> : <CoachTipsCard tips={home.tips} />}
-              <TopMistakeWidget />
-            </div>
-          )}
-        </motion.div>
+      {/* 6 — Today's Insight (single card, single CTA) */}
+      {visible("insight") && home && home.tips.length > 0 && (
+        <Section {...(sectionProps as any)}>
+          <TodaysInsight tips={home.tips} />
+        </Section>
       )}
 
-      <motion.div variants={item} className="flex justify-end">
+      <Section {...(sectionProps as any)} className="flex justify-end">
         <CustomizeSheet widgets={SECTIONS} hidden={hidden} onChange={persistHidden} />
-      </motion.div>
+      </Section>
 
       {hidden.size === SECTIONS.length ? (
         <div className="rounded-3xl border border-dashed border-border/60 bg-surface/40 p-10 text-center">
@@ -208,17 +209,17 @@ function DashboardPage() {
           <p className="text-sm text-muted-foreground">All sections are hidden. Open Customize to bring them back.</p>
         </div>
       ) : null}
-    </motion.div>
+    </div>
   );
 }
 
 function FocusSkeleton() {
-  return <div className="h-48 rounded-3xl border border-border/40 bg-card/40 animate-shimmer" />;
+  return <div className="h-40 rounded-3xl border border-border/40 bg-card/40 animate-shimmer" />;
 }
 function KpiSkeleton() {
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-      {Array.from({ length: 5 }).map((_, i) => (
+    <div className="grid gap-3 md:grid-cols-3">
+      {Array.from({ length: 3 }).map((_, i) => (
         <div key={i} className="h-24 rounded-2xl border border-border/40 bg-card/40 animate-shimmer" />
       ))}
     </div>
@@ -229,15 +230,6 @@ function ActionsSkeleton() {
     <div className="grid gap-3 md:grid-cols-2">
       {Array.from({ length: 4 }).map((_, i) => (
         <div key={i} className="h-20 rounded-2xl border border-border/40 bg-card/40 animate-shimmer" />
-      ))}
-    </div>
-  );
-}
-function CoachSkeleton() {
-  return (
-    <div className="grid gap-3 md:grid-cols-2">
-      {Array.from({ length: 2 }).map((_, i) => (
-        <div key={i} className="h-28 rounded-2xl border border-border/40 bg-card/40 animate-shimmer" />
       ))}
     </div>
   );
