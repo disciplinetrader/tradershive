@@ -13,10 +13,8 @@ export function PerformanceSnapshot({ data }: Props) {
   const kpis = [
     { key: "todayR", label: "Today", value: fmtR(data.todayR), trend: signOf(data.todayR), sub: `${data.tradesToday} trade${data.tradesToday === 1 ? "" : "s"}`, icon: Activity },
     { key: "weekR", label: "This week", value: fmtR(data.weekR), trend: signOf(data.weekDeltaR), sub: fmtDelta(data.weekDeltaR, "vs last wk"), icon: TrendingUp },
-    { key: "monthR", label: "This month", value: fmtR(data.monthR), trend: signOf(data.monthR), sub: "Rolling MTD", icon: Sigma },
     { key: "winRate", label: "Win rate", value: `${data.winRate.toFixed(0)}%`, trend: data.winRate >= 50 ? "up" as const : "down" as const, sub: "Last 30 days", icon: Percent },
     { key: "profitFactor", label: "Profit factor", value: data.profitFactor > 0 ? data.profitFactor.toFixed(2) : "—", trend: data.profitFactor >= 1.5 ? "up" as const : data.profitFactor >= 1 ? "flat" as const : "down" as const, sub: "Gross win ÷ loss", icon: Sigma },
-    { key: "avgR", label: "Avg R", value: fmtR(data.avgR), trend: signOf(data.avgR), sub: "Per closed trade", icon: TrendingUp },
     { key: "drawdown", label: "Current DD", value: `−${data.currentDrawdownR.toFixed(2)}R`, trend: data.currentDrawdownR >= 3 ? "down" as const : "flat" as const, sub: "Peak-to-trough", icon: ShieldAlert },
   ];
 
@@ -24,14 +22,14 @@ export function PerformanceSnapshot({ data }: Props) {
     <section className="space-y-3">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Performance snapshot</h2>
-          <p className="text-[11px] text-muted-foreground/80">Live from your closed trades — no manual input.</p>
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Performance</h2>
+          <p className="text-[11px] text-muted-foreground/80">Live from your closed trades.</p>
         </div>
       </div>
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-7"
+        className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5"
       >
         {kpis.map((k) => (
           <div key={k.key} className="rounded-2xl border border-border/50 bg-card/60 p-4 backdrop-blur transition hover:border-primary/30 hover:bg-card/80">
