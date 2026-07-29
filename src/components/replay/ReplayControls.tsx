@@ -38,8 +38,12 @@ const SHORTCUTS: Array<[string, string]> = [
   ["Space", "Play / Pause"],
   ["← / →", "Step 1 candle"],
   ["Shift + ← / →", "Skip 10 candles"],
+  ["+ / -", "Faster / slower playback"],
   ["B / Shift+B", "Next / previous bookmark"],
   ["T / Shift+T", "Next / previous trade"],
+  ["M", "Bookmark current candle"],
+  ["S", "Snapshot chart"],
+  ["F", "Fast-forward to next trade"],
   ["?", "Show this help"],
   ["Esc", "Close dialogs · exit focus"],
 ];
