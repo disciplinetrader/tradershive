@@ -77,9 +77,11 @@ export function ReplayControls() {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement;
       if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
-      if (e.code === "Space") { e.preventDefault(); toggle(); }
+      else if (e.code === "Space") { e.preventDefault(); toggle(); }
       else if (e.code === "ArrowRight") { e.shiftKey ? skip(10) : step(1); }
       else if (e.code === "ArrowLeft") { e.shiftKey ? skip(-10) : step(-1); }
+      else if (e.key === "." && !e.shiftKey && !e.metaKey && !e.ctrlKey) { e.preventDefault(); step(1); }
+      else if (e.key === "," && !e.shiftKey && !e.metaKey && !e.ctrlKey) { e.preventDefault(); step(-1); }
       else if (e.key === "b") { jumpTo("next_bookmark"); }
       else if (e.key === "B") { jumpTo("prev_bookmark"); }
       else if (e.key === "t") { jumpTo("next_trade"); }
@@ -89,6 +91,7 @@ export function ReplayControls() {
         e.preventDefault();
         addCheckpoint("custom", "Bookmark");
       }
+
       else if (e.key === "s" || e.key === "S") {
         e.preventDefault();
         // Reuse the workspace snapshot pipeline set up in replay.session.tsx.
