@@ -7,6 +7,7 @@
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { MessageSquarePlus } from "lucide-react";
+import { useRouterState } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 import { FeedbackDialog, type FeedbackType } from "./FeedbackDialog";
 
