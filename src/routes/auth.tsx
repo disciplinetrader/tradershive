@@ -305,10 +305,12 @@ function LoginForm({ onForgot }: { onForgot: () => void }) {
 type SignupSuccess = { email: string };
 
 function RegisterForm() {
+  const navigate = useNavigate();
   const [step, setStep] = useState<1 | 2>(1);
   const [showPw, setShowPw] = useState(false);
   const [success, setSuccess] = useState<SignupSuccess | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+
 
   const detectedTz = detectTimezone();
   const timezoneOptions = useMemo(() => getTimezoneOptions(), []);
@@ -370,11 +372,11 @@ function RegisterForm() {
 
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: values.email,
       password: values.password,
       options: {
-        emailRedirectTo: `${window.location.origin}/onboarding`,
+        emailRedirectTo: `${window.location.origin}/verify-email`,
         data: {
           username: values.username,
           display_name: `${values.first_name} ${values.last_name}`.trim(),
@@ -395,8 +397,17 @@ function RegisterForm() {
       return;
     }
     clearSignupDraft();
+    // Beta: email confirmation is disabled, so signUp returns an active session.
+    // Auto-login the user straight into onboarding and skip the "check your inbox" screen.
+    if (data?.session || data?.user) {
+      toast.success(`Welcome to ${APP_NAME}`);
+      await navigate({ to: "/onboarding", replace: true });
+      return;
+    }
+    // Fallback (should not happen while auto-confirm is on): show the legacy verify screen.
     setSuccess({ email: values.email });
   });
+
 
   if (success) {
     return (
