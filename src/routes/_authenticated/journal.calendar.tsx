@@ -67,7 +67,7 @@ function JournalCalendar() {
           icon={CalendarDays}
           title="No trading days yet"
           description="Once you log trades, this calendar shows P&L, discipline and grade for every day you traded."
-          action={{ label: "Go to trades", to: "/journal/trades" }}
+          action={{ label: "Go to trades", href: "/journal/trades" }}
         />
       </GlassCard>
     );
