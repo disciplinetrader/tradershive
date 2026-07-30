@@ -437,12 +437,17 @@ export function hitTest(d: Drawing, c: ChartCoords, px: number, py: number): boo
   const pts = project(d, c);
   const p0 = pts[0], p1 = pts[1], p2 = pts[2];
   switch (d.kind) {
-    case "horizontal_line":
-      return !!p0 && Math.abs(py - p0.y) < HIT_TOLERANCE;
+    case "horizontal_line": {
+      const y = rowOf(d, c);
+      return y != null && Math.abs(py - y) < HIT_TOLERANCE;
+    }
     case "horizontal_ray":
       return !!p0 && Math.abs(py - p0.y) < HIT_TOLERANCE && px >= p0.x - HIT_TOLERANCE;
-    case "vertical_line":
-      return !!p0 && Math.abs(px - p0.x) < HIT_TOLERANCE;
+    case "vertical_line": {
+      const x = columnOf(d, c);
+      return x != null && Math.abs(px - x) < HIT_TOLERANCE;
+    }
+
     case "trend_line":
     case "arrow":
     case "measure":
