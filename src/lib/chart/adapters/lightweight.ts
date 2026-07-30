@@ -349,13 +349,29 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
       } else if (candles.length && keepFrom != null && keepTo != null && barStep !== prevStep) {
         // Timeframe changed (bar spacing differs) → restore the same time
         // window so drawings anchored to those timestamps stay in view.
-        const from = timeToLogical(keepFrom);
-        const to = timeToLogical(keepTo);
-        if (from != null && to != null && to > from) {
-          try { ts.setVisibleLogicalRange({ from: from as Logical, to: to as Logical }); }
-          catch { /* range rejected — leave as-is */ }
+        const first = barTimes[0];
+        const last = barTimes[barTimes.length - 1];
+        const margin = barStep * 20;
+        if (keepTo < first || keepFrom > last) {
+          // The previous window doesn't overlap the newly loaded history
+          // (e.g. a low timeframe simply can't reach that far back) — show
+          // the available data instead of an almost-empty viewport.
+          try { ts.fitContent(); } catch { /* ignore */ }
+        } else {
+          // Clamp to the loaded history (plus a small margin) so a wide window
+          // from a higher timeframe can't leave the chart looking empty.
+          const clampedFrom = Math.max(keepFrom, first - margin);
+          const clampedTo = Math.min(Math.max(keepTo, clampedFrom + barStep * 30), last + margin);
+          const from = timeToLogical(clampedFrom);
+          const to = timeToLogical(clampedTo);
+          if (from != null && to != null && to > from) {
+            try { ts.setVisibleLogicalRange({ from: from as Logical, to: to as Logical }); }
+            catch { /* range rejected — leave as-is */ }
+          }
         }
       }
+
+
       // Safety: if the primitive lost its host (series rebuilt), re-attach so
       // saved drawings are repainted against the freshly loaded series.
       if (!requestPrimitiveUpdate) attachDrawings();
@@ -609,6 +625,16 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
       return await new Promise<Blob | null>((r) => canvas.toBlob((b) => r(b), "image/png"));
     },
     fitContent() { resizeToContainer(); chart.timeScale().fitContent(); },
+    getVisibleTimeRange() {
+      if (!barTimes.length) return null;
+      const range = chart.timeScale().getVisibleLogicalRange();
+      if (!range) return null;
+      const from = logicalToTime(Number(range.from));
+      const to = logicalToTime(Number(range.to));
+      if (from == null || to == null || !(to > from)) return null;
+      return { from, to };
+    },
+
     resetPriceScale() { chart.priceScale("right").applyOptions({ autoScale: true }); },
     zoomBy(factor: number) {
       try {

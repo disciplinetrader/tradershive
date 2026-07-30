@@ -52,6 +52,9 @@ export interface ChartAdapter {
   /** Screenshot the current viewport as PNG. */
   screenshot(): Promise<Blob | null>;
   fitContent(): void;
+  /** Currently visible window expressed in timestamps (ms), if known. */
+  getVisibleTimeRange?(): { from: number; to: number } | null;
+
   resetPriceScale(): void;
   /** Zoom around the current visible-range centre. factor >1 = zoom in. */
   zoomBy?(factor: number): void;
