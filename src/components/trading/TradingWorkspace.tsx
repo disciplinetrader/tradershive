@@ -963,7 +963,16 @@ function TradingWorkspaceInner() {
         <SymbolSearch open={symbolSearchOpen} onOpenChange={setSymbolSearchOpen} />
         <AlertsDialog open={alertsOpen} onOpenChange={setAlertsOpen} symbol={symbol} />
 
+        {drawingMenu && (
+          <DrawingContextMenu
+            store={drawingStore}
+            menu={drawingMenu}
+            onClose={closeDrawingMenu}
+            revision={drawingRevision}
+          />
+        )}
       </div>
+
     </TooltipProvider>
   );
 }
