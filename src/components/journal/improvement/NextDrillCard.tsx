@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/use-auth";
 import type { JournalEntry } from "@/lib/journal/api";
 import { CONFIDENCE_LABEL, modeLabel, type DrillRecommendation } from "@/lib/journal/improvement";
 import { acceptDrill, homeworkKeys } from "@/lib/journal/homework";
