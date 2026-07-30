@@ -181,7 +181,7 @@ function Workspace() {
               </ReplayChart>
 
               {chartTrading && prefs.ticketOpen ? (
-                <FloatingOrderTicket className="absolute right-3 top-[108px] z-30" />
+                <FloatingOrderTicket className="absolute bottom-3 right-3 z-30" />
               ) : null}
 
               {prefs.hudVisible ? (
