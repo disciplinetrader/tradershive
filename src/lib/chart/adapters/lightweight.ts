@@ -318,17 +318,47 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
     kind: "lightweight-charts",
     setCandles(candles) {
       resizeToContainer();
+
+      // Preserve the visible *time* window across data swaps. Logical indices
+      // mean different things on different timeframes, so keeping the raw
+      // logical range would scroll the user (and every time-anchored drawing)
+      // off screen when the timeframe changes — the drawing is still stored,
+      // it just ends up outside the viewport. Translate range → time with the
+      // OLD bars, then time → range with the NEW bars.
+      const ts = chart.timeScale();
+      const prevStep = barStep;
+      let keepFrom: number | null = null;
+      let keepTo: number | null = null;
+      if (barTimes.length) {
+        const range = ts.getVisibleLogicalRange();
+        if (range) {
+          keepFrom = logicalToTime(Number(range.from));
+          keepTo = logicalToTime(Number(range.to));
+        }
+      }
+
       recomputeBars(candles);
       applyCandles(priceSeries, currentType, candles);
+
       // Only fit on the very first data push. Later updates must preserve
       // the user's zoom/pan — otherwise every tick or indicator toggle
       // snaps the range back to fit-all.
       if (!didInitialFit && candles.length) {
         chart.timeScale().fitContent();
         didInitialFit = true;
+      } else if (candles.length && keepFrom != null && keepTo != null && barStep !== prevStep) {
+        // Timeframe changed (bar spacing differs) → restore the same time
+        // window so drawings anchored to those timestamps stay in view.
+        const from = timeToLogical(keepFrom);
+        const to = timeToLogical(keepTo);
+        if (from != null && to != null && to > from) {
+          try { ts.setVisibleLogicalRange({ from: from as Logical, to: to as Logical }); }
+          catch { /* range rejected — leave as-is */ }
+        }
       }
       requestPrimitiveUpdate?.();
     },
+
 
     updateLastCandle(candle) {
       try { updateLast(priceSeries, currentType, [candle]); } catch { /* series torn down */ }
