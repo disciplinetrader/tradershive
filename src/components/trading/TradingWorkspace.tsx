@@ -231,6 +231,14 @@ function TradingWorkspaceInner() {
     const base: IndicatorConfig[] = INDICATOR_TOGGLES.filter((i) => enabled[i.key]).map((i) => ({
       id: i.key, key: i.key, params: i.params, pane: i.pane, visible: true,
     }));
+    // Volume is always declared, with visible reflecting the toggle. Emitting
+    // an explicit `visible: false` (instead of dropping the entry) is what
+    // lets the chart distinguish "turned off" from "not configured" and
+    // actually remove the histogram.
+    if (!enabled.volume) {
+      base.push({ id: "volume", key: "volume", params: {}, pane: "sub", visible: false });
+    }
+
     if (smcOn) {
       base.push({
         id: "smc", key: "smc", pane: "price", visible: true,
