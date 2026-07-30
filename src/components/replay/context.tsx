@@ -690,12 +690,18 @@ export function ReplayProvider({ id, children }: { id: string; children: ReactNo
     async (tid: string) => {
       const t = trades.find((x) => x.id === tid);
       if (!t) return;
-      await updateTradeFn({ data: { id: tid, stop_loss: t.entry_price } });
-      await qc.invalidateQueries({ queryKey: ["replay", id] });
-      toast.success("Break-even set");
+      try {
+        await updateTradeFn({ data: { id: tid, stop_loss: t.entry_price } });
+        await qc.invalidateQueries({ queryKey: ["replay", id] });
+        toast.success("Break-even set");
+      } catch (err) {
+        console.warn("[replay] break-even failed", err);
+        toast.error("Couldn't set break-even — the position may already be closed.");
+      }
     },
     [trades, updateTradeFn, qc, id],
   );
+
 
   /** Enable/disable a trailing stop at `distance` price units. Pass null to clear. */
   const setTrailingStop = useCallback((tid: string, distance: number | null) => {
@@ -740,11 +746,19 @@ export function ReplayProvider({ id, children }: { id: string; children: ReactNo
 
   const modifyTrade = useCallback(
     async (tid: string, patch: { stop_loss?: number | null; take_profit?: number | null }) => {
-      await updateTradeFn({ data: { id: tid, ...patch } });
-      await qc.invalidateQueries({ queryKey: ["replay", id] });
+      try {
+        await updateTradeFn({ data: { id: tid, ...patch } });
+        await qc.invalidateQueries({ queryKey: ["replay", id] });
+      } catch (err) {
+        // Never let a failed level drag escalate into a full-screen error overlay.
+        console.warn("[replay] modify trade failed", err);
+        toast.error("Couldn't update the position — it may already be closed.");
+        await qc.invalidateQueries({ queryKey: ["replay", id] });
+      }
     },
     [updateTradeFn, qc, id],
   );
+
 
   const addNote = useCallback(
     async (body: string) => {
