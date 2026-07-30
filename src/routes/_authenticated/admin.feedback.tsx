@@ -241,7 +241,10 @@ function FeedbackDetailDialog({
 
   useMemo(() => {
     if (!row) { setNotes([]); return; }
-    void notesFn({ data: { parent_type: parentType, parent_id: row.id } }).then((r) => setNotes(r as any));
+    void notesFn({ data: { parent_type: parentType, parent_id: row.id } })
+      .then((r) => setNotes(r as any))
+      .catch(() => setNotes([]));
+
   }, [row?.id]);
 
   if (!row) return null;
