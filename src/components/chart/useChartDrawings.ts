@@ -16,7 +16,7 @@ import {
   anchorAt, drawDrawing, hitTest, moveAnchor, translateDrawing,
 } from "@/lib/chart/drawings/render";
 import {
-  FREEHAND_KINDS, SINGLE_CLICK_KINDS, sanitizeDrawingText,
+  FREEHAND_KINDS, SINGLE_CLICK_KINDS, sanitizeDrawingText, tickFromPrecision,
   type Drawing, type DrawingKind, type DrawingPoint, type DrawingStyle, type ToolId,
 } from "@/lib/chart/drawings/types";
 
