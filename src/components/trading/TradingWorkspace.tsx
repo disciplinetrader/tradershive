@@ -22,6 +22,10 @@ import { SymbolSearch } from "@/components/paper-trading/SymbolSearch";
 import { AlertsDialog } from "@/components/chart/AlertsDialog";
 
 import { ChartEngine } from "@/components/chart/ChartEngine";
+import { DrawingToolRail } from "@/components/chart/DrawingToolRail";
+import { useChartDrawings } from "@/components/chart/useChartDrawings";
+import { DrawingStore } from "@/lib/chart/drawings/store";
+import type { ToolId } from "@/lib/chart/drawings/types";
 import { DEFAULT_CHART_SETTINGS } from "@/lib/chart/constants";
 import type { ChartSettings, ChartType, IndicatorConfig, IndicatorKey } from "@/lib/chart/types";
 import {
@@ -165,6 +169,16 @@ function TradingWorkspaceInner() {
   const [shortcutsHelp, setShortcutsHelp] = useState(false);
   const [multiPanes, setMultiPanes] = useState<MultiChartPane[]>([]);
   const [alertsOpen, setAlertsOpen] = useState(false);
+  const [candles, setCandles] = useState<import("@/lib/market-data/types").Candle[]>([]);
+
+  // ── Drawings: chart-anchored objects (time/price), not screen pixels ──
+  const drawingStoreRef = useRef<DrawingStore | null>(null);
+  if (!drawingStoreRef.current) drawingStoreRef.current = new DrawingStore();
+  const drawingStore = drawingStoreRef.current;
+  const [activeTool, setActiveTool] = useState<ToolId>("cursor");
+  const [magnet, setMagnet] = useState(false);
+  const [drawingsLocked, setDrawingsLocked] = useState(false);
+
 
 
   // Rehydrate persisted UI state once localStorage has been read.
@@ -188,8 +202,22 @@ function TradingWorkspaceInner() {
     setAdapter((prev) => (prev === api.adapter ? prev : api.adapter));
     setTick((t) => t + 1);
   }, []);
+  const handleAdapter = useCallback((a: import("@/lib/chart/adapter").ChartAdapter | null) => {
+    setAdapter((prev) => (prev === a ? prev : a));
+  }, []);
+  const handleCandles = useCallback((rows: import("@/lib/market-data/types").Candle[]) => {
+    setCandles(rows);
+  }, []);
+
+  // DOM overlays (position lines, planner) re-project whenever the chart's
+  // geometry changes — zoom, pan, price-scale drag or resize.
+  useEffect(() => {
+    if (!adapter?.subscribeGeometry) return;
+    return adapter.subscribeGeometry(() => setTick((t) => t + 1));
+  }, [adapter]);
 
   const activeTf: Timeframe = (CHART_TIMEFRAMES as string[]).includes(timeframe) ? (timeframe as Timeframe) : "1H";
+
 
   const chartSettings: ChartSettings = useMemo(
     () => ({ ...DEFAULT_CHART_SETTINGS, symbol, market, timeframe: activeTf, chartType }),
@@ -262,6 +290,35 @@ function TradingWorkspaceInner() {
   const bid = quote?.bid ?? last;
   const ask = quote?.ask ?? last;
   const spread = quote?.spread ?? Math.max(0, ask - bid);
+
+  // Drawings are scoped per symbol so switching instruments swaps the set.
+  useEffect(() => { drawingStore.setScope(symbol); }, [drawingStore, symbol]);
+
+  const { drawings: drawingRevision } = useChartDrawings({
+    adapter,
+    store: drawingStore,
+    activeTool,
+    setActiveTool,
+    magnet,
+    candles,
+    pricePrecision: decimals,
+    enabled: !drawingsHidden,
+    onPositionDrawn: (d) => {
+      emitTradeIntent({
+        kind: "prefill",
+        side: d.kind === "long_position" ? "long" : "short",
+        orderType: "market",
+        price: d.points[0].price,
+        tp: d.points[1].price,
+        sl: d.points[2].price,
+      });
+      setRightOpen(true);
+      setActiveTab("order");
+      toast.success("Position tool sent to the Order Panel");
+    },
+  });
+
+
 
   // Actions
   const closeFn = useServerFn(closeTrade);
@@ -392,10 +449,30 @@ function TradingWorkspaceInner() {
           <div className="mx-1 hidden h-5 w-px bg-border/60 md:block" />
 
           {/* Timeframe */}
+          {/* Favourite timeframes — one click, always visible on wide screens */}
+          <div className="hidden items-center gap-0.5 rounded-md border border-border/60 bg-background/50 p-0.5 lg:flex">
+            {FAVOURITE_TIMEFRAMES.map((tf) => (
+              <Tooltip key={tf}>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setTimeframe(tf)}
+                    className={cn(
+                      "rounded px-1.5 py-0.5 text-[11px] font-semibold tabular-nums transition",
+                      activeTf === tf ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    )}
+                    aria-pressed={activeTf === tf}
+                  >{tf}</button>
+                </TooltipTrigger>
+                <TooltipContent className="text-xs">{tf} timeframe</TooltipContent>
+              </Tooltip>
+            ))}
+          </div>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="h-7 gap-1.5 px-2 text-[11px] font-semibold">
-                <Clock className="h-3.5 w-3.5" /> {activeTf}
+                <Clock className="h-3.5 w-3.5" />
+                <span className="lg:hidden">{activeTf}</span>
                 <ChevronDown className="h-3 w-3 opacity-60" />
               </Button>
             </DropdownMenuTrigger>
@@ -416,6 +493,7 @@ function TradingWorkspaceInner() {
               </div>
             </DropdownMenuContent>
           </DropdownMenu>
+
 
           {/* Chart type */}
           <DropdownMenu>
@@ -546,19 +624,31 @@ function TradingWorkspaceInner() {
 
         {/* ── Main workspace: chart dominates; rails collapse ───────────── */}
         <div className="flex min-h-0 flex-1">
-          {/* Left tool rail — icons only, collapsible */}
+          {/* Left tool rail — drawing tools first, then chart utilities */}
           {!focusMode && (
             <nav
               aria-label="Chart tools"
               className={cn(
-                "hidden shrink-0 flex-col items-center gap-1 border-r border-border/40 bg-card/20 py-2 md:flex",
+                "hidden shrink-0 flex-col items-center gap-1 overflow-y-auto border-r border-border/40 bg-card/20 py-2 md:flex",
                 leftRailOpen ? "w-11" : "w-8",
               )}
             >
               {leftRailOpen && (
                 <>
+                  <DrawingToolRail
+                    store={drawingStore}
+                    activeTool={activeTool}
+                    onToolChange={setActiveTool}
+                    magnet={magnet}
+                    onMagnetChange={setMagnet}
+                    hidden={drawingsHidden}
+                    onHiddenChange={setDrawingsHidden}
+                    locked={drawingsLocked}
+                    onLockedChange={setDrawingsLocked}
+                    revision={drawingRevision}
+                  />
+                  <div className="my-1 h-px w-6 bg-border/60" />
                   <RailButton label="Plan trade (T)" icon={Target} active={plannerActive} onClick={() => setPlannerActive((v) => !v)} />
-                  <RailButton label={drawingsHidden ? "Show overlays (H)" : "Hide overlays (H)"} icon={drawingsHidden ? EyeOff : Eye} onClick={() => setDrawingsHidden((v) => !v)} />
                   <RailButton label="Alerts" icon={Bell} active={activeTab === "alerts"} onClick={() => { setRightOpen(true); setActiveTab("alerts"); }} />
                   <RailButton label="Replay Studio" icon={Play} onClick={() => { window.location.href = "/replay"; }} />
                   <RailButton label="Screenshot (P)" icon={Camera} onClick={screenshot} />
@@ -576,6 +666,7 @@ function TradingWorkspaceInner() {
               </button>
             </nav>
           )}
+
 
           <div className="relative flex min-h-[calc(100dvh-4.5rem)] min-w-0 flex-1 flex-col border-r border-border/40">
             {/* Compact active-indicator strip — only shown when indicators
@@ -596,7 +687,9 @@ function TradingWorkspaceInner() {
             <div className="relative min-h-0 flex-1">
               <ChartEngine
                 settings={chartSettings} indicators={indicators}
-                onQuote={setQuote} onReady={handleReady} className="absolute inset-0"
+                onQuote={setQuote} onReady={handleReady}
+                onAdapter={handleAdapter} onCandles={handleCandles}
+                className="absolute inset-0"
               >
                 {!drawingsHidden && (
                   <>

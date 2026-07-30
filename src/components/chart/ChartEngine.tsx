@@ -12,6 +12,10 @@ interface Props {
   indicators: IndicatorConfig[];
   onQuote?: (q: Quote | null) => void;
   onReady?: (api: ChartHandle) => void;
+  /** Receives the live renderer adapter (or null on unmount). */
+  onAdapter?: (adapter: ChartAdapter | null) => void;
+  /** Receives the loaded candle history — used by magnet snapping. */
+  onCandles?: (candles: Candle[]) => void;
   /**
    * Renderer factory — defaults to lightweight-charts. Swap in a TradingView
    * Advanced Charts factory here (or via context) to migrate without touching
@@ -35,11 +39,12 @@ export interface ChartHandle {
  * subscription lifecycle; delegates every draw call to the adapter.
  */
 export const ChartEngine = forwardRef<ChartHandle, Props>(function ChartEngine(
-  { settings, indicators, onQuote, onReady, adapter: adapterFactory = createLightweightAdapter, className, children },
+  { settings, indicators, onQuote, onReady, onAdapter, onCandles, adapter: adapterFactory = createLightweightAdapter, className, children },
   ref,
 ) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const adapterRef = useRef<ChartAdapter | null>(null);
+  const [adapterInstance, setAdapterInstance] = useState<ChartAdapter | null>(null);
   const [candles, setCandles] = useState<Candle[]>([]);
   const [quote, setQuote] = useState<Quote | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -52,9 +57,13 @@ export const ChartEngine = forwardRef<ChartHandle, Props>(function ChartEngine(
     if (!hostRef.current) return;
     const a = adapterFactory({ container: hostRef.current, settings });
     adapterRef.current = a;
-    return () => { a.destroy(); adapterRef.current = null; };
+    setAdapterInstance(a);
+    return () => { a.destroy(); adapterRef.current = null; setAdapterInstance(null); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => { onAdapter?.(adapterInstance); }, [adapterInstance, onAdapter]);
+  useEffect(() => { onCandles?.(candles); }, [candles, onCandles]);
 
   // Settings & chart type
   useEffect(() => { adapterRef.current?.applySettings(settings); }, [settings]);

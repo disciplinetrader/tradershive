@@ -13,6 +13,7 @@
  */
 
 import type { Candle } from "@/lib/market-data/types";
+import type { ChartCoords } from "./drawings/types";
 import type { ChartSettings, ChartType, IndicatorConfig } from "./types";
 
 export interface ChartMountOptions {
@@ -73,9 +74,34 @@ export interface ChartAdapter {
    */
   setExternalMarkers(markers: ExternalMarker[]): void;
 
+  /**
+   * Register a chart-native drawing source. The renderer paints it as part
+   * of the chart's own paint cycle, so every object is re-projected from
+   * time/price on every zoom, pan, price-scale change and resize.
+   */
+  setDrawingsSource?(source: DrawingsSource | null): void;
+  /** Ask the renderer to repaint the drawing layer (state changed). */
+  requestDrawingsRepaint?(): void;
+  /** Live coordinate converters for hit-testing and pointer interaction. */
+  getCoords?(): ChartCoords | null;
+  /** The DOM element owning the chart canvases (for pointer/keyboard). */
+  chartElement?(): HTMLElement | null;
+  /** Price formatter used by drawing labels. */
+  setPriceFormatter?(fn: (price: number) => string): void;
+  /** Notified whenever chart geometry changes (range, scale, size). */
+  subscribeGeometry?(cb: () => void): () => void;
+  /** Nearest candle to a timestamp — used by magnet mode. */
+  setCandleAccessor?(fn: () => { time: number; open: number; high: number; low: number; close: number }[]): void;
+
   /** Tear down and release GPU/canvas resources. */
   destroy(): void;
 }
+
+export interface DrawingsSource {
+  draw(ctx: CanvasRenderingContext2D, coords: ChartCoords): void;
+}
+
+export type { ChartCoords } from "./drawings/types";
 
 export interface PriceLineOptions {
   price: number;
