@@ -495,12 +495,27 @@ export function anchorAt(d: Drawing, c: ChartCoords, px: number, py: number): An
 }
 
 export function translateDrawing(d: Drawing, dTime: number, dPrice: number): DrawingPoint[] {
-  return d.points.map((p) => ({ time: p.time + dTime, price: p.price + dPrice }));
+  // Axis-locked objects ignore movement on the axis they don't own, so a
+  // Horizontal Line only ever slides vertically and a Vertical Line only
+  // ever slides horizontally.
+  const lock = axisLockFor(d.kind);
+  const dt = lock === "price" ? 0 : dTime;
+  const dp = lock === "time" ? 0 : dPrice;
+  return d.points.map((p) => ({ time: p.time + dt, price: p.price + dp }));
 }
 
 export function moveAnchor(d: Drawing, anchorId: string, next: DrawingPoint): DrawingPoint[] {
   const idx = Number(anchorId.slice(1));
+  const lock = axisLockFor(d.kind);
+  if (lock !== "both") {
+    const base = d.points[idx] ?? d.points[0];
+    const constrained: DrawingPoint = lock === "price"
+      ? { time: base.time, price: next.price }
+      : { time: next.time, price: base.price };
+    return d.points.map((p, i) => (i === idx ? constrained : { ...p }));
+  }
   const points = d.points.map((p, i) => (i === idx ? { ...next } : { ...p }));
+
   if (d.kind === "long_position" || d.kind === "short_position") {
     // Entry drag carries stop/target with it; TP/SL drags keep the shared end time.
     if (idx === 0) {
