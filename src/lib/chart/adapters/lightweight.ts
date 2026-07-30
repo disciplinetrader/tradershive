@@ -356,7 +356,11 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
           catch { /* range rejected — leave as-is */ }
         }
       }
+      // Safety: if the primitive lost its host (series rebuilt), re-attach so
+      // saved drawings are repainted against the freshly loaded series.
+      if (!requestPrimitiveUpdate) attachDrawings();
       requestPrimitiveUpdate?.();
+
     },
 
 
