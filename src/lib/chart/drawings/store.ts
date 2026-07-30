@@ -183,15 +183,19 @@ export class DrawingStore {
 
   private offsetCopy(src: Drawing): Drawing {
     const span = src.points.length > 1 ? Math.abs(src.points[1].time - src.points[0].time) : 0;
-    const shift = span || 0;
+    // Axis-anchored lines are single-point, so nudge them along their own axis
+    // instead of leaving the copy exactly under the original.
+    const shift = src.kind === "vertical_line" && !span ? 0 : span;
+    const priceNudge = src.kind === "horizontal_line" ? Math.abs(src.points[0].price) * 0.002 : 0;
     return {
       ...src,
       id: newId(),
       createdAt: Date.now(),
-      points: src.points.map((p) => ({ time: p.time + shift, price: p.price })),
+      points: src.points.map((p) => ({ time: p.time + shift, price: p.price + priceNudge })),
       style: { ...src.style },
     };
   }
+
 
   undo() {
     const prev = this.undoStack.pop();
