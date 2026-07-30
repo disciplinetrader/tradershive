@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
-import { Copy, Eye, EyeOff, Lock, LockOpen, Settings2, Trash2 } from "lucide-react";
+import { Copy, Eye, EyeOff, Lock, LockOpen, Settings2, Tag, Trash2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type { DrawingStore } from "@/lib/chart/drawings/store";
+import { LABELLED_KINDS } from "@/lib/chart/drawings/types";
+
 
 const COLORS = ["#38bdf8", "#22c55e", "#ef4444", "#f59e0b", "#a855f7", "#e2e8f0"];
 const WIDTHS = [1, 2, 3];
