@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useReplay } from "./context";
 import { createLightweightAdapter } from "@/lib/chart/adapters/lightweight";
 import type { ChartAdapter, PriceLineHandle } from "@/lib/chart/adapter";
@@ -10,6 +10,13 @@ import { useOptionalDrawings } from "@/features/replay/drawings/store";
 type Props = {
   onCapture?: (dataUrl: string) => void;
   onAdapterReady?: (adapter: ChartAdapter | null) => void;
+  /**
+   * Draw native entry/SL/TP price lines for open trades. Turned off when the
+   * ChartOrderLayer is mounted so the two don't render the same level twice.
+   */
+  showPositionLines?: boolean;
+  /** Overlays rendered inside the chart box (order layer, HUD chips…). */
+  children?: ReactNode;
 };
 
 /**
@@ -26,7 +33,7 @@ type Props = {
  * when wrapped in a DrawingProvider, an overlay DrawingLayer for trend lines,
  * horizontal rays, rectangles, and Fibonacci retracements.
  */
-export function ReplayChart({ onCapture, onAdapterReady }: Props) {
+export function ReplayChart({ onCapture, onAdapterReady, showPositionLines = true, children }: Props) {
   const { session, candles, cursorIdx, openTrades, bookmarks, playing, speed } = useReplay();
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const hostRef = useRef<HTMLDivElement | null>(null);
@@ -102,6 +109,7 @@ export function ReplayChart({ onCapture, onAdapterReady }: Props) {
     if (!a) return;
     priceLinesRef.current.forEach((l) => l.remove());
     const next: PriceLineHandle[] = [];
+    if (!showPositionLines) { priceLinesRef.current = next; return; }
     const fmt = (n: number) => {
       const abs = Math.abs(n);
       const digits = abs >= 100 ? 2 : abs >= 1 ? 4 : 5;
@@ -122,7 +130,7 @@ export function ReplayChart({ onCapture, onAdapterReady }: Props) {
       }
     }
     priceLinesRef.current = next;
-  }, [openTrades]);
+  }, [openTrades, showPositionLines]);
 
   useEffect(() => {
     const a = adapterRef.current;
@@ -168,6 +176,7 @@ export function ReplayChart({ onCapture, onAdapterReady }: Props) {
     <div ref={wrapperRef} className="relative h-full w-full overflow-hidden rounded-[3px] border border-border bg-card">
       <div ref={hostRef} className="absolute inset-0" />
       {drawingCtx ? <DrawingLayer adapter={adapter} host={wrapperRef.current} /> : null}
+      {children}
       {!candles.length ? (
         <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">Loading candles…</div>
       ) : null}
