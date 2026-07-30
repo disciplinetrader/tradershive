@@ -59,9 +59,8 @@ export function NarrativeNotes({
           <><Check className="h-3 w-3 text-success" /> Saved</>
         ) : autosave.status === "error" ? (
           <span className="flex items-center gap-1 text-danger"><TriangleAlert className="h-3 w-3" /> Not saved</span>
-        ) : (
-          <span>Autosaves as you type</span>
-        )}
+        ) : null}
+
       </div>
 
       <div className="grid gap-2 md:grid-cols-2">
