@@ -306,6 +306,20 @@ function TradingWorkspaceInner() {
   // Drawings are scoped per symbol so switching instruments swaps the set.
   useEffect(() => { drawingStore.setScope(symbol); }, [drawingStore, symbol]);
 
+  // Chart pixel size, so the inline text editor can clamp itself on screen
+  // instead of opening half-off the canvas near an edge.
+  const [chartBounds, setChartBounds] = useState({ width: 0, height: 0 });
+  useEffect(() => {
+    const el = adapter?.chartElement?.();
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const sync = () => setChartBounds({ width: el.clientWidth, height: el.clientHeight });
+    sync();
+    const ro = new ResizeObserver(sync);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [adapter]);
+
+
   const {
     drawings: drawingRevision, menu: drawingMenu, closeMenu: closeDrawingMenu,
     textEditor, commitTextEditor, cancelTextEditor, updateTextEditor,
