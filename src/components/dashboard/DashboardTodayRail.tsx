@@ -41,8 +41,9 @@ export function DashboardTodayRail({ performance, hero }: Props) {
   const challengePct = target > 0 ? Math.max(0, Math.min(100, (profit / target) * 100)) : 0;
 
   return (
-    <div className="flex w-full flex-col gap-3 md:w-[280px] md:shrink-0">
+    <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {/* Today's P&L */}
+
       <Surface>
         <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           Today&rsquo;s P&amp;L
