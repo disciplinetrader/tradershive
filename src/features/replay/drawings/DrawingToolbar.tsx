@@ -22,7 +22,7 @@ export function DrawingToolbar() {
     <aside
       role="toolbar"
       aria-label="Drawing tools"
-      className="flex h-full w-9 shrink-0 flex-col items-center gap-0.5 border-r border-border/60 bg-card/60 py-1 backdrop-blur"
+      className="rx-surface rx-line-r flex h-full w-[38px] shrink-0 flex-col items-center gap-0.5 py-1"
     >
       {TOOLS.map((t) => {
         const Icon = t.icon;

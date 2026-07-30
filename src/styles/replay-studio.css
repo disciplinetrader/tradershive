@@ -1,0 +1,268 @@
+/**
+ * REPLAY STUDIO X — Design System (Phase 0)
+ * ------------------------------------------------------------------
+ * A self-contained token layer for the Replay workspace only. Scoped to
+ * `.rx-root` so the rest of the app keeps its own look. The goal is a
+ * professional desktop trading terminal, NOT a SaaS dashboard:
+ *   · nearly-black surfaces          · hairline borders
+ *   · compact controls               · zero glassmorphism / gradients
+ *   · purple strictly as an accent   · green / red only for trading data
+ */
+
+.rx-root {
+  /* ── Surfaces (nearly black, layered by elevation) ── */
+  --rx-bg: oklch(0.16 0.006 265);
+  --rx-surface-0: oklch(0.175 0.006 265);
+  --rx-surface-1: oklch(0.198 0.007 265);
+  --rx-surface-2: oklch(0.225 0.008 265);
+  --rx-overlay: oklch(0.185 0.007 265 / 0.94);
+
+  /* ── Hairlines ── */
+  --rx-line: oklch(1 0 0 / 0.07);
+  --rx-line-strong: oklch(1 0 0 / 0.13);
+  --rx-hairline: 1px;
+
+  /* ── Text ── */
+  --rx-text: oklch(0.95 0.005 250);
+  --rx-text-dim: oklch(0.72 0.008 250);
+  --rx-text-faint: oklch(0.58 0.008 250);
+
+  /* ── Accent + trading semantics ── */
+  --rx-accent: oklch(0.66 0.19 295);
+  --rx-accent-soft: oklch(0.66 0.19 295 / 0.14);
+  --rx-long: oklch(0.74 0.17 152);
+  --rx-short: oklch(0.66 0.2 22);
+  --rx-warn: oklch(0.79 0.15 85);
+
+  /* ── Spacing scale (compact, 2px base) ── */
+  --rx-space-1: 2px;
+  --rx-space-2: 4px;
+  --rx-space-3: 6px;
+  --rx-space-4: 8px;
+  --rx-space-5: 12px;
+  --rx-space-6: 16px;
+  --rx-space-7: 24px;
+
+  /* ── Radii (sharp terminal corners) ── */
+  --rx-radius-xs: 2px;
+  --rx-radius-sm: 3px;
+  --rx-radius-md: 4px;
+  --rx-radius-lg: 6px;
+  --rx-radius-pill: 999px;
+
+  /* ── Structural heights ── */
+  --rx-toolbar-h: 38px;
+  --rx-timeline-h: 34px;
+  --rx-dock-collapsed-h: 32px;
+  --rx-dock-default-h: 248px;
+  --rx-dock-min-h: 140px;
+  --rx-dock-max-h: 520px;
+  --rx-rail-w: 38px;
+
+  /* ── Control sizes ── */
+  --rx-btn-xs: 20px;
+  --rx-btn-sm: 24px;
+  --rx-btn-md: 28px;
+  --rx-btn-lg: 32px;
+
+  /* ── Typography ── */
+  --rx-font-micro: 9px;
+  --rx-font-xs: 10px;
+  --rx-font-sm: 11px;
+  --rx-font-md: 12px;
+  --rx-font-lg: 14px;
+  --rx-tracking-caps: 0.08em;
+
+  /* ── Motion ── */
+  --rx-dur-fast: 90ms;
+  --rx-dur: 150ms;
+  --rx-dur-slow: 240ms;
+  --rx-ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /* ── Elevation (flat, terminal-grade — no glow) ── */
+  --rx-shadow-float: 0 8px 24px oklch(0 0 0 / 0.55);
+  --rx-shadow-dock: 0 -6px 20px oklch(0 0 0 / 0.4);
+
+  background: var(--rx-bg);
+  color: var(--rx-text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Surfaces ───────────────────────────────────────────────── */
+.rx-surface {
+  background: var(--rx-surface-0);
+}
+.rx-surface-1 {
+  background: var(--rx-surface-1);
+}
+.rx-line-b {
+  border-bottom: var(--rx-hairline) solid var(--rx-line);
+}
+.rx-line-t {
+  border-top: var(--rx-hairline) solid var(--rx-line);
+}
+.rx-line-r {
+  border-right: var(--rx-hairline) solid var(--rx-line);
+}
+.rx-line-l {
+  border-left: var(--rx-hairline) solid var(--rx-line);
+}
+.rx-divider {
+  width: var(--rx-hairline);
+  align-self: stretch;
+  margin-block: 7px;
+  background: var(--rx-line);
+}
+
+/* ── Floating components (transport pill, HUD) ──────────────── */
+.rx-float {
+  background: var(--rx-overlay);
+  border: var(--rx-hairline) solid var(--rx-line-strong);
+  border-radius: var(--rx-radius-lg);
+  box-shadow: var(--rx-shadow-float);
+}
+
+/* ── Buttons ────────────────────────────────────────────────── */
+.rx-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--rx-space-2);
+  height: var(--rx-btn-md);
+  min-width: var(--rx-btn-md);
+  padding-inline: var(--rx-space-3);
+  border-radius: var(--rx-radius-sm);
+  border: var(--rx-hairline) solid transparent;
+  color: var(--rx-text-dim);
+  font-size: var(--rx-font-sm);
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background var(--rx-dur) var(--rx-ease),
+    color var(--rx-dur) var(--rx-ease),
+    border-color var(--rx-dur) var(--rx-ease);
+}
+.rx-btn:hover:not(:disabled) {
+  background: var(--rx-surface-2);
+  color: var(--rx-text);
+}
+.rx-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.rx-btn:focus-visible {
+  outline: none;
+  border-color: var(--rx-accent);
+}
+.rx-btn[data-active="true"] {
+  background: var(--rx-accent-soft);
+  color: var(--rx-text);
+  border-color: oklch(0.66 0.19 295 / 0.35);
+}
+.rx-btn[data-variant="icon"] {
+  padding-inline: 0;
+  width: var(--rx-btn-md);
+}
+.rx-btn[data-size="sm"] {
+  height: var(--rx-btn-sm);
+  min-width: var(--rx-btn-sm);
+  width: auto;
+}
+.rx-btn[data-size="sm"][data-variant="icon"] {
+  width: var(--rx-btn-sm);
+}
+.rx-btn[data-size="lg"] {
+  height: var(--rx-btn-lg);
+  min-width: var(--rx-btn-lg);
+}
+.rx-btn[data-size="lg"][data-variant="icon"] {
+  width: var(--rx-btn-lg);
+}
+.rx-btn[data-tone="accent"] {
+  background: var(--rx-accent);
+  color: oklch(0.99 0 0);
+  border-color: transparent;
+}
+.rx-btn[data-tone="accent"]:hover:not(:disabled) {
+  background: oklch(0.7 0.19 295);
+  color: oklch(0.99 0 0);
+}
+
+/* ── Micro labels / stats ───────────────────────────────────── */
+.rx-caps {
+  font-size: var(--rx-font-micro);
+  text-transform: uppercase;
+  letter-spacing: var(--rx-tracking-caps);
+  color: var(--rx-text-faint);
+  font-weight: 600;
+}
+.rx-value {
+  font-size: var(--rx-font-md);
+  font-weight: 600;
+  color: var(--rx-text);
+  line-height: 1.1;
+}
+.rx-long {
+  color: var(--rx-long);
+}
+.rx-short {
+  color: var(--rx-short);
+}
+.rx-dim {
+  color: var(--rx-text-dim);
+}
+
+/* ── Dock ───────────────────────────────────────────────────── */
+.rx-dock {
+  background: var(--rx-surface-0);
+  border-top: var(--rx-hairline) solid var(--rx-line-strong);
+}
+.rx-dock-tab {
+  height: var(--rx-dock-collapsed-h);
+  padding-inline: var(--rx-space-5);
+  font-size: var(--rx-font-sm);
+  font-weight: 500;
+  color: var(--rx-text-faint);
+  border-bottom: 2px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--rx-space-2);
+  cursor: pointer;
+  transition: color var(--rx-dur) var(--rx-ease);
+}
+.rx-dock-tab:hover {
+  color: var(--rx-text);
+}
+.rx-dock-tab[data-active="true"] {
+  color: var(--rx-text);
+  border-bottom-color: var(--rx-accent);
+}
+
+/* ── Scrollbars inside the studio ───────────────────────────── */
+.rx-root ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.rx-root ::-webkit-scrollbar-thumb {
+  background: var(--rx-line-strong);
+  border-radius: var(--rx-radius-pill);
+}
+.rx-root ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rx-root * {
+    transition-duration: 1ms !important;
+    animation-duration: 1ms !important;
+  }
+}
+
+/* Chart-overlay telemetry: keep legible above candles */
+.rx-hud {
+  text-shadow: 0 1px 3px rgb(0 0 0 / 0.85);
+}
+.rx-hud .rx-value {
+  color: var(--rx-text-strong, #F2F3F5);
+}
