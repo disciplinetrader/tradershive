@@ -40,6 +40,7 @@ import {
   type SectionId,
 } from "@/lib/journal/editor/model";
 import { validateEntry, type ValidationIssue } from "@/lib/journal/editor/validation";
+import { derivedPatch } from "@/lib/journal/derive";
 import type { Narrative } from "@/lib/journal/story";
 import {
   clearLocalDraft,
