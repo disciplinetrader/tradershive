@@ -133,12 +133,16 @@ export function drawDrawing(
 
   switch (d.kind) {
     case "horizontal_line": {
-      if (!p0) break;
+      // Price-only anchor: derived from y(price), never from the stored time.
+      const y = rowOf(d, c);
+      if (y == null) break;
       ctx.beginPath();
-      ctx.moveTo(0, p0.y);
-      ctx.lineTo(c.width, p0.y);
+      ctx.moveTo(0, y);
+      ctx.lineTo(c.width, y);
       ctx.stroke();
-      label(ctx, s.text || c.formatPrice(d.points[0].price), c.width - 80, p0.y - 2, s.color);
+      if (s.showLabel !== false) {
+        label(ctx, s.text || c.formatPrice(d.points[0].price), c.width - 80, y - 2, s.color, s.fontSize);
+      }
       break;
     }
     case "horizontal_ray": {
@@ -147,17 +151,26 @@ export function drawDrawing(
       ctx.moveTo(p0.x, p0.y);
       ctx.lineTo(c.width, p0.y);
       ctx.stroke();
-      label(ctx, c.formatPrice(d.points[0].price), c.width - 80, p0.y - 2, s.color);
+      if (s.showLabel !== false) {
+        label(ctx, c.formatPrice(d.points[0].price), c.width - 80, p0.y - 2, s.color);
+      }
       break;
     }
     case "vertical_line": {
-      if (!p0) break;
+      // Time-only anchor: derived from x(time), never from the stored price.
+      const x = columnOf(d, c);
+      if (x == null) break;
       ctx.beginPath();
-      ctx.moveTo(p0.x, 0);
-      ctx.lineTo(p0.x, c.height);
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, c.height);
       ctx.stroke();
+      if (s.showLabel !== false) {
+        const text = s.text || formatTimeLabel(d.points[0].time);
+        if (text) label(ctx, text, x + 4, c.height - 6, s.color, s.fontSize);
+      }
       break;
     }
+
     case "trend_line":
     case "ray":
     case "extended_line":
