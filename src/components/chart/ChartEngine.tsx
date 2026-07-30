@@ -80,11 +80,18 @@ export const ChartEngine = forwardRef<ChartHandle, Props>(function ChartEngine(
     let cancelled = false;
     const to = Date.now();
     const tfMs = TIMEFRAME_SECONDS[settings.timeframe] * 1000;
-    const from = to - tfMs * 500;
+    // Cover at least the window the user was already looking at. Otherwise a
+    // 1H → 15m switch loads only the last few days and every drawing anchored
+    // to an older timestamp falls outside the loaded history (looks deleted).
+    const prev = adapterRef.current?.getVisibleTimeRange?.() ?? null;
+    const neededBars = prev ? Math.ceil((to - prev.from) / tfMs) + 20 : 0;
+    const bars = Math.min(3000, Math.max(500, neededBars));
+    const from = to - tfMs * bars;
     setLoadError(null);
     setFreshness((f) => (candles.length ? f : "loading"));
     marketData
-      .getCandles({ symbol: settings.symbol, timeframe: settings.timeframe, from, to, limit: 500 }, settings.market)
+      .getCandles({ symbol: settings.symbol, timeframe: settings.timeframe, from, to, limit: bars }, settings.market)
+
       .then((rows) => {
         if (cancelled) return;
         if (!rows || rows.length === 0) {
