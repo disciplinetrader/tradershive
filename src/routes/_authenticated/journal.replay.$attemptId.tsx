@@ -9,7 +9,7 @@
  * analytics) — it is never the source of truth here, so an edited original
  * trade re-derives correctly instead of showing stale numbers.
  */
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -29,7 +29,7 @@ import {
   PsychologyComparison,
   ReflectionCard,
 } from "@/components/journal/replay/ComparisonSections";
-import { PracticeDialog } from "@/components/journal/replay/PracticeLauncher";
+import { IntentDialog, usePracticeLauncher } from "@/components/journal/replay/PracticeLauncher";
 import {
   attemptKeys,
   fetchReplaySession,
@@ -61,7 +61,6 @@ import {
 } from "@/lib/journal/replay-compare";
 import { fetchEntry, journalKeys } from "@/lib/journal/api";
 import { planVsReality, storyMetrics } from "@/lib/journal/story";
-import { useDebouncedCallback } from "@/hooks/use-debounced-callback";
 
 const ComparisonChart = lazy(() =>
   import("@/components/journal/replay/ComparisonChart").then((m) => ({ default: m.ComparisonChart })),
@@ -94,13 +93,13 @@ function ComparisonPage() {
   const [practiceOpen, setPracticeOpen] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
-  const attemptQ = useQuery({ queryKey: attemptKeys.detail(attemptId), queryFn: () => getAttempt(attemptId) });
+  const attemptQ = useQuery({ queryKey: attemptKeys.one(attemptId), queryFn: () => getAttempt(attemptId) });
   const attempt = attemptQ.data ?? null;
   const entryId = attempt?.original_entry_id ?? null;
   const sessionId = attempt?.session_id ?? null;
 
   const entryQ = useQuery({
-    queryKey: journalKeys.detail(entryId ?? ""),
+    queryKey: journalKeys.entry(entryId ?? ""),
     queryFn: () => fetchEntry(entryId!),
     enabled: !!entryId,
   });
@@ -127,31 +126,33 @@ function ComparisonPage() {
     if (attempt?.reflection) setReflection(attempt.reflection as AttemptReflection);
   }, [attempt?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const persist = useDebouncedCallback(async (next: AttemptReflection) => {
-    try {
-      await saveReflection(attemptId, next);
-      qc.invalidateQueries({ queryKey: attemptKeys.detail(attemptId) });
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setSaving(false);
-    }
-  }, 700);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
 
   const onReflection = useCallback(
     (next: AttemptReflection) => {
       setReflection(next);
       setSaving(true);
-      persist(next);
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(async () => {
+        try {
+          await saveReflection(attemptId, next);
+          qc.invalidateQueries({ queryKey: attemptKeys.one(attemptId) });
+        } catch (e) {
+          toast.error((e as Error).message);
+        } finally {
+          setSaving(false);
+        }
+      }, 700);
     },
-    [persist],
+    [attemptId, qc],
   );
 
   const best = useMutation({
     mutationFn: () => markBestAttempt(entryId!, attemptId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: attemptKeys.forEntry(entryId ?? "") });
-      qc.invalidateQueries({ queryKey: attemptKeys.detail(attemptId) });
+      qc.invalidateQueries({ queryKey: attemptKeys.one(attemptId) });
       toast.success("Marked as the best attempt for this trade.");
     },
     onError: (e) => toast.error((e as Error).message),
@@ -168,10 +169,10 @@ function ComparisonPage() {
 
     const intent = (attempt.intent ?? {}) as AttemptIntent;
     const telemetry = (attempt.telemetry ?? {}) as AttemptTelemetry;
-    const replay = sideFromReplay(tradesQ.data ?? [], intent, telemetry, entry);
+    const replay = sideFromReplay(tradesQ.data ?? [], intent, reflection, telemetry);
 
     const adherence = intentAdherence(intent, replay);
-    replay.planAdherence = adherence.score;
+    replay.adherence = adherence.score;
 
     const rows = improvementDelta(original, replay);
     const po = processVsOutcome(rows, original, replay);
@@ -190,8 +191,8 @@ function ComparisonPage() {
       });
 
     const readiness = readinessVerdict(siblings.length ? siblings : [{ processDelta: po.processDelta, correctedCount: mistakes.correctedCount, repeatedCount: mistakes.repeatedCount }]);
-    const action = nextPracticeAction(readiness.verdict, mistakes, po, entry);
-    const evaluation = buildEvaluation({ original, replay, rows, po, mistakes, psych, readiness, reflection });
+    const action = nextPracticeAction(rows, mistakes, po);
+    const evaluation = buildEvaluation({ rows, po, mistakes, readiness, next: action, original, replay });
 
     return {
       entry,
@@ -357,7 +358,10 @@ function ComparisonPage() {
           readiness={model.readiness}
           dismissed={dismissed}
           onDismiss={() => setDismissed(true)}
-          onStart={() => setPracticeOpen(true)}
+          onStart={() => {
+            launcher.request(model.action.mode, model.action.mistake);
+            setPracticeOpen(true);
+          }}
           onHomework={() => {
             void saveEvaluation(attemptId, {
               ...(attempt.ai_review as object | null),
@@ -369,13 +373,21 @@ function ComparisonPage() {
         />
       </StorySection>
 
-      <PracticeDialog
-        open={practiceOpen}
-        onOpenChange={setPracticeOpen}
-        entry={model.entry}
-        mode={model.action.mode as PracticeMode}
-        focusMistake={model.action.mistake}
-      />
+      {practiceOpen && launcher.pending ? (
+        <IntentDialog
+          entry={model.entry}
+          pending={launcher.pending}
+          busy={launcher.busy}
+          onClose={() => {
+            launcher.cancel();
+            setPracticeOpen(false);
+          }}
+          onStart={(intent) => {
+            setPracticeOpen(false);
+            launcher.start(intent);
+          }}
+        />
+      ) : null}
     </div>
   );
 }
