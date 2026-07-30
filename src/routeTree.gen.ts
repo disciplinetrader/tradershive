@@ -52,6 +52,7 @@ import { Route as AuthenticatedReplayIndexRouteImport } from './routes/_authenti
 import { Route as AuthenticatedPropChallengesIndexRouteImport } from './routes/_authenticated/prop-challenges.index'
 import { Route as AuthenticatedMarketIndexRouteImport } from './routes/_authenticated/market.index'
 import { Route as AuthenticatedLeaderboardIndexRouteImport } from './routes/_authenticated/leaderboard.index'
+import { Route as AuthenticatedJournalIndexRouteImport } from './routes/_authenticated/journal.index'
 import { Route as AuthenticatedCommunityIndexRouteImport } from './routes/_authenticated/community.index'
 import { Route as AuthenticatedChampionshipIndexRouteImport } from './routes/_authenticated/championship.index'
 import { Route as AuthenticatedBattleArenaIndexRouteImport } from './routes/_authenticated/battle-arena.index'
@@ -400,6 +401,12 @@ const AuthenticatedLeaderboardIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedLeaderboardRoute,
+  } as any)
+const AuthenticatedJournalIndexRoute =
+  AuthenticatedJournalIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedJournalRoute,
   } as any)
 const AuthenticatedCommunityIndexRoute =
   AuthenticatedCommunityIndexRouteImport.update({
@@ -1259,6 +1266,7 @@ export interface FileRoutesByFullPath {
   '/battle-arena/': typeof AuthenticatedBattleArenaIndexRoute
   '/championship/': typeof AuthenticatedChampionshipIndexRoute
   '/community/': typeof AuthenticatedCommunityIndexRoute
+  '/journal/': typeof AuthenticatedJournalIndexRoute
   '/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
   '/market/': typeof AuthenticatedMarketIndexRoute
   '/prop-challenges/': typeof AuthenticatedPropChallengesIndexRoute
@@ -1301,7 +1309,6 @@ export interface FileRoutesByTo {
   '/feedback': typeof AuthenticatedFeedbackRoute
   '/goals': typeof AuthenticatedGoalsRoute
   '/guilds': typeof AuthenticatedGuildsRoute
-  '/journal': typeof AuthenticatedJournalRouteWithChildren
   '/marketplace': typeof AuthenticatedMarketplaceRoute
   '/mistakes': typeof AuthenticatedMistakesRoute
   '/paper-trading': typeof AuthenticatedPaperTradingRoute
@@ -1412,6 +1419,7 @@ export interface FileRoutesByTo {
   '/battle-arena': typeof AuthenticatedBattleArenaIndexRoute
   '/championship': typeof AuthenticatedChampionshipIndexRoute
   '/community': typeof AuthenticatedCommunityIndexRoute
+  '/journal': typeof AuthenticatedJournalIndexRoute
   '/leaderboard': typeof AuthenticatedLeaderboardIndexRoute
   '/market': typeof AuthenticatedMarketIndexRoute
   '/prop-challenges': typeof AuthenticatedPropChallengesIndexRoute
@@ -1579,6 +1587,7 @@ export interface FileRoutesById {
   '/_authenticated/battle-arena/': typeof AuthenticatedBattleArenaIndexRoute
   '/_authenticated/championship/': typeof AuthenticatedChampionshipIndexRoute
   '/_authenticated/community/': typeof AuthenticatedCommunityIndexRoute
+  '/_authenticated/journal/': typeof AuthenticatedJournalIndexRoute
   '/_authenticated/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
   '/_authenticated/market/': typeof AuthenticatedMarketIndexRoute
   '/_authenticated/prop-challenges/': typeof AuthenticatedPropChallengesIndexRoute
@@ -1746,6 +1755,7 @@ export interface FileRouteTypes {
     | '/battle-arena/'
     | '/championship/'
     | '/community/'
+    | '/journal/'
     | '/leaderboard/'
     | '/market/'
     | '/prop-challenges/'
@@ -1788,7 +1798,6 @@ export interface FileRouteTypes {
     | '/feedback'
     | '/goals'
     | '/guilds'
-    | '/journal'
     | '/marketplace'
     | '/mistakes'
     | '/paper-trading'
@@ -1899,6 +1908,7 @@ export interface FileRouteTypes {
     | '/battle-arena'
     | '/championship'
     | '/community'
+    | '/journal'
     | '/leaderboard'
     | '/market'
     | '/prop-challenges'
@@ -2065,6 +2075,7 @@ export interface FileRouteTypes {
     | '/_authenticated/battle-arena/'
     | '/_authenticated/championship/'
     | '/_authenticated/community/'
+    | '/_authenticated/journal/'
     | '/_authenticated/leaderboard/'
     | '/_authenticated/market/'
     | '/_authenticated/prop-challenges/'
@@ -2412,6 +2423,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/leaderboard/'
       preLoaderRoute: typeof AuthenticatedLeaderboardIndexRouteImport
       parentRoute: typeof AuthenticatedLeaderboardRoute
+    }
+    '/_authenticated/journal/': {
+      id: '/_authenticated/journal/'
+      path: '/'
+      fullPath: '/journal/'
+      preLoaderRoute: typeof AuthenticatedJournalIndexRouteImport
+      parentRoute: typeof AuthenticatedJournalRoute
     }
     '/_authenticated/community/': {
       id: '/_authenticated/community/'
@@ -3549,11 +3567,13 @@ const AuthenticatedCommunityRouteWithChildren =
 interface AuthenticatedJournalRouteChildren {
   AuthenticatedJournalEntryIdRoute: typeof AuthenticatedJournalEntryIdRoute
   AuthenticatedJournalTradesRoute: typeof AuthenticatedJournalTradesRoute
+  AuthenticatedJournalIndexRoute: typeof AuthenticatedJournalIndexRoute
 }
 
 const AuthenticatedJournalRouteChildren: AuthenticatedJournalRouteChildren = {
   AuthenticatedJournalEntryIdRoute: AuthenticatedJournalEntryIdRoute,
   AuthenticatedJournalTradesRoute: AuthenticatedJournalTradesRoute,
+  AuthenticatedJournalIndexRoute: AuthenticatedJournalIndexRoute,
 }
 
 const AuthenticatedJournalRouteWithChildren =
