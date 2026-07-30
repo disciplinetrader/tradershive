@@ -74,13 +74,25 @@ export function installGlobalErrorHandlers() {
   window.addEventListener("unhandledrejection", (event) => {
     // Transient network blips (tab sleep, HMR reload, flaky connection) from
     // background polling must never escalate into a full-screen error overlay.
-    const reason = event.reason as { message?: string; name?: string } | undefined;
+    const reason = event.reason as { message?: string; name?: string; code?: string } | undefined;
     const msg = typeof reason?.message === "string" ? reason.message : String(reason ?? "");
     if (/Failed to fetch|NetworkError|Load failed|The user aborted/i.test(msg)) {
       event.preventDefault();
       console.warn("[network] transient request failure ignored:", msg);
       return;
     }
+    // Sanitized server-function failures are already surfaced to the user via
+    // toasts; they are recoverable and must not blank the screen.
+    const code = typeof reason?.code === "string" ? reason.code : "";
+    if (
+      /^(database_error|conflict|not_found|validation_error|bad_request|rate_limited|forbidden|unauthorized|upstream_unavailable|internal)$/.test(code) ||
+      /Could not complete the request/i.test(msg)
+    ) {
+      event.preventDefault();
+      console.warn("[server-fn] recoverable request failure ignored:", msg);
+      return;
+    }
     reportLovableError(event.reason, { mechanism: "unhandledrejection" });
   });
+
 }
