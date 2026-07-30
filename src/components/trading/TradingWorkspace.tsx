@@ -98,6 +98,41 @@ const SMC_SUB_OPTIONS: { key: "show_swings" | "show_bos" | "show_fvg" | "show_ob
   { key: "show_ob", label: "Order Blocks (OB)", desc: "Last opposing candle before displacement" },
 ];
 
+/** Right dock — only one tab is visible at a time (terminal style). */
+const RIGHT_TABS: { k: WorkspaceTab; label: string; icon: typeof Target }[] = [
+  { k: "watchlist", label: "Watchlist", icon: Star },
+  { k: "order", label: "Order", icon: Target },
+  { k: "positions", label: "Positions", icon: ListOrdered },
+  { k: "alerts", label: "Alerts", icon: Bell },
+  { k: "news", label: "News", icon: Newspaper },
+];
+
+/** Icon-only button used by the left tool rail. */
+function RailButton({
+  label, icon: Icon, active, onClick,
+}: { label: string; icon: typeof Target; active?: boolean; onClick: () => void }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          onClick={onClick}
+          aria-label={label}
+          aria-pressed={!!active}
+          className={cn(
+            "grid h-8 w-8 place-items-center rounded-md transition-colors",
+            active ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+          )}
+        >
+          <Icon className="h-4 w-4" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="right">{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+
+
 function TradingWorkspaceInner() {
   const qc = useQueryClient();
   const { symbol, symbolMeta, market, timeframe, setTimeframe, accountId, setAccountId, account } = usePaper();
