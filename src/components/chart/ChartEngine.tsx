@@ -157,9 +157,15 @@ export const ChartEngine = forwardRef<ChartHandle, Props>(function ChartEngine(
   useEffect(() => { adapterRef.current?.syncOverlayIndicators(indicators, candles); }, [indicators, candles]);
   useEffect(() => { adapterRef.current?.syncSubPaneIndicators(indicators, candles); }, [indicators, candles]);
   useEffect(() => {
-    const showVol = settings.showVolume || indicators.some((i) => i.key === "volume" && i.visible !== false);
+    // The indicator registry is authoritative whenever it knows about volume.
+    // Previously this OR'd the persisted `settings.showVolume` flag, so
+    // removing the Volume indicator left the histogram on screen forever.
+    // Only fall back to the settings flag when no volume entry exists at all.
+    const entry = indicators.find((i) => i.key === "volume");
+    const showVol = entry ? entry.visible !== false : !!settings.showVolume;
     adapterRef.current?.setVolumeVisible(showVol, candles);
   }, [settings.showVolume, indicators, candles]);
+
 
   // Handle
   useImperativeHandle(ref, () => ({

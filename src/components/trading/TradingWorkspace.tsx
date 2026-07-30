@@ -24,6 +24,7 @@ import { AlertsDialog } from "@/components/chart/AlertsDialog";
 import { ChartEngine } from "@/components/chart/ChartEngine";
 import { DrawingToolRail } from "@/components/chart/DrawingToolRail";
 import { useChartDrawings } from "@/components/chart/useChartDrawings";
+import { ChartTextEditor } from "@/components/chart/ChartTextEditor";
 import { DrawingContextMenu } from "@/components/chart/DrawingContextMenu";
 import { DrawingStore } from "@/lib/chart/drawings/store";
 import type { ToolId } from "@/lib/chart/drawings/types";
@@ -231,6 +232,14 @@ function TradingWorkspaceInner() {
     const base: IndicatorConfig[] = INDICATOR_TOGGLES.filter((i) => enabled[i.key]).map((i) => ({
       id: i.key, key: i.key, params: i.params, pane: i.pane, visible: true,
     }));
+    // Volume is always declared, with visible reflecting the toggle. Emitting
+    // an explicit `visible: false` (instead of dropping the entry) is what
+    // lets the chart distinguish "turned off" from "not configured" and
+    // actually remove the histogram.
+    if (!enabled.volume) {
+      base.push({ id: "volume", key: "volume", params: {}, pane: "sub", visible: false });
+    }
+
     if (smcOn) {
       base.push({
         id: "smc", key: "smc", pane: "price", visible: true,
@@ -297,7 +306,24 @@ function TradingWorkspaceInner() {
   // Drawings are scoped per symbol so switching instruments swaps the set.
   useEffect(() => { drawingStore.setScope(symbol); }, [drawingStore, symbol]);
 
-  const { drawings: drawingRevision, menu: drawingMenu, closeMenu: closeDrawingMenu } = useChartDrawings({
+  // Chart pixel size, so the inline text editor can clamp itself on screen
+  // instead of opening half-off the canvas near an edge.
+  const [chartBounds, setChartBounds] = useState({ width: 0, height: 0 });
+  useEffect(() => {
+    const el = adapter?.chartElement?.();
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const sync = () => setChartBounds({ width: el.clientWidth, height: el.clientHeight });
+    sync();
+    const ro = new ResizeObserver(sync);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [adapter]);
+
+
+  const {
+    drawings: drawingRevision, menu: drawingMenu, closeMenu: closeDrawingMenu,
+    textEditor, commitTextEditor, cancelTextEditor, updateTextEditor,
+  } = useChartDrawings({
     adapter,
     store: drawingStore,
     activeTool,
@@ -694,8 +720,18 @@ function TradingWorkspaceInner() {
                 onAdapter={handleAdapter} onCandles={handleCandles}
                 className="absolute inset-0"
               >
+                {textEditor && (
+                  <ChartTextEditor
+                    state={textEditor}
+                    onChange={updateTextEditor}
+                    onCommit={commitTextEditor}
+                    onCancel={cancelTextEditor}
+                    bounds={chartBounds}
+                  />
+                )}
                 {!drawingsHidden && (
                   <>
+
                     <PositionLinesLive
                       adapter={adapter} sym={meta ?? null}
                       trades={openHere} livePrice={last}

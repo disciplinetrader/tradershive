@@ -599,18 +599,28 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
       } catch { /* older builds */ }
     },
     setVolumeVisible(visible, candles) {
-      if (visible && !volSeries) {
+      // Idempotent in both directions: repeated calls with the same value must
+      // never stack a second histogram or throw on an already-removed series.
+      if (!visible) {
+        if (volSeries) {
+          try { chart.removeSeries(volSeries); } catch { /* already detached */ }
+          volSeries = null;
+          // The dedicated scale keeps reserving margin after the series is
+          // gone, which left a blank band where volume used to be.
+          try { chart.priceScale("vol").applyOptions({ visible: false, scaleMargins: { top: 0, bottom: 0 } }); } catch { /* no scale */ }
+        }
+        return;
+      }
+      if (!volSeries) {
         volSeries = chart.addSeries(HistogramSeries, { priceFormat: { type: "volume" }, priceScaleId: "vol" });
-        chart.priceScale("vol").applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
       }
-      if (!visible && volSeries) { chart.removeSeries(volSeries); volSeries = null; }
-      if (volSeries) {
-        volSeries.setData(candles.map((c) => ({
-          time: (c.time / 1000) as UTCTimestamp, value: c.volume,
-          color: c.close >= c.open ? "rgba(34,197,94,0.4)" : "rgba(239,68,68,0.4)",
-        })) as any);
-      }
+      try { chart.priceScale("vol").applyOptions({ visible: true, scaleMargins: { top: 0.8, bottom: 0 } }); } catch { /* no scale */ }
+      volSeries.setData(candles.map((c) => ({
+        time: (c.time / 1000) as UTCTimestamp, value: c.volume,
+        color: c.close >= c.open ? "rgba(34,197,94,0.4)" : "rgba(239,68,68,0.4)",
+      })) as any);
     },
+
     priceToY(price) { try { return priceSeries.priceToCoordinate(price) ?? null; } catch { return null; } },
     yToPrice(y) { try { return priceSeries.coordinateToPrice(y) as number ?? null; } catch { return null; } },
     timeToX(timeMs) { try { return chart.timeScale().timeToCoordinate((timeMs / 1000) as UTCTimestamp) ?? null; } catch { return null; } },

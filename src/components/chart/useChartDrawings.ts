@@ -9,15 +9,33 @@
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { ChartAdapter } from "@/lib/chart/adapter";
+import { isTypingTarget } from "@/lib/chart/keyboard";
 import type { Candle } from "@/lib/market-data/types";
 import { DrawingStore, makeDrawing } from "@/lib/chart/drawings/store";
 import {
   anchorAt, drawDrawing, hitTest, moveAnchor, translateDrawing,
 } from "@/lib/chart/drawings/render";
 import {
-  FREEHAND_KINDS, SINGLE_CLICK_KINDS,
+  FREEHAND_KINDS, SINGLE_CLICK_KINDS, sanitizeDrawingText,
   type Drawing, type DrawingKind, type DrawingPoint, type DrawingStyle, type ToolId,
 } from "@/lib/chart/drawings/types";
+
+/**
+ * Inline text authoring session. `id` is present when an existing drawing is
+ * being edited; absent while a brand-new label is being typed (nothing is
+ * added to the store until the text is confirmed and non-empty).
+ */
+export interface TextEditorState {
+  id: string | null;
+  point: DrawingPoint;
+  /** Anchor position in chart-element pixels, for placing the input. */
+  x: number;
+  y: number;
+  value: string;
+  fontSize: number;
+  align: "left" | "center" | "right";
+}
+
 
 export interface DrawingsController {
   store: DrawingStore;
@@ -55,11 +73,66 @@ export function useChartDrawings({
   );
 
   const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(null);
+  const [textEditor, setTextEditor] = useState<TextEditorState | null>(null);
   const pendingCancelRef = useRef<(() => void) | null>(null);
   const closeMenu = useCallback(() => setMenu(null), []);
+  // The pointer layer reads this synchronously to know an editor is open.
+  const textEditorRef = useRef<TextEditorState | null>(null);
+  textEditorRef.current = textEditor;
 
   const ref = useRef({ activeTool, keepToolActive, magnet, candles, style, onPositionDrawn, setActiveTool });
   ref.current = { activeTool, keepToolActive, magnet, candles, style, onPositionDrawn, setActiveTool };
+
+  /** Discard an in-flight text session without touching the store. */
+  const cancelTextEditor = useCallback(() => {
+    setTextEditor(null);
+    if (isDrawingKind(ref.current.activeTool)) ref.current.setActiveTool("cursor");
+  }, []);
+
+  /**
+   * Confirm a text session. Empty (or whitespace-only) input never creates a
+   * drawing and deletes the one being edited, so the chart can't accumulate
+   * invisible objects. Text is sanitised and clamped before it is stored.
+   */
+  const commitTextEditor = useCallback(
+    (raw: string) => {
+      const session = textEditorRef.current;
+      if (!session) return;
+      const text = sanitizeDrawingText(raw);
+      setTextEditor(null);
+      if (session.id) {
+        if (!text) { store.remove(session.id); }
+        else {
+          const existing = store.list().find((d) => d.id === session.id);
+          if (existing) {
+            store.beginEdit();
+            store.patch(session.id, { style: { ...existing.style, text } });
+            store.commit();
+          }
+        }
+      } else if (text) {
+        store.add(
+          makeDrawing("text", [session.point], {
+            ...ref.current.style,
+            text,
+            fontSize: session.fontSize,
+            textAlign: session.align,
+          }),
+        );
+      }
+      if (!ref.current.keepToolActive && isDrawingKind(ref.current.activeTool)) {
+        ref.current.setActiveTool("cursor");
+      }
+    },
+    [store],
+  );
+
+  /** Style tweaks applied live from the editor toolbar. */
+  const updateTextEditor = useCallback((patch: Partial<TextEditorState>) => {
+    setTextEditor((prev) => (prev ? { ...prev, ...patch } : prev));
+  }, []);
+
+
 
   // ── Register the paint source ────────────────────────────────────────
   useEffect(() => {
@@ -162,6 +235,19 @@ export function useChartDrawings({
       return [a, b];
     };
 
+    /** Open the inline editor for a new label, or an existing one. */
+    const openTextEditor = (pt: DrawingPoint, px: number, py: number, existing?: Drawing) => {
+      setTextEditor({
+        id: existing?.id ?? null,
+        point: existing ? existing.points[0] : pt,
+        x: px,
+        y: py,
+        value: existing?.style.text ?? "",
+        fontSize: existing?.style.fontSize ?? ref.current.style?.fontSize ?? 14,
+        align: existing?.style.textAlign ?? "left",
+      });
+    };
+
     const onDown = (e: PointerEvent) => {
       if (e.button !== 0) return;
       const { activeTool: tool } = ref.current;
@@ -169,6 +255,14 @@ export function useChartDrawings({
       const pt = toPoint(px, py);
       if (!pt) return;
       const coords = adapter.getCoords?.();
+
+      // A click anywhere while typing confirms the label first — the click is
+      // consumed so it can't also drop a second label underneath.
+      if (textEditorRef.current) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
 
       // Second click of a two-click object → commit.
       if (pending) {
@@ -183,10 +277,18 @@ export function useChartDrawings({
         e.preventDefault();
         e.stopPropagation();
         pointerId = e.pointerId;
+        // Text is authored in an inline editor: nothing is committed to the
+        // store until the trader confirms non-empty content.
+        if (tool === "text") {
+          pointerId = null;
+          openTextEditor(pt, px, py);
+          return;
+        }
         if (SINGLE_CLICK_KINDS.includes(tool) && tool !== "long_position" && tool !== "short_position") {
           finishCreate(makeDrawing(tool, [pt], ref.current.style));
           return;
         }
+
         session = { mode: "create", kind: tool, origin: pt, moved: false, downX: px, downY: py };
         store.draft = makeDrawing(
           tool,
@@ -359,13 +461,38 @@ export function useChartDrawings({
       }
     };
 
+    /** Double-click a text label to edit it in place. */
+    const onDoubleClick = (e: MouseEvent) => {
+      const coords = adapter.getCoords?.();
+      if (!coords || textEditorRef.current) return;
+      const r = rectOf();
+      const px = e.clientX - r.left;
+      const py = e.clientY - r.top;
+      const list = store.list();
+      for (let i = list.length - 1; i >= 0; i--) {
+        const d = list[i];
+        if (d.hidden || d.locked || d.kind !== "text") continue;
+        if (hitTest(d, coords, px, py)) {
+          e.preventDefault();
+          e.stopPropagation();
+          store.select(d.id);
+          const x = coords.x(d.points[0].time);
+          const y = coords.y(d.points[0].price);
+          openTextEditor(d.points[0], x ?? px, y ?? py, d);
+          return;
+        }
+      }
+    };
+
     el.addEventListener("pointerdown", onDown, { capture: true });
     el.addEventListener("contextmenu", onContext, { capture: true });
+    el.addEventListener("dblclick", onDoubleClick, { capture: true });
     window.addEventListener("pointermove", onMove, { capture: true });
     window.addEventListener("pointerup", onUp, { capture: true });
     return () => {
       el.removeEventListener("pointerdown", onDown, { capture: true } as any);
       el.removeEventListener("contextmenu", onContext, { capture: true } as any);
+      el.removeEventListener("dblclick", onDoubleClick, { capture: true } as any);
       window.removeEventListener("pointermove", onMove, { capture: true } as any);
       window.removeEventListener("pointerup", onUp, { capture: true } as any);
       pendingCancelRef.current = null;
@@ -374,6 +501,7 @@ export function useChartDrawings({
       el.style.cursor = "";
     };
   }, [adapter, store, enabled]);
+
 
 
   // ── Cursor affordance ────────────────────────────────────────────────
@@ -389,9 +517,13 @@ export function useChartDrawings({
   useEffect(() => {
     if (!enabled) return;
     const onKey = (e: KeyboardEvent) => {
-      const t = e.target as HTMLElement | null;
-      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      // Two independent guards: the focused element, and an open text session.
+      // Either one means the trader is typing, so Delete/Backspace must never
+      // remove the selected drawing and Escape belongs to the editor.
+      if (isTypingTarget(e.target)) return;
+      if (textEditorRef.current) return;
       const meta = e.metaKey || e.ctrlKey;
+
 
       if (e.key === "Escape") {
         setMenu(null);
@@ -431,5 +563,9 @@ export function useChartDrawings({
     return () => window.removeEventListener("keydown", onKey);
   }, [store, enabled]);
 
-  return { drawings: version, store, menu, closeMenu };
+  return {
+    drawings: version, store, menu, closeMenu,
+    textEditor, commitTextEditor, cancelTextEditor, updateTextEditor,
+  };
+
 }

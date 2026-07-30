@@ -7,8 +7,62 @@
  * resize and timeframe changes.
  */
 
-import { axisLockFor } from "./types";
+import { axisLockFor, TEXT_LIMITS, textLines } from "./types";
 import type { ChartCoords, Drawing, DrawingPoint } from "./types";
+
+/** Line height multiplier shared by the renderer and the inline editor. */
+export const TEXT_LINE_HEIGHT = 1.25;
+
+/**
+ * Shared offscreen context used only to measure text during hit-testing.
+ * Created lazily and reused, so hover never allocates a canvas per frame.
+ */
+let measureCtx: CanvasRenderingContext2D | null | undefined;
+function getMeasureCtx(): CanvasRenderingContext2D | null {
+  if (measureCtx !== undefined) return measureCtx;
+  try {
+    measureCtx = typeof document === "undefined"
+      ? null
+      : document.createElement("canvas").getContext("2d");
+  } catch { measureCtx = null; }
+  return measureCtx;
+}
+
+
+export const textFontSize = (size: number | undefined) =>
+  Math.min(TEXT_LIMITS.maxFontSize, Math.max(TEXT_LIMITS.minFontSize, Number(size) || 12));
+
+export const textFont = (size: number) =>
+  `600 ${size}px ui-sans-serif, system-ui, sans-serif`;
+
+/**
+ * Pixel box of a text drawing, measured from the same font the renderer uses.
+ * Selection, hover and hit-testing all read this, so a one-word label is not
+ * clickable across 140px of empty chart and a long label stays fully grabbable.
+ */
+export function textBox(d: Drawing, c: ChartCoords, ctx?: CanvasRenderingContext2D | null) {
+  const x = c.x(d.points[0]?.time ?? NaN);
+  const y = c.y(d.points[0]?.price ?? NaN);
+  if (x == null || y == null || !Number.isFinite(x) || !Number.isFinite(y)) return null;
+  const lines = textLines(d.style.text);
+  const rows = lines.length ? lines : ["Text"];
+  const size = textFontSize(d.style.fontSize);
+  let widest = 0;
+  if (ctx) {
+    const prev = ctx.font;
+    ctx.font = textFont(size);
+    for (const line of rows) widest = Math.max(widest, ctx.measureText(line).width);
+    ctx.font = prev;
+  } else {
+    // Headless fallback (tests / no canvas): approximate advance width.
+    for (const line of rows) widest = Math.max(widest, line.length * size * 0.58);
+  }
+  const height = rows.length * size * TEXT_LINE_HEIGHT;
+  const align = d.style.textAlign ?? "left";
+  const left = align === "center" ? x - widest / 2 : align === "right" ? x - widest : x;
+  return { left, top: y - height / 2, width: widest, height, x, y };
+}
+
 
 /**
  * Axis-anchored helpers.
@@ -245,12 +299,24 @@ export function drawDrawing(
     }
     case "text": {
       if (!p0) break;
-      ctx.font = `600 ${s.fontSize}px ui-sans-serif, system-ui, sans-serif`;
+      const lines = textLines(s.text);
+      // An empty text object is never persisted, but a legacy row could still
+      // carry one — render the placeholder so it stays selectable/deletable.
+      const rows = lines.length ? lines : ["Text"];
+      const size = textFontSize(s.fontSize);
+      ctx.font = textFont(size);
       ctx.textBaseline = "middle";
+      ctx.textAlign = s.textAlign ?? "left";
       ctx.fillStyle = s.color;
-      ctx.fillText(s.text || "Text", p0.x, p0.y);
+      const lh = size * TEXT_LINE_HEIGHT;
+      // Anchor is the vertical centre of the block, so multi-line text grows
+      // symmetrically around the clicked price instead of drifting downward.
+      const top = p0.y - ((rows.length - 1) * lh) / 2;
+      rows.forEach((line, i) => ctx.fillText(line, p0.x, top + i * lh));
+      ctx.textAlign = "left";
       break;
     }
+
     case "price_label": {
       if (!p0) break;
       ctx.beginPath();
@@ -473,9 +539,19 @@ export function hitTest(d: Drawing, c: ChartCoords, px: number, py: number): boo
       }
       return false;
     }
-    case "text":
+    case "text": {
+      // Measured box, so a short label isn't clickable across dead chart space
+      // and a long / multi-line one stays fully grabbable.
+      const box = textBox(d, c, getMeasureCtx());
+      if (!box) return false;
+      return (
+        px >= box.left - HIT_TOLERANCE && px <= box.left + box.width + HIT_TOLERANCE &&
+        py >= box.top - HIT_TOLERANCE && py <= box.top + box.height + HIT_TOLERANCE
+      );
+    }
     case "price_label":
       return !!p0 && Math.abs(py - p0.y) < 12 && px >= p0.x - 6 && px <= p0.x + 140;
+
     case "long_position":
     case "short_position": {
       if (!p0 || !p1 || !p2) return false;
