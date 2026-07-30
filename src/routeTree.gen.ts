@@ -92,6 +92,7 @@ import { Route as AuthenticatedLeaderboardCountryRouteImport } from './routes/_a
 import { Route as AuthenticatedJournalTradesRouteImport } from './routes/_authenticated/journal.trades'
 import { Route as AuthenticatedJournalPsychologyRouteImport } from './routes/_authenticated/journal.psychology'
 import { Route as AuthenticatedJournalPlaybooksRouteImport } from './routes/_authenticated/journal.playbooks'
+import { Route as AuthenticatedJournalCoachRouteImport } from './routes/_authenticated/journal.coach'
 import { Route as AuthenticatedJournalCalendarRouteImport } from './routes/_authenticated/journal.calendar'
 import { Route as AuthenticatedJournalAnalyticsRouteImport } from './routes/_authenticated/journal.analytics'
 import { Route as AuthenticatedJournalEntryIdRouteImport } from './routes/_authenticated/journal.$entryId'
@@ -641,6 +642,12 @@ const AuthenticatedJournalPlaybooksRoute =
   AuthenticatedJournalPlaybooksRouteImport.update({
     id: '/playbooks',
     path: '/playbooks',
+    getParentRoute: () => AuthenticatedJournalRoute,
+  } as any)
+const AuthenticatedJournalCoachRoute =
+  AuthenticatedJournalCoachRouteImport.update({
+    id: '/coach',
+    path: '/coach',
     getParentRoute: () => AuthenticatedJournalRoute,
   } as any)
 const AuthenticatedJournalCalendarRoute =
@@ -1259,6 +1266,7 @@ export interface FileRoutesByFullPath {
   '/journal/$entryId': typeof AuthenticatedJournalEntryIdRoute
   '/journal/analytics': typeof AuthenticatedJournalAnalyticsRoute
   '/journal/calendar': typeof AuthenticatedJournalCalendarRoute
+  '/journal/coach': typeof AuthenticatedJournalCoachRoute
   '/journal/playbooks': typeof AuthenticatedJournalPlaybooksRoute
   '/journal/psychology': typeof AuthenticatedJournalPsychologyRoute
   '/journal/trades': typeof AuthenticatedJournalTradesRoute
@@ -1416,6 +1424,7 @@ export interface FileRoutesByTo {
   '/journal/$entryId': typeof AuthenticatedJournalEntryIdRoute
   '/journal/analytics': typeof AuthenticatedJournalAnalyticsRoute
   '/journal/calendar': typeof AuthenticatedJournalCalendarRoute
+  '/journal/coach': typeof AuthenticatedJournalCoachRoute
   '/journal/playbooks': typeof AuthenticatedJournalPlaybooksRoute
   '/journal/psychology': typeof AuthenticatedJournalPsychologyRoute
   '/journal/trades': typeof AuthenticatedJournalTradesRoute
@@ -1588,6 +1597,7 @@ export interface FileRoutesById {
   '/_authenticated/journal/$entryId': typeof AuthenticatedJournalEntryIdRoute
   '/_authenticated/journal/analytics': typeof AuthenticatedJournalAnalyticsRoute
   '/_authenticated/journal/calendar': typeof AuthenticatedJournalCalendarRoute
+  '/_authenticated/journal/coach': typeof AuthenticatedJournalCoachRoute
   '/_authenticated/journal/playbooks': typeof AuthenticatedJournalPlaybooksRoute
   '/_authenticated/journal/psychology': typeof AuthenticatedJournalPsychologyRoute
   '/_authenticated/journal/trades': typeof AuthenticatedJournalTradesRoute
@@ -1760,6 +1770,7 @@ export interface FileRouteTypes {
     | '/journal/$entryId'
     | '/journal/analytics'
     | '/journal/calendar'
+    | '/journal/coach'
     | '/journal/playbooks'
     | '/journal/psychology'
     | '/journal/trades'
@@ -1917,6 +1928,7 @@ export interface FileRouteTypes {
     | '/journal/$entryId'
     | '/journal/analytics'
     | '/journal/calendar'
+    | '/journal/coach'
     | '/journal/playbooks'
     | '/journal/psychology'
     | '/journal/trades'
@@ -2088,6 +2100,7 @@ export interface FileRouteTypes {
     | '/_authenticated/journal/$entryId'
     | '/_authenticated/journal/analytics'
     | '/_authenticated/journal/calendar'
+    | '/_authenticated/journal/coach'
     | '/_authenticated/journal/playbooks'
     | '/_authenticated/journal/psychology'
     | '/_authenticated/journal/trades'
@@ -2754,6 +2767,13 @@ declare module '@tanstack/react-router' {
       path: '/playbooks'
       fullPath: '/journal/playbooks'
       preLoaderRoute: typeof AuthenticatedJournalPlaybooksRouteImport
+      parentRoute: typeof AuthenticatedJournalRoute
+    }
+    '/_authenticated/journal/coach': {
+      id: '/_authenticated/journal/coach'
+      path: '/coach'
+      fullPath: '/journal/coach'
+      preLoaderRoute: typeof AuthenticatedJournalCoachRouteImport
       parentRoute: typeof AuthenticatedJournalRoute
     }
     '/_authenticated/journal/calendar': {
@@ -3648,6 +3668,7 @@ interface AuthenticatedJournalRouteChildren {
   AuthenticatedJournalEntryIdRoute: typeof AuthenticatedJournalEntryIdRoute
   AuthenticatedJournalAnalyticsRoute: typeof AuthenticatedJournalAnalyticsRoute
   AuthenticatedJournalCalendarRoute: typeof AuthenticatedJournalCalendarRoute
+  AuthenticatedJournalCoachRoute: typeof AuthenticatedJournalCoachRoute
   AuthenticatedJournalPlaybooksRoute: typeof AuthenticatedJournalPlaybooksRoute
   AuthenticatedJournalPsychologyRoute: typeof AuthenticatedJournalPsychologyRoute
   AuthenticatedJournalTradesRoute: typeof AuthenticatedJournalTradesRoute
@@ -3658,6 +3679,7 @@ const AuthenticatedJournalRouteChildren: AuthenticatedJournalRouteChildren = {
   AuthenticatedJournalEntryIdRoute: AuthenticatedJournalEntryIdRoute,
   AuthenticatedJournalAnalyticsRoute: AuthenticatedJournalAnalyticsRoute,
   AuthenticatedJournalCalendarRoute: AuthenticatedJournalCalendarRoute,
+  AuthenticatedJournalCoachRoute: AuthenticatedJournalCoachRoute,
   AuthenticatedJournalPlaybooksRoute: AuthenticatedJournalPlaybooksRoute,
   AuthenticatedJournalPsychologyRoute: AuthenticatedJournalPsychologyRoute,
   AuthenticatedJournalTradesRoute: AuthenticatedJournalTradesRoute,
