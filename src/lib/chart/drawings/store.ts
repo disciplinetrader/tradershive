@@ -63,6 +63,7 @@ export class DrawingStore {
     this.scope = scope;
     this.drawings = this.read();
     this.selectedId = null;
+    this.hoveredId = null;
     this.undoStack = [];
     this.redoStack = [];
     this.emit();
@@ -134,6 +135,7 @@ export class DrawingStore {
     this.pushHistory();
     this.drawings = this.drawings.filter((d) => d.id !== id);
     if (this.selectedId === id) this.selectedId = null;
+    if (this.hoveredId === id) this.hoveredId = null;
     this.persist();
     this.emit();
   }
