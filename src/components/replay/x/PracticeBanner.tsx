@@ -52,7 +52,8 @@ export function PracticeBanner({ sessionId }: { sessionId: string | null | undef
   if (!attempt || attempt.status === "completed") return null;
 
   const blind = attempt.mode === "blind";
-  const focus = attempt.mistake_focus ? mistakeLabel(attempt.mistake_focus) : null;
+  const mistakeFocus = (attempt as { mistake_focus?: string | null }).mistake_focus ?? null;
+  const focus = mistakeFocus ? mistakeLabel(mistakeFocus) : null;
 
   const finish = async () => {
     setBusy(true);
