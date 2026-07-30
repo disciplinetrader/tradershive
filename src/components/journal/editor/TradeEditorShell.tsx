@@ -25,7 +25,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { EDITOR_SECTIONS, ORIGIN_LABEL, type SectionId } from "@/lib/journal/editor/model";
 import { issueCounts } from "@/lib/journal/editor/validation";
-import { autoTitle } from "@/lib/journal/auto-title";
+import { generateJournalTitle } from "@/lib/journal/auto-title";
 import { useTradeEditorContext } from "./TradeEditorProvider";
 import { closeTradeEditor, setTradeEditorMode, type EditorMode } from "./store";
 import { TradeSection, PlanSection, ExecutionSection, ReviewSection, AdvancedSection } from "./sections/core";
@@ -35,7 +35,7 @@ import { MistakesSection } from "./sections/mistakes";
 import { MediaSection } from "./sections/media";
 import { NarrativeSection } from "./sections/narrative";
 
-const SECTION_COMPONENT: Record<SectionId, () => JSX.Element> = {
+const SECTION_COMPONENT: Record<SectionId, () => React.ReactElement> = {
   trade: TradeSection,
   plan: PlanSection,
   execution: ExecutionSection,
@@ -208,7 +208,7 @@ function SectionRail() {
 
 function EditorHeader({ mode }: { mode: EditorMode }) {
   const { entry, origin, flush } = useTradeEditorContext();
-  const title = useMemo(() => autoTitle(entry), [entry]);
+  const title = useMemo(() => generateJournalTitle(entry), [entry]);
 
   return (
     <div className="flex items-center gap-2 border-b border-border/50 px-3 py-2">
