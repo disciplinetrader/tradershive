@@ -26,12 +26,15 @@ export function ChallengeHUD({ challengeId }: { challengeId: string }) {
 
   useEffect(() => {
     const t = setInterval(() => {
-      void tick({ data: { id: challengeId } }).then(() =>
-        qc.invalidateQueries({ queryKey: ["prop-challenge", challengeId] }),
-      );
+      // Background poll: a transient network failure must never escape as an
+      // unhandled rejection (it surfaces as a full-screen runtime error).
+      void tick({ data: { id: challengeId } })
+        .then(() => qc.invalidateQueries({ queryKey: ["prop-challenge", challengeId] }))
+        .catch(() => undefined);
     }, 15_000);
     return () => clearInterval(t);
   }, [challengeId, tick, qc]);
+
 
   if (!q.data) return null;
   const { challenge, progress } = q.data;
