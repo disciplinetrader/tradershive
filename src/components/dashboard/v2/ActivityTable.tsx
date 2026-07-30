@@ -66,7 +66,7 @@ export function ActivityTable() {
       (overview?.recentTrades ?? []).slice(0, 8).map((t) => ({
         id: t.id,
         primary: t.pair,
-        secondary: t.direction === "buy" ? "Long" : "Short",
+        secondary: t.direction === "long" ? "Long" : "Short",
         meta: relTime(t.openedAt),
         value: `${t.pnl >= 0 ? "+" : "−"}$${Math.abs(t.pnl).toFixed(2)}`,
         tone: t.pnl > 0 ? "up" : t.pnl < 0 ? "down" : "flat",
