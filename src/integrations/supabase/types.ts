@@ -5123,6 +5123,7 @@ export type Database = {
           mistake_flags: Json
           mistakes: string[]
           moderation_status: string | null
+          narrative: Json
           notes_html: string | null
           notes_text: string | null
           opened_at: string | null
@@ -5185,6 +5186,7 @@ export type Database = {
           mistake_flags?: Json
           mistakes?: string[]
           moderation_status?: string | null
+          narrative?: Json
           notes_html?: string | null
           notes_text?: string | null
           opened_at?: string | null
@@ -5247,6 +5249,7 @@ export type Database = {
           mistake_flags?: Json
           mistakes?: string[]
           moderation_status?: string | null
+          narrative?: Json
           notes_html?: string | null
           notes_text?: string | null
           opened_at?: string | null

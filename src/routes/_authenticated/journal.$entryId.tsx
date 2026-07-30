@@ -1,40 +1,17 @@
-import { useMemo, useState } from "react";
-import { createFileRoute, Link, useBlocker, useNavigate } from "@tanstack/react-router";
+/**
+ * TRADE STORY — /journal/$entryId
+ *
+ * One continuous narrative: header → chart evidence → execution timeline →
+ * two-column review. Everything is derived from the single trade query plus
+ * the journal list already in cache; nothing here invents data.
+ */
+import { lazy, Suspense, useCallback, useMemo, useRef, useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import {
-  ArrowLeft,
-  ArrowDownRight,
-  ArrowUpRight,
-  Camera,
-  Check,
-  ExternalLink,
-  Gauge,
-  ImageOff,
-  Pencil,
-  Sparkles,
-  Target,
-  Tag as TagIcon,
-  Trash2,
-  X,
-} from "lucide-react";
-import { PageHeader } from "@/components/ui/page-header";
-import { GlassCard } from "@/components/ui/glass-card";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,705 +22,317 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useAuth } from "@/hooks/use-auth";
 import {
   deleteEntry,
   fetchAttachments,
+  fetchEntries,
   fetchEntry,
+  fetchHistory,
   fetchTags,
+  fetchTaxonomy,
   fetchAllEntryTagLinks,
   journalKeys,
   updateEntry,
-  type EntryUpdate,
   type JournalEntry,
 } from "@/lib/journal/api";
 import { batchSignUrls, JOURNAL_IMAGES_BUCKET } from "@/lib/journal/storage";
 import {
-  formatDate,
-  formatDurationLong,
-  formatNumber,
-  shortId,
-  tradeResult,
-} from "@/lib/journal/format";
-import {
-  DEFAULT_EMOTIONS,
-  DEFAULT_MISTAKES,
-  DEFAULT_SETUPS,
-  GRADE_COLOR,
-  SESSION_OPTIONS,
-} from "@/lib/journal/constants";
-import { cn } from "@/lib/utils";
+  buildMistakes,
+  buildTimeline,
+  improvementPlan,
+  planVsReality,
+  playbookMatch,
+  readNarrative,
+  similarTrades,
+  storyMetrics,
+  type TimelineEvent,
+} from "@/lib/journal/story";
+import { hiveScore } from "@/lib/journal/metrics";
+import { StorySection } from "@/components/journal/story/primitives";
+import { StoryHeader } from "@/components/journal/story/StoryHeader";
+import { TradeStoryChart } from "@/components/journal/story/TradeStoryChart";
+import { ExecutionTimeline } from "@/components/journal/story/ExecutionTimeline";
+import { PerformanceSummary } from "@/components/journal/story/PerformanceSummary";
+import { PlanVsReality } from "@/components/journal/story/PlanVsReality";
+import { MediaStrip } from "@/components/journal/story/MediaStrip";
+import { NarrativeNotes } from "@/components/journal/story/NarrativeNotes";
+import { PlaybookMatch } from "@/components/journal/story/PlaybookMatch";
+import { MistakesPanel } from "@/components/journal/story/MistakesPanel";
+import { PsychologyPanel } from "@/components/journal/story/PsychologyPanel";
+import { SimilarTrades } from "@/components/journal/story/SimilarTrades";
+import { ImprovementPlan } from "@/components/journal/story/ImprovementPlan";
+import { ReplayActions, useReplayContext } from "@/components/journal/story/ReplayActions";
+import type { Candle } from "@/lib/market-data/types";
 import { routeBoundaries } from "@/lib/route-boundaries";
+
+// The editor is heavy and only opens on demand — keep it out of first paint.
+const JournalDrawer = lazy(() =>
+  import("@/components/journal/JournalDrawer").then((m) => ({ default: m.JournalDrawer })),
+);
+
+const AiReview = lazy(() =>
+  import("@/components/journal/story/AiReview").then((m) => ({ default: m.AiReview })),
+);
 
 export const Route = createFileRoute("/_authenticated/journal/$entryId")({
   head: () => ({
     meta: [
-      { title: "Journal Entry — TradersHIVE Arena" },
-      { name: "description", content: "Full record of a single trade: execution, psychology, and lessons." },
+      { title: "Trade Story — TradersHIVE Journal" },
+      {
+        name: "description",
+        content: "The full story of one trade: plan versus reality, execution evidence, mistakes, psychology and the next improvement.",
+      },
     ],
   }),
-  component: JournalEntryPage,
+  component: TradeStoryPage,
   ...routeBoundaries({
-    label: "Journal entry",
+    label: "Trade story",
     boundary: "journal_entry_route",
-    backHref: "/journal",
-    backLabel: "Back to Journal",
+    backHref: "/journal/trades",
+    backLabel: "Back to Trades",
   }),
 });
 
-const TRADE_TYPE_OPTIONS = [
-  { value: "intraday", label: "Intraday" },
-  { value: "swing", label: "Swing" },
-  { value: "long_term", label: "Long term" },
-];
-
-type Draft = {
-  session: string;
-  setup: string;
-  strategy: string;
-  trade_type: string;
-  entry_reason_text: string;
-  notes_text: string;
-};
-
-function toDraft(e: JournalEntry): Draft {
-  return {
-    session: e.session ?? "",
-    setup: e.setup ?? "",
-    strategy: e.strategy ?? "",
-    trade_type: ((e as unknown as { trade_type?: string | null }).trade_type ?? "") as string,
-    entry_reason_text: e.entry_reason_text ?? "",
-    notes_text: e.notes_text ?? "",
-  };
-}
-
-function draftsEqual(a: Draft, b: Draft) {
-  return (
-    a.session === b.session &&
-    a.setup === b.setup &&
-    a.strategy === b.strategy &&
-    a.trade_type === b.trade_type &&
-    a.entry_reason_text === b.entry_reason_text &&
-    a.notes_text === b.notes_text
-  );
-}
-
-const EMOTION_META = new Map(DEFAULT_EMOTIONS.map((e) => [e.value, e]));
-const MISTAKE_META = new Map(DEFAULT_MISTAKES.map((m) => [m.value, m]));
-
-function emotionLabel(v: string): string {
-  return (EMOTION_META.get(v)?.label ?? v.replace(/_/g, " ")).toUpperCase();
-}
-function emotionColor(v: string): string {
-  return EMOTION_META.get(v)?.color ?? "#a3a3a3";
-}
-function mistakeLabel(v: string): string {
-  return MISTAKE_META.get(v)?.label ?? v.replace(/_/g, " ");
-}
-
-function JournalEntryPage() {
+function TradeStoryPage() {
   const { entryId } = Route.useParams();
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [lightbox, setLightbox] = useState<string | null>(null);
-  const [mode, setMode] = useState<"view" | "edit">("view");
-  const [draft, setDraft] = useState<Draft | null>(null);
-  const [discardOpenLocal, setDiscardOpenLocal] = useState(false);
+  const { user } = useAuth();
 
-  const deleteMutation = useMutation({
+  const [candles, setCandles] = useState<Candle[]>([]);
+  const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const uploadRef = useRef<(() => void) | null>(null);
+  const notesFocusRef = useRef<(() => void) | null>(null);
+  const similarRef = useRef<HTMLDivElement | null>(null);
+
+  const entryQuery = useQuery({ queryKey: journalKeys.entry(entryId), queryFn: () => fetchEntry(entryId) });
+  const listQuery = useQuery({ queryKey: journalKeys.list(), queryFn: fetchEntries });
+  const attachmentsQuery = useQuery({
+    queryKey: ["journal", "attachments", entryId],
+    queryFn: () => fetchAttachments(entryId),
+  });
+  const historyQuery = useQuery({
+    queryKey: ["journal", "history", entryId],
+    queryFn: () => fetchHistory(entryId),
+  });
+  const tagsQuery = useQuery({ queryKey: journalKeys.tags(), queryFn: fetchTags });
+  const taxonomyQuery = useQuery({ queryKey: ["journal", "taxonomy"], queryFn: fetchTaxonomy });
+  const linksQuery = useQuery({ queryKey: ["journal", "entryTagLinks"], queryFn: fetchAllEntryTagLinks });
+
+  const entry = entryQuery.data ?? null;
+  const all = listQuery.data ?? [];
+
+  const shotPaths = entry?.screenshots ?? [];
+  const shotUrlsQuery = useQuery({
+    queryKey: ["journal", "entry-shots", entryId, shotPaths.join("|")],
+    queryFn: () => batchSignUrls(JOURNAL_IMAGES_BUCKET, shotPaths),
+    enabled: shotPaths.length > 0,
+  });
+  const shotUrls = shotUrlsQuery.data ?? {};
+
+  const metrics = useMemo(() => (entry ? storyMetrics(entry, candles) : null), [entry, candles]);
+  const timeline = useMemo(
+    () => (entry ? buildTimeline(entry, attachmentsQuery.data ?? [], historyQuery.data ?? []) : []),
+    [entry, attachmentsQuery.data, historyQuery.data],
+  );
+  const plan = useMemo(() => (entry && metrics ? planVsReality(entry, metrics) : null), [entry, metrics]);
+  const mistakes = useMemo(() => (entry && metrics ? buildMistakes(entry, all, metrics) : []), [entry, all, metrics]);
+  const playbook = useMemo(() => (entry && metrics ? playbookMatch(entry, metrics) : null), [entry, metrics]);
+  const similar = useMemo(() => (entry ? similarTrades(entry, all) : []), [entry, all]);
+  const actions = useMemo(
+    () => (entry && metrics ? improvementPlan(entry, metrics, mistakes) : []),
+    [entry, metrics, mistakes],
+  );
+
+  // Hive contribution = score with this trade minus score without it.
+  const hiveDelta = useMemo(() => {
+    if (!entry || all.length < 2) return null;
+    const withIt = hiveScore(all).total;
+    const without = hiveScore(all.filter((e) => e.id !== entry.id)).total;
+
+    return Math.round((withIt - without) * 10) / 10;
+  }, [entry, all]);
+
+  const { prevId, nextId } = useMemo(() => {
+    const ordered = [...all].sort(
+      (a, b) => new Date(b.opened_at ?? b.created_at).getTime() - new Date(a.opened_at ?? a.created_at).getTime(),
+    );
+    const i = ordered.findIndex((e) => e.id === entryId);
+    return { prevId: i > 0 ? ordered[i - 1].id : null, nextId: i >= 0 && i < ordered.length - 1 ? ordered[i + 1].id : null };
+  }, [all, entryId]);
+
+  const appendNote = useCallback(
+    async (text: string) => {
+      if (!entry) return;
+      const nar = readNarrative(entry);
+      const free = [nar.free ?? "", text].filter(Boolean).join("\n");
+      await updateEntry(entry.id, {
+        narrative: { ...nar, free } as never,
+        notes_text: free,
+      });
+      qc.invalidateQueries({ queryKey: journalKeys.entry(entry.id) });
+    },
+    [entry, qc],
+  );
+
+  const del = useMutation({
     mutationFn: () => deleteEntry(entryId),
     onSuccess: () => {
       toast.success("Journal entry deleted");
       qc.invalidateQueries({ queryKey: journalKeys.list() });
-      navigate({ to: "/journal" });
+      navigate({ to: "/journal/trades" });
     },
-    onError: (err) => toast.error((err as Error)?.message ?? "Delete failed"),
+    onError: (e) => toast.error((e as Error)?.message ?? "Delete failed"),
   });
 
-  const entryQuery = useQuery({
-    queryKey: journalKeys.entry(entryId),
-    queryFn: () => fetchEntry(entryId),
-  });
-  const tagsQuery = useQuery({ queryKey: journalKeys.tags(), queryFn: fetchTags });
-  const linksQuery = useQuery({
-    queryKey: ["journal", "entryTagLinks"],
-    queryFn: fetchAllEntryTagLinks,
-  });
-  const attachmentsQuery = useQuery({
-    queryKey: ["journal", "attachments", entryId],
-    queryFn: () => fetchAttachments(entryId),
-    enabled: !!entryId,
-  });
-
-  const entry = entryQuery.data ?? null;
-  const original = useMemo(() => (entry ? toDraft(entry) : null), [entry]);
-  const dirty = !!(mode === "edit" && draft && original && !draftsEqual(draft, original));
-
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      if (!draft) throw new Error("Nothing to save");
-      const patch: EntryUpdate = {
-        session: (draft.session || null) as EntryUpdate["session"],
-        setup: (draft.setup || null) as EntryUpdate["setup"],
-        strategy: draft.strategy.trim() || null,
-        entry_reason_text: draft.entry_reason_text.trim() || null,
-        notes_text: draft.notes_text.trim() || null,
-        ...((draft.trade_type
-          ? { trade_type: draft.trade_type }
-          : { trade_type: null }) as unknown as EntryUpdate),
-      };
-      return updateEntry(entryId, patch);
-    },
-    onSuccess: () => {
-      toast.success("Journal updated");
-      qc.invalidateQueries({ queryKey: journalKeys.entry(entryId) });
-      qc.invalidateQueries({ queryKey: journalKeys.list() });
-      setMode("view");
-    },
-    onError: (err) => toast.error((err as Error)?.message ?? "Save failed"),
-  });
-
-  // beforeunload guard is delivered via useBlocker's enableBeforeUnload below.
-
-
-  const blocker = useBlocker({
-    shouldBlockFn: () => dirty,
-    withResolver: true,
-    enableBeforeUnload: () => dirty,
-  });
-  const discardOpen = blocker.status === "blocked" || discardOpenLocal;
-
-  const enterEdit = () => {
-    if (!entry) return;
-    setDraft(toDraft(entry));
-    setMode("edit");
-  };
-  const requestCancel = () => {
-    if (dirty) setDiscardOpenLocal(true);
-    else {
-      setMode("view");
-      setDraft(null);
-    }
-  };
-  const continueEditing = () => {
-    setDiscardOpenLocal(false);
-    if (blocker.status === "blocked") blocker.reset();
-  };
-  const discardChanges = () => {
-    setMode("view");
-    setDraft(entry ? toDraft(entry) : null);
-    setDiscardOpenLocal(false);
-    if (blocker.status === "blocked") blocker.proceed();
-  };
-
-  const entryTags = useMemo(() => {
-    if (!entry) return [];
-    const ids = new Set(
-      (linksQuery.data ?? []).filter((l) => l.entry_id === entry.id).map((l) => l.tag_id),
-    );
-    return (tagsQuery.data ?? []).filter((t) => ids.has(t.id));
-  }, [entry, linksQuery.data, tagsQuery.data]);
-
-  const screenshotPaths = useMemo(() => entry?.screenshots ?? [], [entry]);
-  const shotUrls = useQuery({
-    queryKey: ["journal", "entry-shots", entryId, screenshotPaths.length],
-    queryFn: () => batchSignUrls(JOURNAL_IMAGES_BUCKET, screenshotPaths),
-    enabled: screenshotPaths.length > 0,
-  });
+  const goReplay = useReplayContext(entry ?? ({ id: entryId } as JournalEntry));
 
   if (entryQuery.isLoading) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-14 w-full rounded-2xl" />
-        <div className="grid gap-4 lg:grid-cols-3">
-          <Skeleton className="h-64 rounded-3xl lg:col-span-2" />
-          <Skeleton className="h-64 rounded-3xl" />
+      <div className="space-y-3">
+        <Skeleton className="h-11 w-full rounded-lg" />
+        <Skeleton className="h-[420px] w-full rounded-lg" />
+        <div className="grid gap-3 lg:grid-cols-3">
+          <Skeleton className="h-64 rounded-lg lg:col-span-2" />
+          <Skeleton className="h-64 rounded-lg" />
         </div>
       </div>
     );
   }
 
-  if (!entry) {
+  if (!entry || !metrics || !plan || !playbook) {
     return (
-      <GlassCard className="p-8 text-center">
-        <p className="text-sm text-muted-foreground">Entry not found.</p>
+      <div className="rounded-lg border border-border/60 p-8 text-center">
+        <p className="text-sm text-muted-foreground">This trade no longer exists.</p>
         <Button asChild variant="outline" className="mt-4">
-          <Link to="/journal"><ArrowLeft className="mr-1.5 h-4 w-4" /> Back to Journal</Link>
+          <Link to="/journal/trades"><ArrowLeft className="mr-1.5 h-4 w-4" /> Back to Trades</Link>
         </Button>
-      </GlassCard>
+      </div>
     );
   }
 
-  const editing = mode === "edit" && draft;
-  const result = tradeResult(entry.pnl);
-  const sessionLabel = SESSION_OPTIONS.find((s) => s.value === entry.session)?.label ?? entry.session ?? "—";
-  const tradeTypeRaw = (entry as unknown as { trade_type?: string | null }).trade_type ?? null;
-
-  const heroShot = screenshotPaths.length > 0 ? shotUrls.data?.[screenshotPaths[0]] : null;
-  const extraShots = screenshotPaths.slice(1);
-  const primaryEmotion = (entry.emotions ?? [])[0] ?? null;
-  const otherEmotions = (entry.emotions ?? []).slice(1);
-  const rValue = entry.rr != null ? Number(entry.rr) : null;
-  const riskPct = (entry as any).risk_pct != null ? Number((entry as any).risk_pct) : null;
-  const returnPct = rValue != null && riskPct != null ? rValue * riskPct : null;
-  const durationText = formatDurationLong(entry.duration_seconds);
+  const entryTagIds = (linksQuery.data ?? []).filter((l) => l.entry_id === entry.id).map((l) => l.tag_id);
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title={`${entry.symbol ?? "Untitled"}${entry.is_favorite ? " ★" : ""}`}
-        description={`${entry.market ?? ""} · #${shortId(entry.id)} · ${formatDate(entry.opened_at ?? entry.created_at)}`}
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate({ to: "/journal" })}
-            >
-              <ArrowLeft className="mr-1.5 h-4 w-4" /> Back
-            </Button>
-            {editing ? (
-              <>
-                <Button variant="outline" size="sm" onClick={requestCancel} disabled={saveMutation.isPending}>
-                  <X className="mr-1.5 h-4 w-4" /> Cancel
-                </Button>
-                <Button
-                  size="sm"
-                  className="gradient-primary text-primary-foreground"
-                  disabled={!dirty || saveMutation.isPending}
-                  onClick={() => saveMutation.mutate()}
-                >
-                  <Check className="mr-1.5 h-4 w-4" />
-                  {saveMutation.isPending ? "Saving…" : "Save changes"}
-                </Button>
-              </>
-            ) : (
-              <Button size="sm" className="gradient-primary text-primary-foreground" onClick={enterEdit}>
-                <Pencil className="mr-1.5 h-4 w-4" /> Edit journal
-              </Button>
-            )}
-          </div>
-        }
+    <div className="space-y-3 pb-10">
+      <StoryHeader
+        entry={entry}
+        hiveDelta={hiveDelta}
+        prevId={prevId}
+        nextId={nextId}
+        onEdit={() => setEditorOpen(true)}
+        onAddNote={() => notesFocusRef.current?.()}
+        onAddScreenshot={() => uploadRef.current?.()}
+        onReplay={goReplay}
+        onDelete={() => setConfirmDelete(true)}
       />
 
-      {editing ? (
-        <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-primary">
-          Editing — changes save only when you click <span className="font-semibold">Save changes</span>.
-        </div>
-      ) : null}
+      <TradeStoryChart entry={entry} onCandles={setCandles} focusTime={selectedEvent?.at ? new Date(selectedEvent.at).getTime() / 1000 : null} />
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        {/* Left column */}
-        <div className="space-y-4 lg:col-span-2">
-          {/* Journal Preview */}
-          <GlassCard className="overflow-hidden p-0">
-            <div className="relative">
-              {heroShot ? (
-                <button
-                  type="button"
-                  onClick={() => setLightbox(heroShot)}
-                  className="block w-full cursor-zoom-in bg-surface-2/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                >
-                  <img
-                    src={heroShot}
-                    alt={`${entry.symbol ?? "Trade"} chart`}
-                    loading="lazy"
-                    decoding="async"
-                    className="max-h-[440px] w-full object-contain"
-                  />
-                </button>
-              ) : (
-                <div className="grid aspect-[16/9] w-full place-items-center bg-surface-2/40 text-muted-foreground">
-                  <div className="flex flex-col items-center gap-2">
-                    <ImageOff className="h-8 w-8" />
-                    <p className="text-xs">No chart uploaded for this trade</p>
-                  </div>
-                </div>
-              )}
-            </div>
-            <div className="flex flex-wrap items-center justify-between gap-4 p-5">
-              <div className="flex flex-wrap items-center gap-2">
-                {entry.direction === "long" ? (
-                  <Badge className="border border-success/40 bg-success/15 text-success font-semibold">
-                    <ArrowUpRight className="mr-1 h-3.5 w-3.5" /> LONG
-                  </Badge>
-                ) : entry.direction === "short" ? (
-                  <Badge className="border border-danger/40 bg-danger/15 text-danger font-semibold">
-                    <ArrowDownRight className="mr-1 h-3.5 w-3.5" /> SHORT
-                  </Badge>
-                ) : null}
-                {entry.grade ? (
-                  <Badge className={cn("border font-semibold", GRADE_COLOR[entry.grade])}>{entry.grade}</Badge>
-                ) : null}
-                <ResultBadge result={result} />
-                {primaryEmotion ? <EmotionBadge value={primaryEmotion} /> : null}
-              </div>
-              <div className="text-right">
-                <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Return</p>
-                <p
-                  className={cn(
-                    "text-3xl font-bold tabular-nums",
-                    rValue == null ? "text-muted-foreground" : rValue > 0 ? "text-success" : rValue < 0 ? "text-danger" : "text-muted-foreground",
-                  )}
-                >
-                  {rValue != null ? `${rValue > 0 ? "+" : ""}${formatNumber(rValue, 2)}R` : "—"}
-                </p>
-                {returnPct != null ? (
-                  <p className="text-xs text-muted-foreground tabular-nums">
-                    {returnPct > 0 ? "+" : ""}{formatNumber(returnPct, 2)}%
-                  </p>
-                ) : null}
-              </div>
-            </div>
-          </GlassCard>
+      <StorySection id="timeline" title="Execution timeline" subtitle="Click an event to focus the chart at that moment">
+        <ExecutionTimeline
+          events={timeline}
+          selectedId={selectedEvent?.id ?? null}
+          onSelect={setSelectedEvent}
+          shotUrls={shotUrls}
+        />
+      </StorySection>
 
-          {/* Trade Summary */}
-          <GlassCard className="p-5">
-            <SectionTitle icon={<Target className="h-4 w-4" />} title="Trade summary" />
-            {editing ? (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Label htmlFor="edit-strategy" className="text-[10px] uppercase tracking-widest text-muted-foreground">Strategy</Label>
-                  <Input
-                    id="edit-strategy"
-                    maxLength={120}
-                    value={draft!.strategy}
-                    onChange={(e) => setDraft((d) => (d ? { ...d, strategy: e.target.value } : d))}
-                    placeholder="e.g. London breakout"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="edit-session" className="text-[10px] uppercase tracking-widest text-muted-foreground">Trading session</Label>
-                  <Select value={draft!.session || undefined} onValueChange={(v) => setDraft((d) => (d ? { ...d, session: v } : d))}>
-                    <SelectTrigger id="edit-session"><SelectValue placeholder="Choose session" /></SelectTrigger>
-                    <SelectContent>
-                      {SESSION_OPTIONS.map((s) => (
-                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="edit-setup" className="text-[10px] uppercase tracking-widest text-muted-foreground">Setup (hidden from summary)</Label>
-                  <Select value={draft!.setup || undefined} onValueChange={(v) => setDraft((d) => (d ? { ...d, setup: v } : d))}>
-                    <SelectTrigger id="edit-setup"><SelectValue placeholder="Choose setup" /></SelectTrigger>
-                    <SelectContent>
-                      {DEFAULT_SETUPS.map((s) => (
-                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="edit-trade-type" className="text-[10px] uppercase tracking-widest text-muted-foreground">Trade horizon</Label>
-                  <Select value={draft!.trade_type || undefined} onValueChange={(v) => setDraft((d) => (d ? { ...d, trade_type: v } : d))}>
-                    <SelectTrigger id="edit-trade-type"><SelectValue placeholder="Choose horizon" /></SelectTrigger>
-                    <SelectContent>
-                      {TRADE_TYPE_OPTIONS.map((t) => (
-                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
-                <Field label="Strategy" value={entry.strategy ?? "—"} />
-                <Field label="Session" value={sessionLabel} />
-                <Field label="Trade Duration" value={durationText} />
-                <Field label="Risk %" value={riskPct != null ? `${formatNumber(riskPct, 2)}%` : "—"} />
-                <Field label="Entry" value={entry.entry_price != null ? formatNumber(Number(entry.entry_price), 5) : "—"} />
-                <Field label="Exit" value={entry.exit_price != null ? formatNumber(Number(entry.exit_price), 5) : "—"} />
-                <Field label="Stop loss" value={entry.stop_loss != null ? formatNumber(Number(entry.stop_loss), 5) : "—"} />
-                <Field label="Take profit" value={entry.take_profit != null ? formatNumber(Number(entry.take_profit), 5) : "—"} />
-                {tradeTypeRaw ? (
-                  <Field
-                    label="Horizon"
-                    value={TRADE_TYPE_OPTIONS.find((t) => t.value === tradeTypeRaw)?.label ?? String(tradeTypeRaw).replace(/_/g, " ")}
-                  />
-                ) : null}
-              </div>
-            )}
-            {!editing && entryTags.length ? (
-              <>
-                <Separator className="my-4" />
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <TagIcon className="h-3.5 w-3.5 text-muted-foreground" />
-                  {entryTags.map((t) => (
-                    <span
-                      key={t.id}
-                      className="rounded-full border px-2 py-0.5 text-[11px]"
-                      style={{ borderColor: `${t.color}55`, color: t.color }}
-                    >
-                      {t.name}
-                    </span>
-                  ))}
-                </div>
-              </>
-            ) : null}
-          </GlassCard>
+      <div className="grid gap-3 lg:grid-cols-3">
+        {/* Primary column — the explanation */}
+        <div className="space-y-3 lg:col-span-2">
+          <StorySection id="plan" title="Plan vs reality">
+            <PlanVsReality rows={plan.rows} adherence={plan.adherence} />
+          </StorySection>
 
-          <GlassCard className="p-5">
-            <SectionTitle icon={<Sparkles className="h-4 w-4" />} title="Entry reason" />
-            {editing ? (
-              <Textarea
-                rows={4}
-                maxLength={4000}
-                value={draft!.entry_reason_text}
-                onChange={(e) => setDraft((d) => (d ? { ...d, entry_reason_text: e.target.value } : d))}
-                placeholder="Why did you take this trade?"
+          <StorySection id="media" title="Screenshots" subtitle="Paste, drop or upload — this is your evidence">
+            <MediaStrip entry={entry} userId={user?.id ?? null} urls={shotUrls} uploadRef={uploadRef} />
+          </StorySection>
+
+          <StorySection id="notes" title="Narrative notes" subtitle="Autosaves as you type">
+            <NarrativeNotes entry={entry} focusRef={notesFocusRef} />
+          </StorySection>
+
+          <StorySection id="ai" title="AI review" subtitle="Grounded in this trade's recorded data">
+            <Suspense fallback={<Skeleton className="h-40 w-full rounded" />}>
+              <AiReview
+                entry={entry}
+                metrics={metrics}
+                mistakes={mistakes}
+                adherence={plan.adherence}
+                onAddToNotes={(t) => void appendNote(t)}
               />
-            ) : (
-              <p className="whitespace-pre-wrap text-sm text-muted-foreground">
-                {entry.entry_reason_text?.trim() || "No entry reason recorded."}
-              </p>
-            )}
-          </GlassCard>
+            </Suspense>
+          </StorySection>
 
-          <GlassCard className="p-5">
-            <SectionTitle icon={<Sparkles className="h-4 w-4" />} title="Review & lessons" />
-            {editing ? (
-              <Textarea
-                rows={6}
-                maxLength={8000}
-                value={draft!.notes_text}
-                onChange={(e) => setDraft((d) => (d ? { ...d, notes_text: e.target.value } : d))}
-                placeholder="Lessons, execution notes, follow-ups…"
-              />
-            ) : (
-              <p className="whitespace-pre-wrap text-sm text-muted-foreground">
-                {entry.notes_text?.trim() || "No notes captured."}
-              </p>
-            )}
-          </GlassCard>
+          <StorySection id="improve" title="Improvement plan">
+            <ImprovementPlan actions={actions} onAddToNotes={(t) => void appendNote(t)} onPractise={goReplay} />
+          </StorySection>
 
-          {extraShots.length ? (
-            <GlassCard className="p-5">
-              <SectionTitle icon={<Camera className="h-4 w-4" />} title={`Additional screenshots (${extraShots.length})`} />
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {extraShots.map((p) => {
-                  const url = shotUrls.data?.[p];
-                  return (
-                    <button
-                      key={p}
-                      type="button"
-                      onClick={() => url && setLightbox(url)}
-                      className="group relative block aspect-video overflow-hidden rounded-lg border border-border/60 bg-surface-2/30 cursor-zoom-in focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                    >
-                      {url ? (
-                        <img src={url} alt="Screenshot" loading="lazy" decoding="async" className="h-full w-full object-cover transition group-hover:scale-105" />
-                      ) : (
-                        <div className="grid h-full w-full place-items-center text-[10px] text-muted-foreground">Loading…</div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </GlassCard>
-          ) : null}
+          <StorySection id="replay" title="Practice">
+            <ReplayActions
+              entry={entry}
+              onSimilar={() => similarRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })}
+            />
+          </StorySection>
         </div>
 
-        {/* Right column */}
-        <div className="space-y-4">
-          <GlassCard className="p-5">
-            <SectionTitle icon={<Gauge className="h-4 w-4" />} title="Psychology" />
+        {/* Secondary column — the numbers */}
+        <div className="space-y-3">
+          <StorySection id="perf" title="Performance">
+            <PerformanceSummary m={metrics} hasCandles={candles.length > 0} />
+          </StorySection>
 
-            <div className="space-y-4">
-              <div>
-                <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Emotion</p>
-                {(entry.emotions ?? []).length ? (
-                  <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    <EmotionBadge value={primaryEmotion!} size="lg" />
-                    {otherEmotions.map((v) => (
-                      <EmotionBadge key={v} value={v} />
-                    ))}
-                  </div>
-                ) : (
-                  <p className="mt-1 text-sm text-muted-foreground">—</p>
-                )}
-              </div>
+          <StorySection id="playbook" title="Playbook match">
+            <PlaybookMatch entry={entry} rules={playbook.rules} pct={playbook.pct} quality={playbook.quality} />
+          </StorySection>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Grade</p>
-                  {entry.grade ? (
-                    <Badge className={cn("mt-1 border text-base font-bold", GRADE_COLOR[entry.grade])}>
-                      {entry.grade}
-                    </Badge>
-                  ) : (
-                    <p className="mt-1 text-sm text-muted-foreground">—</p>
-                  )}
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Confidence</p>
-                  <p className="mt-1 text-sm font-semibold text-foreground tabular-nums">
-                    {entry.confidence != null ? `${entry.confidence}%` : "—"}
-                  </p>
-                </div>
-              </div>
+          <StorySection id="mistakes" title="Mistakes & rule violations">
+            <MistakesPanel items={mistakes} />
+          </StorySection>
 
-              <div>
-                <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Mistakes</p>
-                {(entry.mistakes ?? []).length ? (
-                  <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    {(entry.mistakes ?? []).map((m) => (
-                      <Badge
-                        key={m}
-                        variant="outline"
-                        className="border-danger/30 bg-danger/5 text-xs text-danger"
-                      >
-                        {mistakeLabel(m)}
-                      </Badge>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="mt-1 text-sm text-muted-foreground">None logged.</p>
-                )}
-              </div>
+          <StorySection id="psych" title="Psychology">
+            <PsychologyPanel entry={entry} />
+          </StorySection>
 
-              <div>
-                <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Notes</p>
-                <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">
-                  {entry.notes_text?.trim() || "No notes captured."}
-                </p>
-              </div>
-            </div>
-          </GlassCard>
-
-          {attachmentsQuery.data?.length ? (
-            <GlassCard className="p-5">
-              <SectionTitle icon={<Camera className="h-4 w-4" />} title={`Attachments (${attachmentsQuery.data.length})`} />
-              <ul className="space-y-1 text-xs text-muted-foreground">
-                {attachmentsQuery.data.map((a) => (
-                  <li key={a.id} className="truncate">{a.name ?? a.path}</li>
-                ))}
-              </ul>
-            </GlassCard>
-          ) : null}
-
-          {!editing ? (
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full text-danger hover:text-danger"
-              disabled={deleteMutation.isPending}
-              onClick={() => setConfirmOpen(true)}
-            >
-              <Trash2 className="mr-1.5 h-4 w-4" /> {deleteMutation.isPending ? "Deleting…" : "Delete entry"}
-            </Button>
-          ) : null}
+          <div ref={similarRef}>
+            <StorySection id="similar" title="Similar trades" subtitle="Rule-based matching">
+              <SimilarTrades items={similar} />
+            </StorySection>
+          </div>
         </div>
       </div>
 
-      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      {editorOpen ? (
+        <Suspense fallback={null}>
+          <JournalDrawer
+            entry={entry}
+            open={editorOpen}
+            onOpenChange={setEditorOpen}
+            allTags={tagsQuery.data ?? []}
+            entryTagIds={entryTagIds}
+            taxonomy={taxonomyQuery.data ?? []}
+          />
+        </Suspense>
+      ) : null}
+
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Journal Entry?</AlertDialogTitle>
+            <AlertDialogTitle>Delete this trade story?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. The linked trade record is preserved.
+              Notes, screenshots and analysis for this entry are removed. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                setConfirmOpen(false);
-                deleteMutation.mutate();
-              }}
-              className="bg-danger text-danger-foreground hover:bg-danger/90"
-            >
-              Delete
-            </AlertDialogAction>
+            <AlertDialogAction onClick={() => del.mutate()}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <AlertDialog open={discardOpen} onOpenChange={(o) => { if (!o) continueEditing(); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Discard changes?</AlertDialogTitle>
-            <AlertDialogDescription>
-              You have unsaved changes to this journal. If you leave now, your changes will be lost.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={continueEditing}>Continue editing</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={discardChanges}
-              className="bg-danger text-danger-foreground hover:bg-danger/90"
-            >
-              Discard changes
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <Dialog open={!!lightbox} onOpenChange={(o) => !o && setLightbox(null)}>
-        <DialogContent className="max-w-5xl border-border/60 bg-background/95 p-3">
-          <div className="flex items-center justify-between pb-2">
-            <p className="text-sm font-semibold">{entry.symbol ?? "Trade"} · Chart preview</p>
-            {lightbox ? (
-              <a
-                href={lightbox}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-              >
-                <ExternalLink className="h-3.5 w-3.5" /> Open in new tab
-              </a>
-            ) : null}
-          </div>
-          {lightbox ? (
-            <img src={lightbox} alt="Screenshot" className="max-h-[80vh] w-full rounded-lg object-contain" />
-          ) : null}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
-
-function SectionTitle({ icon, title }: { icon: React.ReactNode; title: string }) {
-  return (
-    <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
-      <span className="grid h-6 w-6 place-items-center rounded-md bg-primary/10 text-primary">{icon}</span>
-      {title}
-    </div>
-  );
-}
-
-function Field({ label, value, multiline }: { label: string; value: string; multiline?: boolean }) {
-  return (
-    <div>
-      <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</p>
-      <p className={cn("mt-0.5 text-sm text-foreground", multiline && "whitespace-pre-wrap")}>{value}</p>
-    </div>
-  );
-}
-
-function ResultBadge({ result }: { result: ReturnType<typeof tradeResult> }) {
-  if (result === "win") return <Badge className="border border-success/40 bg-success/15 text-success font-semibold">WIN</Badge>;
-  if (result === "loss") return <Badge className="border border-danger/40 bg-danger/15 text-danger font-semibold">LOSS</Badge>;
-  return <Badge className="border border-border bg-muted/40 text-muted-foreground font-semibold">BREAK-EVEN</Badge>;
-}
-
-function EmotionBadge({ value, size = "md" }: { value: string; size?: "md" | "lg" }) {
-  const color = emotionColor(value);
-  const label = emotionLabel(value);
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-full border font-bold uppercase tracking-wider",
-        size === "lg" ? "px-3 py-1 text-xs" : "px-2 py-0.5 text-[10px]",
-      )}
-      style={{
-        color,
-        borderColor: `${color}66`,
-        backgroundColor: `${color}22`,
-      }}
-    >
-      {label}
-    </span>
-  );
-}
-
-export type _EntryType = JournalEntry;
