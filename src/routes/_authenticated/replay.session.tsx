@@ -20,6 +20,7 @@ import { ReplaySkeleton } from "@/components/replay/ReplaySkeleton";
 import { PostSessionSummary } from "@/components/replay/PostSessionSummary";
 import { ReplayTimeline } from "@/components/replay/ReplayTimeline";
 import { ReplayTopBar } from "@/components/replay/x/ReplayTopBar";
+import { PracticeBanner } from "@/components/replay/x/PracticeBanner";
 import { ReplayTransport } from "@/components/replay/x/ReplayTransport";
 import { ReplayHudOverlay } from "@/components/replay/x/ReplayHudOverlay";
 import { ReplayBottomDock } from "@/components/replay/x/ReplayBottomDock";
@@ -160,6 +161,7 @@ function Workspace() {
     <TooltipProvider delayDuration={300}>
       <div className="rx-root flex h-[calc(100dvh-5rem)] min-h-0 flex-col overflow-hidden md:h-dvh">
         <ReplayTopBar onSnapshot={takeShot} onFinish={finishAndReview} onCommands={() => setPaletteOpen(true)} tradeMode={prefs.tradeMode} onToggleTradeMode={() => update("tradeMode", chartTrading ? "panel" : "chart")} />
+        <PracticeBanner sessionId={session?.id} />
 
         {/* Chart region — icon rail + edge-to-edge canvas */}
         <div className="flex min-h-0 flex-1">

@@ -290,7 +290,7 @@ function TradeStoryPage() {
           </StorySection>
 
           <StorySection id="mistakes" title="Mistakes & rule violations">
-            <MistakesPanel items={mistakes} />
+            <MistakesPanel items={mistakes} entry={entry} />
           </StorySection>
 
           <StorySection id="psych" title="Psychology">
