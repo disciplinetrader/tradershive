@@ -20,12 +20,8 @@ export function PerformanceSnapshot({ data }: Props) {
 
   return (
     <section className="space-y-2">
-      <div className="flex items-end justify-between gap-4">
-        <div>
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Performance · Last 30 days</h2>
-        </div>
-      </div>
       <div className="grid gap-3 md:grid-cols-3">
+
         <NetPnlTile pnl={data.netPnl30d} trades={data.trades30d} tone={pnlTone} spark={data.pnlSpark14d} />
 
         {enoughData ? (
