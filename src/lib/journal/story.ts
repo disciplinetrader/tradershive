@@ -10,6 +10,7 @@
 import type { JournalEntry, JournalAttachment, JournalHistory } from "@/lib/journal/api";
 import type { Candle } from "@/lib/market-data/types";
 import { DEFAULT_MISTAKES, DEFAULT_SETUPS, SESSION_OPTIONS } from "@/lib/journal/constants";
+import { deriveTrade, RISK_BASIS_LABEL, type RiskBasis, type TradeResult } from "@/lib/journal/derive";
 
 const n = (v: unknown): number | null => {
   const x = typeof v === "string" ? Number(v) : (v as number);
@@ -59,6 +60,11 @@ export type StoryMetrics = {
   grossPnl: number | null;
   fees: number | null;
   r: number | null;
+  /** Which risk basis produced `r` — never leave R's meaning ambiguous. */
+  rBasis: RiskBasis | null;
+  rBasisLabel: string | null;
+  riskAmount: number | null;
+  result: TradeResult | null;
   riskDistance: number | null;
   riskPct: number | null;
   rewardDistance: number | null;
@@ -71,6 +77,7 @@ export type StoryMetrics = {
   sizingQuality: number | null;
   sizingNote: string | null;
 };
+
 
 /**
  * MFE / MAE are measured from the candles the chart already loaded, limited to
@@ -98,11 +105,8 @@ export function excursions(entry: JournalEntry, candles: Candle[]): { mfe: numbe
 }
 
 export function storyMetrics(entry: JournalEntry, candles: Candle[]): StoryMetrics {
-  const pnl = n(entry.pnl);
-  const commission = n(entry.commission) ?? 0;
-  const swap = n(entry.swap) ?? 0;
-  const fees = n(entry.commission) == null && n(entry.swap) == null ? null : commission + swap;
-  const gross = pnl == null ? null : pnl + (fees ?? 0);
+  // P/L, fees and R come from the canonical derivation below.
+
 
   const entryPrice = n(entry.entry_price);
   const exitPrice = n(entry.exit_price);
@@ -150,11 +154,17 @@ export function storyMetrics(entry: JournalEntry, candles: Candle[]): StoryMetri
     }
   }
 
+  const derived = deriveTrade(entry);
+
   return {
-    netPnl: pnl,
-    grossPnl: gross,
-    fees,
-    r: n(entry.rr),
+    netPnl: derived.netPnl,
+    grossPnl: derived.grossPnl,
+    fees: derived.fees,
+    r: derived.r,
+    rBasis: derived.rBasis,
+    rBasisLabel: derived.rBasis ? RISK_BASIS_LABEL[derived.rBasis] : null,
+    riskAmount: derived.riskAmount,
+    result: derived.result,
     riskDistance,
     riskPct,
     rewardDistance,
@@ -167,6 +177,7 @@ export function storyMetrics(entry: JournalEntry, candles: Candle[]): StoryMetri
     sizingQuality,
     sizingNote,
   };
+
 }
 
 /* ------------------------------------------------------------------ */

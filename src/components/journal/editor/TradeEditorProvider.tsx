@@ -40,6 +40,7 @@ import {
   type SectionId,
 } from "@/lib/journal/editor/model";
 import { validateEntry, type ValidationIssue } from "@/lib/journal/editor/validation";
+import { derivedPatch } from "@/lib/journal/derive";
 import type { Narrative } from "@/lib/journal/story";
 import {
   clearLocalDraft,
@@ -169,7 +170,14 @@ export function TradeEditorProvider({
         throw new Error("This trade changed elsewhere — review before saving.");
       }
 
-      const next = await updateEntry(entryId, patch as EntryUpdate);
+      // Canonical derivation: recompute R (and anything else derived) in the
+      // same write, so no surface can read a stale win/loss or R value.
+      const base = (qc.getQueryData<JournalEntry | null>(journalKeys.entry(entryId)) ?? server) as JournalEntry | null;
+      const withDerived = base
+        ? ({ ...patch, ...derivedPatch(base, patch as EntryUpdate) } as Patch)
+        : patch;
+
+      const next = await updateEntry(entryId, withDerived as EntryUpdate);
       baselineRef.current = next.updated_at;
       changedRef.current = {};
       clearLocalDraft(entryId);
@@ -179,17 +187,23 @@ export function TradeEditorProvider({
       qc.setQueryData<JournalEntry[]>(journalKeys.list(), (prev) =>
         prev ? prev.map((e) => (e.id === next.id ? next : e)) : prev,
       );
+      setLocal((prev) => (prev && prev.id === next.id ? next : prev));
+      // Roll-ups (overview, calendar, analytics, Hive Score, improvement,
+      // replay comparison) all derive from these keys — refresh them together
+      // so a win→loss edit can never leave a stale aggregate behind.
+      void qc.invalidateQueries({ queryKey: journalKeys.all });
       if (user) {
         void recordHistory({
           entryId,
           userId: user.id,
           action: "updated",
-          snapshot: Object.keys(patch) as never,
+          snapshot: Object.keys(withDerived) as never,
         }).catch(() => {});
       }
     },
-    [entryId, qc, user],
+    [entryId, qc, server, user],
   );
+
 
   const autosave = useAutosave<Patch>(writePatch, { delay: 800 });
 
