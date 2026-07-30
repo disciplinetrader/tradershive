@@ -59,6 +59,11 @@ export type StoryMetrics = {
   grossPnl: number | null;
   fees: number | null;
   r: number | null;
+  /** Which risk basis produced `r` — never leave R's meaning ambiguous. */
+  rBasis: RiskBasis | null;
+  rBasisLabel: string | null;
+  riskAmount: number | null;
+  result: TradeResult | null;
   riskDistance: number | null;
   riskPct: number | null;
   rewardDistance: number | null;
@@ -71,6 +76,7 @@ export type StoryMetrics = {
   sizingQuality: number | null;
   sizingNote: string | null;
 };
+
 
 /**
  * MFE / MAE are measured from the candles the chart already loaded, limited to
