@@ -23,6 +23,7 @@ function storageKey(scope: string) {
 export class DrawingStore {
   private drawings: Drawing[] = [];
   private selectedId: string | null = null;
+  private hoveredId: string | null = null;
   private undoStack: Drawing[][] = [];
   private redoStack: Drawing[][] = [];
   private listeners = new Set<Listener>();
