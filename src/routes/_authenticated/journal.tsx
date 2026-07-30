@@ -38,6 +38,8 @@ function JournalLayout() {
       />
       <JournalSubNav />
       <Outlet />
+      {/* One editing system for every trade source. */}
+      <TradeEditorHost />
     </div>
   );
 }
