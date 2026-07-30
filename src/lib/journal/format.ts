@@ -1,3 +1,5 @@
+import { resultOf } from "@/lib/journal/derive";
+
 export function formatCurrency(n: number | null | undefined, currency = "USD"): string {
   if (n == null || Number.isNaN(n)) return "—";
   return new Intl.NumberFormat("en-US", {
