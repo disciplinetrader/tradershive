@@ -159,7 +159,7 @@ function Workspace() {
   return (
     <TooltipProvider delayDuration={300}>
       <div className="rx-root flex h-[calc(100dvh-5rem)] min-h-0 flex-col overflow-hidden md:h-dvh">
-        <ReplayTopBar onSnapshot={takeShot} onFinish={finishAndReview} onCommands={() => setPaletteOpen(true)} />
+        <ReplayTopBar onSnapshot={takeShot} onFinish={finishAndReview} onCommands={() => setPaletteOpen(true)} tradeMode={prefs.tradeMode} onToggleTradeMode={() => update("tradeMode", chartTrading ? "panel" : "chart")} />
 
         {/* Chart region — icon rail + edge-to-edge canvas */}
         <div className="flex min-h-0 flex-1">

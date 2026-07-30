@@ -185,17 +185,24 @@ export function ChartOrderLayer({
   }, [adapter]);
 
   const digits = useMemo(() => priceDigits(price || 1), [price]);
+  const priceRef = useRef(price);
+  priceRef.current = price;
 
-  // Alt-click on empty chart space arms a draft right where you clicked.
-  const onBackgroundDown = useCallback(
-    (e: React.PointerEvent) => {
+  // Alt-click on the chart arms a draft right where you clicked. Bound to
+  // the chart element itself so the overlay never intercepts pan/zoom.
+  useEffect(() => {
+    const el = adapter?.chartElement?.();
+    if (!el || !enabled) return;
+    const onDown = (e: PointerEvent) => {
       if (!e.altKey) return;
       const p = yToPrice(e.clientY);
       if (p == null) return;
-      armAt(p >= price ? "short" : "long", p);
-    },
-    [armAt, price, yToPrice],
-  );
+      e.preventDefault();
+      armAt(p >= priceRef.current ? "short" : "long", p);
+    };
+    el.addEventListener("pointerdown", onDown);
+    return () => el.removeEventListener("pointerdown", onDown);
+  }, [adapter, enabled, armAt, yToPrice]);
 
   if (!enabled) return null;
 
@@ -215,8 +222,6 @@ export function ChartOrderLayer({
     <div
       ref={hostRef}
       className="pointer-events-none absolute inset-0 z-20 overflow-hidden"
-      onPointerDown={onBackgroundDown}
-      style={{ pointerEvents: draft ? "auto" : "none" }}
       data-testid="chart-order-layer"
     >
       {/* ── Open positions ─────────────────────────────────────── */}
