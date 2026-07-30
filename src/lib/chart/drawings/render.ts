@@ -541,7 +541,7 @@ function nearRect(px: number, py: number, x1: number, y1: number, x2: number, y2
 export function hitTest(d: Drawing, c: ChartCoords, px: number, py: number): boolean {
   if (d.hidden) return false;
   const pts = project(d, c);
-  const p0 = pts[0], p1 = pts[1], p2 = pts[2];
+  const p0 = pts[0], p1 = pts[1];
   switch (d.kind) {
     case "horizontal_line": {
       const y = rowOf(d, c);
