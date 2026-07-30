@@ -1,17 +1,16 @@
 /**
  * Finnhub server proxy — POC for live forex quotes via WebSocket.
  *
- * The API key never ships to the browser. `finnhubWsToken` returns a
- * short-lived token payload (the key itself; Finnhub has no OAuth flow) so
- * the client can open `wss://ws.finnhub.io?token=...`. `finnhubQuote`
- * offers a REST fallback via `/forex/candle` (resolution=1) so callers
- * that want a one-shot price without opening a socket still work.
+ * The API key never ships to the browser: every call is proxied through
+ * these authenticated server functions. `finnhubQuote` reads
+ * `/forex/candle` (resolution=1) and returns a normalised quote.
  *
  * Kept intentionally minimal — this file exists ONLY to evaluate Finnhub
  * as the live-quote source for forex. Historical candles remain on
  * Twelve Data.
  */
 import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const BASE = "https://finnhub.io/api/v1";
 
@@ -22,21 +21,19 @@ function key(): string {
 }
 
 /** Configuration probe used by the client provider on boot. */
-export const finnhubStatus = createServerFn({ method: "GET" }).handler(async () => {
+export const finnhubStatus = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
   const configured = !!process.env.FINNHUB_API_KEY;
   return { configured };
 });
 
 /**
- * Returns the API token so the client can open a Finnhub WebSocket.
- * NB: Finnhub does not offer per-connection tokens; the account key is
- * the token. Only authenticated users of TradersHIVE should receive this,
- * but during the POC we return unconditionally — restrict via middleware
- * before wider rollout.
+ * NOTE: there is deliberately no `finnhubWsToken` endpoint. Finnhub has no
+ * per-connection tokens, so handing the browser a socket token means handing
+ * it the account API key. Live quotes are therefore polled through the
+ * authenticated server proxy below and the key never leaves the server.
  */
-export const finnhubWsToken = createServerFn({ method: "GET" }).handler(async () => {
-  return { token: key(), url: "wss://ws.finnhub.io" };
-});
 
 /**
  * One-shot REST quote for a Finnhub forex symbol (e.g. "OANDA:EUR_USD").
@@ -45,6 +42,7 @@ export const finnhubWsToken = createServerFn({ method: "GET" }).handler(async ()
  * want the WebSocket lifecycle.
  */
 export const finnhubQuote = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: { symbol: string }) => input)
   .handler(async ({ data }) => {
     const t0 = Date.now();

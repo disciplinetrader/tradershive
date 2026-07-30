@@ -61,6 +61,33 @@ interface Options {
 const isDrawingKind = (t: ToolId): t is DrawingKind =>
   t !== "cursor" && t !== "crosshair" && t !== "dot";
 
+/** Default reward-to-risk applied to a freshly created position tool. */
+const DEFAULT_POSITION_RR = 2;
+const ATR_PERIOD = 14;
+
+/**
+ * ATR of the loaded candles — the preferred seed for a position tool's stop
+ * distance, so the initial box is sized to the instrument's real volatility
+ * instead of an arbitrary percentage.
+ */
+function averageTrueRange(candles?: Candle[]): number | null {
+  if (!candles || candles.length < 2) return null;
+  const slice = candles.slice(-(ATR_PERIOD + 1));
+  let sum = 0;
+  let n = 0;
+  for (let i = 1; i < slice.length; i++) {
+    const prev = slice[i - 1], cur = slice[i];
+    const tr = Math.max(
+      cur.high - cur.low,
+      Math.abs(cur.high - prev.close),
+      Math.abs(cur.low - prev.close),
+    );
+    if (Number.isFinite(tr) && tr > 0) { sum += tr; n++; }
+  }
+  return n ? sum / n : null;
+}
+
+
 export function useChartDrawings({
   adapter, store, activeTool, setActiveTool, keepToolActive, magnet,
   candles, style, pricePrecision = 4, onPositionDrawn, enabled = true,
@@ -236,16 +263,46 @@ export function useChartDrawings({
       return step > 0 ? step : 60_000;
     };
 
+    /**
+     * Intelligent defaults for a fresh position tool, expressed purely in
+     * chart-domain units:
+     *   • span  — ~22% of the currently visible time range (≈25 candles of a
+     *     120-candle viewport), so the box is immediately usable.
+     *   • risk  — ATR of the loaded candles, falling back to ~1.5% of the
+     *     visible price range, then to 0.5% of price.
+     * These are read once at creation time and then owned by the user — no
+     * redraw ever recomputes them.
+     */
+    const positionDefaults = (entryPrice: number) => {
+      const coords = adapter.getCoords?.();
+      let span = barStep() * 24;
+      if (coords) {
+        const t0 = coords.timeAt(0);
+        const t1 = coords.timeAt(coords.width);
+        if (t0 != null && t1 != null && t1 > t0) span = (t1 - t0) * 0.22;
+      }
+      let risk = averageTrueRange(ref.current.candles) ?? 0;
+      if (!(risk > 0) && coords) {
+        const top = coords.priceAt(0);
+        const bottom = coords.priceAt(coords.height);
+        if (top != null && bottom != null) risk = Math.abs(top - bottom) * 0.015;
+      }
+      if (!(risk > 0)) risk = Math.abs(entryPrice) * 0.005;
+      return { span: span > 0 ? span : barStep() * 24, risk };
+    };
+
     const seedPoints = (kind: DrawingKind, a: DrawingPoint, b: DrawingPoint): DrawingPoint[] => {
       if (kind === "long_position" || kind === "short_position") {
-        const risk = Math.abs(b.price - a.price) || a.price * 0.002;
+        const { span, risk } = positionDefaults(a.price);
         const dir = kind === "long_position" ? 1 : -1;
-        // The end anchor is a *timestamp*, never a pixel width: a click with
-        // no drag still gets a real, persisted time span.
-        const end = b.time > a.time ? b.time : a.time + barStep() * 20;
+        // The end anchor is a *timestamp*, never a pixel width. A second click
+        // to the right sets the span explicitly; anything shorter than a
+        // usable box falls back to the intelligent default span.
+        const dragged = b.time - a.time;
+        const end = dragged > span * 0.15 ? b.time : a.time + span;
         return [
           { time: a.time, price: a.price },
-          { time: end, price: a.price + dir * risk * 2 },
+          { time: end, price: a.price + dir * risk * DEFAULT_POSITION_RR },
           { time: end, price: a.price - dir * risk },
         ];
       }
@@ -254,6 +311,7 @@ export function useChartDrawings({
       }
       return [a, b];
     };
+
 
     /** Open the inline editor for a new label, or an existing one. */
     const openTextEditor = (pt: DrawingPoint, px: number, py: number, existing?: Drawing) => {
@@ -446,8 +504,11 @@ export function useChartDrawings({
       if (current.mode === "create") {
         const draft = store.draft;
         if (!draft) return;
-        const isPosition = draft.kind === "long_position" || draft.kind === "short_position";
-        if (!current.moved && !isPosition && !FREEHAND_KINDS.includes(draft.kind)) {
+        // Position tools follow the same two-click contract as trend lines:
+        // click one fixes Entry, the preview follows the cursor, click two
+        // fixes the time span (SL/TP come from the risk defaults).
+        if (!current.moved && !FREEHAND_KINDS.includes(draft.kind)) {
+
           // A click without a drag arms the second anchor instead of guessing
           // one — the object now follows the cursor until the next click.
           pending = { kind: draft.kind, origin: current.origin };

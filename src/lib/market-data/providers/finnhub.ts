@@ -2,9 +2,9 @@
  * Finnhub provider — POC for live forex quotes via WebSocket.
  *
  * Scope (intentionally narrow):
- *   • Live quotes for a handful of forex pairs + XAU/USD via
- *     `wss://ws.finnhub.io` (OANDA-prefixed symbols).
- *   • REST fallback `getQuote()` via the `finnhubQuote` server function.
+ *   • Live quotes for a handful of forex pairs + XAU/USD, polled through the
+ *     authenticated `finnhubQuote` server function (OANDA-prefixed symbols).
+ *     The API key never reaches the browser.
  *   • No candle support — historical data stays on Twelve Data. Any
  *     `getCandles` call throws `finnhub_no_candles_poc` so callers can
  *     detect and route elsewhere.
@@ -14,7 +14,7 @@
  * or when the Admin Panel explicitly assigns "finnhub" to a market.
  */
 import { DESCRIPTORS_BY_CODE } from "../descriptors";
-import { finnhubQuote, finnhubStatus, finnhubWsToken } from "../finnhub.functions";
+import { finnhubQuote, finnhubStatus } from "../finnhub.functions";
 import { DEFAULT_SESSIONS } from "../sessions";
 import type {
   Candle, CandleQuery, MarketDataProvider, MarketKind, MarketStatusInfo,
@@ -31,6 +31,9 @@ const CATALOG: Array<{ symbol: string; fh: string; displayName: string; market: 
   { symbol: "USDCAD", fh: "OANDA:USD_CAD", displayName: "USD / CAD", market: "forex",  tickSize: 0.00001, pricePrecision: 5 },
   { symbol: "XAUUSD", fh: "OANDA:XAU_USD", displayName: "Gold / USD", market: "metals", tickSize: 0.01,   pricePrecision: 2 },
 ];
+
+/** Live-quote poll cadence through the authenticated server proxy. */
+const POLL_MS = 3_000;
 
 const BY_ENGINE = new Map(CATALOG.map((r) => [r.symbol, r]));
 
@@ -55,7 +58,7 @@ export class FinnhubProvider implements MarketDataProvider {
   readonly name = "Finnhub";
   readonly capabilities: ProviderCapabilities = {
     markets: ["forex", "metals"],
-    supportsRest: true, supportsWs: true, supportsHistorical: false, supportsStreaming: true,
+    supportsRest: true, supportsWs: false, supportsHistorical: false, supportsStreaming: true,
   };
 
   private _status: ProviderStatus = "disconnected";
@@ -63,12 +66,10 @@ export class FinnhubProvider implements MarketDataProvider {
   private subs = new Map<string, Set<QuoteHandler>>(); // engineSym -> handlers
   private lastQuote = new Map<string, Quote>();
 
-  private ws: WebSocket | null = null;
-  private wsReady = false;
-  private wsQueue: string[] = []; // finnhub symbols pending subscribe after open
   private booted = false;
-  private reconnectAttempts = 0;
-  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private pollTimer: ReturnType<typeof setInterval> | null = null;
+  private polling = false;
+  private failures = 0;
 
   status() { return this._status; }
   onStatus(h: StatusHandler) { this.handlers.add(h); return () => this.handlers.delete(h); }
@@ -89,76 +90,64 @@ export class FinnhubProvider implements MarketDataProvider {
         console.warn("[finnhub] provider disabled — set FINNHUB_API_KEY to enable.");
         return;
       }
-      await this.openSocket();
+      this.setStatus("connected");
+      this.startPolling();
     } catch (e) {
       this.setStatus("error", { message: (e as Error).message });
       console.error("[finnhub] connect failed:", e);
     }
   }
 
-  private async openSocket() {
-    if (typeof WebSocket === "undefined") { this.setStatus("disabled", { reason: "no_websocket" }); return; }
-    const { token, url } = (await finnhubWsToken()) as { token: string; url: string };
-    const ws = new WebSocket(`${url}?token=${encodeURIComponent(token)}`);
-    this.ws = ws;
-    const openedAt = Date.now();
-    ws.onopen = () => {
-      this.wsReady = true;
-      this.reconnectAttempts = 0;
-      this.setStatus("connected");
-      console.info(`[finnhub] ws connected in ${Date.now() - openedAt}ms`);
-      // Flush any pending subscribes AND re-subscribe existing symbols after reconnect.
-      const wanted = new Set<string>([...this.wsQueue, ...[...this.subs.keys()].map(toFinnhub)]);
-      this.wsQueue = [];
-      for (const s of wanted) ws.send(JSON.stringify({ type: "subscribe", symbol: s }));
-    };
-    ws.onmessage = (ev) => this.onMessage(ev.data);
-    ws.onerror = (e) => { console.warn("[finnhub] ws error:", (e as Event).type); };
-    ws.onclose = (e) => {
-      this.wsReady = false;
-      this.ws = null;
-      if (this._status === "disabled") return;
-      this.setStatus("disconnected", { code: e.code, reason: e.reason });
-      this.scheduleReconnect();
-    };
+  /**
+   * Live quotes are polled through the authenticated server proxy. The
+   * Finnhub key stays on the server — the browser never sees it and no
+   * socket URL carries a credential.
+   */
+  private startPolling() {
+    if (this.pollTimer) return;
+    this.pollTimer = setInterval(() => { void this.pollOnce(); }, POLL_MS);
+    void this.pollOnce();
   }
 
-  private scheduleReconnect() {
-    if (this.reconnectTimer) return;
-    this.reconnectAttempts += 1;
-    const delay = Math.min(30_000, 1_000 * 2 ** Math.min(this.reconnectAttempts, 5));
-    this.reconnectTimer = setTimeout(() => {
-      this.reconnectTimer = null;
-      void this.openSocket().catch((err) => console.warn("[finnhub] reconnect failed:", err));
-    }, delay);
-  }
-
-  private onMessage(raw: unknown) {
-    if (typeof raw !== "string") return;
-    let msg: any;
-    try { msg = JSON.parse(raw); } catch { return; }
-    if (msg?.type !== "trade" || !Array.isArray(msg.data)) return;
-    for (const t of msg.data) {
-      const fh = String(t.s ?? "");
-      const engineSym = [...BY_ENGINE.entries()].find(([, r]) => r.fh === fh)?.[0];
-      if (!engineSym) continue;
-      const price = Number(t.p);
-      if (!Number.isFinite(price) || price <= 0) continue;
-      const half = syntheticHalfSpread(engineSym, price);
-      const quote: Quote = {
-        symbol: engineSym, providerCode: this.code,
-        ts: Number(t.t) || Date.now(),
-        last: price, bid: price - half, ask: price + half, spread: half * 2,
-      };
-      this.lastQuote.set(engineSym, quote);
-      for (const h of this.subs.get(engineSym) ?? []) { try { h(quote); } catch { /* noop */ } }
+  private async pollOnce() {
+    if (this.polling) return;
+    const symbols = [...this.subs.keys()];
+    if (!symbols.length) return;
+    this.polling = true;
+    try {
+      for (const engineSym of symbols) {
+        try {
+          const res = (await finnhubQuote({ data: { symbol: toFinnhub(engineSym) } })) as any;
+          if (!res || res.error || !Number.isFinite(res.last)) continue;
+          const half = Number.isFinite(res.spread)
+            ? res.spread / 2
+            : syntheticHalfSpread(engineSym, res.last);
+          this.emit({
+            symbol: engineSym, providerCode: this.code,
+            ts: res.ts ?? Date.now(),
+            last: res.last, bid: res.last - half, ask: res.last + half, spread: half * 2,
+          });
+          this.failures = 0;
+          if (this._status !== "connected") this.setStatus("connected");
+        } catch (e) {
+          this.failures += 1;
+          if (this.failures >= 3 && this._status === "connected") {
+            this.setStatus("error", { message: (e as Error).message });
+          }
+        }
+      }
+    } finally {
+      this.polling = false;
     }
   }
 
+  private emit(quote: Quote) {
+    this.lastQuote.set(quote.symbol, quote);
+    for (const h of this.subs.get(quote.symbol) ?? []) { try { h(quote); } catch { /* noop */ } }
+  }
+
   async disconnect() {
-    if (this.reconnectTimer) { clearTimeout(this.reconnectTimer); this.reconnectTimer = null; }
-    if (this.ws) { try { this.ws.close(); } catch { /* noop */ } this.ws = null; }
-    this.wsReady = false;
+    if (this.pollTimer) { clearInterval(this.pollTimer); this.pollTimer = null; }
     this.subs.clear();
     this.setStatus("disconnected");
   }
@@ -179,9 +168,9 @@ export class FinnhubProvider implements MarketDataProvider {
   async getQuote(symbol: string): Promise<Quote> {
     if (!this.booted) await this.connect();
     if (this._status === "disabled") throw new Error("Finnhub provider not configured.");
-    // Prefer the freshest WS tick if we have one.
-    const ws = this.lastQuote.get(symbol);
-    if (ws && Date.now() - ws.ts < 10_000) return ws;
+    // Prefer the freshest polled tick if we have one.
+    const cachedQuote = this.lastQuote.get(symbol);
+    if (cachedQuote && Date.now() - cachedQuote.ts < POLL_MS) return cachedQuote;
     const res = (await finnhubQuote({ data: { symbol: toFinnhub(symbol) } })) as any;
     if (res?.error) throw new Error(res.error);
     console.info(`[finnhub] REST getQuote(${symbol}) in ${res.durationMs}ms`);
@@ -202,9 +191,8 @@ export class FinnhubProvider implements MarketDataProvider {
     if (!this.booted) void this.connect();
     if (!this.subs.has(symbol)) {
       this.subs.set(symbol, new Set());
-      const fh = toFinnhub(symbol);
-      if (this.wsReady && this.ws) this.ws.send(JSON.stringify({ type: "subscribe", symbol: fh }));
-      else this.wsQueue.push(fh);
+      this.startPolling();
+      void this.pollOnce();
     }
     this.subs.get(symbol)!.add(handler);
     // Prime with last known tick if any.
@@ -222,13 +210,7 @@ export class FinnhubProvider implements MarketDataProvider {
     const set = this.subs.get(handle.symbol);
     if (!set || !h) return;
     set.delete(h);
-    if (set.size === 0) {
-      this.subs.delete(handle.symbol);
-      if (this.wsReady && this.ws) {
-        try { this.ws.send(JSON.stringify({ type: "unsubscribe", symbol: toFinnhub(handle.symbol) })); }
-        catch { /* noop */ }
-      }
-    }
+    if (set.size === 0) this.subs.delete(handle.symbol);
   }
 
   async getMarketStatus(market: MarketKind): Promise<MarketStatusInfo> {

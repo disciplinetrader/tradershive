@@ -391,16 +391,25 @@ export function drawDrawing(
     case "short_position": {
       const g = positionGeometry(d, c);
       if (!g) break;
-      const { x1, x2, entryY, targetY, stopY } = g;
+      const { x1, x2 } = g;
       const green = "#22c55e";
       const red = "#ef4444";
+      const long = d.kind === "long_position";
       const rewardTone = green;
       const riskTone = red;
+      // Rendering-only separation: when Entry / TP / SL land on (nearly) the
+      // same pixel row the tool must still read as three lines. Prices and
+      // stored anchors are untouched — this only nudges the painted rows.
+      const { entryY, targetY, stopY } = separateRows(g);
       ctx.setLineDash([]);
       ctx.fillStyle = withAlpha(rewardTone, 0.16);
-      ctx.fillRect(x1, Math.min(entryY, targetY), x2 - x1, Math.abs(targetY - entryY));
+      ctx.fillRect(x1, Math.min(entryY, targetY), x2 - x1, Math.max(Math.abs(targetY - entryY), 1));
       ctx.fillStyle = withAlpha(riskTone, 0.16);
-      ctx.fillRect(x1, Math.min(entryY, stopY), x2 - x1, Math.abs(stopY - entryY));
+      ctx.fillRect(x1, Math.min(entryY, stopY), x2 - x1, Math.max(Math.abs(stopY - entryY), 1));
+      // Outline of the whole box so the draggable body is obvious.
+      ctx.strokeStyle = withAlpha(s.color, 0.55);
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x1, Math.min(targetY, stopY), x2 - x1, Math.abs(stopY - targetY));
 
       const line = (y: number, color: string, dashed: boolean) => {
         ctx.strokeStyle = color;
@@ -419,12 +428,18 @@ export function drawDrawing(
       const risk = Math.abs(d.points[0].price - d.points[2].price);
       const reward = Math.abs(d.points[1].price - d.points[0].price);
       const rr = risk > 0 ? reward / risk : 0;
-      label(ctx, `${d.kind === "long_position" ? "LONG" : "SHORT"} · ${c.formatPrice(d.points[0].price)}`, x1 + 4, entryY - 3, "#e2e8f0");
-      label(ctx, `TP ${c.formatPrice(d.points[1].price)}`, x1 + 4, targetY - 3, green);
-      label(ctx, `SL ${c.formatPrice(d.points[2].price)}`, x1 + 4, stopY - 3, red);
-      label(ctx, `R:R  1 : ${rr.toFixed(2)}`, x2 - 90, Math.min(entryY, targetY) - 3, "#e2e8f0");
+      // Labels are stacked with a guaranteed gap so three near-identical
+      // prices stay readable instead of printing on top of each other.
+      const rows = stackLabels([
+        { y: entryY, text: `${long ? "LONG" : "SHORT"} · ${c.formatPrice(d.points[0].price)}`, color: "#e2e8f0" },
+        { y: targetY, text: `TP ${c.formatPrice(d.points[1].price)}`, color: green },
+        { y: stopY, text: `SL ${c.formatPrice(d.points[2].price)}`, color: red },
+      ]);
+      for (const r of rows) label(ctx, r.text, x1 + 4, r.y - 3, r.color);
+      label(ctx, `R:R  1 : ${rr.toFixed(2)}`, Math.max(x1 + 4, x2 - 90), Math.min(entryY, targetY, stopY) - 8, "#e2e8f0");
       break;
     }
+
   }
 
   ctx.restore();
@@ -451,6 +466,19 @@ export function drawDrawing(
 }
 
 /**
+ * Rendering safeguard only (pixels). This is NOT a width: the box width is
+ * always `x(endTime) - x(startTime)`. When a tool is zoomed out so far that
+ * its real span collapses below a few pixels we still paint a sliver so it
+ * remains visible and grabbable — small enough that normal zoom scaling is
+ * never clamped.
+ */
+const POSITION_MIN_RENDER_PX = 10;
+/** Minimum painted gap between Entry / TP / SL rows. Visual only. */
+const POSITION_MIN_ROW_GAP = 3;
+/** Sideways offset applied to price handles that would otherwise overlap. */
+const POSITION_HANDLE_OFFSET = 16;
+
+/**
  * Pixel geometry of a position tool, derived fresh from its domain anchors
  * on every paint. Nothing here is cached or fed back into the model, which
  * is what keeps Entry/SL/TP and the time anchors numerically stable through
@@ -466,15 +494,46 @@ export function positionGeometry(d: Drawing, c: ChartCoords) {
   if (startX == null || endX == null || entryY == null || targetY == null || stopY == null) return null;
   if (![startX, endX, entryY, targetY, stopY].every(Number.isFinite)) return null;
   const x1 = Math.min(startX, endX);
-  // Minimum on-screen width keeps a freshly placed (zero-span) tool grabbable
-  // without ever writing that pixel floor back into the stored time anchors.
-  const x2 = Math.max(Math.max(startX, endX), x1 + 40);
-  return { x1, x2, entryY, targetY, stopY };
+  const rawRight = Math.max(startX, endX);
+  // Width comes from the time domain. The floor below is a visibility
+  // safeguard for a degenerate span, never a layout constant.
+  const x2 = rawRight - x1 >= POSITION_MIN_RENDER_PX ? rawRight : x1 + POSITION_MIN_RENDER_PX;
+  return { x1, x2, entryY, targetY, stopY, rawWidth: rawRight - x1 };
 }
 
 /** Canonical end anchor — both end-anchored points share this timestamp. */
 export function positionEndTime(d: Drawing): number {
   return d.points[1]?.time ?? d.points[0]?.time ?? 0;
+}
+
+/**
+ * Painted rows for Entry / TP / SL. Identical prices would otherwise collapse
+ * into one line; this pushes them apart by a few pixels for legibility while
+ * leaving every stored price untouched.
+ */
+function separateRows(g: { entryY: number; targetY: number; stopY: number }) {
+  const rows = [
+    { key: "targetY" as const, y: g.targetY },
+    { key: "entryY" as const, y: g.entryY },
+    { key: "stopY" as const, y: g.stopY },
+  ].sort((a, b) => a.y - b.y);
+  for (let i = 1; i < rows.length; i++) {
+    const gap = rows[i].y - rows[i - 1].y;
+    if (gap < POSITION_MIN_ROW_GAP) rows[i].y = rows[i - 1].y + POSITION_MIN_ROW_GAP;
+  }
+  const out = { ...g };
+  for (const r of rows) out[r.key] = r.y;
+  return out;
+}
+
+/** Stack labels top-to-bottom so near-identical prices stay readable. */
+function stackLabels(items: Array<{ y: number; text: string; color: string }>) {
+  const sorted = [...items].sort((a, b) => a.y - b.y);
+  const GAP = 17;
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i].y - sorted[i - 1].y < GAP) sorted[i].y = sorted[i - 1].y + GAP;
+  }
+  return sorted;
 }
 
 /** Interactive anchors for a drawing, in pixels. */
@@ -495,17 +554,25 @@ export function anchorsFor(d: Drawing, c: ChartCoords, opts: { includeLocked?: b
   if (isPositionKind(d.kind)) {
     const g = positionGeometry(d, c);
     if (!g) return [];
+    const rows = separateRows(g);
     const mid = (g.x1 + g.x2) / 2;
     // Price handles sit mid-span (price-only drags); the two edge handles
-    // move the time anchors and never touch Entry / SL / TP.
+    // move the time anchors and never touch Entry / SL / TP. When two levels
+    // are within grabbing distance the handles fan out horizontally so each
+    // one stays independently clickable.
+    const tight = (a: number, b: number) => Math.abs(a - b) < POSITION_HANDLE_OFFSET;
+    const crowded =
+      tight(rows.entryY, rows.targetY) || tight(rows.entryY, rows.stopY) || tight(rows.targetY, rows.stopY);
+    const off = crowded ? POSITION_HANDLE_OFFSET : 0;
     return [
-      { id: "p0", x: mid, y: g.entryY },
-      { id: "p1", x: mid, y: g.targetY },
-      { id: "p2", x: mid, y: g.stopY },
-      { id: "tStart", x: g.x1, y: g.entryY },
-      { id: "tEnd", x: g.x2, y: g.entryY },
+      { id: "p0", x: mid, y: rows.entryY },
+      { id: "p1", x: mid - off, y: rows.targetY },
+      { id: "p2", x: mid + off, y: rows.stopY },
+      { id: "tStart", x: g.x1, y: rows.entryY },
+      { id: "tEnd", x: g.x2, y: rows.entryY },
     ];
   }
+
   const out: Anchor[] = [];
   d.points.forEach((p, i) => {
     const x = c.x(p.time);
