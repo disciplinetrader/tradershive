@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
-import { Copy, Eye, EyeOff, Lock, LockOpen, Settings2, Trash2 } from "lucide-react";
+import { Copy, Eye, EyeOff, Lock, LockOpen, Settings2, Tag, Trash2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type { DrawingStore } from "@/lib/chart/drawings/store";
+import { LABELLED_KINDS } from "@/lib/chart/drawings/types";
+
 
 const COLORS = ["#38bdf8", "#22c55e", "#ef4444", "#f59e0b", "#a855f7", "#e2e8f0"];
 const WIDTHS = [1, 2, 3];
@@ -92,8 +94,18 @@ export function DrawingContextMenu({ store, menu, onClose, revision }: Props) {
               </button>
             ))}
           </div>
+          {LABELLED_KINDS.includes(drawing.kind) && (
+            <button
+              onClick={() => patchStyle({ showLabel: drawing.style.showLabel === false })}
+              className="flex w-full items-center gap-2 rounded px-1 py-0.5 text-[10px] hover:bg-muted"
+            >
+              <Tag className="h-3 w-3" />
+              {drawing.style.showLabel === false ? "Show label" : "Hide label"}
+            </button>
+          )}
         </div>
       )}
+
       <Item icon={Copy} label="Duplicate" onClick={() => { store.duplicate(drawing.id); onClose(); }} />
       <Item
         icon={drawing.locked ? LockOpen : Lock}

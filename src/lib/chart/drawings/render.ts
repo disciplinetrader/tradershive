@@ -7,7 +7,36 @@
  * resize and timeframe changes.
  */
 
+import { axisLockFor } from "./types";
 import type { ChartCoords, Drawing, DrawingPoint } from "./types";
+
+/**
+ * Axis-anchored helpers.
+ *
+ * A Horizontal Line stores a price and nothing else that matters, so its
+ * pixel row is derived from `c.y(price)` alone — the stored time is never
+ * consulted. A Vertical Line is the mirror image: only `c.x(time)` matters.
+ * That is what makes them immune to price-scale changes / timeframe swaps
+ * on the axis they don't own.
+ */
+function rowOf(d: Drawing, c: ChartCoords): number | null {
+  const y = c.y(d.points[0]?.price ?? NaN);
+  return y == null || !Number.isFinite(y) ? null : y;
+}
+
+function columnOf(d: Drawing, c: ChartCoords): number | null {
+  const x = c.x(d.points[0]?.time ?? NaN);
+  return x == null || !Number.isFinite(x) ? null : x;
+}
+
+function formatTimeLabel(timeMs: number) {
+  const dt = new Date(timeMs);
+  if (Number.isNaN(dt.getTime())) return "";
+  return dt.toLocaleString(undefined, {
+    month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit",
+  });
+}
+
 
 export interface Anchor {
   id: string;
@@ -104,12 +133,16 @@ export function drawDrawing(
 
   switch (d.kind) {
     case "horizontal_line": {
-      if (!p0) break;
+      // Price-only anchor: derived from y(price), never from the stored time.
+      const y = rowOf(d, c);
+      if (y == null) break;
       ctx.beginPath();
-      ctx.moveTo(0, p0.y);
-      ctx.lineTo(c.width, p0.y);
+      ctx.moveTo(0, y);
+      ctx.lineTo(c.width, y);
       ctx.stroke();
-      label(ctx, s.text || c.formatPrice(d.points[0].price), c.width - 80, p0.y - 2, s.color);
+      if (s.showLabel !== false) {
+        label(ctx, s.text || c.formatPrice(d.points[0].price), c.width - 80, y - 2, s.color, s.fontSize);
+      }
       break;
     }
     case "horizontal_ray": {
@@ -118,17 +151,26 @@ export function drawDrawing(
       ctx.moveTo(p0.x, p0.y);
       ctx.lineTo(c.width, p0.y);
       ctx.stroke();
-      label(ctx, c.formatPrice(d.points[0].price), c.width - 80, p0.y - 2, s.color);
+      if (s.showLabel !== false) {
+        label(ctx, c.formatPrice(d.points[0].price), c.width - 80, p0.y - 2, s.color);
+      }
       break;
     }
     case "vertical_line": {
-      if (!p0) break;
+      // Time-only anchor: derived from x(time), never from the stored price.
+      const x = columnOf(d, c);
+      if (x == null) break;
       ctx.beginPath();
-      ctx.moveTo(p0.x, 0);
-      ctx.lineTo(p0.x, c.height);
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, c.height);
       ctx.stroke();
+      if (s.showLabel !== false) {
+        const text = s.text || formatTimeLabel(d.points[0].time);
+        if (text) label(ctx, text, x + 4, c.height - 6, s.color, s.fontSize);
+      }
       break;
     }
+
     case "trend_line":
     case "ray":
     case "extended_line":
@@ -348,16 +390,26 @@ export function anchorsFor(d: Drawing, c: ChartCoords, opts: { includeLocked?: b
   if (d.hidden) return [];
   if (d.locked && !opts.includeLocked) return [];
   if (d.kind === "brush") return [];
+  // Axis-anchored lines get a single mid-viewport handle on the axis they own,
+  // so the handle is always reachable regardless of the other axis.
+  if (d.kind === "horizontal_line") {
+    const y = rowOf(d, c);
+    return y == null ? [] : [{ id: "p0", x: c.width * 0.5, y }];
+  }
+  if (d.kind === "vertical_line") {
+    const x = columnOf(d, c);
+    return x == null ? [] : [{ id: "p0", x, y: c.height * 0.5 }];
+  }
   const out: Anchor[] = [];
   d.points.forEach((p, i) => {
-    let x = c.x(p.time);
+    const x = c.x(p.time);
     const y = c.y(p.price);
-    if (d.kind === "horizontal_line") x = c.width * 0.5;
     if (x == null || y == null) return;
     out.push({ id: `p${i}`, x, y });
   });
   return out;
 }
+
 
 function distToSegment(px: number, py: number, x1: number, y1: number, x2: number, y2: number) {
   const dx = x2 - x1, dy = y2 - y1;
@@ -385,12 +437,17 @@ export function hitTest(d: Drawing, c: ChartCoords, px: number, py: number): boo
   const pts = project(d, c);
   const p0 = pts[0], p1 = pts[1], p2 = pts[2];
   switch (d.kind) {
-    case "horizontal_line":
-      return !!p0 && Math.abs(py - p0.y) < HIT_TOLERANCE;
+    case "horizontal_line": {
+      const y = rowOf(d, c);
+      return y != null && Math.abs(py - y) < HIT_TOLERANCE;
+    }
     case "horizontal_ray":
       return !!p0 && Math.abs(py - p0.y) < HIT_TOLERANCE && px >= p0.x - HIT_TOLERANCE;
-    case "vertical_line":
-      return !!p0 && Math.abs(px - p0.x) < HIT_TOLERANCE;
+    case "vertical_line": {
+      const x = columnOf(d, c);
+      return x != null && Math.abs(px - x) < HIT_TOLERANCE;
+    }
+
     case "trend_line":
     case "arrow":
     case "measure":
@@ -438,12 +495,27 @@ export function anchorAt(d: Drawing, c: ChartCoords, px: number, py: number): An
 }
 
 export function translateDrawing(d: Drawing, dTime: number, dPrice: number): DrawingPoint[] {
-  return d.points.map((p) => ({ time: p.time + dTime, price: p.price + dPrice }));
+  // Axis-locked objects ignore movement on the axis they don't own, so a
+  // Horizontal Line only ever slides vertically and a Vertical Line only
+  // ever slides horizontally.
+  const lock = axisLockFor(d.kind);
+  const dt = lock === "price" ? 0 : dTime;
+  const dp = lock === "time" ? 0 : dPrice;
+  return d.points.map((p) => ({ time: p.time + dt, price: p.price + dp }));
 }
 
 export function moveAnchor(d: Drawing, anchorId: string, next: DrawingPoint): DrawingPoint[] {
   const idx = Number(anchorId.slice(1));
+  const lock = axisLockFor(d.kind);
+  if (lock !== "both") {
+    const base = d.points[idx] ?? d.points[0];
+    const constrained: DrawingPoint = lock === "price"
+      ? { time: base.time, price: next.price }
+      : { time: next.time, price: base.price };
+    return d.points.map((p, i) => (i === idx ? constrained : { ...p }));
+  }
   const points = d.points.map((p, i) => (i === idx ? { ...next } : { ...p }));
+
   if (d.kind === "long_position" || d.kind === "short_position") {
     // Entry drag carries stop/target with it; TP/SL drags keep the shared end time.
     if (idx === 0) {
