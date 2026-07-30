@@ -156,11 +156,17 @@ export function storyMetrics(entry: JournalEntry, candles: Candle[]): StoryMetri
     }
   }
 
+  const derived = deriveTrade(entry);
+
   return {
-    netPnl: pnl,
-    grossPnl: gross,
-    fees,
-    r: n(entry.rr),
+    netPnl: derived.netPnl,
+    grossPnl: derived.grossPnl,
+    fees: derived.fees,
+    r: derived.r,
+    rBasis: derived.rBasis,
+    rBasisLabel: derived.rBasis ? RISK_BASIS_LABEL[derived.rBasis] : null,
+    riskAmount: derived.riskAmount,
+    result: derived.result,
     riskDistance,
     riskPct,
     rewardDistance,
@@ -173,6 +179,7 @@ export function storyMetrics(entry: JournalEntry, candles: Candle[]): StoryMetri
     sizingQuality,
     sizingNote,
   };
+
 }
 
 /* ------------------------------------------------------------------ */
