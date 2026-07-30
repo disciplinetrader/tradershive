@@ -11,6 +11,8 @@ import { RX } from "@/lib/replay/design-tokens";
 
 export type ReplaySideTab = "trade" | "notes";
 export type ReplayDockTab = "trades" | "journal" | "coach" | "marks" | "results";
+/** Studio X Phase 2 — how orders are entered: on the chart, or in the panel. */
+export type ReplayTradeMode = "chart" | "panel";
 
 export type ReplayWorkspacePrefs = {
   /** legacy right-rail state — kept so older sessions restore cleanly */
@@ -23,10 +25,18 @@ export type ReplayWorkspacePrefs = {
   dockTab: ReplayDockTab;
   dockHeight: number;
   hudVisible: boolean;
+  /** Chart-native trading (default) vs classic panel trading. */
+  tradeMode: ReplayTradeMode;
+  /** Floating order ticket visibility in chart-trading mode. */
+  ticketOpen: boolean;
 };
 
-const STORAGE_KEY = "thive.replay.workspace.prefs.v3";
-const LEGACY_KEYS = ["thive.replay.workspace.prefs.v2", "thive.replay.workspace.prefs.v1"];
+const STORAGE_KEY = "thive.replay.workspace.prefs.v4";
+const LEGACY_KEYS = [
+  "thive.replay.workspace.prefs.v3",
+  "thive.replay.workspace.prefs.v2",
+  "thive.replay.workspace.prefs.v1",
+];
 const VALID_TABS: ReplaySideTab[] = ["trade", "notes"];
 const VALID_DOCK_TABS: ReplayDockTab[] = ["trades", "journal", "coach", "marks", "results"];
 const VALID_SPEEDS = new Set([0.5, 1, 2, 4, 8, 16, 32, 64]);
@@ -44,6 +54,8 @@ const DEFAULTS: ReplayWorkspacePrefs = {
   dockTab: "trades",
   dockHeight: RX.dockDefaultH,
   hudVisible: true,
+  tradeMode: "chart",
+  ticketOpen: true,
 };
 
 const clamp = (n: unknown, min: number, max: number, fallback: number) => {
@@ -68,6 +80,8 @@ function readStorage(): ReplayWorkspacePrefs {
     merged.sideOpen = !!merged.sideOpen;
     merged.dockOpen = !!merged.dockOpen;
     merged.hudVisible = merged.hudVisible !== false;
+    if (merged.tradeMode !== "panel") merged.tradeMode = "chart";
+    merged.ticketOpen = merged.ticketOpen !== false;
     merged.railWidth = clamp(merged.railWidth, RAIL_MIN, RAIL_MAX, RAIL_DEFAULT);
     merged.dockHeight = clamp(merged.dockHeight, RX.dockMinH, RX.dockMaxH, RX.dockDefaultH);
     return merged;

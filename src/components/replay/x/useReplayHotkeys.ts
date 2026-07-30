@@ -9,7 +9,13 @@ import { useEffect } from "react";
 import { SPEEDS } from "@/lib/replay/constants";
 import { useReplay } from "../context";
 
-export function useReplayHotkeys(onToggleHelp: () => void) {
+/**
+ * @param onToggleHelp  opens the shortcut sheet
+ * @param chartTrading  when true, `B` and `S` belong to the ChartOrderLayer
+ *                      (Buy / Sell) — bookmark jump and snapshot stay
+ *                      reachable via Shift+B, M, the toolbar and ⌘K.
+ */
+export function useReplayHotkeys(onToggleHelp: () => void, chartTrading = false) {
   const { toggle, step, skip, jumpTo, fastForwardUntil, addCheckpoint, speed, setSpeed } = useReplay();
 
   useEffect(() => {
@@ -21,13 +27,13 @@ export function useReplayHotkeys(onToggleHelp: () => void) {
       else if (e.code === "ArrowLeft") { e.shiftKey ? skip(-10) : step(-1); }
       else if (e.key === "." && !e.shiftKey && !e.metaKey && !e.ctrlKey) { e.preventDefault(); step(1); }
       else if (e.key === "," && !e.shiftKey && !e.metaKey && !e.ctrlKey) { e.preventDefault(); step(-1); }
-      else if (e.key === "b") { jumpTo("next_bookmark"); }
+      else if (e.key === "b") { if (!chartTrading) jumpTo("next_bookmark"); }
       else if (e.key === "B") { jumpTo("prev_bookmark"); }
       else if (e.key === "t") { jumpTo("next_trade"); }
       else if (e.key === "T") { jumpTo("prev_trade"); }
       else if (e.key === "f" || e.key === "F") { e.preventDefault(); fastForwardUntil("next_order_trigger"); }
       else if (e.key === "m" || e.key === "M") { e.preventDefault(); addCheckpoint("custom", "Bookmark"); }
-      else if (e.key === "s" || e.key === "S") { e.preventDefault(); window.dispatchEvent(new Event("replay-capture")); }
+      else if ((e.key === "s" || e.key === "S") && !chartTrading) { e.preventDefault(); window.dispatchEvent(new Event("replay-capture")); }
       else if (e.key === "+" || e.key === "=") {
         e.preventDefault();
         const idx = (SPEEDS as readonly number[]).indexOf(speed);
@@ -40,7 +46,7 @@ export function useReplayHotkeys(onToggleHelp: () => void) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [toggle, step, skip, jumpTo, fastForwardUntil, addCheckpoint, speed, setSpeed, onToggleHelp]);
+  }, [toggle, step, skip, jumpTo, fastForwardUntil, addCheckpoint, speed, setSpeed, onToggleHelp, chartTrading]);
 }
 
 export const REPLAY_SHORTCUTS: Array<[string, string]> = [
