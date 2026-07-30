@@ -105,11 +105,8 @@ export function excursions(entry: JournalEntry, candles: Candle[]): { mfe: numbe
 }
 
 export function storyMetrics(entry: JournalEntry, candles: Candle[]): StoryMetrics {
-  const pnl = n(entry.pnl);
-  const commission = n(entry.commission) ?? 0;
-  const swap = n(entry.swap) ?? 0;
-  const fees = n(entry.commission) == null && n(entry.swap) == null ? null : commission + swap;
-  const gross = pnl == null ? null : pnl + (fees ?? 0);
+  // P/L, fees and R come from the canonical derivation below.
+
 
   const entryPrice = n(entry.entry_price);
   const exitPrice = n(entry.exit_price);
