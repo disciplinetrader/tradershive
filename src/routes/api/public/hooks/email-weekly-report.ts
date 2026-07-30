@@ -7,6 +7,7 @@
  */
 import { createFileRoute } from "@tanstack/react-router";
 import { guardRoute } from "@/lib/server-errors";
+import { checkCronAuth } from "@/lib/cron-guard";
 
 interface UserRow {
   id: string;
@@ -29,7 +30,10 @@ function fmtMoney(n: number): string {
 export const Route = createFileRoute("/api/public/hooks/email-weekly-report")({
   server: {
     handlers: {
-      POST: guardRoute("api/public/hooks/email-weekly-report", async () => {
+      POST: guardRoute("api/public/hooks/email-weekly-report", async ({ request }) => {
+        const denied = checkCronAuth(request);
+        if (denied) return denied;
+
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const { triggerWeeklyReport } = await import("@/lib/email/triggers.server");
 

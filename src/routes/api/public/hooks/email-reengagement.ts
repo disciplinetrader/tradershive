@@ -8,6 +8,7 @@
  */
 import { createFileRoute } from "@tanstack/react-router";
 import { guardRoute } from "@/lib/server-errors";
+import { checkCronAuth } from "@/lib/cron-guard";
 
 const BUCKETS: Array<{ days: 3 | 7 | 14 | 30; lo: number; hi: number }> = [
   { days: 3, lo: 3, hi: 4 },
@@ -19,7 +20,10 @@ const BUCKETS: Array<{ days: 3 | 7 | 14 | 30; lo: number; hi: number }> = [
 export const Route = createFileRoute("/api/public/hooks/email-reengagement")({
   server: {
     handlers: {
-      POST: guardRoute("api/public/hooks/email-reengagement", async () => {
+      POST: guardRoute("api/public/hooks/email-reengagement", async ({ request }) => {
+        const denied = checkCronAuth(request);
+        if (denied) return denied;
+
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const { triggerReengagement } = await import("@/lib/email/triggers.server");
         let enqueued = 0;

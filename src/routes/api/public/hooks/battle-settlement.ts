@@ -14,6 +14,7 @@
  */
 import { createFileRoute } from "@tanstack/react-router";
 import { guardRoute } from "@/lib/server-errors";
+import { checkCronAuth } from "@/lib/cron-guard";
 
 const BATCH_LIMIT = 50;
 
@@ -22,7 +23,10 @@ type Outcome = { battle_id: string; ok: boolean; error?: string; duration_ms: nu
 export const Route = createFileRoute("/api/public/hooks/battle-settlement")({
   server: {
     handlers: {
-      POST: guardRoute("api/public/hooks/battle-settlement", async () => {
+      POST: guardRoute("api/public/hooks/battle-settlement", async ({ request }) => {
+        const denied = checkCronAuth(request);
+        if (denied) return denied;
+
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
         const nowISO = new Date().toISOString();
