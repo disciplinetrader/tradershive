@@ -65,12 +65,15 @@ export function pnlTone(pnl: number | null | undefined): "up" | "down" | "flat" 
   return "flat";
 }
 
+/**
+ * Presentation helper. The canonical derivation lives in
+ * `@/lib/journal/derive` — this only collapses "not measurable" to breakeven
+ * for badge rendering.
+ */
 export function tradeResult(pnl: number | null | undefined): "win" | "loss" | "breakeven" {
-  if (pnl == null) return "breakeven";
-  if (pnl > 0) return "win";
-  if (pnl < 0) return "loss";
-  return "breakeven";
+  return resultOf(pnl) ?? "breakeven";
 }
+
 
 export function wordCount(text: string): number {
   const t = (text || "").trim();
