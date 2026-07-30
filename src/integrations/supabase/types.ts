@@ -7606,51 +7606,103 @@ export type Database = {
       }
       replay_comparisons: {
         Row: {
+          ai_review: Json | null
+          attempt_number: number
           breakdown: Json
+          comparison_version: number
+          completed_at: string | null
           created_at: string
           entry_diff: number | null
           exit_diff: number | null
           id: string
+          intent: Json
+          is_best: boolean
+          mode: string
+          original_entry_id: string | null
           original_trade_id: string | null
+          outcome_delta: number | null
+          process_delta: number | null
+          reflection: Json
+          replay_entry_id: string | null
           replay_trade_id: string | null
           result_diff: number | null
           rr_diff: number | null
-          session_id: string
+          session_id: string | null
+          status: string
+          telemetry: Json
           timing_diff_seconds: number | null
           updated_at: string
           user_id: string
+          verdict: string | null
         }
         Insert: {
+          ai_review?: Json | null
+          attempt_number?: number
           breakdown?: Json
+          comparison_version?: number
+          completed_at?: string | null
           created_at?: string
           entry_diff?: number | null
           exit_diff?: number | null
           id?: string
+          intent?: Json
+          is_best?: boolean
+          mode?: string
+          original_entry_id?: string | null
           original_trade_id?: string | null
+          outcome_delta?: number | null
+          process_delta?: number | null
+          reflection?: Json
+          replay_entry_id?: string | null
           replay_trade_id?: string | null
           result_diff?: number | null
           rr_diff?: number | null
-          session_id: string
+          session_id?: string | null
+          status?: string
+          telemetry?: Json
           timing_diff_seconds?: number | null
           updated_at?: string
           user_id: string
+          verdict?: string | null
         }
         Update: {
+          ai_review?: Json | null
+          attempt_number?: number
           breakdown?: Json
+          comparison_version?: number
+          completed_at?: string | null
           created_at?: string
           entry_diff?: number | null
           exit_diff?: number | null
           id?: string
+          intent?: Json
+          is_best?: boolean
+          mode?: string
+          original_entry_id?: string | null
           original_trade_id?: string | null
+          outcome_delta?: number | null
+          process_delta?: number | null
+          reflection?: Json
+          replay_entry_id?: string | null
           replay_trade_id?: string | null
           result_diff?: number | null
           rr_diff?: number | null
-          session_id?: string
+          session_id?: string | null
+          status?: string
+          telemetry?: Json
           timing_diff_seconds?: number | null
           updated_at?: string
           user_id?: string
+          verdict?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "replay_comparisons_original_entry_id_fkey"
+            columns: ["original_entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "replay_comparisons_replay_trade_id_fkey"
             columns: ["replay_trade_id"]
