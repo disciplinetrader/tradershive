@@ -68,8 +68,12 @@ export function useChartDrawings({
     adapter.setDrawingsSource({
       draw(ctx, coords) {
         const selectedId = store.selectedIdValue();
+        const hoveredId = store.hoveredIdValue();
         for (const d of store.list()) {
-          drawDrawing(ctx, coords, d, { selected: d.id === selectedId });
+          drawDrawing(ctx, coords, d, {
+            selected: d.id === selectedId,
+            hovered: d.id === hoveredId && d.id !== selectedId,
+          });
         }
         if (store.draft) drawDrawing(ctx, coords, store.draft, { ghost: true });
       },
