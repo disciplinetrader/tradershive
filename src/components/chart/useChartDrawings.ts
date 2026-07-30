@@ -412,10 +412,10 @@ export function useChartDrawings({
         const dTime = pt.time - s.last.time;
         const dPrice = pt.price - s.last.price;
         s.last = pt;
-        store.patch(d.id, { points: translateDrawing(d, dTime, dPrice) });
+        store.patch(d.id, { points: translateDrawing(d, dTime, dPrice, { tick: tickRef.current }) });
         return;
       }
-      store.patch(d.id, { points: moveAnchor(d, s.anchorId, pt) });
+      store.patch(d.id, { points: moveAnchor(d, s.anchorId, pt, { tick: tickRef.current }) });
     };
 
     const onUp = (e: PointerEvent) => {
