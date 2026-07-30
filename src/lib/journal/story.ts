@@ -10,6 +10,7 @@
 import type { JournalEntry, JournalAttachment, JournalHistory } from "@/lib/journal/api";
 import type { Candle } from "@/lib/market-data/types";
 import { DEFAULT_MISTAKES, DEFAULT_SETUPS, SESSION_OPTIONS } from "@/lib/journal/constants";
+import { deriveTrade, RISK_BASIS_LABEL, type RiskBasis, type TradeResult } from "@/lib/journal/derive";
 
 const n = (v: unknown): number | null => {
   const x = typeof v === "string" ? Number(v) : (v as number);
