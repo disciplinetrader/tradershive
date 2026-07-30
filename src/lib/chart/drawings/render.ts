@@ -450,6 +450,33 @@ export function drawDrawing(
   }
 }
 
+/**
+ * Pixel geometry of a position tool, derived fresh from its domain anchors
+ * on every paint. Nothing here is cached or fed back into the model, which
+ * is what keeps Entry/SL/TP and the time anchors numerically stable through
+ * zoom, pan, price-scale changes, resize and fullscreen toggles.
+ */
+export function positionGeometry(d: Drawing, c: ChartCoords) {
+  if (d.points.length < 3) return null;
+  const startX = c.x(d.points[0].time);
+  const endX = c.x(positionEndTime(d));
+  const entryY = c.y(d.points[0].price);
+  const targetY = c.y(d.points[1].price);
+  const stopY = c.y(d.points[2].price);
+  if (startX == null || endX == null || entryY == null || targetY == null || stopY == null) return null;
+  if (![startX, endX, entryY, targetY, stopY].every(Number.isFinite)) return null;
+  const x1 = Math.min(startX, endX);
+  // Minimum on-screen width keeps a freshly placed (zero-span) tool grabbable
+  // without ever writing that pixel floor back into the stored time anchors.
+  const x2 = Math.max(Math.max(startX, endX), x1 + 40);
+  return { x1, x2, entryY, targetY, stopY };
+}
+
+/** Canonical end anchor — both end-anchored points share this timestamp. */
+export function positionEndTime(d: Drawing): number {
+  return d.points[1]?.time ?? d.points[0]?.time ?? 0;
+}
+
 /** Interactive anchors for a drawing, in pixels. */
 export function anchorsFor(d: Drawing, c: ChartCoords, opts: { includeLocked?: boolean } = {}): Anchor[] {
   if (d.hidden) return [];
@@ -464,6 +491,20 @@ export function anchorsFor(d: Drawing, c: ChartCoords, opts: { includeLocked?: b
   if (d.kind === "vertical_line") {
     const x = columnOf(d, c);
     return x == null ? [] : [{ id: "p0", x, y: c.height * 0.5 }];
+  }
+  if (isPositionKind(d.kind)) {
+    const g = positionGeometry(d, c);
+    if (!g) return [];
+    const mid = (g.x1 + g.x2) / 2;
+    // Price handles sit mid-span (price-only drags); the two edge handles
+    // move the time anchors and never touch Entry / SL / TP.
+    return [
+      { id: "p0", x: mid, y: g.entryY },
+      { id: "p1", x: mid, y: g.targetY },
+      { id: "p2", x: mid, y: g.stopY },
+      { id: "tStart", x: g.x1, y: g.entryY },
+      { id: "tEnd", x: g.x2, y: g.entryY },
+    ];
   }
   const out: Anchor[] = [];
   d.points.forEach((p, i) => {
