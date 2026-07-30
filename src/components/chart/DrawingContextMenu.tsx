@@ -94,8 +94,18 @@ export function DrawingContextMenu({ store, menu, onClose, revision }: Props) {
               </button>
             ))}
           </div>
+          {LABELLED_KINDS.includes(drawing.kind) && (
+            <button
+              onClick={() => patchStyle({ showLabel: drawing.style.showLabel === false })}
+              className="flex w-full items-center gap-2 rounded px-1 py-0.5 text-[10px] hover:bg-muted"
+            >
+              <Tag className="h-3 w-3" />
+              {drawing.style.showLabel === false ? "Show label" : "Hide label"}
+            </button>
+          )}
         </div>
       )}
+
       <Item icon={Copy} label="Duplicate" onClick={() => { store.duplicate(drawing.id); onClose(); }} />
       <Item
         icon={drawing.locked ? LockOpen : Lock}
