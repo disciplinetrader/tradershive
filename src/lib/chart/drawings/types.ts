@@ -47,11 +47,57 @@ export interface DrawingStyle {
   fillOpacity: number;
   fontSize: number;
   text?: string;
+  /** Horizontal alignment of a text drawing relative to its anchor. */
+  textAlign?: "left" | "center" | "right";
   extendLeft?: boolean;
   extendRight?: boolean;
   /** Show the price/time badge on axis-anchored lines. Defaults to true. */
   showLabel?: boolean;
 }
+
+/**
+ * Hard bounds for text drawings. A pasted novel must never be able to blow up
+ * the canvas, stall a repaint or push the chart off screen — it is clamped on
+ * the way in (editor) and again on the way out (renderer).
+ */
+export const TEXT_LIMITS = {
+  maxChars: 500,
+  maxLines: 8,
+  maxLineChars: 80,
+  minFontSize: 8,
+  maxFontSize: 48,
+} as const;
+
+/**
+ * Normalises text before it is stored on a drawing.
+ * Strips control characters, normalises newlines, clamps line count and
+ * length. Returns "" for anything that is effectively empty — callers treat
+ * that as "cancel / delete", never as a blank drawing.
+ */
+export function sanitizeDrawingText(raw: string | null | undefined): string {
+  if (typeof raw !== "string") return "";
+  const cleaned = raw
+    .replace(/\r\n?/g, "\n")
+    // Control characters (except newline) can corrupt canvas measurement.
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\u0000-\u0009\u000B-\u001F\u007F]/g, "")
+    .slice(0, TEXT_LIMITS.maxChars);
+  const lines = cleaned
+    .split("\n")
+    .slice(0, TEXT_LIMITS.maxLines)
+    .map((l) => l.slice(0, TEXT_LIMITS.maxLineChars).trimEnd());
+  // Drop trailing blank lines so "text\n\n\n" doesn't render as a tall ghost.
+  while (lines.length && lines[lines.length - 1].trim() === "") lines.pop();
+  const out = lines.join("\n");
+  return out.trim().length ? out : "";
+}
+
+/** Lines a text drawing should paint, already clamped. */
+export function textLines(text: string | undefined): string[] {
+  const safe = sanitizeDrawingText(text);
+  return safe ? safe.split("\n") : [];
+}
+
 
 export interface Drawing {
   id: string;
