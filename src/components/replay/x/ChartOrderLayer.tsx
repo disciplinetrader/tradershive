@@ -286,6 +286,7 @@ export function ChartOrderLayer({
           invalidReason={draftCheck?.ok ? null : draftCheck?.reason ?? null}
           busy={busy}
           yOf={yOf}
+          activeKind={dragTag?.startsWith("draft:") ? (dragTag.split(":")[1] as LevelKind) : null}
           onDragLevel={(e, kind, current) => startDrag(e, "draft", kind, current)}
           onCancel={cancel}
           onConfirm={() => void confirm()}
@@ -416,6 +417,7 @@ function DraftArtifact({
   invalidReason,
   busy,
   yOf,
+  activeKind,
   onDragLevel,
   onCancel,
   onConfirm,
@@ -431,6 +433,7 @@ function DraftArtifact({
   invalidReason: string | null;
   busy: boolean;
   yOf: (p: number | null | undefined) => number | null;
+  activeKind: LevelKind | null;
   onDragLevel: (e: React.PointerEvent, kind: LevelKind, current: number) => void;
   onCancel: () => void;
   onConfirm: () => void;
@@ -471,13 +474,14 @@ function DraftArtifact({
         label={`${side === "long" ? "BUY" : "SELL"} ${orderType.toUpperCase()}`}
         value={formatPrice(entry, digits)}
         onPointerDown={(e) => onDragLevel(e, "entry", entry)}
+        active={activeKind === "entry"}
         strong
       />
       {ySl != null && sl != null ? (
-        <Level y={ySl} color={C.short} label="SL" value={formatPrice(sl, digits)} onPointerDown={(e) => onDragLevel(e, "sl", sl)} />
+        <Level y={ySl} color={C.short} label="SL" value={formatPrice(sl, digits)} onPointerDown={(e) => onDragLevel(e, "sl", sl)} active={activeKind === "sl"} />
       ) : null}
       {yTp != null && tp != null ? (
-        <Level y={yTp} color={C.long} label="TP" value={formatPrice(tp, digits)} onPointerDown={(e) => onDragLevel(e, "tp", tp)} />
+        <Level y={yTp} color={C.long} label="TP" value={formatPrice(tp, digits)} onPointerDown={(e) => onDragLevel(e, "tp", tp)} active={activeKind === "tp"} />
       ) : null}
 
       {/* Live R:R read-out */}
