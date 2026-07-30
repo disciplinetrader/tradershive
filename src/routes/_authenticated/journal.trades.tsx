@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import {
   Calendar as CalendarIcon,
   Download,
@@ -91,6 +91,7 @@ function loadView(): ViewMode {
 function JournalTradesPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
+  const navigate = useNavigate();
 
   const [view, setView] = useState<ViewMode>(loadView());
   const [filters, setFilters] = useState<JournalFiltersState>(EMPTY_FILTERS);
