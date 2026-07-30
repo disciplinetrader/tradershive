@@ -56,7 +56,7 @@ import { TradeCard } from "@/components/journal/TradeCard";
 import { TradeTable } from "@/components/journal/TradeTable";
 import { CalendarView } from "@/components/journal/CalendarView";
 import { TimelineView } from "@/components/journal/TimelineView";
-import { JournalDrawer } from "@/components/journal/JournalDrawer";
+import { openTradeEditor } from "@/components/journal/editor/store";
 import { ManualEntryDialog } from "@/components/journal/ManualEntryDialog";
 import { DraftsBanner } from "@/components/journal/DraftsBanner";
 import { JournalSearchBar, resolveSavedView } from "@/components/journal/JournalSearchBar";
@@ -94,7 +94,6 @@ function JournalTradesPage() {
 
   const [view, setView] = useState<ViewMode>(loadView());
   const [filters, setFilters] = useState<JournalFiltersState>(EMPTY_FILTERS);
-  const [drawerId, setDrawerId] = useState<string | null>(null);
   const [dayFilterIds, setDayFilterIds] = useState<Set<string> | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [savedView, setSavedView] = useState<string>("recent");
@@ -106,11 +105,19 @@ function JournalTradesPage() {
     try { localStorage.setItem(JOURNAL_STORAGE_KEYS.view, view); } catch { /* ignore */ }
   }, [view]);
 
-  // Deep-link edit — /journal?edit=<entryId> opens the drawer for that entry.
+  // Deep-link edit — /journal/trades?edit=<entryId> opens the unified editor.
   const search = useSearch({ strict: false }) as { edit?: string };
   useEffect(() => {
-    if (search?.edit) setDrawerId(search.edit);
+    if (search?.edit) openTradeEditor(search.edit, "full");
   }, [search?.edit]);
+
+  const openEditor = useCallback(
+    (id: string | null, mode: "quick" | "full" = "full") => {
+      if (id) openTradeEditor(id, mode);
+    },
+    [],
+  );
+  const openStory = useCallback((id: string) => { void navigate({ to: "/journal/$entryId", params: { entryId: id } }); }, [navigate]);
 
   const entriesQuery = useQuery({
     queryKey: journalKeys.list(),
@@ -171,15 +178,6 @@ function JournalTradesPage() {
     enabled: allScreenshotPaths.length > 0,
   });
 
-  const drawerEntry = useMemo(
-    () => (drawerId ? (entriesQuery.data ?? []).find((e) => e.id === drawerId) ?? null : null),
-    [drawerId, entriesQuery.data],
-  );
-  const drawerTagIds = useMemo(
-    () => (drawerEntry ? Array.from(entryTagMap.get(drawerEntry.id) ?? []) : []),
-    [drawerEntry, entryTagMap],
-  );
-
   const deleteMut = useMutation({
     mutationFn: (id: string) => deleteEntry(id),
     onSuccess: () => {
@@ -199,7 +197,7 @@ function JournalTradesPage() {
     onSuccess: (entry) => {
       qc.invalidateQueries({ queryKey: journalKeys.list() });
       toast.success("Entry duplicated");
-      setDrawerId(entry.id);
+      openTradeEditor(entry.id, "full");
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -279,7 +277,7 @@ function JournalTradesPage() {
         <>
           <DraftsBanner
             entries={entriesQuery.data ?? []}
-            onContinue={(id) => setDrawerId(id)}
+            onContinue={(id) => openEditor(id, "full")}
           />
 
           <GlassCard className="p-3 sm:p-4">
@@ -370,8 +368,8 @@ function JournalTradesPage() {
                         entry={entry}
                         tags={tags}
                         screenshotUrl={url}
-                        onView={() => setDrawerId(entry.id)}
-                        onEdit={() => setDrawerId(entry.id)}
+                        onView={() => openStory(entry.id)}
+                        onEdit={() => openEditor(entry.id, "quick")}
                         onDuplicate={() => duplicateMut.mutate(entry.id)}
                         onDelete={() => deleteMut.mutate(entry.id)}
                         onShare={() => shareMut.mutate(entry.id)}
@@ -386,8 +384,8 @@ function JournalTradesPage() {
                 <GlassCard className="p-4">
                   <TradeTable
                     entries={filtered}
-                    onView={setDrawerId}
-                    onEdit={setDrawerId}
+                    onView={openStory}
+                    onEdit={(id) => openEditor(id, "quick")}
                     onDuplicate={(id) => duplicateMut.mutate(id)}
                     onShare={(id) => shareMut.mutate(id)}
                     onDelete={(id) => setPendingDeleteId(id)}
@@ -400,7 +398,7 @@ function JournalTradesPage() {
                   entries={entriesQuery.data ?? []}
                   onDayClick={(_key, ids) => {
                     setDayFilterIds(new Set(ids));
-                    if (ids.length === 1) setDrawerId(ids[0]);
+                    if (ids.length === 1) openStory(ids[0]);
                   }}
                 />
               ) : null}
@@ -408,7 +406,7 @@ function JournalTradesPage() {
               {view === "timeline" ? (
                 <TimelineView
                   entries={filtered}
-                  onView={setDrawerId}
+                  onView={openStory}
                   screenshotUrls={screenshotUrlsQuery.data ?? {}}
                 />
               ) : null}
@@ -416,15 +414,6 @@ function JournalTradesPage() {
           )}
         </>
       )}
-
-      <JournalDrawer
-        entry={drawerEntry}
-        open={!!drawerEntry}
-        onOpenChange={(v) => !v && setDrawerId(null)}
-        allTags={tagsQuery.data ?? []}
-        entryTagIds={drawerTagIds}
-        taxonomy={taxonomyQuery.data ?? []}
-      />
 
       <AlertDialog open={!!pendingDeleteId} onOpenChange={(v) => !v && setPendingDeleteId(null)}>
         <AlertDialogContent>
