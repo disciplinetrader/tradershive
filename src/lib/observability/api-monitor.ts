@@ -60,7 +60,18 @@ export function installApiMonitor(): void {
     }, TIMEOUT_MS);
 
     try {
-      const response = await originalFetch(input as RequestInfo, init);
+      let response: Response;
+      try {
+        response = await originalFetch(input as RequestInfo, init);
+      } catch (err) {
+        // One retry for transient network blips (server-fn RPC calls fail with
+        // "Failed to fetch" during HMR reloads / brief connectivity drops).
+        const retryable =
+          !init?.signal?.aborted && /Failed to fetch|NetworkError|Load failed/i.test(String(err));
+        if (!retryable) throw err;
+        await new Promise((r) => window.setTimeout(r, 400));
+        response = await originalFetch(input as RequestInfo, init);
+      }
       const duration = performance.now() - start;
 
 
