@@ -248,13 +248,19 @@ export async function disableShare(entryId: string): Promise<void> {
   if (error) throw error;
 }
 
+/** Columns rendered by the public share page. Kept explicit so private
+ *  reflection/internal fields never leave the server via a share link. */
+const SHARED_ENTRY_COLUMNS =
+  "id, symbol, direction, session, setup, grade, rr, pnl, duration_seconds, emotions, mistakes, screenshots, notes_html, created_at, closed_at";
+
 export async function fetchSharedEntry(token: string): Promise<JournalEntry | null> {
   const { data, error } = await supabase
     .from("journal_entries")
-    .select("*")
+    .select(SHARED_ENTRY_COLUMNS)
     .eq("share_token", token)
     .eq("is_public", true)
     .maybeSingle();
   if (error) throw error;
   return (data ?? null) as JournalEntry | null;
 }
+
