@@ -313,19 +313,28 @@ function TradingSection() {
 /* ---------------- Security ---------------- */
 
 function SecuritySection({ email }: { email: string }) {
+  const [current, setCurrent] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [saving, setSaving] = useState(false);
 
   const change = async () => {
+    if (!current) return toast.error("Enter your current password");
     const parsed = passwordSchema.safeParse(password);
     if (!parsed.success) return toast.error(parsed.error.issues[0].message);
     if (password !== confirm) return toast.error("Passwords do not match");
+    if (password === current) return toast.error("New password must be different from your current password");
     setSaving(true);
+    // Re-verify identity with the provider before allowing a password change.
+    const { error: reauthError } = await supabase.auth.signInWithPassword({ email, password: current });
+    if (reauthError) {
+      setSaving(false);
+      return toast.error("Current password is incorrect");
+    }
     const { error } = await supabase.auth.updateUser({ password });
     setSaving(false);
     if (error) return toast.error(error.message);
-    setPassword(""); setConfirm("");
+    setCurrent(""); setPassword(""); setConfirm("");
     toast.success("Password updated");
   };
 
@@ -334,6 +343,11 @@ function SecuritySection({ email }: { email: string }) {
       <h2 className="text-base font-semibold">Security</h2>
       <p className="text-xs text-muted-foreground">Signed in as <span className="text-foreground">{email}</span>.</p>
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
+        <div className="space-y-1.5 sm:col-span-2">
+          <Label htmlFor="current-pw">Current password</Label>
+          <Input id="current-pw" type="password" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} />
+          <p className="text-[11px] text-muted-foreground">Required to confirm it&apos;s really you before changing your password.</p>
+        </div>
         <div className="space-y-1.5">
           <Label htmlFor="new-pw">New password</Label>
           <Input id="new-pw" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
@@ -345,10 +359,11 @@ function SecuritySection({ email }: { email: string }) {
         </div>
       </div>
       <div className="mt-5 flex justify-end">
-        <Button onClick={change} disabled={saving || !password} className="gradient-primary text-primary-foreground">
+        <Button onClick={change} disabled={saving || !current || !password} className="gradient-primary text-primary-foreground">
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Update password"}
         </Button>
       </div>
+
     </GlassCard>
   );
 }
