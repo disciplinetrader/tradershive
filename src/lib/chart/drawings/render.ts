@@ -389,19 +389,18 @@ export function drawDrawing(
     }
     case "long_position":
     case "short_position": {
-      const entry = pts[0], target = pts[1], stop = pts[2];
-      if (!entry || !target || !stop) break;
-      const x1 = entry.x;
-      const x2 = Math.max(target.x, x1 + 40);
+      const g = positionGeometry(d, c);
+      if (!g) break;
+      const { x1, x2, entryY, targetY, stopY } = g;
       const green = "#22c55e";
       const red = "#ef4444";
       const rewardTone = green;
       const riskTone = red;
       ctx.setLineDash([]);
       ctx.fillStyle = withAlpha(rewardTone, 0.16);
-      ctx.fillRect(x1, Math.min(entry.y, target.y), x2 - x1, Math.abs(target.y - entry.y));
+      ctx.fillRect(x1, Math.min(entryY, targetY), x2 - x1, Math.abs(targetY - entryY));
       ctx.fillStyle = withAlpha(riskTone, 0.16);
-      ctx.fillRect(x1, Math.min(entry.y, stop.y), x2 - x1, Math.abs(stop.y - entry.y));
+      ctx.fillRect(x1, Math.min(entryY, stopY), x2 - x1, Math.abs(stopY - entryY));
 
       const line = (y: number, color: string, dashed: boolean) => {
         ctx.strokeStyle = color;
@@ -412,18 +411,18 @@ export function drawDrawing(
         ctx.lineTo(x2, y);
         ctx.stroke();
       };
-      line(entry.y, s.color, false);
-      line(target.y, rewardTone, true);
-      line(stop.y, riskTone, true);
+      line(entryY, s.color, false);
+      line(targetY, rewardTone, true);
+      line(stopY, riskTone, true);
       ctx.setLineDash([]);
 
       const risk = Math.abs(d.points[0].price - d.points[2].price);
       const reward = Math.abs(d.points[1].price - d.points[0].price);
       const rr = risk > 0 ? reward / risk : 0;
-      label(ctx, `${d.kind === "long_position" ? "LONG" : "SHORT"} · ${c.formatPrice(d.points[0].price)}`, x1 + 4, entry.y - 3, "#e2e8f0");
-      label(ctx, `TP ${c.formatPrice(d.points[1].price)}`, x1 + 4, target.y - 3, green);
-      label(ctx, `SL ${c.formatPrice(d.points[2].price)}`, x1 + 4, stop.y - 3, red);
-      label(ctx, `R:R  1 : ${rr.toFixed(2)}`, x2 - 90, Math.min(entry.y, target.y) - 3, "#e2e8f0");
+      label(ctx, `${d.kind === "long_position" ? "LONG" : "SHORT"} · ${c.formatPrice(d.points[0].price)}`, x1 + 4, entryY - 3, "#e2e8f0");
+      label(ctx, `TP ${c.formatPrice(d.points[1].price)}`, x1 + 4, targetY - 3, green);
+      label(ctx, `SL ${c.formatPrice(d.points[2].price)}`, x1 + 4, stopY - 3, red);
+      label(ctx, `R:R  1 : ${rr.toFixed(2)}`, x2 - 90, Math.min(entryY, targetY) - 3, "#e2e8f0");
       break;
     }
   }
