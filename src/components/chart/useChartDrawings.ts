@@ -113,14 +113,29 @@ export function useChartDrawings({
     };
 
     type Session =
-      | { mode: "create"; kind: DrawingKind; origin: DrawingPoint; moved: boolean }
+      | { mode: "create"; kind: DrawingKind; origin: DrawingPoint; moved: boolean; downX: number; downY: number }
       | { mode: "move"; id: string; last: DrawingPoint }
       | { mode: "anchor"; id: string; anchorId: string };
 
     let session: Session | null = null;
     let pointerId: number | null = null;
+    /**
+     * Two-click authoring state. After the first click the tool stays armed:
+     * the draft follows the cursor and the *next* click commits the second
+     * anchor. This is the TradingView behaviour for trend lines, rays,
+     * shapes, fibs and measurements.
+     */
+    let pending: { kind: DrawingKind; origin: DrawingPoint } | null = null;
+
+    const clearPending = () => {
+      pending = null;
+      store.draft = null;
+      adapter.requestDrawingsRepaint?.();
+    };
+    pendingCancelRef.current = clearPending;
 
     const finishCreate = (d: Drawing) => {
+      pending = null;
       store.draft = null;
       store.add(d);
       if ((d.kind === "long_position" || d.kind === "short_position")) ref.current.onPositionDrawn?.(d);
@@ -147,6 +162,15 @@ export function useChartDrawings({
       if (!pt) return;
       const coords = adapter.getCoords?.();
 
+      // Second click of a two-click object → commit.
+      if (pending) {
+        e.preventDefault();
+        e.stopPropagation();
+        const { kind, origin } = pending;
+        finishCreate(makeDrawing(kind, seedPoints(kind, origin, pt), ref.current.style));
+        return;
+      }
+
       if (isDrawingKind(tool)) {
         e.preventDefault();
         e.stopPropagation();
@@ -155,7 +179,7 @@ export function useChartDrawings({
           finishCreate(makeDrawing(tool, [pt], ref.current.style));
           return;
         }
-        session = { mode: "create", kind: tool, origin: pt, moved: false };
+        session = { mode: "create", kind: tool, origin: pt, moved: false, downX: px, downY: py };
         store.draft = makeDrawing(
           tool,
           FREEHAND_KINDS.includes(tool) ? [pt] : seedPoints(tool, pt, pt),
@@ -201,8 +225,18 @@ export function useChartDrawings({
 
     const onMove = (e: PointerEvent) => {
       const s = session;
-      if (!s || (pointerId != null && e.pointerId !== pointerId)) return;
       const { px, py } = localPoint(e);
+
+      // Live preview between the first and second click.
+      if (!s && pending) {
+        const pt = toPoint(px, py);
+        if (!pt) return;
+        store.draft = makeDrawing(pending.kind, seedPoints(pending.kind, pending.origin, pt), ref.current.style);
+        adapter.requestDrawingsRepaint?.();
+        return;
+      }
+
+      if (!s || (pointerId != null && e.pointerId !== pointerId)) return;
       const pt = toPoint(px, py);
       if (!pt) return;
       e.preventDefault();
@@ -211,7 +245,7 @@ export function useChartDrawings({
       if (s.mode === "create") {
         const draft = store.draft;
         if (!draft) return;
-        s.moved = true;
+        if (Math.abs(px - s.downX) > 3 || Math.abs(py - s.downY) > 3) s.moved = true;
         draft.points = FREEHAND_KINDS.includes(s.kind)
           ? [...draft.points, pt]
           : seedPoints(s.kind, s.origin, pt);
@@ -237,34 +271,56 @@ export function useChartDrawings({
       pointerId = null;
       if (current.mode === "create") {
         const draft = store.draft;
-        store.draft = null;
         if (!draft) return;
         const isPosition = draft.kind === "long_position" || draft.kind === "short_position";
-        if (!current.moved && !isPosition) {
-          // A click without a drag: give the object a sensible default span.
-          const coords = adapter.getCoords?.();
-          const span = coords ? (coords.timeAt(coords.width * 0.85) ?? draft.points[0].time) : draft.points[0].time;
-          draft.points = seedPoints(draft.kind, draft.points[0], {
-            time: Math.max(span, draft.points[0].time),
-            price: draft.points[0].price,
-          });
+        if (!current.moved && !isPosition && !FREEHAND_KINDS.includes(draft.kind)) {
+          // A click without a drag arms the second anchor instead of guessing
+          // one — the object now follows the cursor until the next click.
+          pending = { kind: draft.kind, origin: current.origin };
+          adapter.requestDrawingsRepaint?.();
+          return;
         }
+        store.draft = null;
         finishCreate(draft);
         return;
       }
       store.commit();
     };
 
+    const onContext = (e: MouseEvent) => {
+      const coords = adapter.getCoords?.();
+      if (!coords) return;
+      const r = rectOf();
+      const px = e.clientX - r.left;
+      const py = e.clientY - r.top;
+      const list = store.list();
+      for (let i = list.length - 1; i >= 0; i--) {
+        const d = list[i];
+        if (d.hidden) continue;
+        if (hitTest(d, coords, px, py)) {
+          e.preventDefault();
+          e.stopPropagation();
+          store.select(d.id);
+          setMenu({ id: d.id, x: e.clientX, y: e.clientY });
+          return;
+        }
+      }
+    };
+
     el.addEventListener("pointerdown", onDown, { capture: true });
+    el.addEventListener("contextmenu", onContext, { capture: true });
     window.addEventListener("pointermove", onMove, { capture: true });
     window.addEventListener("pointerup", onUp, { capture: true });
     return () => {
       el.removeEventListener("pointerdown", onDown, { capture: true } as any);
+      el.removeEventListener("contextmenu", onContext, { capture: true } as any);
       window.removeEventListener("pointermove", onMove, { capture: true } as any);
       window.removeEventListener("pointerup", onUp, { capture: true } as any);
+      pendingCancelRef.current = null;
       store.draft = null;
     };
   }, [adapter, store, enabled]);
+
 
   // ── Cursor affordance ────────────────────────────────────────────────
   useEffect(() => {
