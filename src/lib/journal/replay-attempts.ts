@@ -258,6 +258,8 @@ export async function startAttempt(input: {
       original_trade_id: input.entry.trade_id,
       attempt_number: attemptNumber,
       mode: input.mode,
+      // Phase 5: the drill target must be queryable, not only stored on the session.
+      mistake_focus: input.mistake ?? null,
       status: "in_progress",
       intent: (input.intent ?? {}) as never,
       breakdown: {} as never,
