@@ -291,10 +291,7 @@ export function ExecutionSection() {
 
 export function ReviewSection() {
   const { entry, extras, setField, setExtras, setNarrative } = useTradeEditorContext();
-  const narrative = useMemo(() => {
-    const raw = (entry as unknown as { narrative?: Record<string, string> }).narrative ?? {};
-    return raw;
-  }, [entry]);
+  const narrative = useMemo(() => readNarrative(entry), [entry]);
 
   return (
     <div className="space-y-3">
