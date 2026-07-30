@@ -156,6 +156,20 @@ function AuthPage() {
                 {mode === "register" ? <RegisterForm /> : null}
                 {mode === "forgot" ? <ForgotForm onSwitch={() => setMode("login")} /> : null}
 
+                {mode !== "forgot" ? (
+                  <div className="mt-6">
+                    <div className="relative mb-4">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-border/60" />
+                      </div>
+                      <div className="relative flex justify-center text-xs">
+                        <span className="bg-card px-2 text-muted-foreground">or continue with</span>
+                      </div>
+                    </div>
+                    <GoogleButton />
+                  </div>
+                ) : null}
+
                 <p className="mt-6 text-center text-xs text-muted-foreground">
                   {mode === "register" ? (
                     <>
