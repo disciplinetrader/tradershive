@@ -86,6 +86,12 @@ export function ChartOrderLayer({
     });
   }, []);
 
+  // Never repaint after unmount (drag/geometry callbacks can outlive us).
+  useEffect(() => () => {
+    if (frame.current != null) cancelAnimationFrame(frame.current);
+    frame.current = null;
+  }, []);
+
   // ── Reprojection: geometry changes, resize, candle pushes ───────────
   useEffect(() => {
     if (!adapter) return;
