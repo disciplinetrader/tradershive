@@ -65,11 +65,8 @@ import { ImprovementPlan } from "@/components/journal/story/ImprovementPlan";
 import { ReplayActions, useReplayContext } from "@/components/journal/story/ReplayActions";
 import type { Candle } from "@/lib/market-data/types";
 import { routeBoundaries } from "@/lib/route-boundaries";
-
-// The editor is heavy and only opens on demand — keep it out of first paint.
-const JournalDrawer = lazy(() =>
-  import("@/components/journal/JournalDrawer").then((m) => ({ default: m.JournalDrawer })),
-);
+import { openTradeEditor } from "@/components/journal/editor/store";
+import { useTradeEditorShortcut } from "@/components/journal/editor/useTradeEditorShortcut";
 
 const AiReview = lazy(() =>
   import("@/components/journal/story/AiReview").then((m) => ({ default: m.AiReview })),
@@ -102,11 +99,13 @@ function TradeStoryPage() {
 
   const [candles, setCandles] = useState<Candle[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(null);
-  const [editorOpen, setEditorOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const uploadRef = useRef<(() => void) | null>(null);
   const notesFocusRef = useRef<(() => void) | null>(null);
   const similarRef = useRef<HTMLDivElement | null>(null);
+
+  // "E" opens the unified editor for the trade being read.
+  useTradeEditorShortcut(entryId);
 
   const entryQuery = useQuery({ queryKey: journalKeys.entry(entryId), queryFn: () => fetchEntry(entryId) });
   const listQuery = useQuery({ queryKey: journalKeys.list(), queryFn: fetchEntries });
@@ -223,7 +222,7 @@ function TradeStoryPage() {
         hiveDelta={hiveDelta}
         prevId={prevId}
         nextId={nextId}
-        onEdit={() => setEditorOpen(true)}
+        onEdit={() => openTradeEditor(entryId, "full")}
         onAddNote={() => notesFocusRef.current?.()}
         onAddScreenshot={() => uploadRef.current?.()}
         onReplay={goReplay}
@@ -305,19 +304,6 @@ function TradeStoryPage() {
           </div>
         </div>
       </div>
-
-      {editorOpen ? (
-        <Suspense fallback={null}>
-          <JournalDrawer
-            entry={entry}
-            open={editorOpen}
-            onOpenChange={setEditorOpen}
-            allTags={tagsQuery.data ?? []}
-            entryTagIds={entryTagIds}
-            taxonomy={taxonomyQuery.data ?? []}
-          />
-        </Suspense>
-      ) : null}
 
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent>
