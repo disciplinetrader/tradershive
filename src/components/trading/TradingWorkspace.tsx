@@ -24,6 +24,7 @@ import { AlertsDialog } from "@/components/chart/AlertsDialog";
 import { ChartEngine } from "@/components/chart/ChartEngine";
 import { DrawingToolRail } from "@/components/chart/DrawingToolRail";
 import { useChartDrawings } from "@/components/chart/useChartDrawings";
+import { ChartTextEditor } from "@/components/chart/ChartTextEditor";
 import { DrawingContextMenu } from "@/components/chart/DrawingContextMenu";
 import { DrawingStore } from "@/lib/chart/drawings/store";
 import type { ToolId } from "@/lib/chart/drawings/types";
