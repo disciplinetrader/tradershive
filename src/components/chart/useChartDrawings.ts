@@ -231,9 +231,47 @@ export function useChartDrawings({
       if (selectedId) store.select(null);
     };
 
+    /**
+     * Cursor + hover affordance so the trader always knows what the next
+     * click will do: crosshair while authoring, resize over an endpoint,
+     * move over the body of a drawing, default over empty chart.
+     */
+    const setCursor = (value: string) => {
+      if (el.style.cursor !== value) el.style.cursor = value;
+    };
+
+    const updateHover = (px: number, py: number, inside: boolean) => {
+      if (session) return;
+      const tool = ref.current.activeTool;
+      if (!inside) { store.setHovered(null); return; }
+      if (isDrawingKind(tool) || pending) { store.setHovered(null); setCursor("crosshair"); return; }
+      const coords = adapter.getCoords?.();
+      if (!coords) return;
+      const selected = store.selected();
+      if (selected && !selected.locked && anchorAt(selected, coords, px, py)) {
+        store.setHovered(selected.id);
+        setCursor("nwse-resize");
+        return;
+      }
+      const list = store.list();
+      for (let i = list.length - 1; i >= 0; i--) {
+        const d = list[i];
+        if (d.hidden) continue;
+        if (hitTest(d, coords, px, py)) {
+          store.setHovered(d.id);
+          setCursor(d.locked ? "not-allowed" : "move");
+          return;
+        }
+      }
+      store.setHovered(null);
+      setCursor(tool === "crosshair" ? "crosshair" : "");
+    };
+
     const onMove = (e: PointerEvent) => {
       const s = session;
       const { px, py } = localPoint(e);
+      const r = rectOf();
+      updateHover(px, py, px >= 0 && py >= 0 && px <= r.width && py <= r.height);
 
       // Live preview between the first and second click.
       if (!s && pending) {
@@ -243,6 +281,7 @@ export function useChartDrawings({
         adapter.requestDrawingsRepaint?.();
         return;
       }
+
 
       if (!s || (pointerId != null && e.pointerId !== pointerId)) return;
       const pt = toPoint(px, py);
