@@ -83,6 +83,11 @@ export function useChartDrawings({
   const ref = useRef({ activeTool, keepToolActive, magnet, candles, style, onPositionDrawn, setActiveTool });
   ref.current = { activeTool, keepToolActive, magnet, candles, style, onPositionDrawn, setActiveTool };
 
+  // Tick size for price-handle snapping — read synchronously during drags so
+  // a precision change never needs to rebuild the pointer listeners.
+  const tickRef = useRef(tickFromPrecision(pricePrecision));
+  tickRef.current = tickFromPrecision(pricePrecision);
+
   /** Discard an in-flight text session without touching the store. */
   const cancelTextEditor = useCallback(() => {
     setTextEditor(null);
