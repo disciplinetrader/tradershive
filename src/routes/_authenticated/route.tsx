@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, redirect, useRouter } from "@tanstack/react-router";
+import { ClientOnly, createFileRoute, Outlet, redirect, useRouter } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/layout/app-shell";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
@@ -23,6 +23,7 @@ export const Route = createFileRoute("/_authenticated")({
 function AuthenticatedLayout() {
   const router = useRouter();
   return (
+    <ClientOnly fallback={<div className="min-h-dvh w-full bg-background" />}>
     <AppShell>
       <FeedbackProvider>
         <ErrorBoundary
@@ -42,5 +43,6 @@ function AuthenticatedLayout() {
         </ErrorBoundary>
       </FeedbackProvider>
     </AppShell>
+    </ClientOnly>
   );
 }
