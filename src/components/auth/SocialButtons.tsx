@@ -77,7 +77,10 @@ export function SocialButtons({ mode = "signin" }: { mode?: "signin" | "signup" 
         onClick={handleGoogle}
       >
         {busy === "google" ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Redirecting to Google…
+          </>
         ) : (
           <>
             <GoogleIcon className="mr-2 h-4 w-4" />
@@ -85,6 +88,12 @@ export function SocialButtons({ mode = "signin" }: { mode?: "signin" | "signup" 
           </>
         )}
       </Button>
+      {error ? (
+        <p role="alert" className="text-xs text-destructive">
+          {error}
+        </p>
+      ) : null}
     </div>
+
   );
 }
