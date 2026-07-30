@@ -153,7 +153,7 @@ export function computeTradeMetrics(input: {
   lot: number;
   commissionPerLot?: number;
 }): TradeMetrics {
-  const { side, entry, sl, tp, lot } = input;
+  const { entry, sl, tp, lot } = input;
   const riskDistance = sl != null ? Math.abs(entry - sl) : 0;
   const rewardDistance = tp != null ? Math.abs(tp - entry) : 0;
   const riskAmount = riskDistance * lot;
@@ -169,9 +169,8 @@ export function computeTradeMetrics(input: {
     commission,
     expectedProfit: Math.max(0, rewardAmount - commission),
     expectedLoss: riskAmount + commission,
-    // side is intentionally unused in the arithmetic — distances are absolute
-    ...(side ? null : null),
   };
+
 }
 
 /** Unrealised P/L for an open replay trade at `price`. */
