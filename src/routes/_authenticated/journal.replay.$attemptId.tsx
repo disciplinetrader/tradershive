@@ -312,7 +312,8 @@ function ComparisonPage() {
         </StorySection>
         <StorySection title="Plan adherence" subtitle="Original plan vs actual, replay intent vs actual.">
           <PlanAdherenceComparison
-            originalRows={model.originalPlanRows.map((r) => ({
+            originalRows={model.originalPlanRows.map((r, i) => ({
+              id: `orig-${i}`,
               area: r.area,
               planned: r.planned,
               actual: r.actual,
