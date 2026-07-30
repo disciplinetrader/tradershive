@@ -4,7 +4,7 @@ import { AlertTriangle, ArrowRight, CheckCircle2, Info, ShieldAlert } from "luci
 import { cn } from "@/lib/utils";
 import type { HomeActionItem } from "@/lib/dashboard-home.functions";
 
-type Props = { items: HomeActionItem[] };
+type Props = { items: HomeActionItem[]; hideHeader?: boolean };
 
 const TONE = {
   info: { ring: "border-info/30", bg: "bg-info/10", text: "text-info", Icon: Info },
@@ -16,13 +16,16 @@ const TONE = {
  * Section 3 — Action Items.
  * Answers: "What needs attention?" Each item is actionable and deep-links.
  */
-export function ActionItemsList({ items }: Props) {
+export function ActionItemsList({ items, hideHeader = false }: Props) {
   return (
     <section className="space-y-3">
-      <div>
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Action items</h2>
-        <p className="text-[11px] text-muted-foreground/80">Loose ends worth closing before your next trade.</p>
-      </div>
+      {hideHeader ? null : (
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Action items</h2>
+          <p className="text-[11px] text-muted-foreground/80">Loose ends worth closing before your next trade.</p>
+        </div>
+      )}
+
 
       {items.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border/50 bg-card/40 p-8 text-center">
