@@ -16,6 +16,8 @@ import {
   type FrequencyRow,
 } from "@/lib/journal/metrics";
 import { cn } from "@/lib/utils";
+import { useImprovement } from "@/lib/journal/use-improvement";
+import { AnalyticsRollup } from "@/components/journal/improvement/AnalyticsRollup";
 
 export const Route = createFileRoute("/_authenticated/journal/analytics")({
   head: () => ({
@@ -38,6 +40,7 @@ function JournalAnalytics() {
   const sessions = useMemo(() => sessionBreakdown(entries), [entries]);
   const symbols = useMemo(() => symbolBreakdown(entries).slice(0, 8), [entries]);
   const insights = useMemo(() => detectInsights(entries), [entries]);
+  const improvement = useImprovement();
 
   if (!entriesQuery.isLoading && entries.length === 0) {
     return (
@@ -80,6 +83,8 @@ function JournalAnalytics() {
         <BreakdownCard title="By session" rows={sessions} emptyHint="Sessions are auto-detected on new trades." />
         <BreakdownCard title="By symbol" rows={symbols} emptyHint="Add a symbol to your entries." />
       </div>
+
+      <AnalyticsRollup rollup={improvement.rollup} entries={improvement.entries} homework={improvement.homework} />
 
       <GlassCard className="flex flex-wrap items-center justify-between gap-2 p-4">
         <p className="text-xs text-muted-foreground">Need deeper equity, risk and drawdown analytics?</p>

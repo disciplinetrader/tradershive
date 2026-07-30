@@ -99,6 +99,9 @@ export function PracticeBanner({ sessionId }: { sessionId: string | null | undef
           processOriginal: processScore(rows, "original"),
           processReplay: processScore(rows, "replay"),
           mistakes: { correctedCount: mistakes.correctedCount, repeatedCount: mistakes.repeatedCount },
+          // Phase 5 aggregation reads these instead of re-deriving every attempt.
+          mistakeRows: mistakes.rows.map((m) => ({ value: m.value, verdict: m.verdict })),
+          introduced: mistakes.introduced.map((m) => ({ value: m.value, verdict: m.verdict })),
         },
       });
 
