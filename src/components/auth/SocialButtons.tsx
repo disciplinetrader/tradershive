@@ -27,26 +27,45 @@ function GoogleIcon({ className }: { className?: string }) {
   );
 }
 
+const GOOGLE_ERROR = "Google sign-in failed. Please try again or continue using email.";
+
 export function SocialButtons({ mode = "signin" }: { mode?: "signin" | "signup" }) {
   const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const verb = mode === "signup" ? "Sign up" : "Continue";
 
   const handleGoogle = async () => {
+    if (busy) return;
     setBusy("google");
+    setError(null);
+    let redirected = false;
     try {
       const result = await lovable.auth.signInWithOAuth("google", {
         redirect_uri: window.location.origin,
       });
       if (result.error) {
-        toast.error(result.error.message ?? "Google sign-in failed");
+        // Never surface raw OAuth/provider errors to users.
+        console.error("[auth] google oauth failed", result.error);
+        setError(GOOGLE_ERROR);
+        toast.error(GOOGLE_ERROR);
         return;
       }
-      if (result.redirected) return;
+      if (result.redirected) {
+        // Full-page redirect in flight — keep the spinner until unload.
+        redirected = true;
+        return;
+      }
       window.location.href = "/dashboard";
+      redirected = true;
+    } catch (e) {
+      console.error("[auth] google oauth threw", e);
+      setError(GOOGLE_ERROR);
+      toast.error(GOOGLE_ERROR);
     } finally {
-      setBusy(null);
+      if (!redirected) setBusy(null);
     }
   };
+
 
   return (
     <div className="grid gap-2">
