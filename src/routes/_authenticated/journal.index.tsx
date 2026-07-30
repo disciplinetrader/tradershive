@@ -11,6 +11,8 @@ import { fetchEntries, journalKeys } from "@/lib/journal/api";
 import { formatCurrency } from "@/lib/journal/format";
 import { detectInsights, hiveScore, scoreBand, summarize } from "@/lib/journal/metrics";
 import { cn } from "@/lib/utils";
+import { useImprovement } from "@/lib/journal/use-improvement";
+import { IntelligencePanel } from "@/components/journal/improvement/IntelligencePanel";
 
 export const Route = createFileRoute("/_authenticated/journal/")({
   head: () => ({
@@ -27,6 +29,8 @@ export const Route = createFileRoute("/_authenticated/journal/")({
 function JournalOverview() {
   const entriesQuery = useQuery({ queryKey: journalKeys.list(), queryFn: fetchEntries, staleTime: 30_000 });
   const entries = entriesQuery.data ?? [];
+  // Phase 5: same roll-up the Analytics area renders, so the two never disagree.
+  const improvement = useImprovement();
 
   const score = useMemo(() => hiveScore(entries), [entries]);
   const stats = useMemo(() => summarize(entries.filter((e) => e.status !== "draft")), [entries]);
@@ -113,6 +117,8 @@ function JournalOverview() {
           <Kpi label="Trades journaled" value={`${Math.round(stats.journaledPct)}%`} tone="flat" />
         </div>
       </div>
+
+      <IntelligencePanel rollup={improvement.rollup} entries={improvement.entries} />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <GlassCard className="p-5">
