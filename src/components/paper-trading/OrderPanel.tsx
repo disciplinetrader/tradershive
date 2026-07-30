@@ -34,7 +34,16 @@ import { PlaybookQuickAttach } from "@/components/playbook/PlaybookQuickAttach";
 type Side = "long" | "short";
 type OrderType = "market" | "limit" | "stop" | "stop_limit";
 
-export function OrderPanel() {
+/**
+ * Order entry.
+ *
+ * `compact` renders the terminal-style ticket used by the Trading Workspace:
+ * only Buy/Sell, order type, entry, lot, SL, TP and Risk stay visible —
+ * commission, tags, notes and playbook attachment move behind "Advanced".
+ * Execution logic is identical in both modes.
+ */
+export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
+
   const qc = useQueryClient();
   const { symbol, symbolMeta, account, accountId } = usePaper();
   const livePrice = useLivePrice(symbol);
@@ -328,9 +337,12 @@ export function OrderPanel() {
             ))}
           </div>
         </Field>
-        <Field label="Commission">
-          <Input inputMode="decimal" value={commission} onChange={(e) => setCommission(e.target.value)} className="h-8 font-mono" />
-        </Field>
+        {!compact && (
+          <Field label="Commission">
+            <Input inputMode="decimal" value={commission} onChange={(e) => setCommission(e.target.value)} className="h-8 font-mono" />
+          </Field>
+        )}
+
       </div>
 
       {calc && (
@@ -384,7 +396,16 @@ export function OrderPanel() {
         </motion.div>
       )}
 
+      <details open={!compact} className={cn(compact && "rounded-md border border-border/40 bg-background/30")}>
+        <summary className={cn(
+          "flex cursor-pointer list-none items-center gap-1.5 px-2 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground hover:text-foreground",
+          !compact && "hidden",
+        )}>
+          Advanced — tags, notes &amp; playbook
+        </summary>
+        <div className={cn("space-y-3", compact && "border-t border-border/40 p-2")}>
       <div>
+
         <Label className="text-xs">Tags</Label>
         <div className="mt-1 flex flex-wrap gap-1">
           {selectedTagIds.map((id) => {
@@ -442,8 +463,12 @@ export function OrderPanel() {
 
       <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Trade notes / thesis" rows={2} />
 
+      <PlaybookQuickAttach context="paper" />
+        </div>
+      </details>
+
       <div className="flex flex-wrap items-center gap-2">
-        <PlaybookQuickAttach context="paper" />
+
         <div className="ml-auto flex flex-1 justify-end gap-2">
           <Button variant="outline" onClick={reset} className="cursor-pointer transition-all duration-150 active:scale-[0.98]"><RotateCcw className="mr-1.5 h-4 w-4" /> Reset</Button>
           <Button
