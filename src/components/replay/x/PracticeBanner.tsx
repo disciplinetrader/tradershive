@@ -21,12 +21,11 @@ import {
   getAttemptBySession,
 } from "@/lib/journal/replay-attempts";
 import { fetchEntry } from "@/lib/journal/api";
-import { planVsReality, storyMetrics } from "@/lib/journal/story";
+import { mistakeLabel, planVsReality, storyMetrics } from "@/lib/journal/story";
 import {
   compareMistakes,
   improvementDelta,
   intentAdherence,
-  mistakeLabelSafe,
   outcomeRows,
   processScore,
   processVsOutcome,
@@ -36,6 +35,8 @@ import {
   type AttemptSummary,
 } from "@/lib/journal/replay-compare";
 import { cn } from "@/lib/utils";
+
+const diff = (a: number | null, b: number | null) => (a == null || b == null ? null : b - a);
 
 export function PracticeBanner({ sessionId }: { sessionId: string | null | undefined }) {
   const navigate = useNavigate();
@@ -51,7 +52,7 @@ export function PracticeBanner({ sessionId }: { sessionId: string | null | undef
   if (!attempt || attempt.status === "completed") return null;
 
   const blind = attempt.mode === "blind";
-  const focus = attempt.focus_mistake ? mistakeLabelSafe(attempt.focus_mistake) : null;
+  const focus = attempt.mistake_focus ? mistakeLabel(attempt.mistake_focus) : null;
 
   const finish = async () => {
     setBusy(true);
@@ -82,9 +83,15 @@ export function PracticeBanner({ sessionId }: { sessionId: string | null | undef
 
       await completeAttempt(attempt.id, {
         telemetry,
-        processDelta: po.processDelta,
-        outcomeDelta: po.outcomeDelta,
+        process_delta: po.processDelta,
+        outcome_delta: po.outcomeDelta,
         verdict: readiness.verdict,
+        replay_trade_id: trades[trades.length - 1]?.id ?? null,
+        entry_diff: diff(original.entryPrice, replay.entryPrice),
+        exit_diff: diff(original.exitPrice, replay.exitPrice),
+        rr_diff: diff(original.realizedR, replay.realizedR),
+        timing_diff_seconds: diff(original.holdSeconds, replay.holdSeconds),
+        result_diff: diff(original.pnl, replay.pnl),
         breakdown: {
           rows,
           outcome: outcomeRows(original, replay),
