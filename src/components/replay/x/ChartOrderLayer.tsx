@@ -21,7 +21,7 @@
  *     drag never blocks or pauses playback
  *   – execution is delegated to the replay context, untouched
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useLayoutEffect } from "react";
 import { toast } from "sonner";
 import { Ban, CircleDot, Minimize2, RefreshCw, Shield, X } from "lucide-react";
 import type { ChartAdapter } from "@/lib/chart/adapter";
