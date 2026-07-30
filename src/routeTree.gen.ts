@@ -170,6 +170,7 @@ import { Route as ApiPublicHooksEmailQueueRouteImport } from './routes/api/publi
 import { Route as ApiPublicHooksEmailMonthlyReportRouteImport } from './routes/api/public/hooks/email-monthly-report'
 import { Route as ApiPublicHooksBattleSettlementRouteImport } from './routes/api/public/hooks/battle-settlement'
 import { Route as AuthenticatedStrategiesPlaybooksIdRouteImport } from './routes/_authenticated/strategies.playbooks.$id'
+import { Route as AuthenticatedJournalReplayAttemptIdRouteImport } from './routes/_authenticated/journal.replay.$attemptId'
 import { Route as AuthenticatedCommunityProfileUsernameRouteImport } from './routes/_authenticated/community.profile.$username'
 import { Route as AuthenticatedCommunityPostIdRouteImport } from './routes/_authenticated/community.post.$id'
 import { Route as AuthenticatedCommunityIdeasNewRouteImport } from './routes/_authenticated/community.ideas.new'
@@ -1105,6 +1106,12 @@ const AuthenticatedStrategiesPlaybooksIdRoute =
     path: '/$id',
     getParentRoute: () => AuthenticatedStrategiesPlaybooksRoute,
   } as any)
+const AuthenticatedJournalReplayAttemptIdRoute =
+  AuthenticatedJournalReplayAttemptIdRouteImport.update({
+    id: '/replay/$attemptId',
+    path: '/replay/$attemptId',
+    getParentRoute: () => AuthenticatedJournalRoute,
+  } as any)
 const AuthenticatedCommunityProfileUsernameRoute =
   AuthenticatedCommunityProfileUsernameRouteImport.update({
     id: '/profile/$username',
@@ -1322,6 +1329,7 @@ export interface FileRoutesByFullPath {
   '/community/ideas/new': typeof AuthenticatedCommunityIdeasNewRoute
   '/community/post/$id': typeof AuthenticatedCommunityPostIdRoute
   '/community/profile/$username': typeof AuthenticatedCommunityProfileUsernameRoute
+  '/journal/replay/$attemptId': typeof AuthenticatedJournalReplayAttemptIdRoute
   '/strategies/playbooks/$id': typeof AuthenticatedStrategiesPlaybooksIdRoute
   '/api/public/hooks/battle-settlement': typeof ApiPublicHooksBattleSettlementRoute
   '/api/public/hooks/email-monthly-report': typeof ApiPublicHooksEmailMonthlyReportRoute
@@ -1480,6 +1488,7 @@ export interface FileRoutesByTo {
   '/community/ideas/new': typeof AuthenticatedCommunityIdeasNewRoute
   '/community/post/$id': typeof AuthenticatedCommunityPostIdRoute
   '/community/profile/$username': typeof AuthenticatedCommunityProfileUsernameRoute
+  '/journal/replay/$attemptId': typeof AuthenticatedJournalReplayAttemptIdRoute
   '/strategies/playbooks/$id': typeof AuthenticatedStrategiesPlaybooksIdRoute
   '/api/public/hooks/battle-settlement': typeof ApiPublicHooksBattleSettlementRoute
   '/api/public/hooks/email-monthly-report': typeof ApiPublicHooksEmailMonthlyReportRoute
@@ -1653,6 +1662,7 @@ export interface FileRoutesById {
   '/_authenticated/community/ideas/new': typeof AuthenticatedCommunityIdeasNewRoute
   '/_authenticated/community/post/$id': typeof AuthenticatedCommunityPostIdRoute
   '/_authenticated/community/profile/$username': typeof AuthenticatedCommunityProfileUsernameRoute
+  '/_authenticated/journal/replay/$attemptId': typeof AuthenticatedJournalReplayAttemptIdRoute
   '/_authenticated/strategies/playbooks/$id': typeof AuthenticatedStrategiesPlaybooksIdRoute
   '/api/public/hooks/battle-settlement': typeof ApiPublicHooksBattleSettlementRoute
   '/api/public/hooks/email-monthly-report': typeof ApiPublicHooksEmailMonthlyReportRoute
@@ -1826,6 +1836,7 @@ export interface FileRouteTypes {
     | '/community/ideas/new'
     | '/community/post/$id'
     | '/community/profile/$username'
+    | '/journal/replay/$attemptId'
     | '/strategies/playbooks/$id'
     | '/api/public/hooks/battle-settlement'
     | '/api/public/hooks/email-monthly-report'
@@ -1984,6 +1995,7 @@ export interface FileRouteTypes {
     | '/community/ideas/new'
     | '/community/post/$id'
     | '/community/profile/$username'
+    | '/journal/replay/$attemptId'
     | '/strategies/playbooks/$id'
     | '/api/public/hooks/battle-settlement'
     | '/api/public/hooks/email-monthly-report'
@@ -2156,6 +2168,7 @@ export interface FileRouteTypes {
     | '/_authenticated/community/ideas/new'
     | '/_authenticated/community/post/$id'
     | '/_authenticated/community/profile/$username'
+    | '/_authenticated/journal/replay/$attemptId'
     | '/_authenticated/strategies/playbooks/$id'
     | '/api/public/hooks/battle-settlement'
     | '/api/public/hooks/email-monthly-report'
@@ -3315,6 +3328,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStrategiesPlaybooksIdRouteImport
       parentRoute: typeof AuthenticatedStrategiesPlaybooksRoute
     }
+    '/_authenticated/journal/replay/$attemptId': {
+      id: '/_authenticated/journal/replay/$attemptId'
+      path: '/replay/$attemptId'
+      fullPath: '/journal/replay/$attemptId'
+      preLoaderRoute: typeof AuthenticatedJournalReplayAttemptIdRouteImport
+      parentRoute: typeof AuthenticatedJournalRoute
+    }
     '/_authenticated/community/profile/$username': {
       id: '/_authenticated/community/profile/$username'
       path: '/profile/$username'
@@ -3673,6 +3693,7 @@ interface AuthenticatedJournalRouteChildren {
   AuthenticatedJournalPsychologyRoute: typeof AuthenticatedJournalPsychologyRoute
   AuthenticatedJournalTradesRoute: typeof AuthenticatedJournalTradesRoute
   AuthenticatedJournalIndexRoute: typeof AuthenticatedJournalIndexRoute
+  AuthenticatedJournalReplayAttemptIdRoute: typeof AuthenticatedJournalReplayAttemptIdRoute
 }
 
 const AuthenticatedJournalRouteChildren: AuthenticatedJournalRouteChildren = {
@@ -3684,6 +3705,8 @@ const AuthenticatedJournalRouteChildren: AuthenticatedJournalRouteChildren = {
   AuthenticatedJournalPsychologyRoute: AuthenticatedJournalPsychologyRoute,
   AuthenticatedJournalTradesRoute: AuthenticatedJournalTradesRoute,
   AuthenticatedJournalIndexRoute: AuthenticatedJournalIndexRoute,
+  AuthenticatedJournalReplayAttemptIdRoute:
+    AuthenticatedJournalReplayAttemptIdRoute,
 }
 
 const AuthenticatedJournalRouteWithChildren =
