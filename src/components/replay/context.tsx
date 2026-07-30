@@ -690,12 +690,18 @@ export function ReplayProvider({ id, children }: { id: string; children: ReactNo
     async (tid: string) => {
       const t = trades.find((x) => x.id === tid);
       if (!t) return;
-      await updateTradeFn({ data: { id: tid, stop_loss: t.entry_price } });
-      await qc.invalidateQueries({ queryKey: ["replay", id] });
-      toast.success("Break-even set");
+      try {
+        await updateTradeFn({ data: { id: tid, stop_loss: t.entry_price } });
+        await qc.invalidateQueries({ queryKey: ["replay", id] });
+        toast.success("Break-even set");
+      } catch (err) {
+        console.warn("[replay] break-even failed", err);
+        toast.error("Couldn't set break-even — the position may already be closed.");
+      }
     },
     [trades, updateTradeFn, qc, id],
   );
+
 
   /** Enable/disable a trailing stop at `distance` price units. Pass null to clear. */
   const setTrailingStop = useCallback((tid: string, distance: number | null) => {
