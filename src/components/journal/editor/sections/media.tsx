@@ -7,7 +7,7 @@ import { Loader2, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
-import { uploadJournalFile } from "@/lib/journal/storage";
+import { uploadJournalImage } from "@/lib/journal/storage";
 import { useTradeEditorContext } from "../TradeEditorProvider";
 import { SubHeading } from "../fields";
 
@@ -25,12 +25,12 @@ export function MediaSection() {
     try {
       const urls: string[] = [];
       for (const file of Array.from(files).slice(0, 6)) {
-        if (file.size > 10 * 1024 * 1024) {
-          toast.error(`${file.name} is larger than 10MB`);
+        if (file.size > 15 * 1024 * 1024) {
+          toast.error(`${file.name} is larger than 15MB`);
           continue;
         }
-        const url = await uploadJournalFile(user.id, entry.id, file);
-        if (url) urls.push(url);
+        const uploaded = await uploadJournalImage(user.id, entry.id, file);
+        if (uploaded.url) urls.push(uploaded.url);
       }
       if (urls.length) setField({ screenshots: [...shots, ...urls] });
     } catch (err) {
