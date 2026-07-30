@@ -390,16 +390,26 @@ export function anchorsFor(d: Drawing, c: ChartCoords, opts: { includeLocked?: b
   if (d.hidden) return [];
   if (d.locked && !opts.includeLocked) return [];
   if (d.kind === "brush") return [];
+  // Axis-anchored lines get a single mid-viewport handle on the axis they own,
+  // so the handle is always reachable regardless of the other axis.
+  if (d.kind === "horizontal_line") {
+    const y = rowOf(d, c);
+    return y == null ? [] : [{ id: "p0", x: c.width * 0.5, y }];
+  }
+  if (d.kind === "vertical_line") {
+    const x = columnOf(d, c);
+    return x == null ? [] : [{ id: "p0", x, y: c.height * 0.5 }];
+  }
   const out: Anchor[] = [];
   d.points.forEach((p, i) => {
-    let x = c.x(p.time);
+    const x = c.x(p.time);
     const y = c.y(p.price);
-    if (d.kind === "horizontal_line") x = c.width * 0.5;
     if (x == null || y == null) return;
     out.push({ id: `p${i}`, x, y });
   });
   return out;
 }
+
 
 function distToSegment(px: number, py: number, x1: number, y1: number, x2: number, y2: number) {
   const dx = x2 - x1, dy = y2 - y1;
