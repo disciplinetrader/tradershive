@@ -10,7 +10,7 @@ practice without risking capital.
   seed price and mock-feed volatility. All calculators read from here.
 - `calculations.ts` — Pure math: `pnl`, `pipsBetween`, `lotForRisk`,
   `directionSign`, `roundPrice`. Zero side effects, safe to memoize.
-- `mock-prices.ts` — Live price hook. Subscribes to the Market Data
+- `live-quotes.ts` — Live price hook. Subscribes to the Market Data
   Engine (`src/lib/market-data/engine.ts`) which routes to Binance for
   crypto and Twelve Data for forex/metals/indices. **No local ticker
   fabrication** — missing providers surface as clear errors rather than

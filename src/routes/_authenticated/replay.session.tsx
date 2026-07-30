@@ -17,6 +17,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ReplayProvider, useReplay } from "@/components/replay/context";
 import { ReplayChart } from "@/components/replay/ReplayChart";
 import { ReplaySkeleton } from "@/components/replay/ReplaySkeleton";
+import { ReplayDataUnavailable, ReplayDataSourceBadge } from "@/components/replay/ReplayDataState";
+
 import { PostSessionSummary } from "@/components/replay/PostSessionSummary";
 import { ReplayTimeline } from "@/components/replay/ReplayTimeline";
 import { ReplayTopBar } from "@/components/replay/x/ReplayTopBar";
@@ -72,7 +74,7 @@ function NoSession() {
 }
 
 function Workspace() {
-  const { session, loading, candles, cursorIdx, captureScreenshot, finish, replayAgain, playing } = useReplay();
+  const { session, loading, candles, cursorIdx, captureScreenshot, finish, replayAgain, playing, dataUnavailable } = useReplay();
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -157,11 +159,25 @@ function Workspace() {
 
   if (loading) return <ReplaySkeleton session={session} />;
 
+  // No real market data → actionable error, never fabricated candles.
+  if (dataUnavailable) {
+    return (
+      <TooltipProvider delayDuration={300}>
+        <div className="rx-root flex h-[calc(100dvh-5rem)] min-h-0 flex-col overflow-hidden md:h-dvh">
+          <ReplayTopBar onSnapshot={takeShot} onFinish={finishAndReview} onCommands={() => setPaletteOpen(true)} tradeMode={prefs.tradeMode} onToggleTradeMode={() => update("tradeMode", chartTrading ? "panel" : "chart")} />
+          <ReplayDataUnavailable onRetry={() => window.location.reload()} />
+        </div>
+      </TooltipProvider>
+    );
+  }
+
   return (
     <TooltipProvider delayDuration={300}>
       <div className="rx-root flex h-[calc(100dvh-5rem)] min-h-0 flex-col overflow-hidden md:h-dvh">
         <ReplayTopBar onSnapshot={takeShot} onFinish={finishAndReview} onCommands={() => setPaletteOpen(true)} tradeMode={prefs.tradeMode} onToggleTradeMode={() => update("tradeMode", chartTrading ? "panel" : "chart")} />
+        <div className="flex items-center gap-2 px-3 py-1"><ReplayDataSourceBadge /></div>
         <PracticeBanner sessionId={session?.id} />
+
 
         {/* Chart region — icon rail + edge-to-edge canvas */}
         <div className="flex min-h-0 flex-1">

@@ -7,7 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { useLivePrice } from "@/lib/paper-trading/mock-prices";
+import { useLivePrice } from "@/lib/paper-trading/live-quotes";
 import { usePaper } from "./context";
 
 const TIMEFRAMES = ["1m", "5m", "15m", "30m", "1H", "4H", "1D", "1W"];

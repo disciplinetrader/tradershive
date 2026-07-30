@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { computeReplayScore } from "./replay/score";
-import { getProvider } from "./replay/market-data";
+
 import { TIMEFRAME_SECONDS, DEFAULT_TEMPLATES, CHECKPOINT_KINDS } from "./replay/constants";
 import type { Timeframe } from "./replay/types";
 
@@ -159,7 +159,7 @@ const createSessionSchema = z.object({
   range_end: z.string().optional().nullable(),
   source_trade_id: z.string().uuid().optional().nullable(),
   source_journal_id: z.string().uuid().optional().nullable(),
-  provider: z.string().default("synthetic"),
+  provider: z.string().default("historical"),
   tags: z.array(z.string()).default([]),
   initial_balance: z.number().positive().optional(),
 });
@@ -643,7 +643,18 @@ export const getReplayStatistics = createServerFn({ method: "GET" })
     return data ?? null;
   });
 
-/* ============ Candles (server-side provider fetch) ============ */
+/* ============ Candles (canonical historical service) ============
+ *
+ * Replay reads REAL market history only. The old behaviour — silently
+ * falling back to the synthetic generator whenever `historical_candles`
+ * had no rows — has been removed: it meant traders could practise on
+ * fabricated price action believing it was real.
+ *
+ * The service validates session-aware coverage, backfills on demand from
+ * the registered provider, and otherwise returns a structured
+ * `unavailable` payload the UI renders as an actionable error state.
+ * Demo sessions must opt in explicitly via `allowSynthetic`.
+ * ================================================================== */
 
 export const getReplayCandles = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -653,40 +664,72 @@ export const getReplayCandles = createServerFn({ method: "POST" })
       timeframe: z.enum(["1m", "3m", "5m", "15m", "30m", "1H", "4H", "1D"]),
       from: z.number(),
       to: z.number(),
-      provider: z.string().optional(),
+      market: z.string().optional(),
+      /** Only honoured for sessions explicitly created as demos. */
+      allowSynthetic: z.boolean().optional(),
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
-    // 1) Prefer stored historical candles (independent of any third-party API).
-    const { data: rows } = await context.supabase
-      .from("historical_candles")
-      .select("ts, open, high, low, close, volume")
-      .eq("symbol", data.symbol)
-      .eq("timeframe", data.timeframe)
-      .gte("ts", new Date(data.from).toISOString())
-      .lte("ts", new Date(data.to).toISOString())
-      .order("ts", { ascending: true })
-      .limit(5000);
-    if (rows && rows.length > 0) {
-      const candles = rows.map((r: any) => ({
-        time: new Date(r.ts as string).getTime(),
-        open: Number(r.open), high: Number(r.high),
-        low: Number(r.low), close: Number(r.close),
-        volume: Number(r.volume ?? 0),
-      }));
-      return { candles, providerId: "historical", providerLabel: "Historical Data Engine",
-        stepSec: TIMEFRAME_SECONDS[data.timeframe as Timeframe] };
+    const { resolveHistoricalRange, HistoricalDataUnavailableError } =
+      await import("./market-data/historical/service.server");
+    const stepSec = TIMEFRAME_SECONDS[data.timeframe as Timeframe];
+
+    try {
+      const res = await resolveHistoricalRange(context.supabase, {
+        symbol: data.symbol,
+        // 3m has no stored equivalent; the service normalises the rest.
+        timeframe: (data.timeframe === "3m" ? "5m" : data.timeframe) as any,
+        from: data.from,
+        to: data.to,
+        market: data.market,
+        allowBackfill: true,
+        allowSynthetic: data.allowSynthetic === true,
+      });
+      return {
+        candles: res.candles,
+        providerId: res.source.providerCode,
+        providerLabel: res.source.label,
+        sourceKind: res.source.kind,
+        isSynthetic: res.source.isSynthetic,
+        coverage: {
+          actual: res.coverage.actual,
+          expected: res.coverage.expected,
+          ratio: res.coverage.ratio,
+          gaps: res.coverage.gaps.length,
+        },
+        warning: res.warning ?? null,
+        unavailable: null,
+        stepSec,
+      };
+    } catch (e) {
+      if (e instanceof HistoricalDataUnavailableError) {
+        return {
+          candles: [],
+          providerId: null,
+          providerLabel: null,
+          sourceKind: null,
+          isSynthetic: false,
+          coverage: {
+            actual: e.detail.coverage.actual,
+            expected: e.detail.coverage.expected,
+            ratio: e.detail.coverage.ratio,
+            gaps: e.detail.coverage.gaps.length,
+          },
+          warning: null,
+          unavailable: {
+            message: e.message,
+            remedy: e.detail.remedy,
+            registered: e.detail.registered,
+            attemptedBackfill: e.detail.attemptedBackfill,
+            providerError: e.detail.providerError ?? null,
+          },
+          stepSec,
+        };
+      }
+      throw e;
     }
-    // 2) Fallback: legacy synthetic provider.
-    const provider = getProvider(data.provider);
-    const candles = await provider.getCandles({
-      symbol: data.symbol,
-      timeframe: data.timeframe as Timeframe,
-      from: data.from,
-      to: data.to,
-    });
-    return { candles, providerId: provider.id, providerLabel: provider.label, stepSec: TIMEFRAME_SECONDS[data.timeframe as Timeframe] };
   });
+
 
 /* ============ Replay from an existing trade =========================
  *
@@ -757,7 +800,8 @@ export const createReplayFromTrade = createServerFn({ method: "POST" })
         range_end: rangeEnd,
         source_trade_id: trade.id,
         source_journal_id: null,
-        provider: "synthetic",
+        // Real history; Replay resolves it through the historical service.
+        provider: "historical",
         tags: ["from-trade"],
         cursor_ts: rangeStart,
         last_opened_at: new Date().toISOString(),

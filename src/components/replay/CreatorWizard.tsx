@@ -23,7 +23,7 @@ import { findInstrument, type InstrumentRecord, type JournalMarket } from "@/lib
 import type { Timeframe } from "@/lib/replay/types";
 import { TIMEFRAMES } from "@/lib/replay/constants";
 import { createReplaySession } from "@/lib/replay.functions";
-import { twelveDataCandles } from "@/lib/market-data/twelvedata.functions";
+import { ensureHistoricalRange } from "@/lib/market-data/historical.functions";
 import { cn } from "@/lib/utils";
 
 const REPLAY_MARKETS = new Set<JournalMarket>(["forex", "crypto", "stocks", "indices", "futures", "metals"]);
@@ -137,22 +137,29 @@ export function CreatorWizard({ open, onOpenChange }: { open: boolean; onOpenCha
       ? instrument.market
       : "forex";
 
-    // Preload candles (+buffer) so the replay opens instantly.
+    // Verify (and, if needed, import) REAL market history for this range.
+    // We never create a session that would have to fall back to fake data.
     setPreload({ progress: 0.1, status: "loading" });
     const fromMs = new Date(`${from}T00:00:00Z`).getTime();
     const toMs = new Date(`${to}T23:59:59Z`).getTime();
+    let sourceCode = "historical";
     try {
-      const res = (await twelveDataCandles({
-        data: { symbol: instrument.symbol, timeframe: tf, from: fromMs, to: toMs, buffer: true },
-      })) as { candles?: unknown[]; cached?: boolean; error?: string };
-      if (res?.error) {
-        setPreload({ progress: 0, status: "error", message: res.error });
-        // Non-fatal for crypto/synthetic — proceed anyway.
-      } else {
-        setPreload({ progress: 1, status: res?.cached ? "cached" : "downloaded" });
+      const res = await ensureHistoricalRange({
+        data: { symbol: instrument.symbol, timeframe: tf as never, from: fromMs, to: toMs, market },
+      });
+      if (!res.ok) {
+        setPreload({
+          progress: 0,
+          status: "error",
+          message: `${res.unavailable?.message ?? "No market data for this range."} ${res.unavailable?.remedy ?? ""}`.trim(),
+        });
+        return; // Block creation — a session without data is not usable.
       }
+      sourceCode = res.source?.providerCode ?? "historical";
+      setPreload({ progress: 1, status: res.source?.kind === "stored" ? "cached" : "downloaded" });
     } catch (e) {
       setPreload({ progress: 0, status: "error", message: (e as Error).message });
+      return;
     }
 
     // Persist prefs + push to recents so the next backtest inherits selection.
@@ -176,12 +183,14 @@ export function CreatorWizard({ open, onOpenChange }: { open: boolean; onOpenCha
         replay_date: from === to ? from : undefined,
         range_start: from !== to ? new Date(`${from}T00:00:00Z`).toISOString() : undefined,
         range_end: from !== to ? new Date(`${to}T23:59:59Z`).toISOString() : undefined,
-        provider: "synthetic",
+        // Record the REAL provider that supplied the candles.
+        provider: sourceCode,
         tags: startPos !== "beginning" ? [`start:${startPos}`] : [],
         initial_balance: balanceNum,
       } as never,
     });
   };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

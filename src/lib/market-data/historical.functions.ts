@@ -127,6 +127,96 @@ const candleQuerySchema = z.object({
   limit: z.number().int().min(1).max(10000).default(5000),
 });
 
+/**
+ * Read-only coverage probe. Used before a backtest is created so the user
+ * learns up-front that a range has no real data, instead of opening a
+ * session that cannot load.
+ */
+export const probeHistoricalCoverage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({
+      symbol: z.string().min(1),
+      timeframe: TF,
+      from: z.number().int(),
+      to: z.number().int(),
+      market: z.string().optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { probeCoverage } = await import("./historical/service.server");
+    const r = await probeCoverage(context.supabase, {
+      symbol: data.symbol,
+      timeframe: data.timeframe as any,
+      from: data.from,
+      to: data.to,
+      market: data.market,
+    });
+    return {
+      ok: r.coverage.ok,
+      registered: r.registered,
+      enabled: r.enabled,
+      sourceCode: r.sourceCode,
+      message: r.message,
+      actual: r.coverage.actual,
+      expected: r.coverage.expected,
+      ratio: r.coverage.ratio,
+    };
+  });
+
+/**
+ * Canonical resolve-with-backfill entry point shared by Replay, the
+ * backtest wizard and any future chart consumer. Returns a structured
+ * `unavailable` payload rather than substituting data.
+ */
+export const ensureHistoricalRange = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({
+      symbol: z.string().min(1),
+      timeframe: TF,
+      from: z.number().int(),
+      to: z.number().int(),
+      market: z.string().optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { resolveHistoricalRange, HistoricalDataUnavailableError } =
+      await import("./historical/service.server");
+    try {
+      const r = await resolveHistoricalRange(context.supabase, {
+        symbol: data.symbol,
+        timeframe: data.timeframe as any,
+        from: data.from,
+        to: data.to,
+        market: data.market,
+        allowBackfill: true,
+      });
+      return {
+        ok: true as const,
+        count: r.candles.length,
+        source: r.source,
+        ratio: r.coverage.ratio,
+        warning: r.warning ?? null,
+        unavailable: null,
+      };
+    } catch (e) {
+      if (e instanceof HistoricalDataUnavailableError) {
+        return {
+          ok: false as const,
+          count: 0,
+          source: null,
+          ratio: e.detail.coverage.ratio,
+          warning: null,
+          unavailable: { message: e.message, remedy: e.detail.remedy },
+        };
+      }
+      throw e;
+    }
+  });
+
+
+
 export const getHistoricalCandles = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => candleQuerySchema.parse(d))

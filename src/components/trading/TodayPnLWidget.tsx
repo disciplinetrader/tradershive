@@ -9,7 +9,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { TrendingDown, TrendingUp, Target, ShieldAlert } from "lucide-react";
 import { listTrades } from "@/lib/paper-trading.functions";
 import { usePaper } from "@/components/paper-trading/context";
-import { useLiveQuotes } from "@/lib/paper-trading/mock-prices";
+import { useLiveQuotes } from "@/lib/paper-trading/live-quotes";
 import { floatingPnl } from "@/lib/trading/plan-math";
 import { findSymbol } from "@/lib/paper-trading/symbols";
 import { cn } from "@/lib/utils";

@@ -50,6 +50,23 @@ type ReplayCtx = {
   loading: boolean;
   session: ReplaySession | null;
   candles: Candle[];
+  /** Non-null when no real market data exists for this session's range. */
+  dataUnavailable: {
+    message: string;
+    remedy: string;
+    registered: boolean;
+    attemptedBackfill: boolean;
+    providerError: string | null;
+  } | null;
+  /** Provenance of the loaded candles, for the "data source" badge. */
+  dataSource: {
+    kind: "stored" | "backfilled" | "synthetic" | null;
+    label: string | null;
+    isSynthetic: boolean;
+    coverage: { actual: number; expected: number; ratio: number; gaps: number };
+    warning: string | null;
+  } | null;
+
   visibleCandles: Candle[];
   cursorIdx: number;
   cursorTs: number;
@@ -149,10 +166,12 @@ export function ReplayProvider({ id, children }: { id: string; children: ReactNo
           timeframe: session!.timeframe as Timeframe,
           from,
           to,
-          provider: session!.provider,
+          market: session!.market ?? undefined,
+          // Only sessions explicitly created as demos may use fake candles.
+          allowSynthetic: session!.provider === "synthetic",
         },
       });
-      return r.candles as Candle[];
+      return r;
     },
   });
 
@@ -162,8 +181,20 @@ export function ReplayProvider({ id, children }: { id: string; children: ReactNo
     queryFn: () => listCps({ data: { session_id: id } }),
   });
 
-  const candles = candleQuery.data ?? [];
+  const candles = (candleQuery.data?.candles ?? []) as Candle[];
+  /** Structured "we have no real data" state — rendered, never faked. */
+  const dataUnavailable = candleQuery.data?.unavailable ?? null;
+  const dataSource = candleQuery.data
+    ? {
+        kind: candleQuery.data.sourceKind,
+        label: candleQuery.data.providerLabel,
+        isSynthetic: !!candleQuery.data.isSynthetic,
+        coverage: candleQuery.data.coverage,
+        warning: candleQuery.data.warning,
+      }
+    : null;
   const checkpoints = (checkpointsQuery.data ?? []) as ReplayCheckpoint[];
+
 
   const [cursorIdx, setCursorIdx] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -856,6 +887,9 @@ export function ReplayProvider({ id, children }: { id: string; children: ReactNo
     loading: query.isPending || candleQuery.isPending,
     session,
     candles,
+    dataUnavailable,
+    dataSource,
+
     visibleCandles,
     cursorIdx,
     cursorTs,

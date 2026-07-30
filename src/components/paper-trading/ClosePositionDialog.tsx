@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { closeTrade } from "@/lib/paper-trading.functions";
 import { findSymbol } from "@/lib/paper-trading/symbols";
 import { pnl as computePnl, formatCurrency, formatNumber } from "@/lib/paper-trading/calculations";
-import { useLivePrice } from "@/lib/paper-trading/mock-prices";
+import { useLivePrice } from "@/lib/paper-trading/live-quotes";
 import { usePaper } from "./context";
 import { cn } from "@/lib/utils";
 

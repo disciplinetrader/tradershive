@@ -57,7 +57,12 @@ export interface Quote {
   changePct?: number;
   ts: number;
   providerCode: string;
+  /** True when served from cache because every provider failed. */
+  stale?: boolean;
+  /** Age of a stale quote in milliseconds. */
+  ageMs?: number;
 }
+
 
 export interface Candle {
   time: number;

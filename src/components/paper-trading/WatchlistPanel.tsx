@@ -15,7 +15,7 @@ import {
   addWatchlistSymbol, createPaperWatchlist, deletePaperWatchlist,
   listPaperWatchlists, removeWatchlistSymbol, toggleWatchlistSymbolFavorite,
 } from "@/lib/paper-trading.functions";
-import { useLiveQuotes } from "@/lib/paper-trading/mock-prices";
+import { useLiveQuotes } from "@/lib/paper-trading/live-quotes";
 import { MARKET_TABS, SYMBOL_CATALOG, findSymbol, type PaperMarket } from "@/lib/paper-trading/symbols";
 import { cn } from "@/lib/utils";
 import { usePaper } from "./context";
