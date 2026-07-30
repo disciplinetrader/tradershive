@@ -594,9 +594,11 @@ export function hitTest(d: Drawing, c: ChartCoords, px: number, py: number): boo
 
     case "long_position":
     case "short_position": {
-      if (!p0 || !p1 || !p2) return false;
-      const x2 = Math.max(p1.x, p0.x + 40);
-      return nearRect(px, py, p0.x, Math.min(p1.y, p2.y), x2, Math.max(p1.y, p2.y));
+      const g = positionGeometry(d, c);
+      if (!g) return false;
+      const top = Math.min(g.entryY, g.targetY, g.stopY);
+      const bottom = Math.max(g.entryY, g.targetY, g.stopY);
+      return nearRect(px, py, g.x1, top, g.x2, bottom);
     }
     default:
       return false;
@@ -610,19 +612,66 @@ export function anchorAt(d: Drawing, c: ChartCoords, px: number, py: number): An
   return null;
 }
 
-export function translateDrawing(d: Drawing, dTime: number, dPrice: number): DrawingPoint[] {
+export interface MutateOptions {
+  /** Symbol tick size — price edits snap to it (no pixel rounding involved). */
+  tick?: number;
+}
+
+export function translateDrawing(
+  d: Drawing,
+  dTime: number,
+  dPrice: number,
+  opts: MutateOptions = {},
+): DrawingPoint[] {
   // Axis-locked objects ignore movement on the axis they don't own, so a
   // Horizontal Line only ever slides vertically and a Vertical Line only
   // ever slides horizontally.
   const lock = axisLockFor(d.kind);
   const dt = lock === "price" ? 0 : dTime;
-  const dp = lock === "time" ? 0 : dPrice;
+  let dp = lock === "time" ? 0 : dPrice;
+  if (isPositionKind(d.kind) && opts.tick) {
+    // Snap the *delta*, not each level: distances between Entry / SL / TP —
+    // and therefore R:R — survive a whole-tool drag exactly.
+    dp = snapPrice(dp, opts.tick);
+  }
   return d.points.map((p) => ({ time: p.time + dt, price: p.price + dp }));
 }
 
-export function moveAnchor(d: Drawing, anchorId: string, next: DrawingPoint): DrawingPoint[] {
-  const idx = Number(anchorId.slice(1));
+export function moveAnchor(
+  d: Drawing,
+  anchorId: string,
+  next: DrawingPoint,
+  opts: MutateOptions = {},
+): DrawingPoint[] {
   const lock = axisLockFor(d.kind);
+
+  if (isPositionKind(d.kind)) {
+    const points = d.points.map((p) => ({ ...p }));
+    const start = points[0].time;
+    const end = positionEndTime(d);
+
+    // Time handles move only the anchor they own; Entry / SL / TP stay put.
+    if (anchorId === "tStart") {
+      points[0] = { ...points[0], time: Math.min(next.time, end - 1) };
+      return points;
+    }
+    if (anchorId === "tEnd") {
+      const t = Math.max(next.time, start + 1);
+      points[1] = { ...points[1], time: t };
+      points[2] = { ...points[2], time: t };
+      return points;
+    }
+
+    // Price handles are price-only: the time anchors are never touched, and
+    // the other two levels keep their own prices.
+    const idx = Number(anchorId.slice(1));
+    if (idx >= 0 && idx < points.length) {
+      points[idx] = { ...points[idx], price: snapPrice(next.price, opts.tick) };
+    }
+    return points;
+  }
+
+  const idx = Number(anchorId.slice(1));
   if (lock !== "both") {
     const base = d.points[idx] ?? d.points[0];
     const constrained: DrawingPoint = lock === "price"
@@ -630,18 +679,5 @@ export function moveAnchor(d: Drawing, anchorId: string, next: DrawingPoint): Dr
       : { time: next.time, price: base.price };
     return d.points.map((p, i) => (i === idx ? constrained : { ...p }));
   }
-  const points = d.points.map((p, i) => (i === idx ? { ...next } : { ...p }));
-
-  if (d.kind === "long_position" || d.kind === "short_position") {
-    // Entry drag carries stop/target with it; TP/SL drags keep the shared end time.
-    if (idx === 0) {
-      const dPrice = next.price - d.points[0].price;
-      const dTime = next.time - d.points[0].time;
-      return d.points.map((p, i) => (i === 0 ? { ...next } : { time: p.time + dTime, price: p.price + dPrice }));
-    }
-    const endTime = next.time;
-    points[1] = { ...points[1], time: endTime };
-    points[2] = { ...points[2], time: endTime };
-  }
-  return points;
+  return d.points.map((p, i) => (i === idx ? { ...next } : { ...p }));
 }
