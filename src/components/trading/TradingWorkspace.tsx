@@ -24,6 +24,7 @@ import { AlertsDialog } from "@/components/chart/AlertsDialog";
 import { ChartEngine } from "@/components/chart/ChartEngine";
 import { DrawingToolRail } from "@/components/chart/DrawingToolRail";
 import { useChartDrawings } from "@/components/chart/useChartDrawings";
+import { DrawingContextMenu } from "@/components/chart/DrawingContextMenu";
 import { DrawingStore } from "@/lib/chart/drawings/store";
 import type { ToolId } from "@/lib/chart/drawings/types";
 import { DEFAULT_CHART_SETTINGS } from "@/lib/chart/constants";
@@ -296,7 +297,7 @@ function TradingWorkspaceInner() {
   // Drawings are scoped per symbol so switching instruments swaps the set.
   useEffect(() => { drawingStore.setScope(symbol); }, [drawingStore, symbol]);
 
-  const { drawings: drawingRevision } = useChartDrawings({
+  const { drawings: drawingRevision, menu: drawingMenu, closeMenu: closeDrawingMenu } = useChartDrawings({
     adapter,
     store: drawingStore,
     activeTool,
