@@ -7,7 +7,7 @@
  * which is why drawings stay anchored through zoom, pan, rescale and resize.
  */
 
-import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { ChartAdapter } from "@/lib/chart/adapter";
 import type { Candle } from "@/lib/market-data/types";
 import { DrawingStore, makeDrawing } from "@/lib/chart/drawings/store";
@@ -53,6 +53,10 @@ export function useChartDrawings({
     () => store.list(),
     () => store.list(),
   );
+
+  const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(null);
+  const pendingCancelRef = useRef<(() => void) | null>(null);
+  const closeMenu = useCallback(() => setMenu(null), []);
 
   const ref = useRef({ activeTool, keepToolActive, magnet, candles, style, onPositionDrawn, setActiveTool });
   ref.current = { activeTool, keepToolActive, magnet, candles, style, onPositionDrawn, setActiveTool };
@@ -340,6 +344,8 @@ export function useChartDrawings({
       const meta = e.metaKey || e.ctrlKey;
 
       if (e.key === "Escape") {
+        setMenu(null);
+        pendingCancelRef.current?.();
         if (store.draft) { store.draft = null; store.commit(); }
         if (store.selectedIdValue()) store.select(null);
         if (isDrawingKind(ref.current.activeTool)) ref.current.setActiveTool("cursor");
@@ -374,5 +380,5 @@ export function useChartDrawings({
     return () => window.removeEventListener("keydown", onKey);
   }, [store, enabled]);
 
-  return { drawings: version, store };
+  return { drawings: version, store, menu, closeMenu };
 }
