@@ -411,8 +411,11 @@ export const updateReplayTrade = createServerFn({ method: "POST" })
       .eq("id", id)
       .eq("status", "open")
       .select()
-      .single();
+      .maybeSingle();
     if (error) throw error;
+    // Trade was closed (or removed) between the drag start and the save —
+    // treat as a no-op instead of surfacing a fatal error to the UI.
+    if (!row) return null;
     await context.supabase.from("replay_events").insert({
       session_id: row.session_id,
       user_id: context.userId,
@@ -422,6 +425,7 @@ export const updateReplayTrade = createServerFn({ method: "POST" })
     });
     return row;
   });
+
 
 export const listReplayTrades = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
