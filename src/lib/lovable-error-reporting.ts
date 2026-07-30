@@ -72,6 +72,15 @@ export function installGlobalErrorHandlers() {
     reportLovableError(err, { mechanism: "onerror", filename: event.filename });
   });
   window.addEventListener("unhandledrejection", (event) => {
+    // Transient network blips (tab sleep, HMR reload, flaky connection) from
+    // background polling must never escalate into a full-screen error overlay.
+    const reason = event.reason as { message?: string; name?: string } | undefined;
+    const msg = typeof reason?.message === "string" ? reason.message : String(reason ?? "");
+    if (/Failed to fetch|NetworkError|Load failed|The user aborted/i.test(msg)) {
+      event.preventDefault();
+      console.warn("[network] transient request failure ignored:", msg);
+      return;
+    }
     reportLovableError(event.reason, { mechanism: "unhandledrejection" });
   });
 }
