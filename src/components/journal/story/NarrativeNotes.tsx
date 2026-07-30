@@ -72,7 +72,7 @@ export function NarrativeNotes({
             </label>
             <Textarea
               id={`nar-${s.key}`}
-              ref={i === 0 && focusRef ? ((el) => { if (focusRef) focusRef.current = () => el?.focus(); }) as never : undefined}
+              ref={i === 0 && focusRef ? (el: HTMLTextAreaElement | null) => { focusRef.current = () => el?.focus(); } : undefined}
               value={draft[s.key] ?? ""}
               onChange={(e) => setField(s.key, e.target.value)}
               onBlur={() => autosave.flush()}

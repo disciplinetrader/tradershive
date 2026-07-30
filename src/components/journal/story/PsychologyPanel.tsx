@@ -14,24 +14,27 @@ const num = (v: unknown): number | null => {
 };
 
 export function PsychologyPanel({ entry }: { entry: JournalEntry }) {
+  const tagged = (v: string) => ((entry.emotions ?? []).includes(v) ? "tagged" : null);
+
   const before: Row[] = [
     { label: "Confidence", value: num(entry.confidence) },
-    { label: "Pre-trade mood", value: (entry.mood_before as string | null) ?? null },
-    { label: "FOMO", value: (entry.emotions ?? []).includes("fomo") ? "tagged" : null },
+    { label: "FOMO", value: tagged("fomo") },
     { label: "Patience", value: num(entry.patience) },
+    { label: "Calm", value: tagged("calm") },
   ];
   const during: Row[] = [
-    { label: "Stress", value: num(entry.stress) },
-    { label: "Hesitation", value: (entry.emotions ?? []).includes("hesitation") ? "tagged" : null },
     { label: "Discipline", value: num(entry.discipline) },
-    { label: "Greed", value: (entry.emotions ?? []).includes("greed") ? "tagged" : null },
+    { label: "Execution", value: num(entry.execution) },
+    { label: "Hesitation", value: tagged("hesitation") },
+    { label: "Greed", value: tagged("greed") },
   ];
   const after: Row[] = [
-    { label: "Post-trade mood", value: (entry.mood_after as string | null) ?? null },
-    { label: "Revenge urge", value: (entry.emotions ?? []).includes("revenge") ? "tagged" : null },
-    { label: "Fear", value: (entry.emotions ?? []).includes("fear") ? "tagged" : null },
-    { label: "Satisfaction", value: num(entry.satisfaction) },
+    { label: "Revenge urge", value: tagged("revenge") },
+    { label: "Fear", value: tagged("fear") },
+    { label: "Frustration", value: tagged("frustration") },
+    { label: "Risk management", value: num(entry.risk_mgmt) },
   ];
+
 
   const filled = [...before, ...during, ...after].filter((r) => r.value != null);
   if (!filled.length) return <MissingData label="No psychology data captured for this trade." />;
