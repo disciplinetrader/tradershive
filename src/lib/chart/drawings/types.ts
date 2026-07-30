@@ -157,6 +157,40 @@ export const SINGLE_CLICK_KINDS: DrawingKind[] = [
 /** Kinds captured as a freehand stream of points. */
 export const FREEHAND_KINDS: DrawingKind[] = ["brush"];
 
+/**
+ * Position tools (Long / Short).
+ *
+ * Domain model — the persisted values are authoritative and are never
+ * recomputed from pixels during ordinary redraws:
+ *   points[0] = { time: START anchor, price: ENTRY }
+ *   points[1] = { time: END anchor,   price: TARGET }
+ *   points[2] = { time: END anchor,   price: STOP }
+ * Both end-anchored points always share the same timestamp; helpers below
+ * are the only writers, so the invariant cannot drift.
+ */
+export const POSITION_KINDS: DrawingKind[] = ["long_position", "short_position"];
+
+export function isPositionKind(kind: DrawingKind): boolean {
+  return kind === "long_position" || kind === "short_position";
+}
+
+/** Tick size implied by a symbol's price precision (e.g. 4 → 0.0001). */
+export function tickFromPrecision(precision: number): number {
+  const p = Number.isFinite(precision) ? Math.min(10, Math.max(0, Math.trunc(precision))) : 2;
+  return Number(Math.pow(10, -p).toFixed(10));
+}
+
+/**
+ * Snap a price to the symbol tick without accumulating rounding drift —
+ * the result is rounded at the tick's own precision, so repeated snapping
+ * of an already-snapped value is a no-op.
+ */
+export function snapPrice(price: number, tick?: number): number {
+  if (!tick || !Number.isFinite(tick) || tick <= 0 || !Number.isFinite(price)) return price;
+  const decimals = Math.max(0, Math.round(-Math.log10(tick)));
+  return Number((Math.round(price / tick) * tick).toFixed(decimals));
+}
+
 
 export const KIND_LABELS: Record<DrawingKind, string> = {
   trend_line: "Trend Line",
