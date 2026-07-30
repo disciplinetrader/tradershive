@@ -240,6 +240,10 @@ export function useChartDrawings({
       if (el.style.cursor !== value) el.style.cursor = value;
     };
 
+    /** Cursor hint matching the axis a drawing is allowed to move on. */
+    const dragCursor = (d: Drawing) =>
+      d.kind === "horizontal_line" ? "ns-resize" : d.kind === "vertical_line" ? "ew-resize" : "move";
+
     const updateHover = (px: number, py: number, inside: boolean) => {
       if (session) return;
       const tool = ref.current.activeTool;
@@ -250,7 +254,7 @@ export function useChartDrawings({
       const selected = store.selected();
       if (selected && !selected.locked && anchorAt(selected, coords, px, py)) {
         store.setHovered(selected.id);
-        setCursor("nwse-resize");
+        setCursor(dragCursor(selected) === "move" ? "nwse-resize" : dragCursor(selected));
         return;
       }
       const list = store.list();
@@ -259,13 +263,14 @@ export function useChartDrawings({
         if (d.hidden) continue;
         if (hitTest(d, coords, px, py)) {
           store.setHovered(d.id);
-          setCursor(d.locked ? "not-allowed" : "move");
+          setCursor(d.locked ? "not-allowed" : dragCursor(d));
           return;
         }
       }
       store.setHovered(null);
       setCursor(tool === "crosshair" ? "crosshair" : "");
     };
+
 
     const onMove = (e: PointerEvent) => {
       const s = session;
