@@ -90,6 +90,7 @@ import { Route as AuthenticatedLeaderboardGlobalRouteImport } from './routes/_au
 import { Route as AuthenticatedLeaderboardFriendsRouteImport } from './routes/_authenticated/leaderboard.friends'
 import { Route as AuthenticatedLeaderboardCountryRouteImport } from './routes/_authenticated/leaderboard.country'
 import { Route as AuthenticatedJournalTradesRouteImport } from './routes/_authenticated/journal.trades'
+import { Route as AuthenticatedJournalCalendarRouteImport } from './routes/_authenticated/journal.calendar'
 import { Route as AuthenticatedJournalEntryIdRouteImport } from './routes/_authenticated/journal.$entryId'
 import { Route as AuthenticatedCommunityTrendingRouteImport } from './routes/_authenticated/community.trending'
 import { Route as AuthenticatedCommunityReviewsRouteImport } from './routes/_authenticated/community.reviews'
@@ -625,6 +626,12 @@ const AuthenticatedJournalTradesRoute =
   AuthenticatedJournalTradesRouteImport.update({
     id: '/trades',
     path: '/trades',
+    getParentRoute: () => AuthenticatedJournalRoute,
+  } as any)
+const AuthenticatedJournalCalendarRoute =
+  AuthenticatedJournalCalendarRouteImport.update({
+    id: '/calendar',
+    path: '/calendar',
     getParentRoute: () => AuthenticatedJournalRoute,
   } as any)
 const AuthenticatedJournalEntryIdRoute =
@@ -1229,6 +1236,7 @@ export interface FileRoutesByFullPath {
   '/community/reviews': typeof AuthenticatedCommunityReviewsRoute
   '/community/trending': typeof AuthenticatedCommunityTrendingRoute
   '/journal/$entryId': typeof AuthenticatedJournalEntryIdRoute
+  '/journal/calendar': typeof AuthenticatedJournalCalendarRoute
   '/journal/trades': typeof AuthenticatedJournalTradesRoute
   '/leaderboard/country': typeof AuthenticatedLeaderboardCountryRoute
   '/leaderboard/friends': typeof AuthenticatedLeaderboardFriendsRoute
@@ -1382,6 +1390,7 @@ export interface FileRoutesByTo {
   '/community/reviews': typeof AuthenticatedCommunityReviewsRoute
   '/community/trending': typeof AuthenticatedCommunityTrendingRoute
   '/journal/$entryId': typeof AuthenticatedJournalEntryIdRoute
+  '/journal/calendar': typeof AuthenticatedJournalCalendarRoute
   '/journal/trades': typeof AuthenticatedJournalTradesRoute
   '/leaderboard/country': typeof AuthenticatedLeaderboardCountryRoute
   '/leaderboard/friends': typeof AuthenticatedLeaderboardFriendsRoute
@@ -1550,6 +1559,7 @@ export interface FileRoutesById {
   '/_authenticated/community/reviews': typeof AuthenticatedCommunityReviewsRoute
   '/_authenticated/community/trending': typeof AuthenticatedCommunityTrendingRoute
   '/_authenticated/journal/$entryId': typeof AuthenticatedJournalEntryIdRoute
+  '/_authenticated/journal/calendar': typeof AuthenticatedJournalCalendarRoute
   '/_authenticated/journal/trades': typeof AuthenticatedJournalTradesRoute
   '/_authenticated/leaderboard/country': typeof AuthenticatedLeaderboardCountryRoute
   '/_authenticated/leaderboard/friends': typeof AuthenticatedLeaderboardFriendsRoute
@@ -1718,6 +1728,7 @@ export interface FileRouteTypes {
     | '/community/reviews'
     | '/community/trending'
     | '/journal/$entryId'
+    | '/journal/calendar'
     | '/journal/trades'
     | '/leaderboard/country'
     | '/leaderboard/friends'
@@ -1871,6 +1882,7 @@ export interface FileRouteTypes {
     | '/community/reviews'
     | '/community/trending'
     | '/journal/$entryId'
+    | '/journal/calendar'
     | '/journal/trades'
     | '/leaderboard/country'
     | '/leaderboard/friends'
@@ -2038,6 +2050,7 @@ export interface FileRouteTypes {
     | '/_authenticated/community/reviews'
     | '/_authenticated/community/trending'
     | '/_authenticated/journal/$entryId'
+    | '/_authenticated/journal/calendar'
     | '/_authenticated/journal/trades'
     | '/_authenticated/leaderboard/country'
     | '/_authenticated/leaderboard/friends'
@@ -2688,6 +2701,13 @@ declare module '@tanstack/react-router' {
       path: '/trades'
       fullPath: '/journal/trades'
       preLoaderRoute: typeof AuthenticatedJournalTradesRouteImport
+      parentRoute: typeof AuthenticatedJournalRoute
+    }
+    '/_authenticated/journal/calendar': {
+      id: '/_authenticated/journal/calendar'
+      path: '/calendar'
+      fullPath: '/journal/calendar'
+      preLoaderRoute: typeof AuthenticatedJournalCalendarRouteImport
       parentRoute: typeof AuthenticatedJournalRoute
     }
     '/_authenticated/journal/$entryId': {
@@ -3566,12 +3586,14 @@ const AuthenticatedCommunityRouteWithChildren =
 
 interface AuthenticatedJournalRouteChildren {
   AuthenticatedJournalEntryIdRoute: typeof AuthenticatedJournalEntryIdRoute
+  AuthenticatedJournalCalendarRoute: typeof AuthenticatedJournalCalendarRoute
   AuthenticatedJournalTradesRoute: typeof AuthenticatedJournalTradesRoute
   AuthenticatedJournalIndexRoute: typeof AuthenticatedJournalIndexRoute
 }
 
 const AuthenticatedJournalRouteChildren: AuthenticatedJournalRouteChildren = {
   AuthenticatedJournalEntryIdRoute: AuthenticatedJournalEntryIdRoute,
+  AuthenticatedJournalCalendarRoute: AuthenticatedJournalCalendarRoute,
   AuthenticatedJournalTradesRoute: AuthenticatedJournalTradesRoute,
   AuthenticatedJournalIndexRoute: AuthenticatedJournalIndexRoute,
 }
