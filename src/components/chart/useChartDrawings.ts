@@ -365,6 +365,8 @@ export function useChartDrawings({
       window.removeEventListener("pointerup", onUp, { capture: true } as any);
       pendingCancelRef.current = null;
       store.draft = null;
+      store.setHovered(null);
+      el.style.cursor = "";
     };
   }, [adapter, store, enabled]);
 
@@ -388,6 +390,7 @@ export function useChartDrawings({
 
       if (e.key === "Escape") {
         setMenu(null);
+        store.setHovered(null);
         pendingCancelRef.current?.();
         if (store.draft) { store.draft = null; store.commit(); }
         if (store.selectedIdValue()) store.select(null);
