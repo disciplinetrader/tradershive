@@ -57,7 +57,6 @@ import {
   type AttemptReflection,
   type AttemptSummary,
   type AttemptTelemetry,
-  type PracticeMode,
 } from "@/lib/journal/replay-compare";
 import { fetchEntry, journalKeys } from "@/lib/journal/api";
 import { planVsReality, storyMetrics } from "@/lib/journal/story";
@@ -92,8 +91,6 @@ function ComparisonPage() {
   const qc = useQueryClient();
   const [dismissed, setDismissed] = useState(false);
 
-  const launcher = usePracticeLauncher(undefined);
-
   const attemptQ = useQuery({ queryKey: attemptKeys.one(attemptId), queryFn: () => getAttempt(attemptId) });
   const attempt = attemptQ.data ?? null;
   const entryId = attempt?.original_entry_id ?? null;
@@ -119,6 +116,8 @@ function ComparisonPage() {
     queryFn: () => listAttempts(entryId!),
     enabled: !!entryId,
   });
+
+  const launcher = usePracticeLauncher(entryQ.data);
 
   /* ---------------- local reflection with debounced persistence ---------- */
   const [reflection, setReflection] = useState<AttemptReflection>({});
