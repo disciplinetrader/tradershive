@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Copy, Lock, LockOpen, Settings2, Trash2 } from "lucide-react";
+import { Copy, Eye, EyeOff, Lock, LockOpen, Settings2, Trash2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type { DrawingStore } from "@/lib/chart/drawings/store";
@@ -103,6 +103,11 @@ export function DrawingContextMenu({ store, menu, onClose, revision }: Props) {
           store.commit();
           onClose();
         }}
+      />
+      <Item
+        icon={drawing.hidden ? Eye : EyeOff}
+        label={drawing.hidden ? "Show" : "Hide"}
+        onClick={() => { store.setHidden(drawing.id, !drawing.hidden); onClose(); }}
       />
       <Item icon={Trash2} label="Delete" danger onClick={() => { store.remove(drawing.id); onClose(); }} />
       <span className="sr-only">{String(revision ?? "")}</span>

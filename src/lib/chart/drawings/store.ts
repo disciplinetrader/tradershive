@@ -23,6 +23,7 @@ function storageKey(scope: string) {
 export class DrawingStore {
   private drawings: Drawing[] = [];
   private selectedId: string | null = null;
+  private hoveredId: string | null = null;
   private undoStack: Drawing[][] = [];
   private redoStack: Drawing[][] = [];
   private listeners = new Set<Listener>();
@@ -62,6 +63,7 @@ export class DrawingStore {
     this.scope = scope;
     this.drawings = this.read();
     this.selectedId = null;
+    this.hoveredId = null;
     this.undoStack = [];
     this.redoStack = [];
     this.emit();
@@ -96,6 +98,21 @@ export class DrawingStore {
     this.emit();
   }
 
+  /** Transient hover highlight — never persisted, never part of history. */
+  hoveredIdValue() { return this.hoveredId; }
+  setHovered(id: string | null) {
+    if (this.hoveredId === id) return;
+    this.hoveredId = id;
+    this.emit();
+  }
+
+  setHidden(id: string, hidden: boolean) {
+    this.pushHistory();
+    this.drawings = this.drawings.map((d) => (d.id === id ? { ...d, hidden } : d));
+    this.persist();
+    this.emit();
+  }
+
   add(d: Drawing) {
     this.pushHistory();
     this.drawings = [...this.drawings, d];
@@ -118,6 +135,7 @@ export class DrawingStore {
     this.pushHistory();
     this.drawings = this.drawings.filter((d) => d.id !== id);
     if (this.selectedId === id) this.selectedId = null;
+    if (this.hoveredId === id) this.hoveredId = null;
     this.persist();
     this.emit();
   }
