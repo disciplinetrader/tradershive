@@ -129,13 +129,12 @@ function DashboardPage() {
     <div className="space-y-6">
       <Section {...(sectionProps as any)}><BetaBanner /></Section>
 
-      {/* 1 — Hero: one recommendation + one CTA, flanked by today's state */}
-      <Section {...(sectionProps as any)} className="flex flex-col gap-3 md:flex-row md:items-stretch">
-        <div className="min-w-0 flex-1">
-          <DashboardHero state={hero} animate={animate} />
-        </div>
+      {/* 1 — Hero: one recommendation + one CTA, then today's state */}
+      <Section {...(sectionProps as any)} className="space-y-3">
+        <DashboardHero state={hero} animate={animate} />
         <DashboardTodayRail performance={home?.performance} hero={hero} />
       </Section>
+
 
       {/* 2 — One AI observation, one CTA */}
       {visible("insight") && home && home.tips.length > 0 ? (
