@@ -85,7 +85,9 @@ export const ChartEngine = forwardRef<ChartHandle, Props>(function ChartEngine(
     // to an older timestamp falls outside the loaded history (looks deleted).
     const prev = adapterRef.current?.getVisibleTimeRange?.() ?? null;
     const neededBars = prev ? Math.ceil((to - prev.from) / tfMs) + 20 : 0;
-    const bars = Math.min(3000, Math.max(500, neededBars));
+    // 1000 is the ceiling most providers honour in a single request.
+    const bars = Math.min(1000, Math.max(500, neededBars));
+
     const from = to - tfMs * bars;
     setLoadError(null);
     setFreshness((f) => (candles.length ? f : "loading"));
