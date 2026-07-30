@@ -323,15 +323,20 @@ export function drawDrawing(
   ctx.restore();
 
   if (opts.selected) {
+    // Locked objects still show their handles, but greyed out so it's obvious
+    // why dragging does nothing.
+    const handles = anchorsFor(d, c, { includeLocked: true });
     ctx.save();
     ctx.setLineDash([]);
-    for (const a of anchorsFor(d, c)) {
+    ctx.shadowBlur = 0;
+    for (const a of handles) {
+      const r = ANCHOR_R + 1;
       ctx.beginPath();
-      ctx.arc(a.x, a.y, ANCHOR_R, 0, Math.PI * 2);
-      ctx.fillStyle = "#0b0f16";
+      ctx.rect(a.x - r, a.y - r, r * 2, r * 2);
+      ctx.fillStyle = d.locked ? "#94a3b8" : "#0b0f16";
       ctx.fill();
       ctx.lineWidth = 1.5;
-      ctx.strokeStyle = s.color;
+      ctx.strokeStyle = d.locked ? "#64748b" : s.color;
       ctx.stroke();
     }
     ctx.restore();
@@ -339,8 +344,10 @@ export function drawDrawing(
 }
 
 /** Interactive anchors for a drawing, in pixels. */
-export function anchorsFor(d: Drawing, c: ChartCoords): Anchor[] {
-  if (d.locked || d.hidden) return [];
+export function anchorsFor(d: Drawing, c: ChartCoords, opts: { includeLocked?: boolean } = {}): Anchor[] {
+  if (d.hidden) return [];
+  if (d.locked && !opts.includeLocked) return [];
+  if (d.kind === "brush") return [];
   const out: Anchor[] = [];
   d.points.forEach((p, i) => {
     let x = c.x(p.time);
@@ -349,7 +356,6 @@ export function anchorsFor(d: Drawing, c: ChartCoords): Anchor[] {
     if (x == null || y == null) return;
     out.push({ id: `p${i}`, x, y });
   });
-  if (d.kind === "brush") return [];
   return out;
 }
 
