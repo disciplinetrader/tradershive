@@ -25,6 +25,10 @@ import { ReplayHudOverlay } from "@/components/replay/x/ReplayHudOverlay";
 import { ReplayBottomDock } from "@/components/replay/x/ReplayBottomDock";
 import { ReplayCommandPalette, ReplayShortcutSheet } from "@/components/replay/x/ReplayCommandPalette";
 import { useReplayHotkeys } from "@/components/replay/x/useReplayHotkeys";
+import { ChartTradingProvider } from "@/components/replay/x/chart-trading-context";
+import { ChartOrderLayer } from "@/components/replay/x/ChartOrderLayer";
+import { FloatingOrderTicket } from "@/components/replay/x/FloatingOrderTicket";
+import { useChartTradingHotkeys } from "@/components/replay/x/useChartTradingHotkeys";
 import { useReplayWorkspacePrefs } from "@/hooks/use-replay-workspace-prefs";
 import { useChartKeyboard } from "@/hooks/use-chart-keyboard";
 import { DrawingProvider, useDrawings } from "@/features/replay/drawings/store";
@@ -44,7 +48,9 @@ function SessionPage() {
   return (
     <ReplayProvider id={id}>
       <DrawingProvider sessionId={id}>
-        <Workspace />
+        <ChartTradingProvider>
+          <Workspace />
+        </ChartTradingProvider>
       </DrawingProvider>
     </ReplayProvider>
   );
@@ -74,7 +80,10 @@ function Workspace() {
   const { undo, redo } = useDrawings();
 
   const adapterRef = useRef<ChartAdapter | null>(null);
-  const onAdapterReady = useCallback((a: ChartAdapter | null) => { adapterRef.current = a; }, []);
+  const [adapter, setAdapter] = useState<ChartAdapter | null>(null);
+  const onAdapterReady = useCallback((a: ChartAdapter | null) => { adapterRef.current = a; setAdapter(a); }, []);
+
+  const chartTrading = prefs.tradeMode === "chart";
 
   useChartKeyboard({
     zoomIn: () => adapterRef.current?.zoomBy?.(1.25),
@@ -86,7 +95,8 @@ function Workspace() {
   });
 
   const toggleHelp = useCallback(() => setHelpOpen((v) => !v), []);
-  useReplayHotkeys(toggleHelp);
+  useReplayHotkeys(toggleHelp, chartTrading);
+  useChartTradingHotkeys(chartTrading);
 
   // ⌘K / Ctrl+K — command palette
   useEffect(() => {
@@ -149,7 +159,7 @@ function Workspace() {
   return (
     <TooltipProvider delayDuration={300}>
       <div className="rx-root flex h-[calc(100dvh-5rem)] min-h-0 flex-col overflow-hidden md:h-dvh">
-        <ReplayTopBar onSnapshot={takeShot} onFinish={finishAndReview} onCommands={() => setPaletteOpen(true)} />
+        <ReplayTopBar onSnapshot={takeShot} onFinish={finishAndReview} onCommands={() => setPaletteOpen(true)} tradeMode={prefs.tradeMode} onToggleTradeMode={() => update("tradeMode", chartTrading ? "panel" : "chart")} />
 
         {/* Chart region — icon rail + edge-to-edge canvas */}
         <div className="flex min-h-0 flex-1">
@@ -165,7 +175,14 @@ function Workspace() {
               <ReplayChart
                 onCapture={(url) => (window as any).__replayCaptureHandler?.(url)}
                 onAdapterReady={onAdapterReady}
-              />
+                showPositionLines={!chartTrading}
+              >
+                {chartTrading ? <ChartOrderLayer adapter={adapter} /> : null}
+              </ReplayChart>
+
+              {chartTrading && prefs.ticketOpen ? (
+                <FloatingOrderTicket className="absolute bottom-3 right-3 z-30" />
+              ) : null}
 
               {prefs.hudVisible ? (
                 <ReplayHudOverlay className="absolute left-3 top-[108px] z-20" />
@@ -197,8 +214,11 @@ function Workspace() {
           onFinish={finishAndReview}
           onToggleDock={() => update("dockOpen", !prefs.dockOpen)}
           onToggleHud={() => update("hudVisible", !prefs.hudVisible)}
+          tradeMode={prefs.tradeMode}
+          onToggleTradeMode={() => update("tradeMode", chartTrading ? "panel" : "chart")}
+          onToggleTicket={() => update("ticketOpen", !prefs.ticketOpen)}
         />
-        <ReplayShortcutSheet open={helpOpen} onOpenChange={setHelpOpen} />
+        <ReplayShortcutSheet open={helpOpen} onOpenChange={setHelpOpen} chartTrading={chartTrading} />
 
         {session ? (
           <PostSessionSummary

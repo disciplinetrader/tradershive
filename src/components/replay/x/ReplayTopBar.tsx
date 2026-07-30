@@ -5,7 +5,7 @@
  * entry points: title, instrument, timeframe, data status, replay
  * progress, command palette, settings, finish.
  */
-import { Camera, CheckCircle2, Command, Settings2, Signal, SignalLow } from "lucide-react";
+import { CandlestickChart, Camera, CheckCircle2, Command, PanelRight, Settings2, Signal, SignalLow } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useReplay } from "../context";
 import { RxToolbar, RxChip, RxDivider, RxIconButton, RxButton, RxMeter } from "./primitives";
@@ -14,10 +14,15 @@ export function ReplayTopBar({
   onSnapshot,
   onFinish,
   onCommands,
+  tradeMode,
+  onToggleTradeMode,
 }: {
   onSnapshot: () => void;
   onFinish: () => void;
   onCommands: () => void;
+  /** Chart-native order entry vs classic panel trading. */
+  tradeMode?: "chart" | "panel";
+  onToggleTradeMode?: () => void;
 }) {
   const { session, candles, cursorIdx } = useReplay();
   const pct = candles.length > 1 ? ((cursorIdx + 1) / candles.length) * 100 : 0;
@@ -54,6 +59,16 @@ export function ReplayTopBar({
       </div>
 
       <div className="ml-auto flex items-center gap-1">
+        {onToggleTradeMode ? (
+          <RxIconButton
+            label={tradeMode === "chart" ? "Chart trading — switch to panel" : "Panel trading — switch to chart"}
+            size="sm"
+            side="bottom"
+            onClick={onToggleTradeMode}
+          >
+            {tradeMode === "chart" ? <CandlestickChart className="h-3.5 w-3.5" /> : <PanelRight className="h-3.5 w-3.5" />}
+          </RxIconButton>
+        ) : null}
         <RxIconButton label="Command palette (⌘K)" size="sm" onClick={onCommands} side="bottom">
           <Command className="h-3.5 w-3.5" />
         </RxIconButton>

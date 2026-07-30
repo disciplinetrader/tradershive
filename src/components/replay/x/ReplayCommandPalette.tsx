@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { useReplay } from "../context";
 import { REPLAY_SHORTCUTS } from "./useReplayHotkeys";
+import { CHART_TRADING_SHORTCUTS } from "./useChartTradingHotkeys";
 
 export function ReplayCommandPalette({
   open,
@@ -17,6 +18,9 @@ export function ReplayCommandPalette({
   onFinish,
   onToggleDock,
   onToggleHud,
+  onToggleTradeMode,
+  onToggleTicket,
+  tradeMode,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -24,6 +28,9 @@ export function ReplayCommandPalette({
   onFinish: () => void;
   onToggleDock: () => void;
   onToggleHud: () => void;
+  onToggleTradeMode?: () => void;
+  onToggleTicket?: () => void;
+  tradeMode?: "chart" | "panel";
 }) {
   const { toggle, restart, replayAgain, jumpTo, fastForwardUntil, addCheckpoint, setSpeed } = useReplay();
   const [q, setQ] = useState("");
@@ -39,6 +46,10 @@ export function ReplayCommandPalette({
       { label: "Finish & review session", run: onFinish },
       { label: "Toggle bottom dock", run: onToggleDock },
       { label: "Toggle HUD overlay", run: onToggleHud },
+      ...(onToggleTradeMode
+        ? [{ label: `Switch to ${tradeMode === "chart" ? "panel" : "chart"} trading`, run: onToggleTradeMode }]
+        : []),
+      ...(onToggleTicket ? [{ label: "Toggle floating order ticket", run: onToggleTicket }] : []),
       { label: "Jump to London Open", run: () => jumpTo("london_open") },
       { label: "Jump to New York Open", run: () => jumpTo("ny_open") },
       { label: "Jump to Asia Open", run: () => jumpTo("asia_open") },
@@ -50,7 +61,7 @@ export function ReplayCommandPalette({
       { label: "Set speed 4x", run: () => setSpeed(4) },
       { label: "Set speed 16x", run: () => setSpeed(16) },
     ],
-    [toggle, restart, replayAgain, onSnapshot, onFinish, onToggleDock, onToggleHud, jumpTo, fastForwardUntil, addCheckpoint, setSpeed],
+    [toggle, restart, replayAgain, onSnapshot, onFinish, onToggleDock, onToggleHud, onToggleTradeMode, onToggleTicket, tradeMode, jumpTo, fastForwardUntil, addCheckpoint, setSpeed],
   );
 
   const filtered = commands.filter((c) => c.label.toLowerCase().includes(q.trim().toLowerCase()));
@@ -98,15 +109,24 @@ export function ReplayCommandPalette({
 }
 
 /** Keyboard shortcut sheet (`?`). */
-export function ReplayShortcutSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+export function ReplayShortcutSheet({
+  open,
+  onOpenChange,
+  chartTrading = false,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  chartTrading?: boolean;
+}) {
+  const rows = chartTrading ? [...CHART_TRADING_SHORTCUTS, ...REPLAY_SHORTCUTS] : REPLAY_SHORTCUTS;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-h-[80vh] max-w-sm overflow-auto">
         <DialogHeader>
           <DialogTitle className="text-base">Keyboard shortcuts</DialogTitle>
         </DialogHeader>
         <ul className="space-y-1.5 text-sm">
-          {REPLAY_SHORTCUTS.map(([keys, label]) => (
+          {rows.map(([keys, label]) => (
             <li key={keys} className="flex items-center justify-between gap-4">
               <span className="text-muted-foreground">{label}</span>
               <kbd className="rounded border border-border/60 bg-background/60 px-2 py-0.5 text-[11px] font-medium tabular-nums text-foreground">
