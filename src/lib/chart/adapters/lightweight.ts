@@ -617,6 +617,16 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
       return await new Promise<Blob | null>((r) => canvas.toBlob((b) => r(b), "image/png"));
     },
     fitContent() { resizeToContainer(); chart.timeScale().fitContent(); },
+    getVisibleTimeRange() {
+      if (!barTimes.length) return null;
+      const range = chart.timeScale().getVisibleLogicalRange();
+      if (!range) return null;
+      const from = logicalToTime(Number(range.from));
+      const to = logicalToTime(Number(range.to));
+      if (from == null || to == null || !(to > from)) return null;
+      return { from, to };
+    },
+
     resetPriceScale() { chart.priceScale("right").applyOptions({ autoScale: true }); },
     zoomBy(factor: number) {
       try {
