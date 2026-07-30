@@ -7,7 +7,36 @@
  * resize and timeframe changes.
  */
 
+import { axisLockFor } from "./types";
 import type { ChartCoords, Drawing, DrawingPoint } from "./types";
+
+/**
+ * Axis-anchored helpers.
+ *
+ * A Horizontal Line stores a price and nothing else that matters, so its
+ * pixel row is derived from `c.y(price)` alone — the stored time is never
+ * consulted. A Vertical Line is the mirror image: only `c.x(time)` matters.
+ * That is what makes them immune to price-scale changes / timeframe swaps
+ * on the axis they don't own.
+ */
+function rowOf(d: Drawing, c: ChartCoords): number | null {
+  const y = c.y(d.points[0]?.price ?? NaN);
+  return y == null || !Number.isFinite(y) ? null : y;
+}
+
+function columnOf(d: Drawing, c: ChartCoords): number | null {
+  const x = c.x(d.points[0]?.time ?? NaN);
+  return x == null || !Number.isFinite(x) ? null : x;
+}
+
+function formatTimeLabel(timeMs: number) {
+  const dt = new Date(timeMs);
+  if (Number.isNaN(dt.getTime())) return "";
+  return dt.toLocaleString(undefined, {
+    month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit",
+  });
+}
+
 
 export interface Anchor {
   id: string;
