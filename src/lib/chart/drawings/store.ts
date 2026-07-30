@@ -96,6 +96,21 @@ export class DrawingStore {
     this.emit();
   }
 
+  /** Transient hover highlight — never persisted, never part of history. */
+  hoveredIdValue() { return this.hoveredId; }
+  setHovered(id: string | null) {
+    if (this.hoveredId === id) return;
+    this.hoveredId = id;
+    this.emit();
+  }
+
+  setHidden(id: string, hidden: boolean) {
+    this.pushHistory();
+    this.drawings = this.drawings.map((d) => (d.id === id ? { ...d, hidden } : d));
+    this.persist();
+    this.emit();
+  }
+
   add(d: Drawing) {
     this.pushHistory();
     this.drawings = [...this.drawings, d];
