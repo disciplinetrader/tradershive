@@ -163,6 +163,8 @@ function TradingWorkspaceInner() {
   const [drawingsHidden, setDrawingsHidden] = useState(false);
   const [shortcutsHelp, setShortcutsHelp] = useState(false);
   const [multiPanes, setMultiPanes] = useState<MultiChartPane[]>([]);
+  const [alertsOpen, setAlertsOpen] = useState(false);
+
 
   // Rehydrate persisted UI state once localStorage has been read.
   useEffect(() => {
