@@ -21,7 +21,7 @@
  *     drag never blocks or pauses playback
  *   – execution is delegated to the replay context, untouched
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useLayoutEffect } from "react";
 import { toast } from "sonner";
 import { Ban, CircleDot, Minimize2, RefreshCw, Shield, X } from "lucide-react";
 import type { ChartAdapter } from "@/lib/chart/adapter";
@@ -286,6 +286,7 @@ export function ChartOrderLayer({
           invalidReason={draftCheck?.ok ? null : draftCheck?.reason ?? null}
           busy={busy}
           yOf={yOf}
+          activeKind={dragTag?.startsWith("draft:") ? (dragTag.split(":")[1] as LevelKind) : null}
           onDragLevel={(e, kind, current) => startDrag(e, "draft", kind, current)}
           onCancel={cancel}
           onConfirm={() => void confirm()}
@@ -416,6 +417,7 @@ function DraftArtifact({
   invalidReason,
   busy,
   yOf,
+  activeKind,
   onDragLevel,
   onCancel,
   onConfirm,
@@ -431,6 +433,7 @@ function DraftArtifact({
   invalidReason: string | null;
   busy: boolean;
   yOf: (p: number | null | undefined) => number | null;
+  activeKind: LevelKind | null;
   onDragLevel: (e: React.PointerEvent, kind: LevelKind, current: number) => void;
   onCancel: () => void;
   onConfirm: () => void;
@@ -440,9 +443,25 @@ function DraftArtifact({
   const yTp = yOf(tp);
   if (yEntry == null) return null;
 
-  // Sit just under the entry line so the read-out never covers the chart
-  // legend or the HUD in the top-left corner.
-  const boxTop = Math.max(8, yEntry + 14);
+  // Smart placement: sit just under the entry line, flip above when there is
+  // no room below, and flip to the right half when the left is crowded.
+  const boxRef = useRef<HTMLDivElement | null>(null);
+  const [box, setBox] = useState({ top: yEntry + 14, left: 12 });
+  useLayoutEffect(() => {
+    const el = boxRef.current;
+    const host = el?.parentElement;
+    if (!el || !host) return;
+    const h = el.offsetHeight || 150;
+    const w = el.offsetWidth || 186;
+    const hostH = host.clientHeight;
+    const hostW = host.clientWidth;
+    let top = yEntry + 14;
+    if (top + h > hostH - 8) top = Math.max(8, yEntry - 14 - h);
+    top = Math.min(Math.max(8, top), Math.max(8, hostH - h - 8));
+    // Keep clear of the left HUD block (~230px) when the entry sits high up.
+    const left = yEntry < 240 ? Math.min(hostW - w - SCALE_GUTTER - 8, 248) : 12;
+    setBox({ top, left });
+  }, [yEntry, ySl, yTp, invalidReason]);
 
   return (
     <>
@@ -455,19 +474,21 @@ function DraftArtifact({
         label={`${side === "long" ? "BUY" : "SELL"} ${orderType.toUpperCase()}`}
         value={formatPrice(entry, digits)}
         onPointerDown={(e) => onDragLevel(e, "entry", entry)}
+        active={activeKind === "entry"}
         strong
       />
       {ySl != null && sl != null ? (
-        <Level y={ySl} color={C.short} label="SL" value={formatPrice(sl, digits)} onPointerDown={(e) => onDragLevel(e, "sl", sl)} />
+        <Level y={ySl} color={C.short} label="SL" value={formatPrice(sl, digits)} onPointerDown={(e) => onDragLevel(e, "sl", sl)} active={activeKind === "sl"} />
       ) : null}
       {yTp != null && tp != null ? (
-        <Level y={yTp} color={C.long} label="TP" value={formatPrice(tp, digits)} onPointerDown={(e) => onDragLevel(e, "tp", tp)} />
+        <Level y={yTp} color={C.long} label="TP" value={formatPrice(tp, digits)} onPointerDown={(e) => onDragLevel(e, "tp", tp)} active={activeKind === "tp"} />
       ) : null}
 
       {/* Live R:R read-out */}
       <div
-        className="pointer-events-auto absolute w-[186px] rounded-[var(--rx-radius-md)] border border-[var(--rx-line-strong)] bg-[var(--rx-overlay)] p-1.5 text-[10px] shadow-[var(--rx-shadow-float)]"
-        style={{ top: boxTop, left: 12 }}
+        ref={boxRef}
+        className="pointer-events-auto absolute w-[186px] rounded-[var(--rx-radius-md)] border border-[var(--rx-line-strong)] bg-[var(--rx-overlay)] p-1.5 text-[10px] tabular-nums shadow-[var(--rx-shadow-float)] transition-[top,left] duration-[120ms] ease-out motion-reduce:transition-none animate-in fade-in-0 zoom-in-95"
+        style={{ top: box.top, left: box.left }}
       >
         <div className="mb-1 flex items-center justify-between">
           <span
@@ -553,6 +574,7 @@ function Level({
   value,
   onPointerDown,
   strong,
+  active,
 }: {
   y: number;
   color: string;
@@ -560,9 +582,13 @@ function Level({
   value: string;
   onPointerDown: (e: React.PointerEvent) => void;
   strong?: boolean;
+  active?: boolean;
 }) {
   return (
-    <div className="absolute left-0 flex items-center" style={{ top: y - 9, right: SCALE_GUTTER }}>
+    <div
+      className="absolute left-0 flex items-center transition-[opacity] duration-[120ms] ease-out motion-reduce:transition-none"
+      style={{ top: y - 9, right: SCALE_GUTTER, opacity: active ? 1 : 0.92 }}
+    >
       <Line color={color} dashed={!strong} />
       <span
         role="slider"
@@ -572,8 +598,12 @@ function Level({
         aria-valuemin={0}
         aria-valuemax={Number.MAX_SAFE_INTEGER}
         onPointerDown={onPointerDown}
-        className="pointer-events-auto ml-1.5 inline-flex h-[18px] cursor-ns-resize select-none items-center gap-1 rounded-[var(--rx-radius-sm)] px-1.5 text-[10px] font-semibold uppercase tracking-wider tabular-nums text-black"
-        style={{ background: color }}
+        className="pointer-events-auto ml-1.5 inline-flex h-[18px] cursor-ns-resize select-none items-center gap-1 rounded-[var(--rx-radius-sm)] px-1.5 text-[10px] font-semibold uppercase tracking-wider tabular-nums text-black outline-none transition-[transform,box-shadow] duration-[120ms] ease-out hover:scale-[1.04] focus-visible:scale-[1.04] motion-reduce:transition-none"
+        style={{
+          background: color,
+          transform: active ? "scale(1.06)" : undefined,
+          boxShadow: active ? `0 0 0 2px color-mix(in oklab, ${color} 45%, transparent)` : undefined,
+        }}
       >
         <CircleDot className="h-2.5 w-2.5 opacity-70" />
         {label} {value}
