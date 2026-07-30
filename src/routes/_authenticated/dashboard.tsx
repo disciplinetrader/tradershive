@@ -3,35 +3,39 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { Activity, Eye, Star } from "lucide-react";
+import { Eye, Star, Target } from "lucide-react";
 
-import { RecentTrades } from "@/components/dashboard/RecentTrades";
+import { DisclosureSection, Surface } from "@/components/ds";
 import { Watchlist } from "@/components/dashboard/Watchlist";
-import { WidgetShell } from "@/components/dashboard/WidgetShell";
 import { CustomizeSheet, type WidgetDef } from "@/components/dashboard/CustomizeSheet";
 import { getDashboardLayout, saveDashboardLayout } from "@/lib/dashboard.functions";
 import { getHomeSummary } from "@/lib/dashboard-home.functions";
 import { getHeroState } from "@/lib/dashboard-hero.functions";
 import { DashboardHero } from "@/components/dashboard/DashboardHero";
+import { DashboardTodayRail } from "@/components/dashboard/DashboardTodayRail";
 import { TodayFocusCard } from "@/components/dashboard/TodayFocusCard";
-import { PerformanceSnapshot } from "@/components/dashboard/PerformanceSnapshot";
-import { ActionItemsList } from "@/components/dashboard/ActionItemsList";
+import { PerformanceSection } from "@/components/dashboard/PerformanceSection";
+import { RecentActivitySection } from "@/components/dashboard/RecentActivitySection";
 import { TodaysInsight } from "@/components/dashboard/TodaysInsight";
 import { BetaBanner } from "@/components/beta/BetaBanner";
 import { OnboardingChecklist } from "@/components/onboarding/OnboardingChecklist";
 import { resolveDashboardMode } from "@/lib/dashboard-mode";
 
 /**
- * Trader Command Center — Mission Control.
+ * Trader Command Center — Mission Control (Redesign Sprint 1).
  *
- * Answers a single question: "What should I do next?"
+ * Answers a single question: "What should I do today?"
+ *
  * Rank order:
- *   1. Hero          — one recommendation + one primary CTA
- *   2. Performance   — Net PnL / Win Rate / Profit Factor (guarded)
- *   3. Today's Focus — action targets for the day
- *   4. Continue      — Recent trades + Watchlist
- *   5. Action items  — outstanding follow-ups
- *   6. Today's Insight (1 tip, 1 CTA)
+ *   1. Hero            — recommendation + primary CTA, with a Today rail
+ *                        (today's P&L, prop-firm status, quick actions)
+ *   2. AI insight      — one observation, one CTA
+ *   3. Performance     — equity curve + 3 headline KPIs (+3 deferred)
+ *   4. Recent activity — trades / replay / reminders in one tabbed block
+ *   5. Deferred        — Today's Focus detail and Watchlist behind disclosure
+ *
+ * Progressive disclosure keeps the default view ~30% lighter without removing
+ * a single feature. No backend, API or business logic was changed.
  */
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -49,10 +53,9 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 const SECTIONS: WidgetDef[] = [
   { id: "performance", label: "Performance", group: "Command Center" },
+  { id: "activity", label: "Recent activity", group: "Command Center" },
   { id: "focus", label: "Today's Focus", group: "Command Center" },
-  { id: "trades", label: "Recent trades", group: "Command Center" },
   { id: "watchlist", label: "Watchlist", group: "Command Center" },
-  { id: "actions", label: "Action Items", group: "Command Center" },
   { id: "insight", label: "Today's Insight", group: "Coaching" },
 ];
 
@@ -116,14 +119,6 @@ function DashboardPage() {
   };
 
   const visible = useMemo(() => (id: string) => !hidden.has(id), [hidden]);
-  const wProps = (id: string) => ({
-    id,
-    collapsed: false,
-    onToggleCollapsed: () => {},
-    onHide: (wid: string) => {
-      const next = new Set(hidden); next.add(wid); persistHidden(next);
-    },
-  });
 
   const Section = animate ? motion.div : "div";
   const sectionProps = animate
@@ -131,106 +126,92 @@ function DashboardPage() {
     : {};
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <Section {...(sectionProps as any)}><BetaBanner /></Section>
 
-      {/* 1 — Hero (greeting embedded) + Performance are tighter together */}
-      <div className="space-y-3">
-        <Section {...(sectionProps as any)}>
-          <DashboardHero state={hero} animate={animate} />
-        </Section>
+      {/* 1 — Hero: one recommendation + one CTA, then today's state */}
+      <Section {...(sectionProps as any)} className="space-y-3">
+        <DashboardHero state={hero} animate={animate} />
+        <DashboardTodayRail performance={home?.performance} hero={hero} />
+      </Section>
 
-        {visible("performance") && (
-          <Section {...(sectionProps as any)}>
-            {isPending || !home ? <KpiSkeleton /> : <PerformanceSnapshot data={home.performance} />}
-          </Section>
-        )}
-      </div>
+
+      {/* 2 — One AI observation, one CTA */}
+      {visible("insight") && home && home.tips.length > 0 ? (
+        <Section {...(sectionProps as any)}>
+          <TodaysInsight tips={home.tips} />
+        </Section>
+      ) : null}
 
       <Section {...(sectionProps as any)}>
         <OnboardingChecklist />
       </Section>
 
-      {/* 3 — Today's Focus */}
-      {visible("focus") && (
+      {/* 3 — Performance */}
+      {visible("performance") ? (
         <Section {...(sectionProps as any)}>
-          {isPending || !home ? <FocusSkeleton /> : <TodayFocusCard data={home.focus} />}
+          {isPending || !home ? <PerformanceSkeleton /> : <PerformanceSection data={home.performance} />}
         </Section>
-      )}
+      ) : null}
 
-      {/* 4 — Continue working */}
-      {(visible("trades") || visible("watchlist")) && (
-        <Section {...(sectionProps as any)} className="grid gap-4 lg:grid-cols-3">
-          {visible("trades") && (
-            <WidgetShell
-              {...wProps("trades")}
-              title="Recent trades"
-              description="Last 10 executions"
-              icon={Activity}
-              className="lg:col-span-2"
-            >
-              <RecentTrades />
-            </WidgetShell>
-          )}
-          {visible("watchlist") && (
-            <WidgetShell
-              {...wProps("watchlist")}
-              title="Watchlist"
-              description="Symbols you're tracking"
-              icon={Star}
-            >
-              <Watchlist />
-            </WidgetShell>
-          )}
-        </Section>
-      )}
-
-      {/* 5 — Action items */}
-      {visible("actions") && (
+      {/* 4 — Recent activity */}
+      {visible("activity") ? (
         <Section {...(sectionProps as any)}>
-          {isPending || !home ? <ActionsSkeleton /> : <ActionItemsList items={home.actions} />}
+          <RecentActivitySection hero={hero} actions={home?.actions ?? []} />
         </Section>
-      )}
+      ) : null}
 
-      {/* 6 — Today's Insight (single card, single CTA) */}
-      {visible("insight") && home && home.tips.length > 0 && (
-        <Section {...(sectionProps as any)}>
-          <TodaysInsight tips={home.tips} />
-        </Section>
-      )}
+      {/* 5 — Deferred detail: nothing removed, just out of the way */}
+      <Section {...(sectionProps as any)} className="grid gap-3 lg:grid-cols-2">
+        {visible("focus") ? (
+          <DisclosureSection
+            title="Today's focus detail"
+            description="Replay minutes, journal debt, streak and goals"
+            icon={Target}
+            storageKey="dashboard-focus"
+          >
+            {home ? <TodayFocusCard data={home.focus} /> : <FocusSkeleton />}
+          </DisclosureSection>
+        ) : null}
+
+        {visible("watchlist") ? (
+          <DisclosureSection
+            title="Watchlist"
+            description="Symbols you're tracking"
+            icon={Star}
+            storageKey="dashboard-watchlist"
+          >
+            <Watchlist />
+          </DisclosureSection>
+        ) : null}
+      </Section>
 
       <Section {...(sectionProps as any)} className="flex justify-end">
         <CustomizeSheet widgets={SECTIONS} hidden={hidden} onChange={persistHidden} />
       </Section>
 
       {hidden.size === SECTIONS.length ? (
-        <div className="rounded-3xl border border-dashed border-border/60 bg-surface/40 p-10 text-center">
+        <Surface tone="muted" className="border-dashed p-10 text-center">
           <Eye className="mx-auto mb-3 h-6 w-6 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">All sections are hidden. Open Customize to bring them back.</p>
-        </div>
+        </Surface>
       ) : null}
     </div>
   );
 }
 
 function FocusSkeleton() {
-  return <div className="h-40 rounded-3xl border border-border/40 bg-card/40 animate-shimmer" />;
+  return <div className="h-40 rounded-2xl border border-border/40 bg-card/40 animate-shimmer" />;
 }
-function KpiSkeleton() {
+function PerformanceSkeleton() {
   return (
-    <div className="grid gap-3 md:grid-cols-3">
-      {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="h-24 rounded-2xl border border-border/40 bg-card/40 animate-shimmer" />
-      ))}
-    </div>
-  );
-}
-function ActionsSkeleton() {
-  return (
-    <div className="grid gap-3 md:grid-cols-2">
-      {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} className="h-20 rounded-2xl border border-border/40 bg-card/40 animate-shimmer" />
-      ))}
+    <div className="space-y-3">
+      <div className="grid gap-3 md:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="h-28 rounded-2xl border border-border/40 bg-card/40 animate-shimmer" />
+        ))}
+      </div>
+      <div className="h-72 rounded-2xl border border-border/40 bg-card/40 animate-shimmer" />
     </div>
   );
 }
