@@ -259,25 +259,27 @@ function TradingWorkspaceInner() {
   useTradingShortcuts({
     // The persistent "Armed" chip inside OrderPanel now provides feedback,
     // so we no longer stack a toast on every B/S press.
-    onBuy: () => { emitTradeIntent({ kind: "focus_side", side: "long" }); },
-    onSell: () => { emitTradeIntent({ kind: "focus_side", side: "short" }); },
+    onBuy: () => { emitTradeIntent({ kind: "focus_side", side: "long" }); setRightOpen(true); setActiveTab("order"); },
+    onSell: () => { emitTradeIntent({ kind: "focus_side", side: "short" }); setRightOpen(true); setActiveTab("order"); },
     onClose: () => closeLast.mutate(),
     onScreenshot: screenshot,
     onPlanTrade: () => setPlannerActive((v) => !v),
     onToggleDrawings: () => setDrawingsHidden((v) => !v),
-    onToggleReplay: () => { setRightOpen(true); setActiveTab("trade"); },
-    onCancelOrders: () => { setRightOpen(true); setActiveTab("trade"); },
+    onToggleReplay: () => { setRightOpen(true); setActiveTab("order"); },
+    onCancelOrders: () => { setRightOpen(true); setActiveTab("positions"); },
   });
 
   const rightOpen = prefs.rightOpen;
   const setRightOpen = useCallback((v: boolean) => update("rightOpen", v), [update]);
   const detailsOpen = prefs.detailsOpen;
   const setDetailsOpen = useCallback((v: boolean) => update("detailsOpen", v), [update]);
+  const leftRailOpen = prefs.leftRailOpen;
   const activeTab: WorkspaceTab = prefs.activeTab;
   const setActiveTab = useCallback((v: WorkspaceTab) => update("activeTab", v), [update]);
   const focusMode = prefs.focusMode;
   const setFocusMode = useCallback((v: boolean) => update("focusMode", v), [update]);
   const rightWidth = Math.min(560, Math.max(280, prefs.rightWidth));
+
 
   // Reflect Focus Mode on the document body so app-shell chrome can hide via CSS.
   useEffect(() => {
@@ -470,36 +472,8 @@ function TradingWorkspaceInner() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Right-aligned quick actions */}
+          {/* Right-aligned quick actions — kept minimal; tools live in the left rail */}
           <div className="ml-auto flex items-center gap-1">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant={plannerActive ? "default" : "ghost"} size="sm"
-                  className="h-7 gap-1 px-2 text-[11px]"
-                  onClick={() => setPlannerActive((v) => !v)}
-                >
-                  <Target className="h-3.5 w-3.5" /> <span className="hidden lg:inline">Plan</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Plan Trade — click chart to place entry</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-7 gap-1 px-2 text-[11px]" onClick={screenshot}>
-                  <Camera className="h-3.5 w-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Screenshot (P)</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-7 gap-1 px-2 text-[11px]" onClick={() => setShortcutsHelp((v) => !v)}>
-                  <Keyboard className="h-3.5 w-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Keyboard shortcuts</TooltipContent>
-            </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -509,24 +483,14 @@ function TradingWorkspaceInner() {
                   onClick={() => setFocusMode(!focusMode)}
                   aria-pressed={focusMode}
                 >
-                  {focusMode ? <Minimize2 className="h-3.5 w-3.5" /> : <Focus className="h-3.5 w-3.5" />}
-                  <span className="hidden lg:inline">{focusMode ? "Exit Focus" : "Focus"}</span>
+                  {focusMode ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+                  <span className="hidden lg:inline">{focusMode ? "Exit" : "Fullscreen"}</span>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>{focusMode ? "Exit Focus Mode (Esc)" : "Focus Mode (F)"}</TooltipContent>
+              <TooltipContent>{focusMode ? "Exit fullscreen (Esc)" : "Fullscreen chart (F)"}</TooltipContent>
             </Tooltip>
-            <Button
-              variant="ghost" size="sm"
-              className="h-7 gap-1 px-2 text-[11px]"
-              onClick={() => setDetailsOpen(!detailsOpen)}
-              aria-expanded={detailsOpen}
-              title="Toggle account & market details"
-            >
-              <Activity className="h-3.5 w-3.5" />
-              <span className="hidden md:inline">Details</span>
-              <ChevronDown className={cn("h-3 w-3 opacity-60 transition-transform", detailsOpen && "rotate-180")} />
-            </Button>
           </div>
+
         </div>
 
         {/* Collapsible account + session details (progressive disclosure) */}
@@ -541,11 +505,39 @@ function TradingWorkspaceInner() {
           </div>
         )}
 
-        {/* ── Main workspace: chart dominates; right rail collapses ─────── */}
-        <div
-          className="flex min-h-0 flex-1"
-          style={{ /* dynamic width for the rail */ }}
-        >
+        {/* ── Main workspace: chart dominates; rails collapse ───────────── */}
+        <div className="flex min-h-0 flex-1">
+          {/* Left tool rail — icons only, collapsible */}
+          {!focusMode && (
+            <nav
+              aria-label="Chart tools"
+              className={cn(
+                "hidden shrink-0 flex-col items-center gap-1 border-r border-border/40 bg-card/20 py-2 md:flex",
+                leftRailOpen ? "w-11" : "w-8",
+              )}
+            >
+              {leftRailOpen && (
+                <>
+                  <RailButton label="Plan trade (T)" icon={Target} active={plannerActive} onClick={() => setPlannerActive((v) => !v)} />
+                  <RailButton label={drawingsHidden ? "Show overlays (H)" : "Hide overlays (H)"} icon={drawingsHidden ? EyeOff : Eye} onClick={() => setDrawingsHidden((v) => !v)} />
+                  <RailButton label="Alerts" icon={Bell} active={activeTab === "alerts"} onClick={() => { setRightOpen(true); setActiveTab("alerts"); }} />
+                  <RailButton label="Replay Studio" icon={Play} onClick={() => { window.location.href = "/replay"; }} />
+                  <RailButton label="Screenshot (P)" icon={Camera} onClick={screenshot} />
+                  <RailButton label="Account & market details" icon={Activity} active={detailsOpen} onClick={() => setDetailsOpen(!detailsOpen)} />
+                  <RailButton label="Keyboard shortcuts (?)" icon={Keyboard} active={shortcutsHelp} onClick={() => setShortcutsHelp((v) => !v)} />
+                </>
+              )}
+              <button
+                onClick={() => update("leftRailOpen", !leftRailOpen)}
+                className="mt-auto grid h-6 w-6 place-items-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                aria-label={leftRailOpen ? "Collapse tool rail" : "Expand tool rail"}
+                title={leftRailOpen ? "Collapse tools" : "Expand tools"}
+              >
+                <ChevronRight className={cn("h-4 w-4 transition-transform", leftRailOpen && "rotate-180")} />
+              </button>
+            </nav>
+          )}
+
           <div className="relative flex min-h-[calc(100dvh-4.5rem)] min-w-0 flex-1 flex-col border-r border-border/40">
             {/* Compact active-indicator strip — only shown when indicators
                 are active so the chart owns as much vertical space as possible.
@@ -694,40 +686,39 @@ function TradingWorkspaceInner() {
                     role="tablist"
                     aria-label="Workspace"
                     onKeyDown={(e) => {
-                      const tabs: WorkspaceTab[] = ["trade", "notes", "insights"];
-                      const i = tabs.indexOf(activeTab);
-                      if (e.key === "ArrowRight") { setActiveTab(tabs[(i + 1) % tabs.length]); e.preventDefault(); }
-                      else if (e.key === "ArrowLeft") { setActiveTab(tabs[(i - 1 + tabs.length) % tabs.length]); e.preventDefault(); }
+                      const i = RIGHT_TABS.findIndex((t) => t.k === activeTab);
+                      if (e.key === "ArrowRight") { setActiveTab(RIGHT_TABS[(i + 1) % RIGHT_TABS.length].k); e.preventDefault(); }
+                      else if (e.key === "ArrowLeft") { setActiveTab(RIGHT_TABS[(i - 1 + RIGHT_TABS.length) % RIGHT_TABS.length].k); e.preventDefault(); }
                     }}
-                    className="flex items-center gap-0.5 overflow-x-auto no-scrollbar"
+                    className="flex min-w-0 items-center gap-0.5 overflow-x-auto no-scrollbar"
                   >
-                    {([
-                      { k: "trade",    label: "Trade",    icon: Target,      count: openHere.length || undefined },
-                      { k: "notes",    label: "Notes",    icon: NotebookPen },
-                      { k: "insights", label: "Insights", icon: BrainCircuit },
-                    ] as { k: WorkspaceTab; label: string; icon: typeof Target; count?: number }[]).map(({ k, label, icon: Icon, count }) => (
-                      <button
-                        key={k}
-                        role="tab"
-                        id={`ws-tab-${k}`}
-                        aria-selected={activeTab === k}
-                        aria-controls={`ws-panel-${k}`}
-                        tabIndex={activeTab === k ? 0 : -1}
-                        onClick={() => setActiveTab(k)}
-                        className={cn(
-                          "inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold transition-colors duration-150",
-                          activeTab === k
-                            ? "bg-primary/15 text-primary"
-                            : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                        )}
-                      >
-                        <Icon className="h-3.5 w-3.5" />
-                        <span className="hidden sm:inline">{label}</span>
-                        {count != null && (
-                          <Badge variant="secondary" className="h-4 px-1 text-[9px]">{count}</Badge>
-                        )}
-                      </button>
-                    ))}
+                    {RIGHT_TABS.map(({ k, label, icon: Icon }) => {
+                      const count = k === "positions" ? (openCount || undefined) : undefined;
+                      return (
+                        <button
+                          key={k}
+                          role="tab"
+                          id={`ws-tab-${k}`}
+                          aria-selected={activeTab === k}
+                          aria-controls={`ws-panel-${k}`}
+                          tabIndex={activeTab === k ? 0 : -1}
+                          onClick={() => setActiveTab(k)}
+                          title={label}
+                          className={cn(
+                            "inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold transition-colors duration-150",
+                            activeTab === k
+                              ? "bg-primary/15 text-primary"
+                              : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                          )}
+                        >
+                          <Icon className="h-3.5 w-3.5" />
+                          <span className="hidden xl:inline">{label}</span>
+                          {count != null && (
+                            <Badge variant="secondary" className="h-4 px-1 text-[9px]">{count}</Badge>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                   <button
                     onClick={() => setRightOpen(false)}
@@ -738,73 +729,72 @@ function TradingWorkspaceInner() {
                     <ChevronRight className="h-4 w-4" />
                   </button>
                 </div>
-                <div className="min-h-0 flex-1 overflow-auto p-2 sm:p-3 space-y-3">
-                  {activeChallenge?.id && <ChallengePanel />}
+                <div className="min-h-0 flex-1 space-y-3 overflow-auto p-2 sm:p-3">
+                  {activeChallenge?.id && activeTab === "order" && <ChallengePanel />}
 
-                  {activeTab === "trade" && (
+                  {activeTab === "watchlist" && (
+                    <div role="tabpanel" id="ws-panel-watchlist" aria-labelledby="ws-tab-watchlist" className="animate-in fade-in duration-150">
+                      <WatchlistPanel />
+                    </div>
+                  )}
+
+                  {activeTab === "order" && (
                     <div
                       role="tabpanel"
-                      id="ws-panel-trade"
-                      aria-labelledby="ws-tab-trade"
+                      id="ws-panel-order"
+                      aria-labelledby="ws-tab-order"
                       className="space-y-3 animate-in fade-in duration-150"
                     >
-                      <OrderPanel />
+                      <OrderPanel compact />
+                    </div>
+                  )}
 
-                      {/* Adaptive: Positions — always show header, one-line empty state when 0 */}
-                      <AdaptiveSection
-                        title="Positions"
-                        count={openCount}
-                        emptyLabel="No open positions"
-                      >
+                  {activeTab === "positions" && (
+                    <div
+                      role="tabpanel"
+                      id="ws-panel-positions"
+                      aria-labelledby="ws-tab-positions"
+                      className="space-y-3 animate-in fade-in duration-150"
+                    >
+                      <AdaptiveSection title="Positions" count={openCount} emptyLabel="No open positions">
                         <PositionsTable />
                       </AdaptiveSection>
-
-                      {/* Adaptive: Pending orders */}
-                      <AdaptiveSection
-                        title="Pending orders"
-                        count={pendingCount}
-                        emptyLabel="No pending orders"
-                      >
+                      <AdaptiveSection title="Pending orders" count={pendingCount} emptyLabel="No pending orders">
                         <OrdersTable />
                       </AdaptiveSection>
-
-                      {/* Playbook checklist folds in only when a strategy is attached */}
-                      <details className="group rounded-md border border-border/40 bg-background/40">
-                        <summary className="flex cursor-pointer list-none items-center gap-1.5 px-2 py-1.5 text-[11px] font-semibold text-muted-foreground hover:text-foreground">
-                          <BookMarked className="h-3.5 w-3.5" />
-                          Playbook
-                          <ChevronDown className="ml-auto h-3 w-3 transition-transform group-open:rotate-180" />
-                        </summary>
-                        <div className="border-t border-border/40 p-2">
-                          <PlaybookQuickAttach context="paper" />
-                        </div>
-                      </details>
                     </div>
                   )}
 
-                  {activeTab === "notes" && (
+                  {activeTab === "alerts" && (
                     <div
                       role="tabpanel"
-                      id="ws-panel-notes"
-                      aria-labelledby="ws-tab-notes"
+                      id="ws-panel-alerts"
+                      aria-labelledby="ws-tab-alerts"
                       className="space-y-3 animate-in fade-in duration-150"
                     >
-                      <QuickJournalPanel symbol={symbol} />
-                      <WorkspaceNotes symbol={symbol} />
+                      <div className="rounded-md border border-border/40 bg-background/30 p-3 text-center">
+                        <Bell className="mx-auto h-5 w-5 text-muted-foreground" />
+                        <p className="mt-2 text-xs font-semibold">Price alerts</p>
+                        <p className="mt-1 text-[11px] text-muted-foreground">Get notified when {symbol} reaches your level.</p>
+                        <Button size="sm" className="mt-2 h-7 text-[11px]" onClick={() => setAlertsOpen(true)}>
+                          Manage alerts
+                        </Button>
+                      </div>
                     </div>
                   )}
 
-                  {activeTab === "insights" && (
+                  {activeTab === "news" && (
                     <div
                       role="tabpanel"
-                      id="ws-panel-insights"
-                      aria-labelledby="ws-tab-insights"
+                      id="ws-panel-news"
+                      aria-labelledby="ws-tab-news"
                       className="space-y-3 animate-in fade-in duration-150"
                     >
                       <AiInsightsPanel symbol={symbol} />
                     </div>
                   )}
                 </div>
+
               </aside>
             </>
           ) : (
@@ -820,10 +810,24 @@ function TradingWorkspaceInner() {
           )}
         </div>
 
-        {/* Bottom dock — Blotter (Open / Pending / Closed / All) + Watchlist */}
-        <BottomDock symbol={symbol} multiPanes={multiPanes} setMultiPanes={setMultiPanes} />
+        {/* Bottom dock — Orders / Positions / History / Journal / Trade Notes */}
+        <BottomDock
+          symbol={symbol}
+          multiPanes={multiPanes}
+          setMultiPanes={setMultiPanes}
+          bottomTab={prefs.bottomTab}
+          setBottomTab={(t) => update("bottomTab", t)}
+          open={prefs.bottomOpen}
+          setOpen={(v) => update("bottomOpen", v)}
+          dockHeight={Math.min(560, Math.max(180, prefs.dockHeight))}
+          setDockHeight={(h) => update("dockHeight", h)}
+          blotterFilter={prefs.blotterFilter}
+          setBlotterFilter={(f) => update("blotterFilter", f)}
+        />
 
         <SymbolSearch open={symbolSearchOpen} onOpenChange={setSymbolSearchOpen} />
+        <AlertsDialog open={alertsOpen} onOpenChange={setAlertsOpen} symbol={symbol} />
+
       </div>
     </TooltipProvider>
   );
@@ -854,33 +858,43 @@ function AdaptiveSection({
   );
 }
 
+const BOTTOM_TABS: { k: BottomTab; label: string }[] = [
+  { k: "orders", label: "Orders" },
+  { k: "positions", label: "Positions" },
+  { k: "history", label: "History" },
+  { k: "journal", label: "Journal" },
+  { k: "notes", label: "Trade Notes" },
+];
+
 /**
- * BottomDock — unified Blotter + Watchlist with resize handle and persisted
- * tab / filter / height. Only the active dataset is mounted, so inactive
- * datasets do not fetch or poll.
+ * BottomDock — dockable, resizable, collapsible terminal panel.
+ * State is owned by the workspace (single prefs instance) and passed down so
+ * the dock, the rail and the shortcuts never desync.
  */
 function BottomDock({
   symbol, multiPanes, setMultiPanes,
+  bottomTab, setBottomTab, open, setOpen,
+  dockHeight, setDockHeight, blotterFilter, setBlotterFilter,
 }: {
   symbol: string;
   multiPanes: MultiChartPane[];
   setMultiPanes: (p: MultiChartPane[]) => void;
+  bottomTab: BottomTab;
+  setBottomTab: (t: BottomTab) => void;
+  open: boolean;
+  setOpen: (v: boolean) => void;
+  dockHeight: number;
+  setDockHeight: (h: number) => void;
+  blotterFilter: BlotterFilter;
+  setBlotterFilter: (f: BlotterFilter) => void;
 }) {
-  const { prefs, update } = useWorkspacePrefs();
-  const bottomTab: BottomTab = prefs.bottomTab;
-  const setBottomTab = (v: BottomTab) => update("bottomTab", v);
-  const blotterFilter: BlotterFilter = prefs.blotterFilter;
-  const setBlotterFilter = (f: BlotterFilter) => update("blotterFilter", f);
-  const dockHeight = Math.min(560, Math.max(180, prefs.dockHeight));
-
   const dragRef = useRef<{ startY: number; startH: number } | null>(null);
   const onResizeStart = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     dragRef.current = { startY: e.clientY, startH: dockHeight };
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
     const onMove = (ev: PointerEvent) => {
       const s = dragRef.current; if (!s) return;
-      const next = Math.min(560, Math.max(180, s.startH - (ev.clientY - s.startY)));
-      update("dockHeight", next);
+      setDockHeight(Math.min(560, Math.max(180, s.startH - (ev.clientY - s.startY))));
     };
     const onUp = () => {
       dragRef.current = null;
@@ -889,66 +903,84 @@ function BottomDock({
     };
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
-  }, [dockHeight, update]);
+  }, [dockHeight, setDockHeight]);
 
   return (
     <div className="border-t border-border/40 bg-card/30">
-      <div className="hidden md:block">
-        <MultiChartStrip panes={multiPanes} onChange={setMultiPanes} primarySymbol={symbol} />
-      </div>
-      <div
-        role="separator"
-        aria-orientation="horizontal"
-        aria-label="Resize dock"
-        onPointerDown={onResizeStart}
-        className="h-1 cursor-row-resize bg-border/40 hover:bg-primary/60 active:bg-primary transition-colors"
-      />
-      <div className="flex min-h-0 flex-col" style={{ height: dockHeight }}>
-        <div
-          role="tablist"
-          aria-label="Bottom dock"
-          onKeyDown={(e) => {
-            const tabs: BottomTab[] = ["blotter", "watchlist"];
-            const i = tabs.indexOf(bottomTab);
-            if (e.key === "ArrowRight") { setBottomTab(tabs[(i + 1) % tabs.length]); e.preventDefault(); }
-            else if (e.key === "ArrowLeft") { setBottomTab(tabs[(i - 1 + tabs.length) % tabs.length]); e.preventDefault(); }
-          }}
-          className="flex items-center gap-1 border-b border-border/40 px-3 pt-1 h-8"
-        >
-          {(["blotter", "watchlist"] as BottomTab[]).map((k) => {
-            const active = bottomTab === k;
-            return (
-              <button
-                key={k}
-                role="tab"
-                id={`dock-tab-${k}`}
-                aria-selected={active}
-                aria-controls={`dock-panel-${k}`}
-                tabIndex={active ? 0 : -1}
-                onClick={() => setBottomTab(k)}
-                className={cn(
-                  "px-3 py-1 text-xs font-semibold rounded-t-md transition-colors",
-                  active
-                    ? "bg-background/60 text-foreground"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {k === "blotter" ? "Blotter" : "Watchlist"}
-              </button>
-            );
-          })}
+      {open ? (
+        <>
+          <div className="hidden md:block">
+            <MultiChartStrip panes={multiPanes} onChange={setMultiPanes} primarySymbol={symbol} />
+          </div>
+          <div
+            role="separator"
+            aria-orientation="horizontal"
+            aria-label="Resize dock"
+            onPointerDown={onResizeStart}
+            className="h-1 cursor-row-resize bg-border/40 transition-colors hover:bg-primary/60 active:bg-primary"
+          />
+        </>
+      ) : null}
+      <div className="flex min-h-0 flex-col" style={open ? { height: dockHeight } : undefined}>
+        <div className="flex h-8 items-center gap-1 border-b border-border/40 px-2">
+          <div
+            role="tablist"
+            aria-label="Bottom dock"
+            onKeyDown={(e) => {
+              const i = BOTTOM_TABS.findIndex((t) => t.k === bottomTab);
+              if (e.key === "ArrowRight") { setBottomTab(BOTTOM_TABS[(i + 1) % BOTTOM_TABS.length].k); e.preventDefault(); }
+              else if (e.key === "ArrowLeft") { setBottomTab(BOTTOM_TABS[(i - 1 + BOTTOM_TABS.length) % BOTTOM_TABS.length].k); e.preventDefault(); }
+            }}
+            className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto no-scrollbar"
+          >
+            {BOTTOM_TABS.map(({ k, label }) => {
+              const active = open && bottomTab === k;
+              return (
+                <button
+                  key={k}
+                  role="tab"
+                  id={`dock-tab-${k}`}
+                  aria-selected={active}
+                  aria-controls={`dock-panel-${k}`}
+                  tabIndex={active ? 0 : -1}
+                  onClick={() => { setBottomTab(k); setOpen(true); }}
+                  className={cn(
+                    "shrink-0 rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors",
+                    active ? "bg-background/70 text-foreground" : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          <button
+            onClick={() => setOpen(!open)}
+            className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            aria-label={open ? "Collapse dock" : "Expand dock"}
+            title={open ? "Collapse dock" : "Expand dock"}
+          >
+            <ChevronDown className={cn("h-4 w-4 transition-transform", !open && "rotate-180")} />
+          </button>
         </div>
-        <div id={`dock-panel-${bottomTab}`} role="tabpanel" className="min-h-0 flex-1 overflow-hidden">
-          {bottomTab === "blotter" ? (
-            <Blotter filter={blotterFilter} onFilterChange={setBlotterFilter} />
-          ) : (
-            <div className="h-full overflow-auto p-2 sm:p-3"><WatchlistPanel /></div>
-          )}
-        </div>
+        {open && (
+          <div id={`dock-panel-${bottomTab}`} role="tabpanel" className="min-h-0 flex-1 overflow-hidden">
+            {bottomTab === "orders" && <Blotter filter="pending" onFilterChange={setBlotterFilter} />}
+            {bottomTab === "positions" && <Blotter filter="open" onFilterChange={setBlotterFilter} />}
+            {bottomTab === "history" && <Blotter filter="closed" onFilterChange={setBlotterFilter} />}
+            {bottomTab === "journal" && (
+              <div className="h-full overflow-auto p-2 sm:p-3"><QuickJournalPanel symbol={symbol} /></div>
+            )}
+            {bottomTab === "notes" && (
+              <div className="h-full overflow-auto p-2 sm:p-3"><WorkspaceNotes symbol={symbol} /></div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
 }
+
 
 import { useMarketCadence } from "@/lib/market-data/hooks";
 export function TradingWorkspace({ fullscreen: _fullscreen }: { fullscreen?: boolean } = {}) {

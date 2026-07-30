@@ -9,8 +9,10 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export type WorkspaceTab = "trade" | "notes" | "insights";
-export type BottomTab = "blotter" | "watchlist";
+/** Right dock tabs — only one visible at a time (terminal style). */
+export type WorkspaceTab = "watchlist" | "order" | "positions" | "alerts" | "news";
+/** Bottom dock tabs. */
+export type BottomTab = "orders" | "positions" | "history" | "journal" | "notes";
 export type BlotterFilter = "open" | "pending" | "closed" | "all" | "winning" | "losing" | "today" | "week";
 export type BlotterSortKey = "symbol" | "pnl" | "time" | "size" | "status";
 export type BlotterSort = { key: BlotterSortKey; dir: "asc" | "desc" };
@@ -26,52 +28,51 @@ export type WorkspacePrefs = {
   smcOn: boolean;
   detailsOpen: boolean;
   bottomTab: BottomTab;
+  bottomOpen: boolean;
+  leftRailOpen: boolean;
   blotterFilter: BlotterFilter;
   dockHeight: number; // px, 180–560
   blotterSortOpen: BlotterSort;
   blotterSortClosed: BlotterSort;
 };
 
-const STORAGE_KEY = "thive.workspace.prefs.v1";
-const VALID_TABS: WorkspaceTab[] = ["trade", "notes", "insights"];
-const VALID_BOTTOM: BottomTab[] = ["blotter", "watchlist"];
+const STORAGE_KEY = "thive.workspace.prefs.v2";
+const VALID_TABS: WorkspaceTab[] = ["watchlist", "order", "positions", "alerts", "news"];
+const VALID_BOTTOM: BottomTab[] = ["orders", "positions", "history", "journal", "notes"];
 const VALID_FILTERS: BlotterFilter[] = ["open", "pending", "closed", "all", "winning", "losing", "today", "week"];
 
 const DEFAULTS: WorkspacePrefs = {
   rightOpen: true,
-  rightWidth: 360,
-  activeTab: "trade",
+  rightWidth: 320,
+  activeTab: "order",
   focusMode: false,
   chartType: "candles",
   timeframe: null,
   indicators: { ema: true, volume: true },
   smcOn: false,
   detailsOpen: false,
-  bottomTab: "blotter",
+  bottomTab: "positions",
+  bottomOpen: true,
+  leftRailOpen: true,
   blotterFilter: "open",
-  dockHeight: 280,
+  dockHeight: 220,
   blotterSortOpen: { key: "time", dir: "desc" },
   blotterSortClosed: { key: "time", dir: "desc" },
 };
+
 
 function readStorage(): WorkspacePrefs {
   if (typeof window === "undefined") return DEFAULTS;
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULTS;
-    const parsed = JSON.parse(raw) as Partial<WorkspacePrefs> & { bottomTab?: string };
+    const parsed = JSON.parse(raw) as Partial<WorkspacePrefs> & { bottomTab?: string; activeTab?: string };
     const merged: WorkspacePrefs = { ...DEFAULTS, ...parsed };
-    if (!VALID_TABS.includes(merged.activeTab)) merged.activeTab = "trade";
-    // Migrate legacy bottom-tab ids (positions/orders/history → blotter+filter).
-    const legacy = parsed.bottomTab as string | undefined;
-    if (legacy && !VALID_BOTTOM.includes(legacy as BottomTab)) {
-      merged.bottomTab = legacy === "watchlist" ? "watchlist" : "blotter";
-      if (legacy === "orders") merged.blotterFilter = "pending";
-      else if (legacy === "history") merged.blotterFilter = "closed";
-      else if (legacy === "positions") merged.blotterFilter = "open";
-    }
+    if (!VALID_TABS.includes(merged.activeTab)) merged.activeTab = DEFAULTS.activeTab;
+    if (!VALID_BOTTOM.includes(merged.bottomTab)) merged.bottomTab = DEFAULTS.bottomTab;
     if (!VALID_FILTERS.includes(merged.blotterFilter)) merged.blotterFilter = "open";
     merged.dockHeight = Math.min(560, Math.max(180, Number(merged.dockHeight) || DEFAULTS.dockHeight));
+
     return merged;
   } catch {
     return DEFAULTS;
