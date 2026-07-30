@@ -434,7 +434,9 @@ function DraftArtifact({
   const yTp = yOf(tp);
   if (yEntry == null) return null;
 
-  const boxTop = Math.max(8, Math.min((ySl ?? yEntry) + 8, (yTp ?? yEntry) + 8, yEntry + 8));
+  // Sit just under the entry line so the read-out never covers the chart
+  // legend or the HUD in the top-left corner.
+  const boxTop = Math.max(8, yEntry + 14);
 
   return (
     <>

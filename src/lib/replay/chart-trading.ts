@@ -59,6 +59,8 @@ export function formatMoney(v: number): string {
   const sign = v < 0 ? "-" : "";
   const abs = Math.abs(v);
   if (abs >= 1000) return `${sign}$${abs.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+  // Instruments quoted in small units (FX) would otherwise collapse to $0.00.
+  if (abs > 0 && abs < 1) return `${sign}$${abs.toFixed(4)}`;
   return `${sign}$${abs.toFixed(2)}`;
 }
 
