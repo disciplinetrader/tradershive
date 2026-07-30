@@ -3,9 +3,10 @@ import type { ChartHandle } from "@/components/chart/ChartEngine";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Activity, BarChart3, BookMarked, BrainCircuit, Camera, CandlestickChart, Check, ChevronDown, ChevronRight,
-  Clock, Focus, Keyboard, LineChart as LineChartIcon, Maximize2, Minimize2, NotebookPen,
-  Target,
+  Clock, Bell, Eye, EyeOff, Play, Focus, Keyboard, LineChart as LineChartIcon, ListOrdered, Maximize2, Minimize2,
+  NotebookPen, Newspaper, Star, Target,
 } from "lucide-react";
+
 import { toast } from "sonner";
 
 import { PaperTradingProvider, usePaper } from "@/components/paper-trading/context";
