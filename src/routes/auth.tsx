@@ -34,7 +34,7 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { BrandPanel } from "@/components/auth/BrandPanel";
 import { PasswordStrength, PasswordMatchIndicator } from "@/components/auth/PasswordStrength";
-import { SocialButtons } from "@/components/auth/SocialButtons";
+
 import { supabase } from "@/integrations/supabase/client";
 import {
   APP_NAME,
@@ -154,17 +154,6 @@ function AuthPage() {
                 {mode === "login" ? <LoginForm onForgot={() => setMode("forgot")} /> : null}
                 {mode === "register" ? <RegisterForm /> : null}
                 {mode === "forgot" ? <ForgotForm onSwitch={() => setMode("login")} /> : null}
-
-                {mode !== "forgot" ? (
-                  <>
-                    <div className="my-6 flex items-center gap-3 text-[11px] uppercase tracking-widest text-muted-foreground">
-                      <div className="h-px flex-1 bg-border" />
-                      or
-                      <div className="h-px flex-1 bg-border" />
-                    </div>
-                    <SocialButtons mode={mode === "register" ? "signup" : "signin"} />
-                  </>
-                ) : null}
 
                 <p className="mt-6 text-center text-xs text-muted-foreground">
                   {mode === "register" ? (
