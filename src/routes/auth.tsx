@@ -35,6 +35,7 @@ import { SearchableSelect } from "@/components/ui/searchable-select";
 import { BrandPanel } from "@/components/auth/BrandPanel";
 import { PasswordStrength, PasswordMatchIndicator } from "@/components/auth/PasswordStrength";
 
+import { lovable } from "@/integrations/lovable";
 import { supabase } from "@/integrations/supabase/client";
 import {
   APP_NAME,
