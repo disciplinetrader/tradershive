@@ -7,7 +7,7 @@
  * resize and timeframe changes.
  */
 
-import { axisLockFor, TEXT_LIMITS, textLines } from "./types";
+import { axisLockFor, isPositionKind, snapPrice, TEXT_LIMITS, textLines } from "./types";
 import type { ChartCoords, Drawing, DrawingPoint } from "./types";
 
 /** Line height multiplier shared by the renderer and the inline editor. */
