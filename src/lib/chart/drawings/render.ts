@@ -7,7 +7,7 @@
  * resize and timeframe changes.
  */
 
-import { axisLockFor, TEXT_LIMITS, textLines } from "./types";
+import { axisLockFor, isPositionKind, snapPrice, TEXT_LIMITS, textLines } from "./types";
 import type { ChartCoords, Drawing, DrawingPoint } from "./types";
 
 /** Line height multiplier shared by the renderer and the inline editor. */
@@ -389,19 +389,18 @@ export function drawDrawing(
     }
     case "long_position":
     case "short_position": {
-      const entry = pts[0], target = pts[1], stop = pts[2];
-      if (!entry || !target || !stop) break;
-      const x1 = entry.x;
-      const x2 = Math.max(target.x, x1 + 40);
+      const g = positionGeometry(d, c);
+      if (!g) break;
+      const { x1, x2, entryY, targetY, stopY } = g;
       const green = "#22c55e";
       const red = "#ef4444";
       const rewardTone = green;
       const riskTone = red;
       ctx.setLineDash([]);
       ctx.fillStyle = withAlpha(rewardTone, 0.16);
-      ctx.fillRect(x1, Math.min(entry.y, target.y), x2 - x1, Math.abs(target.y - entry.y));
+      ctx.fillRect(x1, Math.min(entryY, targetY), x2 - x1, Math.abs(targetY - entryY));
       ctx.fillStyle = withAlpha(riskTone, 0.16);
-      ctx.fillRect(x1, Math.min(entry.y, stop.y), x2 - x1, Math.abs(stop.y - entry.y));
+      ctx.fillRect(x1, Math.min(entryY, stopY), x2 - x1, Math.abs(stopY - entryY));
 
       const line = (y: number, color: string, dashed: boolean) => {
         ctx.strokeStyle = color;
@@ -412,18 +411,18 @@ export function drawDrawing(
         ctx.lineTo(x2, y);
         ctx.stroke();
       };
-      line(entry.y, s.color, false);
-      line(target.y, rewardTone, true);
-      line(stop.y, riskTone, true);
+      line(entryY, s.color, false);
+      line(targetY, rewardTone, true);
+      line(stopY, riskTone, true);
       ctx.setLineDash([]);
 
       const risk = Math.abs(d.points[0].price - d.points[2].price);
       const reward = Math.abs(d.points[1].price - d.points[0].price);
       const rr = risk > 0 ? reward / risk : 0;
-      label(ctx, `${d.kind === "long_position" ? "LONG" : "SHORT"} · ${c.formatPrice(d.points[0].price)}`, x1 + 4, entry.y - 3, "#e2e8f0");
-      label(ctx, `TP ${c.formatPrice(d.points[1].price)}`, x1 + 4, target.y - 3, green);
-      label(ctx, `SL ${c.formatPrice(d.points[2].price)}`, x1 + 4, stop.y - 3, red);
-      label(ctx, `R:R  1 : ${rr.toFixed(2)}`, x2 - 90, Math.min(entry.y, target.y) - 3, "#e2e8f0");
+      label(ctx, `${d.kind === "long_position" ? "LONG" : "SHORT"} · ${c.formatPrice(d.points[0].price)}`, x1 + 4, entryY - 3, "#e2e8f0");
+      label(ctx, `TP ${c.formatPrice(d.points[1].price)}`, x1 + 4, targetY - 3, green);
+      label(ctx, `SL ${c.formatPrice(d.points[2].price)}`, x1 + 4, stopY - 3, red);
+      label(ctx, `R:R  1 : ${rr.toFixed(2)}`, x2 - 90, Math.min(entryY, targetY) - 3, "#e2e8f0");
       break;
     }
   }
@@ -451,6 +450,33 @@ export function drawDrawing(
   }
 }
 
+/**
+ * Pixel geometry of a position tool, derived fresh from its domain anchors
+ * on every paint. Nothing here is cached or fed back into the model, which
+ * is what keeps Entry/SL/TP and the time anchors numerically stable through
+ * zoom, pan, price-scale changes, resize and fullscreen toggles.
+ */
+export function positionGeometry(d: Drawing, c: ChartCoords) {
+  if (d.points.length < 3) return null;
+  const startX = c.x(d.points[0].time);
+  const endX = c.x(positionEndTime(d));
+  const entryY = c.y(d.points[0].price);
+  const targetY = c.y(d.points[1].price);
+  const stopY = c.y(d.points[2].price);
+  if (startX == null || endX == null || entryY == null || targetY == null || stopY == null) return null;
+  if (![startX, endX, entryY, targetY, stopY].every(Number.isFinite)) return null;
+  const x1 = Math.min(startX, endX);
+  // Minimum on-screen width keeps a freshly placed (zero-span) tool grabbable
+  // without ever writing that pixel floor back into the stored time anchors.
+  const x2 = Math.max(Math.max(startX, endX), x1 + 40);
+  return { x1, x2, entryY, targetY, stopY };
+}
+
+/** Canonical end anchor — both end-anchored points share this timestamp. */
+export function positionEndTime(d: Drawing): number {
+  return d.points[1]?.time ?? d.points[0]?.time ?? 0;
+}
+
 /** Interactive anchors for a drawing, in pixels. */
 export function anchorsFor(d: Drawing, c: ChartCoords, opts: { includeLocked?: boolean } = {}): Anchor[] {
   if (d.hidden) return [];
@@ -465,6 +491,20 @@ export function anchorsFor(d: Drawing, c: ChartCoords, opts: { includeLocked?: b
   if (d.kind === "vertical_line") {
     const x = columnOf(d, c);
     return x == null ? [] : [{ id: "p0", x, y: c.height * 0.5 }];
+  }
+  if (isPositionKind(d.kind)) {
+    const g = positionGeometry(d, c);
+    if (!g) return [];
+    const mid = (g.x1 + g.x2) / 2;
+    // Price handles sit mid-span (price-only drags); the two edge handles
+    // move the time anchors and never touch Entry / SL / TP.
+    return [
+      { id: "p0", x: mid, y: g.entryY },
+      { id: "p1", x: mid, y: g.targetY },
+      { id: "p2", x: mid, y: g.stopY },
+      { id: "tStart", x: g.x1, y: g.entryY },
+      { id: "tEnd", x: g.x2, y: g.entryY },
+    ];
   }
   const out: Anchor[] = [];
   d.points.forEach((p, i) => {
@@ -501,7 +541,7 @@ function nearRect(px: number, py: number, x1: number, y1: number, x2: number, y2
 export function hitTest(d: Drawing, c: ChartCoords, px: number, py: number): boolean {
   if (d.hidden) return false;
   const pts = project(d, c);
-  const p0 = pts[0], p1 = pts[1], p2 = pts[2];
+  const p0 = pts[0], p1 = pts[1];
   switch (d.kind) {
     case "horizontal_line": {
       const y = rowOf(d, c);
@@ -554,9 +594,11 @@ export function hitTest(d: Drawing, c: ChartCoords, px: number, py: number): boo
 
     case "long_position":
     case "short_position": {
-      if (!p0 || !p1 || !p2) return false;
-      const x2 = Math.max(p1.x, p0.x + 40);
-      return nearRect(px, py, p0.x, Math.min(p1.y, p2.y), x2, Math.max(p1.y, p2.y));
+      const g = positionGeometry(d, c);
+      if (!g) return false;
+      const top = Math.min(g.entryY, g.targetY, g.stopY);
+      const bottom = Math.max(g.entryY, g.targetY, g.stopY);
+      return nearRect(px, py, g.x1, top, g.x2, bottom);
     }
     default:
       return false;
@@ -570,19 +612,66 @@ export function anchorAt(d: Drawing, c: ChartCoords, px: number, py: number): An
   return null;
 }
 
-export function translateDrawing(d: Drawing, dTime: number, dPrice: number): DrawingPoint[] {
+export interface MutateOptions {
+  /** Symbol tick size — price edits snap to it (no pixel rounding involved). */
+  tick?: number;
+}
+
+export function translateDrawing(
+  d: Drawing,
+  dTime: number,
+  dPrice: number,
+  opts: MutateOptions = {},
+): DrawingPoint[] {
   // Axis-locked objects ignore movement on the axis they don't own, so a
   // Horizontal Line only ever slides vertically and a Vertical Line only
   // ever slides horizontally.
   const lock = axisLockFor(d.kind);
   const dt = lock === "price" ? 0 : dTime;
-  const dp = lock === "time" ? 0 : dPrice;
+  let dp = lock === "time" ? 0 : dPrice;
+  if (isPositionKind(d.kind) && opts.tick) {
+    // Snap the *delta*, not each level: distances between Entry / SL / TP —
+    // and therefore R:R — survive a whole-tool drag exactly.
+    dp = snapPrice(dp, opts.tick);
+  }
   return d.points.map((p) => ({ time: p.time + dt, price: p.price + dp }));
 }
 
-export function moveAnchor(d: Drawing, anchorId: string, next: DrawingPoint): DrawingPoint[] {
-  const idx = Number(anchorId.slice(1));
+export function moveAnchor(
+  d: Drawing,
+  anchorId: string,
+  next: DrawingPoint,
+  opts: MutateOptions = {},
+): DrawingPoint[] {
   const lock = axisLockFor(d.kind);
+
+  if (isPositionKind(d.kind)) {
+    const points = d.points.map((p) => ({ ...p }));
+    const start = points[0].time;
+    const end = positionEndTime(d);
+
+    // Time handles move only the anchor they own; Entry / SL / TP stay put.
+    if (anchorId === "tStart") {
+      points[0] = { ...points[0], time: Math.min(next.time, end - 1) };
+      return points;
+    }
+    if (anchorId === "tEnd") {
+      const t = Math.max(next.time, start + 1);
+      points[1] = { ...points[1], time: t };
+      points[2] = { ...points[2], time: t };
+      return points;
+    }
+
+    // Price handles are price-only: the time anchors are never touched, and
+    // the other two levels keep their own prices.
+    const idx = Number(anchorId.slice(1));
+    if (idx >= 0 && idx < points.length) {
+      points[idx] = { ...points[idx], price: snapPrice(next.price, opts.tick) };
+    }
+    return points;
+  }
+
+  const idx = Number(anchorId.slice(1));
   if (lock !== "both") {
     const base = d.points[idx] ?? d.points[0];
     const constrained: DrawingPoint = lock === "price"
@@ -590,18 +679,5 @@ export function moveAnchor(d: Drawing, anchorId: string, next: DrawingPoint): Dr
       : { time: next.time, price: base.price };
     return d.points.map((p, i) => (i === idx ? constrained : { ...p }));
   }
-  const points = d.points.map((p, i) => (i === idx ? { ...next } : { ...p }));
-
-  if (d.kind === "long_position" || d.kind === "short_position") {
-    // Entry drag carries stop/target with it; TP/SL drags keep the shared end time.
-    if (idx === 0) {
-      const dPrice = next.price - d.points[0].price;
-      const dTime = next.time - d.points[0].time;
-      return d.points.map((p, i) => (i === 0 ? { ...next } : { time: p.time + dTime, price: p.price + dPrice }));
-    }
-    const endTime = next.time;
-    points[1] = { ...points[1], time: endTime };
-    points[2] = { ...points[2], time: endTime };
-  }
-  return points;
+  return d.points.map((p, i) => (i === idx ? { ...next } : { ...p }));
 }

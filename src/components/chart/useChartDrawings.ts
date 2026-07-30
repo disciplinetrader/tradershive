@@ -16,7 +16,7 @@ import {
   anchorAt, drawDrawing, hitTest, moveAnchor, translateDrawing,
 } from "@/lib/chart/drawings/render";
 import {
-  FREEHAND_KINDS, SINGLE_CLICK_KINDS, sanitizeDrawingText,
+  FREEHAND_KINDS, SINGLE_CLICK_KINDS, sanitizeDrawingText, tickFromPrecision,
   type Drawing, type DrawingKind, type DrawingPoint, type DrawingStyle, type ToolId,
 } from "@/lib/chart/drawings/types";
 
@@ -82,6 +82,11 @@ export function useChartDrawings({
 
   const ref = useRef({ activeTool, keepToolActive, magnet, candles, style, onPositionDrawn, setActiveTool });
   ref.current = { activeTool, keepToolActive, magnet, candles, style, onPositionDrawn, setActiveTool };
+
+  // Tick size for price-handle snapping — read synchronously during drags so
+  // a precision change never needs to rebuild the pointer listeners.
+  const tickRef = useRef(tickFromPrecision(pricePrecision));
+  tickRef.current = tickFromPrecision(pricePrecision);
 
   /** Discard an in-flight text session without touching the store. */
   const cancelTextEditor = useCallback(() => {
@@ -223,11 +228,26 @@ export function useChartDrawings({
       if (!ref.current.keepToolActive) ref.current.setActiveTool("cursor");
     };
 
+    /** Median bar step of the loaded series — used for default time spans. */
+    const barStep = () => {
+      const cs = ref.current.candles;
+      if (!cs || cs.length < 2) return 60_000;
+      const step = cs[cs.length - 1].time - cs[cs.length - 2].time;
+      return step > 0 ? step : 60_000;
+    };
+
     const seedPoints = (kind: DrawingKind, a: DrawingPoint, b: DrawingPoint): DrawingPoint[] => {
       if (kind === "long_position" || kind === "short_position") {
         const risk = Math.abs(b.price - a.price) || a.price * 0.002;
         const dir = kind === "long_position" ? 1 : -1;
-        return [a, { time: b.time, price: a.price + dir * risk * 2 }, { time: b.time, price: a.price - dir * risk }];
+        // The end anchor is a *timestamp*, never a pixel width: a click with
+        // no drag still gets a real, persisted time span.
+        const end = b.time > a.time ? b.time : a.time + barStep() * 20;
+        return [
+          { time: a.time, price: a.price },
+          { time: end, price: a.price + dir * risk * 2 },
+          { time: end, price: a.price - dir * risk },
+        ];
       }
       if (kind === "triangle") {
         return [a, b, { time: a.time, price: b.price }];
@@ -412,10 +432,10 @@ export function useChartDrawings({
         const dTime = pt.time - s.last.time;
         const dPrice = pt.price - s.last.price;
         s.last = pt;
-        store.patch(d.id, { points: translateDrawing(d, dTime, dPrice) });
+        store.patch(d.id, { points: translateDrawing(d, dTime, dPrice, { tick: tickRef.current }) });
         return;
       }
-      store.patch(d.id, { points: moveAnchor(d, s.anchorId, pt) });
+      store.patch(d.id, { points: moveAnchor(d, s.anchorId, pt, { tick: tickRef.current }) });
     };
 
     const onUp = (e: PointerEvent) => {
