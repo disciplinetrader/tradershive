@@ -78,7 +78,7 @@ export function drawDrawing(
   ctx: CanvasRenderingContext2D,
   c: ChartCoords,
   d: Drawing,
-  opts: { selected?: boolean; ghost?: boolean } = {},
+  opts: { selected?: boolean; hovered?: boolean; ghost?: boolean } = {},
 ) {
   if (d.hidden) return;
   const pts = project(d, c);
@@ -87,7 +87,14 @@ export function drawDrawing(
   ctx.globalAlpha = opts.ghost ? 0.7 : 1;
   ctx.strokeStyle = s.color;
   ctx.fillStyle = s.color;
-  ctx.lineWidth = s.width;
+  // Active/hover affordance: a soft glow in the object's own colour plus a
+  // slightly heavier stroke. Never applied to idle objects, so the chart
+  // stays calm until the pointer actually touches something.
+  if (opts.selected || opts.hovered) {
+    ctx.shadowColor = withAlpha(s.color, opts.selected ? 0.9 : 0.6);
+    ctx.shadowBlur = opts.selected ? 10 : 7;
+  }
+  ctx.lineWidth = s.width + (opts.selected ? 1 : opts.hovered ? 0.75 : 0);
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
   dash(ctx, s.lineStyle);
