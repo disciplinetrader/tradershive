@@ -10,9 +10,11 @@ import {
   createChart, CandlestickSeries, LineSeries, AreaSeries, BarSeries, BaselineSeries, HistogramSeries,
   createSeriesMarkers, CrosshairMode as LWCrosshair, ColorType,
   type IChartApi, type ISeriesApi, type ISeriesMarkersPluginApi, type SeriesMarker, type UTCTimestamp,
+  type ISeriesPrimitive, type IPrimitivePaneView, type Logical,
 } from "lightweight-charts";
 import type { Candle } from "@/lib/market-data/types";
-import type { ChartAdapter, ChartAdapterFactory } from "../adapter";
+import type { ChartAdapter, ChartAdapterFactory, DrawingsSource } from "../adapter";
+import type { ChartCoords } from "../drawings/types";
 import type { ChartSettings, ChartType, IndicatorConfig } from "../types";
 import { ema, sma, bollinger, vwap, atr, donchian, heikinAshi, fibonacci, supportResistance, sessions, smc, rsi, macd } from "../indicators";
 
@@ -170,6 +172,137 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
   };
   let volSeries: ISeriesApi<"Histogram"> | null = null;
 
+  // ── Chart-coordinate machinery ─────────────────────────────────────────
+  // Times of the currently loaded bars. Used to turn an arbitrary timestamp
+  // into a *fractional logical index*, which the time scale then converts to
+  // a pixel. Going through logical indices (instead of timeToCoordinate)
+  // keeps drawings anchored even when their timestamp falls between bars or
+  // beyond the last bar — exactly how TradingView anchors objects.
+  let barTimes: number[] = [];
+  let barStep = 60_000;
+
+  const recomputeBars = (candles: Candle[]) => {
+    barTimes = candles.map((c) => c.time);
+    if (barTimes.length > 1) {
+      const diffs: number[] = [];
+      for (let i = 1; i < Math.min(barTimes.length, 40); i++) diffs.push(barTimes[i] - barTimes[i - 1]);
+      diffs.sort((a, b) => a - b);
+      barStep = diffs[Math.floor(diffs.length / 2)] || barStep;
+    }
+  };
+
+  /** timestamp (ms) → fractional logical index */
+  const timeToLogical = (timeMs: number): number | null => {
+    if (!barTimes.length) return null;
+    const first = barTimes[0];
+    const lastIdx = barTimes.length - 1;
+    const last = barTimes[lastIdx];
+    if (timeMs <= first) return (timeMs - first) / barStep;
+    if (timeMs >= last) return lastIdx + (timeMs - last) / barStep;
+    let lo = 0, hi = lastIdx;
+    while (hi - lo > 1) {
+      const mid = (lo + hi) >> 1;
+      if (barTimes[mid] <= timeMs) lo = mid; else hi = mid;
+    }
+    const span = barTimes[hi] - barTimes[lo] || barStep;
+    return lo + (timeMs - barTimes[lo]) / span;
+  };
+
+  /** fractional logical index → timestamp (ms) */
+  const logicalToTime = (logical: number): number | null => {
+    if (!barTimes.length) return null;
+    const lastIdx = barTimes.length - 1;
+    if (logical <= 0) return barTimes[0] + logical * barStep;
+    if (logical >= lastIdx) return barTimes[lastIdx] + (logical - lastIdx) * barStep;
+    const lo = Math.floor(logical);
+    const frac = logical - lo;
+    const span = (barTimes[lo + 1] ?? barTimes[lo] + barStep) - barTimes[lo];
+    return barTimes[lo] + frac * span;
+  };
+
+  let priceFormatter: (p: number) => string = (p) => p.toFixed(4);
+
+  const buildCoords = (): ChartCoords | null => {
+    const size = containerSize(container);
+    const ts = chart.timeScale();
+    return {
+      width: size.width - (chart.priceScale("right").width?.() ?? 0),
+      height: size.height,
+      formatPrice: (p: number) => priceFormatter(p),
+      x(timeMs: number) {
+        const logical = timeToLogical(timeMs);
+        if (logical == null) return null;
+        const v = ts.logicalToCoordinate(logical as Logical);
+        return v == null ? null : v;
+      },
+      y(price: number) {
+        try { return priceSeries.priceToCoordinate(price) ?? null; } catch { return null; }
+      },
+      timeAt(x: number) {
+        const logical = ts.coordinateToLogical(x);
+        return logical == null ? null : logicalToTime(Number(logical));
+      },
+      priceAt(y: number) {
+        try {
+          const p = priceSeries.coordinateToPrice(y);
+          return p == null ? null : Number(p);
+        } catch { return null; }
+      },
+    };
+  };
+
+  // ── Drawings primitive: painted inside the chart's own paint cycle ─────
+  let drawingsSource: DrawingsSource | null = null;
+  let requestPrimitiveUpdate: (() => void) | null = null;
+
+  const drawingsPaneView: IPrimitivePaneView = {
+    zOrder: () => "top",
+    renderer: () => ({
+      draw: (target: any) => {
+        const src = drawingsSource;
+        if (!src) return;
+        target.useMediaCoordinateSpace(({ context, mediaSize }: any) => {
+          const coords = buildCoords();
+          if (!coords) return;
+          coords.width = mediaSize.width;
+          coords.height = mediaSize.height;
+          context.save();
+          try { src.draw(context as CanvasRenderingContext2D, coords); } finally { context.restore(); }
+        });
+      },
+    }),
+  };
+
+  const drawingsPrimitive: ISeriesPrimitive<UTCTimestamp> = {
+    paneViews: () => [drawingsPaneView],
+    attached: (param: any) => { requestPrimitiveUpdate = param.requestUpdate; },
+    detached: () => { requestPrimitiveUpdate = null; },
+  } as unknown as ISeriesPrimitive<UTCTimestamp>;
+
+  const attachDrawings = () => {
+    try { priceSeries.attachPrimitive(drawingsPrimitive as any); } catch { /* unsupported */ }
+  };
+  attachDrawings();
+
+  // ── Geometry subscriptions for DOM overlays (position lines, planner) ──
+  const geometryListeners = new Set<() => void>();
+  let geometryRaf: number | null = null;
+  let lastSignature = "";
+  const geometryTick = () => {
+    geometryRaf = null;
+    if (destroyed || !geometryListeners.size) return;
+    const range = chart.timeScale().getVisibleLogicalRange();
+    const size = containerSize(container);
+    let probe: number | null = null;
+    try { probe = priceSeries.coordinateToPrice(10) as number | null; } catch { probe = null; }
+    const sig = `${range?.from ?? ""}|${range?.to ?? ""}|${size.width}x${size.height}|${probe ?? ""}`;
+    if (sig !== lastSignature) {
+      lastSignature = sig;
+      for (const cb of geometryListeners) cb();
+    }
+    if (typeof requestAnimationFrame !== "undefined") geometryRaf = requestAnimationFrame(geometryTick);
+  };
+
   if (onCrosshair) {
     chart.subscribeCrosshairMove((param) => {
       const time = param.time ? Number(param.time) * 1000 : null;
@@ -180,10 +313,12 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
   }
 
   let didInitialFit = false;
+
   return {
     kind: "lightweight-charts",
     setCandles(candles) {
       resizeToContainer();
+      recomputeBars(candles);
       applyCandles(priceSeries, currentType, candles);
       // Only fit on the very first data push. Later updates must preserve
       // the user's zoom/pan — otherwise every tick or indicator toggle
@@ -192,10 +327,12 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
         chart.timeScale().fitContent();
         didInitialFit = true;
       }
+      requestPrimitiveUpdate?.();
     },
 
     updateLastCandle(candle) {
       try { updateLast(priceSeries, currentType, [candle]); } catch { /* series torn down */ }
+      if (barTimes.length && candle.time > barTimes[barTimes.length - 1]) barTimes.push(candle.time);
     },
     applySettings(next) {
       chart.applyOptions({
@@ -220,6 +357,7 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
       // re-attach on the next sync.
       smcMarkers = null;
       externalMarkers = null;
+      attachDrawings();
     },
 
     syncOverlayIndicators(indicators, candles) {
@@ -489,9 +627,36 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
       if (!externalMarkers) externalMarkers = createSeriesMarkers(priceSeries, mapped) as any;
       else externalMarkers.setMarkers(mapped);
     },
+    setDrawingsSource(source) {
+      drawingsSource = source;
+      requestPrimitiveUpdate?.();
+    },
+    requestDrawingsRepaint() {
+      requestPrimitiveUpdate?.();
+    },
+    getCoords() {
+      return buildCoords();
+    },
+    chartElement() {
+      try { return chart.chartElement(); } catch { return container; }
+    },
+    setPriceFormatter(fn) {
+      priceFormatter = fn;
+      requestPrimitiveUpdate?.();
+    },
+    subscribeGeometry(cb) {
+      geometryListeners.add(cb);
+      if (geometryRaf === null && typeof requestAnimationFrame !== "undefined") {
+        geometryRaf = requestAnimationFrame(geometryTick);
+      }
+      return () => { geometryListeners.delete(cb); };
+    },
     destroy() {
       destroyed = true;
       if (resizeFrame !== null && typeof cancelAnimationFrame !== "undefined") cancelAnimationFrame(resizeFrame);
+      if (geometryRaf !== null && typeof cancelAnimationFrame !== "undefined") cancelAnimationFrame(geometryRaf);
+      geometryListeners.clear();
+      drawingsSource = null;
       resizeObserver?.disconnect();
       themeObserver?.disconnect();
       chart.remove();
