@@ -1,13 +1,20 @@
 import type { JournalEntry } from "@/lib/journal/api";
+import { resultOf } from "@/lib/journal/derive";
 
 export type JournalSummary = {
   trades: number;
   wins: number;
   losses: number;
   breakeven: number;
+  /** Trades with no recorded P/L — never counted as break-even or as zero. */
+  unmeasured: number;
   netPnl: number;
   winRate: number;
   avgRR: number;
+  /** False when no decided trade exists — render "Not measurable", not 0%. */
+  winRateMeasurable: boolean;
+  avgRRMeasurable: boolean;
+  profitFactorMeasurable: boolean;
   profitFactor: number;
   expectancy: number;
   avgWin: number;
@@ -19,12 +26,15 @@ export type JournalSummary = {
 };
 
 const num = (v: unknown): number => (typeof v === "number" && Number.isFinite(v) ? v : 0);
+const numOrNull = (v: unknown): number | null =>
+  typeof v === "number" && Number.isFinite(v) ? v : null;
 
 export function summarize(entries: JournalEntry[]): JournalSummary {
   const trades = entries.length;
   let wins = 0;
   let losses = 0;
   let breakeven = 0;
+  let unmeasured = 0;
   let netPnl = 0;
   let grossWin = 0;
   let grossLoss = 0;
@@ -36,23 +46,29 @@ export function summarize(entries: JournalEntry[]): JournalSummary {
   let drafts = 0;
 
   for (const e of entries) {
-    const pnl = num(e.pnl);
-    netPnl += pnl;
-    if (pnl > 0) {
-      wins += 1;
-      grossWin += pnl;
-    } else if (pnl < 0) {
-      losses += 1;
-      grossLoss += Math.abs(pnl);
+    // Canonical result derivation — no page decides win/loss on its own.
+    const pnl = numOrNull(e.pnl);
+    const result = resultOf(pnl);
+    if (result == null) {
+      unmeasured += 1;
     } else {
-      breakeven += 1;
+      netPnl += pnl as number;
+      if (result === "win") {
+        wins += 1;
+        grossWin += pnl as number;
+      } else if (result === "loss") {
+        losses += 1;
+        grossLoss += Math.abs(pnl as number);
+      } else {
+        breakeven += 1;
+      }
+      best = Math.max(best, pnl as number);
+      worst = Math.min(worst, pnl as number);
     }
     if (typeof e.rr === "number" && Number.isFinite(e.rr)) {
       rrSum += e.rr;
       rrCount += 1;
     }
-    best = Math.max(best, pnl);
-    worst = Math.min(worst, pnl);
     if ((e.notes_text?.trim().length ?? 0) > 0 || (e.entry_reason_text?.trim().length ?? 0) > 0) journaled += 1;
     if (e.status === "draft") drafts += 1;
   }
@@ -61,17 +77,23 @@ export function summarize(entries: JournalEntry[]): JournalSummary {
   const winRate = decided ? (wins / decided) * 100 : 0;
   const avgWin = wins ? grossWin / wins : 0;
   const avgLoss = losses ? grossLoss / losses : 0;
+  const measured = wins + losses + breakeven;
 
   return {
     trades,
     wins,
     losses,
     breakeven,
+    unmeasured,
     netPnl,
     winRate,
+    winRateMeasurable: decided > 0,
+    avgRRMeasurable: rrCount > 0,
+    profitFactorMeasurable: grossLoss > 0 || grossWin > 0,
     avgRR: rrCount ? rrSum / rrCount : 0,
     profitFactor: grossLoss ? grossWin / grossLoss : grossWin > 0 ? Infinity : 0,
-    expectancy: trades ? netPnl / trades : 0,
+    expectancy: measured ? netPnl / measured : 0,
+
     avgWin,
     avgLoss,
     bestTrade: best,
