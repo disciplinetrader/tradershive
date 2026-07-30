@@ -49,6 +49,8 @@ export interface DrawingStyle {
   text?: string;
   extendLeft?: boolean;
   extendRight?: boolean;
+  /** Show the price/time badge on axis-anchored lines. Defaults to true. */
+  showLabel?: boolean;
 }
 
 export interface Drawing {
@@ -67,7 +69,33 @@ export const DEFAULT_STYLE: DrawingStyle = {
   lineStyle: 0,
   fillOpacity: 0.12,
   fontSize: 12,
+  showLabel: true,
 };
+
+/**
+ * Axis lock per kind.
+ * `price` → the object is anchored to a price only; time is meaningless and
+ * must never change while dragging (Horizontal Line).
+ * `time` → anchored to a timestamp only; price never changes (Vertical Line).
+ */
+export type AxisLock = "price" | "time" | "both";
+
+export const AXIS_LOCKS: Partial<Record<DrawingKind, AxisLock>> = {
+  horizontal_line: "price",
+  vertical_line: "time",
+};
+
+export function axisLockFor(kind: DrawingKind): AxisLock {
+  return AXIS_LOCKS[kind] ?? "both";
+}
+
+/** Kinds that expose a label-visibility toggle. */
+export const LABELLED_KINDS: DrawingKind[] = [
+  "horizontal_line",
+  "horizontal_ray",
+  "vertical_line",
+  "price_label",
+];
 
 /** Kinds that finish with a single click instead of a drag. */
 export const SINGLE_CLICK_KINDS: DrawingKind[] = [
@@ -82,6 +110,7 @@ export const SINGLE_CLICK_KINDS: DrawingKind[] = [
 
 /** Kinds captured as a freehand stream of points. */
 export const FREEHAND_KINDS: DrawingKind[] = ["brush"];
+
 
 export const KIND_LABELS: Record<DrawingKind, string> = {
   trend_line: "Trend Line",
