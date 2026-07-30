@@ -746,11 +746,19 @@ export function ReplayProvider({ id, children }: { id: string; children: ReactNo
 
   const modifyTrade = useCallback(
     async (tid: string, patch: { stop_loss?: number | null; take_profit?: number | null }) => {
-      await updateTradeFn({ data: { id: tid, ...patch } });
-      await qc.invalidateQueries({ queryKey: ["replay", id] });
+      try {
+        await updateTradeFn({ data: { id: tid, ...patch } });
+        await qc.invalidateQueries({ queryKey: ["replay", id] });
+      } catch (err) {
+        // Never let a failed level drag escalate into a full-screen error overlay.
+        console.warn("[replay] modify trade failed", err);
+        toast.error("Couldn't update the position — it may already be closed.");
+        await qc.invalidateQueries({ queryKey: ["replay", id] });
+      }
     },
     [updateTradeFn, qc, id],
   );
+
 
   const addNote = useCallback(
     async (body: string) => {
