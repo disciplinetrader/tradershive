@@ -1,12 +1,18 @@
-/** Mistakes grouped by phase, each with evidence, cost and detection source. */
+/**
+ * Mistakes grouped by phase, each with evidence, cost and detection source.
+ * Phase 4 adds a per-mistake drill entry point straight into Replay Studio.
+ */
 import type { MistakeItem } from "@/lib/journal/story";
+import type { JournalEntry } from "@/lib/journal/api";
+import { FixMistakeButton, IntentDialog, usePracticeLauncher } from "@/components/journal/replay/PracticeLauncher";
 import { formatNumber } from "@/lib/journal/format";
 import { MissingData } from "./primitives";
 import { cn } from "@/lib/utils";
 
 const ORDER: MistakeItem["group"][] = ["setup", "entry", "risk", "management", "exit", "psychology", "process"];
 
-export function MistakesPanel({ items }: { items: MistakeItem[] }) {
+export function MistakesPanel({ items, entry }: { items: MistakeItem[]; entry?: JournalEntry }) {
+  const launcher = usePracticeLauncher(entry);
   if (!items.length) return <MissingData label="No mistakes tagged or detected on this trade." />;
 
   const groups = ORDER.map((g) => ({ g, list: items.filter((i) => i.group === g) })).filter((x) => x.list.length);
@@ -36,11 +42,25 @@ export function MistakesPanel({ items }: { items: MistakeItem[] }) {
                   <span>Seen {m.occurrences}×</span>
                 </div>
                 <p className="mt-0.5 text-[11px] text-foreground/80">Instead: {m.correct}</p>
+                {entry && m.source === "user" ? (
+                  <div className="mt-1">
+                    <FixMistakeButton mistake={m.value} launcher={launcher} entry={entry} />
+                  </div>
+                ) : null}
               </li>
             ))}
           </ul>
         </div>
       ))}
+      {entry && launcher.pending ? (
+        <IntentDialog
+          entry={entry}
+          pending={launcher.pending}
+          busy={launcher.isPending}
+          onClose={launcher.close}
+          onStart={launcher.start}
+        />
+      ) : null}
     </div>
   );
 }
