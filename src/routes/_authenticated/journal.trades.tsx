@@ -13,7 +13,6 @@ import {
   Rows,
 } from "lucide-react";
 import { toast } from "sonner";
-import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
@@ -244,31 +243,24 @@ function JournalTradesPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Trades"
-        description="Every trade you have logged, filterable and exportable."
-        actions={
-          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-            <ManualEntryDialog />
-            {JOURNAL_FEATURES.importTrade ? (
-              <Button variant="outline" size="sm" className="min-h-touch flex-1 sm:flex-none">
-                <Import className="mr-1.5 h-4 w-4" />
-                <span className="truncate">Import</span>
-              </Button>
-            ) : null}
-            <Button
-              variant="outline"
-              size="sm"
-              className="min-h-touch flex-1 sm:flex-none"
-              onClick={() => exportEntries(filtered)}
-              disabled={!filtered.length}
-            >
-              <Download className="mr-1.5 h-4 w-4" />
-              Export
-            </Button>
-          </div>
-        }
-      />
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        {JOURNAL_FEATURES.importTrade ? (
+          <Button variant="outline" size="sm" className="min-h-touch">
+            <Import className="mr-1.5 h-4 w-4" />
+            Import
+          </Button>
+        ) : null}
+        <Button
+          variant="outline"
+          size="sm"
+          className="min-h-touch"
+          onClick={() => exportEntries(filtered)}
+          disabled={!filtered.length}
+        >
+          <Download className="mr-1.5 h-4 w-4" />
+          Export
+        </Button>
+      </div>
 
       {isEmpty ? (
         <GlassCard className="p-8">
