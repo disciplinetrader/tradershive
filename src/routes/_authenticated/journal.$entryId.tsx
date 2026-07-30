@@ -150,8 +150,9 @@ function TradeStoryPage() {
   // Hive contribution = score with this trade minus score without it.
   const hiveDelta = useMemo(() => {
     if (!entry || all.length < 2) return null;
-    const withIt = hiveScore(all).score;
-    const without = hiveScore(all.filter((e) => e.id !== entry.id)).score;
+    const withIt = hiveScore(all).total;
+    const without = hiveScore(all.filter((e) => e.id !== entry.id)).total;
+
     return Math.round((withIt - without) * 10) / 10;
   }, [entry, all]);
 
