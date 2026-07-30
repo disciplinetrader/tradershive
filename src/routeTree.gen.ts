@@ -52,6 +52,7 @@ import { Route as AuthenticatedReplayIndexRouteImport } from './routes/_authenti
 import { Route as AuthenticatedPropChallengesIndexRouteImport } from './routes/_authenticated/prop-challenges.index'
 import { Route as AuthenticatedMarketIndexRouteImport } from './routes/_authenticated/market.index'
 import { Route as AuthenticatedLeaderboardIndexRouteImport } from './routes/_authenticated/leaderboard.index'
+import { Route as AuthenticatedJournalIndexRouteImport } from './routes/_authenticated/journal.index'
 import { Route as AuthenticatedCommunityIndexRouteImport } from './routes/_authenticated/community.index'
 import { Route as AuthenticatedChampionshipIndexRouteImport } from './routes/_authenticated/championship.index'
 import { Route as AuthenticatedBattleArenaIndexRouteImport } from './routes/_authenticated/battle-arena.index'
@@ -88,6 +89,12 @@ import { Route as AuthenticatedLeaderboardLeagueRouteImport } from './routes/_au
 import { Route as AuthenticatedLeaderboardGlobalRouteImport } from './routes/_authenticated/leaderboard.global'
 import { Route as AuthenticatedLeaderboardFriendsRouteImport } from './routes/_authenticated/leaderboard.friends'
 import { Route as AuthenticatedLeaderboardCountryRouteImport } from './routes/_authenticated/leaderboard.country'
+import { Route as AuthenticatedJournalTradesRouteImport } from './routes/_authenticated/journal.trades'
+import { Route as AuthenticatedJournalPsychologyRouteImport } from './routes/_authenticated/journal.psychology'
+import { Route as AuthenticatedJournalPlaybooksRouteImport } from './routes/_authenticated/journal.playbooks'
+import { Route as AuthenticatedJournalCoachRouteImport } from './routes/_authenticated/journal.coach'
+import { Route as AuthenticatedJournalCalendarRouteImport } from './routes/_authenticated/journal.calendar'
+import { Route as AuthenticatedJournalAnalyticsRouteImport } from './routes/_authenticated/journal.analytics'
 import { Route as AuthenticatedJournalEntryIdRouteImport } from './routes/_authenticated/journal.$entryId'
 import { Route as AuthenticatedCommunityTrendingRouteImport } from './routes/_authenticated/community.trending'
 import { Route as AuthenticatedCommunityReviewsRouteImport } from './routes/_authenticated/community.reviews'
@@ -400,6 +407,12 @@ const AuthenticatedLeaderboardIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedLeaderboardRoute,
   } as any)
+const AuthenticatedJournalIndexRoute =
+  AuthenticatedJournalIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedJournalRoute,
+  } as any)
 const AuthenticatedCommunityIndexRoute =
   AuthenticatedCommunityIndexRouteImport.update({
     id: '/',
@@ -612,6 +625,42 @@ const AuthenticatedLeaderboardCountryRoute =
     id: '/country',
     path: '/country',
     getParentRoute: () => AuthenticatedLeaderboardRoute,
+  } as any)
+const AuthenticatedJournalTradesRoute =
+  AuthenticatedJournalTradesRouteImport.update({
+    id: '/trades',
+    path: '/trades',
+    getParentRoute: () => AuthenticatedJournalRoute,
+  } as any)
+const AuthenticatedJournalPsychologyRoute =
+  AuthenticatedJournalPsychologyRouteImport.update({
+    id: '/psychology',
+    path: '/psychology',
+    getParentRoute: () => AuthenticatedJournalRoute,
+  } as any)
+const AuthenticatedJournalPlaybooksRoute =
+  AuthenticatedJournalPlaybooksRouteImport.update({
+    id: '/playbooks',
+    path: '/playbooks',
+    getParentRoute: () => AuthenticatedJournalRoute,
+  } as any)
+const AuthenticatedJournalCoachRoute =
+  AuthenticatedJournalCoachRouteImport.update({
+    id: '/coach',
+    path: '/coach',
+    getParentRoute: () => AuthenticatedJournalRoute,
+  } as any)
+const AuthenticatedJournalCalendarRoute =
+  AuthenticatedJournalCalendarRouteImport.update({
+    id: '/calendar',
+    path: '/calendar',
+    getParentRoute: () => AuthenticatedJournalRoute,
+  } as any)
+const AuthenticatedJournalAnalyticsRoute =
+  AuthenticatedJournalAnalyticsRouteImport.update({
+    id: '/analytics',
+    path: '/analytics',
+    getParentRoute: () => AuthenticatedJournalRoute,
   } as any)
 const AuthenticatedJournalEntryIdRoute =
   AuthenticatedJournalEntryIdRouteImport.update({
@@ -1215,6 +1264,12 @@ export interface FileRoutesByFullPath {
   '/community/reviews': typeof AuthenticatedCommunityReviewsRoute
   '/community/trending': typeof AuthenticatedCommunityTrendingRoute
   '/journal/$entryId': typeof AuthenticatedJournalEntryIdRoute
+  '/journal/analytics': typeof AuthenticatedJournalAnalyticsRoute
+  '/journal/calendar': typeof AuthenticatedJournalCalendarRoute
+  '/journal/coach': typeof AuthenticatedJournalCoachRoute
+  '/journal/playbooks': typeof AuthenticatedJournalPlaybooksRoute
+  '/journal/psychology': typeof AuthenticatedJournalPsychologyRoute
+  '/journal/trades': typeof AuthenticatedJournalTradesRoute
   '/leaderboard/country': typeof AuthenticatedLeaderboardCountryRoute
   '/leaderboard/friends': typeof AuthenticatedLeaderboardFriendsRoute
   '/leaderboard/global': typeof AuthenticatedLeaderboardGlobalRoute
@@ -1251,6 +1306,7 @@ export interface FileRoutesByFullPath {
   '/battle-arena/': typeof AuthenticatedBattleArenaIndexRoute
   '/championship/': typeof AuthenticatedChampionshipIndexRoute
   '/community/': typeof AuthenticatedCommunityIndexRoute
+  '/journal/': typeof AuthenticatedJournalIndexRoute
   '/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
   '/market/': typeof AuthenticatedMarketIndexRoute
   '/prop-challenges/': typeof AuthenticatedPropChallengesIndexRoute
@@ -1293,7 +1349,6 @@ export interface FileRoutesByTo {
   '/feedback': typeof AuthenticatedFeedbackRoute
   '/goals': typeof AuthenticatedGoalsRoute
   '/guilds': typeof AuthenticatedGuildsRoute
-  '/journal': typeof AuthenticatedJournalRouteWithChildren
   '/marketplace': typeof AuthenticatedMarketplaceRoute
   '/mistakes': typeof AuthenticatedMistakesRoute
   '/paper-trading': typeof AuthenticatedPaperTradingRoute
@@ -1367,6 +1422,12 @@ export interface FileRoutesByTo {
   '/community/reviews': typeof AuthenticatedCommunityReviewsRoute
   '/community/trending': typeof AuthenticatedCommunityTrendingRoute
   '/journal/$entryId': typeof AuthenticatedJournalEntryIdRoute
+  '/journal/analytics': typeof AuthenticatedJournalAnalyticsRoute
+  '/journal/calendar': typeof AuthenticatedJournalCalendarRoute
+  '/journal/coach': typeof AuthenticatedJournalCoachRoute
+  '/journal/playbooks': typeof AuthenticatedJournalPlaybooksRoute
+  '/journal/psychology': typeof AuthenticatedJournalPsychologyRoute
+  '/journal/trades': typeof AuthenticatedJournalTradesRoute
   '/leaderboard/country': typeof AuthenticatedLeaderboardCountryRoute
   '/leaderboard/friends': typeof AuthenticatedLeaderboardFriendsRoute
   '/leaderboard/global': typeof AuthenticatedLeaderboardGlobalRoute
@@ -1403,6 +1464,7 @@ export interface FileRoutesByTo {
   '/battle-arena': typeof AuthenticatedBattleArenaIndexRoute
   '/championship': typeof AuthenticatedChampionshipIndexRoute
   '/community': typeof AuthenticatedCommunityIndexRoute
+  '/journal': typeof AuthenticatedJournalIndexRoute
   '/leaderboard': typeof AuthenticatedLeaderboardIndexRoute
   '/market': typeof AuthenticatedMarketIndexRoute
   '/prop-challenges': typeof AuthenticatedPropChallengesIndexRoute
@@ -1533,6 +1595,12 @@ export interface FileRoutesById {
   '/_authenticated/community/reviews': typeof AuthenticatedCommunityReviewsRoute
   '/_authenticated/community/trending': typeof AuthenticatedCommunityTrendingRoute
   '/_authenticated/journal/$entryId': typeof AuthenticatedJournalEntryIdRoute
+  '/_authenticated/journal/analytics': typeof AuthenticatedJournalAnalyticsRoute
+  '/_authenticated/journal/calendar': typeof AuthenticatedJournalCalendarRoute
+  '/_authenticated/journal/coach': typeof AuthenticatedJournalCoachRoute
+  '/_authenticated/journal/playbooks': typeof AuthenticatedJournalPlaybooksRoute
+  '/_authenticated/journal/psychology': typeof AuthenticatedJournalPsychologyRoute
+  '/_authenticated/journal/trades': typeof AuthenticatedJournalTradesRoute
   '/_authenticated/leaderboard/country': typeof AuthenticatedLeaderboardCountryRoute
   '/_authenticated/leaderboard/friends': typeof AuthenticatedLeaderboardFriendsRoute
   '/_authenticated/leaderboard/global': typeof AuthenticatedLeaderboardGlobalRoute
@@ -1569,6 +1637,7 @@ export interface FileRoutesById {
   '/_authenticated/battle-arena/': typeof AuthenticatedBattleArenaIndexRoute
   '/_authenticated/championship/': typeof AuthenticatedChampionshipIndexRoute
   '/_authenticated/community/': typeof AuthenticatedCommunityIndexRoute
+  '/_authenticated/journal/': typeof AuthenticatedJournalIndexRoute
   '/_authenticated/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
   '/_authenticated/market/': typeof AuthenticatedMarketIndexRoute
   '/_authenticated/prop-challenges/': typeof AuthenticatedPropChallengesIndexRoute
@@ -1699,6 +1768,12 @@ export interface FileRouteTypes {
     | '/community/reviews'
     | '/community/trending'
     | '/journal/$entryId'
+    | '/journal/analytics'
+    | '/journal/calendar'
+    | '/journal/coach'
+    | '/journal/playbooks'
+    | '/journal/psychology'
+    | '/journal/trades'
     | '/leaderboard/country'
     | '/leaderboard/friends'
     | '/leaderboard/global'
@@ -1735,6 +1810,7 @@ export interface FileRouteTypes {
     | '/battle-arena/'
     | '/championship/'
     | '/community/'
+    | '/journal/'
     | '/leaderboard/'
     | '/market/'
     | '/prop-challenges/'
@@ -1777,7 +1853,6 @@ export interface FileRouteTypes {
     | '/feedback'
     | '/goals'
     | '/guilds'
-    | '/journal'
     | '/marketplace'
     | '/mistakes'
     | '/paper-trading'
@@ -1851,6 +1926,12 @@ export interface FileRouteTypes {
     | '/community/reviews'
     | '/community/trending'
     | '/journal/$entryId'
+    | '/journal/analytics'
+    | '/journal/calendar'
+    | '/journal/coach'
+    | '/journal/playbooks'
+    | '/journal/psychology'
+    | '/journal/trades'
     | '/leaderboard/country'
     | '/leaderboard/friends'
     | '/leaderboard/global'
@@ -1887,6 +1968,7 @@ export interface FileRouteTypes {
     | '/battle-arena'
     | '/championship'
     | '/community'
+    | '/journal'
     | '/leaderboard'
     | '/market'
     | '/prop-challenges'
@@ -2016,6 +2098,12 @@ export interface FileRouteTypes {
     | '/_authenticated/community/reviews'
     | '/_authenticated/community/trending'
     | '/_authenticated/journal/$entryId'
+    | '/_authenticated/journal/analytics'
+    | '/_authenticated/journal/calendar'
+    | '/_authenticated/journal/coach'
+    | '/_authenticated/journal/playbooks'
+    | '/_authenticated/journal/psychology'
+    | '/_authenticated/journal/trades'
     | '/_authenticated/leaderboard/country'
     | '/_authenticated/leaderboard/friends'
     | '/_authenticated/leaderboard/global'
@@ -2052,6 +2140,7 @@ export interface FileRouteTypes {
     | '/_authenticated/battle-arena/'
     | '/_authenticated/championship/'
     | '/_authenticated/community/'
+    | '/_authenticated/journal/'
     | '/_authenticated/leaderboard/'
     | '/_authenticated/market/'
     | '/_authenticated/prop-challenges/'
@@ -2400,6 +2489,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLeaderboardIndexRouteImport
       parentRoute: typeof AuthenticatedLeaderboardRoute
     }
+    '/_authenticated/journal/': {
+      id: '/_authenticated/journal/'
+      path: '/'
+      fullPath: '/journal/'
+      preLoaderRoute: typeof AuthenticatedJournalIndexRouteImport
+      parentRoute: typeof AuthenticatedJournalRoute
+    }
     '/_authenticated/community/': {
       id: '/_authenticated/community/'
       path: '/'
@@ -2651,6 +2747,48 @@ declare module '@tanstack/react-router' {
       fullPath: '/leaderboard/country'
       preLoaderRoute: typeof AuthenticatedLeaderboardCountryRouteImport
       parentRoute: typeof AuthenticatedLeaderboardRoute
+    }
+    '/_authenticated/journal/trades': {
+      id: '/_authenticated/journal/trades'
+      path: '/trades'
+      fullPath: '/journal/trades'
+      preLoaderRoute: typeof AuthenticatedJournalTradesRouteImport
+      parentRoute: typeof AuthenticatedJournalRoute
+    }
+    '/_authenticated/journal/psychology': {
+      id: '/_authenticated/journal/psychology'
+      path: '/psychology'
+      fullPath: '/journal/psychology'
+      preLoaderRoute: typeof AuthenticatedJournalPsychologyRouteImport
+      parentRoute: typeof AuthenticatedJournalRoute
+    }
+    '/_authenticated/journal/playbooks': {
+      id: '/_authenticated/journal/playbooks'
+      path: '/playbooks'
+      fullPath: '/journal/playbooks'
+      preLoaderRoute: typeof AuthenticatedJournalPlaybooksRouteImport
+      parentRoute: typeof AuthenticatedJournalRoute
+    }
+    '/_authenticated/journal/coach': {
+      id: '/_authenticated/journal/coach'
+      path: '/coach'
+      fullPath: '/journal/coach'
+      preLoaderRoute: typeof AuthenticatedJournalCoachRouteImport
+      parentRoute: typeof AuthenticatedJournalRoute
+    }
+    '/_authenticated/journal/calendar': {
+      id: '/_authenticated/journal/calendar'
+      path: '/calendar'
+      fullPath: '/journal/calendar'
+      preLoaderRoute: typeof AuthenticatedJournalCalendarRouteImport
+      parentRoute: typeof AuthenticatedJournalRoute
+    }
+    '/_authenticated/journal/analytics': {
+      id: '/_authenticated/journal/analytics'
+      path: '/analytics'
+      fullPath: '/journal/analytics'
+      preLoaderRoute: typeof AuthenticatedJournalAnalyticsRouteImport
+      parentRoute: typeof AuthenticatedJournalRoute
     }
     '/_authenticated/journal/$entryId': {
       id: '/_authenticated/journal/$entryId'
@@ -3528,10 +3666,24 @@ const AuthenticatedCommunityRouteWithChildren =
 
 interface AuthenticatedJournalRouteChildren {
   AuthenticatedJournalEntryIdRoute: typeof AuthenticatedJournalEntryIdRoute
+  AuthenticatedJournalAnalyticsRoute: typeof AuthenticatedJournalAnalyticsRoute
+  AuthenticatedJournalCalendarRoute: typeof AuthenticatedJournalCalendarRoute
+  AuthenticatedJournalCoachRoute: typeof AuthenticatedJournalCoachRoute
+  AuthenticatedJournalPlaybooksRoute: typeof AuthenticatedJournalPlaybooksRoute
+  AuthenticatedJournalPsychologyRoute: typeof AuthenticatedJournalPsychologyRoute
+  AuthenticatedJournalTradesRoute: typeof AuthenticatedJournalTradesRoute
+  AuthenticatedJournalIndexRoute: typeof AuthenticatedJournalIndexRoute
 }
 
 const AuthenticatedJournalRouteChildren: AuthenticatedJournalRouteChildren = {
   AuthenticatedJournalEntryIdRoute: AuthenticatedJournalEntryIdRoute,
+  AuthenticatedJournalAnalyticsRoute: AuthenticatedJournalAnalyticsRoute,
+  AuthenticatedJournalCalendarRoute: AuthenticatedJournalCalendarRoute,
+  AuthenticatedJournalCoachRoute: AuthenticatedJournalCoachRoute,
+  AuthenticatedJournalPlaybooksRoute: AuthenticatedJournalPlaybooksRoute,
+  AuthenticatedJournalPsychologyRoute: AuthenticatedJournalPsychologyRoute,
+  AuthenticatedJournalTradesRoute: AuthenticatedJournalTradesRoute,
+  AuthenticatedJournalIndexRoute: AuthenticatedJournalIndexRoute,
 }
 
 const AuthenticatedJournalRouteWithChildren =
@@ -3797,13 +3949,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
