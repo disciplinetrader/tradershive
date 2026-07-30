@@ -5114,6 +5114,7 @@ export type Database = {
           execution: number | null
           exit_price: number | null
           exit_quality: number | null
+          field_sources: Json
           grade: Database["public"]["Enums"]["journal_grade"] | null
           id: string
           is_favorite: boolean
@@ -5129,7 +5130,9 @@ export type Database = {
           opened_at: string | null
           opened_tz: string | null
           patience: number | null
+          playbook_review: Json
           pnl: number | null
+          psychology: Json
           reward_pct: number | null
           risk_mgmt: number | null
           risk_pct: number | null
@@ -5177,6 +5180,7 @@ export type Database = {
           execution?: number | null
           exit_price?: number | null
           exit_quality?: number | null
+          field_sources?: Json
           grade?: Database["public"]["Enums"]["journal_grade"] | null
           id?: string
           is_favorite?: boolean
@@ -5192,7 +5196,9 @@ export type Database = {
           opened_at?: string | null
           opened_tz?: string | null
           patience?: number | null
+          playbook_review?: Json
           pnl?: number | null
+          psychology?: Json
           reward_pct?: number | null
           risk_mgmt?: number | null
           risk_pct?: number | null
@@ -5240,6 +5246,7 @@ export type Database = {
           execution?: number | null
           exit_price?: number | null
           exit_quality?: number | null
+          field_sources?: Json
           grade?: Database["public"]["Enums"]["journal_grade"] | null
           id?: string
           is_favorite?: boolean
@@ -5255,7 +5262,9 @@ export type Database = {
           opened_at?: string | null
           opened_tz?: string | null
           patience?: number | null
+          playbook_review?: Json
           pnl?: number | null
+          psychology?: Json
           reward_pct?: number | null
           risk_mgmt?: number | null
           risk_pct?: number | null
