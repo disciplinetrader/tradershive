@@ -25,6 +25,7 @@ import {
 } from "@/lib/journal/editor/model";
 import { issuesForSection } from "@/lib/journal/editor/validation";
 import { formatDuration } from "@/lib/journal/format";
+import { readNarrative } from "@/lib/journal/story";
 import { useTradeEditorContext } from "../TradeEditorProvider";
 import {
   DateTimeField,
