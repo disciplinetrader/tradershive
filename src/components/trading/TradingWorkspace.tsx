@@ -705,8 +705,18 @@ function TradingWorkspaceInner() {
                 onAdapter={handleAdapter} onCandles={handleCandles}
                 className="absolute inset-0"
               >
+                {textEditor && (
+                  <ChartTextEditor
+                    state={textEditor}
+                    onChange={updateTextEditor}
+                    onCommit={commitTextEditor}
+                    onCancel={cancelTextEditor}
+                    bounds={chartBounds}
+                  />
+                )}
                 {!drawingsHidden && (
                   <>
+
                     <PositionLinesLive
                       adapter={adapter} sym={meta ?? null}
                       trades={openHere} livePrice={last}
