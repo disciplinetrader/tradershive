@@ -51,21 +51,18 @@ export function installApiMonitor(): void {
     const start = performance.now();
     let timedOut = false;
 
-    // Attach an abort timeout to detect hangs without overriding caller signals.
-    const controller = new AbortController();
+    // Passive monitoring only: never abort the caller's request. Injecting our
+    // own AbortController here cancelled in-flight server-function calls and
+    // surfaced as "TypeError: Failed to fetch" in the app.
     const timer = window.setTimeout(() => {
       timedOut = true;
-      controller.abort();
+      emit("api", "slow", { value: TIMEOUT_MS, data: { url, method, status: 0 } });
     }, TIMEOUT_MS);
-    const callerSignal = init?.signal;
-    if (callerSignal) {
-      if (callerSignal.aborted) controller.abort();
-      else callerSignal.addEventListener("abort", () => controller.abort(), { once: true });
-    }
 
     try {
-      const response = await originalFetch(input, { ...init, signal: controller.signal });
+      const response = await originalFetch(input as RequestInfo, init);
       const duration = performance.now() - start;
+
 
       if (response.status >= 500) {
         emit("api", "server_error", {
