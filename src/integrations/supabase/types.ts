@@ -7617,6 +7617,7 @@ export type Database = {
           id: string
           intent: Json
           is_best: boolean
+          mistake_focus: string | null
           mode: string
           original_entry_id: string | null
           original_trade_id: string | null
@@ -7647,6 +7648,7 @@ export type Database = {
           id?: string
           intent?: Json
           is_best?: boolean
+          mistake_focus?: string | null
           mode?: string
           original_entry_id?: string | null
           original_trade_id?: string | null
@@ -7677,6 +7679,7 @@ export type Database = {
           id?: string
           intent?: Json
           is_best?: boolean
+          mistake_focus?: string | null
           mode?: string
           original_entry_id?: string | null
           original_trade_id?: string | null
@@ -7919,13 +7922,24 @@ export type Database = {
           id: string
           market: string
           max_trades: number
+          measurable_goal: string | null
+          origin: string
+          priority: number
           reason: string | null
+          replay_mode: string | null
+          result: Json
           session_hint: string | null
+          skill: string | null
+          source_comparison_id: string | null
+          source_entry_id: string | null
           source_session_id: string | null
           status: string
           symbol: string
+          target_mistake: string | null
           target_r: number
           timeframe: string
+          title: string | null
+          updated_at: string
           user_id: string
         }
         Insert: {
@@ -7935,13 +7949,24 @@ export type Database = {
           id?: string
           market: string
           max_trades?: number
+          measurable_goal?: string | null
+          origin?: string
+          priority?: number
           reason?: string | null
+          replay_mode?: string | null
+          result?: Json
           session_hint?: string | null
+          skill?: string | null
+          source_comparison_id?: string | null
+          source_entry_id?: string | null
           source_session_id?: string | null
           status?: string
           symbol: string
+          target_mistake?: string | null
           target_r?: number
           timeframe: string
+          title?: string | null
+          updated_at?: string
           user_id: string
         }
         Update: {
@@ -7951,13 +7976,24 @@ export type Database = {
           id?: string
           market?: string
           max_trades?: number
+          measurable_goal?: string | null
+          origin?: string
+          priority?: number
           reason?: string | null
+          replay_mode?: string | null
+          result?: Json
           session_hint?: string | null
+          skill?: string | null
+          source_comparison_id?: string | null
+          source_entry_id?: string | null
           source_session_id?: string | null
           status?: string
           symbol?: string
+          target_mistake?: string | null
           target_r?: number
           timeframe?: string
+          title?: string | null
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
