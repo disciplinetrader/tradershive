@@ -2,6 +2,7 @@ import { Outlet, createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/ui/page-header";
 import { JournalSubNav } from "@/components/journal/JournalSubNav";
 import { ManualEntryDialog } from "@/components/journal/ManualEntryDialog";
+import { TradeEditorHost } from "@/components/journal/editor/TradeEditorHost";
 import { routeBoundaries } from "@/lib/route-boundaries";
 
 export const Route = createFileRoute("/_authenticated/journal")({
