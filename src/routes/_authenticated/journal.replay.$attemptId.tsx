@@ -90,8 +90,9 @@ function ComparisonPage() {
   const { attemptId } = Route.useParams();
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const [practiceOpen, setPracticeOpen] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+
+  const launcher = usePracticeLauncher(undefined);
 
   const attemptQ = useQuery({ queryKey: attemptKeys.one(attemptId), queryFn: () => getAttempt(attemptId) });
   const attempt = attemptQ.data ?? null;
@@ -358,10 +359,7 @@ function ComparisonPage() {
           readiness={model.readiness}
           dismissed={dismissed}
           onDismiss={() => setDismissed(true)}
-          onStart={() => {
-            launcher.request(model.action.mode, model.action.mistake);
-            setPracticeOpen(true);
-          }}
+          onStart={() => launcher.open(model.action.mode, model.action.mistake)}
           onHomework={() => {
             void saveEvaluation(attemptId, {
               ...(attempt.ai_review as object | null),
@@ -373,19 +371,13 @@ function ComparisonPage() {
         />
       </StorySection>
 
-      {practiceOpen && launcher.pending ? (
+      {launcher.pending ? (
         <IntentDialog
           entry={model.entry}
           pending={launcher.pending}
-          busy={launcher.busy}
-          onClose={() => {
-            launcher.cancel();
-            setPracticeOpen(false);
-          }}
-          onStart={(intent) => {
-            setPracticeOpen(false);
-            launcher.start(intent);
-          }}
+          busy={launcher.isPending}
+          onClose={launcher.close}
+          onStart={launcher.start}
         />
       ) : null}
     </div>
