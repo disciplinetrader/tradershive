@@ -18,7 +18,7 @@ import {
 } from "@/lib/paper-trading.functions";
 import { findSymbol } from "@/lib/paper-trading/symbols";
 import { pnl as computePnl, formatCurrency, formatNumber } from "@/lib/paper-trading/calculations";
-import { useLiveQuotes } from "@/lib/paper-trading/mock-prices";
+import { useLiveQuotes } from "@/lib/paper-trading/live-quotes";
 import { usePaper } from "./context";
 import { ClosePositionDialog } from "./ClosePositionDialog";
 import { PostTradeSummary, type ClosedTrade } from "./PostTradeSummary";

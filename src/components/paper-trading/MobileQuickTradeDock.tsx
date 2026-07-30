@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { openTrade, listTrades } from "@/lib/paper-trading.functions";
 import { lotForRisk, formatCurrency } from "@/lib/paper-trading/calculations";
-import { useLivePrice, useLiveQuotes } from "@/lib/paper-trading/mock-prices";
+import { useLivePrice, useLiveQuotes } from "@/lib/paper-trading/live-quotes";
 import { validateNewOrder, type OpenTradeInput } from "@/lib/paper-trading/risk";
 import { usePaper } from "./context";
 import { OrderPanel } from "./OrderPanel";

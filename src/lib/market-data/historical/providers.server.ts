@@ -96,28 +96,32 @@ export class BinanceHistoricalProvider implements HistoricalDataProvider {
   }
 }
 
-/* ------------------------------ Stooq (Dukascopy-labeled) ------------------------------
+/* ------------------------------ Stooq ------------------------------
  *
  * Free, no-key daily OHLC feed for FX / metals / indices / commodities.
- * Serves as the initial free provider until a full Dukascopy binary tick
- * decoder is added. Daily only — intraday for these symbols requires the
- * paid Dukascopy pipeline or another provider.
+ * Daily resolution only — intraday for these symbols must come from a
+ * different provider (Twelve Data today).
+ *
+ * NOTE: this provider was historically mis-registered under the code
+ * "dukascopy". No Dukascopy code has ever run. `LEGACY_PROVIDER_CODES`
+ * keeps old rows resolvable while the DB is migrated to "stooq".
  */
 
 const STOOQ_BASE = "https://stooq.com/q/d/l/";
 
 export class StooqHistoricalProvider implements HistoricalDataProvider {
-  readonly code = "dukascopy";
-  readonly label = "Dukascopy / Stooq (daily)";
+  readonly code = "stooq";
+  readonly label = "Stooq (daily)";
   readonly supports: HistoricalTimeframe[] = ["1D", "1W", "1M"];
 
   async fetchCandles({ nativeSymbol, timeframe, from, to }: {
     nativeSymbol: string; timeframe: HistoricalTimeframe; from: number; to: number;
   }): Promise<HistoricalCandle[]> {
     if (!this.supports.includes(timeframe)) {
-      throw new Error(`Stooq/Dukascopy: intraday not yet supported (${timeframe}). Use daily 1D.`);
+      throw new Error(`Stooq: intraday not supported (${timeframe}). Daily (1D) and above only.`);
     }
     const interval = timeframe === "1D" ? "d" : timeframe === "1W" ? "w" : "m";
+
     const url = new URL(STOOQ_BASE);
     url.searchParams.set("s", nativeSymbol.toLowerCase());
     url.searchParams.set("i", interval);
@@ -153,11 +157,23 @@ export class StooqHistoricalProvider implements HistoricalDataProvider {
 
 const REGISTRY: Record<string, HistoricalDataProvider> = {
   binance: new BinanceHistoricalProvider(),
-  dukascopy: new StooqHistoricalProvider(),
+  stooq: new StooqHistoricalProvider(),
 };
 
+/**
+ * Codes that exist in older DB rows and must keep resolving until the
+ * data migration has propagated everywhere.
+ */
+export const LEGACY_PROVIDER_CODES: Record<string, string> = {
+  dukascopy: "stooq",
+};
+
+export function canonicalProviderCode(code: string): string {
+  return LEGACY_PROVIDER_CODES[code] ?? code;
+}
+
 export function getHistoricalProvider(code: string): HistoricalDataProvider {
-  const p = REGISTRY[code];
+  const p = REGISTRY[canonicalProviderCode(code)];
   if (!p) throw new Error(`Unknown historical provider: ${code}`);
   return p;
 }
@@ -165,3 +181,4 @@ export function getHistoricalProvider(code: string): HistoricalDataProvider {
 export function listHistoricalProviders(): HistoricalDataProvider[] {
   return Object.values(REGISTRY);
 }
+

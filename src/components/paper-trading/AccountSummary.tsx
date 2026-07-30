@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { getAccountStats, listTrades } from "@/lib/paper-trading.functions";
 import { formatCurrency } from "@/lib/paper-trading/calculations";
-import { useLiveQuotes } from "@/lib/paper-trading/mock-prices";
+import { useLiveQuotes } from "@/lib/paper-trading/live-quotes";
 import {
   accountRiskLimits,
   computeAccountRisk,

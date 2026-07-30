@@ -116,7 +116,7 @@ export function ScenarioPicker({
         symbol,
         timeframe: tf,
         replay_date: date,
-        provider: "synthetic",
+        provider: "historical",
         tags,
       } as any,
     });

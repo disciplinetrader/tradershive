@@ -11,10 +11,16 @@
 
 import { CANDLE_CACHE_MS, QUOTE_CACHE_MS } from "./constants";
 import { TTLCache } from "./cache";
+import { breakers, type BreakerSnapshot, type BreakerState } from "./circuit-breaker";
 import { bootstrapProviders, getProvider, listProviders } from "./providers/registry";
 import { getActiveSessions, getNextSession } from "./sessions";
 import { MarketProviderUnavailableError } from "./errors";
 import { listMarketAssignments } from "./admin.functions";
+
+/** How old a cached value may be before we refuse to serve it at all. */
+const STALE_QUOTE_MAX_MS = 5 * 60_000;
+const STALE_CANDLE_MAX_MS = 30 * 60_000;
+
 import type {
   Candle, CandleQuery, MarketDataProvider, MarketKind, MarketStatusInfo,
   ProviderStatus, Quote, QuoteHandler, SearchQuery, SessionWindow,
@@ -85,21 +91,27 @@ class MarketDataEngine {
   listProviders(): MarketDataProvider[] { return listProviders(); }
 
   pickProvider(market?: MarketKind, symbol?: string): MarketDataProvider {
-    return this.resolveProvider(market, symbol, /*live*/ false);
+    return this.resolveChain(market, symbol, /*live*/ false)[0];
   }
 
   /** Live quote / subscribe routing. Consults VITE_LIVE_FOREX_PROVIDER
    *  to swap the forex live-data source (POC — Finnhub eval) without
    *  affecting historical candles, which always use pickProvider(). */
   pickLiveQuoteProvider(market?: MarketKind, symbol?: string): MarketDataProvider {
-    return this.resolveProvider(market, symbol, /*live*/ true);
+    return this.resolveChain(market, symbol, /*live*/ true)[0];
   }
 
-  private resolveProvider(market: MarketKind | undefined, symbol: string | undefined, live: boolean): MarketDataProvider {
+  /**
+   * Ordered list of providers to try for a market: primary first, then the
+   * configured fallback. Providers whose circuit breaker is open are pushed
+   * to the back rather than dropped, so a fully-tripped market still gets
+   * one real attempt instead of a silent substitution.
+   */
+  private resolveChain(market: MarketKind | undefined, symbol: string | undefined, live: boolean): MarketDataProvider[] {
     const effective = market ?? inferMarketFromSymbol(symbol);
     if (!effective) {
-      const any = listProviders().find((p) => p.status() !== "disabled");
-      if (any) return any;
+      const any = listProviders().filter((p) => p.status() !== "disabled");
+      if (any.length) return any;
       throw new MarketProviderUnavailableError({ reason: "not_assigned" });
     }
     let a = this.assignments.get(effective);
@@ -113,44 +125,105 @@ class MarketDataEngine {
       }
     }
 
-    const readable = (p?: MarketDataProvider): p is MarketDataProvider =>
-      !!p && p.status() !== "disabled" && p.capabilities.markets.includes(effective);
+    const usable = (code: string | null): MarketDataProvider | undefined => {
+      if (!code) return undefined;
+      const p = getProvider(code);
+      if (!p || p.status() === "disabled") return undefined;
+      if (!p.capabilities.markets.includes(effective)) return undefined;
+      return p;
+    };
 
-    const primary = getProvider(a.primary);
-    if (readable(primary)) return primary;
-
-    const fallback = a.fallback ? getProvider(a.fallback) : undefined;
-    if (readable(fallback)) {
-      console.warn(`[market-data] ${effective}: primary "${a.primary}" unavailable, using fallback "${a.fallback}".`);
-      return fallback;
+    const ordered: MarketDataProvider[] = [];
+    for (const code of [a.primary, a.fallback]) {
+      const p = usable(code);
+      if (p && !ordered.includes(p)) ordered.push(p);
     }
-    throw new MarketProviderUnavailableError({
-      market: effective, reason: primary ? "not_configured" : "not_assigned",
-      providerCode: a.primary,
-    });
+    if (!ordered.length) {
+      throw new MarketProviderUnavailableError({
+        market: effective,
+        reason: getProvider(a.primary) ? "not_configured" : "not_assigned",
+        providerCode: a.primary,
+      });
+    }
+    // Healthy providers first; tripped ones remain as a last resort.
+    const healthy = ordered.filter((p) => breakers.canRequest(p.code));
+    const tripped = ordered.filter((p) => !breakers.canRequest(p.code));
+    return [...healthy, ...tripped];
   }
 
+  /** Run `fn` down the provider chain, recording breaker outcomes. */
+  private async withChain<T>(
+    chain: MarketDataProvider[],
+    fn: (p: MarketDataProvider) => Promise<T>,
+    label: string,
+  ): Promise<{ value: T; provider: string; degraded: boolean }> {
+    let lastError: unknown;
+    for (let i = 0; i < chain.length; i++) {
+      const p = chain[i];
+      try {
+        const value = await fn(p);
+        breakers.recordSuccess(p.code);
+        return { value, provider: p.code, degraded: i > 0 };
+      } catch (e) {
+        lastError = e;
+        breakers.recordFailure(p.code, e);
+        if (i < chain.length - 1) {
+          console.warn(`[market-data] ${label}: "${p.code}" failed (${(e as Error).message}) — trying "${chain[i + 1].code}".`);
+        }
+      }
+    }
+    throw lastError ?? new Error(`${label}: all providers failed`);
+  }
 
   async searchSymbols(q: SearchQuery): Promise<SymbolMeta[]> { return this.pickProvider(q.market).searchSymbols(q); }
   async getSymbols(market?: MarketKind): Promise<SymbolMeta[]> { return this.pickProvider(market).getSymbols(market); }
 
+  /** Last known quote age when the live feed is degraded, per symbol. */
+  private staleQuotes = new Map<string, number>();
+
   async getQuote(symbol: string, market?: MarketKind): Promise<Quote> {
     const cached = this.quoteCache.get(symbol);
-    if (cached) return cached;
-    const q = await this.pickLiveQuoteProvider(market, symbol).getQuote(symbol);
-    this.quoteCache.set(symbol, q);
-    return q;
+    if (cached) { this.staleQuotes.delete(symbol); return cached; }
+    const chain = this.resolveChain(market, symbol, /*live*/ true);
+    try {
+      const { value } = await this.withChain(chain, (p) => p.getQuote(symbol), `quote ${symbol}`);
+      this.quoteCache.set(symbol, value);
+      this.staleQuotes.delete(symbol);
+      return value;
+    } catch (e) {
+      // Degraded path: serve the last real quote, clearly marked stale.
+      const stale = this.quoteCache.getStale(symbol, STALE_QUOTE_MAX_MS);
+      if (stale) {
+        this.staleQuotes.set(symbol, stale.ageMs);
+        return { ...stale.value, stale: true, ageMs: stale.ageMs } as Quote;
+      }
+      throw e;
+    }
   }
+
+  /** Age (ms) of the last served quote when it came from the stale path. */
+  quoteStaleness(symbol: string): number | null { return this.staleQuotes.get(symbol) ?? null; }
 
   async getCandles(q: CandleQuery, market?: MarketKind): Promise<Candle[]> {
     const key = `${q.symbol}|${q.timeframe}|${q.from}|${q.to}|${q.limit ?? "*"}`;
     const cached = this.candleCache.get(key);
     if (cached) return cached;
-    const out = await this.pickProvider(market, q.symbol).getCandles(q);
-    if (out.length) this.candleCache.set(key, out);
-    return out;
+    const chain = this.resolveChain(market, q.symbol, /*live*/ false);
+    try {
+      const { value } = await this.withChain(chain, (p) => p.getCandles(q), `candles ${q.symbol}`);
+      if (value.length) this.candleCache.set(key, value);
+      return value;
+    } catch (e) {
+      const stale = this.candleCache.getStale(key, STALE_CANDLE_MAX_MS);
+      if (stale) {
+        console.warn(`[market-data] serving stale candles for ${q.symbol} (${Math.round(stale.ageMs / 1000)}s old).`);
+        return stale.value;
+      }
+      throw e;
+    }
   }
   getHistoricalData(q: CandleQuery, market?: MarketKind) { return this.getCandles(q, market); }
+
 
   private warnedMarkets = new Set<string>();
   subscribe(symbol: string, handler: QuoteHandler, market?: MarketKind): SubscriptionHandle {
@@ -209,9 +282,17 @@ class MarketDataEngine {
   cacheStats() { return { quotes: this.quoteCache.size(), candles: this.candleCache.size(), subscriptions: this.fanout.size }; }
   clearCache() { this.quoteCache.clear(); this.candleCache.clear(); }
 
-  health(): { code: string; name: string; status: ProviderStatus }[] {
-    return listProviders().map((p) => ({ code: p.code, name: p.name, status: p.status() }));
+  health(): { code: string; name: string; status: ProviderStatus; breaker: BreakerState; lastError: string | null }[] {
+    return listProviders().map((p) => {
+      const b = breakers.snapshot(p.code);
+      return { code: p.code, name: p.name, status: p.status(), breaker: b.state, lastError: b.lastError };
+    });
   }
+
+  /** Circuit-breaker snapshots for the admin market-data health view. */
+  breakerStates(): BreakerSnapshot[] { return breakers.all(); }
+  resetBreaker(code?: string) { breakers.reset(code); }
+
 
   /** Legacy accessor kept for old callers — no-op. */
   setStrategy(_: unknown) { /* deprecated; use Admin Panel */ }

@@ -35,7 +35,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { closeTrade, listTrades } from "@/lib/paper-trading.functions";
-import { useLiveQuotes } from "@/lib/paper-trading/mock-prices";
+import { useLiveQuotes } from "@/lib/paper-trading/live-quotes";
 import { evaluateSlTpOnTick } from "@/lib/paper-trading/sl-tp";
 
 type MonitoredTrade = {

@@ -1,11 +1,23 @@
-// Market Data Provider abstraction.
-// This layer separates the Replay Engine from any specific data source.
-// Today we use a deterministic synthetic provider; tomorrow this can be
-// swapped for TradingView, broker historical APIs, tick feeds, or DOM data
-// without touching the engine, controller or UI.
+// Market Data Provider abstraction for Replay.
+//
+// IMPORTANT — data integrity rule:
+// The synthetic provider below produces FABRICATED prices. It must never be
+// used as a silent fallback for a missing real dataset, because a trader
+// cannot tell fake candles from real ones once they are on the chart.
+//
+// It is retained only for:
+//   * demo / marketing sessions explicitly created as demos, and
+//   * local development, behind the ENABLE_SYNTHETIC_REPLAY server flag.
+//
+// Every synthetic result is labelled `DEMO DATA` and carries `isSynthetic`
+// so the UI can badge it. Real replay data flows through
+// `src/lib/market-data/historical/service.server.ts`.
 
 import { TIMEFRAME_SECONDS } from "./constants";
 import type { Candle, Timeframe } from "./types";
+
+export const SYNTHETIC_PROVIDER_ID = "synthetic";
+export const SYNTHETIC_LABEL = "DEMO DATA (synthetic)";
 
 export type CandleQuery = {
   symbol: string;
@@ -17,8 +29,22 @@ export type CandleQuery = {
 export interface MarketDataProvider {
   readonly id: string;
   readonly label: string;
+  /** True when the provider fabricates prices rather than sourcing them. */
+  readonly isSynthetic?: boolean;
   getCandles(query: CandleQuery): Promise<Candle[]>;
 }
+
+/**
+ * Server-side gate for synthetic replay data.
+ * Disabled unless ENABLE_SYNTHETIC_REPLAY is explicitly set to "true".
+ */
+export function syntheticReplayEnabled(): boolean {
+  const flag =
+    (typeof process !== "undefined" ? process.env?.ENABLE_SYNTHETIC_REPLAY : undefined) ??
+    (import.meta as any).env?.VITE_ENABLE_SYNTHETIC_REPLAY;
+  return String(flag ?? "").toLowerCase() === "true";
+}
+
 
 // Deterministic seeded RNG so a given (symbol, tf, date) always produces the
 // same series — critical for reproducible replay sessions.
@@ -67,8 +93,9 @@ function volatilityFor(symbol: string): number {
 }
 
 export class SyntheticMarketDataProvider implements MarketDataProvider {
-  readonly id = "synthetic";
-  readonly label = "Synthetic (deterministic)";
+  readonly id = SYNTHETIC_PROVIDER_ID;
+  readonly label = SYNTHETIC_LABEL;
+  readonly isSynthetic = true;
 
   async getCandles({ symbol, timeframe, from, to }: CandleQuery): Promise<Candle[]> {
     const stepSec = TIMEFRAME_SECONDS[timeframe];
@@ -103,13 +130,34 @@ export class SyntheticMarketDataProvider implements MarketDataProvider {
 
 // Provider registry — pluggable per session.settings.provider.
 const providers: Record<string, MarketDataProvider> = {
-  synthetic: new SyntheticMarketDataProvider(),
+  [SYNTHETIC_PROVIDER_ID]: new SyntheticMarketDataProvider(),
 };
 
-export function getProvider(id?: string | null): MarketDataProvider {
-  return providers[id ?? "synthetic"] ?? providers.synthetic;
+/**
+ * Resolve a replay provider by id.
+ *
+ * Returns `undefined` for unknown ids instead of silently falling back to
+ * synthetic — callers must decide explicitly what to do with missing data.
+ */
+export function getProvider(id?: string | null): MarketDataProvider | undefined {
+  if (!id) return undefined;
+  return providers[id];
+}
+
+/**
+ * Explicit, opt-in access to the synthetic generator. Throws unless the
+ * server flag is on, so it can never be reached by accident in production.
+ */
+export function getSyntheticProvider(): MarketDataProvider {
+  if (!syntheticReplayEnabled()) {
+    throw new Error(
+      "Synthetic replay data is disabled. Set ENABLE_SYNTHETIC_REPLAY=true to use demo candles.",
+    );
+  }
+  return providers[SYNTHETIC_PROVIDER_ID];
 }
 
 export function registerProvider(p: MarketDataProvider) {
   providers[p.id] = p;
 }
+
