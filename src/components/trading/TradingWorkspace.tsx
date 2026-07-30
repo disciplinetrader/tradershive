@@ -305,7 +305,10 @@ function TradingWorkspaceInner() {
   // Drawings are scoped per symbol so switching instruments swaps the set.
   useEffect(() => { drawingStore.setScope(symbol); }, [drawingStore, symbol]);
 
-  const { drawings: drawingRevision, menu: drawingMenu, closeMenu: closeDrawingMenu } = useChartDrawings({
+  const {
+    drawings: drawingRevision, menu: drawingMenu, closeMenu: closeDrawingMenu,
+    textEditor, commitTextEditor, cancelTextEditor, updateTextEditor,
+  } = useChartDrawings({
     adapter,
     store: drawingStore,
     activeTool,
