@@ -8,6 +8,8 @@
  */
 
 import { getHistoricalProvider } from "./providers.server";
+import { resolveHistoricalProvider, nativeSymbolForProvider } from "./routing";
+
 import type { HistoricalCandle, HistoricalTimeframe } from "./types";
 import { AGGREGATE_FROM, HISTORICAL_TF_SECONDS } from "./types";
 
