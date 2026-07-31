@@ -7,6 +7,7 @@
  */
 
 import type { PositionOrder } from "./model";
+import { isLive } from "./lifecycle";
 import { trace } from "./debug";
 
 type Listener = () => void;
