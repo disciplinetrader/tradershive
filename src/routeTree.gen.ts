@@ -72,6 +72,7 @@ import { Route as AuthenticatedStrategiesBacktestsRouteImport } from './routes/_
 import { Route as AuthenticatedStrategiesIdRouteImport } from './routes/_authenticated/strategies.$id'
 import { Route as AuthenticatedSettingsEmailRouteImport } from './routes/_authenticated/settings.email'
 import { Route as AuthenticatedReplayTradesRouteImport } from './routes/_authenticated/replay.trades'
+import { Route as AuthenticatedReplayStudioRouteImport } from './routes/_authenticated/replay.studio'
 import { Route as AuthenticatedReplaySettingsRouteImport } from './routes/_authenticated/replay.settings'
 import { Route as AuthenticatedReplaySessionRouteImport } from './routes/_authenticated/replay.session'
 import { Route as AuthenticatedReplayPerformanceRouteImport } from './routes/_authenticated/replay.performance'
@@ -524,6 +525,12 @@ const AuthenticatedReplayTradesRoute =
   AuthenticatedReplayTradesRouteImport.update({
     id: '/trades',
     path: '/trades',
+    getParentRoute: () => AuthenticatedReplayRoute,
+  } as any)
+const AuthenticatedReplayStudioRoute =
+  AuthenticatedReplayStudioRouteImport.update({
+    id: '/studio',
+    path: '/studio',
     getParentRoute: () => AuthenticatedReplayRoute,
   } as any)
 const AuthenticatedReplaySettingsRoute =
@@ -1302,6 +1309,7 @@ export interface FileRoutesByFullPath {
   '/replay/performance': typeof AuthenticatedReplayPerformanceRoute
   '/replay/session': typeof AuthenticatedReplaySessionRoute
   '/replay/settings': typeof AuthenticatedReplaySettingsRoute
+  '/replay/studio': typeof AuthenticatedReplayStudioRoute
   '/replay/trades': typeof AuthenticatedReplayTradesRoute
   '/settings/email': typeof AuthenticatedSettingsEmailRoute
   '/strategies/$id': typeof AuthenticatedStrategiesIdRoute
@@ -1462,6 +1470,7 @@ export interface FileRoutesByTo {
   '/replay/performance': typeof AuthenticatedReplayPerformanceRoute
   '/replay/session': typeof AuthenticatedReplaySessionRoute
   '/replay/settings': typeof AuthenticatedReplaySettingsRoute
+  '/replay/studio': typeof AuthenticatedReplayStudioRoute
   '/replay/trades': typeof AuthenticatedReplayTradesRoute
   '/settings/email': typeof AuthenticatedSettingsEmailRoute
   '/strategies/$id': typeof AuthenticatedStrategiesIdRoute
@@ -1637,6 +1646,7 @@ export interface FileRoutesById {
   '/_authenticated/replay/performance': typeof AuthenticatedReplayPerformanceRoute
   '/_authenticated/replay/session': typeof AuthenticatedReplaySessionRoute
   '/_authenticated/replay/settings': typeof AuthenticatedReplaySettingsRoute
+  '/_authenticated/replay/studio': typeof AuthenticatedReplayStudioRoute
   '/_authenticated/replay/trades': typeof AuthenticatedReplayTradesRoute
   '/_authenticated/settings/email': typeof AuthenticatedSettingsEmailRoute
   '/_authenticated/strategies/$id': typeof AuthenticatedStrategiesIdRoute
@@ -1812,6 +1822,7 @@ export interface FileRouteTypes {
     | '/replay/performance'
     | '/replay/session'
     | '/replay/settings'
+    | '/replay/studio'
     | '/replay/trades'
     | '/settings/email'
     | '/strategies/$id'
@@ -1972,6 +1983,7 @@ export interface FileRouteTypes {
     | '/replay/performance'
     | '/replay/session'
     | '/replay/settings'
+    | '/replay/studio'
     | '/replay/trades'
     | '/settings/email'
     | '/strategies/$id'
@@ -2146,6 +2158,7 @@ export interface FileRouteTypes {
     | '/_authenticated/replay/performance'
     | '/_authenticated/replay/session'
     | '/_authenticated/replay/settings'
+    | '/_authenticated/replay/studio'
     | '/_authenticated/replay/trades'
     | '/_authenticated/settings/email'
     | '/_authenticated/strategies/$id'
@@ -2653,6 +2666,13 @@ declare module '@tanstack/react-router' {
       path: '/trades'
       fullPath: '/replay/trades'
       preLoaderRoute: typeof AuthenticatedReplayTradesRouteImport
+      parentRoute: typeof AuthenticatedReplayRoute
+    }
+    '/_authenticated/replay/studio': {
+      id: '/_authenticated/replay/studio'
+      path: '/studio'
+      fullPath: '/replay/studio'
+      preLoaderRoute: typeof AuthenticatedReplayStudioRouteImport
       parentRoute: typeof AuthenticatedReplayRoute
     }
     '/_authenticated/replay/settings': {
@@ -3813,6 +3833,7 @@ interface AuthenticatedReplayRouteChildren {
   AuthenticatedReplayPerformanceRoute: typeof AuthenticatedReplayPerformanceRoute
   AuthenticatedReplaySessionRoute: typeof AuthenticatedReplaySessionRoute
   AuthenticatedReplaySettingsRoute: typeof AuthenticatedReplaySettingsRoute
+  AuthenticatedReplayStudioRoute: typeof AuthenticatedReplayStudioRoute
   AuthenticatedReplayTradesRoute: typeof AuthenticatedReplayTradesRoute
   AuthenticatedReplayIndexRoute: typeof AuthenticatedReplayIndexRoute
 }
@@ -3823,6 +3844,7 @@ const AuthenticatedReplayRouteChildren: AuthenticatedReplayRouteChildren = {
   AuthenticatedReplayPerformanceRoute: AuthenticatedReplayPerformanceRoute,
   AuthenticatedReplaySessionRoute: AuthenticatedReplaySessionRoute,
   AuthenticatedReplaySettingsRoute: AuthenticatedReplaySettingsRoute,
+  AuthenticatedReplayStudioRoute: AuthenticatedReplayStudioRoute,
   AuthenticatedReplayTradesRoute: AuthenticatedReplayTradesRoute,
   AuthenticatedReplayIndexRoute: AuthenticatedReplayIndexRoute,
 }
