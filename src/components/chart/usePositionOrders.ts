@@ -11,12 +11,13 @@
  * Nothing here executes an order; orders are local Paper Trading objects.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import type { DrawingStore } from "@/lib/chart/drawings/store";
 import type { Drawing } from "@/lib/chart/drawings/types";
 import { isPositionKind } from "@/lib/chart/drawings/types";
 import { tickFromPrecision } from "@/lib/chart/drawings/types";
 import { positionOrderStore } from "@/lib/chart/orders/store";
+import { trace } from "@/lib/chart/orders/debug";
 import {
   ORDER_TYPE_LABELS, createOrder, draftFromDrawing, inferOrderType, validateOrder, withLevels,
   type OrderDraft, type OrderType, type PositionOrder,
