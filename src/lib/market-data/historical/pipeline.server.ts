@@ -358,7 +358,7 @@ export async function runImport(rawOpts: RunImportOpts) {
       const { data: sym } = await admin
         .from("historical_symbols")
         .select("id, earliest_available, latest_imported")
-        .eq("source_code", opts.sourceCode).eq("symbol", opts.symbol).maybeSingle();
+        .eq("symbol", opts.symbol).maybeSingle();
       if (sym) {
         const patch: Record<string, string> = { latest_imported: latestIso };
         if (!sym.earliest_available || new Date(sym.earliest_available).getTime() > clean[0].ts) {
