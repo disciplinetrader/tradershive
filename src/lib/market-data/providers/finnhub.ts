@@ -1,17 +1,15 @@
 /**
- * Finnhub provider — POC for live forex quotes via WebSocket.
+ * Finnhub provider — LIVE quotes for US equities / ETFs.
  *
- * Scope (intentionally narrow):
- *   • Live quotes for a handful of forex pairs + XAU/USD, polled through the
- *     authenticated `finnhubQuote` server function (OANDA-prefixed symbols).
- *     The API key never reaches the browser.
- *   • No candle support — historical data stays on Twelve Data. Any
- *     `getCandles` call throws `finnhub_no_candles_poc` so callers can
- *     detect and route elsewhere.
+ * Scope is dictated by what our Finnhub subscription actually serves
+ * (verified by direct probes, see `finnhub.functions.ts`):
+ *   • `/quote` → US stocks and ETFs  ✅
+ *   • forex, metals and CFD indices  ❌ HTTP 403 / "subscription required"
+ *   • any `/candle` endpoint         ❌ HTTP 403
  *
- * The provider is only reachable when
- *   VITE_LIVE_FOREX_PROVIDER === "finnhub"
- * or when the Admin Panel explicitly assigns "finnhub" to a market.
+ * So this provider advertises `markets: ["stocks"]` only, is live-quote
+ * only, and never claims historical support. The engine falls back to
+ * Twelve Data automatically whenever a request here fails.
  */
 import { DESCRIPTORS_BY_CODE } from "../descriptors";
 import { finnhubQuote, finnhubStatus } from "../finnhub.functions";
@@ -22,34 +20,27 @@ import type {
   SessionWindow, StatusHandler, SubscriptionHandle, SymbolMeta,
 } from "../types";
 
-/** Engine-symbol → Finnhub (OANDA broker) symbol map. */
+/** Engine-symbol → Finnhub symbol. For US equities they're identical. */
 const CATALOG: Array<{ symbol: string; fh: string; displayName: string; market: MarketKind; tickSize: number; pricePrecision: number }> = [
-  { symbol: "EURUSD", fh: "OANDA:EUR_USD", displayName: "EUR / USD", market: "forex",  tickSize: 0.00001, pricePrecision: 5 },
-  { symbol: "GBPUSD", fh: "OANDA:GBP_USD", displayName: "GBP / USD", market: "forex",  tickSize: 0.00001, pricePrecision: 5 },
-  { symbol: "USDJPY", fh: "OANDA:USD_JPY", displayName: "USD / JPY", market: "forex",  tickSize: 0.001,   pricePrecision: 3 },
-  { symbol: "AUDUSD", fh: "OANDA:AUD_USD", displayName: "AUD / USD", market: "forex",  tickSize: 0.00001, pricePrecision: 5 },
-  { symbol: "USDCAD", fh: "OANDA:USD_CAD", displayName: "USD / CAD", market: "forex",  tickSize: 0.00001, pricePrecision: 5 },
-  { symbol: "XAUUSD", fh: "OANDA:XAU_USD", displayName: "Gold / USD", market: "metals", tickSize: 0.01,   pricePrecision: 2 },
+  { symbol: "AAPL",  fh: "AAPL",  displayName: "Apple Inc.",        market: "stocks", tickSize: 0.01, pricePrecision: 2 },
+  { symbol: "MSFT",  fh: "MSFT",  displayName: "Microsoft Corp.",   market: "stocks", tickSize: 0.01, pricePrecision: 2 },
+  { symbol: "TSLA",  fh: "TSLA",  displayName: "Tesla Inc.",        market: "stocks", tickSize: 0.01, pricePrecision: 2 },
+  { symbol: "NVDA",  fh: "NVDA",  displayName: "NVIDIA Corp.",      market: "stocks", tickSize: 0.01, pricePrecision: 2 },
+  { symbol: "AMZN",  fh: "AMZN",  displayName: "Amazon.com Inc.",   market: "stocks", tickSize: 0.01, pricePrecision: 2 },
+  { symbol: "GOOGL", fh: "GOOGL", displayName: "Alphabet Inc.",     market: "stocks", tickSize: 0.01, pricePrecision: 2 },
+  { symbol: "META",  fh: "META",  displayName: "Meta Platforms",    market: "stocks", tickSize: 0.01, pricePrecision: 2 },
+  { symbol: "SPY",   fh: "SPY",   displayName: "S&P 500 ETF",       market: "stocks", tickSize: 0.01, pricePrecision: 2 },
+  { symbol: "QQQ",   fh: "QQQ",   displayName: "Nasdaq 100 ETF",    market: "stocks", tickSize: 0.01, pricePrecision: 2 },
+  { symbol: "DIA",   fh: "DIA",   displayName: "Dow 30 ETF",        market: "stocks", tickSize: 0.01, pricePrecision: 2 },
 ];
 
 /** Live-quote poll cadence through the authenticated server proxy. */
-const POLL_MS = 3_000;
+const POLL_MS = 5_000;
 
 const BY_ENGINE = new Map(CATALOG.map((r) => [r.symbol, r]));
 
 function toFinnhub(engineSym: string): string {
-  const hit = BY_ENGINE.get(engineSym);
-  if (hit) return hit.fh;
-  const s = engineSym.replace(/\//g, "").toUpperCase();
-  if (s.length === 6) return `OANDA:${s.slice(0, 3)}_${s.slice(3)}`;
-  return engineSym;
-}
-
-// Reasonable synthetic spread when the ticker gives us only last-trade.
-function syntheticHalfSpread(sym: string, price: number): number {
-  if (sym.startsWith("XAU")) return 0.05;
-  if (sym.endsWith("JPY")) return 0.005;
-  return price * 0.00005;
+  return BY_ENGINE.get(engineSym)?.fh ?? engineSym.replace(/[/\s]/g, "").toUpperCase();
 }
 
 export class FinnhubProvider implements MarketDataProvider {
@@ -57,7 +48,7 @@ export class FinnhubProvider implements MarketDataProvider {
   readonly descriptor = DESCRIPTORS_BY_CODE.get("finnhub")!;
   readonly name = "Finnhub";
   readonly capabilities: ProviderCapabilities = {
-    markets: ["forex", "metals"],
+    markets: ["stocks"],
     supportsRest: true, supportsWs: false, supportsHistorical: false, supportsStreaming: true,
   };
 
@@ -65,6 +56,8 @@ export class FinnhubProvider implements MarketDataProvider {
   private handlers = new Set<StatusHandler>();
   private subs = new Map<string, Set<QuoteHandler>>(); // engineSym -> handlers
   private lastQuote = new Map<string, Quote>();
+  /** Symbols this plan is not entitled to — never retried. */
+  private notEntitled = new Set<string>();
 
   private booted = false;
   private pollTimer: ReturnType<typeof setInterval> | null = null;
@@ -78,6 +71,9 @@ export class FinnhubProvider implements MarketDataProvider {
     this._status = s;
     for (const h of this.handlers) { try { h(s, meta); } catch { /* noop */ } }
   }
+
+  /** True when the plan can't serve this symbol — engine should fail over. */
+  supportsSymbol(engineSym: string) { return !this.notEntitled.has(engineSym); }
 
   async connect() {
     if (this.booted) return;
@@ -100,8 +96,7 @@ export class FinnhubProvider implements MarketDataProvider {
 
   /**
    * Live quotes are polled through the authenticated server proxy. The
-   * Finnhub key stays on the server — the browser never sees it and no
-   * socket URL carries a credential.
+   * Finnhub key stays on the server — the browser never sees it.
    */
   private startPolling() {
     if (this.pollTimer) return;
@@ -111,21 +106,23 @@ export class FinnhubProvider implements MarketDataProvider {
 
   private async pollOnce() {
     if (this.polling) return;
-    const symbols = [...this.subs.keys()];
+    const symbols = [...this.subs.keys()].filter((s) => !this.notEntitled.has(s));
     if (!symbols.length) return;
     this.polling = true;
     try {
       for (const engineSym of symbols) {
         try {
           const res = (await finnhubQuote({ data: { symbol: toFinnhub(engineSym) } })) as any;
+          if (res?.error === "finnhub_not_entitled") {
+            this.notEntitled.add(engineSym);
+            console.warn(`[finnhub] ${engineSym} is not covered by the current plan — engine will fail over.`);
+            continue;
+          }
           if (!res || res.error || !Number.isFinite(res.last)) continue;
-          const half = Number.isFinite(res.spread)
-            ? res.spread / 2
-            : syntheticHalfSpread(engineSym, res.last);
           this.emit({
             symbol: engineSym, providerCode: this.code,
             ts: res.ts ?? Date.now(),
-            last: res.last, bid: res.last - half, ask: res.last + half, spread: half * 2,
+            last: res.last, bid: res.bid, ask: res.ask, spread: res.spread,
           });
           this.failures = 0;
           if (this._status !== "connected") this.setStatus("connected");
@@ -167,23 +164,27 @@ export class FinnhubProvider implements MarketDataProvider {
 
   async getQuote(symbol: string): Promise<Quote> {
     if (!this.booted) await this.connect();
-    if (this._status === "disabled") throw new Error("Finnhub provider not configured.");
-    // Prefer the freshest polled tick if we have one.
+    if (this._status === "disabled") throw new Error("finnhub_not_configured");
+    if (this.notEntitled.has(symbol)) throw new Error("finnhub_not_entitled");
     const cachedQuote = this.lastQuote.get(symbol);
     if (cachedQuote && Date.now() - cachedQuote.ts < POLL_MS) return cachedQuote;
     const res = (await finnhubQuote({ data: { symbol: toFinnhub(symbol) } })) as any;
-    if (res?.error) throw new Error(res.error);
-    console.info(`[finnhub] REST getQuote(${symbol}) in ${res.durationMs}ms`);
-    return {
+    if (res?.error) {
+      if (res.error === "finnhub_not_entitled") this.notEntitled.add(symbol);
+      throw new Error(res.error);
+    }
+    const quote: Quote = {
       symbol, providerCode: this.code, ts: res.ts,
       bid: res.bid, ask: res.ask, last: res.last, spread: res.spread,
     };
+    this.lastQuote.set(symbol, quote);
+    return quote;
   }
 
   async getCandles(_q: CandleQuery): Promise<Candle[]> {
-    // Historical candles are out of scope for the POC — Twelve Data owns
-    // that path. Throwing lets the engine or caller fall back cleanly.
-    throw new Error("finnhub_no_candles_poc");
+    // Historical candles are not available on this plan (HTTP 403) and are
+    // owned by Twelve Data / Binance. Throw so the engine routes elsewhere.
+    throw new Error("finnhub_no_historical");
   }
   getHistoricalData(q: CandleQuery) { return this.getCandles(q); }
 
@@ -195,7 +196,6 @@ export class FinnhubProvider implements MarketDataProvider {
       void this.pollOnce();
     }
     this.subs.get(symbol)!.add(handler);
-    // Prime with last known tick if any.
     const cached = this.lastQuote.get(symbol);
     if (cached) { try { handler(cached); } catch { /* noop */ } }
     const sub: SubscriptionHandle = {
