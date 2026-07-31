@@ -78,9 +78,86 @@ export class PositionOrderStore {
     this.scope = scope;
     this.status = "hydrating";
     this.orders = this.read();
+    this.pushed.clear();
     this.status = "hydrated";
     trace({ op: "hydrate", source: "orderStore", scope, next: this.orders.length });
     this.emit();
+    void this.syncRemote(scope);
+  }
+
+  /**
+   * Attach the durable backend. Safe to call repeatedly; attaching syncs the
+   * current scope so a fresh device recovers open positions immediately.
+   */
+  attachRemote(remote: OrderRemote) {
+    if (this.remote === remote) return;
+    this.remote = remote;
+    if (this.status === "hydrated") void this.syncRemote(this.scope);
+  }
+
+  /**
+   * Two-way reconcile for one scope. The execution tape is append-only, so
+   * the record with the newer client `updatedAt` is a strict superset and
+   * last-write-wins is lossless. Terminal orders are never resurrected.
+   */
+  private async syncRemote(scope: string) {
+    const remote = this.remote;
+    if (!remote) return;
+    let incoming: PositionOrder[] = [];
+    try {
+      incoming = await remote.pull(scope);
+    } catch { return; }
+    if (this.scope !== scope || this.status !== "hydrated") return;
+
+    const byId = new Map(this.orders.map((o) => [o.id, o]));
+    let changed = false;
+
+    for (const r of incoming) {
+      if (!isSyncable(r)) { void remote.remove(r.id).catch(() => {}); continue; }
+      const local = byId.get(r.id);
+      if (!local) { byId.set(r.id, r); changed = true; continue; }
+      // Terminal locally → the server copy is stale; drop it there.
+      if (!isSyncable(local)) { void remote.remove(r.id).catch(() => {}); continue; }
+      if ((r.updatedAt ?? 0) > (local.updatedAt ?? 0)) { byId.set(r.id, r); changed = true; }
+      this.pushed.set(r.id, r.updatedAt ?? 0);
+    }
+
+    if (changed) {
+      this.orders = [...byId.values()];
+      this.persistLocal("remote-sync");
+      this.emit();
+    }
+    this.mirror();
+    trace({
+      op: "remote:sync", source: "orderStore", scope,
+      next: this.orders.length, reason: `pulled=${incoming.length}`,
+    });
+  }
+
+  /** Push local changes up: new/updated syncable orders, drops for the rest. */
+  private mirror() {
+    const remote = this.remote;
+    if (!remote || this.status !== "hydrated") return;
+    const seen = new Set<string>();
+    for (const order of this.orders) {
+      seen.add(order.id);
+      if (!isSyncable(order)) {
+        if (this.pushed.has(order.id)) {
+          this.pushed.delete(order.id);
+          void remote.remove(order.id).catch(() => {});
+        }
+        continue;
+      }
+      const stamp = order.updatedAt ?? order.createdAt ?? 0;
+      if (this.pushed.get(order.id) === stamp) continue;
+      this.pushed.set(order.id, stamp);
+      void remote.upsert(order).catch(() => {});
+    }
+    for (const id of [...this.pushed.keys()]) {
+      if (seen.has(id)) continue;
+      this.pushed.delete(id);
+      void remote.remove(id).catch(() => {});
+    }
   }
 
   private read(): PositionOrder[] {
@@ -93,18 +170,24 @@ export class PositionOrderStore {
     } catch { return []; }
   }
 
-  persist(reason = "write") {
+  private persistLocal(reason: string) {
     if (typeof window === "undefined") return;
-    // Never let an un-hydrated store overwrite persisted state.
-    if (this.status !== "hydrated") {
-      trace({ op: "persist:skipped", source: "orderStore", scope: this.scope, next: this.orders.length, reason: `status=${this.status}` });
-      return;
-    }
     try {
       window.localStorage.setItem(storageKey(this.scope), JSON.stringify(this.orders));
       trace({ op: "persist", source: "orderStore", scope: this.scope, next: this.orders.length, reason });
     } catch { /* quota */ }
   }
+
+  persist(reason = "write") {
+    // Never let an un-hydrated store overwrite persisted state.
+    if (this.status !== "hydrated") {
+      trace({ op: "persist:skipped", source: "orderStore", scope: this.scope, next: this.orders.length, reason: `status=${this.status}` });
+      return;
+    }
+    this.persistLocal(reason);
+    this.mirror();
+  }
+
 
 
   /** Idempotent by drawing: a drawing can only carry one pending order. */
