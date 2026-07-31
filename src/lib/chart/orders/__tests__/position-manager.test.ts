@@ -397,7 +397,7 @@ describe("chart execution markers", () => {
     const stores = markStores();
     const pos = livePosition(stores);
     partialClosePosition(stores, pos.id, { percent: 25, price: 115 }, 2_000);
-    setTrailing(stores, pos.id, { mode: "fixed", distance: 5 });
+    setTrailing(stores, pos.id, { mode: "fixed", distance: 5, active: true });
     runManagementTick(stores, { price: 130, time: 3_000 });
 
     const drawing = stores.drawings.list().find((d) => d.id === "d1")!;
