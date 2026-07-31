@@ -55,8 +55,8 @@ export function SessionSidebar() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={`font-mono ${(m?.pnl ?? 0) >= 0 ? "text-emerald-500" : "text-destructive"}`}>
-                        {(m?.pnl ?? 0).toFixed(2)}
+                      <span className={`font-mono ${(m?.totalPnl ?? 0) >= 0 ? "text-emerald-500" : "text-destructive"}`}>
+                        {(m?.totalPnl ?? 0).toFixed(2)}
                       </span>
                       <Button size="sm" variant="ghost" onClick={() => closePositionNow(p.id)}>Close</Button>
                     </div>
@@ -94,10 +94,10 @@ export function SessionSidebar() {
                 <div key={t.id} className="flex items-center justify-between border-b border-border/40 px-3 py-2 text-xs">
                   <div>
                     <div className="font-medium">{t.symbol} {t.direction === "buy" ? "long" : "short"}</div>
-                    <div className="font-mono text-[11px] text-muted-foreground">{t.exitReason}</div>
+                    <div className="font-mono text-[11px] text-muted-foreground">{t.closeReason}</div>
                   </div>
-                  <span className={`font-mono ${t.pnl >= 0 ? "text-emerald-500" : "text-destructive"}`}>
-                    {t.pnl.toFixed(2)}
+                  <span className={`font-mono ${t.netPnl >= 0 ? "text-emerald-500" : "text-destructive"}`}>
+                    {t.netPnl.toFixed(2)}
                   </span>
                 </div>
               ))
