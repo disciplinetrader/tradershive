@@ -20,6 +20,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { checkCoverage, describeCoverage, type CoverageResult, type CoverageTimeframe } from "./coverage";
 import { canonicalProviderCode } from "./providers.server";
+import { resolveHistoricalProvider } from "./routing";
+
 
 export type ServiceCandle = {
   time: number;
