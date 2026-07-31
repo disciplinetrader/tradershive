@@ -52,12 +52,12 @@ export function usePositionOrders({
   );
 
   const [draft, setDraft] = useState<OrderDraft | null>(null);
-  // Reconciliation stays disarmed until the drawing layer has hydrated for this symbol.
-  const armedSymbol = useRef<string | null>(null);
 
-  // Orders are scoped per symbol, exactly like drawings.
+  // Orders are scoped per symbol, exactly like drawings. `setScope` hydrates
+  // the new scope itself and refuses to flush an un-hydrated (empty) list, so
+  // a single effect covers both first mount and later symbol changes.
   useEffect(() => { positionOrderStore.setScope(symbol); }, [symbol]);
-  useEffect(() => { positionOrderStore.hydrate(symbol); /* first mount */ }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
 
   /** Open the confirmation panel for a freshly drawn position. */
   const openDraft = useCallback((d: Drawing) => {
