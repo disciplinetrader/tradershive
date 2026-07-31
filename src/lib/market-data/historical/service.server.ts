@@ -184,14 +184,17 @@ export async function resolveHistoricalRange(db: Db, opts: ResolveOptions): Prom
   let attemptedBackfill = false;
   let providerError: string | undefined;
 
-  if (opts.allowBackfill !== false && symbolRow?.source_code && symbolRow.is_enabled !== false) {
+  const routed = resolveHistoricalProvider(market, symbolRow?.source_code ?? null);
+
+  if (opts.allowBackfill !== false && symbolRow && symbolRow.is_enabled !== false) {
     attemptedBackfill = true;
     try {
       const { runImport } = await import("./pipeline.server");
       await runImport({
         symbol,
         nativeSymbol: symbolRow.native_symbol ?? symbol,
-        sourceCode: canonicalProviderCode(symbolRow.source_code),
+        sourceCode: routed.code,
+        market,
         timeframe: timeframe as any,
         from,
         to,
@@ -207,8 +210,8 @@ export async function resolveHistoricalRange(db: Db, opts: ResolveOptions): Prom
           candles: refreshed.candles,
           source: {
             kind: "backfilled",
-            providerCode: refreshed.providerCode ?? canonicalProviderCode(symbolRow.source_code),
-            label: `${canonicalProviderCode(symbolRow.source_code)} (imported on demand)`,
+            providerCode: refreshed.providerCode ?? routed.code,
+            label: `${routed.code} (imported on demand)`,
             isSynthetic: false,
           },
           symbolMeta: { ...symbolMeta, importedAt: new Date().toISOString() },
@@ -217,9 +220,10 @@ export async function resolveHistoricalRange(db: Db, opts: ResolveOptions): Prom
       }
     } catch (e) {
       providerError = e instanceof Error ? e.message : String(e);
-      console.warn(`[historical] on-demand import failed for ${symbol} ${timeframe}: ${providerError}`);
+      console.warn(`[historical] on-demand import failed for ${symbol} ${timeframe} via ${routed.code}: ${providerError}`);
     }
   }
+
 
   // ---- Explicit demo mode ------------------------------------------------
   if (opts.allowSynthetic) {
