@@ -6,6 +6,9 @@
  */
 
 import { DEFAULT_STYLE, type Drawing, type DrawingStyle, type ToolId } from "./types";
+import { trace } from "@/lib/chart/orders/debug";
+
+export type HydrationStatus = "idle" | "hydrating" | "hydrated" | "failed";
 
 type Listener = () => void;
 
@@ -29,6 +32,7 @@ export class DrawingStore {
   private listeners = new Set<Listener>();
   private clipboard: Drawing | null = null;
   private scope = "default";
+  private status: HydrationStatus = "idle";
 
   /** Transient drawing being created (not yet committed). */
   draft: Drawing | null = null;
@@ -53,6 +57,8 @@ export class DrawingStore {
   list() { return this.drawings; }
   /** Current persistence scope (symbol). */
   scopeValue() { return this.scope; }
+  /** Explicit hydration state — never infer hydration from list length. */
+  hydration(): HydrationStatus { return this.status; }
   selected() { return this.drawings.find((d) => d.id === this.selectedId) ?? null; }
   selectedIdValue() { return this.selectedId; }
   canUndo() { return this.undoStack.length > 0; }
@@ -60,10 +66,15 @@ export class DrawingStore {
   hasClipboard() { return !!this.clipboard; }
 
   setScope(scope: string) {
-    if (scope === this.scope) return;
-    this.persist();
+    if (scope === this.scope && this.status === "hydrated") return;
+    trace({ op: "setScope", source: "drawingStore", scope, prev: this.drawings.length, reason: `from ${this.scope} (${this.status})` });
+    // Only flush the outgoing scope if it was actually hydrated.
+    if (this.status === "hydrated" && scope !== this.scope) this.persist();
     this.scope = scope;
+    this.status = "hydrating";
     this.drawings = this.read();
+    this.status = "hydrated";
+    trace({ op: "hydrate", source: "drawingStore", scope, next: this.drawings.length });
     this.selectedId = null;
     this.hoveredId = null;
     this.undoStack = [];
@@ -83,14 +94,22 @@ export class DrawingStore {
 
   persist() {
     if (typeof window === "undefined") return;
+    if (this.status !== "hydrated") {
+      trace({ op: "persist:skipped", source: "drawingStore", scope: this.scope, next: this.drawings.length, reason: `status=${this.status}` });
+      return;
+    }
     try {
       window.localStorage.setItem(storageKey(this.scope), JSON.stringify(this.drawings));
+      trace({ op: "persist", source: "drawingStore", scope: this.scope, next: this.drawings.length });
     } catch { /* quota */ }
   }
 
   hydrate(scope: string) {
     this.scope = scope;
+    this.status = "hydrating";
     this.drawings = this.read();
+    this.status = "hydrated";
+    trace({ op: "hydrate", source: "drawingStore", scope, next: this.drawings.length });
     this.emit();
   }
 

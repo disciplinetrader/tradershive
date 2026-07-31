@@ -7,8 +7,11 @@
  */
 
 import type { PositionOrder } from "./model";
+import { trace } from "./debug";
 
 type Listener = () => void;
+
+export type HydrationStatus = "idle" | "hydrating" | "hydrated" | "failed";
 
 function storageKey(scope: string) {
   return `thive.chart.orders.${scope}`;
@@ -18,6 +21,7 @@ export class PositionOrderStore {
   private orders: PositionOrder[] = [];
   private listeners = new Set<Listener>();
   private scope = "default";
+  private status: HydrationStatus = "idle";
 
   subscribe(fn: Listener) {
     this.listeners.add(fn);
@@ -29,6 +33,8 @@ export class PositionOrderStore {
   list() { return this.orders; }
   /** Current persistence scope (symbol). */
   scopeValue() { return this.scope; }
+  /** Explicit hydration state — never infer hydration from list length. */
+  hydration(): HydrationStatus { return this.status; }
   pending() { return this.orders.filter((o) => o.status === "pending"); }
   byId(id: string) { return this.orders.find((o) => o.id === id) ?? null; }
   byDrawing(drawingId: string) {
@@ -36,16 +42,21 @@ export class PositionOrderStore {
   }
 
   setScope(scope: string) {
-    if (scope === this.scope) return;
-    this.persist();
+    if (scope === this.scope && this.status === "hydrated") return;
+    trace({ op: "setScope", source: "orderStore", scope, prev: this.orders.length, reason: `from ${this.scope} (${this.status})` });
+    // Only flush the outgoing scope when it actually held hydrated state.
+    // Persisting an un-hydrated (empty) list would erase the stored orders.
+    if (this.status === "hydrated" && scope !== this.scope) this.persist("scope-change");
     this.scope = scope;
-    this.orders = this.read();
-    this.emit();
+    this.hydrate(scope);
   }
 
   hydrate(scope: string) {
     this.scope = scope;
+    this.status = "hydrating";
     this.orders = this.read();
+    this.status = "hydrated";
+    trace({ op: "hydrate", source: "orderStore", scope, next: this.orders.length });
     this.emit();
   }
 
@@ -59,12 +70,19 @@ export class PositionOrderStore {
     } catch { return []; }
   }
 
-  persist() {
+  persist(reason = "write") {
     if (typeof window === "undefined") return;
+    // Never let an un-hydrated store overwrite persisted state.
+    if (this.status !== "hydrated") {
+      trace({ op: "persist:skipped", source: "orderStore", scope: this.scope, next: this.orders.length, reason: `status=${this.status}` });
+      return;
+    }
     try {
       window.localStorage.setItem(storageKey(this.scope), JSON.stringify(this.orders));
+      trace({ op: "persist", source: "orderStore", scope: this.scope, next: this.orders.length, reason });
     } catch { /* quota */ }
   }
+
 
   /** Idempotent by drawing: a drawing can only carry one pending order. */
   add(order: PositionOrder) {
@@ -109,13 +127,23 @@ export class PositionOrderStore {
   }
 
   /** Drop orders whose drawing no longer exists (drawing deleted / cleared). */
-  reconcile(drawingIds: Set<string>) {
+  reconcile(drawingIds: Set<string>, source = "unknown") {
+    if (this.status !== "hydrated") {
+      trace({ op: "reconcile:skipped", source, scope: this.scope, reason: `orders ${this.status}` });
+      return;
+    }
     const next = this.orders.filter((o) => drawingIds.has(o.drawingId));
     if (next.length === this.orders.length) return;
+    trace({
+      op: "reconcile", source, scope: this.scope,
+      prev: this.orders.length, next: next.length,
+      extra: { drawingIds: [...drawingIds] },
+    });
     this.orders = next;
-    this.persist();
+    this.persist("reconcile");
     this.emit();
   }
+
 }
 
 /** Shared singleton — the chart, ticket and tables all read the same state. */

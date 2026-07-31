@@ -11,12 +11,13 @@
  * Nothing here executes an order; orders are local Paper Trading objects.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import type { DrawingStore } from "@/lib/chart/drawings/store";
 import type { Drawing } from "@/lib/chart/drawings/types";
 import { isPositionKind } from "@/lib/chart/drawings/types";
 import { tickFromPrecision } from "@/lib/chart/drawings/types";
 import { positionOrderStore } from "@/lib/chart/orders/store";
+import { trace } from "@/lib/chart/orders/debug";
 import {
   ORDER_TYPE_LABELS, createOrder, draftFromDrawing, inferOrderType, validateOrder, withLevels,
   type OrderDraft, type OrderType, type PositionOrder,
@@ -52,12 +53,12 @@ export function usePositionOrders({
   );
 
   const [draft, setDraft] = useState<OrderDraft | null>(null);
-  // Reconciliation stays disarmed until the drawing layer has hydrated for this symbol.
-  const armedSymbol = useRef<string | null>(null);
 
-  // Orders are scoped per symbol, exactly like drawings.
+  // Orders are scoped per symbol, exactly like drawings. `setScope` hydrates
+  // the new scope itself and refuses to flush an un-hydrated (empty) list, so
+  // a single effect covers both first mount and later symbol changes.
   useEffect(() => { positionOrderStore.setScope(symbol); }, [symbol]);
-  useEffect(() => { positionOrderStore.hydrate(symbol); /* first mount */ }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
 
   /** Open the confirmation panel for a freshly drawn position. */
   const openDraft = useCallback((d: Drawing) => {
@@ -125,17 +126,32 @@ export function usePositionOrders({
   // Keep pending orders in lockstep with their drawing after edits/drags,
   // and drop orders whose drawing was deleted.
   useEffect(() => {
-    // Only reconcile once both stores point at this symbol AND the drawing
-    // layer has actually hydrated — otherwise the pre-hydration (empty)
-    // drawing list would wipe persisted orders on reload.
-    if (store.scopeValue() !== symbol || positionOrderStore.scopeValue() !== symbol) return;
-    if (drawings.length > 0) armedSymbol.current = symbol;
-    if (armedSymbol.current !== symbol) return;
-    const ids = new Set(drawings.map((d) => d.id));
-    positionOrderStore.reconcile(ids);
+    // Explicit gate: both stores must be hydrated for the *same* scope before
+    // reconciliation may delete anything. Hydration is never inferred from
+    // list length — an empty list is a valid hydrated state.
+    const ready =
+      store.hydration() === "hydrated" &&
+      positionOrderStore.hydration() === "hydrated" &&
+      store.scopeValue() === symbol &&
+      positionOrderStore.scopeValue() === symbol;
+    if (!ready) {
+      trace({
+        op: "reconcile:gated", source: "usePositionOrders", scope: symbol,
+        reason: `drawings=${store.hydration()}/${store.scopeValue()} orders=${positionOrderStore.hydration()}/${positionOrderStore.scopeValue()}`,
+      });
+      return;
+    }
+    // Read the live store, never the React snapshot: on reload the snapshot
+    // captured before hydration is an empty list, and reconciling against it
+    // would delete every persisted order. `drawings` stays in the dep list
+    // purely as the change trigger.
+    const live = store.list();
+    trace({ op: "reconcile:run", source: "usePositionOrders", scope: symbol, prev: drawings.length, next: live.length, reason: "live vs snapshot" });
+    const ids = new Set(live.map((d) => d.id));
+    positionOrderStore.reconcile(ids, "usePositionOrders");
 
     for (const order of positionOrderStore.pending()) {
-      const d = drawings.find((x) => x.id === order.drawingId);
+      const d = live.find((x) => x.id === order.drawingId);
       if (!d || d.points.length < 3) continue;
       const entry = d.points[0].price;
       const target = d.points[1].price;
@@ -144,6 +160,7 @@ export function usePositionOrders({
       positionOrderStore.replace(withLevels(order, { entry, stop, target }));
     }
   }, [drawings, store, symbol]);
+
 
   const pending = useMemo(() => orders.filter((o) => o.status === "pending"), [orders]);
 
