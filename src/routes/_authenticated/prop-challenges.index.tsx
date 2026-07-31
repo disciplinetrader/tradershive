@@ -13,7 +13,7 @@ import { formatCurrency } from "@/lib/prop-challenges/evaluator";
 
 export const Route = createFileRoute("/_authenticated/prop-challenges/")({
   component: PropChallengesIndex,
-  validateSearch: (s: Record<string, unknown>) => ({ all: s.all === "1" ? "1" : undefined }),
+  validateSearch: (s: Record<string, unknown>): { all?: "1" } => (s.all === "1" ? { all: "1" } : {}),
 });
 
 function PropChallengesIndex() {
