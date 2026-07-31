@@ -90,10 +90,12 @@ export const getChampionship = createServerFn({ method: "GET" })
     const { data: profiles } = userIds.length
       ? await supabase.from("profiles").select("id, username, display_name, avatar_url, country").in("id", userIds)
       : { data: [] };
-    const participantCount = await supabase
-      .from("championship_participants")
-      .select("id", { count: "exact", head: true })
-      .eq("championship_id", data.id);
+    // Participant rows are owner/admin-scoped by RLS; use the definer-backed
+    // counter so the public count stays available without exposing rows.
+    const participantCount = await supabase.rpc("championship_participant_count" as any, {
+      _champ: data.id,
+    });
+
     return {
       championship: champ,
       my_registration: reg.data ?? null,
