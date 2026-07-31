@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useReplay } from "./context";
+import { describeProvenance, hasProvenance, LEGACY_PROVENANCE_LABEL } from "@/lib/replay/provenance";
 
 /**
  * Blocking state shown when a replay session has no real market data.
@@ -52,8 +53,39 @@ export function ReplayDataUnavailable({ onRetry }: { onRetry?: () => void }) {
  * screen came from — stored history, an on-demand import, or demo data.
  */
 export function ReplayDataSourceBadge() {
-  const { dataSource } = useReplay();
-  if (!dataSource?.kind) return null;
+  const { dataSource, provenance } = useReplay();
+
+  // Persisted provenance wins: it survives refresh and describes the frozen
+  // dataset, not the current request.
+  if (hasProvenance(provenance)) {
+    const demo = provenance!.coverage_status === "demo";
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Badge variant={demo ? "destructive" : "outline"} className="gap-1 text-[10px]">
+            {demo ? <FlaskConical className="h-3 w-3" /> : null}
+            {demo ? "DEMO DATA" : provenance!.source_provider}
+          </Badge>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-xs text-xs">
+          <div>{describeProvenance(provenance)}</div>
+          <div className="mt-1 text-muted-foreground">
+            {provenance!.actual_start?.slice(0, 16).replace("T", " ")} →{" "}
+            {provenance!.actual_end?.slice(0, 16).replace("T", " ")}
+            {provenance!.known_gaps?.length ? ` · ${provenance!.known_gaps.length} gap(s)` : ""}
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  if (!dataSource?.kind) {
+    return (
+      <Badge variant="outline" className="gap-1 text-[10px] text-muted-foreground">
+        {LEGACY_PROVENANCE_LABEL}
+      </Badge>
+    );
+  }
 
   if (dataSource.isSynthetic) {
     return (
