@@ -451,13 +451,20 @@ export function evaluateTakeProfits(
     const live = (current.takeProfits ?? []).find((l) => l.id === leg.id);
     if (!live || !legTriggered(current.direction, live, price)) continue;
 
-    const isLast = (current.takeProfits ?? [])
+    // Only the final leg of a ladder that allocates the WHOLE position may
+    // sweep the remainder. A ladder that allocates less (25 + 25) leaves a
+    // deliberate runner open — closing it here would silently flatten a
+    // position the trader chose to keep.
+    const noPendingLeft = (current.takeProfits ?? [])
       .filter((l) => l.status === "pending" && l.id !== live.id).length === 0;
+    const fullyAllocated = allocatedPercent(current.takeProfits ?? []) >= 99.999;
+    const isLast = noPendingLeft && fullyAllocated;
 
     const res = partialClose(current, {
-      // The last pending leg closes the remainder — no dust left behind.
+      // The last leg of a full ladder closes the remainder — no dust left.
       percent: isLast ? 100 : live.percent,
       basis: isLast ? "remaining" : "original",
+
       price: live.price, // no price improvement
       kind: "take_profit",
       note: `TP${live.index} · ${live.percent}%`,
