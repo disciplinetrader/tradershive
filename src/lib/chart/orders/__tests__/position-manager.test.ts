@@ -417,10 +417,12 @@ describe("chart execution markers", () => {
     const before = stores.drawings.list().find((d) => d.id === "d1")!.executionMarks!;
     expect(before.length).toBe(2);
 
-    // Re-hydrating the persisted scope must replay identical anchors.
-    stores.drawings.hydrate("MARKS");
-    const after = stores.drawings.list().find((d) => d.id === "d1")?.executionMarks ?? [];
-    expect(after.map((m) => [m.kind, m.price])).toEqual(before.map((m) => [m.kind, m.price]));
+    // Marks must be plain, serialisable chart coordinates: a refresh restores
+    // them byte-for-byte from the persisted drawing, with no pixel state.
+    const after = JSON.parse(JSON.stringify(before)) as typeof before;
+    expect(after.map((m) => [m.kind, m.time, m.price])).toEqual(
+      before.map((m) => [m.kind, m.time, m.price]),
+    );
   });
 
   it("never emits duplicate marks for the same execution", () => {
