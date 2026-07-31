@@ -38,8 +38,9 @@ export type PlaceResult =
   | { ok: true; order: PositionOrder; created: boolean }
   | { ok: false; errors: string[] };
 
+/** Back-compat alias — every caller now gets lifecycle-aware badge text. */
 export function badgeFor(order: PositionOrder): string {
-  return `${ORDER_TYPE_LABELS[order.orderType]} · ${order.status === "pending" ? "Pending" : order.status}`;
+  return badgeForState(order);
 }
 
 /**
