@@ -1,47 +1,71 @@
 import { useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Camera, Crosshair, Expand, LineChart as LineChartIcon, Ruler, Wrench } from "lucide-react";
+import { AlertTriangle, Camera, Crosshair, Expand, LineChart as LineChartIcon, RefreshCw, Ruler, Wrench } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { useLivePrice } from "@/lib/paper-trading/live-quotes";
+import { useLivePrice, engineSymbol } from "@/lib/paper-trading/live-quotes";
+import { SYMBOL_BY_KEY } from "@/lib/paper-trading/symbols";
+import { useCandles } from "@/lib/market-data/hooks";
+import type { MarketKind, Timeframe } from "@/lib/market-data/types";
 import { usePaper } from "./context";
 
 const TIMEFRAMES = ["1m", "5m", "15m", "30m", "1H", "4H", "1D", "1W"];
 
+const TF_SECONDS: Record<string, number> = {
+  "1m": 60, "5m": 300, "15m": 900, "30m": 1800,
+  "1H": 3600, "4H": 14400, "1D": 86400, "1W": 604800,
+};
+
+const VISIBLE_CANDLES = 72;
+
 type Candle = { o: number; h: number; l: number; c: number };
 
-function useSyntheticCandles(symbol: string, tf: string, count = 72): Candle[] {
+/**
+ * Real market candles for the Paper Trading chart.
+ *
+ * Chart, watchlist and quotes all resolve through the same canonical symbol
+ * mapping (`engineSymbol` + the symbol's market), so the Market Data Engine
+ * picks the same provider for each — Binance for crypto, the configured
+ * provider for everything else. Nothing here generates price data: the live
+ * quote may only nudge the CURRENT candle, never create earlier ones.
+ */
+function useMarketCandles(symbol: string, tf: string) {
+  const meta = SYMBOL_BY_KEY[symbol];
   const price = useLivePrice(symbol);
-  return useMemo(() => {
-    if (!symbol) return [];
-    let seed = 0;
-    for (let i = 0; i < symbol.length; i++) seed = (seed * 31 + symbol.charCodeAt(i)) | 0;
-    for (let i = 0; i < tf.length; i++) seed = (seed * 17 + tf.charCodeAt(i)) | 0;
-    const base = price ?? 100;
-    const vol = base * 0.004;
-    const candles: Candle[] = [];
-    let last = base * 0.985;
-    for (let i = 0; i < count; i++) {
-      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
-      const drift = ((seed % 1000) / 1000 - 0.5) * vol;
-      const o = last;
-      const c = Math.max(0.0001, o + drift);
-      const range = vol * (0.4 + ((seed >> 8) % 100) / 200);
-      const h = Math.max(o, c) + range * 0.6;
-      const l = Math.min(o, c) - range * 0.4;
-      candles.push({ o, h, l, c });
-      last = c;
+  const stepSec = TF_SECONDS[tf] ?? 3600;
+
+  const { to, from } = useMemo(() => {
+    const now = Date.now();
+    const bucket = Math.floor(now / (stepSec * 1000)) * stepSec * 1000;
+    return { to: bucket + stepSec * 1000, from: bucket - VISIBLE_CANDLES * stepSec * 1000 };
+  }, [stepSec, symbol, tf]);
+
+  const { candles: raw, loading, error, reload } = useCandles(
+    meta ? engineSymbol(meta.symbol) : null,
+    tf as Timeframe,
+    { from, to, limit: VISIBLE_CANDLES, market: meta?.market as MarketKind | undefined },
+  );
+
+  const candles = useMemo<Candle[]>(() => {
+    const mapped = raw.map((c) => ({ o: c.open, h: c.high, l: c.low, c: c.close }));
+    if (price != null && mapped.length) {
+      // Update the in-progress candle only — no synthetic history.
+      const last = mapped[mapped.length - 1];
+      mapped[mapped.length - 1] = {
+        ...last,
+        c: price,
+        h: Math.max(last.h, price),
+        l: Math.min(last.l, price),
+      };
     }
-    if (price != null && candles.length) {
-      const lastC = candles[candles.length - 1];
-      candles[candles.length - 1] = { ...lastC, c: price, h: Math.max(lastC.h, price), l: Math.min(lastC.l, price) };
-    }
-    return candles;
-  }, [symbol, tf, price]);
+    return mapped;
+  }, [raw, price]);
+
+  return { candles, loading, error: meta ? error : `Unknown symbol "${symbol}".`, reload };
 }
 
 function sma(values: number[], period: number): (number | null)[] {
@@ -104,7 +128,7 @@ export function ChartArea() {
   const { symbol, symbolMeta, timeframe, setTimeframe } = usePaper();
   const containerRef = useRef<HTMLDivElement>(null);
   const price = useLivePrice(symbol);
-  const candles = useSyntheticCandles(symbol, timeframe, 72);
+  const { candles, loading, error, reload } = useMarketCandles(symbol, timeframe);
   const [indicators, setIndicators] = useState<Set<Indicator>>(() => new Set<Indicator>(["sma20"]));
 
   const toggleIndicator = (k: Indicator) => {
@@ -284,6 +308,31 @@ export function ChartArea() {
             </g>
           )}
         </svg>
+
+        {error && !candles.length ? (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/85 p-6 backdrop-blur-sm">
+            <div className="max-w-sm space-y-3 text-center">
+              <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-destructive/10">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+              </div>
+              <p className="text-sm font-semibold">Chart data unavailable</p>
+              <p className="text-xs text-muted-foreground">
+                No real candles could be loaded for {symbol} · {timeframe}. Nothing is drawn rather than showing
+                made-up price action.
+              </p>
+              <p className="text-[11px] text-muted-foreground/70">{error}</p>
+              <Button size="sm" variant="outline" onClick={reload}>
+                <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Retry
+              </Button>
+            </div>
+          </div>
+        ) : null}
+
+        {loading && !candles.length ? (
+          <div className="absolute inset-0 z-10 flex items-center justify-center text-xs text-muted-foreground">
+            Loading market data…
+          </div>
+        ) : null}
 
         {indicators.size > 0 && (
           <div className="pointer-events-none absolute left-3 top-3 flex flex-wrap gap-2 rounded-lg border border-border/60 bg-background/70 px-2.5 py-1 text-[10px] text-muted-foreground backdrop-blur">

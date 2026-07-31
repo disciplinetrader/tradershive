@@ -180,13 +180,17 @@ function OnboardingPage() {
         meta: { markets: markets.length, styles: styles.length, goals: goals.length, strategy },
       });
       markChecklist("complete_onboarding", true);
-      const row = (await createRandom()) as { id: string } | null;
+      const res = await createRandom();
+      const row = res.session;
       trackOnboarding("first_backtest_launched");
       markChecklist("create_first_backtest", true);
       if (row?.id) {
         toast.success("🎉 First backtest ready — enjoy the arena");
         await navigate({ to: "/replay/session", search: { id: row.id } as never });
       } else {
+        if (res.unavailable) {
+          toast.info(res.unavailable.message, { description: res.unavailable.remedy });
+        }
         await navigate({ to: "/replay", replace: true });
       }
     } catch (e: unknown) {

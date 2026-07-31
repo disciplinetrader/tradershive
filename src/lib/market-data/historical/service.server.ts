@@ -54,10 +54,23 @@ export type ResolveOptions = {
   minRatio?: number;
 };
 
+export type SymbolProvenanceMeta = {
+  canonicalSymbol: string;
+  market: string;
+  exchange: string | null;
+  timezone: string | null;
+  adjustmentMode: string;
+  /** Last time the registered importer wrote candles for this symbol. */
+  importedAt: string | null;
+  dataVersion: string | null;
+};
+
 export type ResolveResult = {
   candles: ServiceCandle[];
   source: DataSource;
   coverage: CoverageResult;
+  /** Everything needed to persist a complete provenance record. */
+  symbolMeta: SymbolProvenanceMeta;
   /** Set when the range is usable but imperfect (gaps within tolerance). */
   warning?: string;
 };
@@ -120,7 +133,7 @@ async function readStored(
 async function findSymbolRow(db: Db, symbol: string) {
   const { data } = await db
     .from("historical_symbols")
-    .select("symbol, native_symbol, source_code, market, is_enabled")
+    .select("symbol, native_symbol, source_code, market, is_enabled, exchange, timezone, latest_imported, metadata, updated_at")
     .eq("symbol", symbol)
     .maybeSingle();
   return data ?? null;
@@ -134,6 +147,16 @@ export async function resolveHistoricalRange(db: Db, opts: ResolveOptions): Prom
   const { symbol, timeframe, from, to } = opts;
   const symbolRow = await findSymbolRow(db, symbol);
   const market = opts.market ?? symbolRow?.market ?? "forex";
+
+  const symbolMeta: SymbolProvenanceMeta = {
+    canonicalSymbol: symbolRow?.symbol ?? symbol,
+    market,
+    exchange: (symbolRow as any)?.exchange ?? null,
+    timezone: (symbolRow as any)?.timezone ?? null,
+    adjustmentMode: String((symbolRow as any)?.metadata?.adjustment_mode ?? "none"),
+    importedAt: (symbolRow as any)?.latest_imported ?? null,
+    dataVersion: (symbolRow as any)?.updated_at ?? null,
+  };
 
   const stored = await readStored(db, symbol, timeframe, from, to);
   let coverage = checkCoverage({
@@ -149,6 +172,7 @@ export async function resolveHistoricalRange(db: Db, opts: ResolveOptions): Prom
         label: stored.providerCode ?? "stored history",
         isSynthetic: false,
       },
+      symbolMeta,
       coverage,
       warning: coverage.gaps.length
         ? `${coverage.gaps.length} gap(s) detected in the stored series.`
@@ -187,6 +211,7 @@ export async function resolveHistoricalRange(db: Db, opts: ResolveOptions): Prom
             label: `${canonicalProviderCode(symbolRow.source_code)} (imported on demand)`,
             isSynthetic: false,
           },
+          symbolMeta: { ...symbolMeta, importedAt: new Date().toISOString() },
           coverage,
         };
       }
@@ -210,6 +235,7 @@ export async function resolveHistoricalRange(db: Db, opts: ResolveOptions): Prom
         label: provider.label,
         isSynthetic: true,
       },
+      symbolMeta: { ...symbolMeta, importedAt: new Date().toISOString(), dataVersion: null },
       coverage: checkCoverage({ candles, from, to, timeframe, market, minRatio: 0 }),
       warning: "These candles are generated demo data, not real market history.",
     };

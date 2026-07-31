@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { deserializeGaps, type SessionProvenance } from "@/lib/replay/provenance";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -66,6 +67,8 @@ type ReplayCtx = {
     coverage: { actual: number; expected: number; ratio: number; gaps: number };
     warning: string | null;
   } | null;
+  /** Provenance persisted on the session row (null for legacy sessions). */
+  provenance: SessionProvenance | null;
 
   visibleCandles: Candle[];
   cursorIdx: number;
@@ -167,6 +170,7 @@ export function ReplayProvider({ id, children }: { id: string; children: ReactNo
           from,
           to,
           market: session!.market ?? undefined,
+          session_id: id,
           // Only sessions explicitly created as demos may use fake candles.
           allowSynthetic: session!.provider === "synthetic",
         },
@@ -193,6 +197,42 @@ export function ReplayProvider({ id, children }: { id: string; children: ReactNo
         warning: candleQuery.data.warning,
       }
     : null;
+  // Provenance always comes from the persisted session row, never from the
+  // transient candle response. Refetch once the dataset has been frozen.
+  useEffect(() => {
+    if (candleQuery.data && !(session as any)?.provenance_recorded_at) {
+      query.refetch();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [candleQuery.data]);
+
+  const provenance: SessionProvenance | null = session
+    ? {
+        source_provider: (session as any).source_provider ?? null,
+        source_type: (session as any).source_type ?? null,
+        imported_at: (session as any).imported_at ?? null,
+        requested_start: (session as any).requested_start ?? null,
+        requested_end: (session as any).requested_end ?? null,
+        actual_start: (session as any).actual_start ?? null,
+        actual_end: (session as any).actual_end ?? null,
+        candle_count: (session as any).candle_count ?? null,
+        expected_candle_count: (session as any).expected_candle_count ?? null,
+        coverage_status: (session as any).coverage_status ?? null,
+        known_gaps: deserializeGaps((session as any).known_gaps).map((g) => ({
+          from: new Date(g.from).toISOString(),
+          to: new Date(g.to).toISOString(),
+          missing: g.missing,
+        })),
+        canonical_symbol: (session as any).canonical_symbol ?? null,
+        market: session.market ?? null,
+        exchange: (session as any).exchange ?? null,
+        timezone: (session as any).timezone ?? null,
+        adjustment_mode: (session as any).adjustment_mode ?? null,
+        data_version: (session as any).data_version ?? null,
+        provenance_recorded_at: (session as any).provenance_recorded_at ?? null,
+      }
+    : null;
+
   const checkpoints = (checkpointsQuery.data ?? []) as ReplayCheckpoint[];
 
 
@@ -889,6 +929,7 @@ export function ReplayProvider({ id, children }: { id: string; children: ReactNo
     candles,
     dataUnavailable,
     dataSource,
+    provenance,
 
     visibleCandles,
     cursorIdx,

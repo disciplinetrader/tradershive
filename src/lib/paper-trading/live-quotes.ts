@@ -12,7 +12,12 @@ import type { SubscriptionHandle } from "@/lib/market-data/types";
 
 type Quote = { symbol: string; price: number; change: number };
 
-function engineSymbol(sym: string): string {
+/**
+ * Canonical engine symbol for a Paper Trading symbol key. Chart, watchlist and
+ * quote subscriptions MUST all go through this so they resolve to the same
+ * provider assignment.
+ */
+export function engineSymbol(sym: string): string {
   return sym.replace(/\//g, "");
 }
 
