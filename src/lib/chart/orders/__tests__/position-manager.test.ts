@@ -13,7 +13,7 @@ import { DrawingStore } from "@/lib/chart/drawings/store";
 import { PositionOrderStore } from "../store";
 import { ClosedTradeStore } from "../trade-store";
 import { createOrder, type OrderDraft, type PositionOrder } from "../model";
-import { aggregateExecutions, orderedExecutions } from "../executions";
+import { aggregateExecutions, orderedExecutions, toExecutionMarks } from "../executions";
 import { defaultLadder, makeTakeProfit, validateLadder } from "../take-profit";
 import { nextTrailingStop, improvesStop } from "../trailing";
 import {
@@ -361,5 +361,61 @@ describe("service — advanced management", () => {
     runManagementTick(stores, { price: 112 });
     const again = stores.orders.byId(order.id)!;
     expect(again.executions!.length).toBe(snapshot.executions!.length);
+  });
+});
+
+/* ── chart execution markers (section 12) ────────────────────────────── */
+
+describe("chart execution markers", () => {
+  it("projects every fill to a canonical time + price mark", () => {
+    let o = openLong();
+    o = ok(scaleIn(o, { quantity: 5, price: 105, now: 2_000 })).order;
+    o = ok(partialClose(o, { percent: 50, price: 120, now: 3_000 })).order;
+
+    const marks = toExecutionMarks(o.executions);
+    expect(marks.map((m) => m.kind)).toEqual(["open", "scale_in", "partial_close"]);
+    expect(marks.map((m) => m.price)).toEqual([100, 105, 120]);
+    expect(marks.every((m) => Number.isFinite(m.time))).toBe(true);
+    // seq order is the canonical order, independent of wall clocks
+    expect(marks.map((m) => m.seq)).toEqual([...marks.map((m) => m.seq)].sort((a, b) => a - b));
+  });
+
+  it("keeps level moves as zero-quantity marks", () => {
+    const stores = makeStores();
+    const pos = livePosition(stores);
+    partialClosePosition(stores, pos.id, { percent: 25, price: 115 }, 2_000);
+    setTrailing(stores, pos.id, { mode: "fixed", distance: 5 });
+    runManagementTick(stores, { price: 130, time: 3_000 });
+
+    const drawing = stores.drawings.list().find((d) => d.id === stores.drawingId)!;
+    const marks = drawing.executionMarks ?? [];
+    expect(marks.length).toBeGreaterThan(1);
+    for (const m of marks) {
+      if (m.kind === "stop_move" || m.kind === "target_move") expect(m.quantity).toBe(0);
+      else expect(m.quantity).toBeGreaterThan(0);
+    }
+  });
+
+  it("stamps marks onto the drawing so they survive refresh", () => {
+    const stores = makeStores();
+    const pos = livePosition(stores);
+    partialClosePosition(stores, pos.id, { percent: 50, price: 118 }, 2_000);
+
+    const before = stores.drawings.list().find((d) => d.id === stores.drawingId)!.executionMarks!;
+    expect(before.length).toBe(2);
+
+    // Re-hydrating the persisted scope must replay identical anchors.
+    stores.drawings.hydrate("BTCUSDT");
+    const after = stores.drawings.list().find((d) => d.id === stores.drawingId)?.executionMarks ?? [];
+    expect(after.map((m) => [m.kind, m.price])).toEqual(before.map((m) => [m.kind, m.price]));
+  });
+
+  it("never emits duplicate marks for the same execution", () => {
+    const stores = makeStores();
+    const pos = livePosition(stores);
+    partialClosePosition(stores, pos.id, { percent: 25, price: 120 }, 2_000);
+    partialClosePosition(stores, pos.id, { percent: 25, price: 125 }, 3_000);
+    const marks = stores.drawings.list().find((d) => d.id === stores.drawingId)!.executionMarks!;
+    expect(new Set(marks.map((m) => m.id)).size).toBe(marks.length);
   });
 });
