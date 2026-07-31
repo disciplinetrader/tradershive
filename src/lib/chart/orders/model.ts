@@ -11,6 +11,10 @@
 
 import type { Drawing } from "@/lib/chart/drawings/types";
 import { positionMetrics } from "@/lib/chart/drawings/position";
+import type { PositionExecution } from "./executions";
+import type { TakeProfitLeg } from "./take-profit";
+import type { TrailingConfig } from "./trailing";
+
 
 export type OrderDirection = "buy" | "sell";
 
@@ -91,6 +95,28 @@ export interface PositionOrder {
   initialTarget?: number;
 
 
+  // ── Advanced position management (Phase 6) ─────────────────────────────
+  // A live position is one identity (`positionId`) with many executions.
+  // `size` always mirrors the REMAINING quantity so every pre-existing
+  // consumer (floating P/L, closed-trade builder) keeps working unchanged;
+  // `originalQuantity` is the immutable basis for TP allocations and R.
+  /** Units at the moment the position first opened, plus every scale-in. */
+  originalQuantity?: number;
+  /** Units still exposed to the market. Reaches 0 exactly once. */
+  remainingQuantity?: number;
+  /** Per-unit risk distance captured at open; the denominator for every R. */
+  riskBasis?: number;
+  /** Append-only execution tape. Ordered by `seq`. */
+  executions?: PositionExecution[];
+  /** TP ladder — allocations are percentages of `originalQuantity`. */
+  takeProfits?: TakeProfitLeg[];
+  /** Trailing-stop configuration; inert until `active`. */
+  trailing?: TrailingConfig;
+  /** Automatic break-even trigger, expressed in R. Fires at most once. */
+  autoBreakEvenR?: number;
+  /** Epoch-ms the stop was moved to break-even (manual or automatic). */
+  breakEvenAt?: number;
+
   // ── Exit ───────────────────────────────────────────────────────────────
   closedAt?: number;
   closePrice?: number;
@@ -101,6 +127,7 @@ export interface PositionOrder {
   realizedR?: number;
   archivedAt?: number;
 }
+
 
 
 export const ORDER_TYPE_LABELS: Record<OrderType, string> = {

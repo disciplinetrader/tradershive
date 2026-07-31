@@ -26,6 +26,15 @@ import {
 } from "./model";
 import { isLive, transition } from "./lifecycle";
 import { evaluateTick, type EngineIntent, type FillIntent, type MarketTick } from "./engine";
+import {
+  advancedMetrics, applyBreakEven, applyTrailing, closureAggregate, evaluateAutoBreakEven,
+  evaluateTakeProfits, openExecution, partialClose, recordLevelMove, remainingQuantityOf, scaleIn,
+  type PartialCloseRequest, type ScaleInRequest,
+} from "./position-manager";
+import type { TakeProfitLeg } from "./take-profit";
+import { validateLadder } from "./take-profit";
+import type { TrailingConfig, TrailingContext } from "./trailing";
+
 
 export interface OrderStores {
   drawings: DrawingStore;
@@ -213,13 +222,17 @@ export function fillOrder(
   const open = transition(filled, "open", {}, now);
   if (!open) return filled;
   // Risk/reward are re-derived against the ACTUAL fill, not the request.
-  const settled = withLevels(open, { entry: intent.fillPrice }, now);
+  // Phase 6: the execution tape is seeded here, exactly once — `openExecution`
+  // is a no-op if an `open` leg already exists, so a replayed fill cannot
+  // create a second entry leg.
+  const settled = openExecution(withLevels(open, { entry: intent.fillPrice }, now), now);
   stores.orders.replace(settled);
 
   syncDrawingGeometry(stores, settled);
   stores.drawings.commit();
   return settled;
 }
+
 
 /**
  * Write the canonical ClosedTrade for a closed order, and stamp the drawing
@@ -314,11 +327,39 @@ export function closePosition(
     : current;
   if (!live) return null;
 
-  const { realizedPnl, realizedR } = realizedResult(live, opts.price);
-  const closed = transition(live, "closed", {
+  // Phase 6: when the position has an execution tape, the final close is
+  // appended as the last exit leg and the realized totals come from the
+  // aggregate of ALL legs — not just this one. Positions without a tape keep
+  // the Phase 3 single-shot arithmetic unchanged.
+  let base = live;
+  let closePrice = opts.price;
+  let realizedPnl: number;
+  let realizedR: number;
+
+  if (live.executions?.length && remainingQuantityOf(live) > 0) {
+    const kind = opts.reason === "stop_loss"
+      ? "stop_out" as const
+      : opts.reason === "take_profit" ? "take_profit" as const : "close" as const;
+    const res = partialClose(live, { percent: 100, price: opts.price, kind, now });
+    if (res.ok) base = res.order;
+  }
+
+  const agg = closureAggregate(base);
+  if (agg) {
+    // Weighted average exit is the canonical close price of a multi-leg trade.
+    closePrice = agg.averageExit;
+    realizedPnl = agg.realizedPnl;
+    realizedR = agg.realizedR;
+  } else {
+    const r = realizedResult(base, opts.price);
+    realizedPnl = r.realizedPnl;
+    realizedR = r.realizedR;
+  }
+
+  const closed = transition(base, "closed", {
     closedAt: now,
-    closePrice: opts.price,
-    closeReason: opts.reason ?? "manual",
+    closePrice,
+    closeReason: opts.reason ?? agg?.closeReason ?? "manual",
     executionSource: opts.reason === "stop_loss" || opts.reason === "take_profit" ? opts.reason : "manual",
     realizedPnl,
     realizedR,
@@ -331,6 +372,222 @@ export function closePosition(
   recordClosedTrade(stores, closed, { market: opts.market });
   return closed;
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   Phase 6 — advanced position management
+   ══════════════════════════════════════════════════════════════════════
+
+   Every mutation below routes through the Position Manager (pure) and then
+   through this one applier, which is the only place a managed position is
+   written back to the stores. That keeps the invariants in one spot:
+
+     · same position id, always
+     · the drawing geometry follows the canonical order
+     · reaching zero remaining quantity closes the position EXACTLY once,
+       producing exactly one ClosedTrade
+*/
+
+function applyManaged(
+  stores: OrderStores,
+  next: PositionOrder,
+  opts: { flat?: boolean; price?: number; reason?: CloseReason; market?: string | null },
+  now: number,
+): PositionOrder | null {
+  stores.orders.replace(next);
+  syncDrawingGeometry(stores, next);
+  stores.drawings.commit();
+
+  if (!opts.flat) return next;
+
+  // The remaining quantity hit zero: finalise. The tape already contains the
+  // closing leg, so `closePosition` finds nothing left to close and simply
+  // aggregates — no duplicate execution, no duplicate ClosedTrade.
+  return closePosition(
+    stores,
+    next.id,
+    { price: opts.price ?? next.stop, reason: opts.reason, market: opts.market },
+    now,
+  );
+}
+
+/** Reduce an open position by a percentage (25 / 50 / 75 / custom) or units. */
+export function partialClosePosition(
+  stores: OrderStores,
+  orderId: string,
+  req: PartialCloseRequest & { market?: string | null },
+  now = Date.now(),
+): { ok: true; order: PositionOrder; flat: boolean } | { ok: false; error: string } {
+  const order = stores.orders.byId(orderId);
+  if (!order) return { ok: false, error: "Position not found." };
+
+  const seeded = order.executions?.length ? order : openExecution(order, order.filledAt ?? now);
+  const res = partialClose(seeded, { ...req, now });
+  if (!res.ok) return res;
+
+  const applied = applyManaged(
+    stores, res.order,
+    { flat: res.flat, price: req.price, reason: req.kind === "stop_out" ? "stop_loss" : req.kind === "take_profit" ? "take_profit" : "manual", market: req.market },
+    now,
+  );
+  return applied ? { ok: true, order: applied, flat: res.flat } : { ok: false, error: "Could not apply the partial close." };
+}
+
+/** Manual, non-target-driven reduction. */
+export function scaleOutPosition(
+  stores: OrderStores,
+  orderId: string,
+  req: Omit<PartialCloseRequest, "kind"> & { market?: string | null },
+  now = Date.now(),
+) {
+  return partialClosePosition(stores, orderId, { ...req, kind: "scale_out" }, now);
+}
+
+/** Add to an open position — same position id, weighted average entry. */
+export function scaleInPosition(
+  stores: OrderStores,
+  orderId: string,
+  req: ScaleInRequest,
+  now = Date.now(),
+): { ok: true; order: PositionOrder } | { ok: false; error: string } {
+  const order = stores.orders.byId(orderId);
+  if (!order) return { ok: false, error: "Position not found." };
+
+  const seeded = order.executions?.length ? order : openExecution(order, order.filledAt ?? now);
+  const res = scaleIn(seeded, { ...req, now });
+  if (!res.ok) return res;
+
+  const applied = applyManaged(stores, res.order, {}, now);
+  return applied ? { ok: true, order: applied } : { ok: false, error: "Could not scale in." };
+}
+
+/** Install or replace the take-profit ladder on a live position. */
+export function setTakeProfits(
+  stores: OrderStores,
+  orderId: string,
+  legs: TakeProfitLeg[],
+  now = Date.now(),
+): { ok: true; order: PositionOrder } | { ok: false; errors: string[] } {
+  const order = stores.orders.byId(orderId);
+  if (!order || !isLive(order.status)) return { ok: false, errors: ["Position is not open."] };
+  const errors = validateLadder(legs);
+  if (errors.length) return { ok: false, errors };
+
+  // Filled legs are historical facts and are preserved as-is.
+  const filled = (order.takeProfits ?? []).filter((l) => l.status === "filled");
+  const next: PositionOrder = {
+    ...order,
+    takeProfits: [...filled, ...legs.filter((l) => l.status !== "filled")],
+    // The furthest leg is the position's visible target on the chart.
+    target: legs.length ? legs[legs.length - 1].price : order.target,
+    updatedAt: now,
+  };
+  stores.orders.replace(next);
+  syncDrawingGeometry(stores, next);
+  stores.drawings.commit();
+  return { ok: true, order: next };
+}
+
+/** Configure the trailing engine. Inert until `active`. */
+export function setTrailing(
+  stores: OrderStores,
+  orderId: string,
+  trailing: TrailingConfig | null,
+  now = Date.now(),
+): PositionOrder | null {
+  const order = stores.orders.byId(orderId);
+  if (!order || !isLive(order.status)) return null;
+  const next: PositionOrder = { ...order, trailing: trailing ?? undefined, updatedAt: now };
+  stores.orders.replace(next);
+  return next;
+}
+
+/** Configure the automatic break-even trigger, in R. `null` disables it. */
+export function setAutoBreakEven(
+  stores: OrderStores,
+  orderId: string,
+  triggerR: number | null,
+  now = Date.now(),
+): PositionOrder | null {
+  const order = stores.orders.byId(orderId);
+  if (!order || !isLive(order.status)) return null;
+  const next: PositionOrder = {
+    ...order,
+    autoBreakEvenR: triggerR && triggerR > 0 ? triggerR : undefined,
+    updatedAt: now,
+  };
+  stores.orders.replace(next);
+  return next;
+}
+
+/**
+ * One management pass over every live position for a single tick.
+ *
+ * Order matters and is deliberate:
+ *   1. take-profit ladder  (may flatten the position, and may itself arm
+ *      break-even / trailing through a leg action)
+ *   2. automatic break-even
+ *   3. trailing stop
+ *
+ * Running the ladder first means a TP that closes the last unit never has a
+ * trailing move applied to an already-flat position. Every step is a no-op
+ * when nothing changed, so this is safe to call on every quote.
+ */
+export function runManagementTick(
+  stores: OrderStores,
+  tick: MarketTick & { context?: Omit<TrailingContext, "price"> },
+  opts: { market?: string | null } = {},
+): PositionOrder[] {
+  const price = tick.price;
+  if (!Number.isFinite(price) || price <= 0) return [];
+  const now = tick.time ?? Date.now();
+  const touched: PositionOrder[] = [];
+
+  for (const position of stores.orders.positions()) {
+    let current = stores.orders.byId(position.id);
+    if (!current || !isLive(current.status)) continue;
+
+    // 1 · take-profit ladder
+    if (current.takeProfits?.length) {
+      const seeded = current.executions?.length ? current : openExecution(current, current.filledAt ?? now);
+      const ladder = evaluateTakeProfits(seeded, price, now);
+      if (ladder.steps.length) {
+        const applied = applyManaged(
+          stores, ladder.order,
+          { flat: ladder.flat, price, reason: "take_profit", market: opts.market },
+          now,
+        );
+        if (applied) touched.push(applied);
+        if (ladder.flat) continue;
+        current = stores.orders.byId(position.id);
+        if (!current || !isLive(current.status)) continue;
+      }
+    }
+
+    // 2 · automatic break-even
+    const be = evaluateAutoBreakEven(current, price, now);
+    if (be) {
+      const applied = applyManaged(stores, be, {}, now);
+      if (applied) touched.push(applied);
+      current = stores.orders.byId(position.id);
+      if (!current || !isLive(current.status)) continue;
+    }
+
+    // 3 · trailing stop
+    const trailed = applyTrailing(current, { price, ...(tick.context ?? {}) }, now);
+    if (trailed) {
+      const applied = applyManaged(stores, trailed, {}, now);
+      if (applied) touched.push(applied);
+    }
+  }
+
+  return touched;
+}
+
+/** Live Phase 6 metric set for a position. Derived, never persisted. */
+export function positionMetricsFor(order: PositionOrder, marketPrice?: number | null) {
+  return advancedMetrics(order, marketPrice);
+}
+
 
 /**
  * One-time reconciliation for Phase 3 positions that closed before the
@@ -401,7 +658,10 @@ export function updatePositionLevels(
   const target = Number.isFinite(levels.target ?? NaN) ? (levels.target as number) : order.target;
   if (stop === order.stop && target === order.target) return order;
 
-  const next = withLevels(order, { stop, target, entry: order.fillPrice ?? order.entry }, now);
+  // Phase 6: a manual drag is an execution-history event too, so the
+  // timeline shows exactly when protection moved and in which direction.
+  const traced = order.executions?.length ? recordLevelMove(order, { stop, target }, now) : order;
+  const next = withLevels(traced, { stop, target, entry: order.fillPrice ?? order.entry }, now);
   stores.orders.replace(next);
   syncDrawingGeometry(stores, next);
   stores.drawings.commit();
@@ -409,9 +669,11 @@ export function updatePositionLevels(
 }
 
 /**
- * Break-even: move the stop to the fill price. Rejected when price has not
- * yet moved in the trader's favour, because that would place the stop on
- * the wrong side of the market and trigger an instant exit.
+ * Break-even: move the stop to the entry (weighted average entry once the
+ * position has been scaled into). Rejected when price has not yet moved in
+ * the trader's favour, and never applied twice — both rules live in the
+ * Position Manager, so the button, the TP-leg action and the automatic
+ * trigger all obey the same guard.
  */
 export function moveStopToBreakEven(
   stores: OrderStores,
@@ -422,20 +684,16 @@ export function moveStopToBreakEven(
   const order = stores.orders.byId(orderId);
   if (!order || !isLive(order.status)) return { ok: false, error: "Position is not open." };
 
-  const fill = order.fillPrice ?? order.entry;
-  if (order.stop === fill) return { ok: false, error: "Stop is already at break-even." };
+  const seeded = order.executions?.length ? order : openExecution(order, order.filledAt ?? now);
+  const res = applyBreakEven(seeded, { price: marketPrice, now });
+  if (!res.ok || !res.order) return { ok: false, error: res.error ?? "Could not move the stop." };
 
-  if (Number.isFinite(marketPrice ?? NaN)) {
-    const price = marketPrice as number;
-    const inProfit = order.direction === "buy" ? price > fill : price < fill;
-    if (!inProfit) {
-      return { ok: false, error: "Move into profit before setting break-even." };
-    }
-  }
-
-  const next = updatePositionLevels(stores, orderId, { stop: fill }, now);
-  return next ? { ok: true, order: next } : { ok: false, error: "Could not move the stop." };
+  stores.orders.replace(res.order);
+  syncDrawingGeometry(stores, res.order);
+  stores.drawings.commit();
+  return { ok: true, order: res.order };
 }
+
 
 /**
  * Archive a closed (or cancelled) order — removes it from the working set

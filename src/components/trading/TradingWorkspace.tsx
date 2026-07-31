@@ -973,7 +973,44 @@ function TradingWorkspaceInner() {
                             if (!positionOrders.closeAtMarket(id)) toast.error("No live price — cannot close yet");
                           }}
                           onArchive={positionOrders.archive}
+                          onPartialClose={(id: string, pct: number) => {
+                            const res = positionOrders.partialClose(id, pct);
+                            if (res.ok) toast.success(`Closed ${pct}% of the position`);
+                            else toast.error(res.error);
+                            return res;
+                          }}
+                          onScaleOut={(id: string, pct: number) => {
+                            const res = positionOrders.scaleOut(id, pct);
+                            if (res.ok) toast.success(`Scaled out ${pct}%`);
+                            else toast.error(res.error);
+                            return res;
+                          }}
+                          onScaleIn={(id: string, pct: number) => {
+                            const res = positionOrders.scaleIn(id, pct);
+                            if (res.ok) toast.success(`Scaled in ${pct}%`);
+                            else toast.error(res.error);
+                            return res;
+                          }}
+                          onTakeProfits={(id: string) => {
+                            const res = positionOrders.applyTakeProfits(id);
+                            if (res.ok) toast.success("Take-profit ladder set (25 / 25 / 50)");
+                            else toast.error(res.errors?.[0] ?? "Could not set the ladder");
+                            return res;
+                          }}
+                          onTrailing={(id: string, cfg) => {
+                            const res = positionOrders.applyTrailingConfig(id, cfg);
+                            if (res) toast.success(cfg ? "Trailing stop armed" : "Trailing stop off");
+                            else toast.error("Position is not open.");
+                            return { ok: Boolean(res) };
+                          }}
+                          onAutoBreakEven={(id: string, r) => {
+                            const res = positionOrders.applyAutoBreakEven(id, r);
+                            if (res) toast.success(r ? `Auto break-even at +${r}R` : "Auto break-even off");
+                            else toast.error("Position is not open.");
+                            return { ok: Boolean(res) };
+                          }}
                         />
+
                       </AdaptiveSection>
                       <AdaptiveSection
                         title="Closed trades"
