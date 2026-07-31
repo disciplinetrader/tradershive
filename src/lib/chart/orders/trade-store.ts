@@ -19,9 +19,20 @@ type Listener = () => void;
 
 export type HydrationStatus = "idle" | "hydrating" | "hydrated" | "failed";
 
+/**
+ * Optional durable backend. Every method is best-effort and awaited off the
+ * critical path — local state never waits on the network.
+ */
+export interface TradeRemote {
+  pull(scope: string): Promise<ClosedTrade[]>;
+  upsert(trade: ClosedTrade): Promise<void>;
+  patch(trade: ClosedTrade): Promise<void>;
+}
+
 function storageKey(scope: string) {
   return `thive.chart.trades.${scope}`;
 }
+
 
 export class ClosedTradeStore {
   private trades: ClosedTrade[] = [];
