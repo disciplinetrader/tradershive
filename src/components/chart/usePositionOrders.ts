@@ -28,10 +28,15 @@ import {
   draftFromDrawing, inferOrderType, withLevels,
   type OrderDraft, type OrderType, type PositionOrder,
 } from "@/lib/chart/orders/model";
+import { defaultLadder, type TakeProfitLeg } from "@/lib/chart/orders/take-profit";
+import type { TrailingConfig, TrailingContext } from "@/lib/chart/orders/trailing";
 import {
   archiveOrder, badgeFor, cancelPendingOrder, closePosition, moveStopToBreakEven,
-  placeOrEditOrder, reconcileClosedTrades, runEngineTick, updatePositionLevels,
+  partialClosePosition, placeOrEditOrder, reconcileClosedTrades, runEngineTick,
+  runManagementTick, scaleInPosition, setAutoBreakEven, setTakeProfits, setTrailing,
+  updatePositionLevels,
 } from "@/lib/chart/orders/service";
+
 
 interface Options {
   store: DrawingStore;
@@ -41,6 +46,12 @@ interface Options {
   riskBudget?: number;
   /** Asset class recorded on closed trades, when the caller knows it. */
   market?: string | null;
+  /**
+   * Market context for the trailing engine (ATR, EMA, swing levels…).
+   * Whatever the chart can compute from the loaded candles; a mode whose
+   * input is absent simply does not move the stop.
+   */
+  trailingContext?: Omit<TrailingContext, "price">;
   /** Fired once, when a pending order becomes a live position. */
   onFill?: (order: PositionOrder) => void;
   /** Fired once, when a live position closes (manual, stop or target). */
@@ -48,8 +59,10 @@ interface Options {
 }
 
 export function usePositionOrders({
-  store, symbol, marketPrice, pricePrecision = 4, riskBudget, market, onFill, onClose,
+  store, symbol, marketPrice, pricePrecision = 4, riskBudget, market,
+  trailingContext, onFill, onClose,
 }: Options) {
+
   const tick = tickFromPrecision(pricePrecision);
   const stores = useMemo(
     () => ({ drawings: store, orders: positionOrderStore, trades: closedTradeStore }),
@@ -229,6 +242,11 @@ export function usePositionOrders({
   // service transitions are guarded by the state machine, so re-renders,
   // repeated identical prices and concurrent mounts cannot double-fill.
   const lastTick = useRef<number | null>(null);
+  // Read through a ref so a new context object identity never re-runs the
+  // tick effect — the price is the only thing that may drive execution.
+  const trailingRef = useRef(trailingContext);
+  trailingRef.current = trailingContext;
+
   useEffect(() => {
     if (!Number.isFinite(marketPrice ?? NaN)) return;
     const price = marketPrice as number;
@@ -243,7 +261,15 @@ export function usePositionOrders({
       if (o.status === "open") onFill?.(o);
       else if (o.status === "closed") onClose?.(o);
     }
-  }, [marketPrice, symbol, stores, onFill, onClose]);
+
+    // Phase 6 management pass: TP ladder → auto break-even → trailing. Runs
+    // after the execution engine so a position opened by this tick is managed
+    // from the next one, exactly like the Phase 3 exit rule.
+    const managed = runManagementTick(stores, { price, context: trailingRef.current }, { market });
+    for (const o of managed) {
+      if (o.status === "closed") onClose?.(o);
+    }
+  }, [marketPrice, symbol, stores, market, onFill, onClose]);
 
   /** Market-exit an open position at the current price. */
   const closeAtMarket = useCallback((orderId: string) => {
@@ -251,13 +277,68 @@ export function usePositionOrders({
     return closePosition(stores, orderId, { price: marketPrice as number, reason: "manual", market });
   }, [stores, marketPrice, market]);
 
-  /** Move the stop to the fill price. */
+  /** Move the stop to the entry (weighted average once scaled in). */
   const breakEven = useCallback((orderId: string) => {
     return moveStopToBreakEven(stores, orderId, marketPrice);
   }, [stores, marketPrice]);
 
   /** Remove a closed position from the working set. */
   const archive = useCallback((orderId: string) => archiveOrder(stores, orderId), [stores]);
+
+  // ── Advanced position management (Phase 6) ─────────────────────────────
+
+  /** Reduce a position by 25 / 50 / 75 / custom percent at the market. */
+  const partialClose = useCallback((orderId: string, percent: number) => {
+    if (!Number.isFinite(marketPrice ?? NaN)) {
+      return { ok: false as const, error: "No live market price." };
+    }
+    return partialClosePosition(stores, orderId, {
+      percent, price: marketPrice as number, kind: "partial_close", market,
+      note: `Partial ${percent}%`,
+    });
+  }, [stores, marketPrice, market]);
+
+  /** Manual, non-target-driven reduction. */
+  const scaleOut = useCallback((orderId: string, percent: number) => {
+    if (!Number.isFinite(marketPrice ?? NaN)) {
+      return { ok: false as const, error: "No live market price." };
+    }
+    return partialClosePosition(stores, orderId, {
+      percent, price: marketPrice as number, kind: "scale_out", market,
+      note: `Scale out ${percent}%`,
+    });
+  }, [stores, marketPrice, market]);
+
+  /** Add to a position at the market — same position id, weighted entry. */
+  const scaleIn = useCallback((orderId: string, percent: number) => {
+    if (!Number.isFinite(marketPrice ?? NaN)) {
+      return { ok: false as const, error: "No live market price." };
+    }
+    return scaleInPosition(stores, orderId, {
+      percent, price: marketPrice as number, note: `Scale in ${percent}%`,
+    });
+  }, [stores, marketPrice]);
+
+  /** Install a TP ladder; with no legs supplied a 25/25/50 default is used. */
+  const applyTakeProfits = useCallback((orderId: string, legs?: TakeProfitLeg[]) => {
+    const order = positionOrderStore.byId(orderId);
+    if (!order) return { ok: false as const, errors: ["Position not found."] };
+    const next = legs?.length
+      ? legs
+      : defaultLadder(order.direction, order.fillPrice ?? order.entry, order.target);
+    return setTakeProfits(stores, orderId, next);
+  }, [stores]);
+
+  const applyTrailingConfig = useCallback(
+    (orderId: string, cfg: TrailingConfig | null) => setTrailing(stores, orderId, cfg),
+    [stores],
+  );
+
+  const applyAutoBreakEven = useCallback(
+    (orderId: string, triggerR: number | null) => setAutoBreakEven(stores, orderId, triggerR),
+    [stores],
+  );
+
 
   // ── Closed trades (Phase 4) ────────────────────────────────────────────
   const [tradeFilter, setTradeFilter] = useState<TradeFilter>("all");
@@ -297,6 +378,9 @@ export function usePositionOrders({
     openPositions, closedPositions, closeAtMarket, breakEven, archive,
     closedTrades: closedTrades as ClosedTrade[], visibleTrades, tradeFilter, setTradeFilter,
     archiveTrade, addToJournal,
+    // Phase 6
+    partialClose, scaleOut, scaleIn, applyTakeProfits, applyTrailingConfig, applyAutoBreakEven,
   };
 }
+
 

@@ -23,9 +23,11 @@
  */
 
 import { resultOf, type TradeResult } from "@/lib/journal/derive";
+import { closureAggregate } from "./position-manager";
 import type {
   CloseReason, ExecutionSource, OrderDirection, OrderType, PositionOrder,
 } from "./model";
+
 
 export const CLOSED_TRADE_SOURCE = "PositionTool" as const;
 
@@ -185,18 +187,46 @@ export function buildClosedTrade(
   const missing = missingExecutionFields(order);
   if (missing.length) return { ok: false, missing };
 
-  const fillPrice = order.fillPrice as number;
-  const exitPrice = order.closePrice as number;
   const initialStop = order.initialStop ?? order.stop;
   const initialTarget = order.initialTarget ?? order.target;
 
-  const d = deriveClosedTrade({
-    direction: order.direction,
-    fillPrice,
-    exitPrice,
-    initialStop,
-    quantity: order.size,
-  });
+  // ── Phase 6 aggregation ────────────────────────────────────────────────
+  // When the position carried an execution tape (partial closes, scale-ins,
+  // TP legs), the trade is built from the AGGREGATE of that tape: weighted
+  // average entry, weighted average exit, summed realized P/L and R. A
+  // single-shot Phase 3/4/5 position has no tape and keeps its original
+  // construction path byte-for-byte.
+  const agg = closureAggregate(order);
+
+  const fillPrice = agg ? agg.averageEntry : (order.fillPrice as number);
+  const exitPrice = agg ? agg.averageExit : (order.closePrice as number);
+  const quantity = agg ? agg.quantity : order.size;
+
+  const d = agg
+    ? (() => {
+        const riskAmount = Math.abs((order.riskBasis ?? Math.abs(fillPrice - initialStop))) * agg.quantity;
+        const fees = PHASE4_FEES;
+        const grossPnl = agg.realizedPnl;
+        const netPnl = grossPnl - fees;
+        const move = agg.quantity > 0 ? grossPnl / agg.quantity : 0;
+        return {
+          grossPnl,
+          fees,
+          netPnl,
+          result: resultOf(netPnl) ?? ("breakeven" as const),
+          riskAmount,
+          realizedR: riskAmount > 0 ? netPnl / riskAmount : 0,
+          returnPercent: fillPrice !== 0 ? (move / fillPrice) * 100 : 0,
+        };
+      })()
+    : deriveClosedTrade({
+        direction: order.direction,
+        fillPrice,
+        exitPrice,
+        initialStop,
+        quantity: order.size,
+      });
+
 
   return {
     ok: true,
@@ -222,10 +252,11 @@ export function buildClosedTrade(
 
       exitPrice,
       exitTime: order.closedAt as number,
-      closeReason: order.closeReason ?? "manual",
+      closeReason: order.closeReason ?? agg?.closeReason ?? "manual",
 
-      quantity: order.size,
-      positionSize: order.size && order.size > 0 ? order.size * fillPrice : null,
+      quantity,
+      positionSize: quantity && quantity > 0 ? quantity * fillPrice : null,
+
 
       grossPnl: d.grossPnl,
       fees: d.fees,
