@@ -39,6 +39,8 @@ export class ClosedTradeStore {
   private listeners = new Set<Listener>();
   private scope = "default";
   private status: HydrationStatus = "idle";
+  private remote: TradeRemote | null = null;
+
 
   subscribe(fn: Listener) {
     this.listeners.add(fn);
