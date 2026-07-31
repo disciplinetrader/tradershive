@@ -825,7 +825,10 @@ export function hitTest(d: Drawing, c: ChartCoords, px: number, py: number): boo
       if (!g) return false;
       const top = Math.min(g.entryY, g.targetY, g.stopY);
       const bottom = Math.max(g.entryY, g.targetY, g.stopY);
-      return nearRect(px, py, g.x1, top, g.x2, bottom);
+      // Hit box only — a collapsed span stays grabbable without the painted
+      // box or the stored timestamps being widened.
+      const hit = positionHitBox(g);
+      return nearRect(px, py, hit.x1, top, hit.x2, bottom);
     }
     default:
       return false;
