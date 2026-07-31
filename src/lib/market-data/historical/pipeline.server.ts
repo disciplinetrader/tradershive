@@ -8,6 +8,8 @@
  */
 
 import { getHistoricalProvider } from "./providers.server";
+import { resolveHistoricalProvider, nativeSymbolForProvider } from "./routing";
+
 import type { HistoricalCandle, HistoricalTimeframe } from "./types";
 import { AGGREGATE_FROM, HISTORICAL_TF_SECONDS } from "./types";
 
@@ -195,7 +197,10 @@ async function writeSnapshots(
 export type RunImportOpts = {
   symbol: string;
   nativeSymbol: string;
+  /** Requested provider. Overridden when it isn't canonical for the market. */
   sourceCode: string;
+  /** Market kind; looked up from historical_symbols when omitted. */
+  market?: string | null;
   timeframe: HistoricalTimeframe;
   from: number;
   to: number;
@@ -206,10 +211,33 @@ export type RunImportOpts = {
   existingJobId?: string; // for retries
 };
 
-export async function runImport(opts: RunImportOpts) {
+export async function runImport(rawOpts: RunImportOpts) {
   const admin = await loadAdmin();
+
+  // ---- Canonical provider resolution (single source of truth) ----
+  let market = rawOpts.market ?? null;
+  let storedNative: string | null = rawOpts.nativeSymbol ?? null;
+  let storedProvider: string | null = rawOpts.sourceCode ?? null;
+  if (!market) {
+    const { data: row } = await admin
+      .from("historical_symbols")
+      .select("market, native_symbol, source_code")
+      .eq("symbol", rawOpts.symbol).maybeSingle();
+    market = (row?.market as string) ?? null;
+    storedNative = (row?.native_symbol as string) ?? storedNative;
+    storedProvider = (row?.source_code as string) ?? storedProvider;
+  }
+  const resolution = resolveHistoricalProvider(market, rawOpts.sourceCode || storedProvider);
+  const nativeSymbol = nativeSymbolForProvider(
+    resolution.code, rawOpts.symbol, storedNative, storedProvider,
+  );
+  const opts: RunImportOpts = {
+    ...rawOpts, sourceCode: resolution.code, nativeSymbol, market,
+  };
+
   const provider = getHistoricalProvider(opts.sourceCode);
   const started = Date.now();
+
 
   // Create or reuse job row
   let jobId: string;
@@ -238,7 +266,14 @@ export async function runImport(opts: RunImportOpts) {
 
   try {
     await log(admin, jobId, opts.symbol, opts.sourceCode, "info", "Import started",
-      { from: opts.from, to: opts.to, timeframe: opts.timeframe });
+      { from: opts.from, to: opts.to, timeframe: opts.timeframe,
+        market, nativeSymbol: opts.nativeSymbol,
+        requestedProvider: rawOpts.sourceCode, resolvedProvider: resolution.code,
+        routingReason: resolution.reason });
+    if (resolution.overrode) {
+      await log(admin, jobId, opts.symbol, opts.sourceCode, "warn",
+        `Provider re-routed: ${resolution.reason}`, { requested: rawOpts.sourceCode, used: resolution.code });
+    }
 
     if (await isCancelled(admin, jobId)) return { jobId, cancelled: true };
 
@@ -254,6 +289,15 @@ export async function runImport(opts: RunImportOpts) {
     const providerMs = Date.now() - fetchStart;
     await admin.from("historical_import_jobs").update({ provider_response_ms: providerMs } as any).eq("id", jobId);
 
+    // Never report success with zero candles — that hides provider failures.
+    if (!rawCandles.length) {
+      throw new Error(
+        `[${opts.sourceCode}] returned 0 candles for ${opts.symbol} (${opts.nativeSymbol}) ` +
+        `${opts.timeframe} ${new Date(opts.from).toISOString()} → ${new Date(opts.to).toISOString()}. ` +
+        `Check the symbol mapping or the provider's coverage for this range.`,
+      );
+    }
+
     if (await isCancelled(admin, jobId)) return { jobId, cancelled: true };
 
     // Validating
@@ -263,6 +307,7 @@ export async function runImport(opts: RunImportOpts) {
       await log(admin, jobId, opts.symbol, opts.sourceCode, "warn",
         `Validation flagged ${warnings} candles`, issues);
     }
+
 
     // Saving
     await setPhase(admin, jobId, "saving", 55);
@@ -313,7 +358,7 @@ export async function runImport(opts: RunImportOpts) {
       const { data: sym } = await admin
         .from("historical_symbols")
         .select("id, earliest_available, latest_imported")
-        .eq("source_code", opts.sourceCode).eq("symbol", opts.symbol).maybeSingle();
+        .eq("symbol", opts.symbol).maybeSingle();
       if (sym) {
         const patch: Record<string, string> = { latest_imported: latestIso };
         if (!sym.earliest_available || new Date(sym.earliest_available).getTime() > clean[0].ts) {

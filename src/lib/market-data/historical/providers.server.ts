@@ -165,10 +165,165 @@ export class StooqHistoricalProvider implements HistoricalDataProvider {
   }
 }
 
+/* --------------------------- Twelve Data ---------------------------
+ *
+ * Canonical historical source for forex, metals, indices, commodities and
+ * stocks. Intraday + daily. Key lives on the server only.
+ */
+
+const TD_BASE = "https://api.twelvedata.com";
+
+const TD_INTERVAL: Partial<Record<HistoricalTimeframe, string>> = {
+  "1m": "1min", "5m": "5min", "15m": "15min", "30m": "30min",
+  "1H": "1h", "4H": "4h", "1D": "1day", "1W": "1week", "1M": "1month",
+};
+
+/** Structured provider failure — always actionable, never silent. */
+export class HistoricalProviderError extends Error {
+  constructor(
+    readonly provider: string,
+    readonly reason: string,
+    readonly detail: {
+      httpStatus?: number;
+      responseType?: string;
+      apiCode?: string;
+      symbol?: string;
+      timeframe?: string;
+      body?: string;
+    } = {},
+  ) {
+    super(
+      `[${provider}] ${reason}` +
+        (detail.httpStatus ? ` (HTTP ${detail.httpStatus})` : "") +
+        (detail.responseType ? ` [${detail.responseType}]` : "") +
+        (detail.body ? `: ${detail.body.slice(0, 200)}` : ""),
+    );
+    this.name = "HistoricalProviderError";
+  }
+}
+
+export class TwelveDataHistoricalProvider implements HistoricalDataProvider {
+  readonly code = "twelvedata";
+  readonly label = "Twelve Data";
+  readonly supports: HistoricalTimeframe[] = ["1m","5m","15m","30m","1H","4H","1D","1W","1M"];
+
+  private key(): string {
+    const k = process.env.TWELVE_DATA_API_KEY;
+    if (!k) {
+      throw new HistoricalProviderError("twelvedata", "API key not configured (TWELVE_DATA_API_KEY missing)", {
+        reason: "not_configured",
+      } as any);
+    }
+    return k;
+  }
+
+  async fetchCandles({ nativeSymbol, timeframe, from, to }: {
+    nativeSymbol: string; timeframe: HistoricalTimeframe; from: number; to: number;
+  }): Promise<HistoricalCandle[]> {
+    const interval = TD_INTERVAL[timeframe];
+    if (!interval) {
+      throw new HistoricalProviderError("twelvedata", `unsupported timeframe ${timeframe}`, { symbol: nativeSymbol });
+    }
+    const apikey = this.key();
+    const stepMs = HISTORICAL_TF_SECONDS[timeframe] * 1000;
+    const PAGE = 5000;
+    const out: HistoricalCandle[] = [];
+    let cursor = from;
+    let guard = 0;
+
+    while (cursor < to && guard++ < 50) {
+      const pageTo = Math.min(to, cursor + PAGE * stepMs);
+      const qs = new URLSearchParams({
+        symbol: nativeSymbol,
+        interval,
+        order: "ASC",
+        format: "JSON",
+        outputsize: String(PAGE),
+        start_date: new Date(cursor).toISOString().slice(0, 19),
+        end_date: new Date(pageTo).toISOString().slice(0, 19),
+        apikey,
+      });
+      const res = await fetch(`${TD_BASE}/time_series?${qs.toString()}`);
+      const contentType = res.headers.get("content-type") ?? "unknown";
+
+      if (!res.ok) {
+        const body = await res.text().catch(() => res.statusText);
+        const planLocked = /available starting with|upgrade/i.test(body);
+        throw new HistoricalProviderError(
+          "twelvedata",
+          res.status === 429
+            ? "rate limit exceeded"
+            : planLocked
+              ? `symbol not included in the current Twelve Data plan (${nativeSymbol})`
+              : "upstream request failed",
+          { httpStatus: res.status, responseType: contentType, symbol: nativeSymbol, timeframe, body },
+        );
+      }
+
+      if (!contentType.includes("json")) {
+        const body = await res.text().catch(() => "");
+        throw new HistoricalProviderError("twelvedata", "non-JSON response (possible interstitial or proxy page)", {
+          httpStatus: res.status, responseType: contentType, symbol: nativeSymbol, timeframe, body,
+        });
+      }
+
+      const json = (await res.json()) as any;
+      if (json?.status === "error") {
+        throw new HistoricalProviderError("twelvedata", String(json.message ?? "API error"), {
+          httpStatus: res.status, responseType: contentType, apiCode: String(json.code ?? ""),
+          symbol: nativeSymbol, timeframe,
+        });
+      }
+      const values: any[] = Array.isArray(json?.values) ? json.values : [];
+      if (!values.length) break;
+
+      let lastTs = cursor;
+      for (const v of values) {
+        const ts = new Date(String(v.datetime).replace(" ", "T") + (String(v.datetime).length <= 10 ? "T00:00:00Z" : "Z")).getTime();
+        if (!Number.isFinite(ts) || ts < from || ts > to) continue;
+        const o = Number(v.open), h = Number(v.high), l = Number(v.low), c = Number(v.close);
+        if (!Number.isFinite(o + h + l + c)) continue;
+        out.push({ ts, open: o, high: h, low: l, close: c, volume: Number(v.volume ?? 0) });
+        if (ts > lastTs) lastTs = ts;
+      }
+
+      const next = lastTs + stepMs;
+      if (next <= cursor) break;
+      cursor = next;
+      if (values.length < PAGE) break;
+      await new Promise((r) => setTimeout(r, 250));
+    }
+
+    out.sort((a, b) => a.ts - b.ts);
+    return out;
+  }
+
+  async earliest(nativeSymbol: string): Promise<number | null> {
+    try {
+      const qs = new URLSearchParams({
+        symbol: nativeSymbol, interval: "1month", order: "ASC",
+        outputsize: "1", format: "JSON", apikey: this.key(),
+      });
+      const res = await fetch(`${TD_BASE}/time_series?${qs.toString()}`);
+      if (!res.ok) return null;
+      const json = (await res.json()) as any;
+      const first = json?.values?.[0]?.datetime;
+      if (!first) return null;
+      const ts = new Date(String(first).replace(" ", "T") + "Z").getTime();
+      return Number.isFinite(ts) ? ts : null;
+    } catch {
+      return null;
+    }
+  }
+}
+
 /* ------------------------------ Registry ------------------------------ */
 
 const REGISTRY: Record<string, HistoricalDataProvider> = {
   binance: new BinanceHistoricalProvider(),
+  twelvedata: new TwelveDataHistoricalProvider(),
+  // Optional, disabled by default — only reachable when a caller explicitly
+  // requests it AND ENABLE_STOOQ_HISTORICAL=true (see historical/routing.ts).
   stooq: new StooqHistoricalProvider(),
 };
 
@@ -193,4 +348,5 @@ export function getHistoricalProvider(code: string): HistoricalDataProvider {
 export function listHistoricalProviders(): HistoricalDataProvider[] {
   return Object.values(REGISTRY);
 }
+
 

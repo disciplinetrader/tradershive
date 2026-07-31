@@ -20,6 +20,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { checkCoverage, describeCoverage, type CoverageResult, type CoverageTimeframe } from "./coverage";
 import { canonicalProviderCode } from "./providers.server";
+import { resolveHistoricalProvider } from "./routing";
+
 
 export type ServiceCandle = {
   time: number;
@@ -184,14 +186,17 @@ export async function resolveHistoricalRange(db: Db, opts: ResolveOptions): Prom
   let attemptedBackfill = false;
   let providerError: string | undefined;
 
-  if (opts.allowBackfill !== false && symbolRow?.source_code && symbolRow.is_enabled !== false) {
+  const routed = resolveHistoricalProvider(market, symbolRow?.source_code ?? null);
+
+  if (opts.allowBackfill !== false && symbolRow && symbolRow.is_enabled !== false) {
     attemptedBackfill = true;
     try {
       const { runImport } = await import("./pipeline.server");
       await runImport({
         symbol,
         nativeSymbol: symbolRow.native_symbol ?? symbol,
-        sourceCode: canonicalProviderCode(symbolRow.source_code),
+        sourceCode: routed.code,
+        market,
         timeframe: timeframe as any,
         from,
         to,
@@ -207,8 +212,8 @@ export async function resolveHistoricalRange(db: Db, opts: ResolveOptions): Prom
           candles: refreshed.candles,
           source: {
             kind: "backfilled",
-            providerCode: refreshed.providerCode ?? canonicalProviderCode(symbolRow.source_code),
-            label: `${canonicalProviderCode(symbolRow.source_code)} (imported on demand)`,
+            providerCode: refreshed.providerCode ?? routed.code,
+            label: `${routed.code} (imported on demand)`,
             isSynthetic: false,
           },
           symbolMeta: { ...symbolMeta, importedAt: new Date().toISOString() },
@@ -217,9 +222,10 @@ export async function resolveHistoricalRange(db: Db, opts: ResolveOptions): Prom
       }
     } catch (e) {
       providerError = e instanceof Error ? e.message : String(e);
-      console.warn(`[historical] on-demand import failed for ${symbol} ${timeframe}: ${providerError}`);
+      console.warn(`[historical] on-demand import failed for ${symbol} ${timeframe} via ${routed.code}: ${providerError}`);
     }
   }
+
 
   // ---- Explicit demo mode ------------------------------------------------
   if (opts.allowSynthetic) {
@@ -247,8 +253,8 @@ export async function resolveHistoricalRange(db: Db, opts: ResolveOptions): Prom
     : symbolRow.is_enabled === false
       ? `${symbol} is registered but disabled. Enable it in Admin → Market Data.`
       : providerError
-        ? `The data provider (${canonicalProviderCode(symbolRow.source_code)}) rejected the request: ${providerError}`
-        : `Run a historical import for ${symbol} · ${timeframe} covering this date range.`;
+        ? `The data provider (${routed.code}) rejected the request: ${providerError}`
+        : `Run a historical import for ${symbol} · ${timeframe} covering this date range (provider: ${routed.code}).`;
 
   throw new HistoricalDataUnavailableError(
     describeCoverage(coverage, symbol, timeframe),
@@ -270,11 +276,15 @@ export async function probeCoverage(db: Db, opts: Omit<ResolveOptions, "allowSyn
     candles: stored.candles, from: opts.from, to: opts.to,
     timeframe: opts.timeframe, market, minRatio: opts.minRatio,
   });
+  // Same canonical routing the importer will use.
+  const routed = resolveHistoricalProvider(market, symbolRow?.source_code ?? null);
   return {
     coverage,
     registered: !!symbolRow,
     enabled: symbolRow?.is_enabled !== false,
-    sourceCode: symbolRow?.source_code ? canonicalProviderCode(symbolRow.source_code) : null,
+    sourceCode: symbolRow ? routed.code : null,
+    routing: routed,
     message: describeCoverage(coverage, opts.symbol, opts.timeframe),
   };
 }
+

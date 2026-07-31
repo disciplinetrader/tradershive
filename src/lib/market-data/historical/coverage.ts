@@ -89,6 +89,16 @@ export function tradableMs(from: number, to: number, market: MarketKind | string
   return tradable;
 }
 
+/**
+ * Fraction of a weekday an intraday market is actually open.
+ * Cash equities / index cash sessions run ~6.5h; FX, metals and futures are
+ * effectively round-the-clock on weekdays.
+ */
+const INTRADAY_SESSION_FRACTION: Record<string, number> = {
+  stocks: 6.5 / 24,
+  indices: 6.5 / 24,
+};
+
 export function expectedCandles(
   from: number,
   to: number,
@@ -97,13 +107,16 @@ export function expectedCandles(
 ): number {
   const step = TF_MS[timeframe];
   if (!step) return 0;
+  const ms = tradableMs(from, to, market);
   // Daily and above already collapse sessions into one bar, so counting
   // calendar steps minus weekends is the right estimate.
   if (timeframe === "1D" || timeframe === "1W" || timeframe === "1M") {
-    return Math.max(0, Math.floor(tradableMs(from, to, market) / step));
+    return Math.max(0, Math.floor(ms / step));
   }
-  return Math.max(0, Math.floor(tradableMs(from, to, market) / step));
+  const fraction = INTRADAY_SESSION_FRACTION[String(market)] ?? 1;
+  return Math.max(0, Math.floor((ms * fraction) / step));
 }
+
 
 /**
  * Validate that a candle set genuinely covers the requested range.
