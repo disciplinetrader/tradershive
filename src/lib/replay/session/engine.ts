@@ -104,9 +104,10 @@ export class ReplaySessionEngine {
 
   play() {
     if (this.clock.atEnd) return;
+    const firstStart = this.metaValue.startedAt === null;
     this.transition("running");
     this.clock.play();
-    this.record(this.metaValue.startedAt === null ? "session_started" : "playback_started");
+    this.record(firstStart ? "session_started" : "playback_started");
     this.emit();
   }
 
@@ -179,7 +180,9 @@ export class ReplaySessionEngine {
     this.log.append({
       type,
       at: this.now(),
-      cursor: obs ? obs.index : this.clock.index,
+      // Cursor is "observations consumed", so a resumed session restarts at
+      // the next unseen observation rather than replaying the logged one.
+      cursor: obs ? obs.index + 1 : this.clock.index,
       marketTime: obs ? obs.time : this.clock.timestamp,
       payload,
     });
