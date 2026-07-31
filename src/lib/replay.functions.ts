@@ -665,6 +665,8 @@ export const getReplayCandles = createServerFn({ method: "POST" })
       from: z.number(),
       to: z.number(),
       market: z.string().optional(),
+      /** When given, resolved provenance is frozen onto the session row. */
+      session_id: z.string().uuid().optional(),
       /** Only honoured for sessions explicitly created as demos. */
       allowSynthetic: z.boolean().optional(),
     }).parse(d),
@@ -685,8 +687,51 @@ export const getReplayCandles = createServerFn({ method: "POST" })
         allowBackfill: true,
         allowSynthetic: data.allowSynthetic === true,
       });
+      const provenance = {
+        source_provider: res.source.providerCode,
+        source_type: res.source.kind,
+        imported_at: res.symbolMeta.importedAt,
+        requested_start: new Date(data.from).toISOString(),
+        requested_end: new Date(data.to).toISOString(),
+        actual_start: res.coverage.firstTs ? new Date(res.coverage.firstTs).toISOString() : null,
+        actual_end: res.coverage.lastTs ? new Date(res.coverage.lastTs).toISOString() : null,
+        candle_count: res.coverage.actual,
+        expected_candle_count: res.coverage.expected,
+        coverage_status: coverageStatusFor({
+          ok: res.coverage.ok,
+          gaps: res.coverage.gaps.length,
+          isSynthetic: res.source.isSynthetic,
+          actual: res.coverage.actual,
+        }),
+        known_gaps: serializeGaps(res.coverage.gaps),
+        canonical_symbol: res.symbolMeta.canonicalSymbol,
+        exchange: res.symbolMeta.exchange,
+        timezone: res.symbolMeta.timezone,
+        adjustment_mode: res.symbolMeta.adjustmentMode,
+        data_version: res.symbolMeta.dataVersion,
+        provenance_recorded_at: new Date().toISOString(),
+      };
+
+      if (data.session_id) {
+        // Freeze provenance the first time a dataset resolves; refresh it when
+        // an earlier attempt recorded an unavailable dataset.
+        const { data: existing } = await context.supabase
+          .from("replay_sessions")
+          .select("provenance_recorded_at, coverage_status")
+          .eq("id", data.session_id)
+          .maybeSingle();
+        const frozen = !!existing?.provenance_recorded_at && existing.coverage_status !== "unavailable";
+        if (!frozen) {
+          await context.supabase
+            .from("replay_sessions")
+            .update(provenance)
+            .eq("id", data.session_id);
+        }
+      }
+
       return {
         candles: res.candles,
+        provenance,
         providerId: res.source.providerCode,
         providerLabel: res.source.label,
         sourceKind: res.source.kind,
@@ -703,8 +748,23 @@ export const getReplayCandles = createServerFn({ method: "POST" })
       };
     } catch (e) {
       if (e instanceof HistoricalDataUnavailableError) {
+        if (data.session_id) {
+          await context.supabase
+            .from("replay_sessions")
+            .update({
+              coverage_status: "unavailable",
+              requested_start: new Date(data.from).toISOString(),
+              requested_end: new Date(data.to).toISOString(),
+              candle_count: e.detail.coverage.actual,
+              expected_candle_count: e.detail.coverage.expected,
+              known_gaps: serializeGaps(e.detail.coverage.gaps),
+              provenance_recorded_at: new Date().toISOString(),
+            })
+            .eq("id", data.session_id);
+        }
         return {
           candles: [],
+          provenance: null,
           providerId: null,
           providerLabel: null,
           sourceKind: null,
