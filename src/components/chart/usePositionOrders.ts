@@ -146,6 +146,7 @@ export function usePositionOrders({
     // would delete every persisted order. `drawings` stays in the dep list
     // purely as the change trigger.
     const live = store.list();
+    trace({ op: "reconcile:run", source: "usePositionOrders", scope: symbol, prev: drawings.length, next: live.length, reason: "live vs snapshot" });
     const ids = new Set(live.map((d) => d.id));
     positionOrderStore.reconcile(ids, "usePositionOrders");
 
