@@ -8,6 +8,7 @@
  */
 
 import { axisLockFor, isPositionKind, snapPrice, TEXT_LIMITS, textLines } from "./types";
+import { compact, positionMetrics, tickFromFormatter, type PositionMetrics } from "./position";
 import type { ChartCoords, Drawing, DrawingPoint } from "./types";
 
 /** Line height multiplier shared by the renderer and the inline editor. */
@@ -389,81 +390,228 @@ export function drawDrawing(
     }
     case "long_position":
     case "short_position": {
-      const g = positionGeometry(d, c);
-      if (!g) break;
-      const { x1, x2 } = g;
-      const green = "#22c55e";
-      const red = "#ef4444";
-      const long = d.kind === "long_position";
-      const rewardTone = green;
-      const riskTone = red;
-      // Rendering-only separation: when Entry / TP / SL land on (nearly) the
-      // same pixel row the tool must still read as three lines. Prices and
-      // stored anchors are untouched — this only nudges the painted rows.
-      const { entryY, targetY, stopY } = separateRows(g);
-      ctx.setLineDash([]);
-      ctx.fillStyle = withAlpha(rewardTone, 0.16);
-      ctx.fillRect(x1, Math.min(entryY, targetY), x2 - x1, Math.max(Math.abs(targetY - entryY), 1));
-      ctx.fillStyle = withAlpha(riskTone, 0.16);
-      ctx.fillRect(x1, Math.min(entryY, stopY), x2 - x1, Math.max(Math.abs(stopY - entryY), 1));
-      // Outline of the whole box so the draggable body is obvious.
-      ctx.strokeStyle = withAlpha(s.color, 0.55);
-      ctx.lineWidth = 1;
-      ctx.strokeRect(x1, Math.min(targetY, stopY), x2 - x1, Math.abs(stopY - targetY));
-
-      const line = (y: number, color: string, dashed: boolean) => {
-        ctx.strokeStyle = color;
-        ctx.lineWidth = dashed ? 1 : 1.6;
-        ctx.setLineDash(dashed ? [5, 4] : []);
-        ctx.beginPath();
-        ctx.moveTo(x1, y);
-        ctx.lineTo(x2, y);
-        ctx.stroke();
-      };
-      line(entryY, s.color, false);
-      line(targetY, rewardTone, true);
-      line(stopY, riskTone, true);
-      ctx.setLineDash([]);
-
-      const risk = Math.abs(d.points[0].price - d.points[2].price);
-      const reward = Math.abs(d.points[1].price - d.points[0].price);
-      const rr = risk > 0 ? reward / risk : 0;
-      // Labels are stacked with a guaranteed gap so three near-identical
-      // prices stay readable instead of printing on top of each other.
-      const rows = stackLabels([
-        { y: entryY, text: `${long ? "LONG" : "SHORT"} · ${c.formatPrice(d.points[0].price)}`, color: "#e2e8f0" },
-        { y: targetY, text: `TP ${c.formatPrice(d.points[1].price)}`, color: green },
-        { y: stopY, text: `SL ${c.formatPrice(d.points[2].price)}`, color: red },
-      ]);
-      for (const r of rows) label(ctx, r.text, x1 + 4, r.y - 3, r.color);
-      label(ctx, `R:R  1 : ${rr.toFixed(2)}`, Math.max(x1 + 4, x2 - 90), Math.min(entryY, targetY, stopY) - 8, "#e2e8f0");
+      drawPosition(ctx, c, d, opts);
       break;
     }
+
 
   }
 
   ctx.restore();
 
-  if (opts.selected) {
+  if (opts.selected || (opts.hovered && isPositionKind(d.kind))) {
     // Locked objects still show their handles, but greyed out so it's obvious
     // why dragging does nothing.
     const handles = anchorsFor(d, c, { includeLocked: true });
+    const round = isPositionKind(d.kind);
     ctx.save();
     ctx.setLineDash([]);
     ctx.shadowBlur = 0;
     for (const a of handles) {
-      const r = ANCHOR_R + 1;
+      const r = ANCHOR_R + (round ? 1.5 : 1);
       ctx.beginPath();
-      ctx.rect(a.x - r, a.y - r, r * 2, r * 2);
+      if (round) ctx.arc(a.x, a.y, r, 0, Math.PI * 2);
+      else ctx.rect(a.x - r, a.y - r, r * 2, r * 2);
       ctx.fillStyle = d.locked ? "#94a3b8" : "#0b0f16";
       ctx.fill();
       ctx.lineWidth = 1.5;
-      ctx.strokeStyle = d.locked ? "#64748b" : s.color;
+      ctx.strokeStyle = d.locked ? "#64748b" : round ? "#cbd5e1" : s.color;
       ctx.stroke();
     }
     ctx.restore();
   }
 }
+
+/* ── Position tool ──────────────────────────────────────────────────── */
+
+const POS_GREEN = "#26a69a";
+const POS_RED = "#ef5350";
+const POS_INK = "#e6edf6";
+const POS_PANEL = "rgba(11, 15, 22, 0.88)";
+const POS_FONT = (size: number, weight = 600) =>
+  `${weight} ${size}px ui-sans-serif, -apple-system, system-ui, sans-serif`;
+
+function roundRect(
+  ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number,
+) {
+  const rad = Math.min(r, h / 2, w / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + rad, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rad);
+  ctx.arcTo(x + w, y + h, x, y + h, rad);
+  ctx.arcTo(x, y + h, x, y, rad);
+  ctx.arcTo(x, y, x + w, y, rad);
+  ctx.closePath();
+}
+
+/** Rounded pill vertically centred on `y`, anchored left at `x`. */
+function pill(
+  ctx: CanvasRenderingContext2D, text: string, x: number, y: number,
+  fg: string, bg: string, size = 10.5,
+) {
+  ctx.save();
+  ctx.font = POS_FONT(size);
+  const w = ctx.measureText(text).width + 12;
+  const h = size + 9;
+  roundRect(ctx, x, y - h / 2, w, h, h / 2);
+  ctx.fillStyle = bg;
+  ctx.fill();
+  ctx.fillStyle = fg;
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, x + 6, y + 0.5);
+  ctx.restore();
+  return w;
+}
+
+/**
+ * TradingView-style Long / Short position.
+ *
+ * Everything painted here is derived from the drawing's stored prices and
+ * timestamps on this frame only — no pixel state is kept between redraws.
+ */
+function drawPosition(
+  ctx: CanvasRenderingContext2D,
+  c: ChartCoords,
+  d: Drawing,
+  opts: { selected?: boolean; hovered?: boolean; ghost?: boolean },
+) {
+  const g = positionGeometry(d, c);
+  if (!g) return;
+  const m = positionMetrics(d, { tick: tickFromFormatter(c.formatPrice) });
+  if (!m) return;
+  const { x1, x2 } = g;
+  const { entryY, targetY, stopY } = separateRows(g);
+  const width = x2 - x1;
+  const active = !!(opts.selected || opts.hovered);
+
+  ctx.save();
+  ctx.shadowBlur = 0;
+  ctx.setLineDash([]);
+  ctx.lineJoin = "miter";
+
+  // Zones — reward above/below entry, risk on the opposite side.
+  const zone = (from: number, to: number, tone: string) => {
+    const top = Math.min(from, to);
+    const h = Math.max(Math.abs(to - from), 1);
+    ctx.fillStyle = withAlpha(tone, active ? 0.2 : 0.14);
+    ctx.fillRect(x1, top, width, h);
+  };
+  zone(entryY, targetY, POS_GREEN);
+  zone(entryY, stopY, POS_RED);
+
+  // Zone outlines.
+  const boxTop = Math.min(targetY, stopY);
+  const boxBottom = Math.max(targetY, stopY);
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = withAlpha(POS_GREEN, active ? 0.85 : 0.6);
+  ctx.strokeRect(x1 + 0.5, Math.min(entryY, targetY) + 0.5, width - 1, Math.max(Math.abs(targetY - entryY), 1));
+  ctx.strokeStyle = withAlpha(POS_RED, active ? 0.85 : 0.6);
+  ctx.strokeRect(x1 + 0.5, Math.min(entryY, stopY) + 0.5, width - 1, Math.max(Math.abs(stopY - entryY), 1));
+
+  // Entry line — the only solid, full-weight line in the tool.
+  ctx.strokeStyle = active ? "#f1f5f9" : "rgba(226, 232, 240, 0.9)";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(x1, entryY);
+  ctx.lineTo(x2, entryY);
+  ctx.stroke();
+
+  // Level labels — rounded pills, stacked so near-identical prices stay legible.
+  const rows = stackLabels([
+    { y: entryY, text: `${m.long ? "Long" : "Short"} · ${c.formatPrice(m.entry)}`, color: POS_INK },
+    { y: targetY, text: `Target ${c.formatPrice(m.target)}`, color: POS_GREEN },
+    { y: stopY, text: `Stop ${c.formatPrice(m.stop)}`, color: POS_RED },
+  ]);
+  for (const r of rows) pill(ctx, r.text, x1 + 6, r.y, r.color, POS_PANEL);
+
+  // Compact R:R badge always visible; the full metrics panel on hover/select.
+  const rrText = `R:R 1 : ${m.rr.toFixed(2)}`;
+  if (!active) {
+    ctx.font = POS_FONT(10.5);
+    const w = ctx.measureText(rrText).width + 12;
+    pill(ctx, rrText, Math.max(x1 + 6, x2 - w - 6), boxTop - 11, POS_INK, POS_PANEL);
+  } else {
+    drawMetricsPanel(ctx, c, m, x2, boxTop, boxBottom, rrText);
+  }
+
+  ctx.restore();
+}
+
+/** Live metrics panel — pinned to the right edge of the tool. */
+function drawMetricsPanel(
+  ctx: CanvasRenderingContext2D,
+  c: ChartCoords,
+  m: PositionMetrics,
+  x2: number,
+  boxTop: number,
+  boxBottom: number,
+  rrText: string,
+) {
+  const rows: Array<[string, string, string]> = [
+    ["Entry", c.formatPrice(m.entry), POS_INK],
+    ["Target", c.formatPrice(m.target), POS_GREEN],
+    ["Stop", c.formatPrice(m.stop), POS_RED],
+    ["Reward", `${c.formatPrice(m.reward)} · ${m.rewardPct.toFixed(2)}%`, POS_GREEN],
+    ["Risk", `${c.formatPrice(m.risk)} · ${m.riskPct.toFixed(2)}%`, POS_RED],
+    ["Ticks", `${m.rewardTicks} / ${m.riskTicks}`, POS_INK],
+    ["Points", `${compact(m.reward, 2)} / ${compact(m.risk, 2)}`, POS_INK],
+    ["Size", m.size == null ? "—" : compact(m.size, 2), "rgba(203, 213, 225, 0.75)"],
+  ];
+
+  ctx.save();
+  ctx.font = POS_FONT(10.5, 500);
+  let labelW = 0;
+  let valueW = 0;
+  for (const [k, v] of rows) {
+    labelW = Math.max(labelW, ctx.measureText(k).width);
+    valueW = Math.max(valueW, ctx.measureText(v).width);
+  }
+  ctx.font = POS_FONT(11, 700);
+  const headW = ctx.measureText(rrText).width;
+
+  const padX = 9;
+  const rowH = 15;
+  const headH = 20;
+  const w = Math.max(labelW + valueW + 22, headW) + padX * 2;
+  const h = headH + rows.length * rowH + 8;
+
+  // Keep the panel inside the viewport; flip to the left of the tool when
+  // there is no room on the right.
+  let x = x2 + 8;
+  if (x + w > c.width - 4) x = Math.max(4, x2 - w - 8);
+  let y = (boxTop + boxBottom) / 2 - h / 2;
+  y = Math.max(4, Math.min(y, c.height - h - 4));
+
+  roundRect(ctx, x, y, w, h, 6);
+  ctx.fillStyle = POS_PANEL;
+  ctx.fill();
+  ctx.strokeStyle = "rgba(148, 163, 184, 0.28)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.textBaseline = "middle";
+  ctx.font = POS_FONT(11, 700);
+  ctx.fillStyle = m.long ? POS_GREEN : POS_RED;
+  ctx.fillText(rrText, x + padX, y + headH / 2 + 2);
+
+  ctx.strokeStyle = "rgba(148, 163, 184, 0.18)";
+  ctx.beginPath();
+  ctx.moveTo(x + padX, y + headH);
+  ctx.lineTo(x + w - padX, y + headH);
+  ctx.stroke();
+
+  rows.forEach(([k, v, color], i) => {
+    const ry = y + headH + 4 + i * rowH + rowH / 2;
+    ctx.font = POS_FONT(10.5, 500);
+    ctx.fillStyle = "rgba(148, 163, 184, 0.9)";
+    ctx.fillText(k, x + padX, ry);
+    ctx.font = POS_FONT(10.5, 600);
+    ctx.fillStyle = color;
+    ctx.fillText(v, x + w - padX - ctx.measureText(v).width, ry);
+  });
+  ctx.restore();
+}
+
 
 /**
  * Rendering safeguard only (pixels). This is NOT a width: the box width is

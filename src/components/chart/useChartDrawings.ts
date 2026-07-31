@@ -265,41 +265,45 @@ export function useChartDrawings({
 
     /**
      * Intelligent defaults for a fresh position tool, expressed purely in
-     * chart-domain units:
-     *   • span  — ~22% of the currently visible time range (≈25 candles of a
-     *     120-candle viewport), so the box is immediately usable.
-     *   • risk  — ATR of the loaded candles, falling back to ~1.5% of the
-     *     visible price range, then to 0.5% of price.
+     * chart-domain units — never pixels:
+     *   • span — 30 bars of the loaded series, clamped so the box never
+     *     exceeds 80% of the visible time range on a very tight viewport.
+     *   • risk — max(1 × ATR, 2% of the visible price range), falling back to
+     *     0.5% of price when neither is available.
      * These are read once at creation time and then owned by the user — no
      * redraw ever recomputes them.
      */
+    const DEFAULT_POSITION_BARS = 30;
+
     const positionDefaults = (entryPrice: number) => {
       const coords = adapter.getCoords?.();
-      let span = barStep() * 24;
+      let span = barStep() * DEFAULT_POSITION_BARS;
+      let visibleRange = 0;
       if (coords) {
         const t0 = coords.timeAt(0);
         const t1 = coords.timeAt(coords.width);
-        if (t0 != null && t1 != null && t1 > t0) span = (t1 - t0) * 0.22;
-      }
-      let risk = averageTrueRange(ref.current.candles) ?? 0;
-      if (!(risk > 0) && coords) {
+        if (t0 != null && t1 != null && t1 > t0) span = Math.min(span, (t1 - t0) * 0.8);
         const top = coords.priceAt(0);
         const bottom = coords.priceAt(coords.height);
-        if (top != null && bottom != null) risk = Math.abs(top - bottom) * 0.015;
+        if (top != null && bottom != null) visibleRange = Math.abs(top - bottom);
       }
+      const atr = averageTrueRange(ref.current.candles) ?? 0;
+      let risk = Math.max(atr, visibleRange * 0.02);
       if (!(risk > 0)) risk = Math.abs(entryPrice) * 0.005;
-      return { span: span > 0 ? span : barStep() * 24, risk };
+      return { span: span > 0 ? span : barStep() * DEFAULT_POSITION_BARS, risk };
     };
 
     const seedPoints = (kind: DrawingKind, a: DrawingPoint, b: DrawingPoint): DrawingPoint[] => {
       if (kind === "long_position" || kind === "short_position") {
         const { span, risk } = positionDefaults(a.price);
         const dir = kind === "long_position" ? 1 : -1;
-        // The end anchor is a *timestamp*, never a pixel width. A second click
-        // to the right sets the span explicitly; anything shorter than a
-        // usable box falls back to the intelligent default span.
+        // The end anchor is a *timestamp*, never a pixel width. The second
+        // click sets the span explicitly once it clears ~3 bars; anything
+        // shorter keeps the intelligent default so the preview is usable
+        // from the very first mouse move.
         const dragged = b.time - a.time;
-        const end = dragged > span * 0.15 ? b.time : a.time + span;
+        const end = dragged > barStep() * 3 ? b.time : a.time + span;
+
         return [
           { time: a.time, price: a.price },
           { time: end, price: a.price + dir * risk * DEFAULT_POSITION_RR },
