@@ -21,9 +21,28 @@ export type OrderType =
   | "buy_stop"
   | "sell_stop";
 
-export type OrderStatus = "pending" | "cancelled" | "filled";
+/**
+ * Full Phase 3 lifecycle. Legal transitions live in `lifecycle.ts` — this
+ * is only the vocabulary.
+ *
+ *   pending → filled → open → closed → archived
+ *   pending → cancelled → archived
+ */
+export type OrderStatus =
+  | "pending"
+  | "filled"
+  | "open"
+  | "closed"
+  | "cancelled"
+  | "archived";
 
 export const ORDER_SOURCE = "PositionTool" as const;
+
+/** How a fill or exit was produced. Paper simulation only. */
+export type ExecutionSource = "market" | "trigger" | "manual" | "stop_loss" | "take_profit";
+
+/** Why an open position stopped being open. */
+export type CloseReason = "manual" | "stop_loss" | "take_profit";
 
 export interface PositionOrder {
   id: string;
@@ -48,8 +67,30 @@ export interface PositionOrder {
   createdAt: number;
   updatedAt: number;
   cancelledAt?: number;
+
+  // ── Execution (Phase 3) ────────────────────────────────────────────────
+  /** Epoch-ms of the fill. Set exactly once, on pending → filled. */
   filledAt?: number;
+  /** Price the position was actually opened at (may differ from `entry`). */
+  fillPrice?: number;
+  /** What produced the fill / exit. */
+  executionSource?: ExecutionSource;
+  /** Stable identity of the live position spawned by the fill. */
+  positionId?: string;
+  /** Slippage against the requested entry, signed against the trader. */
+  slippage?: number;
+
+  // ── Exit ───────────────────────────────────────────────────────────────
+  closedAt?: number;
+  closePrice?: number;
+  closeReason?: CloseReason;
+  /** Realised P/L in quote currency (× size when sizing is known). */
+  realizedPnl?: number;
+  /** Realised result expressed in R multiples. */
+  realizedR?: number;
+  archivedAt?: number;
 }
+
 
 export const ORDER_TYPE_LABELS: Record<OrderType, string> = {
   market: "Market",
