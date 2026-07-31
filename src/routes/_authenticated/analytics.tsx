@@ -25,7 +25,9 @@ export const Route = createFileRoute("/_authenticated/analytics")({
 
 const TABS = [
   { to: "/analytics", label: "Overview", exact: true },
+  { to: "/analytics/portfolio", label: "Portfolio" },
   { to: "/analytics/performance", label: "Performance" },
+
   { to: "/analytics/risk", label: "Risk" },
   { to: "/analytics/behaviour", label: "Behaviour" },
   { to: "/analytics/trades", label: "Trades" },
