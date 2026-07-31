@@ -366,6 +366,19 @@ describe("service — advanced management", () => {
 
 /* ── chart execution markers (section 12) ────────────────────────────── */
 
+/** Stores whose drawing carries the id the order layer will patch. */
+function markStores() {
+  const stores = makeStores();
+  stores.drawings.hydrate("MARKS");
+  stores.drawings.add({
+    id: "d1",
+    kind: "long_position",
+    points: [{ time: 1, price: 100 }, { time: 2, price: 130 }, { time: 3, price: 90 }],
+    style: { color: "#fff", width: 1, lineStyle: 0, fillOpacity: 0.2, fontSize: 11 },
+  } as never);
+  return stores;
+}
+
 describe("chart execution markers", () => {
   it("projects every fill to a canonical time + price mark", () => {
     let o = openLong();
@@ -381,13 +394,13 @@ describe("chart execution markers", () => {
   });
 
   it("keeps level moves as zero-quantity marks", () => {
-    const stores = makeStores();
+    const stores = markStores();
     const pos = livePosition(stores);
     partialClosePosition(stores, pos.id, { percent: 25, price: 115 }, 2_000);
     setTrailing(stores, pos.id, { mode: "fixed", distance: 5 });
     runManagementTick(stores, { price: 130, time: 3_000 });
 
-    const drawing = stores.drawings.list()[0]!;
+    const drawing = stores.drawings.list().find((d) => d.id === "d1")!;
     const marks = drawing.executionMarks ?? [];
     expect(marks.length).toBeGreaterThan(1);
     for (const m of marks) {
@@ -397,25 +410,25 @@ describe("chart execution markers", () => {
   });
 
   it("stamps marks onto the drawing so they survive refresh", () => {
-    const stores = makeStores();
+    const stores = markStores();
     const pos = livePosition(stores);
     partialClosePosition(stores, pos.id, { percent: 50, price: 118 }, 2_000);
 
-    const before = stores.drawings.list()[0]!.executionMarks!;
+    const before = stores.drawings.list().find((d) => d.id === "d1")!.executionMarks!;
     expect(before.length).toBe(2);
 
     // Re-hydrating the persisted scope must replay identical anchors.
-    stores.drawings.hydrate("BTCUSDT");
-    const after = stores.drawings.list()[0]?.executionMarks ?? [];
+    stores.drawings.hydrate("MARKS");
+    const after = stores.drawings.list().find((d) => d.id === "d1")?.executionMarks ?? [];
     expect(after.map((m) => [m.kind, m.price])).toEqual(before.map((m) => [m.kind, m.price]));
   });
 
   it("never emits duplicate marks for the same execution", () => {
-    const stores = makeStores();
+    const stores = markStores();
     const pos = livePosition(stores);
     partialClosePosition(stores, pos.id, { percent: 25, price: 120 }, 2_000);
     partialClosePosition(stores, pos.id, { percent: 25, price: 125 }, 3_000);
-    const marks = stores.drawings.list()[0]!.executionMarks!;
+    const marks = stores.drawings.list().find((d) => d.id === "d1")!.executionMarks!;
     expect(new Set(marks.map((m) => m.id)).size).toBe(marks.length);
   });
 });
