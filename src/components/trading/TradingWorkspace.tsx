@@ -26,6 +26,7 @@ import { DrawingToolRail } from "@/components/chart/DrawingToolRail";
 import { useChartDrawings } from "@/components/chart/useChartDrawings";
 import { ChartTextEditor } from "@/components/chart/ChartTextEditor";
 import { PositionOrderDialog } from "@/components/chart/PositionOrderDialog";
+import { PendingOrdersPanel } from "@/components/chart/PendingOrdersPanel";
 import { usePositionOrders } from "@/components/chart/usePositionOrders";
 
 import { DrawingContextMenu } from "@/components/chart/DrawingContextMenu";
@@ -931,9 +932,24 @@ function TradingWorkspaceInner() {
                       <AdaptiveSection title="Positions" count={openCount} emptyLabel="No open positions">
                         <PositionsTable />
                       </AdaptiveSection>
+                      <AdaptiveSection
+                        title="Chart orders"
+                        count={positionOrders.pendingOrders.length}
+                        emptyLabel="No pending Position Tool orders."
+                      >
+                        <PendingOrdersPanel
+                          orders={positionOrders.pendingOrders}
+                          decimals={decimals}
+                          onEdit={positionOrders.editOrder}
+                          onCancel={(id: string) => {
+                            if (positionOrders.cancelOrder(id)) toast.success("Pending order cancelled");
+                          }}
+                        />
+                      </AdaptiveSection>
                       <AdaptiveSection title="Pending orders" count={pendingCount} emptyLabel="No pending orders">
                         <OrdersTable />
                       </AdaptiveSection>
+
                     </div>
                   )}
 
@@ -1005,6 +1021,7 @@ function TradingWorkspaceInner() {
           marketPrice={last}
           tick={positionOrders.tick}
           decimals={decimals}
+          mode={positionOrders.draftMode}
           inferredType={positionOrders.inferredType}
           onConfirm={(d) => {
             const order = positionOrders.confirmDraft(d);
@@ -1030,7 +1047,7 @@ function TradingWorkspaceInner() {
             onClose={closeDrawingMenu}
             revision={drawingRevision}
             onOpenOrderTicket={positionOrders.openDraftForId}
-            onCancelOrder={(id) => { positionOrders.cancelOrder(id); toast.success("Pending order cancelled"); }}
+            onCancelOrder={(id: string) => { if (positionOrders.cancelOrder(id)) toast.success("Pending order cancelled"); }}
           />
         )}
       </div>

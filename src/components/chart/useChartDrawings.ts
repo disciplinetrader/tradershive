@@ -13,7 +13,7 @@ import { isTypingTarget } from "@/lib/chart/keyboard";
 import type { Candle } from "@/lib/market-data/types";
 import { DrawingStore, makeDrawing } from "@/lib/chart/drawings/store";
 import {
-  anchorAt, drawDrawing, hitTest, moveAnchor, translateDrawing,
+  anchorAt, drawDrawing, hitTest, moveAnchor, pickDrawingAt, translateDrawing,
 } from "@/lib/chart/drawings/render";
 import {
   FREEHAND_KINDS, SINGLE_CLICK_KINDS, sanitizeDrawingText, tickFromPrecision,
@@ -532,18 +532,16 @@ export function useChartDrawings({
       const r = rectOf();
       const px = e.clientX - r.left;
       const py = e.clientY - r.top;
-      const list = store.list();
-      for (let i = list.length - 1; i >= 0; i--) {
-        const d = list[i];
-        if (d.hidden) continue;
-        if (hitTest(d, coords, px, py)) {
-          e.preventDefault();
-          e.stopPropagation();
-          store.select(d.id);
-          setMenu({ id: d.id, x: e.clientX, y: e.clientY });
-          return;
-        }
-      }
+      // Default browser menu is suppressed ONLY when a drawing is actually
+      // hit, so right-clicking empty chart space keeps native behaviour.
+      const d = pickDrawingAt(store.list(), coords, px, py);
+      if (!d) return;
+      e.preventDefault();
+      e.stopPropagation();
+      store.select(d.id);
+      // clientX/clientY are viewport coordinates — the menu is `position:
+      // fixed`, so no scroll/canvas-offset correction is needed.
+      setMenu({ id: d.id, x: e.clientX, y: e.clientY });
     };
 
     /** Double-click a text label to edit it in place. */
