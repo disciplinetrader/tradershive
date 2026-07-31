@@ -547,8 +547,13 @@ function drawClosedTrade(
   ctx.font = POS_FONT(10, 700);
   pill(ctx, label, anchorX + 10, anchorY - 12, tone, POS_PANEL, 10);
 
+  // The full execution tape stays visible after closure — scale-ins, partial
+  // exits and trailing steps are the record of how the trade was managed.
+  drawExecutionMarks(ctx, c, d, t.direction, active);
+
   ctx.restore();
 }
+
 
 const CLOSE_REASON_TEXT: Record<ClosedTradeStamp["closeReason"], string> = {
   manual: "Manual",
