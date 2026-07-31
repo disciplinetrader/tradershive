@@ -104,7 +104,7 @@ export const getChampionship = createServerFn({ method: "GET" })
       activity: activity.data ?? [],
       hall_of_fame: hof.data ?? null,
       profiles: profiles ?? [],
-      participant_count: participantCount.count ?? 0,
+      participant_count: (participantCount.data as number | null) ?? 0,
     };
   });
 
