@@ -614,13 +614,12 @@ function drawMetricsPanel(
 
 
 /**
- * Rendering safeguard only (pixels). This is NOT a width: the box width is
- * always `x(endTime) - x(startTime)`. When a tool is zoomed out so far that
- * its real span collapses below a few pixels we still paint a sliver so it
- * remains visible and grabbable — small enough that normal zoom scaling is
- * never clamped.
+ * Interaction padding (pixels). Purely a hit-testing affordance: when a tool
+ * is zoomed out until its real span collapses to a couple of pixels the
+ * grab area is inflated so it stays clickable. Painted geometry and the
+ * stored timestamps are never touched.
  */
-const POSITION_MIN_RENDER_PX = 10;
+const POSITION_MIN_HIT_PX = 10;
 /** Minimum painted gap between Entry / TP / SL rows. Visual only. */
 const POSITION_MIN_ROW_GAP = 3;
 /** Sideways offset applied to price handles that would otherwise overlap. */
@@ -631,6 +630,9 @@ const POSITION_HANDLE_OFFSET = 16;
  * on every paint. Nothing here is cached or fed back into the model, which
  * is what keeps Entry/SL/TP and the time anchors numerically stable through
  * zoom, pan, price-scale changes, resize and fullscreen toggles.
+ *
+ * `x2` is always `x(endTime)` — the box width is the time span and nothing
+ * else. Degenerate spans are handled by `positionHitBox`, not here.
  */
 export function positionGeometry(d: Drawing, c: ChartCoords) {
   if (d.points.length < 3) return null;
@@ -642,12 +644,22 @@ export function positionGeometry(d: Drawing, c: ChartCoords) {
   if (startX == null || endX == null || entryY == null || targetY == null || stopY == null) return null;
   if (![startX, endX, entryY, targetY, stopY].every(Number.isFinite)) return null;
   const x1 = Math.min(startX, endX);
-  const rawRight = Math.max(startX, endX);
-  // Width comes from the time domain. The floor below is a visibility
-  // safeguard for a degenerate span, never a layout constant.
-  const x2 = rawRight - x1 >= POSITION_MIN_RENDER_PX ? rawRight : x1 + POSITION_MIN_RENDER_PX;
-  return { x1, x2, entryY, targetY, stopY, rawWidth: rawRight - x1 };
+  const x2 = Math.max(startX, endX);
+  return { x1, x2, entryY, targetY, stopY, rawWidth: x2 - x1 };
 }
+
+/**
+ * Grab area for a position tool. Identical to the painted box unless the
+ * span has collapsed below `POSITION_MIN_HIT_PX`, in which case it is
+ * inflated symmetrically so the user can still select and drag it.
+ */
+export function positionHitBox(g: { x1: number; x2: number }) {
+  const width = g.x2 - g.x1;
+  if (width >= POSITION_MIN_HIT_PX) return { x1: g.x1, x2: g.x2 };
+  const pad = (POSITION_MIN_HIT_PX - width) / 2;
+  return { x1: g.x1 - pad, x2: g.x2 + pad };
+}
+
 
 /** Canonical end anchor — both end-anchored points share this timestamp. */
 export function positionEndTime(d: Drawing): number {
@@ -712,12 +724,15 @@ export function anchorsFor(d: Drawing, c: ChartCoords, opts: { includeLocked?: b
     const crowded =
       tight(rows.entryY, rows.targetY) || tight(rows.entryY, rows.stopY) || tight(rows.targetY, rows.stopY);
     const off = crowded ? POSITION_HANDLE_OFFSET : 0;
+    // Edge handles use the padded hit box so a collapsed span still offers two
+    // separately grabbable edges; the timestamps they write remain exact.
+    const hit = positionHitBox(g);
     return [
       { id: "p0", x: mid, y: rows.entryY },
       { id: "p1", x: mid - off, y: rows.targetY },
       { id: "p2", x: mid + off, y: rows.stopY },
-      { id: "tStart", x: g.x1, y: rows.entryY },
-      { id: "tEnd", x: g.x2, y: rows.entryY },
+      { id: "tStart", x: hit.x1, y: rows.entryY },
+      { id: "tEnd", x: hit.x2, y: rows.entryY },
     ];
   }
 
@@ -813,7 +828,10 @@ export function hitTest(d: Drawing, c: ChartCoords, px: number, py: number): boo
       if (!g) return false;
       const top = Math.min(g.entryY, g.targetY, g.stopY);
       const bottom = Math.max(g.entryY, g.targetY, g.stopY);
-      return nearRect(px, py, g.x1, top, g.x2, bottom);
+      // Hit box only — a collapsed span stays grabbable without the painted
+      // box or the stored timestamps being widened.
+      const hit = positionHitBox(g);
+      return nearRect(px, py, hit.x1, top, hit.x2, bottom);
     }
     default:
       return false;

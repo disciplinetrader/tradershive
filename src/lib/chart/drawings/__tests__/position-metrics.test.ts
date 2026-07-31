@@ -34,3 +34,24 @@ describe("position metrics", () => {
     expect(tickFromFormatter((p) => p.toFixed(0))).toBe(1);
   });
 });
+
+describe("collapsed span", () => {
+  it("paints the true time width and only pads the hit area", async () => {
+    const { positionGeometry, positionHitBox, hitTest } = await import("../render");
+    const c = {
+      x: (t: number) => (t - T0) / MIN * 0.05,
+      y: (p: number) => (2000 - p) * 4,
+      timeAt: (x: number) => T0 + x / 0.05 * MIN,
+      priceAt: (y: number) => 2000 - y / 4,
+      width: 800, height: 600,
+      formatPrice: (p: number) => p.toFixed(2),
+    };
+    const g = positionGeometry(long, c)!;
+    expect(g.x2 - g.x1).toBeCloseTo(1.5, 6);   // real, unclamped width
+    expect(g.rawWidth).toBeCloseTo(1.5, 6);
+    const hit = positionHitBox(g);
+    expect(hit.x2 - hit.x1).toBeCloseTo(10, 6); // padded grab area
+    expect(hitTest(long, c, g.x1 - 3, c.y(1960))).toBe(true);
+    expect(long.points[1].time).toBe(T0 + 30 * MIN); // timestamps untouched
+  });
+});
