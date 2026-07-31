@@ -3,11 +3,16 @@
  * persistence, mirroring the DrawingStore so orders survive refresh, replay,
  * zoom, pan and timeframe changes exactly like the drawings they reference.
  *
- * Phase 2 keeps everything local: nothing here talks to an execution API.
+ * Phase 8 adds an optional durable mirror (`attachRemote`) so a pending order
+ * or an OPEN position — including its full execution tape — survives a new
+ * device or a cleared cache. Local state stays authoritative for rendering;
+ * the mirror is best-effort and resolves conflicts last-write-wins on the
+ * client `updatedAt` stamp.
  */
 
 import type { PositionOrder } from "./model";
 import { isLive } from "./lifecycle";
+import { isSyncable, type OrderRemote } from "./order-sync";
 import { trace } from "./debug";
 
 type Listener = () => void;
@@ -23,6 +28,10 @@ export class PositionOrderStore {
   private listeners = new Set<Listener>();
   private scope = "default";
   private status: HydrationStatus = "idle";
+  private remote: OrderRemote | null = null;
+  /** id → last `updatedAt` pushed remotely, so mirroring stays idempotent. */
+  private pushed = new Map<string, number>();
+
 
   subscribe(fn: Listener) {
     this.listeners.add(fn);
