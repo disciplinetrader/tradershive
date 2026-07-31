@@ -55,44 +55,41 @@ export const joinReplayChallenge = createServerFn({ method: "POST" })
     return row;
   });
 
-// ---------- Random Session ----------
-
-const MARKETS = ["forex", "crypto", "metals", "indices"] as const;
-const SYMBOLS_BY_MARKET: Record<string, string[]> = {
-  forex: ["EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD", "USD/CAD"],
-  crypto: ["BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT"],
-  metals: ["XAU/USD", "XAG/USD"],
-  indices: ["SPX500", "NAS100", "US30", "GER40"],
-};
-const TFS = ["5m", "15m", "1H"] as const;
+// ---------- Surprise Session ----------
+//
+// Rolls a REAL session: a registered historical symbol / timeframe / day that
+// actually has stored candles. It never writes `provider: "synthetic"`. When
+// nothing is covered it returns the same actionable no-market-data payload the
+// normal Replay flow uses.
 
 export const createRandomReplaySession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const market = MARKETS[Math.floor(Math.random() * MARKETS.length)];
-    const symbols = SYMBOLS_BY_MARKET[market];
-    const symbol = symbols[Math.floor(Math.random() * symbols.length)];
-    const timeframe = TFS[Math.floor(Math.random() * TFS.length)];
-    // Random day from the past 3 years, skipping weekends for forex/indices/metals.
-    const now = Date.now();
-    const spanDays = 365 * 3;
-    let day = new Date(now - Math.floor(Math.random() * spanDays) * 86400_000);
-    if (market !== "crypto") {
-      while (day.getUTCDay() === 0 || day.getUTCDay() === 6) day = new Date(day.getTime() - 86400_000);
+    const { pickSurpriseSession } = await import("./replay/surprise.server");
+    const result = await pickSurpriseSession(context.supabase);
+
+    if ("failure" in result) {
+      return { session: null, unavailable: result.failure };
     }
-    const replay_date = day.toISOString().slice(0, 10);
-    const cursor = new Date(`${replay_date}T09:30:00Z`).toISOString();
+
+    const { pick } = result;
+    const cursor = new Date(pick.from + 2 * 3600_000).toISOString();
     const { data: row, error } = await context.supabase
       .from("replay_sessions")
       .insert({
         user_id: context.userId,
         title: "🎲 Surprise Session",
         mode: "day",
-        market,
-        symbol,
-        timeframe,
-        replay_date,
-        provider: "synthetic",
+        market: pick.market,
+        symbol: pick.symbol,
+        timeframe: pick.timeframe,
+        replay_date: pick.replayDate,
+        // Real, stored history — resolved through the canonical service.
+        provider: "historical",
+        canonical_symbol: pick.symbol,
+        source_provider: pick.providerCode,
+        requested_start: new Date(pick.from).toISOString(),
+        requested_end: new Date(pick.to).toISOString(),
         cursor_ts: cursor,
         is_random: true,
         hide_future: true,
@@ -103,8 +100,9 @@ export const createRandomReplaySession = createServerFn({ method: "POST" })
       .select()
       .single();
     if (error) throw error;
-    return row;
+    return { session: row, unavailable: null };
   });
+
 
 // ---------- Session Summary ----------
 
