@@ -15,22 +15,36 @@ export function useLiveQuote(symbol: string | null | undefined, market?: MarketK
   return quote;
 }
 
-export function useCandles(symbol: string | null | undefined, timeframe: Timeframe, opts?: { from?: number; to?: number; limit?: number; market?: MarketKind }) {
+export function useCandles(
+  symbol: string | null | undefined,
+  timeframe: Timeframe,
+  opts?: { from?: number; to?: number; limit?: number; market?: MarketKind },
+) {
   const [candles, setCandles] = useState<Candle[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [nonce, setNonce] = useState(0);
+  const reload = () => setNonce((n) => n + 1);
   useEffect(() => {
     if (!symbol) return;
     let cancelled = false;
     setLoading(true);
+    setError(null);
     marketData.init();
     const to = opts?.to ?? Date.now();
     const from = opts?.from ?? to - 1000 * 60 * 60 * 24 * 60;
     marketData.getCandles({ symbol, timeframe, from, to, limit: opts?.limit }, opts?.market)
-      .then((rows) => { if (!cancelled) setCandles(rows); })
+      .then((rows) => {
+        if (cancelled) return;
+        setCandles(rows);
+        // No fabrication: an empty response is an explicit unavailable state.
+        if (!rows.length) setError("No candles returned for this symbol and timeframe.");
+      })
+      .catch((e) => { if (!cancelled) { setCandles([]); setError((e as Error).message); } })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [symbol, timeframe, opts?.from, opts?.to, opts?.limit, opts?.market]);
-  return { candles, loading };
+  }, [symbol, timeframe, opts?.from, opts?.to, opts?.limit, opts?.market, nonce]);
+  return { candles, loading, error, reload };
 }
 
 export function useMarketStatus(market: MarketKind) {
