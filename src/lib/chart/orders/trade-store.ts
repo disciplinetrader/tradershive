@@ -200,6 +200,7 @@ export class ClosedTradeStore {
     this.trades = [...this.trades, trade];
     this.persist("add");
     this.emit();
+    void this.remote?.upsert(trade).catch(() => {});
     return { trade, created: true };
   }
 
@@ -211,6 +212,7 @@ export class ClosedTradeStore {
     this.trades = this.trades.map((t) => (t.id === tradeId ? next : t));
     this.persist("link-journal");
     this.emit();
+    void this.remote?.patch(next).catch(() => {});
     return next;
   }
 
@@ -222,6 +224,7 @@ export class ClosedTradeStore {
     this.trades = this.trades.map((t) => (t.id === tradeId ? next : t));
     this.persist("archive");
     this.emit();
+    void this.remote?.patch(next).catch(() => {});
     return next;
   }
 
@@ -230,8 +233,10 @@ export class ClosedTradeStore {
     this.trades = [];
     this.scope = scope;
     this.status = "hydrated";
+    this.remote = null;
     this.emit();
   }
+
 }
 
 export const closedTradeStore = new ClosedTradeStore();
