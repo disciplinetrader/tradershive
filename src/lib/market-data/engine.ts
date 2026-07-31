@@ -132,13 +132,11 @@ class MarketDataEngine {
     let a = this.assignments.get(effective);
     if (!a) throw new MarketProviderUnavailableError({ market: effective, reason: "not_assigned" });
 
-    // LIVE-only override: prefer Finnhub where the plan supports it, keeping
-    // the historical/DB-assigned provider as the automatic fallback.
+    // LIVE-only override: US equities prefer Finnhub, keeping the
+    // historical/DB-assigned provider (Twelve Data) as automatic fallback.
+    // Forex/metals/indices/commodities stay on Twelve Data for live quotes.
     if (live) {
-      const envFlag = effective === "forex"
-        ? ((import.meta as any).env?.VITE_LIVE_FOREX_PROVIDER as string | undefined)
-        : undefined;
-      const preferred = envFlag ?? LIVE_PROVIDER_OVERRIDES[effective];
+      const preferred = LIVE_PROVIDER_OVERRIDES[effective];
       if (preferred && preferred !== a.primary) {
         const p = getProvider(preferred);
         // Only take the override when the provider is registered, enabled,
