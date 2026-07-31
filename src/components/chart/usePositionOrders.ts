@@ -126,6 +126,7 @@ export function usePositionOrders({
   // Keep pending orders in lockstep with their drawing after edits/drags,
   // and drop orders whose drawing was deleted.
   useEffect(() => {
+    console.log("[orders] EFFECT-ENTER", symbol, store.hydration(), store.list().length, positionOrderStore.hydration(), positionOrderStore.list().length);
     // Explicit gate: both stores must be hydrated for the *same* scope before
     // reconciliation may delete anything. Hydration is never inferred from
     // list length — an empty list is a valid hydrated state.
