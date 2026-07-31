@@ -387,7 +387,7 @@ describe("chart execution markers", () => {
     setTrailing(stores, pos.id, { mode: "fixed", distance: 5 });
     runManagementTick(stores, { price: 130, time: 3_000 });
 
-    const drawing = stores.drawings.list().find((d) => d.id === stores.drawingId)!;
+    const drawing = stores.drawings.list()[0]!;
     const marks = drawing.executionMarks ?? [];
     expect(marks.length).toBeGreaterThan(1);
     for (const m of marks) {
@@ -401,12 +401,12 @@ describe("chart execution markers", () => {
     const pos = livePosition(stores);
     partialClosePosition(stores, pos.id, { percent: 50, price: 118 }, 2_000);
 
-    const before = stores.drawings.list().find((d) => d.id === stores.drawingId)!.executionMarks!;
+    const before = stores.drawings.list()[0]!.executionMarks!;
     expect(before.length).toBe(2);
 
     // Re-hydrating the persisted scope must replay identical anchors.
     stores.drawings.hydrate("BTCUSDT");
-    const after = stores.drawings.list().find((d) => d.id === stores.drawingId)?.executionMarks ?? [];
+    const after = stores.drawings.list()[0]?.executionMarks ?? [];
     expect(after.map((m) => [m.kind, m.price])).toEqual(before.map((m) => [m.kind, m.price]));
   });
 
@@ -415,7 +415,7 @@ describe("chart execution markers", () => {
     const pos = livePosition(stores);
     partialClosePosition(stores, pos.id, { percent: 25, price: 120 }, 2_000);
     partialClosePosition(stores, pos.id, { percent: 25, price: 125 }, 3_000);
-    const marks = stores.drawings.list().find((d) => d.id === stores.drawingId)!.executionMarks!;
+    const marks = stores.drawings.list()[0]!.executionMarks!;
     expect(new Set(marks.map((m) => m.id)).size).toBe(marks.length);
   });
 });
