@@ -9,7 +9,7 @@
  * semantics can never drift between surfaces.
  */
 import type { JournalEntry, EntryUpdate } from "@/lib/journal/api";
-import { NARRATIVE_SECTIONS, readNarrative, type Narrative } from "@/lib/journal/story";
+import { NARRATIVE_SECTIONS, readNarrative, type Narrative } from "@/lib/journal/narrative";
 
 /* ------------------------------------------------------------------ */
 /* Sections                                                            */
