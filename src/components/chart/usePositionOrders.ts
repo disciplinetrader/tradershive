@@ -18,6 +18,8 @@ import { isPositionKind } from "@/lib/chart/drawings/types";
 import { tickFromPrecision } from "@/lib/chart/drawings/types";
 import { positionOrderStore } from "@/lib/chart/orders/store";
 import { closedTradeStore } from "@/lib/chart/orders/trade-store";
+import { supabaseTradeRemote } from "@/lib/chart/orders/trade-sync";
+
 import { matchesFilter, type ClosedTrade, type TradeFilter } from "@/lib/chart/orders/closed-trade";
 import { addTradeToJournal } from "@/lib/chart/orders/journal-link";
 import { trace } from "@/lib/chart/orders/debug";
