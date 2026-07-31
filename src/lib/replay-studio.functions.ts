@@ -58,7 +58,7 @@ export const joinReplayChallenge = createServerFn({ method: "POST" })
 // ---------- Surprise Session ----------
 //
 // Rolls a REAL session: a registered historical symbol / timeframe / day that
-// actually has stored candles. It never writes `provider: "synthetic"`. When
+// actually has stored candles. It never writes a synthetic provider. When
 // nothing is covered it returns the same actionable no-market-data payload the
 // normal Replay flow uses.
 
