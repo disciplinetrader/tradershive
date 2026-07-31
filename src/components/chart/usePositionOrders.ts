@@ -123,6 +123,9 @@ export function usePositionOrders({
   // Keep pending orders in lockstep with their drawing after edits/drags,
   // and drop orders whose drawing was deleted.
   useEffect(() => {
+    // Only reconcile once both stores are pointing at this symbol — otherwise
+    // the pre-hydration (empty) drawing list would wipe persisted orders.
+    if (store.scopeValue() !== symbol || positionOrderStore.scopeValue() !== symbol) return;
     const ids = new Set(drawings.map((d) => d.id));
     positionOrderStore.reconcile(ids);
     for (const order of positionOrderStore.pending()) {
@@ -134,7 +137,7 @@ export function usePositionOrders({
       if (entry === order.entry && target === order.target && stop === order.stop) continue;
       positionOrderStore.replace(withLevels(order, { entry, stop, target }));
     }
-  }, [drawings]);
+  }, [drawings, store, symbol]);
 
   const pending = useMemo(() => orders.filter((o) => o.status === "pending"), [orders]);
 

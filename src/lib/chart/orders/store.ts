@@ -27,6 +27,8 @@ export class PositionOrderStore {
   private emit() { for (const l of this.listeners) l(); }
 
   list() { return this.orders; }
+  /** Current persistence scope (symbol). */
+  scopeValue() { return this.scope; }
   pending() { return this.orders.filter((o) => o.status === "pending"); }
   byId(id: string) { return this.orders.find((o) => o.id === id) ?? null; }
   byDrawing(drawingId: string) {
