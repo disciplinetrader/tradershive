@@ -158,13 +158,64 @@ export function usePositionOrders({
       if (entry === order.entry && target === order.target && stop === order.stop) continue;
       positionOrderStore.replace(withLevels(order, { entry, stop, target }));
     }
-  }, [drawings, store, symbol]);
 
+    // Live positions: dragging the Stop or Target handle modifies the
+    // position. The Entry handle is inert once filled — the fill price is a
+    // historical fact — so the drawing is snapped back to it.
+    for (const order of positionOrderStore.positions()) {
+      const d = live.find((x) => x.id === order.drawingId);
+      if (!d || d.points.length < 3) continue;
+      const target = d.points[1].price;
+      const stop = d.points[2].price;
+      const fill = order.fillPrice ?? order.entry;
+      const drifted = d.points[0].price !== fill;
+      if (stop === order.stop && target === order.target && !drifted) continue;
+      updatePositionLevels(stores, order.id, { stop, target });
+    }
+  }, [drawings, store, symbol, stores]);
+
+  // ── Execution engine ───────────────────────────────────────────────────
+  // One tick per market-price change. The engine itself is pure and the
+  // service transitions are guarded by the state machine, so re-renders,
+  // repeated identical prices and concurrent mounts cannot double-fill.
+  const lastTick = useRef<number | null>(null);
+  useEffect(() => {
+    if (!Number.isFinite(marketPrice ?? NaN)) return;
+    const price = marketPrice as number;
+    if (price <= 0) return;
+    if (positionOrderStore.hydration() !== "hydrated") return;
+    if (positionOrderStore.scopeValue() !== symbol) return;
+    if (lastTick.current === price) return;
+    lastTick.current = price;
+
+    const applied = runEngineTick(stores, { price });
+    for (const o of applied) {
+      if (o.status === "open") onFill?.(o);
+      else if (o.status === "closed") onClose?.(o);
+    }
+  }, [marketPrice, symbol, stores, onFill, onClose]);
+
+  /** Market-exit an open position at the current price. */
+  const closeAtMarket = useCallback((orderId: string) => {
+    if (!Number.isFinite(marketPrice ?? NaN)) return null;
+    return closePosition(stores, orderId, { price: marketPrice as number, reason: "manual" });
+  }, [stores, marketPrice]);
+
+  /** Move the stop to the fill price. */
+  const breakEven = useCallback((orderId: string) => {
+    return moveStopToBreakEven(stores, orderId, marketPrice);
+  }, [stores, marketPrice]);
+
+  /** Remove a closed position from the working set. */
+  const archive = useCallback((orderId: string) => archiveOrder(stores, orderId), [stores]);
 
   const pending = useMemo(() => orders.filter((o) => o.status === "pending"), [orders]);
+  const openPositions = useMemo(() => orders.filter((o) => isLive(o.status)), [orders]);
+  const closedPositions = useMemo(() => orders.filter((o) => o.status === "closed"), [orders]);
 
   return {
     draft, draftMode, inferredType, openDraft, openDraftForId, closeDraft, confirmDraft,
     cancelOrder, editOrder, setOrderType, pendingOrders: pending, tick,
+    openPositions, closedPositions, closeAtMarket, breakEven, archive,
   };
 }
