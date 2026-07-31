@@ -253,8 +253,8 @@ export async function resolveHistoricalRange(db: Db, opts: ResolveOptions): Prom
     : symbolRow.is_enabled === false
       ? `${symbol} is registered but disabled. Enable it in Admin → Market Data.`
       : providerError
-        ? `The data provider (${canonicalProviderCode(symbolRow.source_code)}) rejected the request: ${providerError}`
-        : `Run a historical import for ${symbol} · ${timeframe} covering this date range.`;
+        ? `The data provider (${routed.code}) rejected the request: ${providerError}`
+        : `Run a historical import for ${symbol} · ${timeframe} covering this date range (provider: ${routed.code}).`;
 
   throw new HistoricalDataUnavailableError(
     describeCoverage(coverage, symbol, timeframe),
@@ -276,11 +276,15 @@ export async function probeCoverage(db: Db, opts: Omit<ResolveOptions, "allowSyn
     candles: stored.candles, from: opts.from, to: opts.to,
     timeframe: opts.timeframe, market, minRatio: opts.minRatio,
   });
+  // Same canonical routing the importer will use.
+  const routed = resolveHistoricalProvider(market, symbolRow?.source_code ?? null);
   return {
     coverage,
     registered: !!symbolRow,
     enabled: symbolRow?.is_enabled !== false,
-    sourceCode: symbolRow?.source_code ? canonicalProviderCode(symbolRow.source_code) : null,
+    sourceCode: symbolRow ? routed.code : null,
+    routing: routed,
     message: describeCoverage(coverage, opts.symbol, opts.timeframe),
   };
 }
+
