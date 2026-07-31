@@ -11,7 +11,7 @@
  * Nothing here executes an order; orders are local Paper Trading objects.
  */
 
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { DrawingStore } from "@/lib/chart/drawings/store";
 import type { Drawing } from "@/lib/chart/drawings/types";
 import { isPositionKind } from "@/lib/chart/drawings/types";
@@ -52,6 +52,8 @@ export function usePositionOrders({
   );
 
   const [draft, setDraft] = useState<OrderDraft | null>(null);
+  // Reconciliation stays disarmed until the drawing layer has hydrated for this symbol.
+  const armedSymbol = useRef<string | null>(null);
 
   // Orders are scoped per symbol, exactly like drawings.
   useEffect(() => { positionOrderStore.setScope(symbol); }, [symbol]);

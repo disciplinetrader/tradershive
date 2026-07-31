@@ -61,7 +61,6 @@ export class PositionOrderStore {
 
   persist() {
     if (typeof window === "undefined") return;
-    (window as any).__persistLog = [...((window as any).__persistLog ?? []), { scope: this.scope, n: this.orders.length, stack: new Error().stack?.split('\n').slice(1,6).join(' | ') }];
     try {
       window.localStorage.setItem(storageKey(this.scope), JSON.stringify(this.orders));
     } catch { /* quota */ }
