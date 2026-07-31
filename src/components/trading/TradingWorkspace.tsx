@@ -27,6 +27,7 @@ import { useChartDrawings } from "@/components/chart/useChartDrawings";
 import { ChartTextEditor } from "@/components/chart/ChartTextEditor";
 import { PositionOrderDialog } from "@/components/chart/PositionOrderDialog";
 import { PendingOrdersPanel } from "@/components/chart/PendingOrdersPanel";
+import { OpenPositionsPanel } from "@/components/chart/OpenPositionsPanel";
 import { usePositionOrders } from "@/components/chart/usePositionOrders";
 
 import { DrawingContextMenu } from "@/components/chart/DrawingContextMenu";
@@ -331,6 +332,18 @@ function TradingWorkspaceInner() {
     symbol,
     marketPrice: last,
     pricePrecision: decimals,
+    onFill: (o) => {
+      toast.success(`${o.direction === "buy" ? "Long" : "Short"} filled`, {
+        description: `${o.symbol} @ ${(o.fillPrice ?? o.entry).toFixed(decimals)}${o.slippage ? ` · slippage ${(-o.slippage).toFixed(decimals)}` : ""}`,
+      });
+    },
+    onClose: (o) => {
+      const win = (o.realizedPnl ?? 0) >= 0;
+      const reason = o.closeReason === "stop_loss" ? "Stop loss" : o.closeReason === "take_profit" ? "Target" : "Closed";
+      (win ? toast.success : toast.error)(`${reason} · ${o.symbol}`, {
+        description: `${(o.realizedR ?? 0) >= 0 ? "+" : ""}${(o.realizedR ?? 0).toFixed(2)}R @ ${(o.closePrice ?? 0).toFixed(decimals)}`,
+      });
+    },
   });
 
   const {
@@ -931,6 +944,27 @@ function TradingWorkspaceInner() {
                     >
                       <AdaptiveSection title="Positions" count={openCount} emptyLabel="No open positions">
                         <PositionsTable />
+                      </AdaptiveSection>
+                      <AdaptiveSection
+                        title="Chart positions"
+                        count={positionOrders.openPositions.length}
+                        emptyLabel="No open chart positions."
+                      >
+                        <OpenPositionsPanel
+                          positions={positionOrders.openPositions}
+                          closed={positionOrders.closedPositions}
+                          marketPrice={last}
+                          decimals={decimals}
+                          onBreakEven={(id: string) => {
+                            const res = positionOrders.breakEven(id);
+                            if (res.ok) toast.success("Stop moved to break-even");
+                            else toast.error(res.error);
+                          }}
+                          onClose={(id: string) => {
+                            if (!positionOrders.closeAtMarket(id)) toast.error("No live price — cannot close yet");
+                          }}
+                          onArchive={positionOrders.archive}
+                        />
                       </AdaptiveSection>
                       <AdaptiveSection
                         title="Chart orders"
