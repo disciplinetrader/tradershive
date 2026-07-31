@@ -315,7 +315,7 @@ export const twelveDataCandles = createServerFn({ method: "POST" })
             symbol: data.symbol, timeframe: data.timeframe as any,
             ts: new Date(c.time).toISOString(),
             open: c.open, high: c.high, low: c.low, close: c.close, volume: c.volume,
-            source_code: "twelvedata",
+            provider_code: "twelvedata",
           }));
           for (let i = 0; i < rows.length; i += 500) {
             await supabaseAdmin

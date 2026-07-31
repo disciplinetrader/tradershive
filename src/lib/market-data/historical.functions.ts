@@ -462,7 +462,7 @@ export const resumeImportJob = createServerFn({ method: "POST" })
     if (error) throw error;
     if (!job) throw new Error("Job not found");
     const { data: sym } = await context.supabase.from("historical_symbols")
-      .select("native_symbol").eq("symbol", job.symbol).eq("source_code", job.source_code).maybeSingle();
+      .select("native_symbol").eq("symbol", job.symbol).maybeSingle();
     if (!sym) throw new Error("Symbol not found");
     const { runImport } = await import("./historical/pipeline.server");
     return runImport({
@@ -484,7 +484,7 @@ export const retryImportJob = createServerFn({ method: "POST" })
     if (error) throw error;
     if (!job) throw new Error("Job not found");
     const { data: sym } = await context.supabase.from("historical_symbols")
-      .select("native_symbol").eq("symbol", job.symbol).eq("source_code", job.source_code).maybeSingle();
+      .select("native_symbol").eq("symbol", job.symbol).maybeSingle();
     if (!sym) throw new Error("Symbol not found");
     // Reset retry counter to allow another N tries
     await context.supabase.from("historical_import_jobs").update({ retry_count: 0 }).eq("id", job.id);
