@@ -114,7 +114,7 @@ export function bootstrapSession(input: BootstrapInput): BootstrapResult {
     sourceJournalId: input.row.source_journal_id ?? null,
   });
 
-  let discardedSnapshot: BootstrapResult extends { discardedSnapshot: infer T } ? T : never = null as never;
+  let discardedSnapshot: { reason: "version" | "dataset" | "corrupt"; message: string } | null = null;
 
   if (input.snapshot) {
     const resumed = resumeSession({ snapshot: input.snapshot, dataset, stores, market, writer });
@@ -130,7 +130,7 @@ export function bootstrapSession(input: BootstrapInput): BootstrapResult {
         discardedSnapshot: null,
       };
     }
-    discardedSnapshot = { reason: resumed.reason, message: resumed.message } as never;
+    discardedSnapshot = { reason: resumed.reason, message: resumed.message };
   }
 
   const engine = new ReplaySessionEngine({ meta, dataset, stores, market, writer });
