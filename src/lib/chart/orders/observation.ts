@@ -115,13 +115,15 @@ export function runCandles(
   opts: ObservationOptions & { policy?: IntrabarPolicy } = {},
 ): PositionOrder[] {
   const touched: PositionOrder[] = [];
+  let prev: Candle | null = null;
   for (const candle of candles) {
     touched.push(
       ...runCandle(stores, candle, {
         ...opts,
-        context: { prevHigh: candle.high, prevLow: candle.low },
+        context: prev ? { prevHigh: prev.high, prevLow: prev.low } : undefined,
       }),
     );
+    prev = candle;
   }
   return touched;
 }
