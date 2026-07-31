@@ -34,12 +34,18 @@ interface Options {
   marketPrice?: number | null;
   pricePrecision?: number;
   riskBudget?: number;
+  /** Fired once, when a pending order becomes a live position. */
+  onFill?: (order: PositionOrder) => void;
+  /** Fired once, when a live position closes (manual, stop or target). */
+  onClose?: (order: PositionOrder) => void;
 }
 
 export function usePositionOrders({
-  store, symbol, marketPrice, pricePrecision = 4, riskBudget,
+  store, symbol, marketPrice, pricePrecision = 4, riskBudget, onFill, onClose,
 }: Options) {
   const tick = tickFromPrecision(pricePrecision);
+  const stores = useMemo(() => ({ drawings: store, orders: positionOrderStore }), [store]);
+
 
   const orders = useSyncExternalStore(
     (cb) => positionOrderStore.subscribe(cb),
