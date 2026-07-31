@@ -18,6 +18,8 @@ import { isPositionKind } from "@/lib/chart/drawings/types";
 import { tickFromPrecision } from "@/lib/chart/drawings/types";
 import { positionOrderStore } from "@/lib/chart/orders/store";
 import { closedTradeStore } from "@/lib/chart/orders/trade-store";
+import { supabaseTradeRemote } from "@/lib/chart/orders/trade-sync";
+
 import { matchesFilter, type ClosedTrade, type TradeFilter } from "@/lib/chart/orders/closed-trade";
 import { addTradeToJournal } from "@/lib/chart/orders/journal-link";
 import { trace } from "@/lib/chart/orders/debug";
@@ -79,10 +81,14 @@ export function usePositionOrders({
   // Orders are scoped per symbol, exactly like drawings. `setScope` hydrates
   // the new scope itself and refuses to flush an un-hydrated (empty) list, so
   // a single effect covers both first mount and later symbol changes.
+  // Closed trades additionally mirror into the backend so the tape survives a
+  // cleared cache or a new device (browser-only; RLS scopes rows to the user).
   useEffect(() => {
     positionOrderStore.setScope(symbol);
+    closedTradeStore.attachRemote(supabaseTradeRemote);
     closedTradeStore.setScope(symbol);
   }, [symbol]);
+
 
   // One-time reconciliation per scope: Phase 3 positions that closed before
   // the canonical trade record existed get exactly one record each. Keyed on

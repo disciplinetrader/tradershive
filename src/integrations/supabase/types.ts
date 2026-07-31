@@ -2907,6 +2907,126 @@ export type Database = {
         }
         Relationships: []
       }
+      chart_closed_trades: {
+        Row: {
+          archived_at: number | null
+          close_reason: string
+          closed_at: number
+          created_at: string
+          direction: string
+          drawing_id: string | null
+          entry_time: number
+          execution_source: string | null
+          exit_price: number
+          exit_time: number
+          fees: number
+          fill_price: number
+          final_stop: number | null
+          final_target: number | null
+          gross_pnl: number
+          id: string
+          initial_risk_distance: number
+          initial_stop: number | null
+          initial_target: number | null
+          journal_entry_id: string | null
+          journal_status: string
+          market: string | null
+          net_pnl: number
+          order_id: string
+          order_type: string
+          payload: Json
+          position_id: string
+          position_size: number | null
+          quantity: number | null
+          realized_r: number
+          requested_entry: number | null
+          return_percent: number
+          risk_amount: number
+          slippage: number
+          symbol: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived_at?: number | null
+          close_reason: string
+          closed_at: number
+          created_at?: string
+          direction: string
+          drawing_id?: string | null
+          entry_time: number
+          execution_source?: string | null
+          exit_price: number
+          exit_time: number
+          fees?: number
+          fill_price: number
+          final_stop?: number | null
+          final_target?: number | null
+          gross_pnl?: number
+          id: string
+          initial_risk_distance?: number
+          initial_stop?: number | null
+          initial_target?: number | null
+          journal_entry_id?: string | null
+          journal_status?: string
+          market?: string | null
+          net_pnl?: number
+          order_id: string
+          order_type: string
+          payload?: Json
+          position_id: string
+          position_size?: number | null
+          quantity?: number | null
+          realized_r?: number
+          requested_entry?: number | null
+          return_percent?: number
+          risk_amount?: number
+          slippage?: number
+          symbol: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          archived_at?: number | null
+          close_reason?: string
+          closed_at?: number
+          created_at?: string
+          direction?: string
+          drawing_id?: string | null
+          entry_time?: number
+          execution_source?: string | null
+          exit_price?: number
+          exit_time?: number
+          fees?: number
+          fill_price?: number
+          final_stop?: number | null
+          final_target?: number | null
+          gross_pnl?: number
+          id?: string
+          initial_risk_distance?: number
+          initial_stop?: number | null
+          initial_target?: number | null
+          journal_entry_id?: string | null
+          journal_status?: string
+          market?: string | null
+          net_pnl?: number
+          order_id?: string
+          order_type?: string
+          payload?: Json
+          position_id?: string
+          position_size?: number | null
+          quantity?: number | null
+          realized_r?: number
+          requested_entry?: number | null
+          return_percent?: number
+          risk_amount?: number
+          slippage?: number
+          symbol?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       chart_drawings: {
         Row: {
           created_at: string

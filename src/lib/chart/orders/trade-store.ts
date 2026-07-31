@@ -19,15 +19,28 @@ type Listener = () => void;
 
 export type HydrationStatus = "idle" | "hydrating" | "hydrated" | "failed";
 
+/**
+ * Optional durable backend. Every method is best-effort and awaited off the
+ * critical path — local state never waits on the network.
+ */
+export interface TradeRemote {
+  pull(scope: string): Promise<ClosedTrade[]>;
+  upsert(trade: ClosedTrade): Promise<void>;
+  patch(trade: ClosedTrade): Promise<void>;
+}
+
 function storageKey(scope: string) {
   return `thive.chart.trades.${scope}`;
 }
+
 
 export class ClosedTradeStore {
   private trades: ClosedTrade[] = [];
   private listeners = new Set<Listener>();
   private scope = "default";
   private status: HydrationStatus = "idle";
+  private remote: TradeRemote | null = null;
+
 
   subscribe(fn: Listener) {
     this.listeners.add(fn);
@@ -73,7 +86,86 @@ export class ClosedTradeStore {
     this.status = "hydrated";
     trace({ op: "hydrate", source: "tradeStore", scope, next: this.trades.length });
     this.emit();
+    void this.syncRemote(scope);
   }
+
+  /**
+   * Attach the durable backend. Safe to call repeatedly; attaching triggers a
+   * sync of the current scope so a fresh device fills in immediately.
+   */
+  attachRemote(remote: TradeRemote) {
+    if (this.remote === remote) return;
+    this.remote = remote;
+    if (this.status === "hydrated") void this.syncRemote(this.scope);
+  }
+
+  /**
+   * Two-way reconcile with the backend for one scope:
+   *   · records only on the server are pulled in (new device / cleared cache)
+   *   · records only on this device are pushed up
+   *   · for records on both, execution facts are identical by construction and
+   *     the mutable state (journal link, archived) is unioned
+   */
+  private async syncRemote(scope: string) {
+    const remote = this.remote;
+    if (!remote) return;
+    let incoming: ClosedTrade[] = [];
+    try {
+      incoming = await remote.pull(scope);
+    } catch { return; }
+    if (this.scope !== scope) return;
+
+    const byPosition = new Map(this.trades.map((t) => [t.positionId, t]));
+    let changed = false;
+
+    for (const r of incoming) {
+      const local = byPosition.get(r.positionId);
+      if (!local) {
+        byPosition.set(r.positionId, r);
+        changed = true;
+        continue;
+      }
+      const merged: ClosedTrade = {
+        ...local,
+        journalEntryId: local.journalEntryId ?? r.journalEntryId,
+        journalStatus: local.journalEntryId ?? r.journalEntryId ? "linked" : local.journalStatus,
+        archivedAt: local.archivedAt ?? r.archivedAt,
+      };
+      if (
+        merged.journalEntryId !== local.journalEntryId ||
+        merged.journalStatus !== local.journalStatus ||
+        merged.archivedAt !== local.archivedAt
+      ) {
+        byPosition.set(r.positionId, merged);
+        changed = true;
+      }
+    }
+
+    // Push anything the server has not seen (or whose mutable state drifted).
+    const remoteByPosition = new Map(incoming.map((t) => [t.positionId, t]));
+    for (const local of byPosition.values()) {
+      const r = remoteByPosition.get(local.positionId);
+      if (!r) {
+        void remote.upsert(local).catch(() => {});
+      } else if (
+        r.journalEntryId !== local.journalEntryId ||
+        (r.archivedAt ?? null) !== (local.archivedAt ?? null)
+      ) {
+        void remote.patch(local).catch(() => {});
+      }
+    }
+
+    if (changed) {
+      this.trades = [...byPosition.values()];
+      this.persist("remote-sync");
+      this.emit();
+    }
+    trace({
+      op: "remote:sync", source: "tradeStore", scope,
+      next: this.trades.length, reason: `pulled=${incoming.length}`,
+    });
+  }
+
 
   private read(): ClosedTrade[] {
     if (typeof window === "undefined") return [];
@@ -108,6 +200,7 @@ export class ClosedTradeStore {
     this.trades = [...this.trades, trade];
     this.persist("add");
     this.emit();
+    void this.remote?.upsert(trade).catch(() => {});
     return { trade, created: true };
   }
 
@@ -119,6 +212,7 @@ export class ClosedTradeStore {
     this.trades = this.trades.map((t) => (t.id === tradeId ? next : t));
     this.persist("link-journal");
     this.emit();
+    void this.remote?.patch(next).catch(() => {});
     return next;
   }
 
@@ -130,6 +224,7 @@ export class ClosedTradeStore {
     this.trades = this.trades.map((t) => (t.id === tradeId ? next : t));
     this.persist("archive");
     this.emit();
+    void this.remote?.patch(next).catch(() => {});
     return next;
   }
 
@@ -138,8 +233,10 @@ export class ClosedTradeStore {
     this.trades = [];
     this.scope = scope;
     this.status = "hydrated";
+    this.remote = null;
     this.emit();
   }
+
 }
 
 export const closedTradeStore = new ClosedTradeStore();
