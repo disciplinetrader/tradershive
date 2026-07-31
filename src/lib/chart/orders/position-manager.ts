@@ -34,7 +34,7 @@ import {
 } from "./executions";
 import { isLive } from "./lifecycle";
 import type { CloseReason, OrderDirection, PositionOrder } from "./model";
-import { legTriggered, type TakeProfitLeg } from "./take-profit";
+import { allocatedPercent, legTriggered, type TakeProfitLeg } from "./take-profit";
 import { improvesStop, nextTrailingStop, type TrailingContext } from "./trailing";
 
 export type ManageResult =
