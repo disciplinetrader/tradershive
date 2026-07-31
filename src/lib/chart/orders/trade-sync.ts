@@ -65,6 +65,11 @@ function num(v: unknown, fallback = 0): number {
   return Number.isFinite(n) ? n : fallback;
 }
 
+/** Row → canonical ClosedTrade. Exported so analytics can read the same shape. */
+export function closedTradeFromRow(row: Record<string, unknown>): ClosedTrade {
+  return fromRow(row);
+}
+
 function fromRow(row: Row): ClosedTrade {
   const payload = (row.payload ?? {}) as Partial<ClosedTrade>;
   return {
