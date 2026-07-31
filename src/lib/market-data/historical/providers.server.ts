@@ -248,12 +248,18 @@ export class TwelveDataHistoricalProvider implements HistoricalDataProvider {
 
       if (!res.ok) {
         const body = await res.text().catch(() => res.statusText);
+        const planLocked = /available starting with|upgrade/i.test(body);
         throw new HistoricalProviderError(
           "twelvedata",
-          res.status === 429 ? "rate limit exceeded" : "upstream request failed",
+          res.status === 429
+            ? "rate limit exceeded"
+            : planLocked
+              ? `symbol not included in the current Twelve Data plan (${nativeSymbol})`
+              : "upstream request failed",
           { httpStatus: res.status, responseType: contentType, symbol: nativeSymbol, timeframe, body },
         );
       }
+
       if (!contentType.includes("json")) {
         const body = await res.text().catch(() => "");
         throw new HistoricalProviderError("twelvedata", "non-JSON response (possible interstitial or proxy page)", {
