@@ -59,7 +59,7 @@ export interface StudioValue {
   seekForwardTo: (timeMs: number) => void;
   finish: () => void;
   saveNow: () => void;
-  placeMarketOrder: (direction: "long" | "short", opts?: { stopDistance?: number; targetDistance?: number; size?: number }) => void;
+  placeMarketOrder: (direction: "buy" | "sell", opts?: { stopDistance?: number; targetDistance?: number; size?: number }) => void;
   closePositionNow: (orderId: string) => void;
   cancelOrder: (orderId: string) => void;
   retry: () => void;
@@ -192,13 +192,13 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
   const price = view?.candles.length ? view.candles[view.candles.length - 1].close : null;
 
   const placeMarketOrder = useCallback(
-    (direction: "long" | "short", opts: { stopDistance?: number; targetDistance?: number; size?: number } = {}) => {
+    (direction: "buy" | "sell", opts: { stopDistance?: number; targetDistance?: number; size?: number } = {}) => {
       if (!stores || !view || price == null) return;
       const dist = opts.stopDistance ?? Math.max(price * 0.002, 1e-8);
       const target = opts.targetDistance ?? dist * 2;
-      const stop = direction === "long" ? price - dist : price + dist;
-      const tp = direction === "long" ? price + target : price - target;
-      const drawing = makeDrawing(direction === "long" ? "long_position" : "short_position", [
+      const stop = direction === "buy" ? price - dist : price + dist;
+      const tp = direction === "buy" ? price + target : price - target;
+      const drawing = makeDrawing(direction === "buy" ? "long_position" : "short_position", [
         { time: view.transport.marketTime, price },
         { time: view.transport.marketTime, price: stop },
       ]);
