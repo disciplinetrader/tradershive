@@ -129,8 +129,20 @@ export class StooqHistoricalProvider implements HistoricalDataProvider {
     if (!res.ok) throw new Error(`Stooq HTTP ${res.status}`);
     const csv = await res.text();
     if (!csv || csv.toLowerCase().startsWith("no data")) return [];
+    // Stooq now serves a JavaScript proof-of-work interstitial to non-browser
+    // clients. Never treat that HTML as "no candles" — fail loudly so the
+    // import job records a real error instead of silently importing nothing.
+    const head = csv.trimStart().slice(0, 200).toLowerCase();
+    if (head.startsWith("<") || head.includes("<!doctype") || head.includes("requires javascript")) {
+      throw new Error(
+        "Stooq returned a browser-verification page instead of CSV. This provider is currently blocked for server-side download; no data was imported.",
+      );
+    }
     const lines = csv.trim().split(/\r?\n/);
     if (lines.length < 2) return [];
+    if (!/^date,/i.test(lines[0])) {
+      throw new Error(`Stooq returned an unexpected response format: ${lines[0].slice(0, 80)}`);
+    }
     const out: HistoricalCandle[] = [];
     for (let i = 1; i < lines.length; i++) {
       const [date, o, h, l, c, v] = lines[i].split(",");
