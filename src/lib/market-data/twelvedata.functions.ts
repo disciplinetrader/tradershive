@@ -206,7 +206,15 @@ export const twelveDataQuote = createServerFn({ method: "POST" })
             const value: CachedQuote = {
               symbol: sym, bid, ask, last: price,
               spread: Number.isFinite(spread) && spread > 0 ? spread : price * 0.0001,
-              ts: q.timestamp ? Number(q.timestamp) * 1000 : Date.now(),
+              // `timestamp` is the *daily bar open* (e.g. 21:00 UTC FX
+              // rollover), not the tick time — using it freezes chart
+              // bucketing and ticks get discarded. Prefer `last_quote_at`
+              // and clamp anything older than a minute to now.
+              ts: (() => {
+                const raw = Number(q.last_quote_at ?? q.timestamp ?? 0) * 1000;
+                return raw && Date.now() - raw < 60_000 ? raw : Date.now();
+              })(),
+
               change: Number(q.change ?? 0),
               percent_change: Number(q.percent_change ?? 0),
             };
