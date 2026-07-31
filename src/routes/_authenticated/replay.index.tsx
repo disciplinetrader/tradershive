@@ -32,6 +32,7 @@ import {
 } from "@/lib/replay.functions";
 import { createRandomReplaySession } from "@/lib/replay-studio.functions";
 import type { ReplaySession } from "@/lib/replay/types";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/replay/")({
