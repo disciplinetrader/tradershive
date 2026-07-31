@@ -42,10 +42,24 @@ const DEFAULT_ASSIGNMENTS: Partial<Record<MarketKind, { primary: string; fallbac
 
 type Assignment = { primary: string; fallback: string | null };
 
+/**
+ * LIVE-quote provider preferences (historical routing is NOT affected).
+ * Finnhub's plan only entitles US equities via `/quote`; forex, metals and
+ * CFD indices return HTTP 403, so those stay on Twelve Data for live too.
+ */
+const LIVE_PROVIDER_OVERRIDES: Partial<Record<MarketKind, string>> = {
+  stocks: "finnhub",
+};
+
+
 class MarketDataEngine {
   private quoteCache = new TTLCache<Quote>(QUOTE_CACHE_MS);
   private candleCache = new TTLCache<Candle[]>(CANDLE_CACHE_MS);
-  private fanout = new Map<string, { upstream: SubscriptionHandle; handlers: Set<QuoteHandler> }>();
+  private fanout = new Map<string, {
+    upstream: SubscriptionHandle; handlers: Set<QuoteHandler>;
+    watchdog?: ReturnType<typeof setTimeout>; recovery?: ReturnType<typeof setTimeout>;
+  }>();
+
   private assignments = new Map<MarketKind, Assignment>();
   private initialized = false;
   private loadPromise: Promise<void> | null = null;
@@ -94,9 +108,10 @@ class MarketDataEngine {
     return this.resolveChain(market, symbol, /*live*/ false)[0];
   }
 
-  /** Live quote / subscribe routing. Consults VITE_LIVE_FOREX_PROVIDER
-   *  to swap the forex live-data source (POC — Finnhub eval) without
-   *  affecting historical candles, which always use pickProvider(). */
+  /** Live quote / subscribe routing. Non-crypto markets that Finnhub can
+   *  actually serve on our plan (US equities) go to Finnhub first, with the
+   *  DB-assigned provider (Twelve Data) kept as automatic fallback.
+   *  Historical routing is untouched — see pickProvider(). */
   pickLiveQuoteProvider(market?: MarketKind, symbol?: string): MarketDataProvider {
     return this.resolveChain(market, symbol, /*live*/ true)[0];
   }
@@ -117,13 +132,27 @@ class MarketDataEngine {
     let a = this.assignments.get(effective);
     if (!a) throw new MarketProviderUnavailableError({ market: effective, reason: "not_assigned" });
 
-    // POC override: live forex quotes may be routed to Finnhub via env flag.
-    if (live && effective === "forex") {
-      const flag = (import.meta as any).env?.VITE_LIVE_FOREX_PROVIDER as string | undefined;
-      if (flag && flag !== a.primary) {
-        a = { primary: flag, fallback: a.primary };
+    // LIVE-only override: prefer Finnhub where the plan supports it, keeping
+    // the historical/DB-assigned provider as the automatic fallback.
+    if (live) {
+      const envFlag = effective === "forex"
+        ? ((import.meta as any).env?.VITE_LIVE_FOREX_PROVIDER as string | undefined)
+        : undefined;
+      const preferred = envFlag ?? LIVE_PROVIDER_OVERRIDES[effective];
+      if (preferred && preferred !== a.primary) {
+        const p = getProvider(preferred);
+        // Only take the override when the provider is registered, enabled,
+        // covers the market and (if it declares symbol entitlements) the
+        // symbol itself. Otherwise silently keep the assigned provider.
+        const entitled = !symbol
+          || typeof (p as any)?.supportsSymbol !== "function"
+          || (p as any).supportsSymbol(symbol);
+        if (p && p.status() !== "disabled" && p.capabilities.markets.includes(effective) && entitled) {
+          a = { primary: preferred, fallback: a.primary };
+        }
       }
     }
+
 
     const usable = (code: string | null): MarketDataProvider | undefined => {
       if (!code) return undefined;
@@ -226,11 +255,17 @@ class MarketDataEngine {
 
 
   private warnedMarkets = new Set<string>();
+
+  /** No tick within this window ⇒ fail over to the next live provider. */
+  private static readonly LIVE_WATCHDOG_MS = 20_000;
+  /** How often a degraded symbol retries its preferred live provider. */
+  private static readonly LIVE_RECOVERY_MS = 5 * 60_000;
+
   subscribe(symbol: string, handler: QuoteHandler, market?: MarketKind): SubscriptionHandle {
     let entry = this.fanout.get(symbol);
     if (!entry) {
-      let p: MarketDataProvider;
-      try { p = this.pickLiveQuoteProvider(market, symbol); }
+      let chain: MarketDataProvider[];
+      try { chain = this.resolveChain(market, symbol, /*live*/ true); }
       catch (e) {
         const key = market ?? inferMarketFromSymbol(symbol) ?? "unknown";
         if (!this.warnedMarkets.has(key)) {
@@ -239,14 +274,51 @@ class MarketDataEngine {
         }
         return { id: `noop-${symbol}`, symbol, unsubscribe: () => {} };
       }
-      void p.connect();
-      const upstream = p.subscribe(symbol, (q) => {
-        this.quoteCache.set(symbol, q);
-        const cur = this.fanout.get(symbol);
-        if (!cur) return;
-        for (const h of cur.handlers) { try { h(q); } catch { /* noop */ } }
-      });
-      entry = { upstream, handlers: new Set() };
+
+      const state: {
+        upstream: SubscriptionHandle; handlers: Set<QuoteHandler>;
+        watchdog?: ReturnType<typeof setTimeout>; recovery?: ReturnType<typeof setTimeout>;
+      } = { upstream: { id: "pending", symbol, unsubscribe: () => {} }, handlers: new Set() };
+
+      const attach = (index: number) => {
+        const p = chain[Math.min(index, chain.length - 1)];
+        void p.connect();
+        let gotTick = false;
+        state.upstream = p.subscribe(symbol, (q) => {
+          gotTick = true;
+          breakers.recordSuccess(p.code);
+          this.quoteCache.set(symbol, q);
+          const cur = this.fanout.get(symbol);
+          if (!cur) return;
+          for (const h of cur.handlers) { try { h(q); } catch { /* noop */ } }
+        });
+
+        // Fail over when the chosen provider produces nothing in time.
+        if (index < chain.length - 1) {
+          state.watchdog = setTimeout(() => {
+            if (gotTick || !this.fanout.get(symbol)) return;
+            const next = chain[index + 1];
+            console.warn(`[market-data] live "${p.code}" produced no ticks for ${symbol} — failing over to "${next.code}".`);
+            breakers.recordFailure(p.code, new Error("live_no_ticks"));
+            try { state.upstream.unsubscribe(); } catch { /* noop */ }
+            attach(index + 1);
+          }, MarketDataEngine.LIVE_WATCHDOG_MS);
+        }
+
+        // Degraded ⇒ periodically try the preferred provider again.
+        if (index > 0) {
+          state.recovery = setTimeout(() => {
+            if (!this.fanout.get(symbol)) return;
+            console.info(`[market-data] retrying preferred live provider "${chain[0].code}" for ${symbol}.`);
+            try { state.upstream.unsubscribe(); } catch { /* noop */ }
+            clearTimeout(state.watchdog);
+            attach(0);
+          }, MarketDataEngine.LIVE_RECOVERY_MS);
+        }
+      };
+
+      attach(0);
+      entry = state;
       this.fanout.set(symbol, entry);
     }
     entry.handlers.add(handler);
@@ -260,11 +332,14 @@ class MarketDataEngine {
         cur.handlers.delete(handler);
         if (cur.handlers.size === 0) {
           cur.upstream.unsubscribe();
+          if (cur.watchdog) clearTimeout(cur.watchdog);
+          if (cur.recovery) clearTimeout(cur.recovery);
           this.fanout.delete(symbol);
         }
       },
     };
   }
+
 
   async getMarketStatus(market: MarketKind): Promise<MarketStatusInfo> {
     try { return await this.pickProvider(market).getMarketStatus(market); }
