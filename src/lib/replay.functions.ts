@@ -4,6 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { computeReplayScore } from "./replay/score";
 
 import { TIMEFRAME_SECONDS, DEFAULT_TEMPLATES, CHECKPOINT_KINDS } from "./replay/constants";
+import { coverageStatusFor, serializeGaps } from "./replay/provenance";
 import type { Timeframe } from "./replay/types";
 
 /* ============ Checkpoints ============ */
