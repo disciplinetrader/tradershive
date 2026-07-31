@@ -195,7 +195,10 @@ async function writeSnapshots(
 export type RunImportOpts = {
   symbol: string;
   nativeSymbol: string;
+  /** Requested provider. Overridden when it isn't canonical for the market. */
   sourceCode: string;
+  /** Market kind; looked up from historical_symbols when omitted. */
+  market?: string | null;
   timeframe: HistoricalTimeframe;
   from: number;
   to: number;
@@ -206,10 +209,33 @@ export type RunImportOpts = {
   existingJobId?: string; // for retries
 };
 
-export async function runImport(opts: RunImportOpts) {
+export async function runImport(rawOpts: RunImportOpts) {
   const admin = await loadAdmin();
+
+  // ---- Canonical provider resolution (single source of truth) ----
+  let market = rawOpts.market ?? null;
+  let storedNative: string | null = rawOpts.nativeSymbol ?? null;
+  let storedProvider: string | null = rawOpts.sourceCode ?? null;
+  if (!market) {
+    const { data: row } = await admin
+      .from("historical_symbols")
+      .select("market, native_symbol, source_code")
+      .eq("symbol", rawOpts.symbol).maybeSingle();
+    market = (row?.market as string) ?? null;
+    storedNative = (row?.native_symbol as string) ?? storedNative;
+    storedProvider = (row?.source_code as string) ?? storedProvider;
+  }
+  const resolution = resolveHistoricalProvider(market, rawOpts.sourceCode || storedProvider);
+  const nativeSymbol = nativeSymbolForProvider(
+    resolution.code, rawOpts.symbol, storedNative, storedProvider,
+  );
+  const opts: RunImportOpts = {
+    ...rawOpts, sourceCode: resolution.code, nativeSymbol, market,
+  };
+
   const provider = getHistoricalProvider(opts.sourceCode);
   const started = Date.now();
+
 
   // Create or reuse job row
   let jobId: string;
