@@ -30,7 +30,11 @@ export function resumeSession(opts: ResumeOptions): ResumeResult {
 
   // Execution state first: the engine must never emit an observation before
   // the orders it belongs to are back in the store.
-  opts.stores.orders.replaceAll(snapshot.orders);
+  for (const order of snapshot.orders) {
+    if (opts.stores.orders.byId(order.id)) opts.stores.orders.replace(order);
+    else opts.stores.orders.add(order);
+  }
+
 
   const log = new ReplayEventLog(snapshot.events);
   // A crash between "orders written" and "clock written" can leave the log
