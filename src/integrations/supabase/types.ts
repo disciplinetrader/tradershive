@@ -11260,6 +11260,10 @@ export type Database = {
         Args: { _champ: string }
         Returns: undefined
       }
+      championship_participant_count: {
+        Args: { _champ: string }
+        Returns: number
+      }
       community_recompute_reputation: {
         Args: { _user_id: string }
         Returns: undefined
