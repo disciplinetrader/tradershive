@@ -36,10 +36,23 @@ export class PositionOrderStore {
   /** Explicit hydration state — never infer hydration from list length. */
   hydration(): HydrationStatus { return this.status; }
   pending() { return this.orders.filter((o) => o.status === "pending"); }
+  /** Live, market-exposed positions (Phase 3). */
+  positions() { return this.orders.filter((o) => isLive(o.status)); }
+  /** Closed but not yet archived — the session's result tape. */
+  closed() { return this.orders.filter((o) => o.status === "closed"); }
   byId(id: string) { return this.orders.find((o) => o.id === id) ?? null; }
   byDrawing(drawingId: string) {
     return this.orders.find((o) => o.drawingId === drawingId && o.status === "pending") ?? null;
   }
+  /** The live position attached to a drawing, if any. */
+  positionByDrawing(drawingId: string) {
+    return this.orders.find((o) => o.drawingId === drawingId && isLive(o.status)) ?? null;
+  }
+  /** Anything still actionable on this drawing: pending order or live position. */
+  activeByDrawing(drawingId: string) {
+    return this.positionByDrawing(drawingId) ?? this.byDrawing(drawingId);
+  }
+
 
   setScope(scope: string) {
     if (scope === this.scope && this.status === "hydrated") return;
