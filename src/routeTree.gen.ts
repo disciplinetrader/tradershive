@@ -119,6 +119,7 @@ import { Route as AuthenticatedAnalyticsSessionsRouteImport } from './routes/_au
 import { Route as AuthenticatedAnalyticsRiskRouteImport } from './routes/_authenticated/analytics.risk'
 import { Route as AuthenticatedAnalyticsReportsRouteImport } from './routes/_authenticated/analytics.reports'
 import { Route as AuthenticatedAnalyticsReplayRouteImport } from './routes/_authenticated/analytics.replay'
+import { Route as AuthenticatedAnalyticsPortfolioRouteImport } from './routes/_authenticated/analytics.portfolio'
 import { Route as AuthenticatedAnalyticsPerformanceRouteImport } from './routes/_authenticated/analytics.performance'
 import { Route as AuthenticatedAnalyticsCompareRouteImport } from './routes/_authenticated/analytics.compare'
 import { Route as AuthenticatedAnalyticsChampionshipsRouteImport } from './routes/_authenticated/analytics.championships'
@@ -807,6 +808,12 @@ const AuthenticatedAnalyticsReplayRoute =
     path: '/replay',
     getParentRoute: () => AuthenticatedAnalyticsRoute,
   } as any)
+const AuthenticatedAnalyticsPortfolioRoute =
+  AuthenticatedAnalyticsPortfolioRouteImport.update({
+    id: '/portfolio',
+    path: '/portfolio',
+    getParentRoute: () => AuthenticatedAnalyticsRoute,
+  } as any)
 const AuthenticatedAnalyticsPerformanceRoute =
   AuthenticatedAnalyticsPerformanceRouteImport.update({
     id: '/performance',
@@ -1247,6 +1254,7 @@ export interface FileRoutesByFullPath {
   '/analytics/championships': typeof AuthenticatedAnalyticsChampionshipsRoute
   '/analytics/compare': typeof AuthenticatedAnalyticsCompareRoute
   '/analytics/performance': typeof AuthenticatedAnalyticsPerformanceRoute
+  '/analytics/portfolio': typeof AuthenticatedAnalyticsPortfolioRoute
   '/analytics/replay': typeof AuthenticatedAnalyticsReplayRoute
   '/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
   '/analytics/risk': typeof AuthenticatedAnalyticsRiskRoute
@@ -1406,6 +1414,7 @@ export interface FileRoutesByTo {
   '/analytics/championships': typeof AuthenticatedAnalyticsChampionshipsRoute
   '/analytics/compare': typeof AuthenticatedAnalyticsCompareRoute
   '/analytics/performance': typeof AuthenticatedAnalyticsPerformanceRoute
+  '/analytics/portfolio': typeof AuthenticatedAnalyticsPortfolioRoute
   '/analytics/replay': typeof AuthenticatedAnalyticsReplayRoute
   '/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
   '/analytics/risk': typeof AuthenticatedAnalyticsRiskRoute
@@ -1580,6 +1589,7 @@ export interface FileRoutesById {
   '/_authenticated/analytics/championships': typeof AuthenticatedAnalyticsChampionshipsRoute
   '/_authenticated/analytics/compare': typeof AuthenticatedAnalyticsCompareRoute
   '/_authenticated/analytics/performance': typeof AuthenticatedAnalyticsPerformanceRoute
+  '/_authenticated/analytics/portfolio': typeof AuthenticatedAnalyticsPortfolioRoute
   '/_authenticated/analytics/replay': typeof AuthenticatedAnalyticsReplayRoute
   '/_authenticated/analytics/reports': typeof AuthenticatedAnalyticsReportsRoute
   '/_authenticated/analytics/risk': typeof AuthenticatedAnalyticsRiskRoute
@@ -1754,6 +1764,7 @@ export interface FileRouteTypes {
     | '/analytics/championships'
     | '/analytics/compare'
     | '/analytics/performance'
+    | '/analytics/portfolio'
     | '/analytics/replay'
     | '/analytics/reports'
     | '/analytics/risk'
@@ -1913,6 +1924,7 @@ export interface FileRouteTypes {
     | '/analytics/championships'
     | '/analytics/compare'
     | '/analytics/performance'
+    | '/analytics/portfolio'
     | '/analytics/replay'
     | '/analytics/reports'
     | '/analytics/risk'
@@ -2086,6 +2098,7 @@ export interface FileRouteTypes {
     | '/_authenticated/analytics/championships'
     | '/_authenticated/analytics/compare'
     | '/_authenticated/analytics/performance'
+    | '/_authenticated/analytics/portfolio'
     | '/_authenticated/analytics/replay'
     | '/_authenticated/analytics/reports'
     | '/_authenticated/analytics/risk'
@@ -2971,6 +2984,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAnalyticsReplayRouteImport
       parentRoute: typeof AuthenticatedAnalyticsRoute
     }
+    '/_authenticated/analytics/portfolio': {
+      id: '/_authenticated/analytics/portfolio'
+      path: '/portfolio'
+      fullPath: '/analytics/portfolio'
+      preLoaderRoute: typeof AuthenticatedAnalyticsPortfolioRouteImport
+      parentRoute: typeof AuthenticatedAnalyticsRoute
+    }
     '/_authenticated/analytics/performance': {
       id: '/_authenticated/analytics/performance'
       path: '/performance'
@@ -3524,6 +3544,7 @@ interface AuthenticatedAnalyticsRouteChildren {
   AuthenticatedAnalyticsChampionshipsRoute: typeof AuthenticatedAnalyticsChampionshipsRoute
   AuthenticatedAnalyticsCompareRoute: typeof AuthenticatedAnalyticsCompareRoute
   AuthenticatedAnalyticsPerformanceRoute: typeof AuthenticatedAnalyticsPerformanceRoute
+  AuthenticatedAnalyticsPortfolioRoute: typeof AuthenticatedAnalyticsPortfolioRoute
   AuthenticatedAnalyticsReplayRoute: typeof AuthenticatedAnalyticsReplayRoute
   AuthenticatedAnalyticsReportsRoute: typeof AuthenticatedAnalyticsReportsRoute
   AuthenticatedAnalyticsRiskRoute: typeof AuthenticatedAnalyticsRiskRoute
@@ -3543,6 +3564,7 @@ const AuthenticatedAnalyticsRouteChildren: AuthenticatedAnalyticsRouteChildren =
     AuthenticatedAnalyticsCompareRoute: AuthenticatedAnalyticsCompareRoute,
     AuthenticatedAnalyticsPerformanceRoute:
       AuthenticatedAnalyticsPerformanceRoute,
+    AuthenticatedAnalyticsPortfolioRoute: AuthenticatedAnalyticsPortfolioRoute,
     AuthenticatedAnalyticsReplayRoute: AuthenticatedAnalyticsReplayRoute,
     AuthenticatedAnalyticsReportsRoute: AuthenticatedAnalyticsReportsRoute,
     AuthenticatedAnalyticsRiskRoute: AuthenticatedAnalyticsRiskRoute,
@@ -3972,13 +3994,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
