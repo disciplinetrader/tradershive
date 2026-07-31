@@ -724,12 +724,15 @@ export function anchorsFor(d: Drawing, c: ChartCoords, opts: { includeLocked?: b
     const crowded =
       tight(rows.entryY, rows.targetY) || tight(rows.entryY, rows.stopY) || tight(rows.targetY, rows.stopY);
     const off = crowded ? POSITION_HANDLE_OFFSET : 0;
+    // Edge handles use the padded hit box so a collapsed span still offers two
+    // separately grabbable edges; the timestamps they write remain exact.
+    const hit = positionHitBox(g);
     return [
       { id: "p0", x: mid, y: rows.entryY },
       { id: "p1", x: mid - off, y: rows.targetY },
       { id: "p2", x: mid + off, y: rows.stopY },
-      { id: "tStart", x: g.x1, y: rows.entryY },
-      { id: "tEnd", x: g.x2, y: rows.entryY },
+      { id: "tStart", x: hit.x1, y: rows.entryY },
+      { id: "tEnd", x: hit.x2, y: rows.entryY },
     ];
   }
 
