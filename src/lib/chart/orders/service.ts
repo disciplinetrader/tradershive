@@ -25,6 +25,8 @@ import {
   type CloseReason, type OrderDraft, type PositionOrder,
 } from "./model";
 import { isLive, transition } from "./lifecycle";
+import { toExecutionMarks } from "./executions";
+
 import { evaluateTick, type EngineIntent, type FillIntent, type MarketTick } from "./engine";
 import {
   advancedMetrics, applyBreakEven, applyTrailing, closureAggregate, evaluateAutoBreakEven,
