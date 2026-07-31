@@ -8239,97 +8239,148 @@ export type Database = {
       }
       replay_sessions: {
         Row: {
+          actual_end: string | null
+          actual_start: string | null
+          adjustment_mode: string | null
+          candle_count: number | null
+          canonical_symbol: string | null
           challenge_id: string | null
           completion_pct: number
+          coverage_status: string | null
           created_at: string
           cursor_ts: string | null
+          data_version: string | null
           deleted_at: string | null
           duration_seconds: number
+          exchange: string | null
+          expected_candle_count: number | null
           hide_future: boolean
           id: string
+          imported_at: string | null
           initial_balance: number | null
           is_favorite: boolean
           is_random: boolean
+          known_gaps: Json | null
           last_opened_at: string | null
           market: string
           mode: string
           playback_speed: number
+          provenance_recorded_at: string | null
           provider: string
           range_end: string | null
           range_start: string | null
           replay_date: string | null
+          requested_end: string | null
+          requested_start: string | null
           settings: Json
           source_journal_id: string | null
+          source_provider: string | null
           source_trade_id: string | null
+          source_type: string | null
           status: string
           strategy_id: string | null
           symbol: string
           tags: string[]
           timeframe: string
+          timezone: string | null
           title: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          actual_end?: string | null
+          actual_start?: string | null
+          adjustment_mode?: string | null
+          candle_count?: number | null
+          canonical_symbol?: string | null
           challenge_id?: string | null
           completion_pct?: number
+          coverage_status?: string | null
           created_at?: string
           cursor_ts?: string | null
+          data_version?: string | null
           deleted_at?: string | null
           duration_seconds?: number
+          exchange?: string | null
+          expected_candle_count?: number | null
           hide_future?: boolean
           id?: string
+          imported_at?: string | null
           initial_balance?: number | null
           is_favorite?: boolean
           is_random?: boolean
+          known_gaps?: Json | null
           last_opened_at?: string | null
           market: string
           mode?: string
           playback_speed?: number
+          provenance_recorded_at?: string | null
           provider?: string
           range_end?: string | null
           range_start?: string | null
           replay_date?: string | null
+          requested_end?: string | null
+          requested_start?: string | null
           settings?: Json
           source_journal_id?: string | null
+          source_provider?: string | null
           source_trade_id?: string | null
+          source_type?: string | null
           status?: string
           strategy_id?: string | null
           symbol: string
           tags?: string[]
           timeframe?: string
+          timezone?: string | null
           title?: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          actual_end?: string | null
+          actual_start?: string | null
+          adjustment_mode?: string | null
+          candle_count?: number | null
+          canonical_symbol?: string | null
           challenge_id?: string | null
           completion_pct?: number
+          coverage_status?: string | null
           created_at?: string
           cursor_ts?: string | null
+          data_version?: string | null
           deleted_at?: string | null
           duration_seconds?: number
+          exchange?: string | null
+          expected_candle_count?: number | null
           hide_future?: boolean
           id?: string
+          imported_at?: string | null
           initial_balance?: number | null
           is_favorite?: boolean
           is_random?: boolean
+          known_gaps?: Json | null
           last_opened_at?: string | null
           market?: string
           mode?: string
           playback_speed?: number
+          provenance_recorded_at?: string | null
           provider?: string
           range_end?: string | null
           range_start?: string | null
           replay_date?: string | null
+          requested_end?: string | null
+          requested_start?: string | null
           settings?: Json
           source_journal_id?: string | null
+          source_provider?: string | null
           source_trade_id?: string | null
+          source_type?: string | null
           status?: string
           strategy_id?: string | null
           symbol?: string
           tags?: string[]
           timeframe?: string
+          timezone?: string | null
           title?: string
           updated_at?: string
           user_id?: string
