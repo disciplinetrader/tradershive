@@ -146,7 +146,10 @@ export class PositionOrderStore {
       trace({ op: "reconcile:skipped", source, scope: this.scope, reason: `orders ${this.status}` });
       return;
     }
-    const next = this.orders.filter((o) => drawingIds.has(o.drawingId));
+    // A live position outlives its drawing: deleting the chart object must
+    // never silently vaporise market exposure. It can only leave via an
+    // explicit close, so live orders are exempt from reconciliation.
+    const next = this.orders.filter((o) => drawingIds.has(o.drawingId) || isLive(o.status));
     if (next.length === this.orders.length) return;
     trace({
       op: "reconcile", source, scope: this.scope,
