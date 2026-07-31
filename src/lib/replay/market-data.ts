@@ -141,6 +141,9 @@ const providers: Record<string, MarketDataProvider> = {
  */
 export function getProvider(id?: string | null): MarketDataProvider | undefined {
   if (!id) return undefined;
+  // The synthetic generator is never reachable by id in production; it must be
+  // requested explicitly through getSyntheticProvider().
+  if (id === SYNTHETIC_PROVIDER_ID && !syntheticReplayEnabled()) return undefined;
   return providers[id];
 }
 
