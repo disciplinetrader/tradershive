@@ -77,7 +77,7 @@ function livePosition(stores: ReturnType<typeof makeStores>, over: Partial<Order
   stores.orders.add(order);
   const filled = fillOrder(
     stores,
-    { kind: "fill", orderId: order.id, fillPrice: order.entry, slippage: 0, executionSource: "limit_touch" },
+    { kind: "fill", orderId: order.id, fillPrice: order.entry, slippage: 0, executionSource: "trigger" },
     1_000,
   );
   return filled!;
