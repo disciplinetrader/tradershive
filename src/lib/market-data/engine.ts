@@ -55,7 +55,11 @@ const LIVE_PROVIDER_OVERRIDES: Partial<Record<MarketKind, string>> = {
 class MarketDataEngine {
   private quoteCache = new TTLCache<Quote>(QUOTE_CACHE_MS);
   private candleCache = new TTLCache<Candle[]>(CANDLE_CACHE_MS);
-  private fanout = new Map<string, { upstream: SubscriptionHandle; handlers: Set<QuoteHandler> }>();
+  private fanout = new Map<string, {
+    upstream: SubscriptionHandle; handlers: Set<QuoteHandler>;
+    watchdog?: ReturnType<typeof setTimeout>; recovery?: ReturnType<typeof setTimeout>;
+  }>();
+
   private assignments = new Map<MarketKind, Assignment>();
   private initialized = false;
   private loadPromise: Promise<void> | null = null;
