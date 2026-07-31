@@ -22,6 +22,8 @@ interface Props {
   marketPrice?: number | null;
   tick?: number;
   decimals?: number;
+  /** "edit" retitles the panel for an existing pending order. */
+  mode?: "create" | "edit";
   /** Live-inferred type, shown as a hint when the user overrides it. */
   inferredType?: OrderType | null;
   onConfirm: (draft: OrderDraft) => void;
@@ -47,18 +49,58 @@ function Row({ label, value, tone }: { label: string; value: string; tone?: "up"
   );
 }
 
+function LevelField({
+  label, value, onChange, step, tone, testId,
+}: {
+  label: string; value: string; onChange: (v: string) => void;
+  step: number; tone?: "up" | "down"; testId: string;
+}) {
+  return (
+    <label className="flex flex-col gap-1">
+      <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</span>
+      <input
+        type="number"
+        inputMode="decimal"
+        step={step}
+        value={value}
+        data-testid={testId}
+        aria-label={label}
+        onChange={(e) => onChange(e.target.value)}
+        className={cn(
+          "w-full rounded-md border border-border bg-background px-2 py-1.5 font-mono text-[12px] tabular-nums outline-none focus:border-primary",
+          tone === "up" && "text-success",
+          tone === "down" && "text-danger",
+        )}
+      />
+    </label>
+  );
+}
+
 export function PositionOrderDialog({
-  draft, marketPrice, tick, decimals = 4, inferredType, onConfirm, onEdit, onCancel,
+  draft, marketPrice, tick, decimals = 4, mode = "create", inferredType, onConfirm, onEdit, onCancel,
 }: Props) {
   const [orderType, setOrderType] = useState<OrderType>(draft?.orderType ?? "market");
+  const [levels, setLevels] = useState({
+    entry: draft ? String(draft.entry) : "",
+    stop: draft ? String(draft.stop) : "",
+    target: draft ? String(draft.target) : "",
+  });
 
   useEffect(() => {
-    if (draft) setOrderType(draft.orderType);
-  }, [draft?.drawingId, draft?.orderType]);
+    if (!draft) return;
+    setOrderType(draft.orderType);
+    setLevels({ entry: String(draft.entry), stop: String(draft.stop), target: String(draft.target) });
+  }, [draft?.drawingId, draft?.orderType, draft?.entry, draft?.stop, draft?.target]);
+
+  const parsed = useMemo(() => ({
+    entry: Number(levels.entry),
+    stop: Number(levels.stop),
+    target: Number(levels.target),
+  }), [levels]);
 
   const current = useMemo<OrderDraft | null>(
-    () => (draft ? { ...draft, orderType } : null),
-    [draft, orderType],
+    () => (draft ? { ...draft, ...parsed, orderType } : null),
+    [draft, parsed, orderType],
   );
 
   const validation = useMemo(
@@ -68,12 +110,14 @@ export function PositionOrderDialog({
 
   if (!draft || !current) return null;
 
-  const fmt = (n: number) => n.toFixed(decimals);
+  const fmt = (n: number) => (Number.isFinite(n) ? n.toFixed(decimals) : "—");
   const risk = Math.abs(current.entry - current.stop);
   const reward = Math.abs(current.target - current.entry);
   const rr = risk > 0 ? reward / risk : 0;
   const distance = entryDistance(current, marketPrice);
   const isBuy = current.direction === "buy";
+  const step = tick && tick > 0 ? tick : 10 ** -decimals;
+
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onCancel(); }}>
@@ -88,10 +132,12 @@ export function PositionOrderDialog({
             >
               {isBuy ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
             </span>
-            Confirm {isBuy ? "Buy" : "Sell"} order · {current.symbol}
+            {mode === "edit" ? "Edit" : "Confirm"} {isBuy ? "Buy" : "Sell"} order · {current.symbol}
           </DialogTitle>
           <DialogDescription>
-            Review the levels below. Nothing is submitted until you confirm.
+            {mode === "edit"
+              ? "Adjust the levels below. The existing order is updated in place."
+              : "Review the levels below. Nothing is submitted until you confirm."}
           </DialogDescription>
         </DialogHeader>
 
@@ -110,6 +156,7 @@ export function PositionOrderDialog({
                 <button
                   key={t}
                   type="button"
+                  data-testid={`order-type-${t}`}
                   onClick={() => setOrderType(t)}
                   className={cn(
                     "rounded-md border px-2 py-1.5 text-[12px] font-medium transition-colors",
@@ -124,10 +171,22 @@ export function PositionOrderDialog({
             </div>
           </div>
 
+          <div className="grid grid-cols-3 gap-2">
+            <LevelField
+              label="Entry" testId="order-entry" step={step}
+              value={levels.entry} onChange={(v) => setLevels((s) => ({ ...s, entry: v }))}
+            />
+            <LevelField
+              label="Stop loss" testId="order-stop" step={step} tone="down"
+              value={levels.stop} onChange={(v) => setLevels((s) => ({ ...s, stop: v }))}
+            />
+            <LevelField
+              label="Take profit" testId="order-target" step={step} tone="up"
+              value={levels.target} onChange={(v) => setLevels((s) => ({ ...s, target: v }))}
+            />
+          </div>
+
           <div className="rounded-lg border bg-muted/30 px-3 py-1">
-            <Row label="Entry" value={fmt(current.entry)} />
-            <Row label="Stop loss" value={fmt(current.stop)} tone="down" />
-            <Row label="Take profit" value={fmt(current.target)} tone="up" />
             <Row label="Risk" value={fmt(risk)} tone="down" />
             <Row label="Reward" value={fmt(reward)} tone="up" />
             <Row label="Risk : Reward" value={`1 : ${rr.toFixed(2)}`} />
@@ -144,7 +203,7 @@ export function PositionOrderDialog({
           </div>
 
           {!validation.ok ? (
-            <Alert variant="destructive" className="py-2">
+            <Alert variant="destructive" className="py-2" data-testid="order-validation-errors">
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
                 <ul className="list-disc space-y-0.5 pl-4 text-[12px]">
@@ -157,15 +216,17 @@ export function PositionOrderDialog({
 
         <div className="flex items-center justify-end gap-2">
           <Button variant="ghost" onClick={onCancel}>Cancel</Button>
-          <Button variant="outline" onClick={onEdit}>Edit</Button>
+          <Button variant="outline" onClick={onEdit}>Adjust on chart</Button>
           <Button
             disabled={!validation.ok}
+            data-testid="order-confirm"
             onClick={() => onConfirm(current)}
             className={cn(isBuy ? "bg-success hover:bg-success/90" : "bg-danger hover:bg-danger/90", "text-white")}
           >
-            Confirm
+            {mode === "edit" ? "Save changes" : "Confirm"}
           </Button>
         </div>
+
       </DialogContent>
     </Dialog>
   );

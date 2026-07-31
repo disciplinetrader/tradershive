@@ -776,6 +776,22 @@ function nearRect(px: number, py: number, x1: number, y1: number, x2: number, y2
   );
 }
 
+/**
+ * Topmost-wins pick used by selection and the right-click context menu.
+ * Hidden drawings are skipped; the last drawing in paint order (visually on
+ * top) is returned so the menu always targets what the user sees.
+ */
+export function pickDrawingAt(
+  list: Drawing[], c: ChartCoords, px: number, py: number,
+): Drawing | null {
+  for (let i = list.length - 1; i >= 0; i--) {
+    const d = list[i];
+    if (d.hidden) continue;
+    if (hitTest(d, c, px, py)) return d;
+  }
+  return null;
+}
+
 export function hitTest(d: Drawing, c: ChartCoords, px: number, py: number): boolean {
   if (d.hidden) return false;
   const pts = project(d, c);

@@ -8,7 +8,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { makeDrawing } from "../store";
-import { moveAnchor, positionGeometry, translateDrawing, anchorsFor, hitTest } from "../render";
+import { moveAnchor, positionGeometry, translateDrawing, anchorsFor, hitTest, pickDrawingAt } from "../render";
 import { snapPrice, tickFromPrecision, type ChartCoords, type Drawing } from "../types";
 
 const T0 = 1_700_000_000_000;
@@ -131,5 +131,25 @@ describe("position tool anchoring", () => {
     expect(ids).toEqual(["p0", "p1", "p2", "tStart", "tEnd"]);
     const g = positionGeometry(d, c)!;
     expect(hitTest(d, c, (g.x1 + g.x2) / 2, g.entryY)).toBe(true);
+  });
+});
+
+describe("context-menu hit-test", () => {
+  it("targets the topmost position drawing under the cursor", () => {
+    const c = coords();
+    const below = position();
+    const above = { ...position(), id: "on-top" };
+    const g = positionGeometry(above, c)!;
+    const picked = pickDrawingAt([below, above], c, (g.x1 + g.x2) / 2, g.entryY);
+    expect(picked?.id).toBe("on-top");
+  });
+
+  it("skips hidden drawings and returns null on empty chart space", () => {
+    const c = coords();
+    const d = position();
+    const g = positionGeometry(d, c)!;
+    expect(pickDrawingAt([{ ...d, hidden: true }], c, (g.x1 + g.x2) / 2, g.entryY)).toBeNull();
+    // far away from the tool → no hit, so the native browser menu is kept
+    expect(pickDrawingAt([d], c, g.x1 - 400, g.entryY + 400)).toBeNull();
   });
 });

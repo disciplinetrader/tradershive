@@ -19,9 +19,10 @@ import { tickFromPrecision } from "@/lib/chart/drawings/types";
 import { positionOrderStore } from "@/lib/chart/orders/store";
 import { trace } from "@/lib/chart/orders/debug";
 import {
-  ORDER_TYPE_LABELS, createOrder, draftFromDrawing, inferOrderType, validateOrder, withLevels,
+  draftFromDrawing, inferOrderType, withLevels,
   type OrderDraft, type OrderType, type PositionOrder,
 } from "@/lib/chart/orders/model";
+import { badgeFor, cancelPendingOrder, placeOrEditOrder } from "@/lib/chart/orders/service";
 
 interface Options {
   store: DrawingStore;
@@ -29,10 +30,6 @@ interface Options {
   marketPrice?: number | null;
   pricePrecision?: number;
   riskBudget?: number;
-}
-
-function badgeFor(order: PositionOrder) {
-  return `${ORDER_TYPE_LABELS[order.orderType]} · ${order.status === "pending" ? "Pending" : order.status}`;
 }
 
 export function usePositionOrders({
@@ -53,6 +50,7 @@ export function usePositionOrders({
   );
 
   const [draft, setDraft] = useState<OrderDraft | null>(null);
+  const [draftMode, setDraftMode] = useState<"create" | "edit">("create");
 
   // Orders are scoped per symbol, exactly like drawings. `setScope` hydrates
   // the new scope itself and refuses to flush an un-hydrated (empty) list, so
@@ -64,7 +62,7 @@ export function usePositionOrders({
   const openDraft = useCallback((d: Drawing) => {
     if (!isPositionKind(d.kind)) return;
     const next = draftFromDrawing(d, { symbol, marketPrice, tick, riskBudget });
-    if (next) setDraft(next);
+    if (next) { setDraftMode("create"); setDraft(next); }
   }, [symbol, marketPrice, tick, riskBudget]);
 
   /** Reopen the ticket for an existing drawing (place or edit its order). */
@@ -74,7 +72,10 @@ export function usePositionOrders({
     const next = draftFromDrawing(d, { symbol, marketPrice, tick, riskBudget });
     if (!next) return;
     const existing = positionOrderStore.byDrawing(id);
-    setDraft(existing ? { ...next, orderType: existing.orderType } : next);
+    setDraftMode(existing ? "edit" : "create");
+    setDraft(existing
+      ? { ...next, orderType: existing.orderType, entry: existing.entry, stop: existing.stop, target: existing.target }
+      : next);
   }, [store, symbol, marketPrice, tick, riskBudget]);
 
   const closeDraft = useCallback(() => setDraft(null), []);
@@ -84,34 +85,28 @@ export function usePositionOrders({
     [draft, marketPrice, tick],
   );
 
-  /** Confirm — create the pending order and badge its drawing. */
+  /** Confirm — create the pending order, or update it in place when editing. */
   const confirmDraft = useCallback((d: OrderDraft): PositionOrder | null => {
-    const check = validateOrder(d, { marketPrice, tick });
-    if (!check.ok) return null;
-    const order = createOrder(d);
-    positionOrderStore.add(order);
-    const target = store.list().find((x) => x.id === d.drawingId);
-    if (target) {
-      store.patch(d.drawingId, { orderId: order.id, orderBadge: badgeFor(order) });
-      store.commit();
-    }
+    const res = placeOrEditOrder({ drawings: store, orders: positionOrderStore }, d, { marketPrice, tick });
+    if (!res.ok) return null;
     setDraft(null);
-    return order;
+    return res.order;
   }, [store, marketPrice, tick]);
 
-  /** Cancel a pending order; the drawing stays on the chart, un-badged. */
+  /**
+   * Cancel a pending order. Atomic: the canonical order is retired and the
+   * drawing is un-badged in one service call, so the two cannot diverge.
+   */
   const cancelOrder = useCallback((orderId: string) => {
-    const order = positionOrderStore.byId(orderId);
-    positionOrderStore.cancel(orderId);
-    positionOrderStore.remove(orderId);
-    if (order) {
-      const target = store.list().find((x) => x.id === order.drawingId);
-      if (target) {
-        store.patch(order.drawingId, { orderId: undefined, orderBadge: undefined });
-        store.commit();
-      }
-    }
+    return cancelPendingOrder({ drawings: store, orders: positionOrderStore }, orderId);
   }, [store]);
+
+  /** Open the edit ticket straight from an order id (no right-click needed). */
+  const editOrder = useCallback((orderId: string) => {
+    const order = positionOrderStore.byId(orderId);
+    if (!order) return;
+    openDraftForId(order.drawingId);
+  }, [openDraftForId]);
 
   /** Manual order-type change on a pending order. */
   const setOrderType = useCallback((orderId: string, orderType: OrderType) => {
@@ -165,7 +160,7 @@ export function usePositionOrders({
   const pending = useMemo(() => orders.filter((o) => o.status === "pending"), [orders]);
 
   return {
-    draft, inferredType, openDraft, openDraftForId, closeDraft, confirmDraft,
-    cancelOrder, setOrderType, pendingOrders: pending, tick,
+    draft, draftMode, inferredType, openDraft, openDraftForId, closeDraft, confirmDraft,
+    cancelOrder, editOrder, setOrderType, pendingOrders: pending, tick,
   };
 }
