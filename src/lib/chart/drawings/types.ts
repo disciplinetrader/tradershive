@@ -123,7 +123,28 @@ export interface Drawing {
    * trade", which is how a closed trade is visually distinguishable.
    */
   closedTrade?: ClosedTradeStamp;
+  /**
+   * Execution tape stamp (Phase 6). Canonical time + price anchors for every
+   * fill on the position behind this drawing — open, scale-in, partial close,
+   * take-profit, stop-out, final exit — plus protective-level moves. Because
+   * the marks are stored as chart coordinates (never pixels) they stay glued
+   * to the candles through zoom, pan, resize, refresh, replay and timeframe
+   * switches, exactly like the position geometry itself.
+   */
+  executionMarks?: ExecutionMark[];
 
+}
+
+export interface ExecutionMark {
+  id: string;
+  seq: number;
+  time: number;
+  price: number;
+  /** Mirrors ExecutionKind from the order layer (kept structural to avoid a cycle). */
+  kind: string;
+  quantity: number;
+  realizedR: number;
+  label?: string;
 }
 
 export interface ClosedTradeStamp {
@@ -138,6 +159,7 @@ export interface ClosedTradeStamp {
   closeReason: "manual" | "stop_loss" | "take_profit";
   outcome: "win" | "loss" | "breakeven";
 }
+
 
 
 export const DEFAULT_STYLE: DrawingStyle = {

@@ -167,3 +167,39 @@ export function isFlat(remaining: number, original: number) {
   const eps = Math.max(1e-9, Math.abs(original) * 1e-9);
   return remaining <= eps;
 }
+
+/**
+ * Chart-anchored view of the tape (Phase 6, section 12).
+ *
+ * Pure projection of executions into canonical time/price marks the renderer
+ * can paint. Level moves are kept — a trailing stop step is part of the story
+ * of the trade — but carry zero quantity so they render as ticks, not fills.
+ */
+export interface ExecutionMarkView {
+  id: string;
+  seq: number;
+  time: number;
+  price: number;
+  kind: ExecutionKind;
+  quantity: number;
+  realizedR: number;
+  label: string;
+}
+
+export function toExecutionMarks(
+  executions: readonly PositionExecution[] | undefined,
+): ExecutionMarkView[] {
+  if (!executions?.length) return [];
+  return orderedExecutions(executions)
+    .filter((e) => Number.isFinite(e.time) && Number.isFinite(e.price) && e.price > 0)
+    .map((e) => ({
+      id: e.id,
+      seq: e.seq,
+      time: e.time,
+      price: e.price,
+      kind: e.kind,
+      quantity: e.quantity,
+      realizedR: e.realizedR,
+      label: e.note ?? EXECUTION_LABEL[e.kind],
+    }));
+}
