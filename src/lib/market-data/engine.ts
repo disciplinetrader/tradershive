@@ -42,6 +42,16 @@ const DEFAULT_ASSIGNMENTS: Partial<Record<MarketKind, { primary: string; fallbac
 
 type Assignment = { primary: string; fallback: string | null };
 
+/**
+ * LIVE-quote provider preferences (historical routing is NOT affected).
+ * Finnhub's plan only entitles US equities via `/quote`; forex, metals and
+ * CFD indices return HTTP 403, so those stay on Twelve Data for live too.
+ */
+const LIVE_PROVIDER_OVERRIDES: Partial<Record<MarketKind, string>> = {
+  stocks: "finnhub",
+};
+
+
 class MarketDataEngine {
   private quoteCache = new TTLCache<Quote>(QUOTE_CACHE_MS);
   private candleCache = new TTLCache<Candle[]>(CANDLE_CACHE_MS);
