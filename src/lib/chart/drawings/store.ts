@@ -51,6 +51,8 @@ export class DrawingStore {
   }
 
   list() { return this.drawings; }
+  /** Current persistence scope (symbol). */
+  scopeValue() { return this.scope; }
   selected() { return this.drawings.find((d) => d.id === this.selectedId) ?? null; }
   selectedIdValue() { return this.selectedId; }
   canUndo() { return this.undoStack.length > 0; }

@@ -524,6 +524,13 @@ function drawPosition(
   ]);
   for (const r of rows) pill(ctx, r.text, x1 + 6, r.y, r.color, POS_PANEL);
 
+  // Pending-order badge (Phase 2). Painted above the box; purely a label —
+  // it never participates in geometry or hit-testing.
+  if (d.orderBadge) {
+    ctx.font = POS_FONT(10, 700);
+    pill(ctx, d.orderBadge, x1 + 6, boxTop - 11, m.long ? POS_GREEN : POS_RED, POS_PANEL);
+  }
+
   // Compact R:R badge always visible; the full metrics panel on hover/select.
   const rrText = `R:R 1 : ${m.rr.toFixed(2)}`;
   if (!active) {
@@ -533,6 +540,7 @@ function drawPosition(
   } else {
     drawMetricsPanel(ctx, c, m, x2, boxTop, boxBottom, rrText);
   }
+
 
   ctx.restore();
 }

@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { Copy, Eye, EyeOff, Lock, LockOpen, Settings2, Tag, Trash2 } from "lucide-react";
+import { Copy, Eye, EyeOff, Lock, LockOpen, Settings2, Tag, Trash2, Ticket, XCircle } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type { DrawingStore } from "@/lib/chart/drawings/store";
-import { LABELLED_KINDS } from "@/lib/chart/drawings/types";
+import { LABELLED_KINDS, isPositionKind } from "@/lib/chart/drawings/types";
 
 
 const COLORS = ["#38bdf8", "#22c55e", "#ef4444", "#f59e0b", "#a855f7", "#e2e8f0"];
@@ -20,10 +20,14 @@ interface Props {
   onClose: () => void;
   /** Store revision so the menu re-renders after style/lock changes. */
   revision?: unknown;
+  /** Open the order ticket for a Position Tool drawing (Phase 2). */
+  onOpenOrderTicket?: (id: string) => void;
+  /** Cancel the pending order attached to a Position Tool drawing. */
+  onCancelOrder?: (orderId: string) => void;
 }
 
 /** Right-click menu for a chart drawing: settings, duplicate, lock, delete. */
-export function DrawingContextMenu({ store, menu, onClose, revision }: Props) {
+export function DrawingContextMenu({ store, menu, onClose, revision, onOpenOrderTicket, onCancelOrder }: Props) {
   const [showSettings, setShowSettings] = useState(false);
   const drawing = store.list().find((d) => d.id === menu.id);
 
@@ -105,6 +109,22 @@ export function DrawingContextMenu({ store, menu, onClose, revision }: Props) {
           )}
         </div>
       )}
+
+      {isPositionKind(drawing.kind) && onOpenOrderTicket ? (
+        <Item
+          icon={Ticket}
+          label={drawing.orderId ? "Edit order" : "Place order"}
+          onClick={() => { onOpenOrderTicket(drawing.id); onClose(); }}
+        />
+      ) : null}
+      {drawing.orderId && onCancelOrder ? (
+        <Item
+          icon={XCircle}
+          label="Cancel order"
+          danger
+          onClick={() => { onCancelOrder(drawing.orderId!); onClose(); }}
+        />
+      ) : null}
 
       <Item icon={Copy} label="Duplicate" onClick={() => { store.duplicate(drawing.id); onClose(); }} />
       <Item

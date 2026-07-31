@@ -25,6 +25,9 @@ import { ChartEngine } from "@/components/chart/ChartEngine";
 import { DrawingToolRail } from "@/components/chart/DrawingToolRail";
 import { useChartDrawings } from "@/components/chart/useChartDrawings";
 import { ChartTextEditor } from "@/components/chart/ChartTextEditor";
+import { PositionOrderDialog } from "@/components/chart/PositionOrderDialog";
+import { usePositionOrders } from "@/components/chart/usePositionOrders";
+
 import { DrawingContextMenu } from "@/components/chart/DrawingContextMenu";
 import { DrawingStore } from "@/lib/chart/drawings/store";
 import type { ToolId } from "@/lib/chart/drawings/types";
@@ -320,6 +323,15 @@ function TradingWorkspaceInner() {
   }, [adapter]);
 
 
+  // Position Tool → pending orders (Phase 2). Creation only: orders are
+  // local Paper Trading objects and are never sent to an execution API here.
+  const positionOrders = usePositionOrders({
+    store: drawingStore,
+    symbol,
+    marketPrice: last,
+    pricePrecision: decimals,
+  });
+
   const {
     drawings: drawingRevision, menu: drawingMenu, closeMenu: closeDrawingMenu,
     textEditor, commitTextEditor, cancelTextEditor, updateTextEditor,
@@ -332,20 +344,9 @@ function TradingWorkspaceInner() {
     candles,
     pricePrecision: decimals,
     enabled: !drawingsHidden,
-    onPositionDrawn: (d) => {
-      emitTradeIntent({
-        kind: "prefill",
-        side: d.kind === "long_position" ? "long" : "short",
-        orderType: "market",
-        price: d.points[0].price,
-        tp: d.points[1].price,
-        sl: d.points[2].price,
-      });
-      setRightOpen(true);
-      setActiveTab("order");
-      toast.success("Position tool sent to the Order Panel");
-    },
+    onPositionDrawn: (d) => positionOrders.openDraft(d),
   });
+
 
 
 
@@ -999,12 +1000,37 @@ function TradingWorkspaceInner() {
         <SymbolSearch open={symbolSearchOpen} onOpenChange={setSymbolSearchOpen} />
         <AlertsDialog open={alertsOpen} onOpenChange={setAlertsOpen} symbol={symbol} />
 
+        <PositionOrderDialog
+          draft={positionOrders.draft}
+          marketPrice={last}
+          tick={positionOrders.tick}
+          decimals={decimals}
+          inferredType={positionOrders.inferredType}
+          onConfirm={(d) => {
+            const order = positionOrders.confirmDraft(d);
+            if (order) {
+              toast.success(`${order.direction === "buy" ? "Buy" : "Sell"} order pending`, {
+                description: `${order.symbol} @ ${order.entry.toFixed(decimals)} · R:R 1 : ${order.rr.toFixed(2)}`,
+              });
+            }
+          }}
+          onEdit={() => {
+            positionOrders.closeDraft();
+            toast.info("Adjust the position on the chart, then reopen the ticket to confirm");
+          }}
+          onCancel={() => positionOrders.closeDraft()}
+        />
+
+
+
         {drawingMenu && (
           <DrawingContextMenu
             store={drawingStore}
             menu={drawingMenu}
             onClose={closeDrawingMenu}
             revision={drawingRevision}
+            onOpenOrderTicket={positionOrders.openDraftForId}
+            onCancelOrder={(id) => { positionOrders.cancelOrder(id); toast.success("Pending order cancelled"); }}
           />
         )}
       </div>

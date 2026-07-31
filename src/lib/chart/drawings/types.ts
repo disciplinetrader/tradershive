@@ -107,6 +107,15 @@ export interface Drawing {
   locked?: boolean;
   hidden?: boolean;
   createdAt: number;
+  /**
+   * Position Tool order link (Phase 2). Present once the drawing has been
+   * confirmed as a pending order; purely descriptive — geometry, anchoring
+   * and dragging behaviour are unchanged.
+   */
+  orderId?: string;
+  /** Short badge painted on the tool, e.g. "Buy Limit · Pending". */
+  orderBadge?: string;
+
 }
 
 export const DEFAULT_STYLE: DrawingStyle = {
