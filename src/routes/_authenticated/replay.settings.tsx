@@ -90,12 +90,16 @@ function ReplaySettingsPage() {
         <GlassCard className="p-5 space-y-3">
           <div className="flex items-center gap-2 text-sm font-semibold"><Layers className="h-4 w-4" /> Data Provider</div>
           <p className="text-xs text-muted-foreground">
-            Replay uses a pluggable Market Data Provider layer. The current default is a deterministic synthetic
-            provider so every replay of the same date/symbol looks identical.
+            Replay plays back <span className="font-medium text-foreground">stored historical market data</span> only.
+            The provider for each session is decided by that symbol&apos;s historical assignment (Admin → Market Data)
+            and is recorded on the session itself, so every session tells you exactly where its candles came from.
           </p>
-          <div className="rounded-lg bg-background/40 border border-border/40 px-3 py-2 text-xs">
-            <span className="font-medium">Active provider:</span> synthetic
-          </div>
+          <ul className="space-y-1.5 rounded-lg border border-border/40 bg-background/40 px-3 py-2 text-xs text-muted-foreground">
+            <li>• Source: stored historical candles, backfilled on demand when missing</li>
+            <li>• Provider: selected per symbol by historical symbol assignment</li>
+            <li>• Real-data replay only — sessions without coverage show an actionable error</li>
+            <li>• Synthetic/demo candles are disabled in production and always badged <span className="font-medium">DEMO DATA</span></li>
+          </ul>
         </GlassCard>
 
         <GlassCard className="p-5 space-y-3">
