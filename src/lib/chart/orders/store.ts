@@ -127,13 +127,23 @@ export class PositionOrderStore {
   }
 
   /** Drop orders whose drawing no longer exists (drawing deleted / cleared). */
-  reconcile(drawingIds: Set<string>) {
+  reconcile(drawingIds: Set<string>, source = "unknown") {
+    if (this.status !== "hydrated") {
+      trace({ op: "reconcile:skipped", source, scope: this.scope, reason: `orders ${this.status}` });
+      return;
+    }
     const next = this.orders.filter((o) => drawingIds.has(o.drawingId));
     if (next.length === this.orders.length) return;
+    trace({
+      op: "reconcile", source, scope: this.scope,
+      prev: this.orders.length, next: next.length,
+      extra: { drawingIds: [...drawingIds] },
+    });
     this.orders = next;
-    this.persist();
+    this.persist("reconcile");
     this.emit();
   }
+
 }
 
 /** Shared singleton — the chart, ticket and tables all read the same state. */
