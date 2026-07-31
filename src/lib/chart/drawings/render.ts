@@ -8,6 +8,7 @@
  */
 
 import { axisLockFor, isPositionKind, snapPrice, TEXT_LIMITS, textLines } from "./types";
+import { compact, positionMetrics, tickFromFormatter, type PositionMetrics } from "./position";
 import type { ChartCoords, Drawing, DrawingPoint } from "./types";
 
 /** Line height multiplier shared by the renderer and the inline editor. */
