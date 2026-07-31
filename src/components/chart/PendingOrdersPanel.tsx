@@ -57,6 +57,7 @@ export function PendingOrdersPanel({ orders, decimals = 4, onEdit, onCancel, cla
             size="sm"
             variant="ghost"
             className="h-6 px-1.5 text-[10px]"
+            aria-label={`Edit order ${o.symbol} ${ORDER_TYPE_LABELS[o.orderType]}`}
             data-testid="pending-order-edit"
             onClick={() => onEdit(o.id)}
           >
@@ -66,6 +67,7 @@ export function PendingOrdersPanel({ orders, decimals = 4, onEdit, onCancel, cla
             size="sm"
             variant="ghost"
             className="h-6 px-1.5 text-[10px] text-danger hover:bg-danger/10"
+            aria-label={`Cancel order ${o.symbol} ${ORDER_TYPE_LABELS[o.orderType]}`}
             data-testid="pending-order-cancel"
             onClick={() => onCancel(o.id)}
           >
