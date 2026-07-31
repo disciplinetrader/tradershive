@@ -141,12 +141,16 @@ export function usePositionOrders({
       });
       return;
     }
-    const ids = new Set(drawings.map((d) => d.id));
+    // Read the live store, never the React snapshot: on reload the snapshot
+    // captured before hydration is an empty list, and reconciling against it
+    // would delete every persisted order. `drawings` stays in the dep list
+    // purely as the change trigger.
+    const live = store.list();
+    const ids = new Set(live.map((d) => d.id));
     positionOrderStore.reconcile(ids, "usePositionOrders");
 
-
     for (const order of positionOrderStore.pending()) {
-      const d = drawings.find((x) => x.id === order.drawingId);
+      const d = live.find((x) => x.id === order.drawingId);
       if (!d || d.points.length < 3) continue;
       const entry = d.points[0].price;
       const target = d.points[1].price;
@@ -155,6 +159,7 @@ export function usePositionOrders({
       positionOrderStore.replace(withLevels(order, { entry, stop, target }));
     }
   }, [drawings, store, symbol]);
+
 
   const pending = useMemo(() => orders.filter((o) => o.status === "pending"), [orders]);
 
