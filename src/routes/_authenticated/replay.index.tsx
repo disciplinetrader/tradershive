@@ -221,11 +221,18 @@ function ReplayDashboard() {
             )}
           </div>
           {active ? (
-            <Button size="sm" asChild className="w-full">
-              <Link to="/replay/session" search={{ id: active.id } as never}>
-                <Play className="mr-2 h-3.5 w-3.5" /> Resume Session
-              </Link>
-            </Button>
+            <div className="space-y-2">
+              <Button size="sm" asChild className="w-full">
+                <Link to="/replay/session" search={{ id: active.id } as never}>
+                  <Play className="mr-2 h-3.5 w-3.5" /> Resume Session
+                </Link>
+              </Button>
+              <Button size="sm" variant="secondary" asChild className="w-full">
+                <Link to="/replay/studio" search={{ id: active.id } as never}>
+                  Open in Replay Studio (canonical engine)
+                </Link>
+              </Button>
+            </div>
           ) : (
             <Button size="sm" onClick={() => setWiz(true)} className="w-full">
               <Sparkles className="mr-2 h-3.5 w-3.5" /> Create Backtest
