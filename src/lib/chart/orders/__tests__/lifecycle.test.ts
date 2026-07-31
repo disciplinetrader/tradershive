@@ -204,8 +204,13 @@ describe("position management", () => {
     expect(closed?.status).toBe("closed");
     expect(closed?.realizedPnl).toBe(10);
     expect(closed?.realizedR).toBe(1);
-    // Second close is a no-op, never a double exit.
-    expect(closePosition(ctx.stores, orderId, { price: 115 })).toBeNull();
+    // Second close is idempotent (Phase 4): it resolves to the same closed
+    // order and its canonical trade, never a double exit.
+    const again = closePosition(ctx.stores, orderId, { price: 115 });
+    expect(again?.status).toBe("closed");
+    expect(again?.closePrice).toBe(110);
+    expect(again?.realizedPnl).toBe(10);
+
   });
 
   it("archives only after closing", () => {

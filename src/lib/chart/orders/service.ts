@@ -17,6 +17,9 @@
 
 import type { DrawingStore } from "@/lib/chart/drawings/store";
 import type { PositionOrderStore } from "./store";
+import type { ClosedTradeStore } from "./trade-store";
+import { closedTradeStore } from "./trade-store";
+import { buildClosedTrade, tradeResult, type ClosedTrade } from "./closed-trade";
 import {
   ORDER_TYPE_LABELS, createOrder, newPositionId, realizedResult, validateOrder, withLevels,
   type CloseReason, type OrderDraft, type PositionOrder,
@@ -27,12 +30,21 @@ import { evaluateTick, type EngineIntent, type FillIntent, type MarketTick } fro
 export interface OrderStores {
   drawings: DrawingStore;
   orders: PositionOrderStore;
+  /** Optional in call sites that predate Phase 4; defaults to the singleton. */
+  trades?: ClosedTradeStore;
+}
+
+function tradeStoreOf(stores: OrderStores): ClosedTradeStore {
+  return stores.trades ?? closedTradeStore;
 }
 
 export interface OrderContext {
   marketPrice?: number | null;
   tick?: number;
+  /** Asset class recorded on the closed trade, when the caller knows it. */
+  market?: string | null;
 }
+
 
 export type PlaceResult =
   | { ok: true; order: PositionOrder; created: boolean }
@@ -189,6 +201,11 @@ export function fillOrder(
     executionSource: intent.executionSource,
     slippage: intent.slippage,
     positionId: newPositionId(),
+    // Phase 4 immutable snapshot — captured once, never rewritten. A later
+    // stop drag or break-even move cannot re-base the original risk.
+    requestedEntry: current.requestedEntry ?? current.entry,
+    initialStop: current.initialStop ?? current.stop,
+    initialTarget: current.initialTarget ?? current.target,
   }, now);
   if (!filled) return null; // already filled / cancelled — no duplicate
   stores.orders.replace(filled);
@@ -205,18 +222,90 @@ export function fillOrder(
 }
 
 /**
+ * Write the canonical ClosedTrade for a closed order, and stamp the drawing
+ * as a completed-trade visualization.
+ *
+ * Idempotency: keyed on `positionId` inside the store, so repeated ticks,
+ * re-renders, refreshes and retries all resolve to the SAME record. Returns
+ * the existing trade with `created: false` in that case.
+ *
+ * Missing execution facts are reported, never fabricated — an incomplete
+ * order produces `{ ok: false, missing }` and no record is written.
+ */
+export function recordClosedTrade(
+  stores: OrderStores,
+  order: PositionOrder,
+  opts: { market?: string | null } = {},
+): { ok: true; trade: ClosedTrade; created: boolean } | { ok: false; missing: string[] } {
+  const trades = tradeStoreOf(stores);
+
+  if (order.positionId) {
+    const existing = trades.byPosition(order.positionId);
+    if (existing) {
+      stampDrawing(stores, existing);
+      return { ok: true, trade: existing, created: false };
+    }
+  }
+
+  const built = buildClosedTrade(order, { market: opts.market ?? null });
+  if (!built.ok) return built;
+
+  const { trade, created } = trades.add(built.trade);
+  stampDrawing(stores, trade);
+  return { ok: true, trade, created };
+}
+
+/**
+ * Retire the live position visualization and replace it with the completed
+ * trade marker. Only canonical values (time + price) are stored, so the
+ * markers stay anchored through zoom, pan, resize, refresh, fullscreen and
+ * timeframe changes exactly like every other drawing anchor.
+ */
+function stampDrawing(stores: OrderStores, trade: ClosedTrade) {
+  const d = stores.drawings.list().find((x) => x.id === trade.drawingId);
+  if (!d) return;
+  stores.drawings.patch(trade.drawingId, {
+    orderBadge: undefined,
+    closedTrade: {
+      tradeId: trade.id,
+      entryTime: trade.entryTime,
+      entryPrice: trade.fillPrice,
+      exitTime: trade.exitTime,
+      exitPrice: trade.exitPrice,
+      direction: trade.direction,
+      netPnl: trade.netPnl,
+      realizedR: trade.realizedR,
+      closeReason: trade.closeReason,
+      outcome: tradeResult(trade),
+    },
+  });
+  stores.drawings.commit();
+}
+
+/**
  * Close an open position at `price`.
  * open → closed. The drawing is retired: it keeps its geometry for review
- * but loses its order link, so it is no longer a tradable object.
+ * but loses its order link, so it is no longer a tradable object, and it is
+ * re-stamped as a completed trade.
+ *
+ * A close request for an already-closed order does NOT create a second
+ * trade — it resolves to the existing canonical record.
  */
 export function closePosition(
   stores: OrderStores,
   orderId: string,
-  opts: { price: number; reason?: CloseReason },
+  opts: { price: number; reason?: CloseReason; market?: string | null },
   now = Date.now(),
 ): PositionOrder | null {
   const current = stores.orders.byId(orderId);
   if (!current || !Number.isFinite(opts.price)) return null;
+
+  // Idempotent manual close: already closed → return the same order and make
+  // sure its canonical trade exists, without touching execution facts.
+  if (current.status === "closed" || current.status === "archived") {
+    recordClosedTrade(stores, current, { market: opts.market });
+    return current;
+  }
 
   // A position sitting in the transient `filled` state is advanced first so
   // the close is always a legal open → closed edge.
@@ -237,13 +326,35 @@ export function closePosition(
   if (!closed) return null;
   stores.orders.replace(closed);
 
-  const d = stores.drawings.list().find((x) => x.id === closed.drawingId);
-  if (d) {
-    stores.drawings.patch(closed.drawingId, { orderBadge: badgeForState(closed) });
-    stores.drawings.commit();
-  }
+  // Atomic with the close transition: the canonical trade is written in the
+  // same call, so a completed position can never exist without its record.
+  recordClosedTrade(stores, closed, { market: opts.market });
   return closed;
 }
+
+/**
+ * One-time reconciliation for Phase 3 positions that closed before the
+ * ClosedTrade record existed.
+ *
+ * Idempotent by construction — every write goes through `recordClosedTrade`,
+ * which is keyed on `positionId`. Records missing required execution fields
+ * are reported, never fabricated.
+ */
+export function reconcileClosedTrades(
+  stores: OrderStores,
+  opts: { market?: string | null } = {},
+): { created: number; existing: number; skipped: { orderId: string; missing: string[] }[] } {
+  const out = { created: 0, existing: 0, skipped: [] as { orderId: string; missing: string[] }[] };
+  for (const order of stores.orders.list()) {
+    if (order.status !== "closed" && order.status !== "archived") continue;
+    const res = recordClosedTrade(stores, order, opts);
+    if (!res.ok) out.skipped.push({ orderId: order.id, missing: res.missing });
+    else if (res.created) out.created += 1;
+    else out.existing += 1;
+  }
+  return out;
+}
+
 
 /** Apply one engine intent. Returns the resulting order, or null on no-op. */
 export function applyIntent(

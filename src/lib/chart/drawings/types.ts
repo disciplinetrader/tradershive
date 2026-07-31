@@ -115,8 +115,30 @@ export interface Drawing {
   orderId?: string;
   /** Short badge painted on the tool, e.g. "Buy Limit · Pending". */
   orderBadge?: string;
+  /**
+   * Completed-trade stamp (Phase 4). Present once the position behind this
+   * drawing has closed. Purely canonical values — time + price — so the
+   * markers stay anchored through zoom, pan, resize and timeframe changes.
+   * Its presence flips the renderer from "live position" to "historical
+   * trade", which is how a closed trade is visually distinguishable.
+   */
+  closedTrade?: ClosedTradeStamp;
 
 }
+
+export interface ClosedTradeStamp {
+  tradeId: string;
+  entryTime: number;
+  entryPrice: number;
+  exitTime: number;
+  exitPrice: number;
+  direction: "buy" | "sell";
+  netPnl: number;
+  realizedR: number;
+  closeReason: "manual" | "stop_loss" | "take_profit";
+  outcome: "win" | "loss" | "breakeven";
+}
+
 
 export const DEFAULT_STYLE: DrawingStyle = {
   color: "#38bdf8",

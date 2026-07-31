@@ -28,6 +28,10 @@ import { ChartTextEditor } from "@/components/chart/ChartTextEditor";
 import { PositionOrderDialog } from "@/components/chart/PositionOrderDialog";
 import { PendingOrdersPanel } from "@/components/chart/PendingOrdersPanel";
 import { OpenPositionsPanel } from "@/components/chart/OpenPositionsPanel";
+import { ClosedTradesPanel } from "@/components/chart/ClosedTradesPanel";
+import { useAuth } from "@/hooks/use-auth";
+import { useNavigate } from "@tanstack/react-router";
+
 import { usePositionOrders } from "@/components/chart/usePositionOrders";
 
 import { DrawingContextMenu } from "@/components/chart/DrawingContextMenu";
@@ -303,6 +307,9 @@ function TradingWorkspaceInner() {
 
   const meta = symbolMeta ?? findSymbol(symbol);
   const decimals = meta?.decimals ?? 2;
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
   const last = quote?.last ?? meta?.refPrice ?? 0;
   const bid = quote?.bid ?? last;
   const ask = quote?.ask ?? last;
@@ -332,6 +339,8 @@ function TradingWorkspaceInner() {
     symbol,
     marketPrice: last,
     pricePrecision: decimals,
+    market: (meta as { market?: string } | null)?.market ?? null,
+
     onFill: (o) => {
       toast.success(`${o.direction === "buy" ? "Long" : "Short"} filled`, {
         description: `${o.symbol} @ ${(o.fillPrice ?? o.entry).toFixed(decimals)}${o.slippage ? ` · slippage ${(-o.slippage).toFixed(decimals)}` : ""}`,
@@ -966,6 +975,37 @@ function TradingWorkspaceInner() {
                           onArchive={positionOrders.archive}
                         />
                       </AdaptiveSection>
+                      <AdaptiveSection
+                        title="Closed trades"
+                        count={positionOrders.visibleTrades.length}
+                        emptyLabel="No closed chart trades yet."
+                      >
+                        <ClosedTradesPanel
+                          trades={positionOrders.visibleTrades}
+                          filter={positionOrders.tradeFilter}
+                          onFilterChange={positionOrders.setTradeFilter}
+                          decimals={decimals}
+                          onViewOnChart={(t) => {
+                            drawingStore.select(t.drawingId);
+                            toast.info("Completed trade highlighted on the chart");
+                          }}
+                          onAddToJournal={async (t) => {
+                            if (!user?.id) { toast.error("Sign in to journal this trade"); return; }
+                            const res = await positionOrders.addToJournal(t.id, user.id);
+                            if (!res.ok) { toast.error(res.error); return; }
+                            toast.success(res.created ? "Journal entry created" : "Opening existing journal entry");
+                            navigate({ to: "/journal/$entryId", params: { entryId: res.entryId } });
+                          }}
+                          onOpenJournal={(t) => {
+                            if (t.journalEntryId) navigate({ to: "/journal/$entryId", params: { entryId: t.journalEntryId } });
+                          }}
+                          onArchive={(t, archived) => {
+                            positionOrders.archiveTrade(t.id, archived);
+                            toast.success(archived ? "Trade archived" : "Trade restored");
+                          }}
+                        />
+                      </AdaptiveSection>
+
                       <AdaptiveSection
                         title="Chart orders"
                         count={positionOrders.pendingOrders.length}

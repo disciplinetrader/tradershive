@@ -80,6 +80,17 @@ export interface PositionOrder {
   /** Slippage against the requested entry, signed against the trader. */
   slippage?: number;
 
+  // ── Immutable execution snapshot (Phase 4) ─────────────────────────────
+  // Captured once at fill time so a later stop drag or break-even move can
+  // never re-base the risk the trade was originally sized against.
+  /** Entry price requested before slippage. */
+  requestedEntry?: number;
+  /** Stop as it stood at fill time. */
+  initialStop?: number;
+  /** Target as it stood at fill time. */
+  initialTarget?: number;
+
+
   // ── Exit ───────────────────────────────────────────────────────────────
   closedAt?: number;
   closePrice?: number;
