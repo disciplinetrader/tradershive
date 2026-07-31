@@ -123,11 +123,15 @@ export function usePositionOrders({
   // Keep pending orders in lockstep with their drawing after edits/drags,
   // and drop orders whose drawing was deleted.
   useEffect(() => {
-    // Only reconcile once both stores are pointing at this symbol — otherwise
-    // the pre-hydration (empty) drawing list would wipe persisted orders.
+    // Only reconcile once both stores point at this symbol AND the drawing
+    // layer has actually hydrated — otherwise the pre-hydration (empty)
+    // drawing list would wipe persisted orders on reload.
     if (store.scopeValue() !== symbol || positionOrderStore.scopeValue() !== symbol) return;
+    if (drawings.length > 0) armedSymbol.current = symbol;
+    if (armedSymbol.current !== symbol) return;
     const ids = new Set(drawings.map((d) => d.id));
     positionOrderStore.reconcile(ids);
+
     for (const order of positionOrderStore.pending()) {
       const d = drawings.find((x) => x.id === order.drawingId);
       if (!d || d.points.length < 3) continue;
