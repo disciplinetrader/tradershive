@@ -9,7 +9,7 @@
 
 import { axisLockFor, isPositionKind, snapPrice, TEXT_LIMITS, textLines } from "./types";
 import { compact, positionMetrics, tickFromFormatter, type PositionMetrics } from "./position";
-import type { ChartCoords, Drawing, DrawingPoint } from "./types";
+import type { ChartCoords, ClosedTradeStamp, Drawing, DrawingPoint } from "./types";
 
 /** Line height multiplier shared by the renderer and the inline editor. */
 export const TEXT_LINE_HEIGHT = 1.25;
@@ -469,14 +469,106 @@ function pill(
  * Everything painted here is derived from the drawing's stored prices and
  * timestamps on this frame only — no pixel state is kept between redraws.
  */
+/**
+ * Completed-trade visualization (Phase 4).
+ *
+ * Replaces the live position rendering once the trade is closed: no live P/L,
+ * no active zones, muted historical geometry, and explicit entry / exit
+ * markers joined by a trade span. Everything is derived from the canonical
+ * time + price anchors on the stamp, so the markers survive zoom, pan,
+ * resize, refresh, fullscreen, timeframe changes and replay.
+ */
+function drawClosedTrade(
+  ctx: CanvasRenderingContext2D,
+  c: ChartCoords,
+  d: Drawing,
+  t: ClosedTradeStamp,
+  opts: { selected?: boolean; hovered?: boolean },
+) {
+  const ex = c.x(t.entryTime);
+  const ey = c.y(t.entryPrice);
+  const xx = c.x(t.exitTime);
+  const xy = c.y(t.exitPrice);
+  const active = !!(opts.selected || opts.hovered);
+  const tone = t.outcome === "win" ? POS_GREEN : t.outcome === "loss" ? POS_RED : POS_INK;
+
+  ctx.save();
+  ctx.shadowBlur = 0;
+  ctx.lineJoin = "miter";
+
+  // Historical geometry — dashed and heavily muted so it can never be
+  // mistaken for a pending order or a live position.
+  const g = positionGeometry(d, c);
+  if (g) {
+    const { entryY, targetY, stopY } = separateRows(g);
+    const top = Math.min(entryY, targetY, stopY);
+    const bottom = Math.max(entryY, targetY, stopY);
+    ctx.setLineDash([3, 4]);
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = withAlpha(tone, active ? 0.4 : 0.22);
+    ctx.fillStyle = withAlpha(tone, 0.05);
+    ctx.fillRect(g.x1, top, g.x2 - g.x1, Math.max(bottom - top, 1));
+    ctx.strokeRect(g.x1 + 0.5, top + 0.5, g.x2 - g.x1 - 1, Math.max(bottom - top, 1));
+    ctx.setLineDash([]);
+  }
+
+  if (ex != null && ey != null && xx != null && xy != null) {
+    // Trade span — entry to exit.
+    ctx.setLineDash([5, 4]);
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = withAlpha(tone, active ? 1 : 0.8);
+    ctx.beginPath();
+    ctx.moveTo(ex, ey);
+    ctx.lineTo(xx, xy);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Entry marker — hollow, direction-coded.
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = t.direction === "buy" ? POS_GREEN : POS_RED;
+    ctx.fillStyle = POS_PANEL;
+    ctx.beginPath();
+    ctx.arc(ex, ey, 4.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Exit marker — filled, outcome-coded.
+    ctx.fillStyle = tone;
+    ctx.beginPath();
+    ctx.arc(xx, xy, 4.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Result badge — realized only. Live P/L is never painted after closure.
+  const sign = t.netPnl > 0 ? "+" : "";
+  const label = `${t.direction === "buy" ? "Long" : "Short"} · ${sign}${t.netPnl.toFixed(2)} · ${t.realizedR >= 0 ? "+" : ""}${t.realizedR.toFixed(2)}R · ${CLOSE_REASON_TEXT[t.closeReason]}`;
+  const anchorX = xx ?? ex ?? (g ? g.x2 : 0);
+  const anchorY = xy ?? ey ?? (g ? g.entryY : 0);
+  ctx.font = POS_FONT(10, 700);
+  pill(ctx, label, anchorX + 10, anchorY - 12, tone, POS_PANEL, 10);
+
+  ctx.restore();
+}
+
+const CLOSE_REASON_TEXT: Record<ClosedTradeStamp["closeReason"], string> = {
+  manual: "Manual",
+  stop_loss: "Stop",
+  take_profit: "Target",
+};
+
 function drawPosition(
+
   ctx: CanvasRenderingContext2D,
   c: ChartCoords,
   d: Drawing,
   opts: { selected?: boolean; hovered?: boolean; ghost?: boolean },
 ) {
+  // Closed trades retire the live rendering entirely — no live P/L, no
+  // active order affordances, only the historical record.
+  if (d.closedTrade) { drawClosedTrade(ctx, c, d, d.closedTrade, opts); return; }
   const g = positionGeometry(d, c);
   if (!g) return;
+
   const m = positionMetrics(d, { tick: tickFromFormatter(c.formatPrice) });
   if (!m) return;
   const { x1, x2 } = g;

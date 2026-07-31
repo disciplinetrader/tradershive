@@ -17,6 +17,9 @@ import type { Drawing } from "@/lib/chart/drawings/types";
 import { isPositionKind } from "@/lib/chart/drawings/types";
 import { tickFromPrecision } from "@/lib/chart/drawings/types";
 import { positionOrderStore } from "@/lib/chart/orders/store";
+import { closedTradeStore } from "@/lib/chart/orders/trade-store";
+import { matchesFilter, type ClosedTrade, type TradeFilter } from "@/lib/chart/orders/closed-trade";
+import { addTradeToJournal } from "@/lib/chart/orders/journal-link";
 import { trace } from "@/lib/chart/orders/debug";
 import { isLive } from "@/lib/chart/orders/lifecycle";
 import {
@@ -25,7 +28,7 @@ import {
 } from "@/lib/chart/orders/model";
 import {
   archiveOrder, badgeFor, cancelPendingOrder, closePosition, moveStopToBreakEven,
-  placeOrEditOrder, runEngineTick, updatePositionLevels,
+  placeOrEditOrder, reconcileClosedTrades, runEngineTick, updatePositionLevels,
 } from "@/lib/chart/orders/service";
 
 interface Options {
@@ -34,6 +37,8 @@ interface Options {
   marketPrice?: number | null;
   pricePrecision?: number;
   riskBudget?: number;
+  /** Asset class recorded on closed trades, when the caller knows it. */
+  market?: string | null;
   /** Fired once, when a pending order becomes a live position. */
   onFill?: (order: PositionOrder) => void;
   /** Fired once, when a live position closes (manual, stop or target). */
@@ -41,16 +46,25 @@ interface Options {
 }
 
 export function usePositionOrders({
-  store, symbol, marketPrice, pricePrecision = 4, riskBudget, onFill, onClose,
+  store, symbol, marketPrice, pricePrecision = 4, riskBudget, market, onFill, onClose,
 }: Options) {
   const tick = tickFromPrecision(pricePrecision);
-  const stores = useMemo(() => ({ drawings: store, orders: positionOrderStore }), [store]);
+  const stores = useMemo(
+    () => ({ drawings: store, orders: positionOrderStore, trades: closedTradeStore }),
+    [store],
+  );
 
 
   const orders = useSyncExternalStore(
     (cb) => positionOrderStore.subscribe(cb),
     () => positionOrderStore.list(),
     () => positionOrderStore.list(),
+  );
+
+  const trades = useSyncExternalStore(
+    (cb) => closedTradeStore.subscribe(cb),
+    () => closedTradeStore.list(),
+    () => closedTradeStore.list(),
   );
 
   const drawings = useSyncExternalStore(
@@ -65,7 +79,31 @@ export function usePositionOrders({
   // Orders are scoped per symbol, exactly like drawings. `setScope` hydrates
   // the new scope itself and refuses to flush an un-hydrated (empty) list, so
   // a single effect covers both first mount and later symbol changes.
-  useEffect(() => { positionOrderStore.setScope(symbol); }, [symbol]);
+  useEffect(() => {
+    positionOrderStore.setScope(symbol);
+    closedTradeStore.setScope(symbol);
+  }, [symbol]);
+
+  // One-time reconciliation per scope: Phase 3 positions that closed before
+  // the canonical trade record existed get exactly one record each. Keyed on
+  // `positionId` inside the store, so re-running is a no-op.
+  const reconciled = useRef<string | null>(null);
+  useEffect(() => {
+    if (reconciled.current === symbol) return;
+    if (positionOrderStore.hydration() !== "hydrated") return;
+    if (closedTradeStore.hydration() !== "hydrated") return;
+    if (positionOrderStore.scopeValue() !== symbol) return;
+    reconciled.current = symbol;
+    const res = reconcileClosedTrades(stores, { market });
+    if (res.created || res.skipped.length) {
+      trace({
+        op: "trades:reconcile", source: "usePositionOrders", scope: symbol,
+        next: res.created,
+        reason: `existing=${res.existing} skipped=${res.skipped.length}`,
+      });
+    }
+  }, [symbol, stores, market, orders]);
+
 
 
   /** Open the confirmation panel for a freshly drawn position. */
@@ -204,8 +242,8 @@ export function usePositionOrders({
   /** Market-exit an open position at the current price. */
   const closeAtMarket = useCallback((orderId: string) => {
     if (!Number.isFinite(marketPrice ?? NaN)) return null;
-    return closePosition(stores, orderId, { price: marketPrice as number, reason: "manual" });
-  }, [stores, marketPrice]);
+    return closePosition(stores, orderId, { price: marketPrice as number, reason: "manual", market });
+  }, [stores, marketPrice, market]);
 
   /** Move the stop to the fill price. */
   const breakEven = useCallback((orderId: string) => {
@@ -215,6 +253,34 @@ export function usePositionOrders({
   /** Remove a closed position from the working set. */
   const archive = useCallback((orderId: string) => archiveOrder(stores, orderId), [stores]);
 
+  // ── Closed trades (Phase 4) ────────────────────────────────────────────
+  const [tradeFilter, setTradeFilter] = useState<TradeFilter>("all");
+
+  const closedTrades = useMemo(
+    () => [...trades].sort((a, b) => b.closedAt - a.closedAt),
+    [trades],
+  );
+
+  const visibleTrades = useMemo(
+    () => closedTrades.filter((t) => matchesFilter(t, tradeFilter)),
+    [closedTrades, tradeFilter],
+  );
+
+  /**
+   * Archiving keeps the record — it only leaves the default view. Journal
+   * links and analytics inputs are retained.
+   */
+  const archiveTrade = useCallback(
+    (tradeId: string, archived = true) => closedTradeStore.setArchived(tradeId, archived),
+    [],
+  );
+
+  /** Idempotent: a repeated call resolves to the existing journal entry. */
+  const addToJournal = useCallback(
+    (tradeId: string, userId: string) => addTradeToJournal(closedTradeStore, tradeId, userId),
+    [],
+  );
+
   const pending = useMemo(() => orders.filter((o) => o.status === "pending"), [orders]);
   const openPositions = useMemo(() => orders.filter((o) => isLive(o.status)), [orders]);
   const closedPositions = useMemo(() => orders.filter((o) => o.status === "closed"), [orders]);
@@ -223,5 +289,8 @@ export function usePositionOrders({
     draft, draftMode, inferredType, openDraft, openDraftForId, closeDraft, confirmDraft,
     cancelOrder, editOrder, setOrderType, pendingOrders: pending, tick,
     openPositions, closedPositions, closeAtMarket, breakEven, archive,
+    closedTrades: closedTrades as ClosedTrade[], visibleTrades, tradeFilter, setTradeFilter,
+    archiveTrade, addToJournal,
   };
 }
+
