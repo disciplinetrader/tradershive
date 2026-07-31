@@ -633,9 +633,96 @@ function drawPosition(
     drawMetricsPanel(ctx, c, m, x2, boxTop, boxBottom, rrText);
   }
 
+  drawExecutionMarks(ctx, c, d, m.long ? "buy" : "sell", active);
 
   ctx.restore();
 }
+
+/**
+ * Execution tape markers (Phase 6).
+ *
+ * Entries are hollow, exits are filled, level moves are small ticks. Every
+ * mark is placed from its own canonical time + price, so the geometry is
+ * recomputed from chart coordinates on every frame and stays anchored through
+ * zoom, pan, resize, replay, refresh and timeframe switches.
+ */
+function drawExecutionMarks(
+  ctx: CanvasRenderingContext2D,
+  c: ChartCoords,
+  d: Drawing,
+  direction: "buy" | "sell",
+  active: boolean,
+) {
+  const marks = d.executionMarks;
+  if (!marks?.length) return;
+
+  ctx.save();
+  ctx.shadowBlur = 0;
+  ctx.setLineDash([]);
+  ctx.lineJoin = "miter";
+
+  const entryTone = direction === "buy" ? POS_GREEN : POS_RED;
+  let prev: { x: number; y: number } | null = null;
+
+  for (const mk of marks) {
+    const x = c.x(mk.time);
+    const y = c.y(mk.price);
+    if (x == null || y == null) continue;
+
+    if (mk.kind === "stop_move" || mk.kind === "target_move") {
+      // Protection moves — a short horizontal tick, never a fill dot.
+      ctx.strokeStyle = withAlpha(mk.kind === "stop_move" ? POS_RED : POS_GREEN, active ? 0.9 : 0.55);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x - 5, y);
+      ctx.lineTo(x + 5, y);
+      ctx.stroke();
+      continue;
+    }
+
+    const isEntry = mk.kind === "open" || mk.kind === "scale_in";
+    const tone = isEntry
+      ? entryTone
+      : mk.realizedR >= 0
+        ? POS_GREEN
+        : POS_RED;
+
+    // Route line between consecutive fills — the visual story of the trade.
+    if (prev) {
+      ctx.setLineDash([4, 4]);
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = withAlpha(POS_INK, active ? 0.45 : 0.22);
+      ctx.beginPath();
+      ctx.moveTo(prev.x, prev.y);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    prev = { x, y };
+
+    ctx.lineWidth = 1.75;
+    ctx.strokeStyle = tone;
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, Math.PI * 2);
+    if (isEntry) {
+      ctx.fillStyle = POS_PANEL;
+      ctx.fill();
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = tone;
+      ctx.fill();
+    }
+
+    // Labels only while the tool is engaged, so idle charts stay calm.
+    if (active && mk.label) {
+      ctx.font = POS_FONT(9.5, 700);
+      pill(ctx, mk.label, x + 8, y - 9, tone, POS_PANEL, 9.5);
+    }
+  }
+
+  ctx.restore();
+}
+
 
 /** Live metrics panel — pinned to the right edge of the tool. */
 function drawMetricsPanel(
