@@ -266,7 +266,14 @@ export async function runImport(rawOpts: RunImportOpts) {
 
   try {
     await log(admin, jobId, opts.symbol, opts.sourceCode, "info", "Import started",
-      { from: opts.from, to: opts.to, timeframe: opts.timeframe });
+      { from: opts.from, to: opts.to, timeframe: opts.timeframe,
+        market, nativeSymbol: opts.nativeSymbol,
+        requestedProvider: rawOpts.sourceCode, resolvedProvider: resolution.code,
+        routingReason: resolution.reason });
+    if (resolution.overrode) {
+      await log(admin, jobId, opts.symbol, opts.sourceCode, "warn",
+        `Provider re-routed: ${resolution.reason}`, { requested: rawOpts.sourceCode, used: resolution.code });
+    }
 
     if (await isCancelled(admin, jobId)) return { jobId, cancelled: true };
 
@@ -282,6 +289,15 @@ export async function runImport(rawOpts: RunImportOpts) {
     const providerMs = Date.now() - fetchStart;
     await admin.from("historical_import_jobs").update({ provider_response_ms: providerMs } as any).eq("id", jobId);
 
+    // Never report success with zero candles — that hides provider failures.
+    if (!rawCandles.length) {
+      throw new Error(
+        `[${opts.sourceCode}] returned 0 candles for ${opts.symbol} (${opts.nativeSymbol}) ` +
+        `${opts.timeframe} ${new Date(opts.from).toISOString()} → ${new Date(opts.to).toISOString()}. ` +
+        `Check the symbol mapping or the provider's coverage for this range.`,
+      );
+    }
+
     if (await isCancelled(admin, jobId)) return { jobId, cancelled: true };
 
     // Validating
@@ -291,6 +307,7 @@ export async function runImport(rawOpts: RunImportOpts) {
       await log(admin, jobId, opts.symbol, opts.sourceCode, "warn",
         `Validation flagged ${warnings} candles`, issues);
     }
+
 
     // Saving
     await setPhase(admin, jobId, "saving", 55);
