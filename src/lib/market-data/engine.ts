@@ -94,9 +94,10 @@ class MarketDataEngine {
     return this.resolveChain(market, symbol, /*live*/ false)[0];
   }
 
-  /** Live quote / subscribe routing. Consults VITE_LIVE_FOREX_PROVIDER
-   *  to swap the forex live-data source (POC — Finnhub eval) without
-   *  affecting historical candles, which always use pickProvider(). */
+  /** Live quote / subscribe routing. Non-crypto markets that Finnhub can
+   *  actually serve on our plan (US equities) go to Finnhub first, with the
+   *  DB-assigned provider (Twelve Data) kept as automatic fallback.
+   *  Historical routing is untouched — see pickProvider(). */
   pickLiveQuoteProvider(market?: MarketKind, symbol?: string): MarketDataProvider {
     return this.resolveChain(market, symbol, /*live*/ true)[0];
   }
@@ -117,13 +118,27 @@ class MarketDataEngine {
     let a = this.assignments.get(effective);
     if (!a) throw new MarketProviderUnavailableError({ market: effective, reason: "not_assigned" });
 
-    // POC override: live forex quotes may be routed to Finnhub via env flag.
-    if (live && effective === "forex") {
-      const flag = (import.meta as any).env?.VITE_LIVE_FOREX_PROVIDER as string | undefined;
-      if (flag && flag !== a.primary) {
-        a = { primary: flag, fallback: a.primary };
+    // LIVE-only override: prefer Finnhub where the plan supports it, keeping
+    // the historical/DB-assigned provider as the automatic fallback.
+    if (live) {
+      const envFlag = effective === "forex"
+        ? ((import.meta as any).env?.VITE_LIVE_FOREX_PROVIDER as string | undefined)
+        : undefined;
+      const preferred = envFlag ?? LIVE_PROVIDER_OVERRIDES[effective];
+      if (preferred && preferred !== a.primary) {
+        const p = getProvider(preferred);
+        // Only take the override when the provider is registered, enabled,
+        // covers the market and (if it declares symbol entitlements) the
+        // symbol itself. Otherwise silently keep the assigned provider.
+        const entitled = !symbol
+          || typeof (p as any)?.supportsSymbol !== "function"
+          || (p as any).supportsSymbol(symbol);
+        if (p && p.status() !== "disabled" && p.capabilities.markets.includes(effective) && entitled) {
+          a = { primary: preferred, fallback: a.primary };
+        }
       }
     }
+
 
     const usable = (code: string | null): MarketDataProvider | undefined => {
       if (!code) return undefined;
