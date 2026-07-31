@@ -251,11 +251,17 @@ class MarketDataEngine {
 
 
   private warnedMarkets = new Set<string>();
+
+  /** No tick within this window ⇒ fail over to the next live provider. */
+  private static readonly LIVE_WATCHDOG_MS = 20_000;
+  /** How often a degraded symbol retries its preferred live provider. */
+  private static readonly LIVE_RECOVERY_MS = 5 * 60_000;
+
   subscribe(symbol: string, handler: QuoteHandler, market?: MarketKind): SubscriptionHandle {
     let entry = this.fanout.get(symbol);
     if (!entry) {
-      let p: MarketDataProvider;
-      try { p = this.pickLiveQuoteProvider(market, symbol); }
+      let chain: MarketDataProvider[];
+      try { chain = this.resolveChain(market, symbol, /*live*/ true); }
       catch (e) {
         const key = market ?? inferMarketFromSymbol(symbol) ?? "unknown";
         if (!this.warnedMarkets.has(key)) {
@@ -264,14 +270,51 @@ class MarketDataEngine {
         }
         return { id: `noop-${symbol}`, symbol, unsubscribe: () => {} };
       }
-      void p.connect();
-      const upstream = p.subscribe(symbol, (q) => {
-        this.quoteCache.set(symbol, q);
-        const cur = this.fanout.get(symbol);
-        if (!cur) return;
-        for (const h of cur.handlers) { try { h(q); } catch { /* noop */ } }
-      });
-      entry = { upstream, handlers: new Set() };
+
+      const state: {
+        upstream: SubscriptionHandle; handlers: Set<QuoteHandler>;
+        watchdog?: ReturnType<typeof setTimeout>; recovery?: ReturnType<typeof setTimeout>;
+      } = { upstream: { id: "pending", symbol, unsubscribe: () => {} }, handlers: new Set() };
+
+      const attach = (index: number) => {
+        const p = chain[Math.min(index, chain.length - 1)];
+        void p.connect();
+        let gotTick = false;
+        state.upstream = p.subscribe(symbol, (q) => {
+          gotTick = true;
+          breakers.recordSuccess(p.code);
+          this.quoteCache.set(symbol, q);
+          const cur = this.fanout.get(symbol);
+          if (!cur) return;
+          for (const h of cur.handlers) { try { h(q); } catch { /* noop */ } }
+        });
+
+        // Fail over when the chosen provider produces nothing in time.
+        if (index < chain.length - 1) {
+          state.watchdog = setTimeout(() => {
+            if (gotTick || !this.fanout.get(symbol)) return;
+            const next = chain[index + 1];
+            console.warn(`[market-data] live "${p.code}" produced no ticks for ${symbol} — failing over to "${next.code}".`);
+            breakers.recordFailure(p.code, new Error("live_no_ticks"));
+            try { state.upstream.unsubscribe(); } catch { /* noop */ }
+            attach(index + 1);
+          }, MarketDataEngine.LIVE_WATCHDOG_MS);
+        }
+
+        // Degraded ⇒ periodically try the preferred provider again.
+        if (index > 0) {
+          state.recovery = setTimeout(() => {
+            if (!this.fanout.get(symbol)) return;
+            console.info(`[market-data] retrying preferred live provider "${chain[0].code}" for ${symbol}.`);
+            try { state.upstream.unsubscribe(); } catch { /* noop */ }
+            clearTimeout(state.watchdog);
+            attach(0);
+          }, MarketDataEngine.LIVE_RECOVERY_MS);
+        }
+      };
+
+      attach(0);
+      entry = state;
       this.fanout.set(symbol, entry);
     }
     entry.handlers.add(handler);
@@ -285,11 +328,14 @@ class MarketDataEngine {
         cur.handlers.delete(handler);
         if (cur.handlers.size === 0) {
           cur.upstream.unsubscribe();
+          if (cur.watchdog) clearTimeout(cur.watchdog);
+          if (cur.recovery) clearTimeout(cur.recovery);
           this.fanout.delete(symbol);
         }
       },
     };
   }
+
 
   async getMarketStatus(market: MarketKind): Promise<MarketStatusInfo> {
     try { return await this.pickProvider(market).getMarketStatus(market); }
