@@ -80,9 +80,13 @@ function syncDrawingGeometry(stores: OrderStores, order: PositionOrder) {
     points,
     orderId: order.id,
     orderBadge: badgeFor(order),
+    // Phase 6: the execution tape is re-projected on every mutation, so the
+    // chart markers are always a pure function of the canonical history.
+    executionMarks: toExecutionMarks(order.executions),
   });
   return true;
 }
+
 
 /**
  * Create a pending order, or edit the one already attached to the draft's
