@@ -3218,6 +3218,48 @@ export type Database = {
         }
         Relationships: []
       }
+      chart_position_orders: {
+        Row: {
+          client_updated_at: number
+          created_at: string
+          drawing_id: string | null
+          id: string
+          order_id: string
+          payload: Json
+          position_id: string | null
+          status: string
+          symbol: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_updated_at?: number
+          created_at?: string
+          drawing_id?: string | null
+          id?: string
+          order_id: string
+          payload: Json
+          position_id?: string | null
+          status: string
+          symbol: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_updated_at?: number
+          created_at?: string
+          drawing_id?: string | null
+          id?: string
+          order_id?: string
+          payload?: Json
+          position_id?: string | null
+          status?: string
+          symbol?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       chart_preferences: {
         Row: {
           auto_scale: boolean

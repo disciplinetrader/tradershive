@@ -32,10 +32,12 @@ import { defaultLadder, type TakeProfitLeg } from "@/lib/chart/orders/take-profi
 import type { TrailingConfig, TrailingContext } from "@/lib/chart/orders/trailing";
 import {
   archiveOrder, badgeFor, cancelPendingOrder, closePosition, moveStopToBreakEven,
-  partialClosePosition, placeOrEditOrder, reconcileClosedTrades, runEngineTick,
-  runManagementTick, scaleInPosition, setAutoBreakEven, setTakeProfits, setTrailing,
+  partialClosePosition, placeOrEditOrder, reconcileClosedTrades,
+  scaleInPosition, setAutoBreakEven, setTakeProfits, setTrailing,
   updatePositionLevels,
 } from "@/lib/chart/orders/service";
+import { runObservation } from "@/lib/chart/orders/observation";
+import { supabaseOrderRemote } from "@/lib/chart/orders/order-sync";
 
 
 interface Options {
@@ -97,6 +99,7 @@ export function usePositionOrders({
   // Closed trades additionally mirror into the backend so the tape survives a
   // cleared cache or a new device (browser-only; RLS scopes rows to the user).
   useEffect(() => {
+    positionOrderStore.attachRemote(supabaseOrderRemote);
     positionOrderStore.setScope(symbol);
     closedTradeStore.attachRemote(supabaseTradeRemote);
     closedTradeStore.setScope(symbol);
@@ -256,18 +259,13 @@ export function usePositionOrders({
     if (lastTick.current === price) return;
     lastTick.current = price;
 
-    const applied = runEngineTick(stores, { price });
+    // Phase 8: live and Replay share ONE tick pipeline — execution engine
+    // (entries, SL, TP) followed by the management pass (TP ladder → auto
+    // break-even → trailing), in that fixed order.
+    const applied = runObservation(stores, { price, context: trailingRef.current }, { market });
     for (const o of applied) {
       if (o.status === "open") onFill?.(o);
       else if (o.status === "closed") onClose?.(o);
-    }
-
-    // Phase 6 management pass: TP ladder → auto break-even → trailing. Runs
-    // after the execution engine so a position opened by this tick is managed
-    // from the next one, exactly like the Phase 3 exit rule.
-    const managed = runManagementTick(stores, { price, context: trailingRef.current }, { market });
-    for (const o of managed) {
-      if (o.status === "closed") onClose?.(o);
     }
   }, [marketPrice, symbol, stores, market, onFill, onClose]);
 
