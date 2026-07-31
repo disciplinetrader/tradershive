@@ -215,7 +215,11 @@ async function createPracticeSession(input: {
       range_end: rangeEnd,
       source_trade_id: entry.trade_id,
       source_journal_id: entry.id,
-      provider: "synthetic",
+      canonical_symbol: entry.symbol ?? null,
+      requested_start: rangeStart,
+      requested_end: rangeEnd,
+      // Real stored/imported history, resolved by the canonical service.
+      provider: "historical",
       tags: ["practice", mode],
       cursor_ts: cursorTs,
       hide_future: true,
