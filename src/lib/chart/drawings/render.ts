@@ -389,56 +389,10 @@ export function drawDrawing(
     }
     case "long_position":
     case "short_position": {
-      const g = positionGeometry(d, c);
-      if (!g) break;
-      const { x1, x2 } = g;
-      const green = "#22c55e";
-      const red = "#ef4444";
-      const long = d.kind === "long_position";
-      const rewardTone = green;
-      const riskTone = red;
-      // Rendering-only separation: when Entry / TP / SL land on (nearly) the
-      // same pixel row the tool must still read as three lines. Prices and
-      // stored anchors are untouched — this only nudges the painted rows.
-      const { entryY, targetY, stopY } = separateRows(g);
-      ctx.setLineDash([]);
-      ctx.fillStyle = withAlpha(rewardTone, 0.16);
-      ctx.fillRect(x1, Math.min(entryY, targetY), x2 - x1, Math.max(Math.abs(targetY - entryY), 1));
-      ctx.fillStyle = withAlpha(riskTone, 0.16);
-      ctx.fillRect(x1, Math.min(entryY, stopY), x2 - x1, Math.max(Math.abs(stopY - entryY), 1));
-      // Outline of the whole box so the draggable body is obvious.
-      ctx.strokeStyle = withAlpha(s.color, 0.55);
-      ctx.lineWidth = 1;
-      ctx.strokeRect(x1, Math.min(targetY, stopY), x2 - x1, Math.abs(stopY - targetY));
-
-      const line = (y: number, color: string, dashed: boolean) => {
-        ctx.strokeStyle = color;
-        ctx.lineWidth = dashed ? 1 : 1.6;
-        ctx.setLineDash(dashed ? [5, 4] : []);
-        ctx.beginPath();
-        ctx.moveTo(x1, y);
-        ctx.lineTo(x2, y);
-        ctx.stroke();
-      };
-      line(entryY, s.color, false);
-      line(targetY, rewardTone, true);
-      line(stopY, riskTone, true);
-      ctx.setLineDash([]);
-
-      const risk = Math.abs(d.points[0].price - d.points[2].price);
-      const reward = Math.abs(d.points[1].price - d.points[0].price);
-      const rr = risk > 0 ? reward / risk : 0;
-      // Labels are stacked with a guaranteed gap so three near-identical
-      // prices stay readable instead of printing on top of each other.
-      const rows = stackLabels([
-        { y: entryY, text: `${long ? "LONG" : "SHORT"} · ${c.formatPrice(d.points[0].price)}`, color: "#e2e8f0" },
-        { y: targetY, text: `TP ${c.formatPrice(d.points[1].price)}`, color: green },
-        { y: stopY, text: `SL ${c.formatPrice(d.points[2].price)}`, color: red },
-      ]);
-      for (const r of rows) label(ctx, r.text, x1 + 4, r.y - 3, r.color);
-      label(ctx, `R:R  1 : ${rr.toFixed(2)}`, Math.max(x1 + 4, x2 - 90), Math.min(entryY, targetY, stopY) - 8, "#e2e8f0");
+      drawPosition(ctx, c, d, opts);
       break;
     }
+
 
   }
 
