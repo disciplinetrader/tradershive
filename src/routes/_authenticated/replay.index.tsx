@@ -64,8 +64,15 @@ function ReplayDashboard() {
 
   const randomM = useMutation({
     mutationFn: () => rand(),
-    onSuccess: (row: { id: string }) =>
-      navigate({ to: "/replay/session", search: { id: row.id } as never }),
+    onSuccess: (res) => {
+      if (!res.session) {
+        toast.error(res.unavailable?.message ?? "No market data available", {
+          description: res.unavailable?.remedy,
+        });
+        return;
+      }
+      navigate({ to: "/replay/session", search: { id: res.session.id } as never });
+    },
   });
 
   const all = (sessions.data ?? []) as ReplaySession[];
