@@ -21,9 +21,28 @@ export type OrderType =
   | "buy_stop"
   | "sell_stop";
 
-export type OrderStatus = "pending" | "cancelled" | "filled";
+/**
+ * Full Phase 3 lifecycle. Legal transitions live in `lifecycle.ts` — this
+ * is only the vocabulary.
+ *
+ *   pending → filled → open → closed → archived
+ *   pending → cancelled → archived
+ */
+export type OrderStatus =
+  | "pending"
+  | "filled"
+  | "open"
+  | "closed"
+  | "cancelled"
+  | "archived";
 
 export const ORDER_SOURCE = "PositionTool" as const;
+
+/** How a fill or exit was produced. Paper simulation only. */
+export type ExecutionSource = "market" | "trigger" | "manual" | "stop_loss" | "take_profit";
+
+/** Why an open position stopped being open. */
+export type CloseReason = "manual" | "stop_loss" | "take_profit";
 
 export interface PositionOrder {
   id: string;
@@ -48,8 +67,30 @@ export interface PositionOrder {
   createdAt: number;
   updatedAt: number;
   cancelledAt?: number;
+
+  // ── Execution (Phase 3) ────────────────────────────────────────────────
+  /** Epoch-ms of the fill. Set exactly once, on pending → filled. */
   filledAt?: number;
+  /** Price the position was actually opened at (may differ from `entry`). */
+  fillPrice?: number;
+  /** What produced the fill / exit. */
+  executionSource?: ExecutionSource;
+  /** Stable identity of the live position spawned by the fill. */
+  positionId?: string;
+  /** Slippage against the requested entry, signed against the trader. */
+  slippage?: number;
+
+  // ── Exit ───────────────────────────────────────────────────────────────
+  closedAt?: number;
+  closePrice?: number;
+  closeReason?: CloseReason;
+  /** Realised P/L in quote currency (× size when sizing is known). */
+  realizedPnl?: number;
+  /** Realised result expressed in R multiples. */
+  realizedR?: number;
+  archivedAt?: number;
 }
+
 
 export const ORDER_TYPE_LABELS: Record<OrderType, string> = {
   market: "Market",
@@ -236,4 +277,69 @@ export function withLevels(
 export function entryDistance(order: Pick<PositionOrder, "entry">, marketPrice?: number | null) {
   if (!Number.isFinite(marketPrice ?? NaN)) return null;
   return order.entry - (marketPrice as number);
+}
+
+export function newPositionId() {
+  return `p_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`;
+}
+
+/**
+ * Live metrics for an open position.
+ *
+ * `size` is optional throughout the app (account sizing lands in a later
+ * phase), so P/L is reported per-unit when size is unknown — the R multiple
+ * and percentage are size-independent and always meaningful.
+ */
+export interface LivePositionMetrics {
+  /** Signed price move in the trader's favour. */
+  move: number;
+  /** Floating P/L in quote currency (× size when known, else per unit). */
+  pnl: number;
+  /** True when P/L is per-unit because position size is unknown. */
+  perUnit: boolean;
+  /** Floating result in R multiples. */
+  r: number;
+  /** Unrealised move as a percentage of the fill price. */
+  pct: number;
+  /** Absolute distance from market to the stop. */
+  toStop: number;
+  /** Absolute distance from market to the target. */
+  toTarget: number;
+  /** Fraction of the way from fill to target, clamped 0…1. */
+  progress: number;
+}
+
+export function livePositionMetrics(
+  order: PositionOrder,
+  marketPrice: number | null | undefined,
+): LivePositionMetrics | null {
+  const fill = order.fillPrice ?? order.entry;
+  if (!Number.isFinite(fill) || !Number.isFinite(marketPrice ?? NaN)) return null;
+  const price = marketPrice as number;
+  const sign = order.direction === "buy" ? 1 : -1;
+  const move = (price - fill) * sign;
+  const risk = Math.abs(fill - order.stop);
+  const reward = Math.abs(order.target - fill);
+  return {
+    move,
+    pnl: order.size && order.size > 0 ? move * order.size : move,
+    perUnit: !(order.size && order.size > 0),
+    r: risk > 0 ? move / risk : 0,
+    pct: fill !== 0 ? (move / fill) * 100 : 0,
+    toStop: Math.abs(price - order.stop),
+    toTarget: Math.abs(order.target - price),
+    progress: reward > 0 ? Math.min(1, Math.max(0, move / reward)) : 0,
+  };
+}
+
+/** Realised result of a closed position. */
+export function realizedResult(order: PositionOrder, closePrice: number) {
+  const fill = order.fillPrice ?? order.entry;
+  const sign = order.direction === "buy" ? 1 : -1;
+  const move = (closePrice - fill) * sign;
+  const risk = Math.abs(fill - order.stop);
+  return {
+    realizedPnl: order.size && order.size > 0 ? move * order.size : move,
+    realizedR: risk > 0 ? move / risk : 0,
+  };
 }
