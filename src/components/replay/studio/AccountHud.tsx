@@ -69,7 +69,15 @@ export function AccountHud({ className }: { className?: string }) {
   const drawdown = peak != null && equity != null && peak > 0 ? Math.max(0, (peak - equity) / peak) : null;
 
   return (
-    <div className={cn("flex items-center gap-4 md:gap-5", className)}>
+    // Phones: a contained horizontal strip (never a page-level scroll).
+    // ≥md: a normal flex row with fluid gaps.
+    <div
+      data-dense
+      className={cn(
+        "scroll-strip scroll-fade-x items-center gap-[var(--space-md)] md:overflow-visible md:[mask-image:none]",
+        className,
+      )}
+    >
       <Stat label="Balance" value={money(balance)} />
       <Stat label="Equity" value={money(equity)} tone={equity != null && balance != null && equity < balance ? "down" : undefined} />
       <Stat label="Open P&L" value={money(open)} tone={open > 0 ? "up" : open < 0 ? "down" : undefined} />
