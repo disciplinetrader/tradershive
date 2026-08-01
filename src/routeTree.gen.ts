@@ -26,6 +26,7 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedReplayRouteImport } from './routes/_authenticated/replay'
 import { Route as AuthenticatedPropChallengesRouteImport } from './routes/_authenticated/prop-challenges'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as AuthenticatedPracticeRouteImport } from './routes/_authenticated/practice'
 import { Route as AuthenticatedPaperTradingRouteImport } from './routes/_authenticated/paper-trading'
 import { Route as AuthenticatedMistakesRouteImport } from './routes/_authenticated/mistakes'
 import { Route as AuthenticatedMarketplaceRouteImport } from './routes/_authenticated/marketplace'
@@ -50,6 +51,7 @@ import { Route as AuthenticatedTradingIndexRouteImport } from './routes/_authent
 import { Route as AuthenticatedStrategiesIndexRouteImport } from './routes/_authenticated/strategies.index'
 import { Route as AuthenticatedReplayIndexRouteImport } from './routes/_authenticated/replay.index'
 import { Route as AuthenticatedPropChallengesIndexRouteImport } from './routes/_authenticated/prop-challenges.index'
+import { Route as AuthenticatedPracticeIndexRouteImport } from './routes/_authenticated/practice.index'
 import { Route as AuthenticatedMarketIndexRouteImport } from './routes/_authenticated/market.index'
 import { Route as AuthenticatedLeaderboardIndexRouteImport } from './routes/_authenticated/leaderboard.index'
 import { Route as AuthenticatedJournalIndexRouteImport } from './routes/_authenticated/journal.index'
@@ -271,6 +273,11 @@ const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPracticeRoute = AuthenticatedPracticeRouteImport.update({
+  id: '/practice',
+  path: '/practice',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedPaperTradingRoute =
   AuthenticatedPaperTradingRouteImport.update({
     id: '/paper-trading',
@@ -400,6 +407,12 @@ const AuthenticatedPropChallengesIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedPropChallengesRoute,
+  } as any)
+const AuthenticatedPracticeIndexRoute =
+  AuthenticatedPracticeIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedPracticeRoute,
   } as any)
 const AuthenticatedMarketIndexRoute =
   AuthenticatedMarketIndexRouteImport.update({
@@ -1231,6 +1244,7 @@ export interface FileRoutesByFullPath {
   '/marketplace': typeof AuthenticatedMarketplaceRoute
   '/mistakes': typeof AuthenticatedMistakesRoute
   '/paper-trading': typeof AuthenticatedPaperTradingRoute
+  '/practice': typeof AuthenticatedPracticeRouteWithChildren
   '/profile': typeof AuthenticatedProfileRouteWithChildren
   '/prop-challenges': typeof AuthenticatedPropChallengesRouteWithChildren
   '/replay': typeof AuthenticatedReplayRouteWithChildren
@@ -1356,6 +1370,7 @@ export interface FileRoutesByFullPath {
   '/journal/': typeof AuthenticatedJournalIndexRoute
   '/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
   '/market/': typeof AuthenticatedMarketIndexRoute
+  '/practice/': typeof AuthenticatedPracticeIndexRoute
   '/prop-challenges/': typeof AuthenticatedPropChallengesIndexRoute
   '/replay/': typeof AuthenticatedReplayIndexRoute
   '/strategies/': typeof AuthenticatedStrategiesIndexRoute
@@ -1520,6 +1535,7 @@ export interface FileRoutesByTo {
   '/journal': typeof AuthenticatedJournalIndexRoute
   '/leaderboard': typeof AuthenticatedLeaderboardIndexRoute
   '/market': typeof AuthenticatedMarketIndexRoute
+  '/practice': typeof AuthenticatedPracticeIndexRoute
   '/prop-challenges': typeof AuthenticatedPropChallengesIndexRoute
   '/replay': typeof AuthenticatedReplayIndexRoute
   '/strategies': typeof AuthenticatedStrategiesIndexRoute
@@ -1574,6 +1590,7 @@ export interface FileRoutesById {
   '/_authenticated/marketplace': typeof AuthenticatedMarketplaceRoute
   '/_authenticated/mistakes': typeof AuthenticatedMistakesRoute
   '/_authenticated/paper-trading': typeof AuthenticatedPaperTradingRoute
+  '/_authenticated/practice': typeof AuthenticatedPracticeRouteWithChildren
   '/_authenticated/profile': typeof AuthenticatedProfileRouteWithChildren
   '/_authenticated/prop-challenges': typeof AuthenticatedPropChallengesRouteWithChildren
   '/_authenticated/replay': typeof AuthenticatedReplayRouteWithChildren
@@ -1699,6 +1716,7 @@ export interface FileRoutesById {
   '/_authenticated/journal/': typeof AuthenticatedJournalIndexRoute
   '/_authenticated/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
   '/_authenticated/market/': typeof AuthenticatedMarketIndexRoute
+  '/_authenticated/practice/': typeof AuthenticatedPracticeIndexRoute
   '/_authenticated/prop-challenges/': typeof AuthenticatedPropChallengesIndexRoute
   '/_authenticated/replay/': typeof AuthenticatedReplayIndexRoute
   '/_authenticated/strategies/': typeof AuthenticatedStrategiesIndexRoute
@@ -1753,6 +1771,7 @@ export interface FileRouteTypes {
     | '/marketplace'
     | '/mistakes'
     | '/paper-trading'
+    | '/practice'
     | '/profile'
     | '/prop-challenges'
     | '/replay'
@@ -1878,6 +1897,7 @@ export interface FileRouteTypes {
     | '/journal/'
     | '/leaderboard/'
     | '/market/'
+    | '/practice/'
     | '/prop-challenges/'
     | '/replay/'
     | '/strategies/'
@@ -2042,6 +2062,7 @@ export interface FileRouteTypes {
     | '/journal'
     | '/leaderboard'
     | '/market'
+    | '/practice'
     | '/prop-challenges'
     | '/replay'
     | '/strategies'
@@ -2095,6 +2116,7 @@ export interface FileRouteTypes {
     | '/_authenticated/marketplace'
     | '/_authenticated/mistakes'
     | '/_authenticated/paper-trading'
+    | '/_authenticated/practice'
     | '/_authenticated/profile'
     | '/_authenticated/prop-challenges'
     | '/_authenticated/replay'
@@ -2220,6 +2242,7 @@ export interface FileRouteTypes {
     | '/_authenticated/journal/'
     | '/_authenticated/leaderboard/'
     | '/_authenticated/market/'
+    | '/_authenticated/practice/'
     | '/_authenticated/prop-challenges/'
     | '/_authenticated/replay/'
     | '/_authenticated/strategies/'
@@ -2383,6 +2406,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/practice': {
+      id: '/_authenticated/practice'
+      path: '/practice'
+      fullPath: '/practice'
+      preLoaderRoute: typeof AuthenticatedPracticeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/paper-trading': {
@@ -2552,6 +2582,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/prop-challenges/'
       preLoaderRoute: typeof AuthenticatedPropChallengesIndexRouteImport
       parentRoute: typeof AuthenticatedPropChallengesRoute
+    }
+    '/_authenticated/practice/': {
+      id: '/_authenticated/practice/'
+      path: '/'
+      fullPath: '/practice/'
+      preLoaderRoute: typeof AuthenticatedPracticeIndexRouteImport
+      parentRoute: typeof AuthenticatedPracticeRoute
     }
     '/_authenticated/market/': {
       id: '/_authenticated/market/'
@@ -3857,6 +3894,19 @@ const AuthenticatedMarketRouteChildren: AuthenticatedMarketRouteChildren = {
 const AuthenticatedMarketRouteWithChildren =
   AuthenticatedMarketRoute._addFileChildren(AuthenticatedMarketRouteChildren)
 
+interface AuthenticatedPracticeRouteChildren {
+  AuthenticatedPracticeIndexRoute: typeof AuthenticatedPracticeIndexRoute
+}
+
+const AuthenticatedPracticeRouteChildren: AuthenticatedPracticeRouteChildren = {
+  AuthenticatedPracticeIndexRoute: AuthenticatedPracticeIndexRoute,
+}
+
+const AuthenticatedPracticeRouteWithChildren =
+  AuthenticatedPracticeRoute._addFileChildren(
+    AuthenticatedPracticeRouteChildren,
+  )
+
 interface AuthenticatedProfileRouteChildren {
   AuthenticatedProfileUsernameRoute: typeof AuthenticatedProfileUsernameRoute
 }
@@ -4013,6 +4063,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMarketplaceRoute: typeof AuthenticatedMarketplaceRoute
   AuthenticatedMistakesRoute: typeof AuthenticatedMistakesRoute
   AuthenticatedPaperTradingRoute: typeof AuthenticatedPaperTradingRoute
+  AuthenticatedPracticeRoute: typeof AuthenticatedPracticeRouteWithChildren
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRouteWithChildren
   AuthenticatedPropChallengesRoute: typeof AuthenticatedPropChallengesRouteWithChildren
   AuthenticatedReplayRoute: typeof AuthenticatedReplayRouteWithChildren
@@ -4045,6 +4096,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMarketplaceRoute: AuthenticatedMarketplaceRoute,
   AuthenticatedMistakesRoute: AuthenticatedMistakesRoute,
   AuthenticatedPaperTradingRoute: AuthenticatedPaperTradingRoute,
+  AuthenticatedPracticeRoute: AuthenticatedPracticeRouteWithChildren,
   AuthenticatedProfileRoute: AuthenticatedProfileRouteWithChildren,
   AuthenticatedPropChallengesRoute:
     AuthenticatedPropChallengesRouteWithChildren,
