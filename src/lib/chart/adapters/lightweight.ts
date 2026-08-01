@@ -279,10 +279,75 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
     detached: () => { requestPrimitiveUpdate = null; },
   } as unknown as ISeriesPrimitive<UTCTimestamp>;
 
+  // ── Session shading primitive: full-height 10% bands (UTC windows) ─────
+  type SessionBand = { start: number; end: number; color: string; name: string };
+  let sessionBands: SessionBand[] = [];
+  let sessionsUpdate: (() => void) | null = null;
+
+  const sessionsPaneView: IPrimitivePaneView = {
+    zOrder: () => "bottom",
+    renderer: () => ({
+      draw: (target: any) => {
+        if (!sessionBands.length) return;
+        target.useMediaCoordinateSpace(({ context, mediaSize }: any) => {
+          const coords = buildCoords();
+          if (!coords) return;
+          const ctx = context as CanvasRenderingContext2D;
+          ctx.save();
+          for (const b of sessionBands) {
+            const x1 = coords.x(b.start);
+            const x2 = coords.x(b.end);
+            if (x1 == null || x2 == null) continue;
+            const left = Math.max(0, Math.min(x1, x2));
+            const right = Math.min(mediaSize.width, Math.max(x1, x2));
+            if (right <= 0 || left >= mediaSize.width || right - left < 0.5) continue;
+            ctx.fillStyle = b.color;
+            ctx.fillRect(left, 0, right - left, mediaSize.height);
+          }
+          ctx.restore();
+        });
+      },
+    }),
+  };
+
+  const sessionsPrimitive: ISeriesPrimitive<UTCTimestamp> = {
+    paneViews: () => [sessionsPaneView],
+    attached: (param: any) => { sessionsUpdate = param.requestUpdate; },
+    detached: () => { sessionsUpdate = null; },
+  } as unknown as ISeriesPrimitive<UTCTimestamp>;
+
+  /** UTC session windows (non-DST baseline), matching indicators.sessions(). */
+  const SESSION_WINDOWS: { name: string; from: number; to: number }[] = [
+    { name: "asia", from: 0, to: 9 },
+    { name: "london", from: 8, to: 17 },
+    { name: "ny", from: 13, to: 22 },
+  ];
+
+  const computeSessionBands = (candles: Candle[]) => {
+    const bands: SessionBand[] = [];
+    if (!candles.length) return bands;
+    const first = candles[0].time;
+    const last = candles[candles.length - 1].time + barStep;
+    const DAY = 86_400_000;
+    // Sessions only make sense on intraday data — a daily bar spans them all.
+    if (barStep >= DAY) return bands;
+    for (let day = Math.floor(first / DAY) * DAY; day <= last; day += DAY) {
+      for (const w of SESSION_WINDOWS) {
+        const start = Math.max(day + w.from * 3_600_000, first);
+        const end = Math.min(day + w.to * 3_600_000, last);
+        if (end <= start) continue;
+        bands.push({ start, end, name: w.name, color: SESSION_FILLS[w.name] });
+      }
+    }
+    return bands;
+  };
+
   const attachDrawings = () => {
     try { priceSeries.attachPrimitive(drawingsPrimitive as any); } catch { /* unsupported */ }
+    try { priceSeries.attachPrimitive(sessionsPrimitive as any); } catch { /* unsupported */ }
   };
   attachDrawings();
+
 
   // ── Geometry subscriptions for DOM overlays (position lines, planner) ──
   const geometryListeners = new Set<() => void>();
