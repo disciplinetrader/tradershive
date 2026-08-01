@@ -774,6 +774,8 @@ function TradingWorkspaceInner() {
                     locked={drawingsLocked}
                     onLockedChange={setDrawingsLocked}
                     revision={drawingRevision}
+                    favourites={favouriteTools}
+                    onToggleFavourite={toggleFavouriteTool}
                   />
                   <div className="my-1 h-px w-6 bg-border/60" />
                   <RailButton label="Object tree — manage drawings" icon={Shapes} active={objectTreeOpen} onClick={() => setObjectTreeOpen((v) => !v)} />
