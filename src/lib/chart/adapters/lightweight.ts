@@ -602,6 +602,8 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
         if (!activeSmcBoxes.has(id)) { chart.removeSeries(s); smcBoxSeries.delete(id); }
       }
       if (!smcHandled && smcMarkers) { smcMarkers.setMarkers([]); }
+      if (!sessionsHandled && sessionBands.length) { sessionBands = []; sessionsUpdate?.(); }
+
     },
     syncSubPaneIndicators(indicators, candles) {
       if (!candles.length) return;
