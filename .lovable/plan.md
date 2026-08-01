@@ -1,51 +1,54 @@
-# Replay Studio → FXReplay-grade backtesting
+# Replay Studio → FX Replay parity
 
-Practice is gone (nav item removed, `/practice` and `/practice/*` now redirect to Replay Studio so old links still work).
-
-Next: close the gap between our Replay Studio and FXReplay / TradingView bar-replay. Below is what they have, what we have, and what I would build.
+Our studio today: 1,224 lines total. A bare chart projection, a sidebar with market Buy/Sell, play/pause/step transport, and a reflection panel. FX Replay's studio is a full trading terminal. Here is the gap and the build order.
 
 ## Gap audit
 
-| Capability | FXReplay | TradersHIVE today |
-| --- | --- | --- |
-| Full-screen terminal chart | Edge-to-edge, no app chrome | Chart boxed inside page tabs, ~14rem of chrome above |
-| Drawing tools on replay chart | Full toolset, persisted per session | None — replay chart is a bare projection |
-| Indicators | Full library | None on the replay chart |
-| Change timeframe mid-session | Yes, cursor preserved | Locked to the dataset timeframe |
-| Order entry | Chart-native ticket, drag SL/TP, risk % sizing, limit/stop | Buy/Sell market buttons in the sidebar only |
-| Position management | Partial close, scale, break-even, trailing | Close-all only |
-| Account HUD | Balance / equity / P&L / drawdown always visible | Buried in tabs |
-| Playback | Play/pause, speeds, step, **jump to date/time** | Play/pause, speeds, step (no seek/jump) |
-| Session end | Results screen with equity curve + stats | Notice banner, then navigates away |
+| FX Replay | TradersHIVE today |
+| --- | --- |
+| Full-screen terminal, chart edge-to-edge | Chart boxed under app chrome + replay tabs |
+| Full drawing toolset on the replay chart | None |
+| Full indicator library, same in replay and live | None on the replay chart |
+| Any timeframe mid-session, down to seconds | Locked to the dataset timeframe |
+| Replay mode: jump to any date, "Go-To" jumps (sessions, price levels, trade closes) | Play/pause/step only, no seek |
+| Multi-pair / multi-chart in one session | Single chart |
+| Chart-native order entry, drag SL/TP, risk-% sizing | Sidebar market buttons only |
+| Position management: partials, scale, break-even, trailing | Close-all only |
+| Always-visible account bar (balance, equity, P&L, drawdown) | Buried in tabs |
+| Prop-firm rule simulation during the session | Exists elsewhere, not wired into replay |
+| Post-session analytics + projections | Basic review page |
+| Economic calendar overlaid on the timeline | None |
 
-## What I will build
+Note: FX Replay's own scripting language (FXR Script) is out of scope — that is a language runtime, not a feature.
 
-**Phase A — Terminal shell (foundation)**
-- Studio takes the full viewport: hide the app sidebar and the replay sub-tabs while in a session, `100dvh` layout, chart edge-to-edge.
-- Top strip: symbol, dataset, timeframe switcher, account HUD (balance, equity, open P&L, day P&L, max drawdown).
-- Bottom transport bar: play/pause, step bar, skip 10, speeds, **draggable seek slider** and a "jump to date/time" picker that re-seeks the clock deterministically.
+## Build order
+
+**Phase A — Terminal shell**
+Studio takes the whole viewport: app sidebar and replay tabs hide during a session, `100dvh` layout, chart edge-to-edge. Top strip carries symbol, dataset, timeframe switcher and a live account HUD (balance, equity, open P&L, day P&L, peak drawdown). Bottom transport bar gets a draggable seek slider plus a jump-to-date/time picker that re-seeks the clock deterministically. Exit button returns to the review screen.
 
 **Phase B — Real charting inside replay**
-- Replace the bare `StudioChart` projection with the workspace `ChartEngine` in replay-feed mode, so replay inherits drawings, the left tool rail, indicators, chart types and the object tree.
-- Drawings and indicator config persist on the replay session record, so a resumed session looks identical.
-- Timeframe switcher aggregates the loaded base bars up (1m → 5m/15m/1H…), keeping the exact clock cursor. No look-ahead: aggregation only ever uses consumed bars.
+Swap the bare `StudioChart` for the workspace `ChartEngine` running in replay-feed mode, so replay inherits drawings, the left tool rail, indicators, chart types and the object tree. Drawings and indicator config persist on the session record so a resumed session looks identical. Timeframe switcher aggregates loaded base bars up (1m → 5m/15m/1H/4H/D) while holding the exact clock cursor — aggregation only ever touches consumed bars, so no look-ahead.
 
 **Phase C — Chart-native trading**
-- Reuse `ChartOrderLayer` / `FloatingOrderTicket` from the live workspace: drag SL/TP lines, hover actions, axis-pinned P&L labels.
-- Order ticket: market / limit / stop, risk-% sizing off the session's starting balance, R:R preview.
-- Position management: partial close, scale in/out, move to break-even, trailing stop — same execution engine, so trades stay canonical and keep syncing to Journal.
-- Keyboard: `Space` play/pause, `→`/`⇧→` step, `B`/`S` buy/sell, `X` close, `Esc` exit.
+Reuse `ChartOrderLayer` and `FloatingOrderTicket` from the live workspace: drag SL/TP, hover actions, axis-pinned P&L labels. Order ticket supports market/limit/stop with risk-% sizing off the session's starting balance and an R:R preview. Position management gains partial close, scale in/out, move to break-even and trailing stop. Keyboard: `Space` play/pause, `→` / `⇧→` step, `B` / `S` buy/sell, `X` close, `Esc` exit.
 
-**Phase D — Session results**
-- On finish: full-screen results with equity curve, R distribution, win rate, expectancy, best/worst trade, and a "save to Journal / review trades" hand-off.
+**Phase D — Go-To and multi-chart**
+Go-To menu jumps the clock to the next/previous session open (Asia/London/NY), a typed date, or a past trade close. Multi-pair layout reuses the workspace `ChartLayoutProvider` so 2–4 panes advance on one shared replay clock.
+
+**Phase E — Session results**
+Finish screen with equity curve, R distribution, win rate, expectancy, best/worst trade, a projection of the same edge over 100/200/300 trades, and a hand-off into Journal and the improvement loop.
+
+## UI/UX direction
+
+FX Replay reads as a dark, dense, chrome-light trading terminal: the chart owns the screen, controls are thin bars pinned top and bottom, everything else is a collapsible dock. Our studio still looks like a web page with a chart inside it. Phase A is where that flips; B–E fill it in. Existing design tokens carry over, so this is layout and density work, not a re-theme.
 
 ## Technical notes
 
-- No new execution logic: everything routes through the existing `ReplaySessionController` → `ReplayClock` → canonical order stores, so determinism and autosave/resume are preserved.
+- No new execution logic — everything routes through the existing `ReplaySessionController` → `ReplayClock` → canonical order stores, preserving determinism, autosave and resume.
 - Timeframe aggregation is a pure function over consumed candles; the clock keeps stepping the base timeframe underneath.
-- Seek/jump replays observations from the session start to the target index rather than mutating state, keeping the run reproducible.
-- Chart reuse means one drawing/indicator codebase for both Trading Workspace and Replay Studio.
+- Seek and Go-To replay observations from session start to the target index rather than mutating state, so runs stay reproducible.
+- Sharing `ChartEngine` means one drawing/indicator codebase across Trading Workspace and Replay Studio.
 
-## Scope check
+## Scope
 
-Phases A–D are a lot for one pass. Default order is A → B → C → D, shipping each phase working. Tell me if you would rather I start with chart-native trading (Phase C) instead.
+That is a lot for one pass. Default order is A → B → C → D → E, each phase shipped working. Say the word if you would rather I lead with chart-native trading (C) instead of the shell.
