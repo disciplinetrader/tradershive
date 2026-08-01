@@ -44,11 +44,13 @@ export const Route = createFileRoute("/_authenticated/replay")({
 
 function ReplayLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const studio = pathname === "/replay/studio";
+  // The studio is a full-bleed terminal: no tab chrome, no max width.
+  if (pathname === "/replay/studio") return <Outlet />;
   return (
-    <div className={studio ? "w-full space-y-3" : "mx-auto w-full max-w-[1600px] space-y-4"}>
+    <div className="mx-auto w-full max-w-[1600px] space-y-4">
       <SegmentedTabs tabs={TABS} pathname={pathname} />
       <Outlet />
     </div>
   );
 }
+

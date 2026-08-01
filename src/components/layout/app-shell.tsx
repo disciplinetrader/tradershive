@@ -94,12 +94,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
   // Immersive workspaces: chart is the hero; sidebar shrinks to icon rail
-  // (hover-to-expand overlay) and page chrome is minimized.
-  // Replay Studio keeps the global search + navigation visible — only the live
-  // Trading terminal goes full-bleed.
+  // (click-to-expand overlay) and page chrome is minimized. The live Trading
+  // terminal and the Replay Studio session both run full-bleed.
   const immersive =
     pathname === "/trading" ||
-    pathname.startsWith("/trading/");
+    pathname.startsWith("/trading/") ||
+    pathname === "/replay/studio";
+
 
   // Close mobile drawer on route change
   useEffect(() => {

@@ -1,6 +1,7 @@
 /**
- * Phase 8B · Studio header — identity, dataset provenance, autosave, lifecycle.
- * Read-only projection of engine selectors; no state of its own.
+ * Phase 8B / Phase A · Studio top strip — identity, dataset provenance, live
+ * account HUD, autosave and lifecycle. Read-only projection of engine
+ * selectors; no state of its own beyond the exit dialog.
  */
 import { useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
@@ -12,6 +13,7 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { AccountHud } from "./AccountHud";
 import { useReplayStudio } from "./context";
 
 
@@ -33,13 +35,14 @@ export function AutosaveIndicator() {
     saving: { icon: Loader2, text: "Saving…", tone: "text-primary" },
     error: { icon: CloudOff, text: "Save failed — retrying", tone: "text-destructive" },
   } as const;
-  const { icon: Icon, text, tone } = map[state];
+  const { icon: Icon, text, tone } = map[state as keyof typeof map] ?? map.idle;
+
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <span className={`inline-flex items-center gap-1.5 text-[11px] ${tone}`}>
           <Icon className={`h-3.5 w-3.5 ${state === "saving" ? "animate-spin" : ""}`} />
-          {text}
+          <span className="hidden xl:inline">{text}</span>
         </span>
       </TooltipTrigger>
       <TooltipContent side="bottom">
@@ -73,31 +76,41 @@ export function SessionHeader() {
   const d = view.dataset;
   const lifecycle = view.transport.lifecycle;
 
-
   return (
-    <header className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-border/60 bg-card/40 px-3 py-2">
-      <Link to="/replay/library" className="text-xs text-muted-foreground hover:text-foreground">
+    <header className="flex h-11 shrink-0 items-center gap-3 overflow-x-auto border-b border-border/60 bg-card/50 px-3">
+      <Link
+        to="/replay/library"
+        className="shrink-0 text-[11px] text-muted-foreground transition hover:text-foreground"
+      >
         ← Library
       </Link>
-      <div className="min-w-0">
-        <div className="truncate text-sm font-medium">{view.meta.title}</div>
-        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-          <Database className="h-3 w-3" />
-          <span>{d.label}</span>
-          <span>· {d.provider}</span>
-          <span>· {d.bars.toLocaleString()} bars</span>
-          <span>· {d.timezone}</span>
-          <span className="font-mono">#{d.checksum}</span>
-        </div>
+
+      <div className="flex min-w-0 shrink-0 items-center gap-2">
+        <span className="truncate text-[13px] font-semibold">{d.label}</span>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+              <Database className="h-3 w-3" />
+              {d.provider}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            {view.meta.title} · {d.bars.toLocaleString()} bars · {d.timezone} · checksum #{d.checksum}
+          </TooltipContent>
+        </Tooltip>
       </div>
 
-      <div className="ml-auto flex items-center gap-2">
-        {d.isSynthetic ? <Badge variant="destructive">Synthetic data</Badge> : null}
+      <div className="mx-auto shrink-0">
+        <AccountHud />
+      </div>
+
+      <div className="flex shrink-0 items-center gap-2">
+        {d.isSynthetic ? <Badge variant="destructive" className="h-5 text-[10px]">Synthetic</Badge> : null}
         {d.gaps > 0 ? (
           <Tooltip>
             <TooltipTrigger asChild>
-              <Badge variant="secondary" className="gap-1">
-                <TriangleAlert className="h-3 w-3" /> {d.gaps} gap{d.gaps === 1 ? "" : "s"}
+              <Badge variant="secondary" className="h-5 gap-1 text-[10px]">
+                <TriangleAlert className="h-3 w-3" /> {d.gaps}
               </Badge>
             </TooltipTrigger>
             <TooltipContent side="bottom" className="max-w-xs">
@@ -106,17 +119,28 @@ export function SessionHeader() {
           </Tooltip>
         ) : null}
         {resumed ? (
-          <Badge variant="outline" className="gap-1">
-            <RefreshCw className="h-3 w-3" /> Resumed at {resumedAtCursor.toLocaleString()}
-          </Badge>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge variant="outline" className="h-5 gap-1 text-[10px]">
+                <RefreshCw className="h-3 w-3" /> Resumed
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Resumed at observation {resumedAtCursor.toLocaleString()}</TooltipContent>
+          </Tooltip>
         ) : null}
-        <Badge variant="outline" className="capitalize">{lifecycle}</Badge>
+        <Badge variant="outline" className="h-5 text-[10px] capitalize">{lifecycle}</Badge>
         <AutosaveIndicator />
-        <Button size="sm" variant="ghost" onClick={saveNow}>Save</Button>
-        <Button size="sm" variant="secondary" onClick={finish} disabled={lifecycle === "completed"}>
+        <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px]" onClick={saveNow}>Save</Button>
+        <Button
+          size="sm"
+          variant="secondary"
+          className="h-7 px-2 text-[11px]"
+          onClick={finish}
+          disabled={lifecycle === "completed"}
+        >
           Finish
         </Button>
-        <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setExitOpen(true)}>
+        <Button size="sm" variant="outline" className="h-7 gap-1.5 px-2 text-[11px]" onClick={() => setExitOpen(true)}>
           <LogOut className="h-3.5 w-3.5" /> Exit
         </Button>
       </div>

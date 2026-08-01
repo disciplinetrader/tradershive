@@ -51,10 +51,15 @@ export interface DatasetView {
   gaps: number;
   checksum: string;
   isSynthetic: boolean;
+  /** Timestamp of the first bar in the loaded range. */
+  startTime: number;
+  /** Timestamp of the last bar in the loaded range. */
+  endTime: number;
 }
 
 export function selectDataset(engine: ReplaySessionEngine): DatasetView {
   const d = engine.dataset.identity;
+  const candles = engine.dataset.candles;
   return {
     label: `${d.symbol} · ${d.timeframe}`,
     provider: d.provider,
@@ -64,8 +69,11 @@ export function selectDataset(engine: ReplaySessionEngine): DatasetView {
     gaps: d.gaps.length,
     checksum: d.checksum.slice(0, 8),
     isSynthetic: d.isSynthetic,
+    startTime: candles.length ? candles[0].time : 0,
+    endTime: candles.length ? candles[candles.length - 1].time : 0,
   };
 }
+
 
 export interface AutosaveView {
   state: "idle" | "dirty" | "saving" | "error";
