@@ -364,8 +364,11 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
     detached: () => { requestPrimitiveUpdate = null; },
   } as unknown as ISeriesPrimitive<UTCTimestamp>;
 
-  // ── Session shading primitive: full-height 10% bands (UTC windows) ─────
-  type SessionBand = { start: number; end: number; color: string; name: string };
+  // ── Session shading primitive: 10% bands + range box + name label ──────
+  type SessionBand = {
+    start: number; end: number; color: string; name: string; label: string;
+    stroke: string; high: number | null; low: number | null;
+  };
   let sessionBands: SessionBand[] = [];
   let sessionsUpdate: (() => void) | null = null;
 
@@ -388,6 +391,42 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
             if (right <= 0 || left >= mediaSize.width || right - left < 0.5) continue;
             ctx.fillStyle = b.color;
             ctx.fillRect(left, 0, right - left, mediaSize.height);
+
+            // Session trading range: high/low box over the shaded window.
+            let boxTop: number | null = null;
+            if (b.high != null && b.low != null) {
+              const yHigh = coords.y(b.high);
+              const yLow = coords.y(b.low);
+              if (yHigh != null && yLow != null) {
+                const top = Math.min(yHigh, yLow);
+                const height = Math.max(Math.abs(yLow - yHigh), 1);
+                boxTop = top;
+                ctx.save();
+                ctx.setLineDash([4, 3]);
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = b.stroke;
+                ctx.strokeRect(left + 0.5, top + 0.5, Math.max(right - left - 1, 1), height);
+                ctx.restore();
+              }
+            }
+
+            // Session name label, pinned to the top of its range (or pane).
+            if (right - left > 34) {
+              ctx.save();
+              ctx.font = "600 10px Inter, system-ui, sans-serif";
+              ctx.textBaseline = "middle";
+              const text = b.label;
+              const w = ctx.measureText(text).width + 10;
+              const lx = Math.min(left + 4, right - w - 2);
+              const ly = Math.max((boxTop ?? 0) - 9, 8);
+              ctx.fillStyle = b.stroke;
+              ctx.globalAlpha = 0.18;
+              ctx.fillRect(lx, ly - 7, w, 14);
+              ctx.globalAlpha = 1;
+              ctx.fillStyle = b.stroke;
+              ctx.fillText(text, lx + 5, ly);
+              ctx.restore();
+            }
           }
           ctx.restore();
         });
@@ -402,11 +441,17 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
   } as unknown as ISeriesPrimitive<UTCTimestamp>;
 
   /** Default UTC session windows (non-DST baseline), matching indicators.sessions(). */
-  const SESSION_WINDOWS: { name: string; from: number; to: number }[] = [
-    { name: "asia", from: 0, to: 9 },
-    { name: "london", from: 8, to: 17 },
-    { name: "ny", from: 13, to: 22 },
+  const SESSION_WINDOWS: { name: string; label: string; from: number; to: number }[] = [
+    { name: "asia", label: "ASIA", from: 0, to: 9 },
+    { name: "london", label: "LONDON", from: 8, to: 17 },
+    { name: "ny", label: "NEW YORK", from: 13, to: 22 },
   ];
+
+  const SESSION_STROKES: Record<string, string> = {
+    asia: "rgba(167,139,250,0.85)",
+    london: "rgba(96,165,250,0.85)",
+    ny: "rgba(251,146,60,0.85)",
+  };
 
   /**
    * Session bands are anchored to real UTC market hours; the axis renders in
@@ -424,6 +469,7 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
     if (barStep >= DAY) return bands;
     const windows = SESSION_WINDOWS.map((w) => ({
       name: w.name,
+      label: w.label,
       from: Number.isFinite(params[`${w.name}_start`]) ? params[`${w.name}_start`] : w.from,
       to: Number.isFinite(params[`${w.name}_end`]) ? params[`${w.name}_end`] : w.to,
     }));
@@ -434,11 +480,25 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
         const start = Math.max(day + w.from * 3_600_000, first);
         const end = Math.min(day + rawEnd * 3_600_000, last);
         if (end <= start) continue;
-        bands.push({ start, end, name: w.name, color: SESSION_FILLS[w.name] });
+        // Trading range of the session = high/low of the bars inside it.
+        let high: number | null = null;
+        let low: number | null = null;
+        for (const c of candles) {
+          if (c.time < start) continue;
+          if (c.time >= end) break;
+          high = high == null ? c.high : Math.max(high, c.high);
+          low = low == null ? c.low : Math.min(low, c.low);
+        }
+        bands.push({
+          start, end, name: w.name, label: w.label,
+          color: SESSION_FILLS[w.name], stroke: SESSION_STROKES[w.name],
+          high, low,
+        });
       }
     }
     return bands;
   };
+
 
 
   const attachDrawings = () => {
