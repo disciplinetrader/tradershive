@@ -201,6 +201,15 @@ function TradingWorkspaceInner() {
   if (!drawingStoreRef.current) drawingStoreRef.current = new DrawingStore();
   const drawingStore = drawingStoreRef.current;
   const [activeTool, setActiveTool] = useState<ToolId>("cursor");
+  // Pinned drawing tools stay reachable over the chart, even in focus mode.
+  const [favouriteTools, setFavouriteTools] = useState<ToolId[]>(() => readFavourites());
+  const toggleFavouriteTool = useCallback((t: ToolId) => {
+    setFavouriteTools((prev) => {
+      const next = prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t];
+      writeFavourites(next);
+      return next;
+    });
+  }, []);
   const [magnet, setMagnet] = useState(false);
   const [drawingsLocked, setDrawingsLocked] = useState(false);
   const [objectTreeOpen, setObjectTreeOpen] = useState(false);
