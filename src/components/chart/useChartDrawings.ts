@@ -402,6 +402,19 @@ export function useChartDrawings({
 
       // Cursor tool: select / drag existing objects, otherwise let the chart pan.
       if (!coords) return;
+
+      // Ctrl / ⌘ + drag starts a marquee: everything inside is selected so it
+      // can be deleted in one keystroke.
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        pointerId = e.pointerId;
+        session = { mode: "marquee", downX: px, downY: py };
+        marqueeRef.current = { x1: px, y1: py, x2: px, y2: py };
+        adapter.requestDrawingsRepaint?.();
+        return;
+      }
+
       const selectedId = store.selectedIdValue();
       const selected = store.list().find((d) => d.id === selectedId);
       if (selected && !selected.locked) {
