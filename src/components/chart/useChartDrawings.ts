@@ -113,6 +113,8 @@ export function useChartDrawings({
   // Tick size for price-handle snapping — read synchronously during drags so
   // a precision change never needs to rebuild the pointer listeners.
   const tickRef = useRef(tickFromPrecision(pricePrecision));
+  /** Live Ctrl-drag rubber band, in canvas pixels. Painted by the draw source. */
+  const marqueeRef = useRef<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
   tickRef.current = tickFromPrecision(pricePrecision);
 
   /** Discard an in-flight text session without touching the store. */
