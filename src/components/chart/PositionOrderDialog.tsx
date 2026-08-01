@@ -61,36 +61,61 @@ function Row({ label, value, tone }: { label: string; value: string; tone?: "up"
 }
 
 function LevelField({
-  label, value, onChange, step, tone, testId,
+  label, value, onChange, step, decimals, tone, testId,
 }: {
   label: string; value: string; onChange: (v: string) => void;
-  step: number; tone?: "up" | "down"; testId: string;
+  step: number; decimals: number; tone?: "up" | "down"; testId: string;
 }) {
+  const nudge = (dir: 1 | -1) => {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return;
+    onChange((n + dir * step).toFixed(decimals));
+  };
   return (
-    <label className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1">
       <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</span>
-      <input
-        type="number"
-        inputMode="decimal"
-        step={step}
-        value={value}
-        data-testid={testId}
-        aria-label={label}
-        onChange={(e) => onChange(e.target.value)}
-        className={cn(
-          "w-full rounded-md border border-border bg-background px-2 py-1.5 font-mono text-[12px] tabular-nums outline-none focus:border-primary",
-          tone === "up" && "text-success",
-          tone === "down" && "text-danger",
-        )}
-      />
-    </label>
+      <div className="flex items-stretch gap-1">
+        <button
+          type="button" aria-label={`Decrease ${label}`} data-testid={`${testId}-dec`}
+          onClick={() => nudge(-1)}
+          className="grid w-6 shrink-0 place-items-center rounded-md border border-border text-muted-foreground hover:bg-muted"
+        >
+          <Minus className="h-3 w-3" />
+        </button>
+        <input
+          type="number"
+          inputMode="decimal"
+          step={step}
+          value={value}
+          data-testid={testId}
+          aria-label={label}
+          onChange={(e) => onChange(e.target.value)}
+          className={cn(
+            "w-full min-w-0 rounded-md border border-border bg-background px-1.5 py-1.5 text-center font-mono text-[12px] tabular-nums outline-none focus:border-primary",
+            tone === "up" && "text-success",
+            tone === "down" && "text-danger",
+          )}
+        />
+        <button
+          type="button" aria-label={`Increase ${label}`} data-testid={`${testId}-inc`}
+          onClick={() => nudge(1)}
+          className="grid w-6 shrink-0 place-items-center rounded-md border border-border text-muted-foreground hover:bg-muted"
+        >
+          <Plus className="h-3 w-3" />
+        </button>
+      </div>
+    </div>
   );
 }
 
 export function PositionOrderDialog({
-  draft, marketPrice, tick, decimals = 4, mode = "create", inferredType, onConfirm, onEdit, onCancel,
+  draft, marketPrice, tick, decimals = 4, mode = "create", inferredType,
+  balance = 0, defaultRiskPct = 1, sym, onConfirm, onEdit, onCancel,
 }: Props) {
   const [orderType, setOrderType] = useState<OrderType>(draft?.orderType ?? "market");
+  /** Once the trader picks a type by hand we stop auto-detecting. */
+  const [typeLocked, setTypeLocked] = useState(false);
+  const [riskPct, setRiskPct] = useState<number>(defaultRiskPct > 0 ? defaultRiskPct : 1);
   const [levels, setLevels] = useState({
     entry: draft ? String(draft.entry) : "",
     stop: draft ? String(draft.stop) : "",
@@ -100,8 +125,10 @@ export function PositionOrderDialog({
   useEffect(() => {
     if (!draft) return;
     setOrderType(draft.orderType);
+    setTypeLocked(false);
+    setRiskPct(defaultRiskPct > 0 ? defaultRiskPct : 1);
     setLevels({ entry: String(draft.entry), stop: String(draft.stop), target: String(draft.target) });
-  }, [draft?.drawingId, draft?.orderType, draft?.entry, draft?.stop, draft?.target]);
+  }, [draft?.drawingId, draft?.orderType, draft?.entry, draft?.stop, draft?.target, defaultRiskPct]);
 
   const parsed = useMemo(() => ({
     entry: Number(levels.entry),
@@ -109,9 +136,30 @@ export function PositionOrderDialog({
     target: Number(levels.target),
   }), [levels]);
 
+  // Instant detection: as long as the trader has not overridden the type,
+  // it follows the entry level against the live market price.
+  const autoType = useMemo(
+    () => (draft ? inferOrderType(draft.direction, parsed.entry, marketPrice, tick ?? 0) : null),
+    [draft?.direction, parsed.entry, marketPrice, tick],
+  );
+  useEffect(() => {
+    if (!typeLocked && autoType && autoType !== orderType) setOrderType(autoType);
+  }, [autoType, typeLocked, orderType]);
+
+  const riskDistance = Math.abs(parsed.entry - parsed.stop);
+  const riskAmount = (balance > 0 ? balance : 0) * (riskPct / 100);
+  const size = useMemo(() => {
+    if (!(riskAmount > 0) || !(riskDistance > 0)) return null;
+    if (sym) {
+      const lot = lotForRisk(sym, parsed.entry, parsed.stop, riskAmount);
+      return lot > 0 ? lot : null;
+    }
+    return riskAmount / riskDistance;
+  }, [riskAmount, riskDistance, sym, parsed.entry, parsed.stop]);
+
   const current = useMemo<OrderDraft | null>(
-    () => (draft ? { ...draft, ...parsed, orderType } : null),
-    [draft, parsed, orderType],
+    () => (draft ? { ...draft, ...parsed, orderType, size: size ?? draft.size } : null),
+    [draft, parsed, orderType, size],
   );
 
   const validation = useMemo(
@@ -122,12 +170,13 @@ export function PositionOrderDialog({
   if (!draft || !current) return null;
 
   const fmt = (n: number) => (Number.isFinite(n) ? n.toFixed(decimals) : "—");
-  const risk = Math.abs(current.entry - current.stop);
+  const risk = riskDistance;
   const reward = Math.abs(current.target - current.entry);
   const rr = risk > 0 ? reward / risk : 0;
   const distance = entryDistance(current, marketPrice);
   const isBuy = current.direction === "buy";
   const step = tick && tick > 0 ? tick : 10 ** -decimals;
+
 
 
   return (
