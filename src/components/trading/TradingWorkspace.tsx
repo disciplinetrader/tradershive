@@ -872,27 +872,8 @@ function TradingWorkspaceInner() {
                 onAdapter={handleAdapter} onCandles={handleCandles}
                 className="absolute inset-0"
               >
-                {/* Persistent BUY / SELL — anchored directly under the symbol legend */}
-                {!focusMode && (
-                  <div className="pointer-events-none absolute left-3 top-11 z-30 flex items-center gap-1.5">
-                    <Button
-                      size="sm"
-                      className="pointer-events-auto h-8 gap-1 bg-success px-3 text-[11px] font-bold text-white tabular-nums shadow-md hover:bg-success/90"
-                      onClick={() => { emitTradeIntent({ kind: "focus_side", side: "long" }); setRightOpen(true); setActiveTab("order"); }}
-                      aria-label={`Buy ${symbol} at ${ask.toFixed(decimals)}`}
-                    >
-                      BUY <span className="opacity-90">{ask.toFixed(decimals)}</span>
-                    </Button>
-                    <Button
-                      size="sm"
-                      className="pointer-events-auto h-8 gap-1 bg-danger px-3 text-[11px] font-bold text-white tabular-nums shadow-md hover:bg-danger/90"
-                      onClick={() => { emitTradeIntent({ kind: "focus_side", side: "short" }); setRightOpen(true); setActiveTab("order"); }}
-                      aria-label={`Sell ${symbol} at ${bid.toFixed(decimals)}`}
-                    >
-                      SELL <span className="opacity-90">{bid.toFixed(decimals)}</span>
-                    </Button>
-                  </div>
-                )}
+
+
 
                 {textEditor && (
                   <ChartTextEditor
