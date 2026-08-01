@@ -56,7 +56,7 @@ export function LibraryCard({ session }: { session: ReplaySession }) {
     onSuccess: (row: { id: string }) => {
       invalidate();
       toast.success("Session duplicated");
-      navigate({ to: "/replay/session", search: { id: row.id } as never });
+      navigate({ to: "/replay/studio", search: { id: row.id } as never });
     },
   });
   const del = useMutation({
@@ -68,7 +68,7 @@ export function LibraryCard({ session }: { session: ReplaySession }) {
     <motion.div whileHover={{ y: -3 }} transition={{ type: "spring", stiffness: 200 }}>
       <GlassCard interactive className="p-4 space-y-2.5 relative group">
         <Link
-          to="/replay/session"
+          to="/replay/studio"
           search={{ id: session.id } as never}
           className="block space-y-2 pr-6"
           aria-label={`Resume ${session.title}`}
@@ -125,7 +125,7 @@ export function LibraryCard({ session }: { session: ReplaySession }) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-              <DropdownMenuItem onSelect={() => navigate({ to: "/replay/session", search: { id: session.id } as never })}>
+              <DropdownMenuItem onSelect={() => navigate({ to: "/replay/studio", search: { id: session.id } as never })}>
                 <Play className="mr-2 h-3.5 w-3.5" /> Continue
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => duplicate.mutate()} disabled={duplicate.isPending}>

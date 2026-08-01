@@ -201,7 +201,7 @@ function OverviewPage() {
                   <span className="text-[10px] text-muted-foreground">{new Date(d.created_at).toLocaleDateString()}</span>
                 </div>
                 <p className="mt-1 text-xs text-foreground/90 line-clamp-3">{d.overall_summary}</p>
-                <Link to="/replay/session" search={{ id: d.session_id }} className="mt-2 inline-block text-[11px] text-primary hover:underline">
+                <Link to="/replay/studio" search={{ id: d.session_id }} className="mt-2 inline-block text-[11px] text-primary hover:underline">
                   Open session →
                 </Link>
               </li>

@@ -95,8 +95,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const immersive =
     pathname === "/trading" ||
     pathname.startsWith("/trading/") ||
-    pathname === "/replay/session" ||
-    pathname.startsWith("/replay/session/");
+    pathname === "/replay/studio" ||
+    pathname.startsWith("/replay/studio/");
 
   // Close mobile drawer on route change
   useEffect(() => {

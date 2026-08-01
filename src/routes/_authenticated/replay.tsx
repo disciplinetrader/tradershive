@@ -15,7 +15,7 @@ import { SegmentedTabs } from "@/components/ui/segmented-tabs";
 // workflow.
 const TABS = [
   { to: "/replay", label: "Home", icon: Home, exact: true },
-  { to: "/replay/session", label: "Trading Workspace", icon: Play },
+  { to: "/replay/studio", label: "Trading Workspace", icon: Play },
   { to: "/replay/library", label: "Saved Sessions", icon: Library },
   { to: "/replay/trades", label: "Trade Review", icon: Film },
   { to: "/replay/performance", label: "Performance", icon: BarChart3 },
@@ -38,7 +38,7 @@ export const Route = createFileRoute("/_authenticated/replay")({
 
 function ReplayLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const immersive = pathname === "/replay/session" || pathname.startsWith("/replay/session/");
+  const immersive = pathname === "/replay/studio";
   if (immersive) {
     // Trading Workspace 2.0: no chrome, no max-width — chart is the hero.
     return <Outlet />;

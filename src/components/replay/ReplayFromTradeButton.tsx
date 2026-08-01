@@ -37,7 +37,7 @@ export function ReplayFromTradeButton({
     mutationFn: () => fn({ data: { trade_id: tradeId } }),
     onSuccess: (row: { id: string }) => {
       onDone?.(row.id);
-      navigate({ to: "/replay/session", search: { id: row.id } as never });
+      navigate({ to: "/replay/studio", search: { id: row.id } as never });
     },
     onError: (e) => toast.error((e as Error).message ?? "Could not start replay"),
   });

@@ -35,6 +35,10 @@ export interface StudioBlocked {
 }
 
 export interface StudioValue {
+  /** Canonical `replay_sessions.id` — the key every reflection artefact hangs off. */
+  sessionId: string;
+  /** Session starting balance, or null when unknown (never defaulted to 0). */
+  startingBalance: number | null;
   phase: StudioPhase;
   blocked: StudioBlocked | null;
   warnings: string[];
@@ -251,6 +255,8 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
         : null;
 
   const value: StudioValue = {
+    sessionId: id,
+    startingBalance: typeof session?.starting_balance === "number" ? session.starting_balance : null,
     phase,
     blocked,
     warnings: boot?.ok ? boot.warnings : boot?.warnings ?? [],

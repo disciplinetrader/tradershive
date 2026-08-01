@@ -61,7 +61,7 @@ function FeedbackLauncher({ onClick }: { onClick: () => void }) {
   // order controls with a persistent floating button. Feedback stays
   // reachable via Ctrl+Shift+B and from Settings > Help.
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  if (pathname.startsWith("/trading") || pathname.startsWith("/replay/session")) return null;
+  if (pathname.startsWith("/trading") || pathname.startsWith("/replay/studio")) return null;
   return (
     <button
       type="button"

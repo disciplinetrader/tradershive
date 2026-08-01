@@ -79,7 +79,7 @@ export function ScenarioPicker({
     mutationFn: useServerFn(createReplaySession),
     onSuccess: (row: any) => {
       onOpenChange(false);
-      navigate({ to: "/replay/session", search: { id: row.id } as any });
+      navigate({ to: "/replay/studio", search: { id: row.id } as any });
     },
   });
 

@@ -127,7 +127,7 @@ export function AdminSearchPalette() {
               {data!.replays?.length ? (
                 <CommandGroup heading="Replay Sessions">
                   {data!.replays.map((r: any) => (
-                    <CommandItem key={`r-${r.id}`} onSelect={() => go(`/replay/session/${r.id}`)}>
+                    <CommandItem key={`r-${r.id}`} onSelect={() => go(`/replay/studio?id=${r.id}`)}>
                       {r.title || r.symbol}
                     </CommandItem>
                   ))}

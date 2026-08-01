@@ -176,7 +176,7 @@ function ReplayPerformancePage() {
             {d?.performance.bestSessionId ? (
               <Button asChild variant="link" size="sm" className="h-6 px-0">
                 <Link
-                  to="/replay/session"
+                  to="/replay/studio"
                   search={{ id: d.performance.bestSessionId } as never}
                 >
                   <Star className="mr-1 h-3 w-3" />

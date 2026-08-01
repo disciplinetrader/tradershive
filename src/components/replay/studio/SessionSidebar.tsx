@@ -9,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { positionMetricsFor } from "@/lib/chart/orders/service";
 import { useReplayStudio } from "./context";
+import { ReflectionPanel } from "./ReflectionPanel";
 
 function Empty({ text }: { text: string }) {
   return <div className="px-3 py-6 text-center text-xs text-muted-foreground">{text}</div>;
@@ -30,11 +31,12 @@ export function SessionSidebar() {
       </div>
 
       <Tabs defaultValue="positions" className="flex min-h-0 flex-1 flex-col">
-        <TabsList className="mx-2 mt-2 grid grid-cols-4">
+        <TabsList className="mx-2 mt-2 grid grid-cols-5">
           <TabsTrigger value="positions" className="text-[11px]">Pos {positions.length || ""}</TabsTrigger>
           <TabsTrigger value="orders" className="text-[11px]">Ord {pending.length || ""}</TabsTrigger>
           <TabsTrigger value="trades" className="text-[11px]">Trades</TabsTrigger>
           <TabsTrigger value="log" className="text-[11px]">Log</TabsTrigger>
+          <TabsTrigger value="review" className="text-[11px]">Review</TabsTrigger>
         </TabsList>
 
         <TabsContent value="positions" className="min-h-0 flex-1">
@@ -103,6 +105,10 @@ export function SessionSidebar() {
               ))
             )}
           </ScrollArea>
+        </TabsContent>
+
+        <TabsContent value="review" className="min-h-0 flex-1">
+          <ReflectionPanel />
         </TabsContent>
 
         <TabsContent value="log" className="min-h-0 flex-1">
