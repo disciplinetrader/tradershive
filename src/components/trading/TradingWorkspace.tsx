@@ -376,6 +376,9 @@ function TradingWorkspaceInner() {
     symbol,
     marketPrice: last,
     pricePrecision: decimals,
+    // Default 1% of account equity — the Position Tool arrives pre-sized.
+    riskBudget: Number(account?.balance ?? 10000) * (Number(account?.max_trade_risk_pct ?? 1) / 100),
+
     market: (meta as { market?: string } | null)?.market ?? null,
 
     onFill: (o) => {
