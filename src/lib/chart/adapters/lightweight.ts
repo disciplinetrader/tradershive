@@ -45,6 +45,75 @@ function containerSize(container: HTMLElement) {
   };
 }
 
+/** The browser's IANA timezone, falling back to UTC on locked-down runtimes. */
+export function browserTimezone(): string {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch { return "UTC"; }
+}
+
+function resolveTimezone(tz: string | undefined): string {
+  if (!tz || tz === "auto" || tz === "local") return browserTimezone();
+  try { new Intl.DateTimeFormat("en-US", { timeZone: tz }); return tz; } catch { return "UTC"; }
+}
+
+/** Offset (in ms) that must be ADDED to a UTC instant to get wall-clock time in `tz`. */
+function tzOffsetMs(epochMs: number, tz: string): number {
+  try {
+    const dtf = new Intl.DateTimeFormat("en-US", {
+      timeZone: tz, hour12: false,
+      year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", second: "2-digit",
+    });
+    const p: Record<string, string> = {};
+    for (const part of dtf.formatToParts(new Date(epochMs))) if (part.type !== "literal") p[part.type] = part.value;
+    const asUTC = Date.UTC(
+      Number(p.year), Number(p.month) - 1, Number(p.day),
+      p.hour === "24" ? 0 : Number(p.hour), Number(p.minute), Number(p.second),
+    );
+    return asUTC - epochMs;
+  } catch { return 0; }
+}
+
+/** LWC hands back seconds; normalise to epoch ms. */
+function toEpochMs(time: any): number {
+  const n = typeof time === "number" ? time : Number(time);
+  if (!Number.isFinite(n)) return Date.now();
+  return n < 1e12 ? n * 1000 : n;
+}
+
+const pad2 = (n: number) => String(n).padStart(2, "0");
+
+function zonedFields(epochMs: number, tz: string) {
+  const shifted = new Date(epochMs + tzOffsetMs(epochMs, tz));
+  return {
+    year: shifted.getUTCFullYear(),
+    month: shifted.getUTCMonth() + 1,
+    day: shifted.getUTCDate(),
+    hour: shifted.getUTCHours(),
+    minute: shifted.getUTCMinutes(),
+  };
+}
+
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+function makeTickFormatter(tz: string) {
+  return (time: any, tickMarkType: number) => {
+    const f = zonedFields(toEpochMs(time), tz);
+    // 0=Year 1=Month 2=DayOfMonth 3=Time 4=TimeWithSeconds
+    if (tickMarkType === 0) return String(f.year);
+    if (tickMarkType === 1) return MONTHS[f.month - 1];
+    if (tickMarkType === 2) return `${f.day} ${MONTHS[f.month - 1]}`;
+    return `${pad2(f.hour)}:${pad2(f.minute)}`;
+  };
+}
+
+function makeTimeFormatter(tz: string) {
+  return (time: any) => {
+    const f = zonedFields(toEpochMs(time), tz);
+    return `${f.day} ${MONTHS[f.month - 1]} ${f.year}  ${pad2(f.hour)}:${pad2(f.minute)}`;
+  };
+}
+
+
 export const createLightweightAdapter: ChartAdapterFactory = ({ container, settings, onCrosshair }) => {
   // lightweight-charts' color parser doesn't accept oklch()/color-mix(). Resolve any
   // CSS color to a concrete rgb()/rgba() via a canvas — getComputedStyle keeps
@@ -82,7 +151,11 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
     return { textColor, gridColor, borderColor, bgColor };
   };
   let themeColors = readThemeColors();
+  // Axis + crosshair times render in the user's timezone (auto-detected unless
+  // the workspace pins one), so session bands line up with local wall clock.
+  let displayTz = resolveTimezone(settings.timezone);
   const initialSize = containerSize(container);
+
   const chart = createChart(container, {
     width: initialSize.width,
     height: initialSize.height,
@@ -102,10 +175,15 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
       autoScale: settings.autoScale,
       invertScale: settings.priceScale === "inverted",
     },
-    localization: { locale: safeLocale() },
-    timeScale: { borderColor: themeColors.borderColor, visible: true, borderVisible: true, timeVisible: true, secondsVisible: false },
+    localization: { locale: safeLocale(), timeFormatter: makeTimeFormatter(displayTz) },
+    timeScale: {
+      borderColor: themeColors.borderColor, visible: true, borderVisible: true,
+      timeVisible: true, secondsVisible: false,
+      tickMarkFormatter: makeTickFormatter(displayTz),
+    },
     crosshair: { mode: crosshairMode(settings) },
   });
+
 
   let destroyed = false;
   let resizeFrame: number | null = null;
@@ -323,14 +401,20 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
     detached: () => { sessionsUpdate = null; },
   } as unknown as ISeriesPrimitive<UTCTimestamp>;
 
-  /** UTC session windows (non-DST baseline), matching indicators.sessions(). */
+  /** Default UTC session windows (non-DST baseline), matching indicators.sessions(). */
   const SESSION_WINDOWS: { name: string; from: number; to: number }[] = [
     { name: "asia", from: 0, to: 9 },
     { name: "london", from: 8, to: 17 },
     { name: "ny", from: 13, to: 22 },
   ];
 
-  const computeSessionBands = (candles: Candle[]) => {
+  /**
+   * Session bands are anchored to real UTC market hours; the axis renders in
+   * the user's timezone, so a 00:00 UTC Asia open correctly appears at 05:30
+   * for IST. Users can still override each window (in UTC hours) from the
+   * indicator settings dialog.
+   */
+  const computeSessionBands = (candles: Candle[], params: Record<string, number> = {}) => {
     const bands: SessionBand[] = [];
     if (!candles.length) return bands;
     const first = candles[0].time;
@@ -338,16 +422,24 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
     const DAY = 86_400_000;
     // Sessions only make sense on intraday data — a daily bar spans them all.
     if (barStep >= DAY) return bands;
-    for (let day = Math.floor(first / DAY) * DAY; day <= last; day += DAY) {
-      for (const w of SESSION_WINDOWS) {
+    const windows = SESSION_WINDOWS.map((w) => ({
+      name: w.name,
+      from: Number.isFinite(params[`${w.name}_start`]) ? params[`${w.name}_start`] : w.from,
+      to: Number.isFinite(params[`${w.name}_end`]) ? params[`${w.name}_end`] : w.to,
+    }));
+    for (let day = Math.floor(first / DAY) * DAY; day <= last + DAY; day += DAY) {
+      for (const w of windows) {
+        // A window whose end wraps past midnight continues into the next day.
+        const rawEnd = w.to > w.from ? w.to : w.to + 24;
         const start = Math.max(day + w.from * 3_600_000, first);
-        const end = Math.min(day + w.to * 3_600_000, last);
+        const end = Math.min(day + rawEnd * 3_600_000, last);
         if (end <= start) continue;
         bands.push({ start, end, name: w.name, color: SESSION_FILLS[w.name] });
       }
     }
     return bands;
   };
+
 
   const attachDrawings = () => {
     try { priceSeries.attachPrimitive(drawingsPrimitive as any); } catch { /* unsupported */ }
@@ -457,6 +549,7 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
       if (barTimes.length && candle.time > barTimes[barTimes.length - 1]) barTimes.push(candle.time);
     },
     applySettings(next) {
+      displayTz = resolveTimezone(next.timezone);
       chart.applyOptions({
         grid: {
           vertLines: { visible: next.showGrid },
@@ -468,8 +561,11 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
           autoScale: next.autoScale,
           invertScale: next.priceScale === "inverted",
         },
+        localization: { timeFormatter: makeTimeFormatter(displayTz) },
+        timeScale: { tickMarkFormatter: makeTickFormatter(displayTz) },
       });
     },
+
     setChartType(type) {
       if (type === currentType) return;
       chart.removeSeries(priceSeries);
@@ -498,7 +594,7 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
           // Sessions render as full-height background bands (Asia / London / NY, UTC).
           if (cfg.key === "sessions") {
             sessionsHandled = true;
-            sessionBands = computeSessionBands(candles);
+            sessionBands = computeSessionBands(candles, cfg.params ?? {});
             sessionsUpdate?.();
             return;
           }

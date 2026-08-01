@@ -83,5 +83,7 @@ export const DEFAULT_CHART_SETTINGS = {
   showVolume: true,
   sessionShading: false,
   autoScale: true,
-  timezone: "UTC",
+  // "auto" = follow the browser's IANA timezone for axis + crosshair times.
+  timezone: "auto",
+
 };
