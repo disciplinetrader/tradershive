@@ -233,6 +233,11 @@ function ManualForm({
   const [rMultiple, setRMultiple] = useState<string>(
     prefill?.rr != null ? formatSignedR(prefill.rr) : "",
   );
+  // Money result. Optional — when blank we keep the R value as the P&L proxy.
+  const [pnlInput, setPnlInput] = useState<string>(
+    prefill?.pnl != null ? String(prefill.pnl) : "",
+  );
+
 
   const [tradeDate, setTradeDate] = useState<string>(
     (prefill?.opened_at ? new Date(prefill.opened_at) : new Date()).toISOString().slice(0, 10),
