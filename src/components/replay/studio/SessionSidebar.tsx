@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { positionMetricsFor } from "@/lib/chart/orders/service";
 import { useReplayStudio } from "./context";
 import { ReflectionPanel } from "./ReflectionPanel";
+import { cn } from "@/lib/utils";
+
 
 function Empty({ text }: { text: string }) {
   return <div className="px-3 py-6 text-center text-xs text-muted-foreground">{text}</div>;
