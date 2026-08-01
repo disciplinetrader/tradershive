@@ -87,6 +87,18 @@ function rangeFor(session: any): { from: number; to: number } {
   return { from: midnight, to: midnight + 24 * 3600 * 1000 };
 }
 
+/**
+ * Where a fresh session drops the cursor. "beginning" (the default) means the
+ * very first candle of the selected day/range, so traders see the open.
+ */
+function startCursorFor(session: any, observations: number): number {
+  const tag: string = (session?.tags ?? []).find?.((t: string) => t.startsWith("start:")) ?? "";
+  const mode = tag.slice("start:".length);
+  if (mode === "random") return Math.floor(Math.random() * Math.max(1, observations * 0.6));
+  if (mode === "before_end") return Math.floor(observations * 0.75);
+  return 0;
+}
+
 export function ReplayStudioProvider({ id, children }: { id: string; children: ReactNode }) {
   const getSess = useServerFn(getReplaySession);
   const getCandles = useServerFn(getReplayCandles);
