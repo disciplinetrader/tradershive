@@ -18,6 +18,7 @@ import {
 import { useLiveQuotes } from "@/lib/paper-trading/live-quotes";
 import { MARKET_TABS, SYMBOL_CATALOG, findSymbol, type PaperMarket } from "@/lib/paper-trading/symbols";
 import { cn } from "@/lib/utils";
+import { useChartLayout } from "@/lib/chart/multi-chart";
 import { usePaper } from "./context";
 
 type Watchlist = { id: string; name: string; market: PaperMarket | null; is_default: boolean; sort_order: number };
@@ -176,7 +177,7 @@ export function WatchlistPanel() {
             const meta = findSymbol(r.symbol);
             const q = quotes[r.symbol];
             const up = (q?.change ?? 0) >= 0;
-            const selected = r.symbol === symbol;
+            const selected = gridOn ? slotSymbols.includes(r.symbol) : r.symbol === symbol;
             return (
               <motion.li
                 key={r.id}
@@ -195,7 +196,7 @@ export function WatchlistPanel() {
                   {r.is_favorite ? <Star className="h-3.5 w-3.5 fill-warning text-warning" /> : <StarOff className="h-3.5 w-3.5" />}
                 </button>
                 <button
-                  onClick={() => setSymbol(r.symbol)}
+                  onClick={() => openSymbol(r.symbol)}
                   className="flex min-w-0 flex-1 cursor-pointer items-center justify-between rounded text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                 >
                   <div className="min-w-0">
