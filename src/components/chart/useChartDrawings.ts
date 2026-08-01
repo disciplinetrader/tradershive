@@ -228,7 +228,8 @@ export function useChartDrawings({
     type Session =
       | { mode: "create"; kind: DrawingKind; origin: DrawingPoint; moved: boolean; downX: number; downY: number }
       | { mode: "move"; id: string; last: DrawingPoint }
-      | { mode: "anchor"; id: string; anchorId: string };
+      | { mode: "anchor"; id: string; anchorId: string }
+      | { mode: "marquee"; downX: number; downY: number };
 
     let session: Session | null = null;
     let pointerId: number | null = null;
