@@ -26,6 +26,11 @@ type WatchSym = { id: string; watchlist_id: string; symbol: string; market: Pape
 export function WatchlistPanel() {
   const qc = useQueryClient();
   const { symbol, setSymbol } = usePaper();
+  // In a multi-chart grid, a symbol click lands on the focused pane.
+  const { enabled: gridOn, activeSlot, slotSymbols, sendSymbolToActiveSlot } = useChartLayout();
+  const openSymbol = gridOn ? sendSymbolToActiveSlot : setSymbol;
+  const targetLabel = !gridOn || slotSymbols.length < 2 ? null : activeSlot === 0 ? "Main chart" : `Chart #${activeSlot + 1}`;
+
 
   const fetch = useServerFn(listPaperWatchlists);
   const addSym = useServerFn(addWatchlistSymbol);
