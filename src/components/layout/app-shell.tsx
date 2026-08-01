@@ -106,8 +106,18 @@ export function AppShell({ children }: { children: ReactNode }) {
   // Close mobile drawer on route change
   useEffect(() => {
     setMobileOpen(false);
-    setRailHovered(false);
+    setRailOpen(false);
   }, [pathname]);
+
+  // Click outside collapses the immersive rail again.
+  useEffect(() => {
+    if (!railOpen) return;
+    const onDown = (e: PointerEvent) => {
+      if (railRef.current && !railRef.current.contains(e.target as Node)) setRailOpen(false);
+    };
+    window.addEventListener("pointerdown", onDown, true);
+    return () => window.removeEventListener("pointerdown", onDown, true);
+  }, [railOpen]);
 
   // Redirect users who haven't completed onboarding
   useEffect(() => {
@@ -117,7 +127,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
   }, [loading, profile, pathname, navigate]);
 
-  const effectiveCollapsed = immersive ? !railHovered : collapsed;
+  const effectiveCollapsed = immersive ? !railOpen : collapsed;
 
   return (
     <ProductTourProvider>
@@ -128,17 +138,16 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="pointer-events-none fixed inset-0 z-0 grid-bg opacity-30 [mask-image:radial-gradient(60%_50%_at_50%_20%,black,transparent)]" aria-hidden />
 
 
-      {/* Desktop sidebar — sticky on standard routes, floating icon rail with hover-expand on immersive routes */}
+      {/* Desktop sidebar — sticky on standard routes, floating icon rail (click to expand) on immersive routes */}
       <aside
         data-app-shell-sidebar
-        onMouseEnter={immersive ? () => setRailHovered(true) : undefined}
-        onMouseLeave={immersive ? () => setRailHovered(false) : undefined}
+        ref={railRef}
         className={cn(
           "hidden border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 md:block",
           immersive
             ? cn(
                 "fixed left-0 top-0 z-40 h-dvh",
-                railHovered ? "w-[248px] shadow-2xl" : "w-[64px]",
+                railOpen ? "w-[248px] shadow-2xl" : "w-[64px]",
               )
             : cn(
                 "sticky top-0 z-30 h-dvh shrink-0",
@@ -149,12 +158,12 @@ export function AppShell({ children }: { children: ReactNode }) {
       >
         <SidebarInner
           collapsed={effectiveCollapsed}
-          onToggle={() => setCollapsed((v) => !v)}
+          onToggle={() => (immersive ? setRailOpen((v) => !v) : setCollapsed((v) => !v))}
           showAdmin={isAdmin}
           currentPath={pathname}
-          hideToggle={immersive}
         />
       </aside>
+
 
       {/* Mobile drawer */}
       {mobileOpen ? (
