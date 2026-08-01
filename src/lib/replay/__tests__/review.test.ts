@@ -68,13 +68,13 @@ describe("Phase 8D · reproducible scoring", () => {
       bookmarks: [{ category: "good_setup" }],
       notesCount: 2,
     };
-    expect(buildScoreInputs(args as never).revisionHash).toBe(buildScoreInputs(args as never).revisionHash);
+    expect(buildScoreInputs(args as never).revision).toBe(buildScoreInputs(args as never).revision);
   });
 
   it("changes the revision hash when the facts change", () => {
     const a = buildScoreInputs({ trades: [trade({})], checklist: [], bookmarks: [], notesCount: 0 } as never);
     const b = buildScoreInputs({ trades: [trade({})], checklist: [], bookmarks: [], notesCount: 3 } as never);
-    expect(a.revisionHash).not.toBe(b.revisionHash);
+    expect(a.revision).not.toBe(b.revision);
   });
 });
 
