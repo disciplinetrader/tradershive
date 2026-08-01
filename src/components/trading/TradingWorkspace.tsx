@@ -1121,7 +1121,66 @@ function TradingWorkspaceInner() {
               <span className="rotate-180 [writing-mode:vertical-rl]">Workspace</span>
             </button>
           )}
+
+          {/* Mobile-only floating access to tools + workspace panel */}
+          {isMobile && !rightOpen && !focusMode && (
+            <div className="pointer-events-none absolute bottom-3 right-3 z-30 flex flex-col items-end gap-2">
+              <Button
+                size="sm"
+                variant="secondary"
+                className="pointer-events-auto h-11 min-w-11 gap-1.5 rounded-full px-3 text-[11px] shadow-lg"
+                onClick={() => setMobileToolsOpen(true)}
+              >
+                <Target className="h-4 w-4" /> Tools
+              </Button>
+              <Button
+                size="sm"
+                className="pointer-events-auto h-11 min-w-11 gap-1.5 rounded-full px-3 text-[11px] shadow-lg"
+                onClick={() => setRightOpen(true)}
+              >
+                <ListOrdered className="h-4 w-4" /> Panel
+              </Button>
+            </div>
+          )}
         </div>
+
+        {/* Mobile drawing-tools sheet — the desktop rail is hidden below md */}
+        <Sheet open={mobileToolsOpen} onOpenChange={setMobileToolsOpen}>
+          <SheetContent side="bottom" className="max-h-[70dvh] overflow-y-auto p-3">
+            <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              Chart tools
+            </div>
+            <div className="flex flex-wrap items-center gap-1">
+              <DrawingToolRail
+                store={drawingStore}
+                activeTool={activeTool}
+                onToolChange={(t) => { setActiveTool(t); setMobileToolsOpen(false); }}
+                magnet={magnet}
+                onMagnetChange={setMagnet}
+                hidden={drawingsHidden}
+                onHiddenChange={setDrawingsHidden}
+                locked={drawingsLocked}
+                onLockedChange={setDrawingsLocked}
+                revision={drawingRevision}
+              />
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <Button variant="outline" size="sm" className="h-11" onClick={() => { setPlannerActive((v) => !v); setMobileToolsOpen(false); }}>
+                <Target className="mr-1.5 h-4 w-4" /> Plan trade
+              </Button>
+              <Button variant="outline" size="sm" className="h-11" onClick={() => { setDetailsOpen(!detailsOpen); setMobileToolsOpen(false); }}>
+                <Activity className="mr-1.5 h-4 w-4" /> Account
+              </Button>
+              <Button variant="outline" size="sm" className="h-11" onClick={() => { setRightOpen(true); setActiveTab("alerts"); setMobileToolsOpen(false); }}>
+                <Bell className="mr-1.5 h-4 w-4" /> Alerts
+              </Button>
+              <Button variant="outline" size="sm" className="h-11" onClick={() => { screenshot(); setMobileToolsOpen(false); }}>
+                <Camera className="mr-1.5 h-4 w-4" /> Screenshot
+              </Button>
+            </div>
+          </SheetContent>
+        </Sheet>
+
 
         {/* Bottom dock — Orders / Positions / History / Journal / Trade Notes */}
         <BottomDock
