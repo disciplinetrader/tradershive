@@ -4535,6 +4535,48 @@ export type Database = {
         }
         Relationships: []
       }
+      economic_events: {
+        Row: {
+          actual: string | null
+          created_at: string
+          currency: string
+          event_time: string
+          forecast: string | null
+          id: string
+          impact: string
+          previous: string | null
+          source: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          actual?: string | null
+          created_at?: string
+          currency: string
+          event_time: string
+          forecast?: string | null
+          id?: string
+          impact?: string
+          previous?: string | null
+          source?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          actual?: string | null
+          created_at?: string
+          currency?: string
+          event_time?: string
+          forecast?: string | null
+          id?: string
+          impact?: string
+          previous?: string | null
+          source?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_events: {
         Row: {
           category: string

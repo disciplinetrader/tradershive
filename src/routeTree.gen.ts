@@ -179,6 +179,7 @@ import { Route as ApiPublicHooksEmailWeeklyReportRouteImport } from './routes/ap
 import { Route as ApiPublicHooksEmailReengagementRouteImport } from './routes/api/public/hooks/email-reengagement'
 import { Route as ApiPublicHooksEmailQueueRouteImport } from './routes/api/public/hooks/email-queue'
 import { Route as ApiPublicHooksEmailMonthlyReportRouteImport } from './routes/api/public/hooks/email-monthly-report'
+import { Route as ApiPublicHooksEconomicCalendarRouteImport } from './routes/api/public/hooks/economic-calendar'
 import { Route as ApiPublicHooksBattleSettlementRouteImport } from './routes/api/public/hooks/battle-settlement'
 import { Route as AuthenticatedStrategiesPlaybooksIdRouteImport } from './routes/_authenticated/strategies.playbooks.$id'
 import { Route as AuthenticatedJournalReplayAttemptIdRouteImport } from './routes/_authenticated/journal.replay.$attemptId'
@@ -1170,6 +1171,12 @@ const ApiPublicHooksEmailMonthlyReportRoute =
     path: '/api/public/hooks/email-monthly-report',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksEconomicCalendarRoute =
+  ApiPublicHooksEconomicCalendarRouteImport.update({
+    id: '/api/public/hooks/economic-calendar',
+    path: '/api/public/hooks/economic-calendar',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksBattleSettlementRoute =
   ApiPublicHooksBattleSettlementRouteImport.update({
     id: '/api/public/hooks/battle-settlement',
@@ -1419,6 +1426,7 @@ export interface FileRoutesByFullPath {
   '/journal/replay/$attemptId': typeof AuthenticatedJournalReplayAttemptIdRoute
   '/strategies/playbooks/$id': typeof AuthenticatedStrategiesPlaybooksIdRoute
   '/api/public/hooks/battle-settlement': typeof ApiPublicHooksBattleSettlementRoute
+  '/api/public/hooks/economic-calendar': typeof ApiPublicHooksEconomicCalendarRoute
   '/api/public/hooks/email-monthly-report': typeof ApiPublicHooksEmailMonthlyReportRoute
   '/api/public/hooks/email-queue': typeof ApiPublicHooksEmailQueueRoute
   '/api/public/hooks/email-reengagement': typeof ApiPublicHooksEmailReengagementRoute
@@ -1588,6 +1596,7 @@ export interface FileRoutesByTo {
   '/journal/replay/$attemptId': typeof AuthenticatedJournalReplayAttemptIdRoute
   '/strategies/playbooks/$id': typeof AuthenticatedStrategiesPlaybooksIdRoute
   '/api/public/hooks/battle-settlement': typeof ApiPublicHooksBattleSettlementRoute
+  '/api/public/hooks/economic-calendar': typeof ApiPublicHooksEconomicCalendarRoute
   '/api/public/hooks/email-monthly-report': typeof ApiPublicHooksEmailMonthlyReportRoute
   '/api/public/hooks/email-queue': typeof ApiPublicHooksEmailQueueRoute
   '/api/public/hooks/email-reengagement': typeof ApiPublicHooksEmailReengagementRoute
@@ -1773,6 +1782,7 @@ export interface FileRoutesById {
   '/_authenticated/journal/replay/$attemptId': typeof AuthenticatedJournalReplayAttemptIdRoute
   '/_authenticated/strategies/playbooks/$id': typeof AuthenticatedStrategiesPlaybooksIdRoute
   '/api/public/hooks/battle-settlement': typeof ApiPublicHooksBattleSettlementRoute
+  '/api/public/hooks/economic-calendar': typeof ApiPublicHooksEconomicCalendarRoute
   '/api/public/hooks/email-monthly-report': typeof ApiPublicHooksEmailMonthlyReportRoute
   '/api/public/hooks/email-queue': typeof ApiPublicHooksEmailQueueRoute
   '/api/public/hooks/email-reengagement': typeof ApiPublicHooksEmailReengagementRoute
@@ -1958,6 +1968,7 @@ export interface FileRouteTypes {
     | '/journal/replay/$attemptId'
     | '/strategies/playbooks/$id'
     | '/api/public/hooks/battle-settlement'
+    | '/api/public/hooks/economic-calendar'
     | '/api/public/hooks/email-monthly-report'
     | '/api/public/hooks/email-queue'
     | '/api/public/hooks/email-reengagement'
@@ -2127,6 +2138,7 @@ export interface FileRouteTypes {
     | '/journal/replay/$attemptId'
     | '/strategies/playbooks/$id'
     | '/api/public/hooks/battle-settlement'
+    | '/api/public/hooks/economic-calendar'
     | '/api/public/hooks/email-monthly-report'
     | '/api/public/hooks/email-queue'
     | '/api/public/hooks/email-reengagement'
@@ -2311,6 +2323,7 @@ export interface FileRouteTypes {
     | '/_authenticated/journal/replay/$attemptId'
     | '/_authenticated/strategies/playbooks/$id'
     | '/api/public/hooks/battle-settlement'
+    | '/api/public/hooks/economic-calendar'
     | '/api/public/hooks/email-monthly-report'
     | '/api/public/hooks/email-queue'
     | '/api/public/hooks/email-reengagement'
@@ -2332,6 +2345,7 @@ export interface RootRouteChildren {
   ApiAiChatRoute: typeof ApiAiChatRoute
   JournalShareTokenRoute: typeof JournalShareTokenRoute
   ApiPublicHooksBattleSettlementRoute: typeof ApiPublicHooksBattleSettlementRoute
+  ApiPublicHooksEconomicCalendarRoute: typeof ApiPublicHooksEconomicCalendarRoute
   ApiPublicHooksEmailMonthlyReportRoute: typeof ApiPublicHooksEmailMonthlyReportRoute
   ApiPublicHooksEmailQueueRoute: typeof ApiPublicHooksEmailQueueRoute
   ApiPublicHooksEmailReengagementRoute: typeof ApiPublicHooksEmailReengagementRoute
@@ -3531,6 +3545,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksEmailMonthlyReportRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/economic-calendar': {
+      id: '/api/public/hooks/economic-calendar'
+      path: '/api/public/hooks/economic-calendar'
+      fullPath: '/api/public/hooks/economic-calendar'
+      preLoaderRoute: typeof ApiPublicHooksEconomicCalendarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/battle-settlement': {
       id: '/api/public/hooks/battle-settlement'
       path: '/api/public/hooks/battle-settlement'
@@ -4213,6 +4234,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAiChatRoute: ApiAiChatRoute,
   JournalShareTokenRoute: JournalShareTokenRoute,
   ApiPublicHooksBattleSettlementRoute: ApiPublicHooksBattleSettlementRoute,
+  ApiPublicHooksEconomicCalendarRoute: ApiPublicHooksEconomicCalendarRoute,
   ApiPublicHooksEmailMonthlyReportRoute: ApiPublicHooksEmailMonthlyReportRoute,
   ApiPublicHooksEmailQueueRoute: ApiPublicHooksEmailQueueRoute,
   ApiPublicHooksEmailReengagementRoute: ApiPublicHooksEmailReengagementRoute,
