@@ -143,7 +143,7 @@ export function ObjectTree({
                       <IconAction
                         label={d.locked ? "Unlock object" : "Lock object"}
                         icon={d.locked ? Lock : LockOpen}
-                        onClick={() => store.patch(d.id, { locked: !d.locked }, { history: true })}
+                        onClick={() => { store.patch(d.id, { locked: !d.locked }, { history: true }); store.commit(); }}
                       />
                       <IconAction label="Duplicate object" icon={Copy} onClick={() => store.duplicate(d.id)} />
                       <IconAction label="Delete object" icon={Trash2} danger onClick={() => store.remove(d.id)} />
