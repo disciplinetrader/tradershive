@@ -880,7 +880,15 @@ function TradingWorkspaceInner() {
 
 
             {/* Chart canvas + overlays (fills remaining space) */}
-            <div className="relative min-h-0 flex-1">
+            <div className={cn("relative grid min-h-0 flex-1 gap-px bg-border/30", layoutGridClass(layout))}>
+              <div
+                onPointerDownCapture={() => setActiveSlot(0)}
+                className={cn(
+                  "relative min-h-0 min-w-0 bg-background",
+                  layoutPanes.length > 0 && (activeSlot === 0 ? "ring-1 ring-inset ring-primary/30" : ""),
+                )}
+              >
+
               {/* Pinned tools float over the chart so drawing survives focus mode. */}
               <FavoriteToolsBar
                 favourites={favouriteTools}
