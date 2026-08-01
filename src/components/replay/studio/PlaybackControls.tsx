@@ -35,17 +35,9 @@ export function PlaybackControls() {
   const t = view?.transport;
   const d = view?.dataset;
 
-  // Keyboard: space = play/pause, → = one bar, shift+→ = 10 bars.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const el = e.target as HTMLElement | null;
-      if (el && (/input|textarea|select/i.test(el.tagName) || el.isContentEditable)) return;
-      if (e.code === "Space") { e.preventDefault(); toggle(); }
-      else if (e.key === "ArrowRight") { e.preventDefault(); e.shiftKey ? skipCandles(10) : stepCandle(); }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [toggle, stepCandle, skipCandles]);
+  // Keyboard bindings live in <StudioHotkeys /> so playback, trading and the
+  // help overlay all share one layer.
+
 
   const span = useMemo(() => {
     if (!d) return 0;
