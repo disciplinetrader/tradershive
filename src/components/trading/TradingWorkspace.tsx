@@ -1191,7 +1191,7 @@ function TradingWorkspaceInner() {
 
           {/* Mobile-only floating access to tools + workspace panel */}
           {isMobile && !rightOpen && !focusMode && (
-            <div className="pointer-events-none absolute bottom-3 right-3 z-30 flex flex-col items-end gap-2">
+            <div className="pointer-events-none absolute bottom-16 right-3 z-30 flex flex-col items-end gap-2">
               <Button
                 size="sm"
                 variant="secondary"
