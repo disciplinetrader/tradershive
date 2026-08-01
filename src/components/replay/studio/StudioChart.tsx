@@ -15,7 +15,8 @@ import { ChevronDown, Eye, EyeOff, LineChart, Shapes } from "lucide-react";
 
 import { createLightweightAdapter } from "@/lib/chart/adapters/lightweight";
 import type { ChartAdapter } from "@/lib/chart/adapter";
-import type { ChartSettings, IndicatorConfig, IndicatorKey, ToolId } from "@/lib/chart/types";
+import type { ChartSettings, IndicatorConfig, IndicatorKey } from "@/lib/chart/types";
+import type { ToolId } from "@/lib/chart/drawings/types";
 import { INDICATOR_TOGGLES } from "@/lib/chart/indicator-registry";
 import { DrawingStore } from "@/lib/chart/drawings/store";
 import { aggregatableFrom, aggregateCandles } from "@/lib/replay/aggregate";
