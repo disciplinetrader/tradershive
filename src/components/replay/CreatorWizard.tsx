@@ -93,6 +93,8 @@ export function CreatorWizard({ open, onOpenChange }: { open: boolean; onOpenCha
   const [to, setTo] = useState(todayISO());
   const [tf, setTf] = useState<Timeframe>(initial.timeframe ?? "5m");
   const [startPos, setStartPos] = useState<StartPosition>(initial.startPos ?? "beginning");
+  const [customRange, setCustomRange] = useState(false);
+
   const [recents, setRecents] = useState<RecentEntry[]>(() => readRecents());
   const [preload, setPreload] = useState<{ progress: number; status: "idle" | "loading" | "cached" | "downloaded" | "error"; message?: string }>({ progress: 0, status: "idle" });
   const navigate = useNavigate();
