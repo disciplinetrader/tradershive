@@ -178,7 +178,7 @@ export const evaluateChallengeInstance = createServerFn({ method: "POST" })
 
     const { data: updated, error: updateError } = await context.supabase
       .from("challenge_instances")
-      .update(patch)
+      .update(patch as never)
       .eq("id", data.id)
       .select()
       .single();
