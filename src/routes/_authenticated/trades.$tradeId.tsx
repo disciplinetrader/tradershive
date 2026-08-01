@@ -138,7 +138,7 @@ function TradeDetailsPage() {
           <div className="flex items-center gap-2 print:hidden">
             {data.source === "replay" ? (
               <Button asChild size="sm" variant="outline">
-                <Link to="/replay/session" search={{ id: trade.session_id, focus: trade.id } as never}>
+                <Link to="/replay/studio" search={{ id: trade.session_id, focus: trade.id } as never}>
                   <PlaySquare className="mr-1.5 h-3.5 w-3.5" /> Replay from entry
                 </Link>
               </Button>
@@ -314,12 +314,12 @@ function TradeDetailsPage() {
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Button asChild size="sm">
-                      <Link to="/replay/session" search={{ id: trade.session_id, focus: trade.id } as never}>
+                      <Link to="/replay/studio" search={{ id: trade.session_id, focus: trade.id } as never}>
                         <PlaySquare className="mr-1.5 h-3.5 w-3.5" /> Replay from entry
                       </Link>
                     </Button>
                     <Button asChild size="sm" variant="outline">
-                      <Link to="/replay/session" search={{ id: trade.session_id } as never}>
+                      <Link to="/replay/studio" search={{ id: trade.session_id } as never}>
                         <ExternalLink className="mr-1.5 h-3.5 w-3.5" /> Open Session
                       </Link>
                     </Button>

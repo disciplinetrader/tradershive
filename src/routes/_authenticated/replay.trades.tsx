@@ -377,7 +377,7 @@ function TradesPage() {
                   </td>
                   <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{fmtDuration(t.opened_at, t.closed_at)}</td>
                   <td className="px-3 py-2 truncate max-w-[140px] text-muted-foreground">
-                    <Link to="/replay/session" search={{ id: t.session_id } as never} className="text-primary hover:underline">
+                    <Link to="/replay/studio" search={{ id: t.session_id } as never} className="text-primary hover:underline">
                       {t.replay_sessions?.title ?? "—"}
                     </Link>
                   </td>

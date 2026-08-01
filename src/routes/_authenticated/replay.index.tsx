@@ -223,7 +223,7 @@ function ReplayDashboard() {
           {active ? (
             <div className="space-y-2">
               <Button size="sm" asChild className="w-full">
-                <Link to="/replay/session" search={{ id: active.id } as never}>
+                <Link to="/replay/studio" search={{ id: active.id } as never}>
                   <Play className="mr-2 h-3.5 w-3.5" /> Resume Session
                 </Link>
               </Button>
@@ -344,7 +344,7 @@ function ReplayDashboard() {
               {favStrategies.map((sess) => (
                 <li key={sess.id}>
                   <Link
-                    to="/replay/session"
+                    to="/replay/studio"
                     search={{ id: sess.id } as never}
                     className="flex items-center justify-between rounded-md px-2 py-1.5 hover:bg-background/60"
                   >

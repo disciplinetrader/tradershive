@@ -55,7 +55,7 @@ function BacktestsPage() {
                   <div className="text-sm">{r.title}</div>
                   <div className="text-[10px] text-muted-foreground">{r.symbol} · {r.timeframe} · {r.status}</div>
                 </div>
-                <Button size="sm" variant="ghost" asChild><Link to="/replay/session" search={{ id: r.id } as any}>Open</Link></Button>
+                <Button size="sm" variant="ghost" asChild><Link to="/replay/studio" search={{ id: r.id } as any}>Open</Link></Button>
               </li>
             ))}
             {(replays.data ?? []).length === 0 ? <li className="py-4 text-xs text-muted-foreground">No replay sessions yet.</li> : null}

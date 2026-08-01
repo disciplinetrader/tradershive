@@ -68,7 +68,7 @@ export function LibraryCard({ session }: { session: ReplaySession }) {
     <motion.div whileHover={{ y: -3 }} transition={{ type: "spring", stiffness: 200 }}>
       <GlassCard interactive className="p-4 space-y-2.5 relative group">
         <Link
-          to="/replay/session"
+          to="/replay/studio"
           search={{ id: session.id } as never}
           className="block space-y-2 pr-6"
           aria-label={`Resume ${session.title}`}

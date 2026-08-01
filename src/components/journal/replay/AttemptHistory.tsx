@@ -132,7 +132,7 @@ export function AttemptHistory({ entryId, onPractiseAgain }: { entryId: string; 
                         </Button>
                       ) : (
                         <Button asChild size="sm" variant="ghost" className="h-6 px-2 text-[11px]">
-                          <Link to="/replay/session" search={{ id: a.session_id ?? undefined } as never}>Resume</Link>
+                          <Link to="/replay/studio" search={{ id: a.session_id ?? undefined } as never}>Resume</Link>
                         </Button>
                       )}
                       <DropdownMenu>
