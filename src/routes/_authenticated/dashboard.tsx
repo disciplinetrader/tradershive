@@ -43,10 +43,11 @@ function fmtR(v: number): string {
 function DashboardPage() {
   const fetchHome = useServerFn(getHomeSummary);
   const fetchHero = useServerFn(getHeroState);
+  const [accountId, setAccountId] = useState<string | null>(null);
 
   const { data: home, isPending } = useQuery({
-    queryKey: ["home_summary"],
-    queryFn: () => fetchHome(),
+    queryKey: ["home_summary", accountId],
+    queryFn: () => fetchHome({ data: { accountId } }),
     staleTime: 30_000,
     refetchInterval: 60_000,
   });
@@ -61,7 +62,8 @@ function DashboardPage() {
 
   return (
     <div className="mx-auto w-full max-w-[1400px] space-y-8 pb-10 sm:space-y-10">
-      <DashboardHeader />
+      <DashboardHeader accountId={accountId} onAccountChange={setAccountId} />
+
       <BetaBanner />
 
       {/* 1 — Hero: the visual focus */}
