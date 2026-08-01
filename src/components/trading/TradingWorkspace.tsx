@@ -729,6 +729,11 @@ function TradingWorkspaceInner() {
             onApply={applyTemplate}
           />
 
+          {/* Multi-chart grid (1 / 2 / 3 / 4 charts) */}
+          <ChartLayoutMenu />
+
+
+
           {/* Right-aligned quick actions (Buy/Sell live on the chart header) */}
           <div className="ml-auto flex items-center gap-1">
             <div className="mx-1 hidden h-5 w-px bg-border/60 md:block" />
