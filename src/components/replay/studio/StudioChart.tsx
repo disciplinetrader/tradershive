@@ -32,6 +32,7 @@ import { ChartTextEditor } from "@/components/chart/ChartTextEditor";
 import { ObjectTree } from "@/components/chart/ObjectTree";
 import { useChartDrawings } from "@/components/chart/useChartDrawings";
 
+import { StudioTradeLayer, type ArmedOrder } from "./StudioTradeLayer";
 import { useReplayStudio } from "./context";
 
 /** Decimals inferred from price magnitude — FX pairs need more than indices. */
