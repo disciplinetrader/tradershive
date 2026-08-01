@@ -34,10 +34,10 @@ export function PageContainer({
     <div
       {...rest}
       className={cn(
-        "mx-auto w-full safe-x",
+        "mx-auto w-full min-w-0 safe-x",
         maxW,
-        // fluid page padding: 12px → 32px
-        "[padding-inline:clamp(0.75rem,2vw,2rem)]",
+        // fluid page gutter — scales smoothly 12px → 32px, no breakpoint steps
+        "[padding-inline:max(env(safe-area-inset-left),var(--space-md))]",
         className,
       )}
     >
