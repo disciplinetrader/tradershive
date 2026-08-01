@@ -125,6 +125,8 @@ const RIGHT_TABS: { k: WorkspaceTab; label: string; icon: typeof Target }[] = [
   { k: "watchlist", label: "Watchlist", icon: Star },
   { k: "order", label: "Order", icon: Target },
   { k: "positions", label: "Positions", icon: ListOrdered },
+  { k: "pending", label: "Pending", icon: Clock },
+  { k: "account", label: "Account", icon: Activity },
   { k: "alerts", label: "Alerts", icon: Bell },
   { k: "news", label: "News", icon: Newspaper },
 ];
