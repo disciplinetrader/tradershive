@@ -292,7 +292,17 @@ export function CreatorWizard({ open, onOpenChange }: { open: boolean; onOpenCha
             <div className="flex flex-wrap gap-1.5">
               {SESSION_PRESETS.map((p) => {
                 const apply = () => {
-                  if (p.id === "custom") return;
+                  if (p.id === "custom") {
+                    setCustomRange(true);
+                    // Reveal + focus the date inputs so the range can be edited.
+                    requestAnimationFrame(() => {
+                      const el = document.getElementById("bt-from") as HTMLInputElement | null;
+                      el?.focus();
+                      el?.scrollIntoView({ block: "nearest" });
+                    });
+                    return;
+                  }
+                  setCustomRange(false);
                   const end = new Date();
                   if (p.days > 0) {
                     const start = new Date(end.getTime() - p.days * 86_400_000);
@@ -311,8 +321,10 @@ export function CreatorWizard({ open, onOpenChange }: { open: boolean; onOpenCha
                   Math.round((new Date(to).getTime() - new Date(from).getTime()) / 86_400_000) + 1,
                 );
                 const active =
-                  (p.id === "1d" && from === to) ||
-                  (p.days > 0 && spanDays - 1 === p.days);
+                  p.id === "custom"
+                    ? customRange
+                    : !customRange &&
+                      ((p.id === "1d" && from === to) || (p.days > 0 && spanDays - 1 === p.days));
                 return (
                   <button
                     key={p.id}
@@ -330,6 +342,12 @@ export function CreatorWizard({ open, onOpenChange }: { open: boolean; onOpenCha
                 );
               })}
             </div>
+            {customRange && (
+              <p className="text-[11px] text-muted-foreground">
+                Pick any From / To dates below to define your own session length.
+              </p>
+            )}
+
           </div>
 
           <div className="space-y-1.5">
