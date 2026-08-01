@@ -51,7 +51,6 @@ import { Route as AuthenticatedTradingIndexRouteImport } from './routes/_authent
 import { Route as AuthenticatedStrategiesIndexRouteImport } from './routes/_authenticated/strategies.index'
 import { Route as AuthenticatedReplayIndexRouteImport } from './routes/_authenticated/replay.index'
 import { Route as AuthenticatedPropChallengesIndexRouteImport } from './routes/_authenticated/prop-challenges.index'
-import { Route as AuthenticatedPracticeIndexRouteImport } from './routes/_authenticated/practice.index'
 import { Route as AuthenticatedMarketIndexRouteImport } from './routes/_authenticated/market.index'
 import { Route as AuthenticatedLeaderboardIndexRouteImport } from './routes/_authenticated/leaderboard.index'
 import { Route as AuthenticatedJournalIndexRouteImport } from './routes/_authenticated/journal.index'
@@ -87,9 +86,7 @@ import { Route as AuthenticatedReplayChallengesRouteImport } from './routes/_aut
 import { Route as AuthenticatedPropChallengesNewRouteImport } from './routes/_authenticated/prop-challenges.new'
 import { Route as AuthenticatedPropChallengesIdRouteImport } from './routes/_authenticated/prop-challenges.$id'
 import { Route as AuthenticatedProfileUsernameRouteImport } from './routes/_authenticated/profile.$username'
-import { Route as AuthenticatedPracticeSkillsRouteImport } from './routes/_authenticated/practice.skills'
-import { Route as AuthenticatedPracticeDrillsRouteImport } from './routes/_authenticated/practice.drills'
-import { Route as AuthenticatedPracticeChallengesRouteImport } from './routes/_authenticated/practice.challenges'
+import { Route as AuthenticatedPracticeSplatRouteImport } from './routes/_authenticated/practice.$'
 import { Route as AuthenticatedMarketSymbolsRouteImport } from './routes/_authenticated/market.symbols'
 import { Route as AuthenticatedMarketSettingsRouteImport } from './routes/_authenticated/market.settings'
 import { Route as AuthenticatedMarketSessionsRouteImport } from './routes/_authenticated/market.sessions'
@@ -412,12 +409,6 @@ const AuthenticatedPropChallengesIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedPropChallengesRoute,
   } as any)
-const AuthenticatedPracticeIndexRoute =
-  AuthenticatedPracticeIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedPracticeRoute,
-  } as any)
 const AuthenticatedMarketIndexRoute =
   AuthenticatedMarketIndexRouteImport.update({
     id: '/',
@@ -625,22 +616,10 @@ const AuthenticatedProfileUsernameRoute =
     path: '/$username',
     getParentRoute: () => AuthenticatedProfileRoute,
   } as any)
-const AuthenticatedPracticeSkillsRoute =
-  AuthenticatedPracticeSkillsRouteImport.update({
-    id: '/skills',
-    path: '/skills',
-    getParentRoute: () => AuthenticatedPracticeRoute,
-  } as any)
-const AuthenticatedPracticeDrillsRoute =
-  AuthenticatedPracticeDrillsRouteImport.update({
-    id: '/drills',
-    path: '/drills',
-    getParentRoute: () => AuthenticatedPracticeRoute,
-  } as any)
-const AuthenticatedPracticeChallengesRoute =
-  AuthenticatedPracticeChallengesRouteImport.update({
-    id: '/challenges',
-    path: '/challenges',
+const AuthenticatedPracticeSplatRoute =
+  AuthenticatedPracticeSplatRouteImport.update({
+    id: '/$',
+    path: '/$',
     getParentRoute: () => AuthenticatedPracticeRoute,
   } as any)
 const AuthenticatedMarketSymbolsRoute =
@@ -1364,9 +1343,7 @@ export interface FileRoutesByFullPath {
   '/market/sessions': typeof AuthenticatedMarketSessionsRoute
   '/market/settings': typeof AuthenticatedMarketSettingsRoute
   '/market/symbols': typeof AuthenticatedMarketSymbolsRoute
-  '/practice/challenges': typeof AuthenticatedPracticeChallengesRoute
-  '/practice/drills': typeof AuthenticatedPracticeDrillsRoute
-  '/practice/skills': typeof AuthenticatedPracticeSkillsRoute
+  '/practice/$': typeof AuthenticatedPracticeSplatRoute
   '/profile/$username': typeof AuthenticatedProfileUsernameRoute
   '/prop-challenges/$id': typeof AuthenticatedPropChallengesIdRoute
   '/prop-challenges/new': typeof AuthenticatedPropChallengesNewRoute
@@ -1402,7 +1379,6 @@ export interface FileRoutesByFullPath {
   '/journal/': typeof AuthenticatedJournalIndexRoute
   '/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
   '/market/': typeof AuthenticatedMarketIndexRoute
-  '/practice/': typeof AuthenticatedPracticeIndexRoute
   '/prop-challenges/': typeof AuthenticatedPropChallengesIndexRoute
   '/replay/': typeof AuthenticatedReplayIndexRoute
   '/strategies/': typeof AuthenticatedStrategiesIndexRoute
@@ -1447,6 +1423,7 @@ export interface FileRoutesByTo {
   '/marketplace': typeof AuthenticatedMarketplaceRoute
   '/mistakes': typeof AuthenticatedMistakesRoute
   '/paper-trading': typeof AuthenticatedPaperTradingRoute
+  '/practice': typeof AuthenticatedPracticeRouteWithChildren
   '/profile': typeof AuthenticatedProfileRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/support': typeof AuthenticatedSupportRoute
@@ -1533,9 +1510,7 @@ export interface FileRoutesByTo {
   '/market/sessions': typeof AuthenticatedMarketSessionsRoute
   '/market/settings': typeof AuthenticatedMarketSettingsRoute
   '/market/symbols': typeof AuthenticatedMarketSymbolsRoute
-  '/practice/challenges': typeof AuthenticatedPracticeChallengesRoute
-  '/practice/drills': typeof AuthenticatedPracticeDrillsRoute
-  '/practice/skills': typeof AuthenticatedPracticeSkillsRoute
+  '/practice/$': typeof AuthenticatedPracticeSplatRoute
   '/profile/$username': typeof AuthenticatedProfileUsernameRoute
   '/prop-challenges/$id': typeof AuthenticatedPropChallengesIdRoute
   '/prop-challenges/new': typeof AuthenticatedPropChallengesNewRoute
@@ -1571,7 +1546,6 @@ export interface FileRoutesByTo {
   '/journal': typeof AuthenticatedJournalIndexRoute
   '/leaderboard': typeof AuthenticatedLeaderboardIndexRoute
   '/market': typeof AuthenticatedMarketIndexRoute
-  '/practice': typeof AuthenticatedPracticeIndexRoute
   '/prop-challenges': typeof AuthenticatedPropChallengesIndexRoute
   '/replay': typeof AuthenticatedReplayIndexRoute
   '/strategies': typeof AuthenticatedStrategiesIndexRoute
@@ -1718,9 +1692,7 @@ export interface FileRoutesById {
   '/_authenticated/market/sessions': typeof AuthenticatedMarketSessionsRoute
   '/_authenticated/market/settings': typeof AuthenticatedMarketSettingsRoute
   '/_authenticated/market/symbols': typeof AuthenticatedMarketSymbolsRoute
-  '/_authenticated/practice/challenges': typeof AuthenticatedPracticeChallengesRoute
-  '/_authenticated/practice/drills': typeof AuthenticatedPracticeDrillsRoute
-  '/_authenticated/practice/skills': typeof AuthenticatedPracticeSkillsRoute
+  '/_authenticated/practice/$': typeof AuthenticatedPracticeSplatRoute
   '/_authenticated/profile/$username': typeof AuthenticatedProfileUsernameRoute
   '/_authenticated/prop-challenges/$id': typeof AuthenticatedPropChallengesIdRoute
   '/_authenticated/prop-challenges/new': typeof AuthenticatedPropChallengesNewRoute
@@ -1756,7 +1728,6 @@ export interface FileRoutesById {
   '/_authenticated/journal/': typeof AuthenticatedJournalIndexRoute
   '/_authenticated/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
   '/_authenticated/market/': typeof AuthenticatedMarketIndexRoute
-  '/_authenticated/practice/': typeof AuthenticatedPracticeIndexRoute
   '/_authenticated/prop-challenges/': typeof AuthenticatedPropChallengesIndexRoute
   '/_authenticated/replay/': typeof AuthenticatedReplayIndexRoute
   '/_authenticated/strategies/': typeof AuthenticatedStrategiesIndexRoute
@@ -1903,9 +1874,7 @@ export interface FileRouteTypes {
     | '/market/sessions'
     | '/market/settings'
     | '/market/symbols'
-    | '/practice/challenges'
-    | '/practice/drills'
-    | '/practice/skills'
+    | '/practice/$'
     | '/profile/$username'
     | '/prop-challenges/$id'
     | '/prop-challenges/new'
@@ -1941,7 +1910,6 @@ export interface FileRouteTypes {
     | '/journal/'
     | '/leaderboard/'
     | '/market/'
-    | '/practice/'
     | '/prop-challenges/'
     | '/replay/'
     | '/strategies/'
@@ -1986,6 +1954,7 @@ export interface FileRouteTypes {
     | '/marketplace'
     | '/mistakes'
     | '/paper-trading'
+    | '/practice'
     | '/profile'
     | '/settings'
     | '/support'
@@ -2072,9 +2041,7 @@ export interface FileRouteTypes {
     | '/market/sessions'
     | '/market/settings'
     | '/market/symbols'
-    | '/practice/challenges'
-    | '/practice/drills'
-    | '/practice/skills'
+    | '/practice/$'
     | '/profile/$username'
     | '/prop-challenges/$id'
     | '/prop-challenges/new'
@@ -2110,7 +2077,6 @@ export interface FileRouteTypes {
     | '/journal'
     | '/leaderboard'
     | '/market'
-    | '/practice'
     | '/prop-challenges'
     | '/replay'
     | '/strategies'
@@ -2256,9 +2222,7 @@ export interface FileRouteTypes {
     | '/_authenticated/market/sessions'
     | '/_authenticated/market/settings'
     | '/_authenticated/market/symbols'
-    | '/_authenticated/practice/challenges'
-    | '/_authenticated/practice/drills'
-    | '/_authenticated/practice/skills'
+    | '/_authenticated/practice/$'
     | '/_authenticated/profile/$username'
     | '/_authenticated/prop-challenges/$id'
     | '/_authenticated/prop-challenges/new'
@@ -2294,7 +2258,6 @@ export interface FileRouteTypes {
     | '/_authenticated/journal/'
     | '/_authenticated/leaderboard/'
     | '/_authenticated/market/'
-    | '/_authenticated/practice/'
     | '/_authenticated/prop-challenges/'
     | '/_authenticated/replay/'
     | '/_authenticated/strategies/'
@@ -2635,13 +2598,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPropChallengesIndexRouteImport
       parentRoute: typeof AuthenticatedPropChallengesRoute
     }
-    '/_authenticated/practice/': {
-      id: '/_authenticated/practice/'
-      path: '/'
-      fullPath: '/practice/'
-      preLoaderRoute: typeof AuthenticatedPracticeIndexRouteImport
-      parentRoute: typeof AuthenticatedPracticeRoute
-    }
     '/_authenticated/market/': {
       id: '/_authenticated/market/'
       path: '/'
@@ -2887,25 +2843,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProfileUsernameRouteImport
       parentRoute: typeof AuthenticatedProfileRoute
     }
-    '/_authenticated/practice/skills': {
-      id: '/_authenticated/practice/skills'
-      path: '/skills'
-      fullPath: '/practice/skills'
-      preLoaderRoute: typeof AuthenticatedPracticeSkillsRouteImport
-      parentRoute: typeof AuthenticatedPracticeRoute
-    }
-    '/_authenticated/practice/drills': {
-      id: '/_authenticated/practice/drills'
-      path: '/drills'
-      fullPath: '/practice/drills'
-      preLoaderRoute: typeof AuthenticatedPracticeDrillsRouteImport
-      parentRoute: typeof AuthenticatedPracticeRoute
-    }
-    '/_authenticated/practice/challenges': {
-      id: '/_authenticated/practice/challenges'
-      path: '/challenges'
-      fullPath: '/practice/challenges'
-      preLoaderRoute: typeof AuthenticatedPracticeChallengesRouteImport
+    '/_authenticated/practice/$': {
+      id: '/_authenticated/practice/$'
+      path: '/$'
+      fullPath: '/practice/$'
+      preLoaderRoute: typeof AuthenticatedPracticeSplatRouteImport
       parentRoute: typeof AuthenticatedPracticeRoute
     }
     '/_authenticated/market/symbols': {
@@ -3975,17 +3917,11 @@ const AuthenticatedMarketRouteWithChildren =
   AuthenticatedMarketRoute._addFileChildren(AuthenticatedMarketRouteChildren)
 
 interface AuthenticatedPracticeRouteChildren {
-  AuthenticatedPracticeChallengesRoute: typeof AuthenticatedPracticeChallengesRoute
-  AuthenticatedPracticeDrillsRoute: typeof AuthenticatedPracticeDrillsRoute
-  AuthenticatedPracticeSkillsRoute: typeof AuthenticatedPracticeSkillsRoute
-  AuthenticatedPracticeIndexRoute: typeof AuthenticatedPracticeIndexRoute
+  AuthenticatedPracticeSplatRoute: typeof AuthenticatedPracticeSplatRoute
 }
 
 const AuthenticatedPracticeRouteChildren: AuthenticatedPracticeRouteChildren = {
-  AuthenticatedPracticeChallengesRoute: AuthenticatedPracticeChallengesRoute,
-  AuthenticatedPracticeDrillsRoute: AuthenticatedPracticeDrillsRoute,
-  AuthenticatedPracticeSkillsRoute: AuthenticatedPracticeSkillsRoute,
-  AuthenticatedPracticeIndexRoute: AuthenticatedPracticeIndexRoute,
+  AuthenticatedPracticeSplatRoute: AuthenticatedPracticeSplatRoute,
 }
 
 const AuthenticatedPracticeRouteWithChildren =
