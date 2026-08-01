@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import {
   ArrowUpRight, Baseline, Brush, Circle, Crosshair, Eye, EyeOff, GitCommitHorizontal, Grid2x2,
-  Lock, LockOpen, Magnet, Minus, MousePointer2, MoveDiagonal, Redo2, Ruler, Square,
+  Lock, LockOpen, Magnet, Minus, MousePointer2, MoveDiagonal, Redo2, Ruler, Square, Star,
   Trash2, TrendingDown, TrendingUp, Triangle, Type, Undo2, Waves, type LucideIcon,
 } from "lucide-react";
 
