@@ -93,8 +93,11 @@ function makePane(index: number, symbol: string, chartType: ChartType): ChartPan
     timeframe: SEED_TIMEFRAMES[Math.min(index, SEED_TIMEFRAMES.length - 1)],
     chartType,
     syncSymbol: true,
+    indicators: {},
+    showVolume: false,
   };
 }
+
 
 /* -------------------------------------------------------------------------- */
 /*  Context                                                                    */
