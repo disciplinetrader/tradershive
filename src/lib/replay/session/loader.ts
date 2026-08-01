@@ -138,14 +138,19 @@ export function bootstrapSession(input: BootstrapInput): BootstrapResult {
     discardedSnapshot = { reason: resumed.reason, message: resumed.message };
   }
 
-  const engine = new ReplaySessionEngine({ meta, dataset, stores, market, writer });
+  const total = dataset.identity.observationCount;
+  const startCursor = Math.max(0, Math.min(total - 1, Math.floor(input.startCursor ?? 0)));
+  const engine = new ReplaySessionEngine({
+    meta, dataset, stores, market, writer,
+    ...(startCursor > 0 ? { clock: { cursor: startCursor } } : {}),
+  });
   return {
     ok: true,
     controller: new ReplaySessionController(engine),
     stores,
     dataset,
     resumed: false,
-    resumedAtCursor: 0,
+    resumedAtCursor: startCursor,
     warnings: preflight.warnings,
     discardedSnapshot,
   };
