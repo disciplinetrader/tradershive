@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { INDICATOR_PARAM_SCHEMA, clampParam } from "@/lib/chart/indicator-schema";
+import { INDICATOR_PARAM_SCHEMA, clampParam, hoursToHHMM, hhmmToHours } from "@/lib/chart/indicator-schema";
 import type { IndicatorKey } from "@/lib/chart/types";
 
 interface Props {
