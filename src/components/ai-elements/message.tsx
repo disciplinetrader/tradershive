@@ -12,23 +12,28 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { cjk } from "@streamdown/cjk";
-import { code } from "@streamdown/code";
-import { math } from "@streamdown/math";
-import { mermaid } from "@streamdown/mermaid";
 import type { UIMessage } from "ai";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import type { ComponentProps, HTMLAttributes, ReactElement } from "react";
 import {
   createContext,
+  lazy,
   memo,
+  Suspense,
   useCallback,
   useContext,
   useEffect,
   useMemo,
   useState,
 } from "react";
-import { Streamdown } from "streamdown";
+import type MarkdownResponse from "./markdown-response";
+
+/**
+ * Shiki/KaTeX live behind this boundary — see `markdown-response.tsx`. The
+ * import is a *type* import above (erased at build time) plus a dynamic
+ * import below, so nothing from that graph reaches this module's chunk.
+ */
+const LazyMarkdownResponse = lazy(() => import("./markdown-response"));
 
 export type MessageProps = HTMLAttributes<HTMLDivElement> & {
   from: UIMessage["role"];
