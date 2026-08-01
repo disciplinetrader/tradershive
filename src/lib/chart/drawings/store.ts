@@ -26,6 +26,8 @@ function storageKey(scope: string) {
 export class DrawingStore {
   private drawings: Drawing[] = [];
   private selectedId: string | null = null;
+  /** Additional ids selected via marquee (Ctrl-drag) multi-select. */
+  private multiIds: string[] = [];
   private hoveredId: string | null = null;
   private undoStack: Drawing[][] = [];
   private redoStack: Drawing[][] = [];
