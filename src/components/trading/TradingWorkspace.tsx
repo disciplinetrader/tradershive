@@ -1402,6 +1402,10 @@ function TradingWorkspaceInner() {
           decimals={decimals}
           mode={positionOrders.draftMode}
           inferredType={positionOrders.inferredType}
+          balance={Number(account?.balance ?? 10000)}
+          defaultRiskPct={Number(account?.max_trade_risk_pct ?? 1)}
+          sym={meta ?? null}
+
           onConfirm={(d) => {
             const order = positionOrders.confirmDraft(d);
             if (order) {
