@@ -50,10 +50,29 @@ export function AutosaveIndicator() {
 }
 
 export function SessionHeader() {
-  const { view, saveNow, finish, warnings, resumed, resumedAtCursor } = useReplayStudio();
+  const { view, saveNow, finish, warnings, resumed, resumedAtCursor, pause } = useReplayStudio();
+  const navigate = useNavigate();
+  const [exitOpen, setExitOpen] = useState(false);
+  const [exiting, setExiting] = useState(false);
+
+  const confirmExit = async () => {
+    setExiting(true);
+    try {
+      pause();
+      saveNow();
+    } finally {
+      setExiting(false);
+      setExitOpen(false);
+      // The session stays saved and resumable — we simply hand the trader
+      // straight to their stats for the backtest they just left.
+      void navigate({ to: "/replay/performance" });
+    }
+  };
+
   if (!view) return null;
   const d = view.dataset;
   const lifecycle = view.transport.lifecycle;
+
 
   return (
     <header className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-border/60 bg-card/40 px-3 py-2">
