@@ -34,10 +34,10 @@ export function PageContainer({
     <div
       {...rest}
       className={cn(
-        "mx-auto w-full safe-x",
+        "mx-auto w-full min-w-0 safe-x",
         maxW,
-        // fluid page padding: 12px → 32px
-        "[padding-inline:clamp(0.75rem,2vw,2rem)]",
+        // fluid page gutter — scales smoothly 12px → 32px, no breakpoint steps
+        "[padding-inline:max(env(safe-area-inset-left),var(--space-md))]",
         className,
       )}
     >
@@ -204,15 +204,14 @@ export function SectionHeader({
     >
       <div className="min-w-0">
         {eyebrow ? (
-          <div className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+          <div className="text-fluid-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground">
             {eyebrow}
           </div>
         ) : null}
-        <h1 className="truncate text-xl font-bold tracking-tight sm:text-2xl lg:text-3xl">
-          {title}
-        </h1>
+        {/* Fluid heading: scales smoothly, truncates before it can overflow. */}
+        <h1 className="truncate text-fluid-2xl font-bold tracking-tight">{title}</h1>
         {description ? (
-          <p className="mt-1 line-clamp-2 text-sm text-muted-foreground sm:line-clamp-none">
+          <p className="mt-1 line-clamp-2 text-fluid-sm text-muted-foreground sm:line-clamp-none">
             {description}
           </p>
         ) : null}

@@ -633,3 +633,138 @@ body.workspace-focus [data-app-shell-main] main {
 @utility animate-workspace-slide {
   animation: th-workspace-slide 160ms var(--ease-in-out-soft) both;
 }
+
+/* =========================================================
+ * RESPONSIVE FOUNDATION (Adaptive UI pass)
+ *
+ * Visual hierarchy contract:
+ *   1. Fluid scale  — every size that matters scales with clamp(),
+ *      so there are no visual "steps" between breakpoints.
+ *   2. Content-driven breakpoints — components break where their
+ *      content breaks (auto-fit grids), not at device widths.
+ *   3. Touch ergonomics — on coarse pointers, interactive elements
+ *      get a 44px minimum hit area; dense terminal surfaces opt out
+ *      with [data-dense].
+ *   4. Legibility — body copy never drops below ~13px, headings
+ *      truncate instead of overflowing, media reserves its box.
+ * =======================================================*/
+
+/* --- Fluid spacing tokens (rem-based, viewport-aware) ------------- */
+:root {
+  --space-2xs: clamp(0.25rem, 0.22rem + 0.15vw, 0.375rem);
+  --space-xs:  clamp(0.375rem, 0.32rem + 0.25vw, 0.5rem);
+  --space-sm:  clamp(0.5rem, 0.42rem + 0.4vw, 0.75rem);
+  --space-md:  clamp(0.75rem, 0.6rem + 0.6vw, 1.25rem);
+  --space-lg:  clamp(1rem, 0.75rem + 1.1vw, 2rem);
+  --space-xl:  clamp(1.5rem, 1rem + 2vw, 3rem);
+  --tap: 2.75rem; /* 44px */
+}
+
+@utility gap-fluid   { gap: var(--space-md); }
+@utility p-fluid     { padding: var(--space-md); }
+@utility px-fluid    { padding-inline: var(--space-md); }
+@utility py-fluid    { padding-block: var(--space-md); }
+@utility stack-fluid { display: flex; flex-direction: column; min-width: 0; gap: var(--space-md); }
+
+/* Content-driven auto-fit grid. Set --col-min per instance.
+   Breaks when the CONTENT no longer fits — not at a device width. */
+@utility grid-fluid {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-md);
+  grid-template-columns: repeat(auto-fit, minmax(min(var(--col-min, 16rem), 100%), 1fr));
+}
+
+/* --- Media: reserve the box, never push the layout (CLS = 0) ------ */
+img, video { max-width: 100%; height: auto; }
+@utility media-fluid {
+  display: block;
+  inline-size: 100%;
+  block-size: auto;
+  aspect-ratio: var(--media-ratio, 16 / 9);
+  object-fit: cover;
+  background-color: color-mix(in oklab, var(--foreground) 5%, transparent);
+}
+@utility media-contain { object-fit: contain; }
+
+/* --- Touch ergonomics -------------------------------------------- */
+@utility tap-target {
+  min-block-size: var(--tap);
+  min-inline-size: var(--tap);
+}
+
+/* On touch devices below the tablet break, give every control a real
+   44px hit area. Dense terminal chrome (chart toolbars, on-chart order
+   controls) opts out via [data-dense] so the chart stays the focus. */
+@media (pointer: coarse) and (max-width: 767px) {
+  button:not([data-dense] button):not([data-dense]),
+  a[role="button"],
+  [role="tab"]:not([data-dense] [role="tab"]),
+  summary,
+  select,
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  textarea {
+    min-block-size: var(--tap);
+  }
+  button:not([data-dense] button):not([data-dense]):where([aria-label]:empty, :has(> svg:only-child)) {
+    min-inline-size: var(--tap);
+  }
+  /* Expand the hit area of genuinely tiny toggles without resizing them. */
+  input[type="checkbox"], input[type="radio"] {
+    position: relative;
+  }
+  input[type="checkbox"]::after, input[type="radio"]::after {
+    content: "";
+    position: absolute;
+    inset: 50% auto auto 50%;
+    inline-size: var(--tap);
+    block-size: var(--tap);
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* --- Hover is a pointer affordance, not a touch one --------------- */
+@media (hover: none) {
+  .hover-lift:hover,
+  .card-interactive:hover {
+    transform: none;
+    box-shadow: none;
+  }
+  /* Sticky :hover after tap on iOS — neutralize row tinting. */
+  .row-interactive:hover { background-color: transparent; }
+}
+
+/* --- Overflow discipline ------------------------------------------ */
+/* Any horizontal scroll must be an explicit, contained decision. */
+@utility scroll-strip {
+  display: flex;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+  & > * { scroll-snap-align: start; flex: 0 0 auto; }
+}
+/* Fade affordance so users know a strip continues past the edge. */
+@utility scroll-fade-x {
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 0.75rem, #000 calc(100% - 0.75rem), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 0.75rem, #000 calc(100% - 0.75rem), transparent 100%);
+}
+
+/* --- Modal ergonomics: full-screen sheet on phones ---------------- */
+@utility dialog-fullscreen-mobile {
+  @media (max-width: 639px) {
+    inset: 0;
+    inline-size: 100vw;
+    max-inline-size: 100vw;
+    block-size: 100dvh;
+    max-block-size: 100dvh;
+    transform: none;
+    border-radius: 0;
+    border-inline: 0;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+}

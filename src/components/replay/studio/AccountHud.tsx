@@ -26,11 +26,15 @@ function Stat({
   tone?: "up" | "down" | "warn";
 }) {
   return (
-    <div className="flex flex-col leading-tight">
-      <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{label}</span>
+    // min-w-0 + truncate: long currency values shrink instead of pushing
+    // the HUD past the viewport on narrow screens.
+    <div className="flex min-w-0 shrink-0 flex-col leading-tight">
+      <span className="text-[clamp(0.5rem,0.45rem+0.15vw,0.5625rem)] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+        {label}
+      </span>
       <span
         className={cn(
-          "font-mono text-[12px] tabular-nums",
+          "truncate font-mono text-[clamp(0.6875rem,0.65rem+0.2vw,0.8125rem)] tabular-nums",
           tone === "up" && "text-emerald-500",
           tone === "down" && "text-destructive",
           tone === "warn" && "text-amber-500",
@@ -65,7 +69,15 @@ export function AccountHud({ className }: { className?: string }) {
   const drawdown = peak != null && equity != null && peak > 0 ? Math.max(0, (peak - equity) / peak) : null;
 
   return (
-    <div className={cn("flex items-center gap-4 md:gap-5", className)}>
+    // Phones: a contained horizontal strip (never a page-level scroll).
+    // ≥md: a normal flex row with fluid gaps.
+    <div
+      data-dense
+      className={cn(
+        "scroll-strip scroll-fade-x items-center gap-[var(--space-md)] md:overflow-visible md:[mask-image:none]",
+        className,
+      )}
+    >
       <Stat label="Balance" value={money(balance)} />
       <Stat label="Equity" value={money(equity)} tone={equity != null && balance != null && equity < balance ? "down" : undefined} />
       <Stat label="Open P&L" value={money(open)} tone={open > 0 ? "up" : open < 0 ? "down" : undefined} />
