@@ -969,6 +969,22 @@ function TradingWorkspaceInner() {
             </div>
           </div>
 
+          {/* Per-indicator inputs (TradingView-style settings) */}
+          <IndicatorSettingsDialog
+            open={!!settingsFor}
+            onOpenChange={(v) => { if (!v) setSettingsFor(null); }}
+            indicatorKey={settingsFor}
+            label={settingsDef?.label ?? "Indicator"}
+            defaults={settingsDef?.params ?? {}}
+            values={settingsFor ? indicatorParams[settingsFor] ?? {} : {}}
+            onApply={(params) => {
+              if (!settingsFor) return;
+              setIndicatorParams((s) => ({ ...s, [settingsFor]: params }));
+              setEnabled((s) => ({ ...s, [settingsFor]: true }));
+            }}
+          />
+
+
           {/* Right rail: tabbed, resizable, collapsible workspace panel */}
           {rightOpen ? (
             <>
