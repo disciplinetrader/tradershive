@@ -24,12 +24,12 @@
  * =======================================================*/
 
 @theme inline {
-  --radius-sm: 2px;
-  --radius-md: 3px;
-  --radius-lg: 3px;
-  --radius-xl: 4px;
-  --radius-2xl: 4px;
-  --radius-3xl: 6px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+  --radius-2xl: 18px;
+  --radius-3xl: 24px;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -78,123 +78,145 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
-/* =============== LIGHT (default) — Milkinside cloud ============ */
-:root {
-  --radius: 3px; /* Minimalist — sharp 3px corners across the app */
+/* =========================================================
+ * MIDNIGHT INDIGO — premium palette (Art Direction pass)
+ *
+ * Sober bases (near-black indigo / cloud white) with ONE
+ * calculated vibrant accent: electric indigo #4f46e5.
+ * Depth comes from layered surfaces + soft shadows, never
+ * from loud colour.
+ * =======================================================*/
 
-  /* Canvas: near-white with a whisper of warmth, pure white cards */
-  --background: oklch(0.985 0.003 280);          /* #F6F6F8-ish cloud */
-  --foreground: oklch(0.17 0.02 265);            /* deep ink #0E1220 */
-  --surface: oklch(1 0 0);                       /* #FFFFFF */
-  --surface-2: oklch(0.975 0.004 280);           /* very soft gray */
+/* =============== LIGHT — porcelain + indigo ============ */
+:root {
+  --radius: 10px; /* softened, 8pt-aligned corners */
+
+  --background: oklch(0.988 0.004 280);
+  --foreground: oklch(0.16 0.03 278);
+  --surface: oklch(1 0 0);
+  --surface-2: oklch(0.972 0.006 280);
 
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.17 0.02 265);
+  --card-foreground: oklch(0.16 0.03 278);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.17 0.02 265);
+  --popover-foreground: oklch(0.16 0.03 278);
 
-  /* Brand — soft violet (Milkinside signature) */
-  --primary: oklch(0.58 0.19 285);               /* #6B57FF-ish violet */
+  /* Brand — electric indigo (#4f46e5) */
+  --primary: oklch(0.52 0.225 277);
   --primary-foreground: oklch(0.99 0 0);
-  --primary-glow: oklch(0.72 0.16 300);          /* lilac glow */
+  --primary-glow: oklch(0.66 0.19 285);
 
-  --secondary: oklch(0.965 0.005 280);
-  --secondary-foreground: oklch(0.22 0.02 265);
-  --muted: oklch(0.965 0.005 280);
-  --muted-foreground: oklch(0.48 0.02 265);      /* readable gray #5D6478 */
-  --accent: oklch(0.96 0.008 280);
-  --accent-foreground: oklch(0.2 0.02 265);
+  --secondary: oklch(0.966 0.007 280);
+  --secondary-foreground: oklch(0.22 0.03 278);
+  --muted: oklch(0.966 0.007 280);
+  --muted-foreground: oklch(0.5 0.025 278);
+  --accent: oklch(0.958 0.012 280);
+  --accent-foreground: oklch(0.2 0.03 278);
 
-  /* Semantic — deep enough to pass WCAG AA as text on white cards
-     while still vivid enough for solid buttons/badges. */
-  --success: oklch(0.54 0.16 155);               /* forest green */
-  --warning: oklch(0.58 0.15 65);                /* deep amber */
-  --info: oklch(0.52 0.17 250);                  /* ink blue */
-  --danger: oklch(0.55 0.22 25);                 /* deep coral */
+  --success: oklch(0.54 0.16 155);
+  --warning: oklch(0.58 0.15 65);
+  --info: oklch(0.52 0.19 262);
+  --danger: oklch(0.55 0.22 25);
   --destructive: oklch(0.55 0.22 25);
   --destructive-foreground: oklch(0.99 0 0);
 
+  --border: oklch(0.16 0.03 278 / 0.08);
+  --input: oklch(0.16 0.03 278 / 0.11);
+  --ring: oklch(0.52 0.225 277 / 0.35);
 
-  --border: oklch(0.17 0.02 265 / 0.07);         /* whisper hairline */
-  --input: oklch(0.17 0.02 265 / 0.1);
-  --ring: oklch(0.58 0.19 285 / 0.35);
+  --chart-1: oklch(0.52 0.225 277);
+  --chart-2: oklch(0.66 0.17 190);
+  --chart-3: oklch(0.74 0.15 75);
+  --chart-4: oklch(0.6 0.22 22);
+  --chart-5: oklch(0.62 0.17 320);
 
-  --chart-1: oklch(0.58 0.19 285);   /* violet */
-  --chart-2: oklch(0.66 0.17 155);   /* mint */
-  --chart-3: oklch(0.78 0.14 75);    /* amber */
-  --chart-4: oklch(0.6 0.22 22);     /* coral */
-  --chart-5: oklch(0.68 0.14 220);   /* sky */
-
-  --sidebar: oklch(0.965 0.005 280);
-  --sidebar-foreground: oklch(0.24 0.02 265);
-  --sidebar-primary: oklch(0.58 0.19 285);
+  --sidebar: oklch(0.972 0.008 280);
+  --sidebar-foreground: oklch(0.24 0.03 278);
+  --sidebar-primary: oklch(0.52 0.225 277);
   --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.93 0.012 285);
-  --sidebar-accent-foreground: oklch(0.17 0.02 265);
-  --sidebar-border: oklch(0.17 0.02 265 / 0.08);
-  --sidebar-ring: oklch(0.58 0.19 285 / 0.35);
+  --sidebar-accent: oklch(0.93 0.025 280);
+  --sidebar-accent-foreground: oklch(0.16 0.03 278);
+  --sidebar-border: oklch(0.16 0.03 278 / 0.08);
+  --sidebar-ring: oklch(0.52 0.225 277 / 0.35);
 
-  /* Ambient pastel wash — used by .app-aurora backdrop */
-  --aurora-a: oklch(0.9 0.09 300 / 0.55);        /* lavender */
-  --aurora-b: oklch(0.92 0.08 200 / 0.5);        /* aqua */
-  --aurora-c: oklch(0.93 0.08 30 / 0.45);        /* peach */
+  --aurora-a: oklch(0.88 0.09 280 / 0.5);
+  --aurora-b: oklch(0.91 0.07 240 / 0.45);
+  --aurora-c: oklch(0.93 0.06 320 / 0.4);
+
+  /* Elevation — soft, wide, low-opacity. Never a hard drop shadow. */
+  --shadow-color: 262 60% 8%;
+  --elev-1: 0 1px 2px hsl(var(--shadow-color) / 0.05),
+            0 1px 3px -1px hsl(var(--shadow-color) / 0.06);
+  --elev-2: 0 2px 4px -2px hsl(var(--shadow-color) / 0.06),
+            0 12px 28px -14px hsl(var(--shadow-color) / 0.16);
+  --elev-3: 0 4px 8px -4px hsl(var(--shadow-color) / 0.08),
+            0 28px 60px -28px hsl(var(--shadow-color) / 0.26);
+  --edge-light: inset 0 1px 0 0 oklch(1 0 0 / 0.7);
 }
 
-/* =============== DARK — Fuselab ink ============ */
+/* =============== DARK — midnight indigo ============ */
 .dark {
   color-scheme: dark;
 
-  --background: oklch(0.16 0.015 220);           /* #0A0F14 deep ink */
-  --foreground: oklch(0.96 0.008 200);           /* soft off-white */
-  --surface: oklch(0.2 0.017 220);               /* elevated panel */
-  --surface-2: oklch(0.23 0.018 220);            /* higher elevation */
+  --background: oklch(0.155 0.032 283);          /* #0a0a1a deep midnight */
+  --foreground: oklch(0.965 0.008 280);
+  --surface: oklch(0.215 0.045 283);             /* #141432 panel */
+  --surface-2: oklch(0.26 0.055 281);            /* #1e1e5a-leaning */
 
-  --card: oklch(0.19 0.016 220);
-  --card-foreground: oklch(0.96 0.008 200);
-  --popover: oklch(0.2 0.017 220);
-  --popover-foreground: oklch(0.96 0.008 200);
+  --card: oklch(0.2 0.042 283);
+  --card-foreground: oklch(0.965 0.008 280);
+  --popover: oklch(0.215 0.045 283);
+  --popover-foreground: oklch(0.965 0.008 280);
 
-  /* Brand — violet (unified across themes) */
-  --primary: oklch(0.72 0.19 285);
-  --primary-foreground: oklch(0.14 0.02 265);
-  --primary-glow: oklch(0.8 0.15 295);
+  --primary: oklch(0.62 0.22 277);               /* #4f46e5 lifted */
+  --primary-foreground: oklch(0.99 0 0);
+  --primary-glow: oklch(0.74 0.17 288);
 
-  --secondary: oklch(0.24 0.017 220);
-  --secondary-foreground: oklch(0.94 0.008 200);
-  --muted: oklch(0.24 0.017 220);
-  --muted-foreground: oklch(0.74 0.014 210);     /* WCAG AA on --surface */
-  --accent: oklch(0.26 0.02 220);
-  --accent-foreground: oklch(0.96 0.008 200);
+  --secondary: oklch(0.25 0.045 283);
+  --secondary-foreground: oklch(0.95 0.008 280);
+  --muted: oklch(0.25 0.045 283);
+  --muted-foreground: oklch(0.75 0.025 280);
+  --accent: oklch(0.29 0.055 281);
+  --accent-foreground: oklch(0.97 0.008 280);
 
-  --success: oklch(0.78 0.15 170);
+  --success: oklch(0.78 0.15 165);
   --warning: oklch(0.82 0.15 80);
-  --info: oklch(0.75 0.14 230);
-  --danger: oklch(0.72 0.19 22);
-  --destructive: oklch(0.72 0.19 22);
+  --info: oklch(0.76 0.14 250);
+  --danger: oklch(0.7 0.2 20);
+  --destructive: oklch(0.7 0.2 20);
   --destructive-foreground: oklch(0.99 0 0);
 
-  --border: oklch(0.96 0.008 200 / 0.08);
-  --input: oklch(0.96 0.008 200 / 0.12);
-  --ring: oklch(0.72 0.19 285 / 0.4);
+  --border: oklch(0.9 0.03 280 / 0.1);
+  --input: oklch(0.9 0.03 280 / 0.14);
+  --ring: oklch(0.62 0.22 277 / 0.45);
 
-  --chart-1: oklch(0.72 0.19 285);   /* violet brand */
-  --chart-2: oklch(0.75 0.13 45);    /* warm gold */
-  --chart-3: oklch(0.7 0.18 300);    /* violet */
-  --chart-4: oklch(0.7 0.2 22);      /* coral */
-  --chart-5: oklch(0.75 0.14 230);   /* sky */
+  --chart-1: oklch(0.66 0.21 277);
+  --chart-2: oklch(0.78 0.14 190);
+  --chart-3: oklch(0.8 0.14 70);
+  --chart-4: oklch(0.7 0.2 22);
+  --chart-5: oklch(0.7 0.18 320);
 
-  --sidebar: oklch(0.14 0.014 220);
-  --sidebar-foreground: oklch(0.9 0.01 200);
-  --sidebar-primary: oklch(0.72 0.19 285);
-  --sidebar-primary-foreground: oklch(0.14 0.02 265);
-  --sidebar-accent: oklch(0.26 0.02 220);
-  --sidebar-accent-foreground: oklch(0.98 0.006 200);
-  --sidebar-border: oklch(0.96 0.008 200 / 0.08);
-  --sidebar-ring: oklch(0.72 0.19 285 / 0.4);
+  --sidebar: oklch(0.135 0.03 283);
+  --sidebar-foreground: oklch(0.9 0.015 280);
+  --sidebar-primary: oklch(0.66 0.21 277);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.27 0.05 282);
+  --sidebar-accent-foreground: oklch(0.98 0.008 280);
+  --sidebar-border: oklch(0.9 0.03 280 / 0.09);
+  --sidebar-ring: oklch(0.66 0.21 277 / 0.45);
 
-  --aurora-a: oklch(0.5 0.15 170 / 0.28);        /* mint pool */
-  --aurora-b: oklch(0.45 0.16 260 / 0.25);       /* indigo pool */
-  --aurora-c: oklch(0.55 0.14 300 / 0.2);        /* violet pool */
+  --aurora-a: oklch(0.45 0.2 277 / 0.3);         /* indigo pool */
+  --aurora-b: oklch(0.4 0.16 300 / 0.24);        /* violet pool */
+  --aurora-c: oklch(0.5 0.12 220 / 0.18);        /* cool haze */
+
+  --shadow-color: 262 70% 2%;
+  --elev-1: 0 1px 2px hsl(var(--shadow-color) / 0.4),
+            0 1px 3px -1px hsl(var(--shadow-color) / 0.35);
+  --elev-2: 0 2px 6px -2px hsl(var(--shadow-color) / 0.45),
+            0 14px 34px -16px hsl(var(--shadow-color) / 0.7);
+  --elev-3: 0 6px 12px -6px hsl(var(--shadow-color) / 0.5),
+            0 32px 70px -30px hsl(var(--shadow-color) / 0.85);
+  --edge-light: inset 0 1px 0 0 oklch(1 0 0 / 0.06);
 }
 
 @layer base {
@@ -237,16 +259,31 @@
   }
 
 
+  /* Editorial type scale — fluid, optically tightened as size grows. */
   h1, h2, h3, h4, h5 {
     font-family: var(--font-display);
-    letter-spacing: -0.022em;
+    letter-spacing: -0.02em;
     font-weight: 600;
     color: var(--foreground);
     text-wrap: balance;
   }
-  h1 { font-size: clamp(1.9rem, 2.4vw, 2.5rem); line-height: 1.1; letter-spacing: -0.03em; font-weight: 700; }
-  h2 { font-size: 1.5rem; line-height: 1.2; font-weight: 650; }
-  h3 { font-size: 1.15rem; line-height: 1.3; }
+  h1 {
+    font-size: clamp(1.9rem, 1.45rem + 1.6vw, 2.75rem);
+    line-height: 1.06;
+    letter-spacing: -0.032em;
+    font-weight: 700;
+  }
+  h2 {
+    font-size: clamp(1.35rem, 1.2rem + 0.7vw, 1.75rem);
+    line-height: 1.18;
+    letter-spacing: -0.026em;
+    font-weight: 650;
+  }
+  h3 {
+    font-size: clamp(1.05rem, 1rem + 0.3vw, 1.2rem);
+    line-height: 1.32;
+    letter-spacing: -0.018em;
+  }
   p { text-wrap: pretty; }
   small { font-size: 0.8125rem; color: var(--muted-foreground); }
   ::selection {
@@ -405,27 +442,28 @@
  *             quiet Fuselab surfaces.
  * =======================================================*/
 
+/* Glassmorphism — translucent surface + blur + top edge light.
+   Standard property only; the build adds vendor prefixes. */
 @utility glass {
-  background: color-mix(in oklab, var(--surface) 78%, transparent);
-  backdrop-filter: blur(18px) saturate(160%);
+  background: color-mix(in oklab, var(--surface) 72%, transparent);
+  backdrop-filter: blur(20px) saturate(170%);
   border: 1px solid var(--border);
+  box-shadow: var(--elev-2), var(--edge-light);
 }
 
 @utility glass-strong {
-  background: color-mix(in oklab, var(--surface) 94%, transparent);
-  backdrop-filter: blur(24px) saturate(170%);
+  background: color-mix(in oklab, var(--surface) 92%, transparent);
+  backdrop-filter: blur(28px) saturate(180%);
   border: 1px solid var(--border);
+  box-shadow: var(--elev-3), var(--edge-light);
 }
 
-/* Soft card = Milkinside signature: pure surface, huge radius,
-   whisper shadow, hairline border. */
+/* Soft card — quiet surface, 8pt radius, layered soft shadow. */
 @utility soft-card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 3px;
-  box-shadow:
-    0 1px 0 0 color-mix(in oklab, var(--foreground) 3%, transparent),
-    0 12px 32px -18px color-mix(in oklab, var(--foreground) 20%, transparent);
+  border-radius: var(--radius);
+  box-shadow: var(--elev-2), var(--edge-light);
 }
 
 @utility grid-bg {
@@ -455,17 +493,9 @@
   filter: blur(12px);
 }
 
-@utility shadow-elegant {
-  box-shadow:
-    0 1px 2px 0 color-mix(in oklab, var(--foreground) 4%, transparent),
-    0 10px 28px -14px color-mix(in oklab, var(--foreground) 18%, transparent);
-}
-
-@utility shadow-card {
-  box-shadow:
-    0 1px 0 0 color-mix(in oklab, var(--foreground) 3%, transparent),
-    0 2px 6px 0 color-mix(in oklab, var(--foreground) 5%, transparent);
-}
+@utility shadow-elegant { box-shadow: var(--elev-2); }
+@utility shadow-card { box-shadow: var(--elev-1); }
+@utility shadow-float { box-shadow: var(--elev-3); }
 
 @utility text-gradient {
   background-image: linear-gradient(135deg, var(--foreground), color-mix(in oklab, var(--primary) 65%, var(--foreground)));
@@ -475,15 +505,13 @@
 }
 
 @utility hover-lift {
-  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1),
+  transition: transform var(--motion-slow, 260ms) cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow var(--motion-slow, 260ms) cubic-bezier(0.22, 1, 0.36, 1),
     border-color 220ms ease;
   &:hover {
-    transform: translateY(-2px);
-    box-shadow:
-      0 1px 2px 0 color-mix(in oklab, var(--foreground) 5%, transparent),
-      0 18px 40px -18px color-mix(in oklab, var(--foreground) 24%, transparent);
-    border-color: color-mix(in oklab, var(--foreground) 14%, var(--border));
+    transform: translateY(-3px);
+    box-shadow: var(--elev-3), var(--edge-light);
+    border-color: color-mix(in oklab, var(--primary) 26%, var(--border));
   }
 }
 
@@ -766,5 +794,183 @@ img, video { max-width: 100%; height: auto; }
     border-radius: 0;
     border-inline: 0;
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* =========================================================
+ * PREMIUM LAYER — depth, rhythm, motion (Art Direction pass)
+ *
+ * Hierarchy contract:
+ *   surface → elevation → accent. Colour is never the primary
+ *   depth cue; layered soft shadows + a 1px edge-light are.
+ *   Motion is restrained (150–420ms, ease-out-soft), never
+ *   decorative, and always disabled under reduced-motion.
+ * =======================================================*/
+
+/* --- 8pt rhythm ---------------------------------------------------
+   All premium spacing derives from an 8px base so vertical rhythm
+   stays consistent across every surface. */
+:root {
+  --grid-unit: 0.5rem;              /* 8px */
+  --gutter-sm: calc(var(--grid-unit) * 2);   /* 16 */
+  --gutter-md: calc(var(--grid-unit) * 3);   /* 24 */
+  --gutter-lg: calc(var(--grid-unit) * 5);   /* 40 */
+  --gutter-xl: calc(var(--grid-unit) * 8);   /* 64 */
+  --ease-premium: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@utility rhythm-sm { padding: var(--gutter-sm); }
+@utility rhythm-md { padding: var(--gutter-md); }
+@utility rhythm-lg { padding: var(--gutter-lg); }
+@utility section-y { padding-block: var(--gutter-lg); }
+
+/* --- Elevation scale ---------------------------------------------- */
+@utility elev-0 { box-shadow: none; }
+@utility elev-1 { box-shadow: var(--elev-1); }
+@utility elev-2 { box-shadow: var(--elev-2); }
+@utility elev-3 { box-shadow: var(--elev-3); }
+
+/* --- Premium card: the canonical container -------------------------
+   Quiet surface + hairline + edge-light + soft elevation. Hovering a
+   card raises it and warms the border toward the accent. */
+@utility premium-card {
+  position: relative;
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, var(--foreground) 2%, var(--card)) 0%,
+      var(--card) 46%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--elev-2), var(--edge-light);
+  transition:
+    transform 280ms var(--ease-premium),
+    box-shadow 280ms var(--ease-premium),
+    border-color 200ms ease;
+}
+@utility premium-card-interactive {
+  cursor: pointer;
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--elev-3), var(--edge-light);
+    border-color: color-mix(in oklab, var(--primary) 30%, var(--border));
+  }
+  &:active { transform: translateY(0) scale(0.995); }
+}
+
+/* --- Accent surfaces ---------------------------------------------- */
+@utility accent-wash {
+  background-image: linear-gradient(
+    135deg,
+    color-mix(in oklab, var(--primary) 12%, transparent) 0%,
+    color-mix(in oklab, var(--primary-glow) 6%, transparent) 45%,
+    transparent 80%
+  );
+}
+/* Hairline gradient rule used to separate major sections. */
+@utility rule-fade {
+  block-size: 1px;
+  border: 0;
+  background-image: linear-gradient(
+    to right,
+    transparent,
+    color-mix(in oklab, var(--foreground) 14%, transparent) 25%,
+    color-mix(in oklab, var(--foreground) 14%, transparent) 75%,
+    transparent
+  );
+}
+/* Slow specular sweep for hero/CTA surfaces. */
+@keyframes th-sheen {
+  0%   { transform: translateX(-120%) skewX(-16deg); }
+  100% { transform: translateX(220%) skewX(-16deg); }
+}
+@utility sheen {
+  position: relative;
+  overflow: hidden;
+  &::after {
+    content: "";
+    position: absolute;
+    inset-block: -40%;
+    inline-size: 38%;
+    background: linear-gradient(90deg, transparent, oklch(1 0 0 / 0.14), transparent);
+    opacity: 0;
+    pointer-events: none;
+  }
+  &:hover::after {
+    opacity: 1;
+    animation: th-sheen 900ms var(--ease-premium);
+  }
+}
+
+/* --- Editorial typography helpers --------------------------------- */
+@utility eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--primary) 70%, var(--muted-foreground));
+}
+@utility display-xl {
+  font-family: var(--font-display);
+  font-size: clamp(2.25rem, 1.6rem + 2.6vw, 3.75rem);
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  font-weight: 700;
+  text-wrap: balance;
+}
+@utility lede {
+  font-size: clamp(1rem, 0.95rem + 0.3vw, 1.15rem);
+  line-height: 1.65;
+  color: var(--muted-foreground);
+  max-inline-size: 62ch;
+  text-wrap: pretty;
+}
+
+/* --- Staggered entrance -------------------------------------------
+   Put `.stagger` on a container: direct children fade+rise in with
+   an escalating delay. Capped at 12 so long lists stay snappy. */
+@keyframes th-rise-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@utility animate-rise-in {
+  animation: th-rise-in 420ms var(--ease-premium) both;
+}
+@utility stagger {
+  & > * {
+    animation: th-rise-in 420ms var(--ease-premium) both;
+  }
+  & > *:nth-child(1)  { animation-delay: 0ms; }
+  & > *:nth-child(2)  { animation-delay: 45ms; }
+  & > *:nth-child(3)  { animation-delay: 90ms; }
+  & > *:nth-child(4)  { animation-delay: 135ms; }
+  & > *:nth-child(5)  { animation-delay: 180ms; }
+  & > *:nth-child(6)  { animation-delay: 225ms; }
+  & > *:nth-child(7)  { animation-delay: 270ms; }
+  & > *:nth-child(8)  { animation-delay: 315ms; }
+  & > *:nth-child(9)  { animation-delay: 360ms; }
+  & > *:nth-child(10) { animation-delay: 405ms; }
+  & > *:nth-child(n + 11) { animation-delay: 450ms; }
+}
+
+/* --- Bento grid ----------------------------------------------------
+   Content-driven auto-fit bento; children opt into span classes. */
+@utility bento {
+  display: grid;
+  min-width: 0;
+  gap: var(--gutter-sm);
+  grid-template-columns: repeat(auto-fit, minmax(min(var(--bento-min, 17rem), 100%), 1fr));
+}
+@utility bento-wide { grid-column: span 2; }
+@utility bento-tall { grid-row: span 2; }
+
+/* --- Reduced motion: honour it for every premium animation -------- */
+@media (prefers-reduced-motion: reduce) {
+  .stagger > *,
+  .animate-rise-in,
+  .sheen::after {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
   }
 }

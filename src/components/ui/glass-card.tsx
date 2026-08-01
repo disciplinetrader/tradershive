@@ -13,7 +13,7 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(function Gla
     <div
       ref={ref}
       className={cn(
-        "glass rounded-3xl transition",
+        "glass rounded-xl transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
         interactive && "hover-lift cursor-pointer",
         className,
       )}

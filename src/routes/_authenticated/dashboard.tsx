@@ -62,25 +62,25 @@ function DashboardPage() {
   const p = home?.performance;
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] space-y-8 pb-10 sm:space-y-10">
+    <div className="mx-auto w-full max-w-[1400px] space-y-[var(--gutter-md)] pb-[var(--gutter-lg)] sm:space-y-[var(--gutter-lg)]">
       <DashboardHeader accountId={accountId} onAccountChange={setAccountId} />
 
       <BetaBanner />
 
       {/* 1 — Hero: the visual focus */}
-      {isPending && !home ? <Skeleton className="h-64 w-full rounded-3xl" /> : <HeroCard data={home} />}
+      {isPending && !home ? <Skeleton className="h-64 w-full rounded-xl" /> : <HeroCard data={home} />}
 
       {/* 2 — Performance: exactly six KPIs, one row */}
       <section className="space-y-3">
         <SectionTitle>Performance</SectionTitle>
         {isPending && !p ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          <div className="grid gap-[var(--gutter-sm)] sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-24 rounded-3xl" />
+              <Skeleton key={i} className="h-24 rounded-xl" />
             ))}
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          <div className="stagger grid gap-[var(--gutter-sm)] sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             <KpiCard
               label="Today's P&L"
               value={fmtR(p?.todayR ?? 0)}
@@ -120,7 +120,7 @@ function DashboardPage() {
       {/* 5 — Quick actions: exactly three */}
       <section className="space-y-3">
         <SectionTitle>Quick actions</SectionTitle>
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="stagger grid gap-[var(--gutter-sm)] sm:grid-cols-3">
           <QuickActionCard to="/trading" icon={LineChart} label="Start Trading" hint="Open the workspace" />
           <QuickActionCard to="/replay" icon={PlayCircle} label="Start Replay" hint="Practise a setup" />
           <QuickActionCard to="/journal" icon={BookOpen} label="Add Journal Entry" hint="Review your last trade" />
