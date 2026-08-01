@@ -442,27 +442,28 @@
  *             quiet Fuselab surfaces.
  * =======================================================*/
 
+/* Glassmorphism — translucent surface + blur + top edge light.
+   Standard property only; the build adds vendor prefixes. */
 @utility glass {
-  background: color-mix(in oklab, var(--surface) 78%, transparent);
-  backdrop-filter: blur(18px) saturate(160%);
+  background: color-mix(in oklab, var(--surface) 72%, transparent);
+  backdrop-filter: blur(20px) saturate(170%);
   border: 1px solid var(--border);
+  box-shadow: var(--elev-2), var(--edge-light);
 }
 
 @utility glass-strong {
-  background: color-mix(in oklab, var(--surface) 94%, transparent);
-  backdrop-filter: blur(24px) saturate(170%);
+  background: color-mix(in oklab, var(--surface) 92%, transparent);
+  backdrop-filter: blur(28px) saturate(180%);
   border: 1px solid var(--border);
+  box-shadow: var(--elev-3), var(--edge-light);
 }
 
-/* Soft card = Milkinside signature: pure surface, huge radius,
-   whisper shadow, hairline border. */
+/* Soft card — quiet surface, 8pt radius, layered soft shadow. */
 @utility soft-card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 3px;
-  box-shadow:
-    0 1px 0 0 color-mix(in oklab, var(--foreground) 3%, transparent),
-    0 12px 32px -18px color-mix(in oklab, var(--foreground) 20%, transparent);
+  border-radius: var(--radius);
+  box-shadow: var(--elev-2), var(--edge-light);
 }
 
 @utility grid-bg {
