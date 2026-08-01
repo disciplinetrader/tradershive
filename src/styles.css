@@ -223,6 +223,20 @@
   }
   html { overflow-x: hidden; }
 
+  /* Radix/vaul scroll-lock compensates for the scrollbar by adding
+     padding/margin to <body>. With `scrollbar-gutter: stable` the track is
+     already reserved, so that compensation double-counts and visibly shifts
+     the page whenever a dropdown, select, popover, dialog or sheet opens. */
+  body[data-scroll-locked],
+  body[data-scroll-locked][style] {
+    padding-right: 0 !important;
+    padding-left: 0 !important;
+    margin-right: 0 !important;
+    margin-left: 0 !important;
+    overflow: hidden !important;
+  }
+
+
   h1, h2, h3, h4, h5 {
     font-family: var(--font-display);
     letter-spacing: -0.022em;
