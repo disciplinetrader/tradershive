@@ -11402,6 +11402,10 @@ export type Database = {
         Returns: boolean
       }
       is_platform_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_study_group_visible: {
+        Args: { _group_id: string; _user_id: string }
+        Returns: boolean
+      }
       join_battle: { Args: { _battle_id: string }; Returns: string }
       join_battle_by_code: { Args: { _code: string }; Returns: string }
       join_championship_live: {
