@@ -1,0 +1,60 @@
+/**
+ * Per-indicator parameter schemas.
+ *
+ * Drives the indicator settings dialog: each entry describes the editable
+ * numeric inputs for an indicator, with the same defaults the toolbar uses.
+ * Keeping this declarative means adding a knob is a one-line change and the
+ * UI, validation and persistence all follow automatically.
+ */
+import type { IndicatorKey } from "./types";
+
+export interface IndicatorParamSpec {
+  key: string;
+  label: string;
+  min: number;
+  max: number;
+  step?: number;
+  hint?: string;
+}
+
+export const INDICATOR_PARAM_SCHEMA: Partial<Record<IndicatorKey, IndicatorParamSpec[]>> = {
+  ema: [{ key: "length", label: "Length", min: 2, max: 400, hint: "Periods used for the exponential average" }],
+  sma: [{ key: "length", label: "Length", min: 2, max: 400 }],
+  bollinger: [
+    { key: "length", label: "Length", min: 2, max: 200 },
+    { key: "stddev", label: "Std. deviation", min: 0.5, max: 5, step: 0.1 },
+  ],
+  supertrend: [
+    { key: "period", label: "ATR period", min: 2, max: 100 },
+    { key: "multiplier", label: "Multiplier", min: 0.5, max: 10, step: 0.1 },
+  ],
+  ichimoku: [
+    { key: "conversion", label: "Conversion line", min: 2, max: 60 },
+    { key: "base", label: "Base line", min: 2, max: 120 },
+  ],
+  donchian: [{ key: "length", label: "Length", min: 2, max: 200 }],
+  rsi: [{ key: "length", label: "Length", min: 2, max: 100 }],
+  macd: [
+    { key: "fast", label: "Fast length", min: 2, max: 100 },
+    { key: "slow", label: "Slow length", min: 3, max: 200 },
+    { key: "signal", label: "Signal smoothing", min: 1, max: 60 },
+  ],
+  atr: [{ key: "length", label: "Length", min: 2, max: 100 }],
+  fib: [{ key: "length", label: "Lookback bars", min: 20, max: 500 }],
+  sr: [
+    { key: "left", label: "Pivot left bars", min: 1, max: 30 },
+    { key: "right", label: "Pivot right bars", min: 1, max: 30 },
+    { key: "levels", label: "Max levels", min: 1, max: 20 },
+  ],
+};
+
+/** Clamp a user-entered value into the spec's allowed range. */
+export function clampParam(spec: IndicatorParamSpec, value: number): number {
+  if (!Number.isFinite(value)) return spec.min;
+  const stepped = spec.step && spec.step < 1 ? Math.round(value * 100) / 100 : Math.round(value);
+  return Math.min(spec.max, Math.max(spec.min, stepped));
+}
+
+export function hasSettings(key: IndicatorKey): boolean {
+  return (INDICATOR_PARAM_SCHEMA[key]?.length ?? 0) > 0;
+}
