@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Activity, BarChart3, BookMarked, BrainCircuit, Camera, CandlestickChart, Check, ChevronDown, ChevronRight,
   Clock, Bell, Eye, EyeOff, Play, Focus, Keyboard, LineChart as LineChartIcon, ListOrdered, Maximize2, Minimize2,
-  NotebookPen, Newspaper, Star, Target,
+  NotebookPen, Newspaper, Shapes, Star, Target,
 } from "lucide-react";
 
 import { toast } from "sonner";
