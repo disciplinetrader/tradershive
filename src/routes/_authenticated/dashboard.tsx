@@ -80,7 +80,7 @@ function DashboardPage() {
             ))}
           </div>
         ) : (
-          <div className="stagger grid gap-[var(--gutter-sm)] sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">లో
+          <div className="stagger grid gap-[var(--gutter-sm)] sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             <KpiCard
               label="Today's P&L"
               value={fmtR(p?.todayR ?? 0)}
