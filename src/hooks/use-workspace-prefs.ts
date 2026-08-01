@@ -25,7 +25,12 @@ export type WorkspacePrefs = {
   chartType: string;
   timeframe: string | null;
   indicators: Record<string, boolean>;
+  /** Per-indicator input overrides, keyed by indicator key. */
+  indicatorParams: Record<string, Record<string, number>>;
   smcOn: boolean;
+  smcParts: Record<string, boolean>;
+  /** Last applied chart template id (built-in or user-saved). */
+  chartTemplateId: string | null;
   detailsOpen: boolean;
   bottomTab: BottomTab;
   bottomOpen: boolean;
@@ -49,7 +54,10 @@ const DEFAULTS: WorkspacePrefs = {
   chartType: "candles",
   timeframe: null,
   indicators: { ema: true, volume: true },
+  indicatorParams: {},
   smcOn: false,
+  smcParts: { show_swings: true, show_bos: true, show_fvg: true, show_ob: true },
+  chartTemplateId: null,
   detailsOpen: false,
   bottomTab: "positions",
   bottomOpen: true,

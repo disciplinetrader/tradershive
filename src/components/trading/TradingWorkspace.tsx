@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Activity, BarChart3, BookMarked, BrainCircuit, Camera, CandlestickChart, Check, ChevronDown, ChevronRight,
   Clock, Bell, Eye, EyeOff, Play, Focus, Keyboard, LineChart as LineChartIcon, ListOrdered, Maximize2, Minimize2,
-  NotebookPen, Newspaper, Shapes, Star, Target,
+  NotebookPen, Newspaper, Settings as SettingsIcon, Shapes, Star, Target,
 } from "lucide-react";
 
 import { toast } from "sonner";
@@ -81,6 +81,10 @@ import { Blotter } from "@/components/trading/Blotter";
 import { PlaybookQuickAttach } from "@/components/playbook/PlaybookQuickAttach";
 import { ChallengePanel } from "@/components/prop-challenges/ChallengePanel";
 import { useActivePropChallenge } from "@/lib/prop-challenges/active-session";
+import { IndicatorSettingsDialog } from "@/components/chart/IndicatorSettingsDialog";
+import { ChartTemplateMenu } from "@/components/chart/ChartTemplateMenu";
+import { hasSettings } from "@/lib/chart/indicator-schema";
+import type { ChartTemplate } from "@/lib/chart/templates";
 
 const CHART_TIMEFRAMES: Timeframe[] = ["1m", "5m", "15m", "30m", "1H", "4H", "1D", "1W"];
 /** One-click timeframes pinned in the toolbar, TradingView-style. */
@@ -163,7 +167,7 @@ function TradingWorkspaceInner() {
   const { symbol, symbolMeta, market, timeframe, setTimeframe, accountId, setAccountId, account } = usePaper();
   useSlTpMonitor(account);
   useRiskMonitor(account);
-  const { prefs, update, hydrated } = useWorkspacePrefs();
+  const { prefs, update, patch, hydrated } = useWorkspacePrefs();
   const { active: activeChallenge } = useActivePropChallenge();
 
   // Auto-bind the workspace to the challenge's paper account so every closed
@@ -174,11 +178,12 @@ function TradingWorkspaceInner() {
     setAccountId(activeChallenge.paper_account_id);
   }, [activeChallenge?.paper_account_id, accountId, setAccountId]);
   const [enabled, setEnabled] = useState<Record<string, boolean>>(prefs.indicators);
+  const [indicatorParams, setIndicatorParams] = useState<Record<string, Record<string, number>>>(prefs.indicatorParams);
+  const [settingsFor, setSettingsFor] = useState<IndicatorKey | null>(null);
+  const [templateId, setTemplateId] = useState<string | null>(prefs.chartTemplateId);
   const [chartType, setChartType] = useState<ChartType>(prefs.chartType as ChartType);
   const [smcOn, setSmcOn] = useState(prefs.smcOn);
-  const [smcParts, setSmcParts] = useState<Record<string, boolean>>({
-    show_swings: true, show_bos: true, show_fvg: true, show_ob: true,
-  });
+  const [smcParts, setSmcParts] = useState<Record<string, boolean>>(prefs.smcParts);
   const [quote, setQuote] = useState<Quote | null>(null);
   const [adapter, setAdapter] = useState<import("@/lib/chart/adapter").ChartAdapter | null>(null);
   const chartApi = useRef<ChartHandle | null>(null);
@@ -206,8 +211,11 @@ function TradingWorkspaceInner() {
   useEffect(() => {
     if (!hydrated) return;
     setEnabled(prefs.indicators);
+    setIndicatorParams(prefs.indicatorParams);
     setChartType(prefs.chartType as ChartType);
     setSmcOn(prefs.smcOn);
+    setSmcParts(prefs.smcParts);
+    setTemplateId(prefs.chartTemplateId);
     if (prefs.timeframe && prefs.timeframe !== timeframe) setTimeframe(prefs.timeframe);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated]);
@@ -216,6 +224,7 @@ function TradingWorkspaceInner() {
   useEffect(() => { if (hydrated) update("indicators", enabled); }, [enabled, hydrated, update]);
   useEffect(() => { if (hydrated) update("chartType", chartType); }, [chartType, hydrated, update]);
   useEffect(() => { if (hydrated) update("smcOn", smcOn); }, [smcOn, hydrated, update]);
+  useEffect(() => { if (hydrated) patch({ indicatorParams, smcParts, chartTemplateId: templateId }); }, [indicatorParams, smcParts, templateId, hydrated, patch]);
   useEffect(() => { if (hydrated && timeframe) update("timeframe", timeframe); }, [timeframe, hydrated, update]);
 
   const handleReady = useCallback((api: ChartHandle) => {
@@ -240,6 +249,17 @@ function TradingWorkspaceInner() {
   const activeTf: Timeframe = (CHART_TIMEFRAMES as string[]).includes(timeframe) ? (timeframe as Timeframe) : "1H";
 
 
+  const applyTemplate = useCallback((t: ChartTemplate) => {
+    setChartType(t.chartType as ChartType);
+    setEnabled({ ...t.indicators });
+    setIndicatorParams({ ...t.params });
+    setSmcOn(t.smcOn);
+    setSmcParts({ show_swings: true, show_bos: true, show_fvg: true, show_ob: true, ...t.smcParts });
+    setTemplateId(t.id);
+  }, []);
+
+  const settingsDef = settingsFor ? INDICATOR_TOGGLES.find((i) => i.key === settingsFor) ?? null : null;
+
   const chartSettings: ChartSettings = useMemo(
     () => ({ ...DEFAULT_CHART_SETTINGS, symbol, market, timeframe: activeTf, chartType }),
     [symbol, market, activeTf, chartType],
@@ -247,7 +267,7 @@ function TradingWorkspaceInner() {
 
   const indicators: IndicatorConfig[] = useMemo(() => {
     const base: IndicatorConfig[] = INDICATOR_TOGGLES.filter((i) => enabled[i.key]).map((i) => ({
-      id: i.key, key: i.key, params: i.params, pane: i.pane, visible: true,
+      id: i.key, key: i.key, params: { ...i.params, ...(indicatorParams[i.key] ?? {}) }, pane: i.pane, visible: true,
     }));
     // Volume is always declared, with visible reflecting the toggle. Emitting
     // an explicit `visible: false` (instead of dropping the entry) is what
@@ -270,7 +290,7 @@ function TradingWorkspaceInner() {
       });
     }
     return base;
-  }, [enabled, smcOn, smcParts]);
+  }, [enabled, smcOn, smcParts, indicatorParams]);
 
   const activeIndicatorCount = Object.values(enabled).filter(Boolean).length + (smcOn ? 1 : 0);
   const activeChartTypeLabel = CHART_TYPE_OPTIONS.find((c) => c.key === chartType)?.label ?? "Candles";
@@ -619,9 +639,19 @@ function TradingWorkspaceInner() {
                       checked={!!enabled[i.key]}
                       onCheckedChange={(v) => setEnabled((s) => ({ ...s, [i.key]: !!v }))}
                       onSelect={(e) => e.preventDefault()}
-                      className="text-xs"
+                      className="group text-xs"
                     >
-                      {i.label}
+                      <span className="flex-1">{i.label}</span>
+                      {hasSettings(i.key) && (
+                        <button
+                          aria-label={`${i.label} settings`}
+                          title="Inputs"
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSettingsFor(i.key); }}
+                          className="ml-2 rounded p-0.5 text-muted-foreground opacity-0 transition hover:text-foreground focus:opacity-100 group-hover:opacity-100"
+                        >
+                          <SettingsIcon className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                     </DropdownMenuCheckboxItem>
                   ))}
                 </div>
@@ -665,6 +695,13 @@ function TradingWorkspaceInner() {
               </DropdownMenuSub>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {/* Chart templates — save / apply full chart configurations */}
+          <ChartTemplateMenu
+            activeId={templateId}
+            current={{ chartType, indicators: enabled, params: indicatorParams, smcOn, smcParts }}
+            onApply={applyTemplate}
+          />
 
           {/* Right-aligned quick actions (Buy/Sell live on the chart header) */}
           <div className="ml-auto flex items-center gap-1">
@@ -756,7 +793,12 @@ function TradingWorkspaceInner() {
               <div className="flex items-center gap-2 border-b border-border/40 bg-background/30 px-3 py-1 text-[10px] text-muted-foreground">
                 <LineChartIcon className="h-3 w-3" />
                 <span className="truncate">
-                  {INDICATOR_TOGGLES.filter((i) => enabled[i.key]).map((i) => i.label).join(" · ")}
+                  {INDICATOR_TOGGLES.filter((i) => enabled[i.key]).map((i) => {
+                    const o = indicatorParams[i.key];
+                    if (!o || Object.keys(o).length === 0) return i.label;
+                    // Reflect custom inputs in the strip, e.g. "EMA (55)".
+                    return `${i.label.replace(/\s*\(.*\)$/, "").replace(/\s+\d+$/, "")} (${Object.values(o).join(", ")})`;
+                  }).join(" · ")}
                   {smcOn && (activeIndicatorCount > 1 ? " · " : "") + "SMC/ICT"}
                 </span>
               </div>
@@ -931,6 +973,22 @@ function TradingWorkspaceInner() {
               </AnimatePresence>
             </div>
           </div>
+
+          {/* Per-indicator inputs (TradingView-style settings) */}
+          <IndicatorSettingsDialog
+            open={!!settingsFor}
+            onOpenChange={(v) => { if (!v) setSettingsFor(null); }}
+            indicatorKey={settingsFor}
+            label={settingsDef?.label ?? "Indicator"}
+            defaults={settingsDef?.params ?? {}}
+            values={settingsFor ? indicatorParams[settingsFor] ?? {} : {}}
+            onApply={(params) => {
+              if (!settingsFor) return;
+              setIndicatorParams((s) => ({ ...s, [settingsFor]: params }));
+              setEnabled((s) => ({ ...s, [settingsFor]: true }));
+            }}
+          />
+
 
           {/* Right rail: tabbed, resizable, collapsible workspace panel */}
           {rightOpen ? (
