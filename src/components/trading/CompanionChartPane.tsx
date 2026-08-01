@@ -1,13 +1,17 @@
-import { useEffect, useState } from "react";
-import { ChevronDown, Link2, Link2Off, Maximize2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ChevronDown, Link2, Link2Off, Maximize2, LineChart as LineChartIcon } from "lucide-react";
 import { ChartEngine } from "@/components/chart/ChartEngine";
 import { DEFAULT_CHART_SETTINGS } from "@/lib/chart/constants";
-import type { ChartSettings, ChartType } from "@/lib/chart/types";
+import type { ChartSettings, ChartType, IndicatorConfig } from "@/lib/chart/types";
 import type { Timeframe } from "@/lib/market-data/types";
+import { INDICATOR_TOGGLES } from "@/lib/chart/indicator-registry";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -15,6 +19,7 @@ import { findSymbol } from "@/lib/paper-trading/symbols";
 import { useLiveQuote } from "@/lib/market-data/hooks";
 import { cn } from "@/lib/utils";
 import type { ChartPane } from "@/lib/chart/multi-chart";
+
 
 const TF_OPTIONS: Timeframe[] = ["1m", "5m", "15m", "30m", "1H", "4H", "1D", "1W"];
 const TYPE_OPTIONS: { key: ChartType; label: string }[] = [
