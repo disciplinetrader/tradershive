@@ -1615,11 +1615,25 @@ import { useMarketCadence } from "@/lib/market-data/hooks";
 export function TradingWorkspace({ fullscreen: _fullscreen }: { fullscreen?: boolean } = {}) {
   return (
     <PaperTradingProvider>
-      <TradingWorkspaceInner />
+      <WorkspaceChartLayout>
+        <TradingWorkspaceInner />
+      </WorkspaceChartLayout>
       <WorkspaceCadence />
     </PaperTradingProvider>
   );
 }
+
+/** Bridges the paper-trading symbol into the multi-chart grid so slot 0 stays
+ *  the tradable chart while companion panes carry their own symbols. */
+function WorkspaceChartLayout({ children }: { children: React.ReactNode }) {
+  const { symbol, setSymbol } = usePaper();
+  return (
+    <ChartLayoutProvider primarySymbol={symbol} onPrimarySymbol={setSymbol} defaultChartType="candles">
+      {children}
+    </ChartLayoutProvider>
+  );
+}
+
 
 /** Registers Twelve Data workspace cadence ONLY when the active symbol is a
  *  Twelve Data market (forex/metals/indices). Crypto workspaces stream from
