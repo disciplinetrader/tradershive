@@ -12,6 +12,7 @@ import {
   Shield,
   Sparkles,
   Swords,
+  Dumbbell,
   Film,
   Trophy,
   ChevronLeft,
@@ -46,6 +47,7 @@ const PRIMARY: NavItem[] = [{ to: "/dashboard", label: "Dashboard", icon: Home }
 const TRADING: NavItem[] = [
   { to: "/trading", label: "Trading Workspace", icon: LineChart },
   { to: "/replay", label: "Replay Studio", icon: Film },
+  { to: "/practice", label: "Practice", icon: Dumbbell },
 ];
 
 const WORK: NavItem[] = [

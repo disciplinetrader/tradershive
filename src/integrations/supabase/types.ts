@@ -2215,6 +2215,188 @@ export type Database = {
         }
         Relationships: []
       }
+      challenge_instances: {
+        Row: {
+          account_id: string | null
+          audit_log: Json
+          created_at: string
+          current_phase: number
+          ended_at: string | null
+          evaluation: Json
+          evaluator_version: string
+          failed_at: string | null
+          failure_reason: string | null
+          id: string
+          passed_at: string | null
+          progress: Json
+          prop_challenge_id: string | null
+          started_at: string
+          status: string
+          template_id: string | null
+          template_snapshot: Json
+          template_version: number
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_id?: string | null
+          audit_log?: Json
+          created_at?: string
+          current_phase?: number
+          ended_at?: string | null
+          evaluation?: Json
+          evaluator_version?: string
+          failed_at?: string | null
+          failure_reason?: string | null
+          id?: string
+          passed_at?: string | null
+          progress?: Json
+          prop_challenge_id?: string | null
+          started_at?: string
+          status?: string
+          template_id?: string | null
+          template_snapshot: Json
+          template_version?: number
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string | null
+          audit_log?: Json
+          created_at?: string
+          current_phase?: number
+          ended_at?: string | null
+          evaluation?: Json
+          evaluator_version?: string
+          failed_at?: string | null
+          failure_reason?: string | null
+          id?: string
+          passed_at?: string | null
+          progress?: Json
+          prop_challenge_id?: string | null
+          started_at?: string
+          status?: string
+          template_id?: string | null
+          template_snapshot?: Json
+          template_version?: number
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_instances_prop_challenge_id_fkey"
+            columns: ["prop_challenge_id"]
+            isOneToOne: false
+            referencedRelation: "prop_challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_instances_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenge_templates: {
+        Row: {
+          challenge_type: string
+          created_at: string
+          description: string | null
+          id: string
+          is_public: boolean
+          name: string
+          owner_id: string
+          phases: Json
+          rules: Json
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          challenge_type?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          name: string
+          owner_id: string
+          phases?: Json
+          rules?: Json
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          challenge_type?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          name?: string
+          owner_id?: string
+          phases?: Json
+          rules?: Json
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      challenge_violations: {
+        Row: {
+          challenge_id: string
+          created_at: string
+          current_value: number | null
+          evidence: Json
+          id: string
+          limit_value: number | null
+          message: string
+          occurred_on: string | null
+          rule_id: string
+          rule_version: number
+          severity: string
+          user_id: string
+        }
+        Insert: {
+          challenge_id: string
+          created_at?: string
+          current_value?: number | null
+          evidence?: Json
+          id?: string
+          limit_value?: number | null
+          message: string
+          occurred_on?: string | null
+          rule_id: string
+          rule_version?: number
+          severity?: string
+          user_id: string
+        }
+        Update: {
+          challenge_id?: string
+          created_at?: string
+          current_value?: number | null
+          evidence?: Json
+          id?: string
+          limit_value?: number | null
+          message?: string
+          occurred_on?: string | null
+          rule_id?: string
+          rule_version?: number
+          severity?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_violations_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_instances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       challenges: {
         Row: {
           active: boolean
@@ -3361,6 +3543,136 @@ export type Database = {
           settings?: Json
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      coaching_plan_items: {
+        Row: {
+          approved_at: string | null
+          assignment_id: string | null
+          challenge_id: string | null
+          created_at: string
+          detail: string | null
+          drill_id: string | null
+          due_at: string | null
+          evidence: Json
+          homework_id: string | null
+          id: string
+          kind: string
+          plan_id: string
+          priority: number
+          source: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          assignment_id?: string | null
+          challenge_id?: string | null
+          created_at?: string
+          detail?: string | null
+          drill_id?: string | null
+          due_at?: string | null
+          evidence?: Json
+          homework_id?: string | null
+          id?: string
+          kind?: string
+          plan_id: string
+          priority?: number
+          source?: string
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          assignment_id?: string | null
+          challenge_id?: string | null
+          created_at?: string
+          detail?: string | null
+          drill_id?: string | null
+          due_at?: string | null
+          evidence?: Json
+          homework_id?: string | null
+          id?: string
+          kind?: string
+          plan_id?: string
+          priority?: number
+          source?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coaching_plan_items_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "practice_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coaching_plan_items_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_instances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coaching_plan_items_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "coaching_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coaching_plans: {
+        Row: {
+          created_at: string
+          evidence: Json
+          id: string
+          review_cadence: string | null
+          source: string
+          status: string
+          success_criteria: Json
+          summary: string | null
+          title: string
+          updated_at: string
+          user_id: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          evidence?: Json
+          id?: string
+          review_cadence?: string | null
+          source?: string
+          status?: string
+          success_criteria?: Json
+          summary?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          evidence?: Json
+          id?: string
+          review_cadence?: string | null
+          source?: string
+          status?: string
+          success_criteria?: Json
+          summary?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          version?: number
         }
         Relationships: []
       }
@@ -6758,6 +7070,110 @@ export type Database = {
           },
         ]
       }
+      practice_assignments: {
+        Row: {
+          coach_source: string | null
+          completed_at: string | null
+          completion: Json
+          created_at: string
+          created_source: string
+          dataset_rules: Json
+          description: string | null
+          drill_id: string | null
+          drill_version: number | null
+          due_at: string | null
+          hidden_context: Json
+          id: string
+          playbook_id: string | null
+          practice_type: string
+          replay_session_id: string | null
+          result: Json
+          review_session_id: string | null
+          risk_rules: Json
+          scoring_profile: string
+          status: string
+          symbol_rules: Json
+          target_mistake: string | null
+          target_skill: string | null
+          timeframe_rules: Json
+          title: string
+          trade_rules: Json
+          updated_at: string
+          user_id: string
+          version: number
+        }
+        Insert: {
+          coach_source?: string | null
+          completed_at?: string | null
+          completion?: Json
+          created_at?: string
+          created_source?: string
+          dataset_rules?: Json
+          description?: string | null
+          drill_id?: string | null
+          drill_version?: number | null
+          due_at?: string | null
+          hidden_context?: Json
+          id?: string
+          playbook_id?: string | null
+          practice_type?: string
+          replay_session_id?: string | null
+          result?: Json
+          review_session_id?: string | null
+          risk_rules?: Json
+          scoring_profile?: string
+          status?: string
+          symbol_rules?: Json
+          target_mistake?: string | null
+          target_skill?: string | null
+          timeframe_rules?: Json
+          title: string
+          trade_rules?: Json
+          updated_at?: string
+          user_id: string
+          version?: number
+        }
+        Update: {
+          coach_source?: string | null
+          completed_at?: string | null
+          completion?: Json
+          created_at?: string
+          created_source?: string
+          dataset_rules?: Json
+          description?: string | null
+          drill_id?: string | null
+          drill_version?: number | null
+          due_at?: string | null
+          hidden_context?: Json
+          id?: string
+          playbook_id?: string | null
+          practice_type?: string
+          replay_session_id?: string | null
+          result?: Json
+          review_session_id?: string | null
+          risk_rules?: Json
+          scoring_profile?: string
+          status?: string
+          symbol_rules?: Json
+          target_mistake?: string | null
+          target_skill?: string | null
+          timeframe_rules?: Json
+          title?: string
+          trade_rules?: Json
+          updated_at?: string
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_assignments_replay_session_id_fkey"
+            columns: ["replay_session_id"]
+            isOneToOne: false
+            referencedRelation: "replay_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       price_alerts: {
         Row: {
           created_at: string
@@ -8089,9 +8505,13 @@ export type Database = {
       }
       replay_homework: {
         Row: {
+          assignment_id: string | null
+          challenge_id: string | null
           completed_at: string | null
           created_at: string
           difficulty: string
+          due_at: string | null
+          history: Json
           id: string
           market: string
           max_trades: number
@@ -8099,6 +8519,7 @@ export type Database = {
           origin: string
           priority: number
           reason: string | null
+          repeat_every_days: number | null
           replay_mode: string | null
           result: Json
           session_hint: string | null
@@ -8116,9 +8537,13 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          assignment_id?: string | null
+          challenge_id?: string | null
           completed_at?: string | null
           created_at?: string
           difficulty?: string
+          due_at?: string | null
+          history?: Json
           id?: string
           market: string
           max_trades?: number
@@ -8126,6 +8551,7 @@ export type Database = {
           origin?: string
           priority?: number
           reason?: string | null
+          repeat_every_days?: number | null
           replay_mode?: string | null
           result?: Json
           session_hint?: string | null
@@ -8143,9 +8569,13 @@ export type Database = {
           user_id: string
         }
         Update: {
+          assignment_id?: string | null
+          challenge_id?: string | null
           completed_at?: string | null
           created_at?: string
           difficulty?: string
+          due_at?: string | null
+          history?: Json
           id?: string
           market?: string
           max_trades?: number
@@ -8153,6 +8583,7 @@ export type Database = {
           origin?: string
           priority?: number
           reason?: string | null
+          repeat_every_days?: number | null
           replay_mode?: string | null
           result?: Json
           session_hint?: string | null
@@ -8170,6 +8601,20 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "replay_homework_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "practice_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "replay_homework_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_instances"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "replay_homework_source_session_id_fkey"
             columns: ["source_session_id"]
@@ -9126,6 +9571,63 @@ export type Database = {
             columns: ["content_id"]
             isOneToOne: false
             referencedRelation: "shared_content"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      skill_results: {
+        Row: {
+          created_at: string
+          evidence: Json
+          id: string
+          sample_size: number
+          score: number | null
+          score_version: string
+          skill: string
+          source_assignment_id: string | null
+          source_drill_id: string | null
+          source_session_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          evidence?: Json
+          id?: string
+          sample_size?: number
+          score?: number | null
+          score_version: string
+          skill: string
+          source_assignment_id?: string | null
+          source_drill_id?: string | null
+          source_session_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          evidence?: Json
+          id?: string
+          sample_size?: number
+          score?: number | null
+          score_version?: string
+          skill?: string
+          source_assignment_id?: string | null
+          source_drill_id?: string | null
+          source_session_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_results_source_assignment_id_fkey"
+            columns: ["source_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "practice_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_results_source_session_id_fkey"
+            columns: ["source_session_id"]
+            isOneToOne: false
+            referencedRelation: "replay_sessions"
             referencedColumns: ["id"]
           },
         ]
