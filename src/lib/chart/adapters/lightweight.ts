@@ -171,10 +171,15 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
       autoScale: settings.autoScale,
       invertScale: settings.priceScale === "inverted",
     },
-    localization: { locale: safeLocale() },
-    timeScale: { borderColor: themeColors.borderColor, visible: true, borderVisible: true, timeVisible: true, secondsVisible: false },
+    localization: { locale: safeLocale(), timeFormatter: makeTimeFormatter(displayTz) },
+    timeScale: {
+      borderColor: themeColors.borderColor, visible: true, borderVisible: true,
+      timeVisible: true, secondsVisible: false,
+      tickMarkFormatter: makeTickFormatter(displayTz),
+    },
     crosshair: { mode: crosshairMode(settings) },
   });
+
 
   let destroyed = false;
   let resizeFrame: number | null = null;
