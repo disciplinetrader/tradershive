@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useJournalEntries } from "@/lib/journal/source-filter";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, LineChart, Sparkles, Target, TrendingDown, TrendingUp } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
@@ -27,7 +28,7 @@ export const Route = createFileRoute("/_authenticated/journal/")({
 });
 
 function JournalOverview() {
-  const entriesQuery = useQuery({ queryKey: journalKeys.list(), queryFn: fetchEntries, staleTime: 30_000 });
+  const entriesQuery = useJournalEntries();
   const entries = entriesQuery.data ?? [];
   // Phase 5: same roll-up the Analytics area renders, so the two never disagree.
   const improvement = useImprovement();
