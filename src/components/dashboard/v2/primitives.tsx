@@ -15,13 +15,12 @@ import { cn } from "@/lib/utils";
 /* --------------------------------------------------------------- Typography */
 
 export function PageTitle({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <h1 className={cn("text-2xl font-bold tracking-tight sm:text-3xl", className)}>{children}</h1>
-  );
+  return <h1 className={cn("display-xl text-[clamp(1.65rem,1.3rem+1.2vw,2.25rem)]", className)}>{children}</h1>;
 }
 
+/** Section labels read as editorial eyebrows, not as shouty headings. */
 export function SectionTitle({ children, className }: { children: ReactNode; className?: string }) {
-  return <h2 className={cn("text-sm font-semibold tracking-tight", className)}>{children}</h2>;
+  return <h2 className={cn("eyebrow", className)}>{children}</h2>;
 }
 
 export function Caption({ children, className }: { children: ReactNode; className?: string }) {
@@ -36,16 +35,18 @@ export interface PanelProps extends HTMLAttributes<HTMLDivElement> {
   tone?: "default" | "hero";
 }
 
-/** The single card shell used across the dashboard. */
+/**
+ * The single card shell used across the dashboard. Depth comes from the
+ * layered `--elev-*` tokens plus a 1px edge-light — never from heavy
+ * outlines or saturated fills.
+ */
 export function Panel({ className, flush, tone = "default", ...props }: PanelProps) {
   return (
     <div
       className={cn(
-        "rounded-3xl shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_24px_-16px_rgba(0,0,0,0.25)]",
-        tone === "hero"
-          ? "bg-gradient-to-br from-primary/10 via-card to-card ring-1 ring-primary/15"
-          : "bg-card ring-1 ring-border/40",
-        !flush && "p-5 sm:p-6",
+        "premium-card",
+        tone === "hero" && "accent-wash",
+        !flush && "p-[var(--gutter-sm)] sm:p-[var(--gutter-md)]",
         className,
       )}
       {...props}
@@ -69,11 +70,11 @@ export function KpiCard({
   tone?: KpiTone;
 }) {
   return (
-    <Panel className="p-4 sm:p-5">
-      <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
+    <Panel className="premium-card-interactive p-[var(--gutter-sm)]">
+      <p className="eyebrow text-muted-foreground">{label}</p>
       <p
         className={cn(
-          "mt-2 text-xl font-semibold tabular-nums sm:text-2xl",
+          "mt-2 text-[clamp(1.25rem,1.1rem+0.5vw,1.6rem)] font-semibold tabular-nums tracking-[-0.03em]",
           tone === "up" && "text-success",
           tone === "down" && "text-danger",
         )}
@@ -99,9 +100,9 @@ export function SidebarCard({
   footer?: ReactNode;
 }) {
   return (
-    <Panel className="flex flex-col gap-3 p-4 sm:p-5">
+    <Panel className="flex flex-col gap-3 p-[var(--gutter-sm)]">
       <div className="flex min-w-0 items-center gap-2">
-        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary ring-1 ring-primary/15">
           <Icon className="h-3.5 w-3.5" aria-hidden />
         </span>
         <SectionTitle className="truncate">{title}</SectionTitle>
@@ -128,13 +129,13 @@ export function QuickActionCard({
   return (
     <Link
       to={to}
-      className="group flex items-center gap-3 rounded-3xl bg-card p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-border/40 transition hover:ring-primary/40 sm:p-5"
+      className="premium-card premium-card-interactive sheen group flex items-center gap-3 p-[var(--gutter-sm)]"
     >
-      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary transition group-hover:bg-primary/15">
+      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/15 transition-colors duration-300 group-hover:bg-primary/18">
         <Icon className="h-4 w-4" aria-hidden />
       </span>
       <span className="min-w-0">
-        <span className="block truncate text-sm font-semibold">{label}</span>
+        <span className="block truncate text-sm font-semibold tracking-[-0.01em]">{label}</span>
         <span className="block truncate text-xs text-muted-foreground">{hint}</span>
       </span>
     </Link>
