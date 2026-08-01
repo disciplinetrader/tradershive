@@ -69,7 +69,7 @@ export function ImprovementView_({ view }: { view: ImprovementView }) {
                   <span className={(d.delta ?? 0) > 0 ? "text-emerald-500" : (d.delta ?? 0) < 0 ? "text-destructive" : ""}>
                     {delta(d.delta)}
                   </span>
-                  <Badge variant="outline" className="text-[10px]">{d.evidence}</Badge>
+                  <Badge variant="outline" className="text-[10px]" title={d.evidence.why}>{d.evidence.level}</Badge>
                 </span>
               </li>
             ))}
