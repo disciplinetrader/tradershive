@@ -2,12 +2,18 @@
  * Phase 8B · Studio header — identity, dataset provenance, autosave, lifecycle.
  * Read-only projection of engine selectors; no state of its own.
  */
-import { Link } from "@tanstack/react-router";
-import { CheckCircle2, CloudOff, Database, Loader2, RefreshCw, Save, TriangleAlert } from "lucide-react";
+import { useState } from "react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { CheckCircle2, CloudOff, Database, Loader2, LogOut, RefreshCw, Save, TriangleAlert } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useReplayStudio } from "./context";
+
 
 function relative(ts: number): string {
   if (!ts) return "not yet";
