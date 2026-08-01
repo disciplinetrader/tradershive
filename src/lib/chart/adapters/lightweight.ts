@@ -549,6 +549,7 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
       if (barTimes.length && candle.time > barTimes[barTimes.length - 1]) barTimes.push(candle.time);
     },
     applySettings(next) {
+      displayTz = resolveTimezone(next.timezone);
       chart.applyOptions({
         grid: {
           vertLines: { visible: next.showGrid },
@@ -560,8 +561,11 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
           autoScale: next.autoScale,
           invertScale: next.priceScale === "inverted",
         },
+        localization: { timeFormatter: makeTimeFormatter(displayTz) },
+        timeScale: { tickMarkFormatter: makeTickFormatter(displayTz) },
       });
     },
+
     setChartType(type) {
       if (type === currentType) return;
       chart.removeSeries(priceSeries);
