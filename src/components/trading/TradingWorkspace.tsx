@@ -781,6 +781,12 @@ function TradingWorkspaceInner() {
                       trades={openHere} livePrice={last}
                       tick={tick + (openHere?.length ?? 0)}
                     />
+                    <PendingOrderLines
+                      adapter={adapter} sym={meta ?? null}
+                      orders={pendingHere}
+                      tick={tick + pendingHere.length}
+                    />
+
                     <TradePlanner
                       adapter={adapter} sym={meta ?? null}
                       active={plannerActive}
