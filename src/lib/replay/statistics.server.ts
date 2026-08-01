@@ -10,9 +10,10 @@ type Sb = {
 };
 
 export async function refreshReplayStatistics(sb: Sb, userId: string): Promise<void> {
-  const [{ data: sessions }, { data: scores }] = await Promise.all([
+  const [{ data: sessions }, { data: scores }, { data: legacyTrades }] = await Promise.all([
     sb.from("replay_sessions").select("id, market, symbol, duration_seconds").eq("user_id", userId).is("deleted_at", null),
     sb.from("replay_scores").select("score").eq("user_id", userId),
+    sb.from("replay_trades").select("id").eq("user_id", userId),
   ]);
 
   const list = (sessions ?? []) as Array<{ market: string; symbol: string; duration_seconds: number | null }>;
@@ -28,6 +29,7 @@ export async function refreshReplayStatistics(sb: Sb, userId: string): Promise<v
   await sb.from("replay_statistics").upsert({
     user_id: userId,
     total_sessions: list.length,
+    total_trades: (legacyTrades ?? []).length,
     total_hours: list.reduce((s, x) => s + (x.duration_seconds ?? 0), 0) / 3600,
     average_score: scoreRows.length
       ? Math.round(scoreRows.reduce((s, x) => s + (x.score ?? 0), 0) / scoreRows.length)
