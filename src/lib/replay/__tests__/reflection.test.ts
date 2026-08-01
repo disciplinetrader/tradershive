@@ -30,7 +30,7 @@ function trade(over: Partial<ClosedTrade> = {}): ClosedTrade {
     returnPercent: 2, slippage: 0, executionSource: "manual",
     closedAt: 10, journalEntryId: null, journalStatus: "none", archivedAt: null,
     ...(over as object),
-  } as ClosedTrade;
+  } as unknown as ClosedTrade;
 }
 
 describe("Phase 8C · canonical → score adapter", () => {
