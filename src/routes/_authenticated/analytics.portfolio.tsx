@@ -120,6 +120,8 @@ function PortfolioWorkspace() {
         <>
           <OverviewSection />
           <EquitySection />
+          <MonteCarloSection />
+
           <DistributionSection />
           <RiskExecutionSection />
           <BehaviourSection />
