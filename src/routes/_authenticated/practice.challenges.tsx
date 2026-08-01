@@ -133,7 +133,7 @@ function ChallengesPage() {
           {templates.isLoading ? (
             <Skeleton className="h-24 w-full" />
           ) : (
-            (templates.data ?? []).map((t: any) => (
+            [...(templates.data?.builtIn ?? []), ...(templates.data?.custom ?? [])].map((t: any) => (
               <div key={t.id} className="rounded-md border border-border/60 p-3">
                 <div className="flex items-center gap-2 font-medium">
                   {t.name}

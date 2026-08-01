@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { EmptyState } from "@/components/ui/empty-state";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getSkillProgress } from "@/lib/practice.functions";
+import { listSkillProgress } from "@/lib/practice.functions";
 
 export const Route = createFileRoute("/_authenticated/practice/skills")({
   head: () => ({
@@ -24,7 +24,7 @@ export const Route = createFileRoute("/_authenticated/practice/skills")({
 });
 
 function SkillsPage() {
-  const fn = useServerFn(getSkillProgress);
+  const fn = useServerFn(listSkillProgress);
   const q = useQuery({ queryKey: ["practice", "skills"], queryFn: () => fn({}) });
 
   if (q.isLoading) return <Skeleton className="h-40 w-full" />;

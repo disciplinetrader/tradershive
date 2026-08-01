@@ -33,7 +33,7 @@ function DrillsPage() {
       const drill = DRILLS.find((d) => d.id === drillId)!;
       return create({
         data: {
-          title: drill.name,
+          title: drill.title,
           description: drill.description,
           practice_type: "guided_drill",
           drill_id: drill.id,
@@ -59,7 +59,7 @@ function DrillsPage() {
         <Card key={d.id}>
           <CardHeader className="pb-2">
             <CardTitle className="flex flex-wrap items-center gap-2 text-base">
-              {d.name}
+              {d.title}
               <Badge variant="outline">v{d.version}</Badge>
               <Badge variant="secondary">{d.skill.replace(/_/g, " ")}</Badge>
             </CardTitle>
