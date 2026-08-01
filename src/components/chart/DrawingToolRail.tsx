@@ -128,7 +128,8 @@ interface Props {
  */
 export function DrawingToolRail({
   store, activeTool, onToolChange, magnet, onMagnetChange,
-  hidden, onHiddenChange, locked, onLockedChange, revision, className,
+  hidden, onHiddenChange, locked, onLockedChange, revision,
+  favourites = [], onToggleFavourite, className,
 }: Props) {
   const [lastUsed, setLastUsed] = useState<Record<string, ToolId>>({});
   const [openGroup, setOpenGroup] = useState<string | null>(null);
