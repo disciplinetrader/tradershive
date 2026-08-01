@@ -62,6 +62,7 @@ import { Route as AuthenticatedAnalyticsIndexRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as JournalShareTokenRouteImport } from './routes/journal.share.$token'
 import { Route as ApiAiChatRouteImport } from './routes/api/ai/chat'
+import { Route as AuthenticatedTradingTvPocRouteImport } from './routes/_authenticated/trading.tv-poc'
 import { Route as AuthenticatedTradingFullscreenRouteImport } from './routes/_authenticated/trading.fullscreen'
 import { Route as AuthenticatedTradesTradeIdRouteImport } from './routes/_authenticated/trades.$tradeId'
 import { Route as AuthenticatedStrategiesTemplatesRouteImport } from './routes/_authenticated/strategies.templates'
@@ -474,6 +475,12 @@ const ApiAiChatRoute = ApiAiChatRouteImport.update({
   path: '/api/ai/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedTradingTvPocRoute =
+  AuthenticatedTradingTvPocRouteImport.update({
+    id: '/tv-poc',
+    path: '/tv-poc',
+    getParentRoute: () => AuthenticatedTradingRoute,
+  } as any)
 const AuthenticatedTradingFullscreenRoute =
   AuthenticatedTradingFullscreenRouteImport.update({
     id: '/fullscreen',
@@ -1384,6 +1391,7 @@ export interface FileRoutesByFullPath {
   '/strategies/templates': typeof AuthenticatedStrategiesTemplatesRoute
   '/trades/$tradeId': typeof AuthenticatedTradesTradeIdRoute
   '/trading/fullscreen': typeof AuthenticatedTradingFullscreenRoute
+  '/trading/tv-poc': typeof AuthenticatedTradingTvPocRoute
   '/api/ai/chat': typeof ApiAiChatRoute
   '/journal/share/$token': typeof JournalShareTokenRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
@@ -1552,6 +1560,7 @@ export interface FileRoutesByTo {
   '/strategies/templates': typeof AuthenticatedStrategiesTemplatesRoute
   '/trades/$tradeId': typeof AuthenticatedTradesTradeIdRoute
   '/trading/fullscreen': typeof AuthenticatedTradingFullscreenRoute
+  '/trading/tv-poc': typeof AuthenticatedTradingTvPocRoute
   '/api/ai/chat': typeof ApiAiChatRoute
   '/journal/share/$token': typeof JournalShareTokenRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
@@ -1736,6 +1745,7 @@ export interface FileRoutesById {
   '/_authenticated/strategies/templates': typeof AuthenticatedStrategiesTemplatesRoute
   '/_authenticated/trades/$tradeId': typeof AuthenticatedTradesTradeIdRoute
   '/_authenticated/trading/fullscreen': typeof AuthenticatedTradingFullscreenRoute
+  '/_authenticated/trading/tv-poc': typeof AuthenticatedTradingTvPocRoute
   '/api/ai/chat': typeof ApiAiChatRoute
   '/journal/share/$token': typeof JournalShareTokenRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
@@ -1920,6 +1930,7 @@ export interface FileRouteTypes {
     | '/strategies/templates'
     | '/trades/$tradeId'
     | '/trading/fullscreen'
+    | '/trading/tv-poc'
     | '/api/ai/chat'
     | '/journal/share/$token'
     | '/admin/'
@@ -2088,6 +2099,7 @@ export interface FileRouteTypes {
     | '/strategies/templates'
     | '/trades/$tradeId'
     | '/trading/fullscreen'
+    | '/trading/tv-poc'
     | '/api/ai/chat'
     | '/journal/share/$token'
     | '/admin'
@@ -2271,6 +2283,7 @@ export interface FileRouteTypes {
     | '/_authenticated/strategies/templates'
     | '/_authenticated/trades/$tradeId'
     | '/_authenticated/trading/fullscreen'
+    | '/_authenticated/trading/tv-poc'
     | '/api/ai/chat'
     | '/journal/share/$token'
     | '/_authenticated/admin/'
@@ -2698,6 +2711,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/ai/chat'
       preLoaderRoute: typeof ApiAiChatRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/trading/tv-poc': {
+      id: '/_authenticated/trading/tv-poc'
+      path: '/tv-poc'
+      fullPath: '/trading/tv-poc'
+      preLoaderRoute: typeof AuthenticatedTradingTvPocRouteImport
+      parentRoute: typeof AuthenticatedTradingRoute
     }
     '/_authenticated/trading/fullscreen': {
       id: '/_authenticated/trading/fullscreen'
@@ -4097,11 +4117,13 @@ const AuthenticatedStrategiesRouteWithChildren =
 
 interface AuthenticatedTradingRouteChildren {
   AuthenticatedTradingFullscreenRoute: typeof AuthenticatedTradingFullscreenRoute
+  AuthenticatedTradingTvPocRoute: typeof AuthenticatedTradingTvPocRoute
   AuthenticatedTradingIndexRoute: typeof AuthenticatedTradingIndexRoute
 }
 
 const AuthenticatedTradingRouteChildren: AuthenticatedTradingRouteChildren = {
   AuthenticatedTradingFullscreenRoute: AuthenticatedTradingFullscreenRoute,
+  AuthenticatedTradingTvPocRoute: AuthenticatedTradingTvPocRoute,
   AuthenticatedTradingIndexRoute: AuthenticatedTradingIndexRoute,
 }
 
