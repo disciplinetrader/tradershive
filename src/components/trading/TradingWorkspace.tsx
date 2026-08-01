@@ -488,7 +488,7 @@ function TradingWorkspaceInner() {
     <TooltipProvider delayDuration={200}>
       <div className="flex min-h-0 flex-col">
         {/* ── Compact unified toolbar (single row) ────────────────────────── */}
-        <div className="flex flex-wrap items-center gap-2 border-b border-border/50 bg-card/40 px-2 py-1.5 backdrop-blur sm:px-3">
+        <div className="no-scrollbar flex flex-nowrap items-center gap-2 overflow-x-auto border-b border-border/50 bg-card/40 px-2 py-1.5 backdrop-blur sm:px-3 md:flex-wrap md:overflow-x-visible">
           <button
             onClick={() => setSymbolSearchOpen(true)}
             className="group flex min-w-0 items-baseline gap-2 rounded-md border border-border/60 bg-background/60 px-2 py-1 text-sm font-bold tracking-wide transition hover:border-primary/40"
