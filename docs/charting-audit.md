@@ -84,7 +84,7 @@ Legend: ✅ working · 🟡 partial · 🔴 present but broken · ⬜ missing ·
 | Selection / editing / deletion | ✅ | `DrawingStore` with undo/redo |
 | Locking / visibility | 🟡 | Model supports it; UI surface is thin |
 | Persistence | ✅ | `features/replay/drawings/persistence.ts` |
-| Object tree | ⬜ | Not implemented |
+| Object tree | ✅ | `src/components/chart/ObjectTree.tsx`, opened from the left rail (Option-A stage) |
 | Fibonacci / channels / anchored tools | 🟡 | Subset of the 20+ renderer types; not grouped in the rail |
 
 ### Indicators
