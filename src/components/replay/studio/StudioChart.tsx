@@ -48,9 +48,12 @@ function decimalsFor(price: number | null): number {
 export function StudioChart({ onAdapterReady }: { onAdapterReady?: (a: ChartAdapter | null) => void }) {
   const {
     view, sessionId, riskPercent, setRiskPercent, placeMarketOrder, sizeForRisk, price: livePrice,
+    seekForwardTo,
   } = useReplayStudio();
   const [armed, setArmed] = useState<ArmedOrder | null>(null);
+  const [newsOn, setNewsOn] = useState(true);
   const tradingLive = view?.transport.lifecycle !== "completed";
+
 
   // Esc always disarms order placement, so the chart never gets stuck armed.
   useEffect(() => {
