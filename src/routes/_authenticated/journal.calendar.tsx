@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useJournalEntries } from "@/lib/journal/source-filter";
 import { useQuery } from "@tanstack/react-query";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
@@ -23,7 +24,7 @@ export const Route = createFileRoute("/_authenticated/journal/calendar")({
 });
 
 function JournalCalendar() {
-  const entriesQuery = useQuery({ queryKey: journalKeys.list(), queryFn: fetchEntries, staleTime: 30_000 });
+  const entriesQuery = useJournalEntries();
   const entries = entriesQuery.data ?? [];
   const today = new Date();
   const [cursor, setCursor] = useState(new Date(today.getFullYear(), today.getMonth(), 1));

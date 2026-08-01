@@ -86,15 +86,23 @@ function startOfMonth(d = new Date()) {
 
 export const getHomeSummary = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<HomeSummary> => {
+  .inputValidator((data: { accountId?: string | null } | undefined) => ({
+    accountId: data?.accountId ?? null,
+  }))
+  .handler(async ({ context, data }): Promise<HomeSummary> => {
     const uid = context.userId;
+    const accountId = data.accountId;
     const now = new Date();
+    let tradesQuery = context.supabase
+      .from("paper_trades")
+      .select("id, symbol, direction, entry_price, opened_at, closed_at, pnl, rr_realized, rr_planned, status")
+      .eq("user_id", uid)
+      .is("deleted_at", null);
+    // Scope every performance metric to the selected paper account.
+    if (accountId) tradesQuery = tradesQuery.eq("account_id", accountId);
+
     const [tradesRes, journalRes, replayRes, goalsRes] = await Promise.all([
-      context.supabase
-        .from("paper_trades")
-        .select("id, symbol, direction, entry_price, opened_at, closed_at, pnl, rr_realized, rr_planned, status")
-        .eq("user_id", uid)
-        .is("deleted_at", null)
+      tradesQuery
         .order("closed_at", { ascending: false, nullsFirst: false })
         .limit(500),
       context.supabase

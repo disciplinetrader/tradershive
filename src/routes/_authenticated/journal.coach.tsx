@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useJournalEntries } from "@/lib/journal/source-filter";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
@@ -22,7 +23,7 @@ export const Route = createFileRoute("/_authenticated/journal/coach")({
 });
 
 function JournalCoach() {
-  const entriesQuery = useQuery({ queryKey: journalKeys.list(), queryFn: fetchEntries, staleTime: 30_000 });
+  const entriesQuery = useJournalEntries();
   const entries = entriesQuery.data ?? [];
   const insights = useMemo(() => detectInsights(entries), [entries]);
   const score = useMemo(() => hiveScore(entries), [entries]);

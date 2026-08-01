@@ -206,6 +206,9 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-size-adjust: 100%;
+    /* Reserve the scrollbar track so opening a dropdown/dialog (which locks
+       scrolling) never shifts the page sideways. */
+    scrollbar-gutter: stable;
   }
   body {
     background: var(--background);

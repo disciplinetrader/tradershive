@@ -350,11 +350,21 @@ export function CreatorWizard({ open, onOpenChange }: { open: boolean; onOpenCha
               onChange={(e) => setStartPos(e.target.value as StartPosition)}
               className="w-full rounded-lg border border-border/60 bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
             >
-              <option value="beginning">Beginning of range</option>
+              <option value="beginning">
+                {from === to ? "Start of the selected day (first candle)" : "Beginning of range (first candle)"}
+              </option>
               <option value="random">Random candle</option>
               <option value="before_end">Last portion of range</option>
             </select>
+            <p className="text-[11px] text-muted-foreground">
+              {startPos === "beginning"
+                ? `Replay opens on the very first candle of ${from === to ? from : from + " → " + to}.`
+                : startPos === "random"
+                  ? "Replay drops you at an unseen candle inside the range."
+                  : "Replay starts near the end of the range."}
+            </p>
           </div>
+
         </div>
 
         {preload.status !== "idle" && (

@@ -2,12 +2,18 @@
  * Phase 8B · Studio header — identity, dataset provenance, autosave, lifecycle.
  * Read-only projection of engine selectors; no state of its own.
  */
-import { Link } from "@tanstack/react-router";
-import { CheckCircle2, CloudOff, Database, Loader2, RefreshCw, Save, TriangleAlert } from "lucide-react";
+import { useState } from "react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { CheckCircle2, CloudOff, Database, Loader2, LogOut, RefreshCw, Save, TriangleAlert } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useReplayStudio } from "./context";
+
 
 function relative(ts: number): string {
   if (!ts) return "not yet";
@@ -44,10 +50,29 @@ export function AutosaveIndicator() {
 }
 
 export function SessionHeader() {
-  const { view, saveNow, finish, warnings, resumed, resumedAtCursor } = useReplayStudio();
+  const { view, saveNow, finish, warnings, resumed, resumedAtCursor, pause } = useReplayStudio();
+  const navigate = useNavigate();
+  const [exitOpen, setExitOpen] = useState(false);
+  const [exiting, setExiting] = useState(false);
+
+  const confirmExit = async () => {
+    setExiting(true);
+    try {
+      pause();
+      saveNow();
+    } finally {
+      setExiting(false);
+      setExitOpen(false);
+      // The session stays saved and resumable — we simply hand the trader
+      // straight to their stats for the backtest they just left.
+      void navigate({ to: "/replay/performance" });
+    }
+  };
+
   if (!view) return null;
   const d = view.dataset;
   const lifecycle = view.transport.lifecycle;
+
 
   return (
     <header className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-border/60 bg-card/40 px-3 py-2">
@@ -91,7 +116,28 @@ export function SessionHeader() {
         <Button size="sm" variant="secondary" onClick={finish} disabled={lifecycle === "completed"}>
           Finish
         </Button>
+        <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setExitOpen(true)}>
+          <LogOut className="h-3.5 w-3.5" /> Exit
+        </Button>
       </div>
+
+      <AlertDialog open={exitOpen} onOpenChange={setExitOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Exit this replay session?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your progress is saved. The session stays in Saved Sessions and you can resume exactly
+              where you left off. We'll take you to Performance so you can review this backtest now.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep trading</AlertDialogCancel>
+            <AlertDialogAction disabled={exiting} onClick={(e) => { e.preventDefault(); void confirmExit(); }}>
+              Save &amp; exit
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </header>
   );
 }

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { useJournalEntries } from "@/lib/journal/source-filter";
 import {
   Calendar as CalendarIcon,
   Download,
@@ -120,11 +121,7 @@ function JournalTradesPage() {
   );
   const openStory = useCallback((id: string) => { void navigate({ to: "/journal/$entryId", params: { entryId: id } }); }, [navigate]);
 
-  const entriesQuery = useQuery({
-    queryKey: journalKeys.list(),
-    queryFn: fetchEntries,
-    staleTime: 30_000,
-  });
+  const entriesQuery = useJournalEntries();
   const tagsQuery = useQuery({ queryKey: journalKeys.tags(), queryFn: fetchTags });
   const tagLinksQuery = useQuery({
     queryKey: ["journal", "entryTagLinks"],

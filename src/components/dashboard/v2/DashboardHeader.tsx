@@ -24,7 +24,14 @@ function greeting(d = new Date()): string {
   return "Good evening";
 }
 
-export function DashboardHeader() {
+export function DashboardHeader({
+  accountId: controlledId,
+  onAccountChange,
+}: {
+  /** Controlled selection so the whole Dashboard reacts to the account. */
+  accountId?: string | null;
+  onAccountChange?: (id: string) => void;
+} = {}) {
   const { profile, user } = useAuth();
   const fetchAccounts = useServerFn(listAccounts);
   const { data: accounts } = useQuery({
@@ -33,9 +40,12 @@ export function DashboardHeader() {
     staleTime: 60_000,
   });
 
-  const [accountId, setAccountId] = useState<string | null>(null);
+  const [internalId, setInternalId] = useState<string | null>(null);
+  const accountId = controlledId !== undefined ? controlledId : internalId;
+
   useEffect(() => {
     if (!accounts?.length) return;
+    if (accountId) return;
     let stored: string | null = null;
     try {
       stored = window.localStorage.getItem(ACCOUNT_KEY);
@@ -43,11 +53,14 @@ export function DashboardHeader() {
       /* storage unavailable */
     }
     const valid = accounts.find((a) => a.id === stored) ?? accounts[0];
-    setAccountId(valid.id);
+    setInternalId(valid.id);
+    onAccountChange?.(valid.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accounts]);
 
   const onSelect = (id: string) => {
-    setAccountId(id);
+    setInternalId(id);
+    onAccountChange?.(id);
     try {
       window.localStorage.setItem(ACCOUNT_KEY, id);
     } catch {

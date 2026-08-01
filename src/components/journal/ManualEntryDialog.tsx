@@ -233,6 +233,11 @@ function ManualForm({
   const [rMultiple, setRMultiple] = useState<string>(
     prefill?.rr != null ? formatSignedR(prefill.rr) : "",
   );
+  // Money result. Optional — when blank we keep the R value as the P&L proxy.
+  const [pnlInput, setPnlInput] = useState<string>(
+    prefill?.pnl != null ? String(prefill.pnl) : "",
+  );
+
 
   const [tradeDate, setTradeDate] = useState<string>(
     (prefill?.opened_at ? new Date(prefill.opened_at) : new Date()).toISOString().slice(0, 10),
@@ -320,14 +325,14 @@ function ManualForm({
     market,
     direction: direction || "long",
     entryPrice: "", exitPrice: "", stopLoss: "", takeProfit: "",
-    pnl: "", rr: rMultiple, lotSize: "",
+    pnl: pnlInput, rr: rMultiple, lotSize: "",
     openedAt: tradeDate, closedAt: tradeDate,
     session, sessionAuto: true,
     confidence: 0,
     strategyTags, emotions, mistakes: [],
     entryReason: "", postTradeNotes: notes,
     riskPercent: "", accountBalance: "",
-  }), [symbol, market, direction, tradeDate, session, strategyTags, emotions, notes, rMultiple]);
+  }), [symbol, market, direction, tradeDate, session, strategyTags, emotions, notes, rMultiple, pnlInput]);
 
   const draftRef = useRef(draftSnapshot());
   useEffect(() => { draftRef.current = draftSnapshot(); }, [draftSnapshot]);
@@ -357,7 +362,9 @@ function ManualForm({
       if (!instrument) throw new Error("Pick an instrument");
 
       const rrSigned = rValue ?? 0;
-      const pnlProxy = rrSigned;
+      const pnlTyped = pnlInput.trim() === "" ? null : Number(pnlInput);
+      const pnlValue =
+        pnlTyped != null && Number.isFinite(pnlTyped) ? pnlTyped : (prefill?.pnl ?? rrSigned);
 
       const openedISO = new Date(`${tradeDate}T12:00:00`).toISOString();
 
@@ -368,7 +375,7 @@ function ManualForm({
         direction: (direction || prefill?.direction || null) as EntryInsert["direction"],
         entry_price: prefill?.entry_price ?? null,
         exit_price: prefill?.exit_price ?? null,
-        pnl: prefill?.pnl ?? pnlProxy,
+        pnl: pnlValue,
         rr: rrSigned,
         risk_pct: null,
         opened_at: openedISO,
@@ -629,6 +636,35 @@ function ManualForm({
             </div>
           </div>
         </Field>
+
+        {/* Realized P&L — money result, sits alongside R */}
+        <Field
+          label="P&L"
+          hint={<span className="text-[11px] text-muted-foreground">Optional — account currency</span>}
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative w-full max-w-xs">
+              <Input
+                value={pnlInput}
+                onChange={(e) => setPnlInput(e.target.value.replace(/[^0-9.\-]/g, ""))}
+                inputMode="decimal"
+                placeholder="e.g. 250 or -120"
+                className={cn(
+                  "h-11 pr-8 font-medium tabular-nums",
+                  Number(pnlInput) > 0 && pnlInput.trim() !== "" && "text-success",
+                  Number(pnlInput) < 0 && "text-danger",
+                )}
+              />
+              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
+                $
+              </span>
+            </div>
+            <span className="text-[11px] text-muted-foreground">
+              Leave blank to use your R multiple as the result.
+            </span>
+          </div>
+        </Field>
+
 
         {/* Trade Date */}
         <Field label="Trade Date" required error={attempted && missing.date ? "Required" : undefined}>
