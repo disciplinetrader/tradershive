@@ -248,7 +248,7 @@ export function CompanionChartPane({
       </header>
 
       <div className="relative min-h-0 flex-1">
-        <ChartEngine settings={settings} indicators={[]} className="absolute inset-0" />
+        <ChartEngine settings={settings} indicators={indicators} className="absolute inset-0" />
       </div>
     </section>
   );
