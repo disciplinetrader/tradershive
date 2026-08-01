@@ -166,6 +166,15 @@ function RailButton({
 function TradingWorkspaceInner() {
   const qc = useQueryClient();
   const { symbol, symbolMeta, market, timeframe, setTimeframe, accountId, setAccountId, account } = usePaper();
+  const {
+    layout,
+    panes: layoutPanes,
+    activeSlot,
+    setActiveSlot,
+    updatePane,
+    promotePane,
+  } = useChartLayout();
+
   useSlTpMonitor(account);
   useRiskMonitor(account);
   const { prefs, update, patch, hydrated } = useWorkspacePrefs();
