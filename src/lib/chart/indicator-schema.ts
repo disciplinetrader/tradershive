@@ -15,6 +15,23 @@ export interface IndicatorParamSpec {
   max: number;
   step?: number;
   hint?: string;
+  /** "time" renders an HH:MM picker; the value is stored as fractional hours. */
+  type?: "number" | "time";
+}
+
+/** 5.5 -> "05:30" (used by the HH:MM inputs). */
+export function hoursToHHMM(hours: number): string {
+  const total = Math.round((Number.isFinite(hours) ? hours : 0) * 60);
+  const h = Math.floor(total / 60) % 24;
+  const m = ((total % 60) + 60) % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+/** "05:30" -> 5.5 */
+export function hhmmToHours(value: string): number {
+  const [h, m] = value.split(":").map((n) => Number(n));
+  if (!Number.isFinite(h)) return 0;
+  return h + (Number.isFinite(m) ? m : 0) / 60;
 }
 
 export const INDICATOR_PARAM_SCHEMA: Partial<Record<IndicatorKey, IndicatorParamSpec[]>> = {
