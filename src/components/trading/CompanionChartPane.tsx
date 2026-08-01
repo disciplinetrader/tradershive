@@ -164,6 +164,56 @@ export function CompanionChartPane({
             </DropdownMenuContent>
           </DropdownMenu>
 
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className={cn(
+                  "flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] hover:bg-muted",
+                  activeCount > 0 ? "text-primary" : "text-muted-foreground",
+                )}
+                aria-label="Pane indicators"
+              >
+                <LineChartIcon className="h-3 w-3" />
+                {activeCount > 0 ? <span className="tabular-nums">{activeCount}</span> : null}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="max-h-[60vh] w-56 overflow-y-auto">
+              <DropdownMenuLabel className="text-[11px]">Indicators for this cell</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuCheckboxItem
+                checked={pane.showVolume ?? false}
+                onCheckedChange={(v) => onChange({ showVolume: Boolean(v) })}
+                onSelect={(e) => e.preventDefault()}
+                className="text-xs"
+              >
+                Volume pane
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuSeparator />
+              {INDICATOR_TOGGLES.map((i) => (
+                <DropdownMenuCheckboxItem
+                  key={i.key}
+                  checked={Boolean(enabled[i.key])}
+                  onCheckedChange={(v) =>
+                    onChange({ indicators: { ...enabled, [i.key]: Boolean(v) } })
+                  }
+                  onSelect={(e) => e.preventDefault()}
+                  className="text-xs"
+                >
+                  {i.label}
+                </DropdownMenuCheckboxItem>
+              ))}
+              {activeCount > 0 ? (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="text-xs" onSelect={() => onChange({ indicators: {} })}>
+                    Clear indicators
+                  </DropdownMenuItem>
+                </>
+              ) : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+
           <Tooltip>
             <TooltipTrigger asChild>
               <button
