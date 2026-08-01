@@ -157,6 +157,7 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
         isSynthetic: !!candleQuery.data!.isSynthetic,
         allowSynthetic: session.provider === "synthetic",
         snapshot,
+        startCursor: startCursorFor(session, candles.length),
       });
       if (cancelled) return;
       if (result.ok) {
