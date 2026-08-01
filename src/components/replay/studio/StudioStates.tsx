@@ -59,7 +59,7 @@ export function SnapshotDiscardedNotice() {
 }
 
 export function SessionCompleteNotice() {
-  const { view, trades } = useReplayStudio();
+  const { view, trades, sessionId } = useReplayStudio();
   if (view?.transport.lifecycle !== "completed") return null;
   return (
     <Alert className="rounded-none border-x-0 border-t-0">
@@ -67,6 +67,9 @@ export function SessionCompleteNotice() {
       <AlertTitle>Session complete</AlertTitle>
       <AlertDescription>
         {trades.length} closed trade{trades.length === 1 ? "" : "s"} recorded. State is saved and resumable on any device.
+        <Button asChild size="sm" variant="secondary" className="ml-3">
+          <Link to="/replay/review" search={{ id: sessionId }}>Open review</Link>
+        </Button>
       </AlertDescription>
     </Alert>
   );
