@@ -1,9 +1,10 @@
 /**
  * Pending-order overlay — TradingView-style on-chart order editing.
  *
- * Every pending paper order on the active symbol renders as a dashed
- * trigger line with a draggable label. Dragging the label vertically
- * re-prices the order (`modifyOrder`); the × cancels it (`cancelOrder`).
+ * Each resting order renders as a thin dashed line across the plot with a
+ * compact chip pinned to the price axis. Hovering expands the chip to reveal
+ * the order description and inline actions (modify / cancel); dragging
+ * re-prices the order and shows a grey ghost line at the original level.
  *
  * Visualization only — all persistence flows through the canonical
  * paper-trading server functions. No order logic lives here.
@@ -12,12 +13,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { X } from "lucide-react";
+import { X, Pencil } from "lucide-react";
 import type { ChartAdapter } from "@/lib/chart/adapter";
 import type { SymbolMeta } from "@/lib/paper-trading/symbols";
 import { modifyOrder, cancelOrder } from "@/lib/paper-trading.functions";
 import { fmtPrice } from "@/lib/trading/plan-math";
-import { cn } from "@/lib/utils";
+import { OrderLine, OrderLabel, LineAction, DragTooltip } from "./order-line-ui";
 
 export type PendingOrderLine = {
   id: string;
@@ -34,15 +35,18 @@ interface Props {
   sym: SymbolMeta | null;
   orders: PendingOrderLine[];
   tick?: number;
+  /** Opens the order ticket for a pending order (optional). */
+  onModify?: (id: string) => void;
 }
 
-export function PendingOrderLines({ adapter, sym, orders, tick }: Props) {
+export function PendingOrderLines({ adapter, sym, orders, tick, onModify }: Props) {
   const qc = useQueryClient();
   const modifyFn = useServerFn(modifyOrder);
   const cancelFn = useServerFn(cancelOrder);
   const hostRef = useRef<HTMLDivElement | null>(null);
   const [, force] = useState(0);
   const [drag, setDrag] = useState<string | null>(null);
+  const [hover, setHover] = useState<string | null>(null);
   const [overrides, setOverrides] = useState<Record<string, number>>({});
 
   const modify = useMutation({
@@ -98,8 +102,14 @@ export function PendingOrderLines({ adapter, sym, orders, tick }: Props) {
   const rendered = useMemo(() => {
     if (!adapter || !sym) return [];
     return orders.map((o) => {
-      const price = overrides[o.id] ?? Number(o.trigger_price);
-      return { o, price, y: adapter.priceToY(price) };
+      const original = Number(o.trigger_price);
+      const price = overrides[o.id] ?? original;
+      return {
+        o,
+        price,
+        y: adapter.priceToY(price),
+        ghostY: overrides[o.id] != null ? adapter.priceToY(original) : null,
+      };
     });
   }, [adapter, sym, orders, overrides]);
 
@@ -107,67 +117,76 @@ export function PendingOrderLines({ adapter, sym, orders, tick }: Props) {
 
   return (
     <div ref={hostRef} className="pointer-events-none absolute inset-0 z-10 select-none">
-      {rendered.map(({ o, price, y }) => {
+      {rendered.map(({ o, price, y, ghostY }) => {
         if (y == null) return null;
         const isLong = o.direction === "long";
+        const tone = isLong ? "buy" : "sell";
         const active = drag === o.id;
-        const label = `${isLong ? "BUY" : "SELL"} ${o.order_type === "stop_limit" ? "STOP-LMT" : o.order_type.toUpperCase()}`;
+        const expanded = active || hover === o.id;
+        const kind = o.order_type === "stop_limit" ? "Stop Limit" : o.order_type === "stop" ? "Stop" : "Limit";
+        const side = isLong ? "Buy" : "Sell";
+
         return (
           <div key={o.id}>
-            <div
-              className="pointer-events-none absolute left-0 right-16 h-px"
-              style={{
-                top: y,
-                backgroundImage: `repeating-linear-gradient(to right, ${isLong ? "#3b82f6" : "#f59e0b"} 0 4px, transparent 4px 10px)`,
-                boxShadow: active
-                  ? `0 0 10px ${isLong ? "rgba(59,130,246,0.7)" : "rgba(245,158,11,0.7)"}`
-                  : "none",
-              }}
-            />
-            <div
-              className="pointer-events-auto absolute left-0 right-16 flex items-center justify-end"
-              style={{ top: y - 11, height: 22, cursor: "ns-resize", touchAction: "none" }}
+            {ghostY != null && active && (
+              <div
+                className="pointer-events-none absolute h-px opacity-50"
+                style={{
+                  top: ghostY,
+                  left: 0,
+                  right: 64,
+                  backgroundImage:
+                    "repeating-linear-gradient(to right, hsl(var(--muted-foreground)) 0 4px, transparent 4px 8px)",
+                }}
+              />
+            )}
+            <OrderLine y={y} tone={tone} active={active} />
+            <OrderLabel
+              y={y}
+              tone={tone}
+              expanded={expanded}
+              title="Drag to re-price this pending order"
+              onMouseEnter={() => setHover(o.id)}
+              onMouseLeave={() => setHover((h) => (h === o.id ? null : h))}
               onPointerDown={(e) => {
-                if ((e.target as HTMLElement).closest("[data-cancel]")) return;
+                if ((e.target as HTMLElement).closest("[data-line-action]")) return;
                 (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
                 setDrag(o.id);
               }}
-              title="Drag to re-price this pending order"
-            >
-              <div
-                className={cn(
-                  "flex select-none items-stretch overflow-hidden rounded-md border shadow-md transition-transform duration-150 hover:scale-105",
-                  isLong ? "border-primary/60" : "border-warning/60",
-                  active && "scale-110",
-                )}
-              >
-                <div
-                  className={cn(
-                    "flex items-center px-1.5 py-0.5 text-[10px] font-bold uppercase text-white",
-                    isLong ? "bg-primary" : "bg-warning",
+              label={
+                <>
+                  <span className="font-semibold text-foreground">{side} {kind}</span>
+                  <span className="text-muted-foreground">{o.lot_size}</span>
+                  {onModify && (
+                    <LineAction label="Modify order" onClick={() => onModify(o.id)}>
+                      <Pencil className="h-2.5 w-2.5" />
+                    </LineAction>
                   )}
-                >
-                  {label}
-                </div>
-                <div className="flex items-center gap-1.5 bg-background/90 px-1.5 py-0.5 font-mono text-[10px]">
-                  <span className="tabular-nums text-foreground">{fmtPrice(sym, price)}</span>
-                  <span className="text-border">│</span>
-                  <span className="tabular-nums text-muted-foreground">{o.lot_size}</span>
-                  <button
-                    data-cancel
-                    aria-label="Cancel pending order"
-                    title="Cancel order"
-                    onClick={() => cancel.mutate(o.id)}
-                    className="ml-0.5 grid h-4 w-4 place-items-center rounded bg-muted text-muted-foreground transition hover:bg-danger hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/40"
-                  >
+                  <LineAction label="Cancel order" danger onClick={() => cancel.mutate(o.id)}>
                     <X className="h-2.5 w-2.5" />
-                  </button>
-                </div>
-              </div>
-            </div>
+                  </LineAction>
+                </>
+              }
+              axis={<span className="tabular-nums">{fmtPrice(sym, price)}</span>}
+            />
+            {active && (
+              <DragTooltip y={y} tone={tone} title={`Moving ${side} ${kind}`}>
+                <Row label="New price" value={fmtPrice(sym, price)} />
+                <Row label="Size" value={String(o.lot_size)} />
+              </DragTooltip>
+            )}
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between py-[1px]">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-bold tabular-nums text-foreground">{value}</span>
     </div>
   );
 }
