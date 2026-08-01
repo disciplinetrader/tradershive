@@ -50,6 +50,11 @@ export interface BootstrapInput {
   snapshot?: SessionSnapshot | null;
   /** Only demo sessions may replay fabricated candles. */
   allowSynthetic?: boolean;
+  /**
+   * Observation index a FRESH session starts on. Defaults to 0 — the very
+   * first candle of the selected range/day. Ignored when a snapshot resumes.
+   */
+  startCursor?: number;
   /** Injected in tests; defaults to the durable server + local writer. */
   writer?: (snapshot: SessionSnapshot) => Promise<void>;
 }
