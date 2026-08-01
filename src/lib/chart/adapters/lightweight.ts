@@ -401,14 +401,20 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
     detached: () => { sessionsUpdate = null; },
   } as unknown as ISeriesPrimitive<UTCTimestamp>;
 
-  /** UTC session windows (non-DST baseline), matching indicators.sessions(). */
+  /** Default UTC session windows (non-DST baseline), matching indicators.sessions(). */
   const SESSION_WINDOWS: { name: string; from: number; to: number }[] = [
     { name: "asia", from: 0, to: 9 },
     { name: "london", from: 8, to: 17 },
     { name: "ny", from: 13, to: 22 },
   ];
 
-  const computeSessionBands = (candles: Candle[]) => {
+  /**
+   * Session bands are anchored to real UTC market hours; the axis renders in
+   * the user's timezone, so a 00:00 UTC Asia open correctly appears at 05:30
+   * for IST. Users can still override each window (in UTC hours) from the
+   * indicator settings dialog.
+   */
+  const computeSessionBands = (candles: Candle[], params: Record<string, number> = {}) => {
     const bands: SessionBand[] = [];
     if (!candles.length) return bands;
     const first = candles[0].time;
@@ -416,16 +422,24 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
     const DAY = 86_400_000;
     // Sessions only make sense on intraday data — a daily bar spans them all.
     if (barStep >= DAY) return bands;
-    for (let day = Math.floor(first / DAY) * DAY; day <= last; day += DAY) {
-      for (const w of SESSION_WINDOWS) {
+    const windows = SESSION_WINDOWS.map((w) => ({
+      name: w.name,
+      from: Number.isFinite(params[`${w.name}_start`]) ? params[`${w.name}_start`] : w.from,
+      to: Number.isFinite(params[`${w.name}_end`]) ? params[`${w.name}_end`] : w.to,
+    }));
+    for (let day = Math.floor(first / DAY) * DAY; day <= last + DAY; day += DAY) {
+      for (const w of windows) {
+        // A window whose end wraps past midnight continues into the next day.
+        const rawEnd = w.to > w.from ? w.to : w.to + 24;
         const start = Math.max(day + w.from * 3_600_000, first);
-        const end = Math.min(day + w.to * 3_600_000, last);
+        const end = Math.min(day + rawEnd * 3_600_000, last);
         if (end <= start) continue;
         bands.push({ start, end, name: w.name, color: SESSION_FILLS[w.name] });
       }
     }
     return bands;
   };
+
 
   const attachDrawings = () => {
     try { priceSeries.attachPrimitive(drawingsPrimitive as any); } catch { /* unsupported */ }
