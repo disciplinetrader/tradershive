@@ -116,7 +116,28 @@ export function SessionHeader() {
         <Button size="sm" variant="secondary" onClick={finish} disabled={lifecycle === "completed"}>
           Finish
         </Button>
+        <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setExitOpen(true)}>
+          <LogOut className="h-3.5 w-3.5" /> Exit
+        </Button>
       </div>
+
+      <AlertDialog open={exitOpen} onOpenChange={setExitOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Exit this replay session?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your progress is saved. The session stays in Saved Sessions and you can resume exactly
+              where you left off. We'll take you to Performance so you can review this backtest now.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep trading</AlertDialogCancel>
+            <AlertDialogAction disabled={exiting} onClick={(e) => { e.preventDefault(); void confirmExit(); }}>
+              Save &amp; exit
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </header>
   );
 }
