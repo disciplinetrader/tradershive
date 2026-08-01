@@ -793,7 +793,12 @@ function TradingWorkspaceInner() {
               <div className="flex items-center gap-2 border-b border-border/40 bg-background/30 px-3 py-1 text-[10px] text-muted-foreground">
                 <LineChartIcon className="h-3 w-3" />
                 <span className="truncate">
-                  {INDICATOR_TOGGLES.filter((i) => enabled[i.key]).map((i) => i.label).join(" · ")}
+                  {INDICATOR_TOGGLES.filter((i) => enabled[i.key]).map((i) => {
+                    const o = indicatorParams[i.key];
+                    if (!o || Object.keys(o).length === 0) return i.label;
+                    // Reflect custom inputs in the strip, e.g. "EMA (55)".
+                    return `${i.label.replace(/\s*\(.*\)$/, "").replace(/\s+\d+$/, "")} (${Object.values(o).join(", ")})`;
+                  }).join(" · ")}
                   {smcOn && (activeIndicatorCount > 1 ? " · " : "") + "SMC/ICT"}
                 </span>
               </div>
