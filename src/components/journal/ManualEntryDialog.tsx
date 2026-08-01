@@ -325,14 +325,14 @@ function ManualForm({
     market,
     direction: direction || "long",
     entryPrice: "", exitPrice: "", stopLoss: "", takeProfit: "",
-    pnl: "", rr: rMultiple, lotSize: "",
+    pnl: pnlInput, rr: rMultiple, lotSize: "",
     openedAt: tradeDate, closedAt: tradeDate,
     session, sessionAuto: true,
     confidence: 0,
     strategyTags, emotions, mistakes: [],
     entryReason: "", postTradeNotes: notes,
     riskPercent: "", accountBalance: "",
-  }), [symbol, market, direction, tradeDate, session, strategyTags, emotions, notes, rMultiple]);
+  }), [symbol, market, direction, tradeDate, session, strategyTags, emotions, notes, rMultiple, pnlInput]);
 
   const draftRef = useRef(draftSnapshot());
   useEffect(() => { draftRef.current = draftSnapshot(); }, [draftSnapshot]);
