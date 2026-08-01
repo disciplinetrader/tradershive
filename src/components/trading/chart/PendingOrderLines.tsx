@@ -141,6 +141,20 @@ export function PendingOrderLines({ adapter, sym, orders, tick, onModify }: Prop
               />
             )}
             <OrderLine y={y} tone={tone} active={active} />
+            {/* Planned-trade marker — an at-a-glance flag like a TradingView alert. */}
+            <span
+              className={cn(
+                "pointer-events-none absolute left-1 grid h-[18px] w-[18px] -translate-y-1/2 place-items-center rounded-[4px] border shadow-sm",
+                isLong
+                  ? "border-success/50 bg-success/20 text-success"
+                  : "border-destructive/50 bg-destructive/20 text-destructive",
+              )}
+              style={{ top: y }}
+              title={`Planned ${side} ${kind} @ ${fmtPrice(sym, price)}`}
+              aria-label={`Planned ${side} ${kind}`}
+            >
+              <Flag className="h-2.5 w-2.5" />
+            </span>
             <OrderLabel
               y={y}
               tone={tone}
