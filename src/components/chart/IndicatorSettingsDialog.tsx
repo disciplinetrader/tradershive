@@ -31,21 +31,30 @@ export function IndicatorSettingsDialog({
   useEffect(() => {
     if (!open) return;
     const next: Record<string, string> = {};
-    for (const s of specs) next[s.key] = String(values[s.key] ?? defaults[s.key] ?? s.min);
+    for (const s of specs) {
+      const raw = values[s.key] ?? defaults[s.key] ?? s.min;
+      next[s.key] = s.type === "time" ? hoursToHHMM(raw) : String(raw);
+    }
     setDraft(next);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, indicatorKey]);
 
   const commit = () => {
     const out: Record<string, number> = {};
-    for (const s of specs) out[s.key] = clampParam(s, Number(draft[s.key]));
+    for (const s of specs) {
+      const raw = draft[s.key] ?? "";
+      out[s.key] = clampParam(s, s.type === "time" ? hhmmToHours(raw) : Number(raw));
+    }
     onApply(out);
     onOpenChange(false);
   };
 
   const reset = () => {
     const next: Record<string, string> = {};
-    for (const s of specs) next[s.key] = String(defaults[s.key] ?? s.min);
+    for (const s of specs) {
+      const raw = defaults[s.key] ?? s.min;
+      next[s.key] = s.type === "time" ? hoursToHHMM(raw) : String(raw);
+    }
     setDraft(next);
   };
 
