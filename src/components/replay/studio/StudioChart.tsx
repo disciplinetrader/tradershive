@@ -11,15 +11,17 @@
  * terminal: drawings (with persistence + object tree) and indicators.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, Eye, EyeOff, LineChart, Shapes } from "lucide-react";
+import { ChevronDown, Eye, EyeOff, LineChart, Newspaper, Shapes } from "lucide-react";
 
 import { createLightweightAdapter } from "@/lib/chart/adapters/lightweight";
-import type { ChartAdapter } from "@/lib/chart/adapter";
+import type { ChartAdapter, ExternalMarker } from "@/lib/chart/adapter";
 import type { ChartSettings, IndicatorConfig, IndicatorKey } from "@/lib/chart/types";
 import type { ToolId } from "@/lib/chart/drawings/types";
 import { INDICATOR_TOGGLES } from "@/lib/chart/indicator-registry";
 import { DrawingStore } from "@/lib/chart/drawings/store";
 import { aggregatableFrom, aggregateCandles } from "@/lib/replay/aggregate";
+import { useEconomicEvents } from "@/lib/economic-calendar/api";
+import { currenciesForSymbol } from "@/lib/economic-calendar/types";
 import type { Candle, Timeframe } from "@/lib/market-data/types";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -168,6 +170,42 @@ export function StudioChart({ onAdapterReady }: { onAdapterReady?: (a: ChartAdap
     adapterRef.current?.setVolumeVisible(!!enabled.volume, candles);
   }, [enabled.volume, candles]);
 
+  // ---- economic calendar (news markers + go-to-news) ----------------------
+  // Only events at or before the last consumed bar are drawn: the calendar
+  // must never leak information the replay clock has not reached yet.
+  const currencies = useMemo(() => currenciesForSymbol(symbol), [symbol]);
+  const { data: newsEvents } = useEconomicEvents({
+    fromMs: view?.dataset.startTime ?? null,
+    toMs: view?.dataset.endTime ?? null,
+    currencies,
+    impacts: ["high", "medium"],
+    enabled: newsOn && !!view,
+  });
+
+  const marketTime = view?.transport.marketTime ?? 0;
+  const visibleNews = useMemo(
+    () => (newsEvents ?? []).filter((e) => e.timeMs <= marketTime),
+    [newsEvents, marketTime],
+  );
+  const nextNews = useMemo(
+    () => (newsEvents ?? []).find((e) => e.timeMs > marketTime) ?? null,
+    [newsEvents, marketTime],
+  );
+
+  useEffect(() => {
+    const a = adapterRef.current;
+    if (!a) return;
+    if (!newsOn) { a.setExternalMarkers([]); return; }
+    const markers: ExternalMarker[] = visibleNews.map((e) => ({
+      timeMs: e.timeMs,
+      position: "aboveBar",
+      shape: "square",
+      color: e.impact === "high" ? "hsl(var(--destructive))" : "hsl(var(--muted-foreground))",
+      text: `${e.currency} ${e.title}`.slice(0, 42),
+    }));
+    a.setExternalMarkers(markers);
+  }, [visibleNews, newsOn, candles]);
+
   // Text-editor placement needs the chart box in element pixels.
   useEffect(() => {
     const el = chartWrapRef.current;
@@ -288,6 +326,38 @@ export function StudioChart({ onAdapterReady }: { onAdapterReady?: (a: ChartAdap
           </TooltipTrigger>
           <TooltipContent side="bottom">{drawingsHidden ? "Show" : "Hide"} drawings</TooltipContent>
         </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant={newsOn ? "secondary" : "ghost"}
+              className="h-6 shrink-0 gap-1 px-2 text-[11px]"
+              onClick={() => setNewsOn((v) => !v)}
+            >
+              <Newspaper className="h-3.5 w-3.5" /> News
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            {newsOn ? "Hide" : "Show"} high/medium impact economic events
+          </TooltipContent>
+        </Tooltip>
+
+        {newsOn && nextNews ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                className="h-6 shrink-0 px-2 text-[11px] text-muted-foreground"
+                onClick={() => seekForwardTo(nextNews.timeMs)}
+              >
+                Next: {nextNews.currency} {nextNews.title.slice(0, 22)}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              Jump to {new Date(nextNews.timeMs).toISOString().slice(0, 16).replace("T", " ")} UTC
+            </TooltipContent>
+          </Tooltip>
+        ) : null}
 
         {displayTf !== baseTf ? (
           <span className="shrink-0 pl-2 text-[10px] text-muted-foreground">folded from {baseTf}</span>
