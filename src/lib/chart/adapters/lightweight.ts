@@ -594,7 +594,7 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
           // Sessions render as full-height background bands (Asia / London / NY, UTC).
           if (cfg.key === "sessions") {
             sessionsHandled = true;
-            sessionBands = computeSessionBands(candles);
+            sessionBands = computeSessionBands(candles, cfg.params ?? {});
             sessionsUpdate?.();
             return;
           }
