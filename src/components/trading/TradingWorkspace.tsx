@@ -1209,6 +1209,27 @@ function TradingWorkspaceInner() {
               </Button>
             </div>
           )}
+
+          {/* Mobile-only persistent Buy / Sell strip — always reachable */}
+          {isMobile && !rightOpen && !focusMode && (
+            <div className="absolute inset-x-0 bottom-0 z-30 flex items-center gap-2 border-t border-border/60 bg-background/95 px-2 py-1.5 pr-28 backdrop-blur">
+              <Button
+                className="h-11 flex-1 bg-success text-[12px] font-bold text-white tabular-nums hover:bg-success/90"
+                onClick={() => { emitTradeIntent({ kind: "focus_side", side: "long" }); setRightOpen(true); setActiveTab("order"); }}
+                aria-label={`Buy ${symbol} at ${ask.toFixed(decimals)}`}
+              >
+                BUY {ask.toFixed(decimals)}
+              </Button>
+              <Button
+                className="h-11 flex-1 bg-danger text-[12px] font-bold text-white tabular-nums hover:bg-danger/90"
+                onClick={() => { emitTradeIntent({ kind: "focus_side", side: "short" }); setRightOpen(true); setActiveTab("order"); }}
+                aria-label={`Sell ${symbol} at ${bid.toFixed(decimals)}`}
+              >
+                SELL {bid.toFixed(decimals)}
+              </Button>
+            </div>
+          )}
+
         </div>
 
         {/* Mobile drawing-tools sheet — the desktop rail is hidden below md */}
