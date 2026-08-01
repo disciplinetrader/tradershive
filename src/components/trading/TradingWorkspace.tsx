@@ -49,6 +49,7 @@ import type { Quote, Timeframe } from "@/lib/market-data/types";
 import { TradePlanner } from "@/components/trading/chart/TradePlanner";
 import { ChartContextMenu } from "@/components/trading/chart/ChartContextMenu";
 import { PositionLinesLive, type OpenTradeLine } from "@/components/trading/chart/PositionLinesLive";
+import { PendingOrderLines, type PendingOrderLine } from "@/components/trading/chart/PendingOrderLines";
 import { TodayPnLWidget } from "@/components/trading/TodayPnLWidget";
 import { MultiChartStrip, type MultiChartPane } from "@/components/trading/MultiChartStrip";
 import { useTradingShortcuts } from "@/hooks/useTradingShortcuts";
@@ -301,12 +302,21 @@ function TradingWorkspaceInner() {
   const fetchOrdersFn = useServerFn(listOrders);
   const { data: pendingOrdersAll } = useQuery({
     queryKey: ["paper", "orders", accountId],
-    queryFn: () => fetchOrdersFn({ data: { account_id: accountId! } }) as unknown as Promise<{ id: string }[]>,
+    queryFn: () => fetchOrdersFn({ data: { account_id: accountId! } }) as unknown as Promise<PendingOrderLine[]>,
     enabled: !!accountId,
     staleTime: 4_000,
     refetchIntervalInBackground: false,
   });
   const pendingCount = pendingOrdersAll?.length ?? 0;
+
+  // Pending orders on the active symbol are drawn on the chart as draggable
+  // trigger lines (TradingView-style on-chart order editing).
+  const pendingHere: PendingOrderLine[] = useMemo(
+    () => (pendingOrdersAll ?? []).filter(
+      (o) => o.symbol === symbol && (o.status == null || o.status === "pending"),
+    ),
+    [pendingOrdersAll, symbol],
+  );
 
   const meta = symbolMeta ?? findSymbol(symbol);
   const decimals = meta?.decimals ?? 2;
@@ -652,8 +662,27 @@ function TradingWorkspaceInner() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Right-aligned quick actions — kept minimal; tools live in the left rail */}
+          {/* Right-aligned quick actions — persistent Buy / Sell always reachable */}
           <div className="ml-auto flex items-center gap-1">
+            <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                className="h-7 shrink-0 gap-1 bg-success px-2.5 text-[11px] font-bold text-white tabular-nums hover:bg-success/90"
+                onClick={() => { emitTradeIntent({ kind: "focus_side", side: "long" }); setRightOpen(true); setActiveTab("order"); }}
+                aria-label={`Buy ${symbol} at ${ask.toFixed(decimals)}`}
+              >
+                BUY <span className="hidden sm:inline">{ask.toFixed(decimals)}</span>
+              </Button>
+              <Button
+                size="sm"
+                className="h-7 shrink-0 gap-1 bg-danger px-2.5 text-[11px] font-bold text-white tabular-nums hover:bg-danger/90"
+                onClick={() => { emitTradeIntent({ kind: "focus_side", side: "short" }); setRightOpen(true); setActiveTab("order"); }}
+                aria-label={`Sell ${symbol} at ${bid.toFixed(decimals)}`}
+              >
+                SELL <span className="hidden sm:inline">{bid.toFixed(decimals)}</span>
+              </Button>
+            </div>
+            <div className="mx-1 hidden h-5 w-px bg-border/60 md:block" />
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -771,6 +800,12 @@ function TradingWorkspaceInner() {
                       trades={openHere} livePrice={last}
                       tick={tick + (openHere?.length ?? 0)}
                     />
+                    <PendingOrderLines
+                      adapter={adapter} sym={meta ?? null}
+                      orders={pendingHere}
+                      tick={tick + pendingHere.length}
+                    />
+
                     <TradePlanner
                       adapter={adapter} sym={meta ?? null}
                       active={plannerActive}
