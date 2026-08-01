@@ -16,7 +16,7 @@ import type { Candle } from "@/lib/market-data/types";
 import type { ChartAdapter, ChartAdapterFactory, DrawingsSource } from "../adapter";
 import type { ChartCoords } from "../drawings/types";
 import type { ChartSettings, ChartType, IndicatorConfig } from "../types";
-import { ema, sma, bollinger, vwap, atr, donchian, heikinAshi, fibonacci, supportResistance, sessions, smc, rsi, macd } from "../indicators";
+import { ema, sma, bollinger, vwap, atr, donchian, heikinAshi, fibonacci, supportResistance, smc, rsi, macd } from "../indicators";
 
 const INDICATOR_COLORS = ["#22d3ee", "#a78bfa", "#f472b6", "#f59e0b", "#34d399", "#f87171", "#60a5fa"];
 
@@ -164,6 +164,13 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
     london: "#60a5fa",
     ny: "#fb923c",
   };
+  // Full-height background bands at 10% opacity (TradingView-style shading).
+  const SESSION_FILLS: Record<string, string> = {
+    asia: "rgba(167,139,250,0.10)",
+    london: "rgba(96,165,250,0.10)",
+    ny: "rgba(251,146,60,0.10)",
+  };
+
   const SMC_BOX_COLORS: Record<string, string> = {
     fvg_bull: "rgba(34,197,94,0.9)",
     fvg_bear: "rgba(239,68,68,0.9)",
@@ -279,10 +286,75 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
     detached: () => { requestPrimitiveUpdate = null; },
   } as unknown as ISeriesPrimitive<UTCTimestamp>;
 
+  // ── Session shading primitive: full-height 10% bands (UTC windows) ─────
+  type SessionBand = { start: number; end: number; color: string; name: string };
+  let sessionBands: SessionBand[] = [];
+  let sessionsUpdate: (() => void) | null = null;
+
+  const sessionsPaneView: IPrimitivePaneView = {
+    zOrder: () => "bottom",
+    renderer: () => ({
+      draw: (target: any) => {
+        if (!sessionBands.length) return;
+        target.useMediaCoordinateSpace(({ context, mediaSize }: any) => {
+          const coords = buildCoords();
+          if (!coords) return;
+          const ctx = context as CanvasRenderingContext2D;
+          ctx.save();
+          for (const b of sessionBands) {
+            const x1 = coords.x(b.start);
+            const x2 = coords.x(b.end);
+            if (x1 == null || x2 == null) continue;
+            const left = Math.max(0, Math.min(x1, x2));
+            const right = Math.min(mediaSize.width, Math.max(x1, x2));
+            if (right <= 0 || left >= mediaSize.width || right - left < 0.5) continue;
+            ctx.fillStyle = b.color;
+            ctx.fillRect(left, 0, right - left, mediaSize.height);
+          }
+          ctx.restore();
+        });
+      },
+    }),
+  };
+
+  const sessionsPrimitive: ISeriesPrimitive<UTCTimestamp> = {
+    paneViews: () => [sessionsPaneView],
+    attached: (param: any) => { sessionsUpdate = param.requestUpdate; },
+    detached: () => { sessionsUpdate = null; },
+  } as unknown as ISeriesPrimitive<UTCTimestamp>;
+
+  /** UTC session windows (non-DST baseline), matching indicators.sessions(). */
+  const SESSION_WINDOWS: { name: string; from: number; to: number }[] = [
+    { name: "asia", from: 0, to: 9 },
+    { name: "london", from: 8, to: 17 },
+    { name: "ny", from: 13, to: 22 },
+  ];
+
+  const computeSessionBands = (candles: Candle[]) => {
+    const bands: SessionBand[] = [];
+    if (!candles.length) return bands;
+    const first = candles[0].time;
+    const last = candles[candles.length - 1].time + barStep;
+    const DAY = 86_400_000;
+    // Sessions only make sense on intraday data — a daily bar spans them all.
+    if (barStep >= DAY) return bands;
+    for (let day = Math.floor(first / DAY) * DAY; day <= last; day += DAY) {
+      for (const w of SESSION_WINDOWS) {
+        const start = Math.max(day + w.from * 3_600_000, first);
+        const end = Math.min(day + w.to * 3_600_000, last);
+        if (end <= start) continue;
+        bands.push({ start, end, name: w.name, color: SESSION_FILLS[w.name] });
+      }
+    }
+    return bands;
+  };
+
   const attachDrawings = () => {
     try { priceSeries.attachPrimitive(drawingsPrimitive as any); } catch { /* unsupported */ }
+    try { priceSeries.attachPrimitive(sessionsPrimitive as any); } catch { /* unsupported */ }
   };
   attachDrawings();
+
 
   // ── Geometry subscriptions for DOM overlays (position lines, planner) ──
   const geometryListeners = new Set<() => void>();
@@ -417,41 +489,20 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
       const activeSessions = new Set<string>();
       const activeSmcBoxes = new Set<string>();
       let smcHandled = false;
+      let sessionsHandled = false;
       indicators
         .filter((i) => i.pane !== "sub" && i.visible !== false)
         .forEach((cfg, idx) => {
           const color = cfg.color ?? INDICATOR_COLORS[idx % INDICATOR_COLORS.length];
 
-          // Sessions render as colored bars pinned to the bottom of the pane.
+          // Sessions render as full-height background bands (Asia / London / NY, UTC).
           if (cfg.key === "sessions") {
-            const s = sessions(candles);
-            const buckets: Record<string, number[]> = { asia: s.asia, london: s.london, ny: s.ny };
-            for (const [name, arr] of Object.entries(buckets)) {
-              const id = `${cfg.id}:${name}`;
-              activeSessions.add(id);
-              let hs = sessionSeries.get(id);
-              if (!hs) {
-                hs = chart.addSeries(HistogramSeries, {
-                  priceScaleId: `sess_${name}`,
-                  color: SESSION_COLORS[name],
-                  priceLineVisible: false,
-                  lastValueVisible: false,
-                  base: 0,
-                });
-                chart.priceScale(`sess_${name}`).applyOptions({
-                  scaleMargins: { top: 0.97, bottom: 0 },
-                  visible: false,
-                });
-                sessionSeries.set(id, hs);
-              }
-              hs.setData(
-                candles
-                  .map((c, i) => ({ time: (c.time / 1000) as UTCTimestamp, value: Number.isFinite(arr[i]) ? 1 : 0, color: SESSION_COLORS[name] }))
-                  .filter((p) => p.value > 0) as any,
-              );
-            }
+            sessionsHandled = true;
+            sessionBands = computeSessionBands(candles);
+            sessionsUpdate?.();
             return;
           }
+
 
           // SMC/ICT renders swing lines + BOS/CHoCH markers + FVG/OB boxes.
           if (cfg.key === "smc") {
@@ -551,6 +602,8 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
         if (!activeSmcBoxes.has(id)) { chart.removeSeries(s); smcBoxSeries.delete(id); }
       }
       if (!smcHandled && smcMarkers) { smcMarkers.setMarkers([]); }
+      if (!sessionsHandled && sessionBands.length) { sessionBands = []; sessionsUpdate?.(); }
+
     },
     syncSubPaneIndicators(indicators, candles) {
       if (!candles.length) return;
