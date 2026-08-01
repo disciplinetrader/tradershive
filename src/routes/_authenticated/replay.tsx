@@ -15,7 +15,7 @@ import { SegmentedTabs } from "@/components/ui/segmented-tabs";
 // workflow.
 const TABS = [
   { to: "/replay", label: "Home", icon: Home, exact: true },
-  { to: "/replay/session", label: "Trading Workspace", icon: Play },
+  { to: "/replay/studio", label: "Trading Workspace", icon: Play },
   { to: "/replay/library", label: "Saved Sessions", icon: Library },
   { to: "/replay/trades", label: "Trade Review", icon: Film },
   { to: "/replay/performance", label: "Performance", icon: BarChart3 },
