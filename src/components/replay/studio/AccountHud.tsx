@@ -26,11 +26,15 @@ function Stat({
   tone?: "up" | "down" | "warn";
 }) {
   return (
-    <div className="flex flex-col leading-tight">
-      <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{label}</span>
+    // min-w-0 + truncate: long currency values shrink instead of pushing
+    // the HUD past the viewport on narrow screens.
+    <div className="flex min-w-0 shrink-0 flex-col leading-tight">
+      <span className="text-[clamp(0.5rem,0.45rem+0.15vw,0.5625rem)] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+        {label}
+      </span>
       <span
         className={cn(
-          "font-mono text-[12px] tabular-nums",
+          "truncate font-mono text-[clamp(0.6875rem,0.65rem+0.2vw,0.8125rem)] tabular-nums",
           tone === "up" && "text-emerald-500",
           tone === "down" && "text-destructive",
           tone === "warn" && "text-amber-500",
