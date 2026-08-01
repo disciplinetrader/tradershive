@@ -87,6 +87,8 @@ import { PlaybookQuickAttach } from "@/components/playbook/PlaybookQuickAttach";
 import { ChallengePanel } from "@/components/prop-challenges/ChallengePanel";
 import { useActivePropChallenge } from "@/lib/prop-challenges/active-session";
 import { IndicatorSettingsDialog } from "@/components/chart/IndicatorSettingsDialog";
+// Shared with the Replay Studio so both surfaces offer the same indicators.
+import { INDICATOR_TOGGLES, type IndicatorDef } from "@/lib/chart/indicator-registry";
 import { ChartTemplateMenu } from "@/components/chart/ChartTemplateMenu";
 import { hasSettings } from "@/lib/chart/indicator-schema";
 import type { ChartTemplate } from "@/lib/chart/templates";
@@ -105,8 +107,6 @@ const CHART_TYPE_OPTIONS: { key: ChartType; label: string }[] = [
   { key: "baseline", label: "Baseline" },
 ];
 
-// Shared with the Replay Studio so both surfaces offer the same indicators.
-import { INDICATOR_TOGGLES, type IndicatorDef } from "@/lib/chart/indicator-registry";
 
 
 const SMC_SUB_OPTIONS: { key: "show_swings" | "show_bos" | "show_fvg" | "show_ob"; label: string; desc: string }[] = [
