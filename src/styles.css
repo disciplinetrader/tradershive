@@ -796,3 +796,181 @@ img, video { max-width: 100%; height: auto; }
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
 }
+
+/* =========================================================
+ * PREMIUM LAYER — depth, rhythm, motion (Art Direction pass)
+ *
+ * Hierarchy contract:
+ *   surface → elevation → accent. Colour is never the primary
+ *   depth cue; layered soft shadows + a 1px edge-light are.
+ *   Motion is restrained (150–420ms, ease-out-soft), never
+ *   decorative, and always disabled under reduced-motion.
+ * =======================================================*/
+
+/* --- 8pt rhythm ---------------------------------------------------
+   All premium spacing derives from an 8px base so vertical rhythm
+   stays consistent across every surface. */
+:root {
+  --grid-unit: 0.5rem;              /* 8px */
+  --gutter-sm: calc(var(--grid-unit) * 2);   /* 16 */
+  --gutter-md: calc(var(--grid-unit) * 3);   /* 24 */
+  --gutter-lg: calc(var(--grid-unit) * 5);   /* 40 */
+  --gutter-xl: calc(var(--grid-unit) * 8);   /* 64 */
+  --ease-premium: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@utility rhythm-sm { padding: var(--gutter-sm); }
+@utility rhythm-md { padding: var(--gutter-md); }
+@utility rhythm-lg { padding: var(--gutter-lg); }
+@utility section-y { padding-block: var(--gutter-lg); }
+
+/* --- Elevation scale ---------------------------------------------- */
+@utility elev-0 { box-shadow: none; }
+@utility elev-1 { box-shadow: var(--elev-1); }
+@utility elev-2 { box-shadow: var(--elev-2); }
+@utility elev-3 { box-shadow: var(--elev-3); }
+
+/* --- Premium card: the canonical container -------------------------
+   Quiet surface + hairline + edge-light + soft elevation. Hovering a
+   card raises it and warms the border toward the accent. */
+@utility premium-card {
+  position: relative;
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, var(--foreground) 2%, var(--card)) 0%,
+      var(--card) 46%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--elev-2), var(--edge-light);
+  transition:
+    transform 280ms var(--ease-premium),
+    box-shadow 280ms var(--ease-premium),
+    border-color 200ms ease;
+}
+@utility premium-card-interactive {
+  cursor: pointer;
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--elev-3), var(--edge-light);
+    border-color: color-mix(in oklab, var(--primary) 30%, var(--border));
+  }
+  &:active { transform: translateY(0) scale(0.995); }
+}
+
+/* --- Accent surfaces ---------------------------------------------- */
+@utility accent-wash {
+  background-image: linear-gradient(
+    135deg,
+    color-mix(in oklab, var(--primary) 12%, transparent) 0%,
+    color-mix(in oklab, var(--primary-glow) 6%, transparent) 45%,
+    transparent 80%
+  );
+}
+/* Hairline gradient rule used to separate major sections. */
+@utility rule-fade {
+  block-size: 1px;
+  border: 0;
+  background-image: linear-gradient(
+    to right,
+    transparent,
+    color-mix(in oklab, var(--foreground) 14%, transparent) 25%,
+    color-mix(in oklab, var(--foreground) 14%, transparent) 75%,
+    transparent
+  );
+}
+/* Slow specular sweep for hero/CTA surfaces. */
+@keyframes th-sheen {
+  0%   { transform: translateX(-120%) skewX(-16deg); }
+  100% { transform: translateX(220%) skewX(-16deg); }
+}
+@utility sheen {
+  position: relative;
+  overflow: hidden;
+  &::after {
+    content: "";
+    position: absolute;
+    inset-block: -40%;
+    inline-size: 38%;
+    background: linear-gradient(90deg, transparent, oklch(1 0 0 / 0.14), transparent);
+    opacity: 0;
+    pointer-events: none;
+  }
+  &:hover::after {
+    opacity: 1;
+    animation: th-sheen 900ms var(--ease-premium);
+  }
+}
+
+/* --- Editorial typography helpers --------------------------------- */
+@utility eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--primary) 70%, var(--muted-foreground));
+}
+@utility display-xl {
+  font-family: var(--font-display);
+  font-size: clamp(2.25rem, 1.6rem + 2.6vw, 3.75rem);
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  font-weight: 700;
+  text-wrap: balance;
+}
+@utility lede {
+  font-size: clamp(1rem, 0.95rem + 0.3vw, 1.15rem);
+  line-height: 1.65;
+  color: var(--muted-foreground);
+  max-inline-size: 62ch;
+  text-wrap: pretty;
+}
+
+/* --- Staggered entrance -------------------------------------------
+   Put `.stagger` on a container: direct children fade+rise in with
+   an escalating delay. Capped at 12 so long lists stay snappy. */
+@keyframes th-rise-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@utility animate-rise-in {
+  animation: th-rise-in 420ms var(--ease-premium) both;
+}
+@utility stagger {
+  & > * {
+    animation: th-rise-in 420ms var(--ease-premium) both;
+  }
+  & > *:nth-child(1)  { animation-delay: 0ms; }
+  & > *:nth-child(2)  { animation-delay: 45ms; }
+  & > *:nth-child(3)  { animation-delay: 90ms; }
+  & > *:nth-child(4)  { animation-delay: 135ms; }
+  & > *:nth-child(5)  { animation-delay: 180ms; }
+  & > *:nth-child(6)  { animation-delay: 225ms; }
+  & > *:nth-child(7)  { animation-delay: 270ms; }
+  & > *:nth-child(8)  { animation-delay: 315ms; }
+  & > *:nth-child(9)  { animation-delay: 360ms; }
+  & > *:nth-child(10) { animation-delay: 405ms; }
+  & > *:nth-child(n + 11) { animation-delay: 450ms; }
+}
+
+/* --- Bento grid ----------------------------------------------------
+   Content-driven auto-fit bento; children opt into span classes. */
+@utility bento {
+  display: grid;
+  min-width: 0;
+  gap: var(--gutter-sm);
+  grid-template-columns: repeat(auto-fit, minmax(min(var(--bento-min, 17rem), 100%), 1fr));
+}
+@utility bento-wide { grid-column: span 2; }
+@utility bento-tall { grid-row: span 2; }
+
+/* --- Reduced motion: honour it for every premium animation -------- */
+@media (prefers-reduced-motion: reduce) {
+  .stagger > *,
+  .animate-rise-in,
+  .sheen::after {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
