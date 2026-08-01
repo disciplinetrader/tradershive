@@ -1035,7 +1035,22 @@ function TradingWorkspaceInner() {
                   </motion.div>
                 )}
               </AnimatePresence>
+              </div>
+
+              {/* Companion panes — context charts, never order-bearing. */}
+              {layoutPanes.map((pane, i) => (
+                <CompanionChartPane
+                  key={pane.id}
+                  pane={pane}
+                  primarySymbol={symbol}
+                  active={activeSlot === i + 1}
+                  onFocus={() => setActiveSlot(i + 1)}
+                  onChange={(patch) => updatePane(pane.id, patch)}
+                  onPromote={() => promotePane(pane.id)}
+                />
+              ))}
             </div>
+
           </div>
 
           {/* Per-indicator inputs (TradingView-style settings) */}
