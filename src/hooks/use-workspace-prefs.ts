@@ -10,7 +10,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 /** Right dock tabs — only one visible at a time (terminal style). */
-export type WorkspaceTab = "watchlist" | "order" | "positions" | "alerts" | "news";
+export type WorkspaceTab = "watchlist" | "order" | "positions" | "pending" | "account" | "alerts" | "news";
 /** Bottom dock tabs. */
 export type BottomTab = "orders" | "positions" | "history" | "journal" | "notes";
 export type BlotterFilter = "open" | "pending" | "closed" | "all" | "winning" | "losing" | "today" | "week";
@@ -37,7 +37,7 @@ export type WorkspacePrefs = {
 };
 
 const STORAGE_KEY = "thive.workspace.prefs.v2";
-const VALID_TABS: WorkspaceTab[] = ["watchlist", "order", "positions", "alerts", "news"];
+const VALID_TABS: WorkspaceTab[] = ["watchlist", "order", "positions", "pending", "account", "alerts", "news"];
 const VALID_BOTTOM: BottomTab[] = ["orders", "positions", "history", "journal", "notes"];
 const VALID_FILTERS: BlotterFilter[] = ["open", "pending", "closed", "all", "winning", "losing", "today", "week"];
 
