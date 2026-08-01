@@ -42,7 +42,7 @@ function Section({ title, right, children }: { title: string; right?: React.Reac
 const hhmm = (iso: string) => new Date(iso).toISOString().slice(11, 16);
 
 export function ReflectionPanel() {
-  const { sessionId, view, trades, startingBalance } = useReplayStudio();
+  const { sessionId, view, trades, startingBalance, seekForwardTo } = useReplayStudio();
   const r = useReplayReflection(sessionId);
   const qc = useQueryClient();
   const scoreFn = useServerFn(scoreReplaySession);
@@ -66,12 +66,11 @@ export function ReflectionPanel() {
     onSuccess: () => qc.invalidateQueries({ queryKey: reflectionKey(sessionId) }),
   });
 
+  /** Forward-only: replay must never rewind into already-revealed-but-unseen bars. */
   const jump = (iso: string) => {
     const t = new Date(iso).getTime();
-    if (Number.isFinite(t)) view && t > view.transport.marketTime && jumpForward(t);
+    if (Number.isFinite(t) && view && t > view.transport.marketTime) seekForwardTo(t);
   };
-  const { seekForwardTo } = useReplayStudio();
-  const jumpForward = (t: number) => seekForwardTo(t);
 
   const score = r.data.score;
 
