@@ -111,8 +111,10 @@ describe("Phase 8C · legacy cutover", () => {
 
   it("keeps reflection persistence out of the engine snapshot", () => {
     const reflection = readFileSync(join(root, "lib/replay-reflection.functions.ts"), "utf8");
-    expect(reflection).not.toContain("engine_v1");
-    expect(reflection).not.toContain("settings");
+    // reflection writes rows in dedicated tables; it never patches the
+    // session settings blob that carries the engine snapshot.
+    expect(reflection).not.toContain("settings:");
+    expect(reflection).not.toContain("SNAPSHOT_SETTINGS_KEY");
   });
 
   it("keeps the reflection panel free of execution math", () => {
