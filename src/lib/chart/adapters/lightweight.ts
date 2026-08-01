@@ -151,7 +151,11 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
     return { textColor, gridColor, borderColor, bgColor };
   };
   let themeColors = readThemeColors();
+  // Axis + crosshair times render in the user's timezone (auto-detected unless
+  // the workspace pins one), so session bands line up with local wall clock.
+  let displayTz = resolveTimezone(settings.timezone);
   const initialSize = containerSize(container);
+
   const chart = createChart(container, {
     width: initialSize.width,
     height: initialSize.height,
