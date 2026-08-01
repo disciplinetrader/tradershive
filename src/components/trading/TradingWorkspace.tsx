@@ -744,7 +744,7 @@ function TradingWorkspaceInner() {
           )}
 
 
-          <div className="relative flex min-h-[60svh] min-w-0 flex-1 flex-col border-r border-border/40 md:min-h-[calc(100dvh-4.5rem)]">
+          <div className="relative flex min-h-[320px] min-w-0 flex-1 flex-col border-r border-border/40">
             {/* Compact active-indicator strip — only shown when indicators
                 are active so the chart owns as much vertical space as possible.
                 The freshness chip lives inside ChartEngine (top-left) and is
