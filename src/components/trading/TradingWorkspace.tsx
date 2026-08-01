@@ -49,6 +49,7 @@ import type { Quote, Timeframe } from "@/lib/market-data/types";
 import { TradePlanner } from "@/components/trading/chart/TradePlanner";
 import { ChartContextMenu } from "@/components/trading/chart/ChartContextMenu";
 import { PositionLinesLive, type OpenTradeLine } from "@/components/trading/chart/PositionLinesLive";
+import { PendingOrderLines, type PendingOrderLine } from "@/components/trading/chart/PendingOrderLines";
 import { TodayPnLWidget } from "@/components/trading/TodayPnLWidget";
 import { MultiChartStrip, type MultiChartPane } from "@/components/trading/MultiChartStrip";
 import { useTradingShortcuts } from "@/hooks/useTradingShortcuts";
