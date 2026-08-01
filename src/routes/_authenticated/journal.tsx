@@ -1,6 +1,8 @@
 import { Outlet, createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/ui/page-header";
 import { JournalSubNav } from "@/components/journal/JournalSubNav";
+import { JournalSourcePicker } from "@/components/journal/JournalSourcePicker";
+import { JournalSourceProvider } from "@/lib/journal/source-filter";
 import { ManualEntryDialog } from "@/components/journal/ManualEntryDialog";
 import { TradeEditorHost } from "@/components/journal/editor/TradeEditorHost";
 import { routeBoundaries } from "@/lib/route-boundaries";
