@@ -664,26 +664,8 @@ function TradingWorkspaceInner() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Right-aligned quick actions — persistent Buy / Sell always reachable */}
+          {/* Right-aligned quick actions (Buy/Sell live on the chart header) */}
           <div className="ml-auto flex items-center gap-1">
-            <div className="flex items-center gap-1">
-              <Button
-                size="sm"
-                className="h-7 shrink-0 gap-1 bg-success px-2.5 text-[11px] font-bold text-white tabular-nums hover:bg-success/90"
-                onClick={() => { emitTradeIntent({ kind: "focus_side", side: "long" }); setRightOpen(true); setActiveTab("order"); }}
-                aria-label={`Buy ${symbol} at ${ask.toFixed(decimals)}`}
-              >
-                BUY <span className="hidden sm:inline">{ask.toFixed(decimals)}</span>
-              </Button>
-              <Button
-                size="sm"
-                className="h-7 shrink-0 gap-1 bg-danger px-2.5 text-[11px] font-bold text-white tabular-nums hover:bg-danger/90"
-                onClick={() => { emitTradeIntent({ kind: "focus_side", side: "short" }); setRightOpen(true); setActiveTab("order"); }}
-                aria-label={`Sell ${symbol} at ${bid.toFixed(decimals)}`}
-              >
-                SELL <span className="hidden sm:inline">{bid.toFixed(decimals)}</span>
-              </Button>
-            </div>
             <div className="mx-1 hidden h-5 w-px bg-border/60 md:block" />
             <Tooltip>
               <TooltipTrigger asChild>
