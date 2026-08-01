@@ -193,7 +193,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               onToggle={() => {}}
               showAdmin={isAdmin}
               currentPath={pathname}
-              hideToggle
+              
             />
           </motion.aside>
         </div>
