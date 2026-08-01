@@ -380,6 +380,18 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
     [stores, price],
   );
 
+  const closePositionNow = useCallback(
+    (orderId: string) => {
+      if (!stores || price == null) return;
+      closePosition(stores, orderId, { price, reason: "manual" });
+    },
+    [stores, price],
+  );
+
+  const cancelOrder = useCallback((orderId: string) => { if (stores) cancelPendingOrder(stores, orderId); }, [stores]);
+
+
+
 
 
   const phase: StudioPhase = !session || candleQuery.isLoading || (!boot && !candleQuery.data?.unavailable)
