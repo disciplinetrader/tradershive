@@ -51,6 +51,14 @@ export function StudioChart({ onAdapterReady }: { onAdapterReady?: (a: ChartAdap
   } = useReplayStudio();
   const [armed, setArmed] = useState<ArmedOrder | null>(null);
   const tradingLive = view?.transport.lifecycle !== "completed";
+
+  // Esc always disarms order placement, so the chart never gets stuck armed.
+  useEffect(() => {
+    if (!armed) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setArmed(null); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [armed]);
   const hostRef = useRef<HTMLDivElement | null>(null);
   const chartWrapRef = useRef<HTMLDivElement | null>(null);
   const adapterRef = useRef<ChartAdapter | null>(null);
