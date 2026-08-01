@@ -54,7 +54,7 @@ export function useScoreSession(sessionId: string) {
   const qc = useQueryClient();
   const run = useServerFn(scoreReplaySessionCanonical);
   return useMutation({
-    mutationFn: (complete = true) => run({ data: { session_id: sessionId, complete } }),
+    mutationFn: (complete?: boolean) => run({ data: { session_id: sessionId, complete: complete ?? true } }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: reviewKeys.review(sessionId) });
       void qc.invalidateQueries({ queryKey: reviewKeys.improvement() });
