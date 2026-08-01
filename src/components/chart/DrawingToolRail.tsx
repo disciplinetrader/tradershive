@@ -187,21 +187,40 @@ export function DrawingToolRail({
               <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{group.label}</p>
               {group.tools.map((t) => {
                 const TIcon = t.icon;
+                const pinned = favourites.includes(t.id);
                 return (
-                  <button
+                  <div
                     key={t.id}
-                    onClick={() => pick(group.id, t.id)}
                     className={cn(
-                      "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs transition",
+                      "flex w-full items-center gap-1 rounded-md pr-1 transition",
                       activeTool === t.id ? "bg-primary/15 text-primary" : "hover:bg-muted",
                     )}
                   >
-                    <TIcon className="h-3.5 w-3.5" />
-                    <span className="flex-1">{t.label}</span>
-                    {t.shortcut && <kbd className="rounded border border-border/60 bg-muted px-1 font-mono text-[9px]">{t.shortcut}</kbd>}
-                  </button>
+                    <button
+                      onClick={() => pick(group.id, t.id)}
+                      className="flex flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs"
+                    >
+                      <TIcon className="h-3.5 w-3.5" />
+                      <span className="flex-1">{t.label}</span>
+                      {t.shortcut && <kbd className="rounded border border-border/60 bg-muted px-1 font-mono text-[9px]">{t.shortcut}</kbd>}
+                    </button>
+                    {onToggleFavourite && t.id !== "cursor" && t.id !== "crosshair" ? (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onToggleFavourite(t.id); }}
+                        aria-pressed={pinned}
+                        aria-label={pinned ? `Unpin ${t.label}` : `Pin ${t.label} to quick access`}
+                        className={cn(
+                          "grid h-6 w-6 shrink-0 place-items-center rounded",
+                          pinned ? "text-primary" : "text-muted-foreground/50 hover:text-foreground",
+                        )}
+                      >
+                        <Star className={cn("h-3 w-3", pinned && "fill-current")} />
+                      </button>
+                    ) : null}
+                  </div>
                 );
               })}
+
             </PopoverContent>
           </Popover>
         );
