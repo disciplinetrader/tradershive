@@ -88,6 +88,7 @@ export function OrderLabel({
   const color = TONE_COLOR[tone];
   return (
     <div
+      data-dense
       className="pointer-events-auto absolute flex items-center justify-end"
       style={{
         top: y - 10,
