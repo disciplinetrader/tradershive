@@ -33,16 +33,21 @@ export const Route = createFileRoute("/_authenticated/journal")({
 
 function JournalLayout() {
   return (
-    <div className="space-y-5">
-      <PageHeader
-        title="Journal"
-        description="Trade → Story → Insight → Improvement."
-        actions={<ManualEntryDialog />}
-      />
-      <JournalSubNav />
-      <Outlet />
-      {/* One editing system for every trade source. */}
-      <TradeEditorHost />
-    </div>
+    <JournalSourceProvider>
+      <div className="space-y-5">
+        <PageHeader
+          title="Journal"
+          description="Trade → Story → Insight → Improvement."
+          actions={<ManualEntryDialog />}
+        />
+        <div className="flex flex-wrap items-center gap-3">
+          <JournalSourcePicker />
+          <JournalSubNav />
+        </div>
+        <Outlet />
+        {/* One editing system for every trade source. */}
+        <TradeEditorHost />
+      </div>
+    </JournalSourceProvider>
   );
 }
