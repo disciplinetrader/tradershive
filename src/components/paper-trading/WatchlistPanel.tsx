@@ -144,6 +144,13 @@ export function WatchlistPanel() {
         </Popover>
       </div>
 
+      {targetLabel && (
+        <p className="rounded-md bg-primary/10 px-2 py-1 text-[10px] font-medium text-primary">
+          Opens in {targetLabel} — click a chart pane to change target
+        </p>
+      )}
+
+
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
