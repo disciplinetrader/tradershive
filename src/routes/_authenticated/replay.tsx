@@ -42,13 +42,9 @@ export const Route = createFileRoute("/_authenticated/replay")({
 
 function ReplayLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const immersive = pathname === "/replay/studio";
-  if (immersive) {
-    // Trading Workspace 2.0: no chrome, no max-width — chart is the hero.
-    return <Outlet />;
-  }
+  const studio = pathname === "/replay/studio";
   return (
-    <div className="mx-auto w-full max-w-[1600px] space-y-4">
+    <div className={studio ? "w-full space-y-3" : "mx-auto w-full max-w-[1600px] space-y-4"}>
       <SegmentedTabs tabs={TABS} pathname={pathname} />
       <Outlet />
     </div>
