@@ -36,7 +36,8 @@ import { useNavigate } from "@tanstack/react-router";
 import { usePositionOrders } from "@/components/chart/usePositionOrders";
 
 import { DrawingContextMenu } from "@/components/chart/DrawingContextMenu";
-import { DrawingStore } from "@/lib/chart/drawings/store";
+import { DrawingStore, readFavourites, writeFavourites } from "@/lib/chart/drawings/store";
+import { FavoriteToolsBar } from "@/components/chart/FavoriteToolsBar";
 import type { ToolId } from "@/lib/chart/drawings/types";
 import { DEFAULT_CHART_SETTINGS } from "@/lib/chart/constants";
 import type { ChartSettings, ChartType, IndicatorConfig, IndicatorKey } from "@/lib/chart/types";
