@@ -174,16 +174,32 @@ export function useChartDrawings({
     adapter.setPriceFormatter?.((p) => p.toFixed(pricePrecision));
     adapter.setDrawingsSource({
       draw(ctx, coords) {
-        const selectedId = store.selectedIdValue();
         const hoveredId = store.hoveredIdValue();
         for (const d of store.list()) {
+          const selected = store.isSelected(d.id);
           drawDrawing(ctx, coords, d, {
-            selected: d.id === selectedId,
-            hovered: d.id === hoveredId && d.id !== selectedId,
+            selected,
+            hovered: d.id === hoveredId && !selected,
           });
         }
         if (store.draft) drawDrawing(ctx, coords, store.draft, { ghost: true });
+        const m = marqueeRef.current;
+        if (m) {
+          const x = Math.min(m.x1, m.x2);
+          const y = Math.min(m.y1, m.y2);
+          const w = Math.abs(m.x2 - m.x1);
+          const h = Math.abs(m.y2 - m.y1);
+          ctx.save();
+          ctx.setLineDash([4, 3]);
+          ctx.lineWidth = 1;
+          ctx.strokeStyle = "rgba(56, 189, 248, 0.9)";
+          ctx.fillStyle = "rgba(56, 189, 248, 0.12)";
+          ctx.fillRect(x, y, w, h);
+          ctx.strokeRect(x, y, w, h);
+          ctx.restore();
+        }
       },
+
     });
     const unsub = store.subscribe(() => adapter.requestDrawingsRepaint?.());
     adapter.requestDrawingsRepaint?.();
