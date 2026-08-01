@@ -58,12 +58,12 @@ export const INDICATOR_PARAM_SCHEMA: Partial<Record<IndicatorKey, IndicatorParam
   ],
   atr: [{ key: "length", label: "Length", min: 2, max: 100 }],
   sessions: [
-    { key: "asia_start", label: "Asia open (UTC h)", min: 0, max: 23, step: 0.5, hint: "Market hours are UTC; the chart axis shows your local time" },
-    { key: "asia_end", label: "Asia close (UTC h)", min: 0, max: 24, step: 0.5 },
-    { key: "london_start", label: "London open (UTC h)", min: 0, max: 23, step: 0.5 },
-    { key: "london_end", label: "London close (UTC h)", min: 0, max: 24, step: 0.5 },
-    { key: "ny_start", label: "New York open (UTC h)", min: 0, max: 23, step: 0.5 },
-    { key: "ny_end", label: "New York close (UTC h)", min: 0, max: 24, step: 0.5 },
+    { key: "asia_start", label: "Asia open (UTC)", min: 0, max: 24, step: 1 / 60, type: "time", hint: "Market hours are UTC; the chart axis shows your local time" },
+    { key: "asia_end", label: "Asia close (UTC)", min: 0, max: 24, step: 1 / 60, type: "time" },
+    { key: "london_start", label: "London open (UTC)", min: 0, max: 24, step: 1 / 60, type: "time" },
+    { key: "london_end", label: "London close (UTC)", min: 0, max: 24, step: 1 / 60, type: "time" },
+    { key: "ny_start", label: "New York open (UTC)", min: 0, max: 24, step: 1 / 60, type: "time" },
+    { key: "ny_end", label: "New York close (UTC)", min: 0, max: 24, step: 1 / 60, type: "time" },
   ],
   fib: [{ key: "length", label: "Lookback bars", min: 20, max: 500 }],
   sr: [
