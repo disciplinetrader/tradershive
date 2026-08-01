@@ -498,7 +498,7 @@ function TradingWorkspaceInner() {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="flex min-h-0 flex-col">
+      <div className="flex h-[100dvh] min-h-0 flex-col overflow-hidden">
         {/* ── Compact unified toolbar (single row) ────────────────────────── */}
         <div className="no-scrollbar flex flex-nowrap items-center gap-2 overflow-x-auto border-b border-border/50 bg-card/40 px-2 py-1.5 backdrop-blur sm:px-3 md:flex-wrap md:overflow-x-visible">
           <button
