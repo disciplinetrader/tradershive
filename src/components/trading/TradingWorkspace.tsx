@@ -881,6 +881,14 @@ function TradingWorkspaceInner() {
 
             {/* Chart canvas + overlays (fills remaining space) */}
             <div className="relative min-h-0 flex-1">
+              {/* Pinned tools float over the chart so drawing survives focus mode. */}
+              <FavoriteToolsBar
+                favourites={favouriteTools}
+                activeTool={activeTool}
+                onToolChange={setActiveTool}
+                onUnpin={toggleFavouriteTool}
+                className="absolute left-2 top-2 z-30"
+              />
               <ChartEngine
                 settings={chartSettings} indicators={indicators}
                 onQuote={setQuote} onReady={handleReady}
