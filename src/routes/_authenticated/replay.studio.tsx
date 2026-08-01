@@ -70,7 +70,7 @@ function Studio() {
   if (phase !== "ready") return <StudioBlockedView />;
 
   return (
-    <div className="flex h-[calc(100dvh-14rem)] min-h-[520px] min-w-0 flex-col overflow-hidden rounded-lg border border-border/60">
+    <div className="flex h-[100dvh] min-w-0 flex-col overflow-hidden bg-background">
       <SessionHeader />
       <SnapshotDiscardedNotice />
       <SessionCompleteNotice />
