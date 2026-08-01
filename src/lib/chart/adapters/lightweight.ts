@@ -45,6 +45,75 @@ function containerSize(container: HTMLElement) {
   };
 }
 
+/** The browser's IANA timezone, falling back to UTC on locked-down runtimes. */
+export function browserTimezone(): string {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch { return "UTC"; }
+}
+
+function resolveTimezone(tz: string | undefined): string {
+  if (!tz || tz === "auto" || tz === "local") return browserTimezone();
+  try { new Intl.DateTimeFormat("en-US", { timeZone: tz }); return tz; } catch { return "UTC"; }
+}
+
+/** Offset (in ms) that must be ADDED to a UTC instant to get wall-clock time in `tz`. */
+function tzOffsetMs(epochMs: number, tz: string): number {
+  try {
+    const dtf = new Intl.DateTimeFormat("en-US", {
+      timeZone: tz, hour12: false,
+      year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", second: "2-digit",
+    });
+    const p: Record<string, string> = {};
+    for (const part of dtf.formatToParts(new Date(epochMs))) if (part.type !== "literal") p[part.type] = part.value;
+    const asUTC = Date.UTC(
+      Number(p.year), Number(p.month) - 1, Number(p.day),
+      p.hour === "24" ? 0 : Number(p.hour), Number(p.minute), Number(p.second),
+    );
+    return asUTC - epochMs;
+  } catch { return 0; }
+}
+
+/** LWC hands back seconds; normalise to epoch ms. */
+function toEpochMs(time: any): number {
+  const n = typeof time === "number" ? time : Number(time);
+  if (!Number.isFinite(n)) return Date.now();
+  return n < 1e12 ? n * 1000 : n;
+}
+
+const pad2 = (n: number) => String(n).padStart(2, "0");
+
+function zonedFields(epochMs: number, tz: string) {
+  const shifted = new Date(epochMs + tzOffsetMs(epochMs, tz));
+  return {
+    year: shifted.getUTCFullYear(),
+    month: shifted.getUTCMonth() + 1,
+    day: shifted.getUTCDate(),
+    hour: shifted.getUTCHours(),
+    minute: shifted.getUTCMinutes(),
+  };
+}
+
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+function makeTickFormatter(tz: string) {
+  return (time: any, tickMarkType: number) => {
+    const f = zonedFields(toEpochMs(time), tz);
+    // 0=Year 1=Month 2=DayOfMonth 3=Time 4=TimeWithSeconds
+    if (tickMarkType === 0) return String(f.year);
+    if (tickMarkType === 1) return MONTHS[f.month - 1];
+    if (tickMarkType === 2) return `${f.day} ${MONTHS[f.month - 1]}`;
+    return `${pad2(f.hour)}:${pad2(f.minute)}`;
+  };
+}
+
+function makeTimeFormatter(tz: string) {
+  return (time: any) => {
+    const f = zonedFields(toEpochMs(time), tz);
+    return `${f.day} ${MONTHS[f.month - 1]} ${f.year}  ${pad2(f.hour)}:${pad2(f.minute)}`;
+  };
+}
+
+
 export const createLightweightAdapter: ChartAdapterFactory = ({ container, settings, onCrosshair }) => {
   // lightweight-charts' color parser doesn't accept oklch()/color-mix(). Resolve any
   // CSS color to a concrete rgb()/rgba() via a canvas — getComputedStyle keeps
