@@ -81,6 +81,10 @@ import { Blotter } from "@/components/trading/Blotter";
 import { PlaybookQuickAttach } from "@/components/playbook/PlaybookQuickAttach";
 import { ChallengePanel } from "@/components/prop-challenges/ChallengePanel";
 import { useActivePropChallenge } from "@/lib/prop-challenges/active-session";
+import { IndicatorSettingsDialog } from "@/components/chart/IndicatorSettingsDialog";
+import { ChartTemplateMenu } from "@/components/chart/ChartTemplateMenu";
+import { hasSettings } from "@/lib/chart/indicator-schema";
+import type { ChartTemplate } from "@/lib/chart/templates";
 
 const CHART_TIMEFRAMES: Timeframe[] = ["1m", "5m", "15m", "30m", "1H", "4H", "1D", "1W"];
 /** One-click timeframes pinned in the toolbar, TradingView-style. */
@@ -163,7 +167,7 @@ function TradingWorkspaceInner() {
   const { symbol, symbolMeta, market, timeframe, setTimeframe, accountId, setAccountId, account } = usePaper();
   useSlTpMonitor(account);
   useRiskMonitor(account);
-  const { prefs, update, hydrated } = useWorkspacePrefs();
+  const { prefs, update, patch, hydrated } = useWorkspacePrefs();
   const { active: activeChallenge } = useActivePropChallenge();
 
   // Auto-bind the workspace to the challenge's paper account so every closed
@@ -174,11 +178,12 @@ function TradingWorkspaceInner() {
     setAccountId(activeChallenge.paper_account_id);
   }, [activeChallenge?.paper_account_id, accountId, setAccountId]);
   const [enabled, setEnabled] = useState<Record<string, boolean>>(prefs.indicators);
+  const [indicatorParams, setIndicatorParams] = useState<Record<string, Record<string, number>>>(prefs.indicatorParams);
+  const [settingsFor, setSettingsFor] = useState<IndicatorKey | null>(null);
+  const [templateId, setTemplateId] = useState<string | null>(prefs.chartTemplateId);
   const [chartType, setChartType] = useState<ChartType>(prefs.chartType as ChartType);
   const [smcOn, setSmcOn] = useState(prefs.smcOn);
-  const [smcParts, setSmcParts] = useState<Record<string, boolean>>({
-    show_swings: true, show_bos: true, show_fvg: true, show_ob: true,
-  });
+  const [smcParts, setSmcParts] = useState<Record<string, boolean>>(prefs.smcParts);
   const [quote, setQuote] = useState<Quote | null>(null);
   const [adapter, setAdapter] = useState<import("@/lib/chart/adapter").ChartAdapter | null>(null);
   const chartApi = useRef<ChartHandle | null>(null);
@@ -206,8 +211,11 @@ function TradingWorkspaceInner() {
   useEffect(() => {
     if (!hydrated) return;
     setEnabled(prefs.indicators);
+    setIndicatorParams(prefs.indicatorParams);
     setChartType(prefs.chartType as ChartType);
     setSmcOn(prefs.smcOn);
+    setSmcParts(prefs.smcParts);
+    setTemplateId(prefs.chartTemplateId);
     if (prefs.timeframe && prefs.timeframe !== timeframe) setTimeframe(prefs.timeframe);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated]);
@@ -216,6 +224,7 @@ function TradingWorkspaceInner() {
   useEffect(() => { if (hydrated) update("indicators", enabled); }, [enabled, hydrated, update]);
   useEffect(() => { if (hydrated) update("chartType", chartType); }, [chartType, hydrated, update]);
   useEffect(() => { if (hydrated) update("smcOn", smcOn); }, [smcOn, hydrated, update]);
+  useEffect(() => { if (hydrated) patch({ indicatorParams, smcParts, chartTemplateId: templateId }); }, [indicatorParams, smcParts, templateId, hydrated, patch]);
   useEffect(() => { if (hydrated && timeframe) update("timeframe", timeframe); }, [timeframe, hydrated, update]);
 
   const handleReady = useCallback((api: ChartHandle) => {
@@ -247,7 +256,7 @@ function TradingWorkspaceInner() {
 
   const indicators: IndicatorConfig[] = useMemo(() => {
     const base: IndicatorConfig[] = INDICATOR_TOGGLES.filter((i) => enabled[i.key]).map((i) => ({
-      id: i.key, key: i.key, params: i.params, pane: i.pane, visible: true,
+      id: i.key, key: i.key, params: { ...i.params, ...(indicatorParams[i.key] ?? {}) }, pane: i.pane, visible: true,
     }));
     // Volume is always declared, with visible reflecting the toggle. Emitting
     // an explicit `visible: false` (instead of dropping the entry) is what
@@ -270,7 +279,7 @@ function TradingWorkspaceInner() {
       });
     }
     return base;
-  }, [enabled, smcOn, smcParts]);
+  }, [enabled, smcOn, smcParts, indicatorParams]);
 
   const activeIndicatorCount = Object.values(enabled).filter(Boolean).length + (smcOn ? 1 : 0);
   const activeChartTypeLabel = CHART_TYPE_OPTIONS.find((c) => c.key === chartType)?.label ?? "Candles";
