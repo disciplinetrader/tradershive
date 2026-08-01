@@ -302,12 +302,21 @@ function TradingWorkspaceInner() {
   const fetchOrdersFn = useServerFn(listOrders);
   const { data: pendingOrdersAll } = useQuery({
     queryKey: ["paper", "orders", accountId],
-    queryFn: () => fetchOrdersFn({ data: { account_id: accountId! } }) as unknown as Promise<{ id: string }[]>,
+    queryFn: () => fetchOrdersFn({ data: { account_id: accountId! } }) as unknown as Promise<PendingOrderLine[]>,
     enabled: !!accountId,
     staleTime: 4_000,
     refetchIntervalInBackground: false,
   });
   const pendingCount = pendingOrdersAll?.length ?? 0;
+
+  // Pending orders on the active symbol are drawn on the chart as draggable
+  // trigger lines (TradingView-style on-chart order editing).
+  const pendingHere: PendingOrderLine[] = useMemo(
+    () => (pendingOrdersAll ?? []).filter(
+      (o) => o.symbol === symbol && (o.status == null || o.status === "pending"),
+    ),
+    [pendingOrdersAll, symbol],
+  );
 
   const meta = symbolMeta ?? findSymbol(symbol);
   const decimals = meta?.decimals ?? 2;
