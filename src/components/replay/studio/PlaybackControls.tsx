@@ -6,7 +6,7 @@
  * design: the clock replays every observation on the way to the target so
  * pending orders, stops and targets in the skipped region still resolve.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   CalendarClock, ChevronRight, FastForward, Gauge, Pause, Play, SkipForward,
 } from "lucide-react";
@@ -17,6 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { MAX_SPEED, MIN_SPEED } from "@/lib/replay/session/clock";
 import { useReplayStudio } from "./context";
+import { StudioHotkeys } from "./StudioHotkeys";
 
 const SPEEDS = [0.25, 0.5, 1, 2, 4, 10, 25, 50, 100];
 
@@ -35,17 +36,9 @@ export function PlaybackControls() {
   const t = view?.transport;
   const d = view?.dataset;
 
-  // Keyboard: space = play/pause, → = one bar, shift+→ = 10 bars.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const el = e.target as HTMLElement | null;
-      if (el && (/input|textarea|select/i.test(el.tagName) || el.isContentEditable)) return;
-      if (e.code === "Space") { e.preventDefault(); toggle(); }
-      else if (e.key === "ArrowRight") { e.preventDefault(); e.shiftKey ? skipCandles(10) : stepCandle(); }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [toggle, stepCandle, skipCandles]);
+  // Keyboard bindings live in <StudioHotkeys /> so playback, trading and the
+  // help overlay all share one layer.
+
 
   const span = useMemo(() => {
     if (!d) return 0;
@@ -199,6 +192,8 @@ export function PlaybackControls() {
       <span className="shrink-0 whitespace-nowrap font-mono text-[11px] text-muted-foreground">
         {new Date(t.marketTime).toISOString().replace("T", " ").slice(0, 16)} UTC
       </span>
+
+      <StudioHotkeys />
     </div>
   );
 }
