@@ -279,11 +279,75 @@ export function StudioChart({ onAdapterReady }: { onAdapterReady?: (a: ChartAdap
         </Tooltip>
 
         {displayTf !== baseTf ? (
-          <span className="ml-auto shrink-0 pl-2 text-[10px] text-muted-foreground">
-            folded from {baseTf}
-          </span>
+          <span className="shrink-0 pl-2 text-[10px] text-muted-foreground">folded from {baseTf}</span>
         ) : null}
+
+        {/* Phase C · chart-native trading controls */}
+        <div className="ml-auto flex shrink-0 items-center gap-1 pl-2">
+          <label className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+            Risk
+            <input
+              type="number"
+              min={0.1}
+              max={10}
+              step={0.1}
+              value={riskPercent}
+              onChange={(e) => setRiskPercent(Number(e.target.value) || 0.1)}
+              className="h-6 w-12 rounded border border-border/60 bg-background px-1 text-right font-mono text-[11px] text-foreground"
+              aria-label="Risk per trade in percent of equity"
+            />
+            %
+          </label>
+          <Button
+            size="sm"
+            variant={armed?.direction === "buy" ? "default" : "ghost"}
+            className="h-6 shrink-0 px-2 text-[11px]"
+            disabled={!tradingLive}
+            onClick={() =>
+              setArmed((a) => (a?.direction === "buy" ? null : { direction: "buy", stopFraction: 0.002, rr: 2 }))
+            }
+          >
+            Buy limit
+          </Button>
+          <Button
+            size="sm"
+            variant={armed?.direction === "sell" ? "default" : "ghost"}
+            className="h-6 shrink-0 px-2 text-[11px]"
+            disabled={!tradingLive}
+            onClick={() =>
+              setArmed((a) => (a?.direction === "sell" ? null : { direction: "sell", stopFraction: 0.002, rr: 2 }))
+            }
+          >
+            Sell limit
+          </Button>
+          <div className="mx-1 h-4 w-px shrink-0 bg-border/60" />
+          <Button
+            size="sm"
+            className="h-6 shrink-0 bg-emerald-600 px-2 text-[11px] text-white hover:bg-emerald-600/90"
+            disabled={!tradingLive || livePrice == null}
+            onClick={() => {
+              if (livePrice == null) return;
+              const dist = Math.max(Math.abs(livePrice) * 0.002, 1e-8);
+              placeMarketOrder("buy", { stopDistance: dist, targetDistance: dist * 2, size: sizeForRisk(livePrice, livePrice - dist) });
+            }}
+          >
+            Buy
+          </Button>
+          <Button
+            size="sm"
+            className="h-6 shrink-0 bg-rose-600 px-2 text-[11px] text-white hover:bg-rose-600/90"
+            disabled={!tradingLive || livePrice == null}
+            onClick={() => {
+              if (livePrice == null) return;
+              const dist = Math.max(Math.abs(livePrice) * 0.002, 1e-8);
+              placeMarketOrder("sell", { stopDistance: dist, targetDistance: dist * 2, size: sizeForRisk(livePrice, livePrice + dist) });
+            }}
+          >
+            Sell
+          </Button>
+        </div>
       </div>
+
 
       <div className="flex min-h-0 flex-1">
         {/* Drawing rail — identical toolset to the live terminal. */}
