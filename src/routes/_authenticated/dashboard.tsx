@@ -120,7 +120,7 @@ function DashboardPage() {
       {/* 5 — Quick actions: exactly three */}
       <section className="space-y-3">
         <SectionTitle>Quick actions</SectionTitle>
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="stagger grid gap-[var(--gutter-sm)] sm:grid-cols-3">
           <QuickActionCard to="/trading" icon={LineChart} label="Start Trading" hint="Open the workspace" />
           <QuickActionCard to="/replay" icon={PlayCircle} label="Start Replay" hint="Practise a setup" />
           <QuickActionCard to="/journal" icon={BookOpen} label="Add Journal Entry" hint="Review your last trade" />
