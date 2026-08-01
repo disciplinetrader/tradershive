@@ -103,7 +103,7 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
       invertScale: settings.priceScale === "inverted",
     },
     localization: { locale: safeLocale() },
-    timeScale: { borderColor: themeColors.borderColor, timeVisible: true, secondsVisible: false },
+    timeScale: { borderColor: themeColors.borderColor, visible: true, borderVisible: true, timeVisible: true, secondsVisible: false },
     crosshair: { mode: crosshairMode(settings) },
   });
 

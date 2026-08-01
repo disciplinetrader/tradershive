@@ -498,7 +498,7 @@ function TradingWorkspaceInner() {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="flex min-h-0 flex-col">
+      <div className="flex h-[100dvh] min-h-0 flex-col overflow-hidden">
         {/* ── Compact unified toolbar (single row) ────────────────────────── */}
         <div className="no-scrollbar flex flex-nowrap items-center gap-2 overflow-x-auto border-b border-border/50 bg-card/40 px-2 py-1.5 backdrop-blur sm:px-3 md:flex-wrap md:overflow-x-visible">
           <button
@@ -664,26 +664,8 @@ function TradingWorkspaceInner() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Right-aligned quick actions — persistent Buy / Sell always reachable */}
+          {/* Right-aligned quick actions (Buy/Sell live on the chart header) */}
           <div className="ml-auto flex items-center gap-1">
-            <div className="flex items-center gap-1">
-              <Button
-                size="sm"
-                className="h-7 shrink-0 gap-1 bg-success px-2.5 text-[11px] font-bold text-white tabular-nums hover:bg-success/90"
-                onClick={() => { emitTradeIntent({ kind: "focus_side", side: "long" }); setRightOpen(true); setActiveTab("order"); }}
-                aria-label={`Buy ${symbol} at ${ask.toFixed(decimals)}`}
-              >
-                BUY <span className="hidden sm:inline">{ask.toFixed(decimals)}</span>
-              </Button>
-              <Button
-                size="sm"
-                className="h-7 shrink-0 gap-1 bg-danger px-2.5 text-[11px] font-bold text-white tabular-nums hover:bg-danger/90"
-                onClick={() => { emitTradeIntent({ kind: "focus_side", side: "short" }); setRightOpen(true); setActiveTab("order"); }}
-                aria-label={`Sell ${symbol} at ${bid.toFixed(decimals)}`}
-              >
-                SELL <span className="hidden sm:inline">{bid.toFixed(decimals)}</span>
-              </Button>
-            </div>
             <div className="mx-1 hidden h-5 w-px bg-border/60 md:block" />
             <Tooltip>
               <TooltipTrigger asChild>
@@ -762,7 +744,7 @@ function TradingWorkspaceInner() {
           )}
 
 
-          <div className="relative flex min-h-[60svh] min-w-0 flex-1 flex-col border-r border-border/40 md:min-h-[calc(100dvh-4.5rem)]">
+          <div className="relative flex min-h-[320px] min-w-0 flex-1 flex-col border-r border-border/40">
             {/* Compact active-indicator strip — only shown when indicators
                 are active so the chart owns as much vertical space as possible.
                 The freshness chip lives inside ChartEngine (top-left) and is
@@ -785,6 +767,28 @@ function TradingWorkspaceInner() {
                 onAdapter={handleAdapter} onCandles={handleCandles}
                 className="absolute inset-0"
               >
+                {/* Persistent BUY / SELL — anchored directly under the symbol legend */}
+                {!focusMode && (
+                  <div className="pointer-events-none absolute left-3 top-11 z-30 flex items-center gap-1.5">
+                    <Button
+                      size="sm"
+                      className="pointer-events-auto h-8 gap-1 bg-success px-3 text-[11px] font-bold text-white tabular-nums shadow-md hover:bg-success/90"
+                      onClick={() => { emitTradeIntent({ kind: "focus_side", side: "long" }); setRightOpen(true); setActiveTab("order"); }}
+                      aria-label={`Buy ${symbol} at ${ask.toFixed(decimals)}`}
+                    >
+                      BUY <span className="opacity-90">{ask.toFixed(decimals)}</span>
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="pointer-events-auto h-8 gap-1 bg-danger px-3 text-[11px] font-bold text-white tabular-nums shadow-md hover:bg-danger/90"
+                      onClick={() => { emitTradeIntent({ kind: "focus_side", side: "short" }); setRightOpen(true); setActiveTab("order"); }}
+                      aria-label={`Sell ${symbol} at ${bid.toFixed(decimals)}`}
+                    >
+                      SELL <span className="opacity-90">{bid.toFixed(decimals)}</span>
+                    </Button>
+                  </div>
+                )}
+
                 {textEditor && (
                   <ChartTextEditor
                     state={textEditor}
@@ -1210,25 +1214,8 @@ function TradingWorkspaceInner() {
             </div>
           )}
 
-          {/* Mobile-only persistent Buy / Sell strip — always reachable */}
-          {isMobile && !rightOpen && !focusMode && (
-            <div className="absolute inset-x-0 bottom-0 z-30 flex items-center gap-2 border-t border-border/60 bg-background/95 px-2 py-1.5 pr-28 backdrop-blur">
-              <Button
-                className="h-11 flex-1 bg-success text-[12px] font-bold text-white tabular-nums hover:bg-success/90"
-                onClick={() => { emitTradeIntent({ kind: "focus_side", side: "long" }); setRightOpen(true); setActiveTab("order"); }}
-                aria-label={`Buy ${symbol} at ${ask.toFixed(decimals)}`}
-              >
-                BUY {ask.toFixed(decimals)}
-              </Button>
-              <Button
-                className="h-11 flex-1 bg-danger text-[12px] font-bold text-white tabular-nums hover:bg-danger/90"
-                onClick={() => { emitTradeIntent({ kind: "focus_side", side: "short" }); setRightOpen(true); setActiveTab("order"); }}
-                aria-label={`Sell ${symbol} at ${bid.toFixed(decimals)}`}
-              >
-                SELL {bid.toFixed(decimals)}
-              </Button>
-            </div>
-          )}
+
+
 
         </div>
 
