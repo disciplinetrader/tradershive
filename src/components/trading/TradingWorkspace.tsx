@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Activity, BarChart3, BookMarked, BrainCircuit, Camera, CandlestickChart, Check, ChevronDown, ChevronRight,
   Clock, Bell, Eye, EyeOff, Play, Focus, Keyboard, LineChart as LineChartIcon, ListOrdered, Maximize2, Minimize2,
-  NotebookPen, Newspaper, Shapes, Star, Target,
+  NotebookPen, Newspaper, Settings as SettingsIcon, Shapes, Star, Target,
 } from "lucide-react";
 
 import { toast } from "sonner";
@@ -248,6 +248,17 @@ function TradingWorkspaceInner() {
 
   const activeTf: Timeframe = (CHART_TIMEFRAMES as string[]).includes(timeframe) ? (timeframe as Timeframe) : "1H";
 
+
+  const applyTemplate = useCallback((t: ChartTemplate) => {
+    setChartType(t.chartType as ChartType);
+    setEnabled({ ...t.indicators });
+    setIndicatorParams({ ...t.params });
+    setSmcOn(t.smcOn);
+    setSmcParts({ show_swings: true, show_bos: true, show_fvg: true, show_ob: true, ...t.smcParts });
+    setTemplateId(t.id);
+  }, []);
+
+  const settingsDef = settingsFor ? INDICATOR_TOGGLES.find((i) => i.key === settingsFor) ?? null : null;
 
   const chartSettings: ChartSettings = useMemo(
     () => ({ ...DEFAULT_CHART_SETTINGS, symbol, market, timeframe: activeTf, chartType }),
@@ -684,6 +695,13 @@ function TradingWorkspaceInner() {
               </DropdownMenuSub>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {/* Chart templates — save / apply full chart configurations */}
+          <ChartTemplateMenu
+            activeId={templateId}
+            current={{ chartType, indicators: enabled, params: indicatorParams, smcOn, smcParts }}
+            onApply={applyTemplate}
+          />
 
           {/* Right-aligned quick actions (Buy/Sell live on the chart header) */}
           <div className="ml-auto flex items-center gap-1">
