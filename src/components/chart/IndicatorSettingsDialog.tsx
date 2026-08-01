@@ -78,17 +78,28 @@ export function IndicatorSettingsDialog({
                 <Label htmlFor={`ind-${s.key}`} className="text-xs">{s.label}</Label>
                 {s.hint && <p className="text-[10px] text-muted-foreground">{s.hint}</p>}
               </div>
-              <Input
-                id={`ind-${s.key}`}
-                type="number"
-                inputMode="decimal"
-                min={s.min}
-                max={s.max}
-                step={s.step ?? 1}
-                value={draft[s.key] ?? ""}
-                onChange={(e) => setDraft((d) => ({ ...d, [s.key]: e.target.value }))}
-                className="h-8 text-right text-xs tabular-nums"
-              />
+              {s.type === "time" ? (
+                <Input
+                  id={`ind-${s.key}`}
+                  type="time"
+                  step={60}
+                  value={draft[s.key] ?? ""}
+                  onChange={(e) => setDraft((d) => ({ ...d, [s.key]: e.target.value }))}
+                  className="h-8 text-right text-xs tabular-nums"
+                />
+              ) : (
+                <Input
+                  id={`ind-${s.key}`}
+                  type="number"
+                  inputMode="decimal"
+                  min={s.min}
+                  max={s.max}
+                  step={s.step ?? 1}
+                  value={draft[s.key] ?? ""}
+                  onChange={(e) => setDraft((d) => ({ ...d, [s.key]: e.target.value }))}
+                  className="h-8 text-right text-xs tabular-nums"
+                />
+              )}
             </div>
           ))}
         </div>
