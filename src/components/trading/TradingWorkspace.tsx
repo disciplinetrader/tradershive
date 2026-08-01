@@ -125,6 +125,8 @@ const RIGHT_TABS: { k: WorkspaceTab; label: string; icon: typeof Target }[] = [
   { k: "watchlist", label: "Watchlist", icon: Star },
   { k: "order", label: "Order", icon: Target },
   { k: "positions", label: "Positions", icon: ListOrdered },
+  { k: "pending", label: "Pending", icon: Clock },
+  { k: "account", label: "Account", icon: Activity },
   { k: "alerts", label: "Alerts", icon: Bell },
   { k: "news", label: "News", icon: Newspaper },
 ];
@@ -919,11 +921,16 @@ function TradingWorkspaceInner() {
               <aside
                 className={cn(
                   "relative flex min-h-0 shrink-0 flex-col overflow-hidden bg-card/30 animate-workspace-slide",
-                  isMobile && "absolute inset-0 z-40 w-full border-l-0 bg-background",
+                  isMobile &&
+                    "absolute inset-x-0 bottom-0 top-auto z-40 h-[75dvh] w-full rounded-t-2xl border-l-0 border-t border-border/60 bg-background shadow-2xl",
                 )}
                 style={isMobile ? undefined : { width: `min(100%, ${rightWidth}px)` }}
                 aria-label="Workspace panel"
               >
+                {isMobile && (
+                  <div className="mx-auto mt-1.5 h-1 w-10 shrink-0 rounded-full bg-border" aria-hidden="true" />
+                )}
+
 
                 <div className="flex items-center justify-between border-b border-border/40 bg-background/40 px-1.5 py-1">
                   <div
@@ -1091,7 +1098,19 @@ function TradingWorkspaceInner() {
                           }}
                         />
                       </AdaptiveSection>
+                    </div>
+                  )}
 
+                  {activeTab === "pending" && (
+                    <div
+                      role="tabpanel"
+                      id="ws-panel-pending"
+                      aria-labelledby="ws-tab-pending"
+                      className="space-y-3 animate-in fade-in duration-150"
+                    >
+                      <AdaptiveSection title="Pending orders" count={pendingCount} emptyLabel="No pending orders">
+                        <OrdersTable />
+                      </AdaptiveSection>
                       <AdaptiveSection
                         title="Chart orders"
                         count={positionOrders.pendingOrders.length}
@@ -1106,12 +1125,25 @@ function TradingWorkspaceInner() {
                           }}
                         />
                       </AdaptiveSection>
-                      <AdaptiveSection title="Pending orders" count={pendingCount} emptyLabel="No pending orders">
-                        <OrdersTable />
-                      </AdaptiveSection>
-
+                      <p className="px-1 text-[11px] text-muted-foreground">
+                        Tip: drag a pending order's label on the chart to re-price it, or press × to cancel.
+                      </p>
                     </div>
                   )}
+
+                  {activeTab === "account" && (
+                    <div
+                      role="tabpanel"
+                      id="ws-panel-account"
+                      aria-labelledby="ws-tab-account"
+                      className="space-y-3 animate-in fade-in duration-150"
+                    >
+                      <TodayPnLWidget />
+                      <AccountSummary />
+                    </div>
+                  )}
+
+
 
                   {activeTab === "alerts" && (
                     <div
@@ -1159,7 +1191,7 @@ function TradingWorkspaceInner() {
 
           {/* Mobile-only floating access to tools + workspace panel */}
           {isMobile && !rightOpen && !focusMode && (
-            <div className="pointer-events-none absolute bottom-3 right-3 z-30 flex flex-col items-end gap-2">
+            <div className="pointer-events-none absolute bottom-16 right-3 z-30 flex flex-col items-end gap-2">
               <Button
                 size="sm"
                 variant="secondary"
@@ -1177,6 +1209,27 @@ function TradingWorkspaceInner() {
               </Button>
             </div>
           )}
+
+          {/* Mobile-only persistent Buy / Sell strip — always reachable */}
+          {isMobile && !rightOpen && !focusMode && (
+            <div className="absolute inset-x-0 bottom-0 z-30 flex items-center gap-2 border-t border-border/60 bg-background/95 px-2 py-1.5 pr-28 backdrop-blur">
+              <Button
+                className="h-11 flex-1 bg-success text-[12px] font-bold text-white tabular-nums hover:bg-success/90"
+                onClick={() => { emitTradeIntent({ kind: "focus_side", side: "long" }); setRightOpen(true); setActiveTab("order"); }}
+                aria-label={`Buy ${symbol} at ${ask.toFixed(decimals)}`}
+              >
+                BUY {ask.toFixed(decimals)}
+              </Button>
+              <Button
+                className="h-11 flex-1 bg-danger text-[12px] font-bold text-white tabular-nums hover:bg-danger/90"
+                onClick={() => { emitTradeIntent({ kind: "focus_side", side: "short" }); setRightOpen(true); setActiveTab("order"); }}
+                aria-label={`Sell ${symbol} at ${bid.toFixed(decimals)}`}
+              >
+                SELL {bid.toFixed(decimals)}
+              </Button>
+            </div>
+          )}
+
         </div>
 
         {/* Mobile drawing-tools sheet — the desktop rail is hidden below md */}
