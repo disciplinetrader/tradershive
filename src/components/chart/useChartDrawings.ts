@@ -474,10 +474,21 @@ export function useChartDrawings({
 
 
       if (!s || (pointerId != null && e.pointerId !== pointerId)) return;
+
+      // Ctrl-drag marquee: purely a pixel-space rubber band, no chart data.
+      if (s.mode === "marquee") {
+        e.preventDefault();
+        e.stopPropagation();
+        marqueeRef.current = { x1: s.downX, y1: s.downY, x2: px, y2: py };
+        adapter.requestDrawingsRepaint?.();
+        return;
+      }
+
       const pt = toPoint(px, py);
       if (!pt) return;
       e.preventDefault();
       e.stopPropagation();
+
 
       if (s.mode === "create") {
         const draft = store.draft;
