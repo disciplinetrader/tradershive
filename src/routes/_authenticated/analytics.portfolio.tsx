@@ -11,6 +11,8 @@ import {
   BehaviourSection, DistributionSection, EquitySection, OverviewSection,
   PlaybookSection, RiskExecutionSection, TimeSection,
 } from "@/components/analytics/portfolio/sections";
+import { MonteCarloSection } from "@/components/analytics/portfolio/MonteCarloSection";
+
 import { AnalyticsWorkspaceProvider, useAnalyticsWorkspace } from "@/components/analytics/portfolio/provider";
 import { filtersFromSearch } from "@/lib/analytics/filters";
 import type { Resolution } from "@/lib/analytics";
@@ -118,6 +120,8 @@ function PortfolioWorkspace() {
         <>
           <OverviewSection />
           <EquitySection />
+          <MonteCarloSection />
+
           <DistributionSection />
           <RiskExecutionSection />
           <BehaviourSection />

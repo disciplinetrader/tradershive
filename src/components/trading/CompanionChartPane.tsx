@@ -1,13 +1,17 @@
-import { useEffect, useState } from "react";
-import { ChevronDown, Link2, Link2Off, Maximize2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ChevronDown, Link2, Link2Off, Maximize2, LineChart as LineChartIcon } from "lucide-react";
 import { ChartEngine } from "@/components/chart/ChartEngine";
 import { DEFAULT_CHART_SETTINGS } from "@/lib/chart/constants";
-import type { ChartSettings, ChartType } from "@/lib/chart/types";
+import type { ChartSettings, ChartType, IndicatorConfig } from "@/lib/chart/types";
 import type { Timeframe } from "@/lib/market-data/types";
+import { INDICATOR_TOGGLES } from "@/lib/chart/indicator-registry";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -15,6 +19,7 @@ import { findSymbol } from "@/lib/paper-trading/symbols";
 import { useLiveQuote } from "@/lib/market-data/hooks";
 import { cn } from "@/lib/utils";
 import type { ChartPane } from "@/lib/chart/multi-chart";
+
 
 const TF_OPTIONS: Timeframe[] = ["1m", "5m", "15m", "30m", "1H", "4H", "1D", "1W"];
 const TYPE_OPTIONS: { key: ChartType; label: string }[] = [
@@ -27,9 +32,10 @@ const TYPE_OPTIONS: { key: ChartType; label: string }[] = [
 ];
 
 /**
- * A companion chart inside the multi-chart grid. Read-only by design — the
- * primary pane keeps ownership of drawings, orders and the trade planner, so
- * there is exactly one place where a click can put money at risk.
+ * A companion chart inside the multi-chart grid. Each cell is independent —
+ * its own symbol, timeframe, chart type, indicators and volume pane — while
+ * the primary pane keeps sole ownership of drawings, orders and the trade
+ * planner, so there is exactly one place where a click can put money at risk.
  */
 export function CompanionChartPane({
   pane,
@@ -54,15 +60,30 @@ export function CompanionChartPane({
   const quote = useLiveQuote(symbol, meta?.market);
   const change = quote?.changePct ?? 0;
 
+  const enabled = pane.indicators ?? {};
+  const indicators = useMemo<IndicatorConfig[]>(
+    () =>
+      INDICATOR_TOGGLES.filter((i) => enabled[i.key]).map((i) => ({
+        id: i.key,
+        key: i.key,
+        params: { ...i.params },
+        pane: i.pane,
+        visible: true,
+      })),
+    [enabled],
+  );
+  const activeCount = indicators.length;
+
   const settings: ChartSettings = {
     ...DEFAULT_CHART_SETTINGS,
     symbol,
     market: meta?.market,
     timeframe: pane.timeframe,
     chartType: pane.chartType,
-    showVolume: false,
+    showVolume: pane.showVolume ?? false,
     showGrid: false,
   };
+
 
   const commitSymbol = () => {
     const next = draft.trim().toUpperCase();
@@ -143,6 +164,56 @@ export function CompanionChartPane({
             </DropdownMenuContent>
           </DropdownMenu>
 
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className={cn(
+                  "flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] hover:bg-muted",
+                  activeCount > 0 ? "text-primary" : "text-muted-foreground",
+                )}
+                aria-label="Pane indicators"
+              >
+                <LineChartIcon className="h-3 w-3" />
+                {activeCount > 0 ? <span className="tabular-nums">{activeCount}</span> : null}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="max-h-[60vh] w-56 overflow-y-auto">
+              <DropdownMenuLabel className="text-[11px]">Indicators for this cell</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuCheckboxItem
+                checked={pane.showVolume ?? false}
+                onCheckedChange={(v) => onChange({ showVolume: Boolean(v) })}
+                onSelect={(e) => e.preventDefault()}
+                className="text-xs"
+              >
+                Volume pane
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuSeparator />
+              {INDICATOR_TOGGLES.map((i) => (
+                <DropdownMenuCheckboxItem
+                  key={i.key}
+                  checked={Boolean(enabled[i.key])}
+                  onCheckedChange={(v) =>
+                    onChange({ indicators: { ...enabled, [i.key]: Boolean(v) } })
+                  }
+                  onSelect={(e) => e.preventDefault()}
+                  className="text-xs"
+                >
+                  {i.label}
+                </DropdownMenuCheckboxItem>
+              ))}
+              {activeCount > 0 ? (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="text-xs" onSelect={() => onChange({ indicators: {} })}>
+                    Clear indicators
+                  </DropdownMenuItem>
+                </>
+              ) : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+
           <Tooltip>
             <TooltipTrigger asChild>
               <button
@@ -177,7 +248,7 @@ export function CompanionChartPane({
       </header>
 
       <div className="relative min-h-0 flex-1">
-        <ChartEngine settings={settings} indicators={[]} className="absolute inset-0" />
+        <ChartEngine settings={settings} indicators={indicators} className="absolute inset-0" />
       </div>
     </section>
   );
