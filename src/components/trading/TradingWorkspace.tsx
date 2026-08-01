@@ -882,10 +882,14 @@ function TradingWorkspaceInner() {
                 className="hidden md:block w-1 shrink-0 cursor-col-resize bg-border/40 hover:bg-primary/60 active:bg-primary transition-colors"
               />
               <aside
-                className="relative flex min-h-0 shrink-0 flex-col overflow-hidden bg-card/30 animate-workspace-slide"
-                style={{ width: `min(100%, ${rightWidth}px)` }}
+                className={cn(
+                  "relative flex min-h-0 shrink-0 flex-col overflow-hidden bg-card/30 animate-workspace-slide",
+                  isMobile && "absolute inset-0 z-40 w-full border-l-0 bg-background",
+                )}
+                style={isMobile ? undefined : { width: `min(100%, ${rightWidth}px)` }}
                 aria-label="Workspace panel"
               >
+
                 <div className="flex items-center justify-between border-b border-border/40 bg-background/40 px-1.5 py-1">
                   <div
                     role="tablist"
