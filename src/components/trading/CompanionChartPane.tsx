@@ -51,13 +51,13 @@ export function CompanionChartPane({
   const [draft, setDraft] = useState(symbol);
   useEffect(() => setDraft(symbol), [symbol]);
 
-  const quote = useLiveQuote(symbol, meta?.market as never);
+  const quote = useLiveQuote(symbol, meta?.market);
   const change = quote?.changePct ?? 0;
 
   const settings: ChartSettings = {
     ...DEFAULT_CHART_SETTINGS,
     symbol,
-    market: meta?.market as ChartSettings["market"],
+    market: meta?.market,
     timeframe: pane.timeframe,
     chartType: pane.chartType,
     showVolume: false,
