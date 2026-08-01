@@ -445,6 +445,15 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
     placeMarketOrder,
     closePositionNow,
     cancelOrder,
+    equity,
+    riskPercent,
+    setRiskPercent,
+    sizeForRisk,
+    placeOrderAt,
+    modifyLevels,
+    modifyPendingLevels,
+    partialClose,
+    breakEven,
     retry: () => { void sessionQuery.refetch(); void candleQuery.refetch(); },
   };
 
