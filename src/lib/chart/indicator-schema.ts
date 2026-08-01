@@ -79,7 +79,12 @@ export const INDICATOR_PARAM_SCHEMA: Partial<Record<IndicatorKey, IndicatorParam
 /** Clamp a user-entered value into the spec's allowed range. */
 export function clampParam(spec: IndicatorParamSpec, value: number): number {
   if (!Number.isFinite(value)) return spec.min;
-  const stepped = spec.step && spec.step < 1 ? Math.round(value * 100) / 100 : Math.round(value);
+  const stepped =
+    spec.type === "time"
+      ? Math.round(value * 60) / 60 // minute precision
+      : spec.step && spec.step < 1
+        ? Math.round(value * 100) / 100
+        : Math.round(value);
   return Math.min(spec.max, Math.max(spec.min, stepped));
 }
 
