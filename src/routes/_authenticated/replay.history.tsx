@@ -39,7 +39,7 @@ function HistoryPage() {
         symbol: search.symbol ?? null,
         search: search.search ?? null,
       }}
-      onChange={(patch) => void navigate({ search: (prev) => ({ ...prev, ...patch }) })}
+      onChange={(patch) => void navigate({ search: (prev: Record<string, unknown>) => ({ ...prev, ...patch }) })}
     />
   );
 }
