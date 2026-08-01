@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChartHandle } from "@/components/chart/ChartEngine";
+import { ChartLayoutProvider, useChartLayout, layoutGridClass } from "@/lib/chart/multi-chart";
+import { CompanionChartPane } from "@/components/trading/CompanionChartPane";
+import { ChartLayoutMenu } from "@/components/trading/ChartLayoutMenu";
+
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Activity, BarChart3, BookMarked, BrainCircuit, Camera, CandlestickChart, Check, ChevronDown, ChevronRight,
