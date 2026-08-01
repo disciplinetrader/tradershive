@@ -2,10 +2,12 @@ import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router"
 import {
   BarChart3,
   Film,
+  History,
   Home,
   Library,
   Play,
   Settings2,
+  TrendingUp,
 } from "lucide-react";
 import { SegmentedTabs } from "@/components/ui/segmented-tabs";
 
@@ -18,6 +20,8 @@ const TABS = [
   { to: "/replay/studio", label: "Trading Workspace", icon: Play },
   { to: "/replay/library", label: "Saved Sessions", icon: Library },
   { to: "/replay/trades", label: "Trade Review", icon: Film },
+  { to: "/replay/history", label: "History", icon: History },
+  { to: "/replay/improvement", label: "Improvement", icon: TrendingUp },
   { to: "/replay/performance", label: "Performance", icon: BarChart3 },
   { to: "/replay/settings", label: "Settings", icon: Settings2 },
 ];

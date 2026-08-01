@@ -12,18 +12,16 @@
  */
 
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
-import { Bookmark, Flag, Sparkles, Trash2 } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { Bookmark, Camera, Flag, Sparkles, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { BOOKMARK_CATEGORIES } from "@/lib/replay/constants";
 import { useReplayReflection } from "@/lib/replay/reflection/queries";
-import { scoreFactsFromClosedTrades } from "@/lib/replay/reflection/adapter";
-import { scoreReplaySession } from "@/lib/replay-reflection.functions";
-import { reflectionKey } from "@/lib/replay/reflection/queries";
+import { useRegisterScreenshot, useScoreSession } from "@/lib/replay/review/queries";
+import { captureChartPng, uploadScreenshot } from "@/lib/replay/review/screenshot";
 import { AiReviewPanel } from "@/components/replay/AiReviewPanel";
 import { useReplayStudio } from "./context";
 
@@ -42,10 +40,10 @@ function Section({ title, right, children }: { title: string; right?: React.Reac
 const hhmm = (iso: string) => new Date(iso).toISOString().slice(11, 16);
 
 export function ReflectionPanel() {
-  const { sessionId, view, trades, startingBalance, seekForwardTo } = useReplayStudio();
+  const { sessionId, view, seekForwardTo } = useReplayStudio();
   const r = useReplayReflection(sessionId);
-  const qc = useQueryClient();
-  const scoreFn = useServerFn(scoreReplaySession);
+  const registerShot = useRegisterScreenshot(sessionId);
+  const [capturing, setCapturing] = useState(false);
 
   const atMs = view?.transport.marketTime ?? Date.now();
   const completed = view?.transport.lifecycle === "completed";
@@ -55,16 +53,34 @@ export function ReflectionPanel() {
   const [category, setCategory] = useState<string>("good_setup");
   const [check, setCheck] = useState("");
 
-  const scoring = useMutation({
-    mutationFn: () =>
-      scoreFn({
-        data: {
-          session_id: sessionId,
-          trades: scoreFactsFromClosedTrades(trades, { startingBalance }),
-        },
-      }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: reflectionKey(sessionId) }),
-  });
+  // ONE scoring path: the server re-derives the score from the durable trade
+  // tape, so the same session scores identically on any device.
+  const scoring = useScoreSession(sessionId);
+
+  /**
+   * Capture only what the chart is currently drawing. The clock has not
+   * released future bars, so the image cannot leak look-ahead information.
+   */
+  const capture = async () => {
+    setCapturing(true);
+    try {
+      const blob = await captureChartPng();
+      if (!blob) return;
+      const path = await uploadScreenshot(sessionId, blob);
+      if (!path) return;
+      registerShot.mutate({
+        storage_path: path,
+        captured_ts: new Date().toISOString(),
+        cursor_ts: new Date(atMs).toISOString(),
+        dataset_checksum: view?.dataset.checksum ?? null,
+        symbol: view?.meta.dataset.symbol ?? null,
+        timeframe: view?.dataset.timeframe ?? null,
+        caption: `Chart @ ${new Date(atMs).toISOString().slice(11, 16)}`,
+      });
+    } finally {
+      setCapturing(false);
+    }
+  };
 
   /** Forward-only: replay must never rewind into already-revealed-but-unseen bars. */
   const jump = (iso: string) => {
@@ -212,7 +228,14 @@ export function ReflectionPanel() {
         </ul>
       </Section>
 
-      <Section title="Screenshots">
+      <Section
+        title="Screenshots"
+        right={
+          <Button size="sm" variant="ghost" onClick={() => void capture()} disabled={capturing}>
+            <Camera className="mr-1 h-3.5 w-3.5" /> {capturing ? "Capturing…" : "Capture chart"}
+          </Button>
+        }
+      >
         {r.data.screenshots.length === 0 ? (
           <p className="text-[11px] text-muted-foreground">No screenshots captured for this session.</p>
         ) : (
@@ -242,10 +265,15 @@ export function ReflectionPanel() {
             {completed ? "Score this session to grade discipline, risk, execution, patience and consistency." : "Finish the session to score it."}
           </p>
         )}
-        <Button size="sm" className="w-full" disabled={!completed || scoring.isPending} onClick={() => scoring.mutate()}>
+        <Button size="sm" className="w-full" disabled={!completed || scoring.isPending} onClick={() => scoring.mutate(undefined)}>
           <Sparkles className="mr-2 h-3.5 w-3.5" />
           {scoring.isPending ? "Scoring…" : score ? "Re-score session" : "Score session"}
         </Button>
+        {completed ? (
+          <Button asChild size="sm" variant="secondary" className="mt-2 w-full">
+            <Link to="/replay/review" search={{ id: sessionId }}>Open full review</Link>
+          </Button>
+        ) : null}
       </Section>
 
       <div className="p-3">

@@ -24,6 +24,7 @@ import type { ClosedTrade } from "@/lib/chart/orders/closed-trade";
 import type { Candle, Timeframe } from "@/lib/replay/types";
 import { bootstrapSession, type BootstrapResult } from "@/lib/replay/session/loader";
 import { loadSnapshot } from "@/lib/replay/session/persistence";
+import { createReplayTradeRemote, replayTradeScope } from "@/lib/chart/orders/replay-trade-sync";
 import type { ReplaySessionController, ControllerSnapshot } from "@/lib/replay/session/controller";
 
 export type StudioPhase = "loading" | "unavailable" | "invalid" | "ready";
@@ -134,7 +135,7 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
           symbol: session.symbol,
           timeframe: session.timeframe ?? "5m",
           market: session.market,
-          starting_balance: session.starting_balance ?? null,
+          starting_balance: session.initial_balance ?? null,
           source_trade_id: session.source_trade_id ?? null,
           source_journal_id: session.source_journal_id ?? null,
         },
@@ -146,7 +147,13 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
         snapshot,
       });
       if (cancelled) return;
-      if (result.ok) bootRef.current = result.controller;
+      if (result.ok) {
+        bootRef.current = result.controller;
+        // Phase 8D: the result tape is durable and provenance-tagged, so a
+        // completed session can be reviewed from server truth on any device.
+        result.stores.trades?.hydrate(replayTradeScope(id));
+        result.stores.trades?.attachRemote(createReplayTradeRemote(id));
+      }
       setBoot(result);
     })();
 
@@ -256,7 +263,10 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
 
   const value: StudioValue = {
     sessionId: id,
-    startingBalance: typeof session?.starting_balance === "number" ? session.starting_balance : null,
+    startingBalance:
+      session?.initial_balance != null && Number.isFinite(Number(session.initial_balance))
+        ? Number(session.initial_balance)
+        : null,
     phase,
     blocked,
     warnings: boot?.ok ? boot.warnings : boot?.warnings ?? [],

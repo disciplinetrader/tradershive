@@ -60,5 +60,5 @@ export function StudioChart({ onAdapterReady }: { onAdapterReady?: (a: ChartAdap
     }
   }, [view?.candles, view]);
 
-  return <div ref={hostRef} className="absolute inset-0" data-testid="studio-chart" />;
+  return <div ref={hostRef} className="absolute inset-0" data-testid="studio-chart" data-studio-chart="" />;
 }
