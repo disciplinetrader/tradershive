@@ -18,6 +18,7 @@ import {
 import { useLiveQuotes } from "@/lib/paper-trading/live-quotes";
 import { MARKET_TABS, SYMBOL_CATALOG, findSymbol, type PaperMarket } from "@/lib/paper-trading/symbols";
 import { cn } from "@/lib/utils";
+import { useChartLayout } from "@/lib/chart/multi-chart";
 import { usePaper } from "./context";
 
 type Watchlist = { id: string; name: string; market: PaperMarket | null; is_default: boolean; sort_order: number };
@@ -26,6 +27,11 @@ type WatchSym = { id: string; watchlist_id: string; symbol: string; market: Pape
 export function WatchlistPanel() {
   const qc = useQueryClient();
   const { symbol, setSymbol } = usePaper();
+  // In a multi-chart grid, a symbol click lands on the focused pane.
+  const { enabled: gridOn, activeSlot, slotSymbols, sendSymbolToActiveSlot } = useChartLayout();
+  const openSymbol = gridOn ? sendSymbolToActiveSlot : setSymbol;
+  const targetLabel = !gridOn || slotSymbols.length < 2 ? null : activeSlot === 0 ? "Main chart" : `Chart #${activeSlot + 1}`;
+
 
   const fetch = useServerFn(listPaperWatchlists);
   const addSym = useServerFn(addWatchlistSymbol);
@@ -138,6 +144,13 @@ export function WatchlistPanel() {
         </Popover>
       </div>
 
+      {targetLabel && (
+        <p className="rounded-md bg-primary/10 px-2 py-1 text-[10px] font-medium text-primary">
+          Opens in {targetLabel} — click a chart pane to change target
+        </p>
+      )}
+
+
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -171,7 +184,7 @@ export function WatchlistPanel() {
             const meta = findSymbol(r.symbol);
             const q = quotes[r.symbol];
             const up = (q?.change ?? 0) >= 0;
-            const selected = r.symbol === symbol;
+            const selected = gridOn ? slotSymbols.includes(r.symbol) : r.symbol === symbol;
             return (
               <motion.li
                 key={r.id}
@@ -190,7 +203,7 @@ export function WatchlistPanel() {
                   {r.is_favorite ? <Star className="h-3.5 w-3.5 fill-warning text-warning" /> : <StarOff className="h-3.5 w-3.5" />}
                 </button>
                 <button
-                  onClick={() => setSymbol(r.symbol)}
+                  onClick={() => openSymbol(r.symbol)}
                   className="flex min-w-0 flex-1 cursor-pointer items-center justify-between rounded text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                 >
                   <div className="min-w-0">

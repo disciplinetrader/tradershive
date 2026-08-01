@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChartHandle } from "@/components/chart/ChartEngine";
+import { ChartLayoutProvider, useChartLayout, layoutGridClass } from "@/lib/chart/multi-chart";
+import { CompanionChartPane } from "@/components/trading/CompanionChartPane";
+import { ChartLayoutMenu } from "@/components/trading/ChartLayoutMenu";
+
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Activity, BarChart3, BookMarked, BrainCircuit, Camera, CandlestickChart, Check, ChevronDown, ChevronRight,
@@ -166,6 +170,15 @@ function RailButton({
 function TradingWorkspaceInner() {
   const qc = useQueryClient();
   const { symbol, symbolMeta, market, timeframe, setTimeframe, accountId, setAccountId, account } = usePaper();
+  const {
+    layout,
+    panes: layoutPanes,
+    activeSlot,
+    setActiveSlot,
+    updatePane,
+    promotePane,
+  } = useChartLayout();
+
   useSlTpMonitor(account);
   useRiskMonitor(account);
   const { prefs, update, patch, hydrated } = useWorkspacePrefs();
@@ -716,6 +729,11 @@ function TradingWorkspaceInner() {
             onApply={applyTemplate}
           />
 
+          {/* Multi-chart grid (1 / 2 / 3 / 4 charts) */}
+          <ChartLayoutMenu />
+
+
+
           {/* Right-aligned quick actions (Buy/Sell live on the chart header) */}
           <div className="ml-auto flex items-center gap-1">
             <div className="mx-1 hidden h-5 w-px bg-border/60 md:block" />
@@ -880,7 +898,15 @@ function TradingWorkspaceInner() {
 
 
             {/* Chart canvas + overlays (fills remaining space) */}
-            <div className="relative min-h-0 flex-1">
+            <div className={cn("relative grid min-h-0 flex-1 gap-px bg-border/30", layoutGridClass(layout))}>
+              <div
+                onPointerDownCapture={() => setActiveSlot(0)}
+                className={cn(
+                  "relative min-h-0 min-w-0 bg-background",
+                  layoutPanes.length > 0 && (activeSlot === 0 ? "ring-1 ring-inset ring-primary/30" : ""),
+                )}
+              >
+
               {/* Pinned tools float over the chart so drawing survives focus mode. */}
               <FavoriteToolsBar
                 favourites={favouriteTools}
@@ -1035,7 +1061,22 @@ function TradingWorkspaceInner() {
                   </motion.div>
                 )}
               </AnimatePresence>
+              </div>
+
+              {/* Companion panes — context charts, never order-bearing. */}
+              {layoutPanes.map((pane, i) => (
+                <CompanionChartPane
+                  key={pane.id}
+                  pane={pane}
+                  primarySymbol={symbol}
+                  active={activeSlot === i + 1}
+                  onFocus={() => setActiveSlot(i + 1)}
+                  onChange={(patch) => updatePane(pane.id, patch)}
+                  onPromote={() => promotePane(pane.id)}
+                />
+              ))}
             </div>
+
           </div>
 
           {/* Per-indicator inputs (TradingView-style settings) */}
@@ -1615,11 +1656,25 @@ import { useMarketCadence } from "@/lib/market-data/hooks";
 export function TradingWorkspace({ fullscreen: _fullscreen }: { fullscreen?: boolean } = {}) {
   return (
     <PaperTradingProvider>
-      <TradingWorkspaceInner />
+      <WorkspaceChartLayout>
+        <TradingWorkspaceInner />
+      </WorkspaceChartLayout>
       <WorkspaceCadence />
     </PaperTradingProvider>
   );
 }
+
+/** Bridges the paper-trading symbol into the multi-chart grid so slot 0 stays
+ *  the tradable chart while companion panes carry their own symbols. */
+function WorkspaceChartLayout({ children }: { children: React.ReactNode }) {
+  const { symbol, setSymbol } = usePaper();
+  return (
+    <ChartLayoutProvider primarySymbol={symbol} onPrimarySymbol={setSymbol} defaultChartType="candles">
+      {children}
+    </ChartLayoutProvider>
+  );
+}
+
 
 /** Registers Twelve Data workspace cadence ONLY when the active symbol is a
  *  Twelve Data market (forex/metals/indices). Crypto workspaces stream from
