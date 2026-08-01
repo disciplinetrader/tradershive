@@ -38,8 +38,14 @@ function JournalLayout() {
         <PageHeader
           title="Journal"
           description="Trade → Story → Insight → Improvement."
-          actions={<ManualEntryDialog />}
+          actions={
+            <div className="flex flex-wrap items-center gap-2">
+              <ImportTradesDialog />
+              <ManualEntryDialog />
+            </div>
+          }
         />
+        <QuickLogInput />
         <div className="flex flex-wrap items-center gap-3">
           <JournalSourcePicker />
           <JournalSubNav />
