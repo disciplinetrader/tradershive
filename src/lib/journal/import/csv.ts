@@ -351,7 +351,6 @@ export function toEntryInsert(row: ImportRow, userId: string, accountId: string 
     swap: row.swap,
     rr,
     notes_text: row.notes,
-    title: `${row.symbol} · ${row.direction ?? "trade"}`,
   } as EntryInsert;
 }
 
