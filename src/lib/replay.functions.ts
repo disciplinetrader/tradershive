@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { computeReplayScore } from "./replay/score";
 
 import { TIMEFRAME_SECONDS, DEFAULT_TEMPLATES, CHECKPOINT_KINDS } from "./replay/constants";
 import { coverageStatusFor, serializeGaps } from "./replay/provenance";
@@ -550,88 +549,10 @@ export const createScreenshotRecord = createServerFn({ method: "POST" })
 
 /* ============ Score + finish ============ */
 
-export const finishReplaySession = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
-  .handler(async ({ data, context }) => {
-    const [trades, checklist, bookmarks, notes] = await Promise.all([
-      context.supabase.from("replay_trades").select("*").eq("session_id", data.id),
-      context.supabase.from("replay_checklists").select("*").eq("session_id", data.id),
-      context.supabase.from("replay_bookmarks").select("*").eq("session_id", data.id),
-      context.supabase.from("replay_notes").select("id, body").eq("session_id", data.id),
-    ]);
-    const breakdown = computeReplayScore({
-      trades: (trades.data ?? []) as any,
-      checklist: (checklist.data ?? []) as any,
-      bookmarks: (bookmarks.data ?? []) as any,
-      notesCount: (notes.data ?? []).length,
-    });
-    const { data: score, error } = await context.supabase
-      .from("replay_scores")
-      .insert({
-        session_id: data.id,
-        user_id: context.userId,
-        score: breakdown.score,
-        discipline: breakdown.discipline,
-        risk: breakdown.risk,
-        execution: breakdown.execution,
-        patience: breakdown.patience,
-        consistency: breakdown.consistency,
-        journal_completion: breakdown.journal_completion,
-        breakdown: { notes: breakdown.notes },
-      })
-      .select()
-      .single();
-    if (error) throw error;
-
-    await context.supabase
-      .from("replay_sessions")
-      .update({ status: "completed", completion_pct: 100 })
-      .eq("id", data.id);
-
-    // Update aggregate statistics
-    const { data: allSessions } = await context.supabase
-      .from("replay_sessions")
-      .select("id, market, symbol, duration_seconds")
-      .eq("user_id", context.userId)
-      .is("deleted_at", null);
-    const { data: allScores } = await context.supabase
-      .from("replay_scores")
-      .select("score")
-      .eq("user_id", context.userId);
-    const { data: allTrades } = await context.supabase
-      .from("replay_trades")
-      .select("id")
-      .eq("user_id", context.userId);
-
-    const totalSessions = allSessions?.length ?? 0;
-    const totalHours = (allSessions ?? []).reduce((s, x) => s + (x.duration_seconds ?? 0), 0) / 3600;
-    const totalTrades = allTrades?.length ?? 0;
-    const avgScore = allScores?.length
-      ? Math.round(allScores.reduce((s, x) => s + (x.score ?? 0), 0) / allScores.length)
-      : 0;
-    const marketCounts = new Map<string, number>();
-    const symbolCounts = new Map<string, number>();
-    for (const s of allSessions ?? []) {
-      marketCounts.set(s.market, (marketCounts.get(s.market) ?? 0) + 1);
-      symbolCounts.set(s.symbol, (symbolCounts.get(s.symbol) ?? 0) + 1);
-    }
-    const topMarket = [...marketCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
-    const topSymbol = [...symbolCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
-
-    await context.supabase.from("replay_statistics").upsert({
-      user_id: context.userId,
-      total_sessions: totalSessions,
-      total_hours: totalHours,
-      total_trades: totalTrades,
-      average_score: avgScore,
-      most_practiced_market: topMarket,
-      most_practiced_symbol: topSymbol,
-      last_practiced_at: new Date().toISOString(),
-    });
-
-    return { score, breakdown };
-  });
+/* Legacy `finishReplaySession` (scored `replay_trades`) was removed in
+   Phase 8C. Canonical sessions are scored by `scoreReplaySession` in
+   `replay-reflection.functions.ts`, which runs the same single
+   `computeReplayScore` formula against canonical ClosedTrade facts. */
 
 export const getReplayStatistics = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
