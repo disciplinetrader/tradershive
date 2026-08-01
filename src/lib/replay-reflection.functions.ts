@@ -19,12 +19,10 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { computeReplayScore } from "./replay/score";
 import { refreshReplayStatistics } from "./replay/statistics.server";
 
-const sessionInput = z.object({ session_id: z.string().uuid() });
-
 /** One round-trip for every reflection artefact attached to a session. */
 export const getReplayReflection = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => sessionInput.parse(d))
+  .inputValidator((d) => z.object({ session_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const id = data.session_id;
     const [notes, bookmarks, checklist, checkpoints, screenshots, score] = await Promise.all([
