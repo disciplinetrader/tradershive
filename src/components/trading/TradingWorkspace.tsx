@@ -686,7 +686,7 @@ function TradingWorkspaceInner() {
         )}
 
         {/* ── Main workspace: chart dominates; rails collapse ───────────── */}
-        <div className="flex min-h-0 flex-1">
+        <div className="relative flex min-h-0 flex-1">
           {/* Left tool rail — drawing tools first, then chart utilities */}
           {!focusMode && (
             <nav
