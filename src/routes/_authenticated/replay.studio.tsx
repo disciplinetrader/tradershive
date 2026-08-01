@@ -7,9 +7,13 @@
  * The page is a thin adapter: it renders selectors and forwards intents.
  */
 import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
+import { useState } from "react";
+import { PanelRight } from "lucide-react";
 import { z } from "zod";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+
 import { ReplayStudioProvider, useReplayStudio } from "@/components/replay/studio/context";
 import { SessionHeader } from "@/components/replay/studio/SessionHeader";
 import { PlaybackControls } from "@/components/replay/studio/PlaybackControls";
@@ -61,6 +65,7 @@ function StudioPage() {
 
 function Studio() {
   const { phase } = useReplayStudio();
+  const [panelOpen, setPanelOpen] = useState(false);
   if (phase === "loading") return <StudioLoading />;
   if (phase !== "ready") return <StudioBlockedView />;
 
@@ -69,13 +74,26 @@ function Studio() {
       <SessionHeader />
       <SnapshotDiscardedNotice />
       <SessionCompleteNotice />
-      <div className="flex min-h-0 flex-1">
+      <div className="relative flex min-h-0 flex-1">
         <div className="relative min-w-0 flex-1">
           <StudioChart />
+          <Button
+            size="sm"
+            className="absolute bottom-3 right-3 z-30 h-11 gap-1.5 rounded-full px-3 text-[11px] shadow-lg md:hidden"
+            onClick={() => setPanelOpen(true)}
+          >
+            <PanelRight className="h-4 w-4" /> Session
+          </Button>
         </div>
-        <SessionSidebar />
+        <SessionSidebar className="hidden md:flex" />
       </div>
+      <Sheet open={panelOpen} onOpenChange={setPanelOpen}>
+        <SheetContent side="bottom" className="h-[75dvh] p-0 md:hidden">
+          <SessionSidebar className="h-full border-l-0" />
+        </SheetContent>
+      </Sheet>
       <PlaybackControls />
     </div>
   );
 }
+

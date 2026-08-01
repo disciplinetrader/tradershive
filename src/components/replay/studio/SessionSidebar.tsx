@@ -10,17 +10,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { positionMetricsFor } from "@/lib/chart/orders/service";
 import { useReplayStudio } from "./context";
 import { ReflectionPanel } from "./ReflectionPanel";
+import { cn } from "@/lib/utils";
+
 
 function Empty({ text }: { text: string }) {
   return <div className="px-3 py-6 text-center text-xs text-muted-foreground">{text}</div>;
 }
 
-export function SessionSidebar() {
+export function SessionSidebar({ className }: { className?: string }) {
   const { positions, pending, trades, view, price, closePositionNow, cancelOrder, placeMarketOrder } = useReplayStudio();
   const live = view?.transport.lifecycle !== "completed";
 
   return (
-    <aside className="flex w-[320px] shrink-0 flex-col border-l border-border/60 bg-card/30">
+    <aside className={cn("flex w-full shrink-0 flex-col border-l border-border/60 bg-card/30 md:w-[320px]", className)}>
+
       <div className="grid grid-cols-2 gap-2 border-b border-border/60 p-2">
         <Button size="sm" onClick={() => placeMarketOrder("buy")} disabled={!live || price == null}>
           Buy market

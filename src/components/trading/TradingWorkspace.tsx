@@ -62,6 +62,9 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/comp
 
 
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+
 import { findSymbol } from "@/lib/paper-trading/symbols";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -418,8 +421,15 @@ function TradingWorkspaceInner() {
     onCancelOrders: () => { setRightOpen(true); setActiveTab("positions"); },
   });
 
-  const rightOpen = prefs.rightOpen;
-  const setRightOpen = useCallback((v: boolean) => update("rightOpen", v), [update]);
+  const isMobile = useIsMobile();
+  const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
+  const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
+  const rightOpen = isMobile ? mobilePanelOpen : prefs.rightOpen;
+  const setRightOpen = useCallback(
+    (v: boolean) => (isMobile ? setMobilePanelOpen(v) : update("rightOpen", v)),
+    [isMobile, update],
+  );
+
   const detailsOpen = prefs.detailsOpen;
   const setDetailsOpen = useCallback((v: boolean) => update("detailsOpen", v), [update]);
   const leftRailOpen = prefs.leftRailOpen;
@@ -478,7 +488,7 @@ function TradingWorkspaceInner() {
     <TooltipProvider delayDuration={200}>
       <div className="flex min-h-0 flex-col">
         {/* ── Compact unified toolbar (single row) ────────────────────────── */}
-        <div className="flex flex-wrap items-center gap-2 border-b border-border/50 bg-card/40 px-2 py-1.5 backdrop-blur sm:px-3">
+        <div className="no-scrollbar flex flex-nowrap items-center gap-2 overflow-x-auto border-b border-border/50 bg-card/40 px-2 py-1.5 backdrop-blur sm:px-3 md:flex-wrap md:overflow-x-visible">
           <button
             onClick={() => setSymbolSearchOpen(true)}
             className="group flex min-w-0 items-baseline gap-2 rounded-md border border-border/60 bg-background/60 px-2 py-1 text-sm font-bold tracking-wide transition hover:border-primary/40"
@@ -676,7 +686,7 @@ function TradingWorkspaceInner() {
         )}
 
         {/* ── Main workspace: chart dominates; rails collapse ───────────── */}
-        <div className="flex min-h-0 flex-1">
+        <div className="relative flex min-h-0 flex-1">
           {/* Left tool rail — drawing tools first, then chart utilities */}
           {!focusMode && (
             <nav
@@ -721,7 +731,7 @@ function TradingWorkspaceInner() {
           )}
 
 
-          <div className="relative flex min-h-[calc(100dvh-4.5rem)] min-w-0 flex-1 flex-col border-r border-border/40">
+          <div className="relative flex min-h-[60svh] min-w-0 flex-1 flex-col border-r border-border/40 md:min-h-[calc(100dvh-4.5rem)]">
             {/* Compact active-indicator strip — only shown when indicators
                 are active so the chart owns as much vertical space as possible.
                 The freshness chip lives inside ChartEngine (top-left) and is
@@ -872,10 +882,14 @@ function TradingWorkspaceInner() {
                 className="hidden md:block w-1 shrink-0 cursor-col-resize bg-border/40 hover:bg-primary/60 active:bg-primary transition-colors"
               />
               <aside
-                className="relative flex min-h-0 shrink-0 flex-col overflow-hidden bg-card/30 animate-workspace-slide"
-                style={{ width: `min(100%, ${rightWidth}px)` }}
+                className={cn(
+                  "relative flex min-h-0 shrink-0 flex-col overflow-hidden bg-card/30 animate-workspace-slide",
+                  isMobile && "absolute inset-0 z-40 w-full border-l-0 bg-background",
+                )}
+                style={isMobile ? undefined : { width: `min(100%, ${rightWidth}px)` }}
                 aria-label="Workspace panel"
               >
+
                 <div className="flex items-center justify-between border-b border-border/40 bg-background/40 px-1.5 py-1">
                   <div
                     role="tablist"
@@ -1107,7 +1121,66 @@ function TradingWorkspaceInner() {
               <span className="rotate-180 [writing-mode:vertical-rl]">Workspace</span>
             </button>
           )}
+
+          {/* Mobile-only floating access to tools + workspace panel */}
+          {isMobile && !rightOpen && !focusMode && (
+            <div className="pointer-events-none absolute bottom-3 right-3 z-30 flex flex-col items-end gap-2">
+              <Button
+                size="sm"
+                variant="secondary"
+                className="pointer-events-auto h-11 min-w-11 gap-1.5 rounded-full px-3 text-[11px] shadow-lg"
+                onClick={() => setMobileToolsOpen(true)}
+              >
+                <Target className="h-4 w-4" /> Tools
+              </Button>
+              <Button
+                size="sm"
+                className="pointer-events-auto h-11 min-w-11 gap-1.5 rounded-full px-3 text-[11px] shadow-lg"
+                onClick={() => setRightOpen(true)}
+              >
+                <ListOrdered className="h-4 w-4" /> Panel
+              </Button>
+            </div>
+          )}
         </div>
+
+        {/* Mobile drawing-tools sheet — the desktop rail is hidden below md */}
+        <Sheet open={mobileToolsOpen} onOpenChange={setMobileToolsOpen}>
+          <SheetContent side="bottom" className="max-h-[70dvh] overflow-y-auto p-3">
+            <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              Chart tools
+            </div>
+            <div className="flex flex-wrap items-center gap-1">
+              <DrawingToolRail
+                store={drawingStore}
+                activeTool={activeTool}
+                onToolChange={(t) => { setActiveTool(t); setMobileToolsOpen(false); }}
+                magnet={magnet}
+                onMagnetChange={setMagnet}
+                hidden={drawingsHidden}
+                onHiddenChange={setDrawingsHidden}
+                locked={drawingsLocked}
+                onLockedChange={setDrawingsLocked}
+                revision={drawingRevision}
+              />
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <Button variant="outline" size="sm" className="h-11" onClick={() => { setPlannerActive((v) => !v); setMobileToolsOpen(false); }}>
+                <Target className="mr-1.5 h-4 w-4" /> Plan trade
+              </Button>
+              <Button variant="outline" size="sm" className="h-11" onClick={() => { setDetailsOpen(!detailsOpen); setMobileToolsOpen(false); }}>
+                <Activity className="mr-1.5 h-4 w-4" /> Account
+              </Button>
+              <Button variant="outline" size="sm" className="h-11" onClick={() => { setRightOpen(true); setActiveTab("alerts"); setMobileToolsOpen(false); }}>
+                <Bell className="mr-1.5 h-4 w-4" /> Alerts
+              </Button>
+              <Button variant="outline" size="sm" className="h-11" onClick={() => { screenshot(); setMobileToolsOpen(false); }}>
+                <Camera className="mr-1.5 h-4 w-4" /> Screenshot
+              </Button>
+            </div>
+          </SheetContent>
+        </Sheet>
+
 
         {/* Bottom dock — Orders / Positions / History / Journal / Trade Notes */}
         <BottomDock
