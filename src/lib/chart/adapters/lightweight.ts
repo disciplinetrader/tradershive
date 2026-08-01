@@ -489,41 +489,20 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
       const activeSessions = new Set<string>();
       const activeSmcBoxes = new Set<string>();
       let smcHandled = false;
+      let sessionsHandled = false;
       indicators
         .filter((i) => i.pane !== "sub" && i.visible !== false)
         .forEach((cfg, idx) => {
           const color = cfg.color ?? INDICATOR_COLORS[idx % INDICATOR_COLORS.length];
 
-          // Sessions render as colored bars pinned to the bottom of the pane.
+          // Sessions render as full-height background bands (Asia / London / NY, UTC).
           if (cfg.key === "sessions") {
-            const s = sessions(candles);
-            const buckets: Record<string, number[]> = { asia: s.asia, london: s.london, ny: s.ny };
-            for (const [name, arr] of Object.entries(buckets)) {
-              const id = `${cfg.id}:${name}`;
-              activeSessions.add(id);
-              let hs = sessionSeries.get(id);
-              if (!hs) {
-                hs = chart.addSeries(HistogramSeries, {
-                  priceScaleId: `sess_${name}`,
-                  color: SESSION_COLORS[name],
-                  priceLineVisible: false,
-                  lastValueVisible: false,
-                  base: 0,
-                });
-                chart.priceScale(`sess_${name}`).applyOptions({
-                  scaleMargins: { top: 0.97, bottom: 0 },
-                  visible: false,
-                });
-                sessionSeries.set(id, hs);
-              }
-              hs.setData(
-                candles
-                  .map((c, i) => ({ time: (c.time / 1000) as UTCTimestamp, value: Number.isFinite(arr[i]) ? 1 : 0, color: SESSION_COLORS[name] }))
-                  .filter((p) => p.value > 0) as any,
-              );
-            }
+            sessionsHandled = true;
+            sessionBands = computeSessionBands(candles);
+            sessionsUpdate?.();
             return;
           }
+
 
           // SMC/ICT renders swing lines + BOS/CHoCH markers + FVG/OB boxes.
           if (cfg.key === "smc") {
