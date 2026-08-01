@@ -548,7 +548,31 @@ export function useChartDrawings({
       const current = session;
       session = null;
       pointerId = null;
+
+      if (current.mode === "marquee") {
+        const m = marqueeRef.current;
+        marqueeRef.current = null;
+        const coords = adapter.getCoords?.();
+        if (!m || !coords) { adapter.requestDrawingsRepaint?.(); return; }
+        const left = Math.min(m.x1, m.x2), right = Math.max(m.x1, m.x2);
+        const top = Math.min(m.y1, m.y2), bottom = Math.max(m.y1, m.y2);
+        // A stray ctrl-click shouldn't wipe the selection with a 1px box.
+        if (right - left < 4 && bottom - top < 4) { store.clearSelection(); return; }
+        const hits = store.list().filter((d) => {
+          if (d.hidden) return false;
+          return d.points.some((p) => {
+            const x = coords.x(p.time);
+            const y = coords.y(p.price);
+            if (x == null || y == null) return false;
+            return x >= left && x <= right && y >= top && y <= bottom;
+          });
+        });
+        store.selectMany(hits.map((d) => d.id));
+        return;
+      }
+
       if (current.mode === "create") {
+
         const draft = store.draft;
         if (!draft) return;
         // Position tools follow the same two-click contract as trend lines:
