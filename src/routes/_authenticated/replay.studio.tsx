@@ -7,9 +7,13 @@
  * The page is a thin adapter: it renders selectors and forwards intents.
  */
 import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
+import { useState } from "react";
+import { PanelRight } from "lucide-react";
 import { z } from "zod";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+
 import { ReplayStudioProvider, useReplayStudio } from "@/components/replay/studio/context";
 import { SessionHeader } from "@/components/replay/studio/SessionHeader";
 import { PlaybackControls } from "@/components/replay/studio/PlaybackControls";
