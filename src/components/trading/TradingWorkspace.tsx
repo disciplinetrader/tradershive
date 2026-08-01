@@ -628,9 +628,19 @@ function TradingWorkspaceInner() {
                       checked={!!enabled[i.key]}
                       onCheckedChange={(v) => setEnabled((s) => ({ ...s, [i.key]: !!v }))}
                       onSelect={(e) => e.preventDefault()}
-                      className="text-xs"
+                      className="group text-xs"
                     >
-                      {i.label}
+                      <span className="flex-1">{i.label}</span>
+                      {hasSettings(i.key) && (
+                        <button
+                          aria-label={`${i.label} settings`}
+                          title="Inputs"
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSettingsFor(i.key); }}
+                          className="ml-2 rounded p-0.5 text-muted-foreground opacity-0 transition hover:text-foreground focus:opacity-100 group-hover:opacity-100"
+                        >
+                          <SettingsIcon className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                     </DropdownMenuCheckboxItem>
                   ))}
                 </div>
