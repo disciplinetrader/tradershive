@@ -164,6 +164,13 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
     london: "#60a5fa",
     ny: "#fb923c",
   };
+  // Full-height background bands at 10% opacity (TradingView-style shading).
+  const SESSION_FILLS: Record<string, string> = {
+    asia: "rgba(167,139,250,0.10)",
+    london: "rgba(96,165,250,0.10)",
+    ny: "rgba(251,146,60,0.10)",
+  };
+
   const SMC_BOX_COLORS: Record<string, string> = {
     fvg_bull: "rgba(34,197,94,0.9)",
     fvg_bear: "rgba(239,68,68,0.9)",
