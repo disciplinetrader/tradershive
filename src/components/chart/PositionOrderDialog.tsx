@@ -109,7 +109,7 @@ function LevelField({
 }
 
 export function PositionOrderDialog({
-  draft, marketPrice, tick, decimals = 4, mode = "create", inferredType,
+  draft, marketPrice, tick, decimals = 4, mode = "create",
   balance = 0, defaultRiskPct = 1, sym, onConfirm, onEdit, onCancel,
 }: Props) {
   const [orderType, setOrderType] = useState<OrderType>(draft?.orderType ?? "market");
@@ -326,7 +326,7 @@ export function PositionOrderDialog({
             onClick={() => onConfirm(current)}
             className={cn(isBuy ? "bg-success hover:bg-success/90" : "bg-danger hover:bg-danger/90", "text-white")}
           >
-            {mode === "edit" ? "Save changes" : "Confirm"}
+            {mode === "edit" ? "Save changes" : `Open ${isBuy ? "Buy" : "Sell"} Position`}
           </Button>
         </div>
 
