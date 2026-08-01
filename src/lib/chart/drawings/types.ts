@@ -164,7 +164,8 @@ export interface ClosedTradeStamp {
 
 export const DEFAULT_STYLE: DrawingStyle = {
   color: "#38bdf8",
-  width: 2,
+  width: 3,
+
   lineStyle: 0,
   fillOpacity: 0.12,
   fontSize: 12,
