@@ -113,6 +113,8 @@ export function useChartDrawings({
   // Tick size for price-handle snapping — read synchronously during drags so
   // a precision change never needs to rebuild the pointer listeners.
   const tickRef = useRef(tickFromPrecision(pricePrecision));
+  /** Live Ctrl-drag rubber band, in canvas pixels. Painted by the draw source. */
+  const marqueeRef = useRef<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
   tickRef.current = tickFromPrecision(pricePrecision);
 
   /** Discard an in-flight text session without touching the store. */
@@ -172,16 +174,32 @@ export function useChartDrawings({
     adapter.setPriceFormatter?.((p) => p.toFixed(pricePrecision));
     adapter.setDrawingsSource({
       draw(ctx, coords) {
-        const selectedId = store.selectedIdValue();
         const hoveredId = store.hoveredIdValue();
         for (const d of store.list()) {
+          const selected = store.isSelected(d.id);
           drawDrawing(ctx, coords, d, {
-            selected: d.id === selectedId,
-            hovered: d.id === hoveredId && d.id !== selectedId,
+            selected,
+            hovered: d.id === hoveredId && !selected,
           });
         }
         if (store.draft) drawDrawing(ctx, coords, store.draft, { ghost: true });
+        const m = marqueeRef.current;
+        if (m) {
+          const x = Math.min(m.x1, m.x2);
+          const y = Math.min(m.y1, m.y2);
+          const w = Math.abs(m.x2 - m.x1);
+          const h = Math.abs(m.y2 - m.y1);
+          ctx.save();
+          ctx.setLineDash([4, 3]);
+          ctx.lineWidth = 1;
+          ctx.strokeStyle = "rgba(56, 189, 248, 0.9)";
+          ctx.fillStyle = "rgba(56, 189, 248, 0.12)";
+          ctx.fillRect(x, y, w, h);
+          ctx.strokeRect(x, y, w, h);
+          ctx.restore();
+        }
       },
+
     });
     const unsub = store.subscribe(() => adapter.requestDrawingsRepaint?.());
     adapter.requestDrawingsRepaint?.();
@@ -228,7 +246,8 @@ export function useChartDrawings({
     type Session =
       | { mode: "create"; kind: DrawingKind; origin: DrawingPoint; moved: boolean; downX: number; downY: number }
       | { mode: "move"; id: string; last: DrawingPoint }
-      | { mode: "anchor"; id: string; anchorId: string };
+      | { mode: "anchor"; id: string; anchorId: string }
+      | { mode: "marquee"; downX: number; downY: number };
 
     let session: Session | null = null;
     let pointerId: number | null = null;
@@ -383,6 +402,19 @@ export function useChartDrawings({
 
       // Cursor tool: select / drag existing objects, otherwise let the chart pan.
       if (!coords) return;
+
+      // Ctrl / ⌘ + drag starts a marquee: everything inside is selected so it
+      // can be deleted in one keystroke.
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        pointerId = e.pointerId;
+        session = { mode: "marquee", downX: px, downY: py };
+        marqueeRef.current = { x1: px, y1: py, x2: px, y2: py };
+        adapter.requestDrawingsRepaint?.();
+        return;
+      }
+
       const selectedId = store.selectedIdValue();
       const selected = store.list().find((d) => d.id === selectedId);
       if (selected && !selected.locked) {
@@ -473,10 +505,21 @@ export function useChartDrawings({
 
 
       if (!s || (pointerId != null && e.pointerId !== pointerId)) return;
+
+      // Ctrl-drag marquee: purely a pixel-space rubber band, no chart data.
+      if (s.mode === "marquee") {
+        e.preventDefault();
+        e.stopPropagation();
+        marqueeRef.current = { x1: s.downX, y1: s.downY, x2: px, y2: py };
+        adapter.requestDrawingsRepaint?.();
+        return;
+      }
+
       const pt = toPoint(px, py);
       if (!pt) return;
       e.preventDefault();
       e.stopPropagation();
+
 
       if (s.mode === "create") {
         const draft = store.draft;
@@ -505,7 +548,31 @@ export function useChartDrawings({
       const current = session;
       session = null;
       pointerId = null;
+
+      if (current.mode === "marquee") {
+        const m = marqueeRef.current;
+        marqueeRef.current = null;
+        const coords = adapter.getCoords?.();
+        if (!m || !coords) { adapter.requestDrawingsRepaint?.(); return; }
+        const left = Math.min(m.x1, m.x2), right = Math.max(m.x1, m.x2);
+        const top = Math.min(m.y1, m.y2), bottom = Math.max(m.y1, m.y2);
+        // A stray ctrl-click shouldn't wipe the selection with a 1px box.
+        if (right - left < 4 && bottom - top < 4) { store.clearSelection(); return; }
+        const hits = store.list().filter((d) => {
+          if (d.hidden) return false;
+          return d.points.some((p) => {
+            const x = coords.x(p.time);
+            const y = coords.y(p.price);
+            if (x == null || y == null) return false;
+            return x >= left && x <= right && y >= top && y <= bottom;
+          });
+        });
+        store.selectMany(hits.map((d) => d.id));
+        return;
+      }
+
       if (current.mode === "create") {
+
         const draft = store.draft;
         if (!draft) return;
         // Position tools follow the same two-click contract as trend lines:
@@ -613,13 +680,15 @@ export function useChartDrawings({
         store.setHovered(null);
         pendingCancelRef.current?.();
         if (store.draft) { store.draft = null; store.commit(); }
-        if (store.selectedIdValue()) store.select(null);
+        store.clearSelection();
         if (isDrawingKind(ref.current.activeTool)) ref.current.setActiveTool("cursor");
         return;
       }
-      if ((e.key === "Delete" || e.key === "Backspace") && store.selectedIdValue()) {
+      if (e.key === "Delete" || e.key === "Backspace") {
+        const ids = store.selectionIds();
+        if (!ids.length) return;
         e.preventDefault();
-        store.remove(store.selectedIdValue()!);
+        store.removeMany(ids);
         return;
       }
       if (meta && e.key.toLowerCase() === "z") {

@@ -36,7 +36,8 @@ import { useNavigate } from "@tanstack/react-router";
 import { usePositionOrders } from "@/components/chart/usePositionOrders";
 
 import { DrawingContextMenu } from "@/components/chart/DrawingContextMenu";
-import { DrawingStore } from "@/lib/chart/drawings/store";
+import { DrawingStore, readFavourites, writeFavourites } from "@/lib/chart/drawings/store";
+import { FavoriteToolsBar } from "@/components/chart/FavoriteToolsBar";
 import type { ToolId } from "@/lib/chart/drawings/types";
 import { DEFAULT_CHART_SETTINGS } from "@/lib/chart/constants";
 import type { ChartSettings, ChartType, IndicatorConfig, IndicatorKey } from "@/lib/chart/types";
@@ -201,6 +202,15 @@ function TradingWorkspaceInner() {
   if (!drawingStoreRef.current) drawingStoreRef.current = new DrawingStore();
   const drawingStore = drawingStoreRef.current;
   const [activeTool, setActiveTool] = useState<ToolId>("cursor");
+  // Pinned drawing tools stay reachable over the chart, even in focus mode.
+  const [favouriteTools, setFavouriteTools] = useState<ToolId[]>(() => readFavourites());
+  const toggleFavouriteTool = useCallback((t: ToolId) => {
+    setFavouriteTools((prev) => {
+      const next = prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t];
+      writeFavourites(next);
+      return next;
+    });
+  }, []);
   const [magnet, setMagnet] = useState(false);
   const [drawingsLocked, setDrawingsLocked] = useState(false);
   const [objectTreeOpen, setObjectTreeOpen] = useState(false);
@@ -764,6 +774,8 @@ function TradingWorkspaceInner() {
                     locked={drawingsLocked}
                     onLockedChange={setDrawingsLocked}
                     revision={drawingRevision}
+                    favourites={favouriteTools}
+                    onToggleFavourite={toggleFavouriteTool}
                   />
                   <div className="my-1 h-px w-6 bg-border/60" />
                   <RailButton label="Object tree — manage drawings" icon={Shapes} active={objectTreeOpen} onClick={() => setObjectTreeOpen((v) => !v)} />
@@ -869,6 +881,14 @@ function TradingWorkspaceInner() {
 
             {/* Chart canvas + overlays (fills remaining space) */}
             <div className="relative min-h-0 flex-1">
+              {/* Pinned tools float over the chart so drawing survives focus mode. */}
+              <FavoriteToolsBar
+                favourites={favouriteTools}
+                activeTool={activeTool}
+                onToolChange={setActiveTool}
+                onUnpin={toggleFavouriteTool}
+                className="absolute left-2 top-2 z-30"
+              />
               <ChartEngine
                 settings={chartSettings} indicators={indicators}
                 onQuote={setQuote} onReady={handleReady}

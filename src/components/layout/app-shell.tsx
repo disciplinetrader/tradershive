@@ -19,7 +19,7 @@ import {
   ChevronRight,
   X,
 } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
@@ -86,7 +86,10 @@ const TOUR_TARGETS: Record<string, string | undefined> = {
 export function AppShell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [railHovered, setRailHovered] = useState(false);
+  // Immersive rail expansion is click-driven — hover-expand was distracting
+  // while working on the chart.
+  const [railOpen, setRailOpen] = useState(false);
+  const railRef = useRef<HTMLElement | null>(null);
   const { isAdmin, profile, loading } = useAuth();
   const { open, setOpen } = useCommandPalette();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -103,8 +106,18 @@ export function AppShell({ children }: { children: ReactNode }) {
   // Close mobile drawer on route change
   useEffect(() => {
     setMobileOpen(false);
-    setRailHovered(false);
+    setRailOpen(false);
   }, [pathname]);
+
+  // Click outside collapses the immersive rail again.
+  useEffect(() => {
+    if (!railOpen) return;
+    const onDown = (e: PointerEvent) => {
+      if (railRef.current && !railRef.current.contains(e.target as Node)) setRailOpen(false);
+    };
+    window.addEventListener("pointerdown", onDown, true);
+    return () => window.removeEventListener("pointerdown", onDown, true);
+  }, [railOpen]);
 
   // Redirect users who haven't completed onboarding
   useEffect(() => {
@@ -114,7 +127,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
   }, [loading, profile, pathname, navigate]);
 
-  const effectiveCollapsed = immersive ? !railHovered : collapsed;
+  const effectiveCollapsed = immersive ? !railOpen : collapsed;
 
   return (
     <ProductTourProvider>
@@ -125,17 +138,16 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="pointer-events-none fixed inset-0 z-0 grid-bg opacity-30 [mask-image:radial-gradient(60%_50%_at_50%_20%,black,transparent)]" aria-hidden />
 
 
-      {/* Desktop sidebar — sticky on standard routes, floating icon rail with hover-expand on immersive routes */}
+      {/* Desktop sidebar — sticky on standard routes, floating icon rail (click to expand) on immersive routes */}
       <aside
         data-app-shell-sidebar
-        onMouseEnter={immersive ? () => setRailHovered(true) : undefined}
-        onMouseLeave={immersive ? () => setRailHovered(false) : undefined}
+        ref={railRef}
         className={cn(
           "hidden border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 md:block",
           immersive
             ? cn(
                 "fixed left-0 top-0 z-40 h-dvh",
-                railHovered ? "w-[248px] shadow-2xl" : "w-[64px]",
+                railOpen ? "w-[248px] shadow-2xl" : "w-[64px]",
               )
             : cn(
                 "sticky top-0 z-30 h-dvh shrink-0",
@@ -146,12 +158,12 @@ export function AppShell({ children }: { children: ReactNode }) {
       >
         <SidebarInner
           collapsed={effectiveCollapsed}
-          onToggle={() => setCollapsed((v) => !v)}
+          onToggle={() => (immersive ? setRailOpen((v) => !v) : setCollapsed((v) => !v))}
           showAdmin={isAdmin}
           currentPath={pathname}
-          hideToggle={immersive}
         />
       </aside>
+
 
       {/* Mobile drawer */}
       {mobileOpen ? (
@@ -181,7 +193,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               onToggle={() => {}}
               showAdmin={isAdmin}
               currentPath={pathname}
-              hideToggle
+              
             />
           </motion.aside>
         </div>
@@ -231,39 +243,40 @@ function SidebarInner({
   onToggle,
   showAdmin,
   currentPath,
-  hideToggle,
 }: {
   collapsed: boolean;
   onToggle: () => void;
   showAdmin: boolean;
   currentPath: string;
-  hideToggle?: boolean;
 }) {
   return (
     <TooltipProvider delayDuration={120} skipDelayDuration={80}>
       <div className="flex h-full flex-col">
-        <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-4">
+        <div className={cn("flex h-16 items-center border-b border-sidebar-border", collapsed ? "flex-col justify-center gap-1 px-1" : "gap-2 px-4")}>
           <Link to="/dashboard" className="flex min-w-0 items-center gap-2">
             <img
               src="/logo.png"
               alt="TradersHIVE Arena"
-              className="h-8 w-8 shrink-0 rounded-full object-cover shadow-elegant"
+              className={cn("shrink-0 rounded-full object-cover shadow-elegant", collapsed ? "h-6 w-6" : "h-8 w-8")}
             />
 
             {!collapsed ? (
               <span className="truncate text-sm font-bold tracking-tight text-sidebar-foreground">{APP_NAME}</span>
             ) : null}
           </Link>
-          {!hideToggle ? (
-            <button
-              onClick={onToggle}
-              className="ml-auto hidden h-8 w-8 place-items-center rounded-md text-muted-foreground transition hover:bg-sidebar-accent hover:text-sidebar-accent-foreground md:grid"
-              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            >
-              {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-            </button>
-          ) : null}
+          <button
+            onClick={onToggle}
+            className={cn(
+              "hidden h-7 w-7 place-items-center rounded-md text-muted-foreground transition hover:bg-sidebar-accent hover:text-sidebar-accent-foreground md:grid",
+              !collapsed && "ml-auto h-8 w-8",
+            )}
+            aria-expanded={!collapsed}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </button>
         </div>
+
 
         <nav className={cn("flex-1 overflow-y-auto", collapsed ? "px-2 py-3" : "p-3")}>
           <NavSection items={PRIMARY} collapsed={collapsed} currentPath={currentPath} />

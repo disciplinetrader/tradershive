@@ -26,6 +26,8 @@ function storageKey(scope: string) {
 export class DrawingStore {
   private drawings: Drawing[] = [];
   private selectedId: string | null = null;
+  /** Additional ids selected via marquee (Ctrl-drag) multi-select. */
+  private multiIds: string[] = [];
   private hoveredId: string | null = null;
   private undoStack: Drawing[][] = [];
   private redoStack: Drawing[][] = [];
@@ -114,10 +116,56 @@ export class DrawingStore {
   }
 
   select(id: string | null) {
-    if (this.selectedId === id) return;
+    const hadMulti = this.multiIds.length > 0;
+    if (this.selectedId === id && !hadMulti) return;
+    this.multiIds = [];
     this.selectedId = id;
     this.emit();
   }
+
+  /** Ids currently in the marquee multi-selection (excludes the primary). */
+  multiSelection() { return this.multiIds; }
+
+  /** Every selected id — primary selection plus marquee members. */
+  selectionIds() {
+    const ids = new Set(this.multiIds);
+    if (this.selectedId) ids.add(this.selectedId);
+    return [...ids];
+  }
+
+  isSelected(id: string) {
+    return id === this.selectedId || this.multiIds.includes(id);
+  }
+
+  /** Replace the marquee selection (Ctrl-drag). */
+  selectMany(ids: string[]) {
+    this.multiIds = [...new Set(ids)];
+    this.selectedId = this.multiIds.length === 1 ? this.multiIds[0] : null;
+    if (this.multiIds.length === 1) this.multiIds = [];
+    this.emit();
+  }
+
+  clearSelection() {
+    if (!this.selectedId && !this.multiIds.length) return;
+    this.selectedId = null;
+    this.multiIds = [];
+    this.emit();
+  }
+
+  /** Delete every selected drawing in a single undoable step. */
+  removeMany(ids: string[]) {
+    if (!ids.length) return;
+    const set = new Set(ids);
+    if (!this.drawings.some((d) => set.has(d.id))) return;
+    this.pushHistory();
+    this.drawings = this.drawings.filter((d) => !set.has(d.id));
+    this.selectedId = null;
+    this.multiIds = [];
+    this.hoveredId = null;
+    this.persist();
+    this.emit();
+  }
+
 
   /** Transient hover highlight — never persisted, never part of history. */
   hoveredIdValue() { return this.hoveredId; }
