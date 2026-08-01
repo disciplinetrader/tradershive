@@ -29,7 +29,12 @@ export type ChartPane = {
   chartType: ChartType;
   /** Follow the primary chart's symbol (multi-timeframe mode). */
   syncSymbol: boolean;
+  /** Per-cell indicators, keyed by registry key. Independent of the primary. */
+  indicators?: Record<string, boolean>;
+  /** Per-cell volume sub-pane. */
+  showVolume?: boolean;
 };
+
 
 export const CHART_LAYOUTS: {
   key: ChartLayoutKey;
