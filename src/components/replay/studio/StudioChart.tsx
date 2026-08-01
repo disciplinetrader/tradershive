@@ -46,7 +46,11 @@ function decimalsFor(price: number | null): number {
 }
 
 export function StudioChart({ onAdapterReady }: { onAdapterReady?: (a: ChartAdapter | null) => void }) {
-  const { view, sessionId } = useReplayStudio();
+  const {
+    view, sessionId, riskPercent, setRiskPercent, placeMarketOrder, sizeForRisk, price: livePrice,
+  } = useReplayStudio();
+  const [armed, setArmed] = useState<ArmedOrder | null>(null);
+  const tradingLive = view?.transport.lifecycle !== "completed";
   const hostRef = useRef<HTMLDivElement | null>(null);
   const chartWrapRef = useRef<HTMLDivElement | null>(null);
   const adapterRef = useRef<ChartAdapter | null>(null);
