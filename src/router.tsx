@@ -49,6 +49,13 @@ export const getRouter = () => {
     routeTree,
     context: { queryClient },
     scrollRestoration: true,
+    // Warm the route chunk + loader on hover/touch-start. With a 60ms delay
+    // an incidental pointer sweep across the sidebar costs nothing, while a
+    // deliberate hover buys ~150-300ms of chunk fetch before the click lands.
+    defaultPreload: "intent",
+    defaultPreloadDelay: 60,
+    // TanStack Query owns freshness; the router must not serve its own
+    // preload cache on top of it or the two caches disagree.
     defaultPreloadStaleTime: 0,
     defaultErrorComponent: ({ error, reset }) => (
       <RouteError error={error} reset={reset} boundary="router_default_error" />

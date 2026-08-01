@@ -12,23 +12,28 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { cjk } from "@streamdown/cjk";
-import { code } from "@streamdown/code";
-import { math } from "@streamdown/math";
-import { mermaid } from "@streamdown/mermaid";
 import type { UIMessage } from "ai";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import type { ComponentProps, HTMLAttributes, ReactElement } from "react";
 import {
   createContext,
+  lazy,
   memo,
+  Suspense,
   useCallback,
   useContext,
   useEffect,
   useMemo,
   useState,
 } from "react";
-import { Streamdown } from "streamdown";
+import type MarkdownResponse from "./markdown-response";
+
+/**
+ * Shiki/KaTeX live behind this boundary — see `markdown-response.tsx`. The
+ * import is a *type* import above (erased at build time) plus a dynamic
+ * import below, so nothing from that graph reaches this module's chunk.
+ */
+const LazyMarkdownResponse = lazy(() => import("./markdown-response"));
 
 export type MessageProps = HTMLAttributes<HTMLDivElement> & {
   from: UIMessage["role"];
@@ -319,20 +324,28 @@ export const MessageBranchPage = ({
   );
 };
 
-export type MessageResponseProps = ComponentProps<typeof Streamdown>;
+export type MessageResponseProps = ComponentProps<typeof MarkdownResponse>;
 
-const streamdownPlugins = { cjk, code, math, mermaid };
-
+/**
+ * Streaming text arrives token by token, so this component re-renders on
+ * every chunk. The memo comparator keeps the (expensive) markdown parse off
+ * the hot path unless the text or the animation flag actually changed.
+ *
+ * The fallback intentionally renders the raw text in a pre-wrap block: while
+ * the highlighter chunk is in flight the user still reads the answer, so
+ * there is no layout hole and no CLS when the real renderer swaps in.
+ */
 export const MessageResponse = memo(
   ({ className, ...props }: MessageResponseProps) => (
-    <Streamdown
-      className={cn(
-        "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
-        className
-      )}
-      plugins={streamdownPlugins}
-      {...props}
-    />
+    <Suspense
+      fallback={
+        <div className={cn("size-full whitespace-pre-wrap text-sm leading-relaxed", className)}>
+          {typeof props.children === "string" ? props.children : null}
+        </div>
+      }
+    >
+      <LazyMarkdownResponse className={className} {...props} />
+    </Suspense>
   ),
   (prevProps, nextProps) =>
     prevProps.children === nextProps.children &&
