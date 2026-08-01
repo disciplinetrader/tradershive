@@ -68,6 +68,29 @@ export interface StudioValue {
   closePositionNow: (orderId: string) => void;
   cancelOrder: (orderId: string) => void;
   retry: () => void;
+
+  // ── Phase C · chart-native trading ─────────────────────────────────────
+  /** Balance + open P/L, or null when the session has no starting balance. */
+  equity: number | null;
+  /** Risk budget per trade, in percent of equity. Drives default sizing. */
+  riskPercent: number;
+  setRiskPercent: (pct: number) => void;
+  /** Units implied by the risk budget for a given entry/stop pair. */
+  sizeForRisk: (entry: number, stop: number) => number;
+  /** Place (or amend) an order at an arbitrary chart price — pending or market. */
+  placeOrderAt: (
+    direction: "buy" | "sell",
+    levels: { entry: number; stop: number; target: number },
+    opts?: { size?: number },
+  ) => void;
+  /** Drag stop / target of a live position. Entry is immutable. */
+  modifyLevels: (orderId: string, levels: { stop?: number; target?: number }) => void;
+  /** Amend a resting order's entry / stop / target. */
+  modifyPendingLevels: (orderId: string, levels: { entry?: number; stop?: number; target?: number }) => void;
+  /** Reduce a live position by a fraction (0–1) at the current price. */
+  partialClose: (orderId: string, fraction: number) => void;
+  /** Move the stop to break-even, subject to the canonical guard. */
+  breakEven: (orderId: string) => void;
 }
 
 const Ctx = createContext<StudioValue | null>(null);
