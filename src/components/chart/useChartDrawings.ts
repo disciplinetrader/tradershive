@@ -680,13 +680,15 @@ export function useChartDrawings({
         store.setHovered(null);
         pendingCancelRef.current?.();
         if (store.draft) { store.draft = null; store.commit(); }
-        if (store.selectedIdValue()) store.select(null);
+        store.clearSelection();
         if (isDrawingKind(ref.current.activeTool)) ref.current.setActiveTool("cursor");
         return;
       }
-      if ((e.key === "Delete" || e.key === "Backspace") && store.selectedIdValue()) {
+      if (e.key === "Delete" || e.key === "Backspace") {
+        const ids = store.selectionIds();
+        if (!ids.length) return;
         e.preventDefault();
-        store.remove(store.selectedIdValue()!);
+        store.removeMany(ids);
         return;
       }
       if (meta && e.key.toLowerCase() === "z") {
