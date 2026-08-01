@@ -17,7 +17,11 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { getReplayCandles, getReplaySession } from "@/lib/replay.functions";
 import { makeDrawing } from "@/lib/chart/drawings/store";
-import { placeOrEditOrder, closePosition, cancelPendingOrder } from "@/lib/chart/orders/service";
+import {
+  placeOrEditOrder, closePosition, cancelPendingOrder, positionMetricsFor,
+  updatePositionLevels, partialClosePosition, moveStopToBreakEven,
+} from "@/lib/chart/orders/service";
+import { inferOrderType } from "@/lib/chart/orders/model";
 import type { OrderStores } from "@/lib/chart/orders/service";
 import type { PositionOrder } from "@/lib/chart/orders/model";
 import type { ClosedTrade } from "@/lib/chart/orders/closed-trade";
@@ -68,6 +72,29 @@ export interface StudioValue {
   closePositionNow: (orderId: string) => void;
   cancelOrder: (orderId: string) => void;
   retry: () => void;
+
+  // ── Phase C · chart-native trading ─────────────────────────────────────
+  /** Balance + open P/L, or null when the session has no starting balance. */
+  equity: number | null;
+  /** Risk budget per trade, in percent of equity. Drives default sizing. */
+  riskPercent: number;
+  setRiskPercent: (pct: number) => void;
+  /** Units implied by the risk budget for a given entry/stop pair. */
+  sizeForRisk: (entry: number, stop: number) => number;
+  /** Place (or amend) an order at an arbitrary chart price — pending or market. */
+  placeOrderAt: (
+    direction: "buy" | "sell",
+    levels: { entry: number; stop: number; target: number },
+    opts?: { size?: number },
+  ) => void;
+  /** Drag stop / target of a live position. Entry is immutable. */
+  modifyLevels: (orderId: string, levels: { stop?: number; target?: number }) => void;
+  /** Amend a resting order's entry / stop / target. */
+  modifyPendingLevels: (orderId: string, levels: { entry?: number; stop?: number; target?: number }) => void;
+  /** Reduce a live position by a fraction (0–1) at the current price. */
+  partialClose: (orderId: string, fraction: number) => void;
+  /** Move the stop to break-even, subject to the canonical guard. */
+  breakEven: (orderId: string) => void;
 }
 
 const Ctx = createContext<StudioValue | null>(null);
@@ -245,6 +272,114 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
     [stores, view, price],
   );
 
+  // ── Phase C · chart-native trading ──────────────────────────────────────
+  // Equity is a projection: starting balance + realized tape + open P/L.
+  const realizedPnl = trades.reduce((sum, t) => sum + (Number.isFinite(t.netPnl) ? t.netPnl : 0), 0);
+  const openPnl = positions.reduce((sum, p) => sum + (positionMetricsFor(p, price)?.totalPnl ?? 0), 0);
+  const startingBalance =
+    session?.initial_balance != null && Number.isFinite(Number(session.initial_balance))
+      ? Number(session.initial_balance)
+      : null;
+  const equity = startingBalance == null ? null : startingBalance + realizedPnl + openPnl;
+
+  const [riskPercent, setRiskPercent] = useState(1);
+
+  const sizeForRisk = useCallback(
+    (entry: number, stop: number) => {
+      const distance = Math.abs(entry - stop);
+      if (!(distance > 0) || equity == null || !(equity > 0)) return 1;
+      const budget = (equity * riskPercent) / 100;
+      const units = budget / distance;
+      return Number.isFinite(units) && units > 0 ? units : 1;
+    },
+    [equity, riskPercent],
+  );
+
+  const placeOrderAt = useCallback(
+    (
+      direction: "buy" | "sell",
+      levels: { entry: number; stop: number; target: number },
+      opts: { size?: number } = {},
+    ) => {
+      if (!stores || !view) return;
+      const { entry, stop, target } = levels;
+      if (![entry, stop, target].every((v) => Number.isFinite(v))) return;
+      const orderType = inferOrderType(direction, entry, price);
+      const time = view.transport.marketTime;
+      const drawing = makeDrawing(direction === "buy" ? "long_position" : "short_position", [
+        { time, price: entry },
+        { time, price: target },
+        { time, price: stop },
+      ]);
+      stores.drawings.add(drawing);
+      placeOrEditOrder(
+        stores,
+        {
+          symbol: view.dataset.label.split(" ")[0],
+          direction,
+          orderType,
+          entry,
+          stop,
+          target,
+          size: opts.size ?? sizeForRisk(entry, stop),
+          drawingId: drawing.id,
+        },
+        { marketPrice: price },
+      );
+    },
+    [stores, view, price, sizeForRisk],
+  );
+
+  const modifyLevels = useCallback(
+    (orderId: string, levels: { stop?: number; target?: number }) => {
+      if (stores) updatePositionLevels(stores, orderId, levels);
+    },
+    [stores],
+  );
+
+  const modifyPendingLevels = useCallback(
+    (orderId: string, levels: { entry?: number; stop?: number; target?: number }) => {
+      if (!stores) return;
+      const order = stores.orders.byId(orderId);
+      if (!order || order.status !== "pending") return;
+      const entry = Number.isFinite(levels.entry ?? NaN) ? (levels.entry as number) : order.entry;
+      const stop = Number.isFinite(levels.stop ?? NaN) ? (levels.stop as number) : order.stop;
+      const target = Number.isFinite(levels.target ?? NaN) ? (levels.target as number) : order.target;
+      placeOrEditOrder(
+        stores,
+        {
+          symbol: order.symbol,
+          direction: order.direction,
+          orderType: inferOrderType(order.direction, entry, price),
+          entry,
+          stop,
+          target,
+          size: order.size,
+          drawingId: order.drawingId,
+        },
+        { marketPrice: price },
+      );
+    },
+    [stores, price],
+  );
+
+  const partialClose = useCallback(
+    (orderId: string, fraction: number) => {
+      if (!stores || price == null) return;
+      partialClosePosition(stores, orderId, {
+        kind: "scale_out",
+        percent: Math.max(1, Math.min(99, fraction * 100)),
+        price,
+      });
+    },
+    [stores, price],
+  );
+
+  const breakEven = useCallback(
+    (orderId: string) => { if (stores) moveStopToBreakEven(stores, orderId, price); },
+    [stores, price],
+  );
+
   const closePositionNow = useCallback(
     (orderId: string) => {
       if (!stores || price == null) return;
@@ -254,6 +389,10 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
   );
 
   const cancelOrder = useCallback((orderId: string) => { if (stores) cancelPendingOrder(stores, orderId); }, [stores]);
+
+
+
+
 
   const phase: StudioPhase = !session || candleQuery.isLoading || (!boot && !candleQuery.data?.unavailable)
     ? "loading"
@@ -306,6 +445,15 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
     placeMarketOrder,
     closePositionNow,
     cancelOrder,
+    equity,
+    riskPercent,
+    setRiskPercent,
+    sizeForRisk,
+    placeOrderAt,
+    modifyLevels,
+    modifyPendingLevels,
+    partialClose,
+    breakEven,
     retry: () => { void sessionQuery.refetch(); void candleQuery.refetch(); },
   };
 
