@@ -93,7 +93,7 @@ export function ComparisonPanel({
       <div className="flex items-center justify-between">
         <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Original versus replay</div>
         {model.verdictBlock ? (
-          <Badge variant={model.verdictBlock.verdict === "better_process" ? "default" : "outline"}>
+          <Badge variant={model.verdictBlock.tone === "up" ? "default" : "outline"}>
             {model.verdictBlock.headline}
           </Badge>
         ) : null}
@@ -170,7 +170,7 @@ export function ComparisonPanel({
             breakdown: { rows: model.rows, outcome: model.outcome },
             process_delta: model.verdictBlock?.processDelta ?? null,
             outcome_delta: model.verdictBlock?.outcomeDelta ?? null,
-            verdict: model.verdictBlock?.verdict ?? null,
+            verdict: model.verdictBlock?.tone ?? null,
           })
         }
       >
