@@ -12,6 +12,7 @@ import {
   Shield,
   Sparkles,
   Swords,
+  Dumbbell,
   Film,
   Trophy,
   ChevronLeft,
