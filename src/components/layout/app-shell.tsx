@@ -243,13 +243,11 @@ function SidebarInner({
   onToggle,
   showAdmin,
   currentPath,
-  hideToggle,
 }: {
   collapsed: boolean;
   onToggle: () => void;
   showAdmin: boolean;
   currentPath: string;
-  hideToggle?: boolean;
 }) {
   return (
     <TooltipProvider delayDuration={120} skipDelayDuration={80}>
