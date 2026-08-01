@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Activity, BarChart3, BookMarked, BrainCircuit, Camera, CandlestickChart, Check, ChevronDown, ChevronRight,
   Clock, Bell, Eye, EyeOff, Play, Focus, Keyboard, LineChart as LineChartIcon, ListOrdered, Maximize2, Minimize2,
-  NotebookPen, Newspaper, Settings as SettingsIcon, Shapes, Star, Target,
+  NotebookPen, Newspaper, Settings as SettingsIcon, Shapes, Star, Target, X as XIcon,
 } from "lucide-react";
 
 import { toast } from "sonner";
@@ -785,24 +785,84 @@ function TradingWorkspaceInner() {
 
 
           <div className="relative flex min-h-[320px] min-w-0 flex-1 flex-col border-r border-border/40">
-            {/* Compact active-indicator strip — only shown when indicators
-                are active so the chart owns as much vertical space as possible.
-                The freshness chip lives inside ChartEngine (top-left) and is
-                the single source of truth for data status. */}
-            {activeIndicatorCount > 0 && (
-              <div className="flex items-center gap-2 border-b border-border/40 bg-background/30 px-3 py-1 text-[10px] text-muted-foreground">
-                <LineChartIcon className="h-3 w-3" />
-                <span className="truncate">
-                  {INDICATOR_TOGGLES.filter((i) => enabled[i.key]).map((i) => {
-                    const o = indicatorParams[i.key];
-                    if (!o || Object.keys(o).length === 0) return i.label;
-                    // Reflect custom inputs in the strip, e.g. "EMA (55)".
-                    return `${i.label.replace(/\s*\(.*\)$/, "").replace(/\s+\d+$/, "")} (${Object.values(o).join(", ")})`;
-                  }).join(" · ")}
-                  {smcOn && (activeIndicatorCount > 1 ? " · " : "") + "SMC/ICT"}
-                </span>
+            {/* Persistent BUY / SELL — sits directly above the indicator panel */}
+            {!focusMode && (
+              <div className="flex items-center gap-1.5 border-b border-border/40 bg-background/40 px-3 py-1.5">
+                <Button
+                  size="sm"
+                  className="h-8 gap-1 bg-success px-3 text-[11px] font-bold text-white tabular-nums shadow-sm hover:bg-success/90"
+                  onClick={() => { emitTradeIntent({ kind: "focus_side", side: "long" }); setRightOpen(true); setActiveTab("order"); }}
+                  aria-label={`Buy ${symbol} at ${ask.toFixed(decimals)}`}
+                >
+                  BUY <span className="opacity-90">{ask.toFixed(decimals)}</span>
+                </Button>
+                <Button
+                  size="sm"
+                  className="h-8 gap-1 bg-danger px-3 text-[11px] font-bold text-white tabular-nums shadow-sm hover:bg-danger/90"
+                  onClick={() => { emitTradeIntent({ kind: "focus_side", side: "short" }); setRightOpen(true); setActiveTab("order"); }}
+                  aria-label={`Sell ${symbol} at ${bid.toFixed(decimals)}`}
+                >
+                  SELL <span className="opacity-90">{bid.toFixed(decimals)}</span>
+                </Button>
               </div>
             )}
+
+            {/* Active indicators — one chip per indicator, TradingView-style,
+                each with its own settings and remove control. */}
+            {activeIndicatorCount > 0 && (
+              <div className="flex items-center gap-1.5 overflow-x-auto border-b border-border/40 bg-background/30 px-3 py-1 text-[10px] text-muted-foreground">
+                <LineChartIcon className="h-3 w-3 shrink-0" />
+                {INDICATOR_TOGGLES.filter((i) => enabled[i.key]).map((i) => {
+                  const o = indicatorParams[i.key];
+                  const label = o && Object.keys(o).length
+                    ? `${i.label.replace(/\s*\(.*\)$/, "").replace(/\s+\d+$/, "")} (${Object.values(o).join(", ")})`
+                    : i.label;
+                  return (
+                    <span
+                      key={i.key}
+                      className="group inline-flex shrink-0 items-center gap-1 rounded-md border border-border/50 bg-card/40 px-1.5 py-0.5 text-foreground/80"
+                    >
+                      <span className="whitespace-nowrap">{label}</span>
+                      {hasSettings(i.key) && (
+                        <button
+                          type="button"
+                          className="rounded p-0.5 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                          aria-label={`${i.label} settings`}
+                          title={`${i.label} settings`}
+                          onClick={() => setSettingsFor(i.key)}
+                        >
+                          <SettingsIcon className="h-3 w-3" />
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="rounded p-0.5 text-muted-foreground transition hover:bg-danger/15 hover:text-danger"
+                        aria-label={`Remove ${i.label} from chart`}
+                        title={`Remove ${i.label}`}
+                        onClick={() => setEnabled((s) => ({ ...s, [i.key]: false }))}
+                      >
+                        <XIcon className="h-3 w-3" />
+                      </button>
+                    </span>
+                  );
+                })}
+                {smcOn && (
+                  <span className="group inline-flex shrink-0 items-center gap-1 rounded-md border border-border/50 bg-card/40 px-1.5 py-0.5 text-foreground/80">
+                    <span className="whitespace-nowrap">SMC/ICT</span>
+                    <button
+                      type="button"
+                      className="rounded p-0.5 text-muted-foreground transition hover:bg-danger/15 hover:text-danger"
+                      aria-label="Remove SMC/ICT from chart"
+                      title="Remove SMC/ICT"
+                      onClick={() => setSmcOn(false)}
+                    >
+                      <XIcon className="h-3 w-3" />
+                    </button>
+                  </span>
+                )}
+              </div>
+            )}
+
 
             {/* Chart canvas + overlays (fills remaining space) */}
             <div className="relative min-h-0 flex-1">
@@ -812,27 +872,8 @@ function TradingWorkspaceInner() {
                 onAdapter={handleAdapter} onCandles={handleCandles}
                 className="absolute inset-0"
               >
-                {/* Persistent BUY / SELL — anchored directly under the symbol legend */}
-                {!focusMode && (
-                  <div className="pointer-events-none absolute left-3 top-11 z-30 flex items-center gap-1.5">
-                    <Button
-                      size="sm"
-                      className="pointer-events-auto h-8 gap-1 bg-success px-3 text-[11px] font-bold text-white tabular-nums shadow-md hover:bg-success/90"
-                      onClick={() => { emitTradeIntent({ kind: "focus_side", side: "long" }); setRightOpen(true); setActiveTab("order"); }}
-                      aria-label={`Buy ${symbol} at ${ask.toFixed(decimals)}`}
-                    >
-                      BUY <span className="opacity-90">{ask.toFixed(decimals)}</span>
-                    </Button>
-                    <Button
-                      size="sm"
-                      className="pointer-events-auto h-8 gap-1 bg-danger px-3 text-[11px] font-bold text-white tabular-nums shadow-md hover:bg-danger/90"
-                      onClick={() => { emitTradeIntent({ kind: "focus_side", side: "short" }); setRightOpen(true); setActiveTab("order"); }}
-                      aria-label={`Sell ${symbol} at ${bid.toFixed(decimals)}`}
-                    >
-                      SELL <span className="opacity-90">{bid.toFixed(decimals)}</span>
-                    </Button>
-                  </div>
-                )}
+
+
 
                 {textEditor && (
                   <ChartTextEditor
