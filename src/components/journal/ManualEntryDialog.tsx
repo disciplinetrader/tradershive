@@ -637,6 +637,35 @@ function ManualForm({
           </div>
         </Field>
 
+        {/* Realized P&L — money result, sits alongside R */}
+        <Field
+          label="P&L"
+          hint={<span className="text-[11px] text-muted-foreground">Optional — account currency</span>}
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative w-full max-w-xs">
+              <Input
+                value={pnlInput}
+                onChange={(e) => setPnlInput(e.target.value.replace(/[^0-9.\-]/g, ""))}
+                inputMode="decimal"
+                placeholder="e.g. 250 or -120"
+                className={cn(
+                  "h-11 pr-8 font-medium tabular-nums",
+                  Number(pnlInput) > 0 && pnlInput.trim() !== "" && "text-success",
+                  Number(pnlInput) < 0 && "text-danger",
+                )}
+              />
+              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
+                $
+              </span>
+            </div>
+            <span className="text-[11px] text-muted-foreground">
+              Leave blank to use your R multiple as the result.
+            </span>
+          </div>
+        </Field>
+
+
         {/* Trade Date */}
         <Field label="Trade Date" required error={attempted && missing.date ? "Required" : undefined}>
           <div className="relative max-w-xs">
