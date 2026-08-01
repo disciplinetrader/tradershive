@@ -362,7 +362,9 @@ function ManualForm({
       if (!instrument) throw new Error("Pick an instrument");
 
       const rrSigned = rValue ?? 0;
-      const pnlProxy = rrSigned;
+      const pnlTyped = pnlInput.trim() === "" ? null : Number(pnlInput);
+      const pnlValue =
+        pnlTyped != null && Number.isFinite(pnlTyped) ? pnlTyped : (prefill?.pnl ?? rrSigned);
 
       const openedISO = new Date(`${tradeDate}T12:00:00`).toISOString();
 
@@ -373,7 +375,7 @@ function ManualForm({
         direction: (direction || prefill?.direction || null) as EntryInsert["direction"],
         entry_price: prefill?.entry_price ?? null,
         exit_price: prefill?.exit_price ?? null,
-        pnl: prefill?.pnl ?? pnlProxy,
+        pnl: pnlValue,
         rr: rrSigned,
         risk_pct: null,
         opened_at: openedISO,
