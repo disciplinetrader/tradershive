@@ -2,10 +2,20 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * Table shell — the scroll is contained to the table, so a wide dataset
+ * never creates page-level horizontal scroll. `overscroll-contain` stops
+ * the swipe from chaining to the document on touch.
+ * For genuinely complex datasets prefer <TableOrList> (cards on mobile).
+ */
 const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(
   ({ className, ...props }, ref) => (
-    <div className="relative w-full overflow-auto">
-      <table ref={ref} className={cn("w-full caption-bottom text-sm", className)} {...props} />
+    <div className="relative w-full min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain [-webkit-overflow-scrolling:touch]">
+      <table
+        ref={ref}
+        className={cn("w-full caption-bottom text-fluid-sm", className)}
+        {...props}
+      />
     </div>
   ),
 );
