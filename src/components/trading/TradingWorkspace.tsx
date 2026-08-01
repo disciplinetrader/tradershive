@@ -418,8 +418,15 @@ function TradingWorkspaceInner() {
     onCancelOrders: () => { setRightOpen(true); setActiveTab("positions"); },
   });
 
-  const rightOpen = prefs.rightOpen;
-  const setRightOpen = useCallback((v: boolean) => update("rightOpen", v), [update]);
+  const isMobile = useIsMobile();
+  const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
+  const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
+  const rightOpen = isMobile ? mobilePanelOpen : prefs.rightOpen;
+  const setRightOpen = useCallback(
+    (v: boolean) => (isMobile ? setMobilePanelOpen(v) : update("rightOpen", v)),
+    [isMobile, update],
+  );
+
   const detailsOpen = prefs.detailsOpen;
   const setDetailsOpen = useCallback((v: boolean) => update("detailsOpen", v), [update]);
   const leftRailOpen = prefs.leftRailOpen;
