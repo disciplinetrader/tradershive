@@ -483,12 +483,19 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
         // Trading range of the session = high/low of the bars inside it.
         let high: number | null = null;
         let low: number | null = null;
-        for (const c of candles) {
-          if (c.time < start) continue;
-          if (c.time >= end) break;
+        // Binary search the first bar in the window — a linear scan per band
+        // would be O(days × bars) on 1m history.
+        let lo = 0, hi = candles.length;
+        while (lo < hi) {
+          const mid = (lo + hi) >> 1;
+          if (candles[mid].time < start) lo = mid + 1; else hi = mid;
+        }
+        for (let i = lo; i < candles.length && candles[i].time < end; i++) {
+          const c = candles[i];
           high = high == null ? c.high : Math.max(high, c.high);
           low = low == null ? c.low : Math.min(low, c.low);
         }
+
         bands.push({
           start, end, name: w.name, label: w.label,
           color: SESSION_FILLS[w.name], stroke: SESSION_STROKES[w.name],
