@@ -160,7 +160,7 @@ export const evaluateChallengeInstance = createServerFn({ method: "POST" })
 
     const evaluation = evaluateChallenge(template, facts);
 
-    const patch: Record<string, unknown> = {
+    const patch: Record<string, any> = {
       evaluation: JSON.parse(JSON.stringify(evaluation)),
       progress: evaluation.progress as any,
       evaluator_version: evaluation.evaluatorVersion,

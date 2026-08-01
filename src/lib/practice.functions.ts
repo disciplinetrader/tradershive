@@ -235,8 +235,8 @@ export const completePracticeAssignment = createServerFn({ method: "POST" })
         completed_at: row.completed_at ?? new Date().toISOString(),
         review_session_id: row.replay_session_id,
         result: result
-          ? (JSON.parse(JSON.stringify(result)) as Record<string, unknown>)
-          : { sampleSize: trades.length, scoreVersion: "default_v1" },
+          ? (JSON.parse(JSON.stringify(result)) as any)
+          : ({ sampleSize: trades.length, scoreVersion: "default_v1" } as any),
       })
       .eq("id", data.id)
       .select()
