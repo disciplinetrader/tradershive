@@ -11,11 +11,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
-import { AlertTriangle, ArrowDownRight, ArrowUpRight } from "lucide-react";
+import { AlertTriangle, ArrowDownRight, ArrowUpRight, Minus, Plus } from "lucide-react";
 import {
-  ORDER_TYPE_LABELS, entryDistance, orderTypesFor, validateOrder,
+  ORDER_TYPE_LABELS, entryDistance, inferOrderType, orderTypesFor, validateOrder,
   type OrderDraft, type OrderType,
 } from "@/lib/chart/orders/model";
+import type { SymbolMeta } from "@/lib/paper-trading/symbols";
+import { lotForRisk } from "@/lib/paper-trading/calculations";
+
+/** Risk presets offered next to the risk input. */
+const RISK_PRESETS = [0.25, 0.5, 1, 2];
 
 interface Props {
   draft: OrderDraft | null;
@@ -26,6 +31,12 @@ interface Props {
   mode?: "create" | "edit";
   /** Live-inferred type, shown as a hint when the user overrides it. */
   inferredType?: OrderType | null;
+  /** Account balance used to turn risk % into a position size. */
+  balance?: number;
+  /** Default risk per trade, in percent of balance. */
+  defaultRiskPct?: number;
+  /** Symbol metadata — enables true lot sizing when available. */
+  sym?: SymbolMeta | null;
   onConfirm: (draft: OrderDraft) => void;
   onEdit: () => void;
   onCancel: () => void;
