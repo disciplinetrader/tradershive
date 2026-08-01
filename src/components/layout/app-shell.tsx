@@ -86,7 +86,10 @@ const TOUR_TARGETS: Record<string, string | undefined> = {
 export function AppShell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [railHovered, setRailHovered] = useState(false);
+  // Immersive rail expansion is click-driven — hover-expand was distracting
+  // while working on the chart.
+  const [railOpen, setRailOpen] = useState(false);
+  const railRef = useRef<HTMLElement | null>(null);
   const { isAdmin, profile, loading } = useAuth();
   const { open, setOpen } = useCommandPalette();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
