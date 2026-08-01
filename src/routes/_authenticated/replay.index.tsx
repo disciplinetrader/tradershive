@@ -72,7 +72,7 @@ function ReplayDashboard() {
         });
         return;
       }
-      navigate({ to: "/replay/session", search: { id: res.session.id } as never });
+      navigate({ to: "/replay/studio", search: { id: res.session.id } as never });
     },
   });
 

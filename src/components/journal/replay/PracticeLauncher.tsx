@@ -65,7 +65,7 @@ export function usePracticeLauncher(entry: JournalEntry | null | undefined) {
       if (entry) qc.invalidateQueries({ queryKey: attemptKeys.forEntry(entry.id) });
       setPending(null);
       toast.success(`Attempt ${attempt.attempt_number} ready — future candles are hidden.`);
-      navigate({ to: "/replay/session", search: { id: sessionId } as never });
+      navigate({ to: "/replay/studio", search: { id: sessionId } as never });
     },
     onError: (e) => toast.error((e as Error).message || "Could not start the practice attempt."),
   });

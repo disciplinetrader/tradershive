@@ -186,7 +186,7 @@ function OnboardingPage() {
       markChecklist("create_first_backtest", true);
       if (row?.id) {
         toast.success("🎉 First backtest ready — enjoy the arena");
-        await navigate({ to: "/replay/session", search: { id: row.id } as never });
+        await navigate({ to: "/replay/studio", search: { id: row.id } as never });
       } else {
         if (res.unavailable) {
           toast.info(res.unavailable.message, { description: res.unavailable.remedy });

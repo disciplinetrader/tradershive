@@ -105,7 +105,7 @@ export function CreatorWizard({ open, onOpenChange }: { open: boolean; onOpenCha
     mutationFn: async (input: Parameters<typeof createFn>[0]) => createFn(input),
     onSuccess: (row: { id: string }) => {
       onOpenChange(false);
-      navigate({ to: "/replay/session", search: { id: row.id } as never });
+      navigate({ to: "/replay/studio", search: { id: row.id } as never });
     },
   });
 
