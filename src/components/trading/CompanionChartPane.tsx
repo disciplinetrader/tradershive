@@ -32,9 +32,10 @@ const TYPE_OPTIONS: { key: ChartType; label: string }[] = [
 ];
 
 /**
- * A companion chart inside the multi-chart grid. Read-only by design — the
- * primary pane keeps ownership of drawings, orders and the trade planner, so
- * there is exactly one place where a click can put money at risk.
+ * A companion chart inside the multi-chart grid. Each cell is independent —
+ * its own symbol, timeframe, chart type, indicators and volume pane — while
+ * the primary pane keeps sole ownership of drawings, orders and the trade
+ * planner, so there is exactly one place where a click can put money at risk.
  */
 export function CompanionChartPane({
   pane,
@@ -59,15 +60,30 @@ export function CompanionChartPane({
   const quote = useLiveQuote(symbol, meta?.market);
   const change = quote?.changePct ?? 0;
 
+  const enabled = pane.indicators ?? {};
+  const indicators = useMemo<IndicatorConfig[]>(
+    () =>
+      INDICATOR_TOGGLES.filter((i) => enabled[i.key]).map((i) => ({
+        id: i.key,
+        key: i.key,
+        params: { ...i.params },
+        pane: i.pane,
+        visible: true,
+      })),
+    [enabled],
+  );
+  const activeCount = indicators.length;
+
   const settings: ChartSettings = {
     ...DEFAULT_CHART_SETTINGS,
     symbol,
     market: meta?.market,
     timeframe: pane.timeframe,
     chartType: pane.chartType,
-    showVolume: false,
+    showVolume: pane.showVolume ?? false,
     showGrid: false,
   };
+
 
   const commitSymbol = () => {
     const next = draft.trim().toUpperCase();
