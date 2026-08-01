@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { INDICATOR_PARAM_SCHEMA, clampParam } from "@/lib/chart/indicator-schema";
+import { INDICATOR_PARAM_SCHEMA, clampParam, hoursToHHMM, hhmmToHours } from "@/lib/chart/indicator-schema";
 import type { IndicatorKey } from "@/lib/chart/types";
 
 interface Props {
@@ -31,21 +31,30 @@ export function IndicatorSettingsDialog({
   useEffect(() => {
     if (!open) return;
     const next: Record<string, string> = {};
-    for (const s of specs) next[s.key] = String(values[s.key] ?? defaults[s.key] ?? s.min);
+    for (const s of specs) {
+      const raw = values[s.key] ?? defaults[s.key] ?? s.min;
+      next[s.key] = s.type === "time" ? hoursToHHMM(raw) : String(raw);
+    }
     setDraft(next);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, indicatorKey]);
 
   const commit = () => {
     const out: Record<string, number> = {};
-    for (const s of specs) out[s.key] = clampParam(s, Number(draft[s.key]));
+    for (const s of specs) {
+      const raw = draft[s.key] ?? "";
+      out[s.key] = clampParam(s, s.type === "time" ? hhmmToHours(raw) : Number(raw));
+    }
     onApply(out);
     onOpenChange(false);
   };
 
   const reset = () => {
     const next: Record<string, string> = {};
-    for (const s of specs) next[s.key] = String(defaults[s.key] ?? s.min);
+    for (const s of specs) {
+      const raw = defaults[s.key] ?? s.min;
+      next[s.key] = s.type === "time" ? hoursToHHMM(raw) : String(raw);
+    }
     setDraft(next);
   };
 
@@ -69,17 +78,28 @@ export function IndicatorSettingsDialog({
                 <Label htmlFor={`ind-${s.key}`} className="text-xs">{s.label}</Label>
                 {s.hint && <p className="text-[10px] text-muted-foreground">{s.hint}</p>}
               </div>
-              <Input
-                id={`ind-${s.key}`}
-                type="number"
-                inputMode="decimal"
-                min={s.min}
-                max={s.max}
-                step={s.step ?? 1}
-                value={draft[s.key] ?? ""}
-                onChange={(e) => setDraft((d) => ({ ...d, [s.key]: e.target.value }))}
-                className="h-8 text-right text-xs tabular-nums"
-              />
+              {s.type === "time" ? (
+                <Input
+                  id={`ind-${s.key}`}
+                  type="time"
+                  step={60}
+                  value={draft[s.key] ?? ""}
+                  onChange={(e) => setDraft((d) => ({ ...d, [s.key]: e.target.value }))}
+                  className="h-8 text-right text-xs tabular-nums"
+                />
+              ) : (
+                <Input
+                  id={`ind-${s.key}`}
+                  type="number"
+                  inputMode="decimal"
+                  min={s.min}
+                  max={s.max}
+                  step={s.step ?? 1}
+                  value={draft[s.key] ?? ""}
+                  onChange={(e) => setDraft((d) => ({ ...d, [s.key]: e.target.value }))}
+                  className="h-8 text-right text-xs tabular-nums"
+                />
+              )}
             </div>
           ))}
         </div>
