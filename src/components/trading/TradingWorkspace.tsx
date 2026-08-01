@@ -23,6 +23,7 @@ import { AlertsDialog } from "@/components/chart/AlertsDialog";
 
 import { ChartEngine } from "@/components/chart/ChartEngine";
 import { DrawingToolRail } from "@/components/chart/DrawingToolRail";
+import { ObjectTree } from "@/components/chart/ObjectTree";
 import { useChartDrawings } from "@/components/chart/useChartDrawings";
 import { ChartTextEditor } from "@/components/chart/ChartTextEditor";
 import { PositionOrderDialog } from "@/components/chart/PositionOrderDialog";
@@ -197,6 +198,7 @@ function TradingWorkspaceInner() {
   const [activeTool, setActiveTool] = useState<ToolId>("cursor");
   const [magnet, setMagnet] = useState(false);
   const [drawingsLocked, setDrawingsLocked] = useState(false);
+  const [objectTreeOpen, setObjectTreeOpen] = useState(false);
 
 
 
@@ -724,6 +726,7 @@ function TradingWorkspaceInner() {
                     revision={drawingRevision}
                   />
                   <div className="my-1 h-px w-6 bg-border/60" />
+                  <RailButton label="Object tree — manage drawings" icon={Shapes} active={objectTreeOpen} onClick={() => setObjectTreeOpen((v) => !v)} />
                   <RailButton label="Plan trade (T)" icon={Target} active={plannerActive} onClick={() => setPlannerActive((v) => !v)} />
                   <RailButton label="Alerts" icon={Bell} active={activeTab === "alerts"} onClick={() => { setRightOpen(true); setActiveTab("alerts"); }} />
                   <RailButton label="Replay Studio" icon={Play} onClick={() => { window.location.href = "/replay"; }} />
@@ -860,6 +863,24 @@ function TradingWorkspaceInner() {
                   </>
                 )}
               </ChartEngine>
+
+              <AnimatePresence>
+                {objectTreeOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -8 }}
+                    className="absolute bottom-3 left-3 z-40"
+                  >
+                    <ObjectTree
+                      store={drawingStore}
+                      revision={drawingRevision}
+                      formatPrice={(v) => v.toFixed(decimals)}
+                      onClose={() => setObjectTreeOpen(false)}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Floating focus-mode exit pill (only in focus mode) */}
               <AnimatePresence>
