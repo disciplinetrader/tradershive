@@ -115,6 +115,9 @@ interface Props {
   onLockedChange: (v: boolean) => void;
   /** Store revision — passed so the rail re-renders on undo/redo changes. */
   revision?: unknown;
+  /** Pinned quick-access tools. */
+  favourites?: ToolId[];
+  onToggleFavourite?: (t: ToolId) => void;
   className?: string;
 }
 
