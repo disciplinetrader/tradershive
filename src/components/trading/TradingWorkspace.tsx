@@ -1093,7 +1093,19 @@ function TradingWorkspaceInner() {
                           }}
                         />
                       </AdaptiveSection>
+                    </div>
+                  )}
 
+                  {activeTab === "pending" && (
+                    <div
+                      role="tabpanel"
+                      id="ws-panel-pending"
+                      aria-labelledby="ws-tab-pending"
+                      className="space-y-3 animate-in fade-in duration-150"
+                    >
+                      <AdaptiveSection title="Pending orders" count={pendingCount} emptyLabel="No pending orders">
+                        <OrdersTable />
+                      </AdaptiveSection>
                       <AdaptiveSection
                         title="Chart orders"
                         count={positionOrders.pendingOrders.length}
@@ -1108,12 +1120,25 @@ function TradingWorkspaceInner() {
                           }}
                         />
                       </AdaptiveSection>
-                      <AdaptiveSection title="Pending orders" count={pendingCount} emptyLabel="No pending orders">
-                        <OrdersTable />
-                      </AdaptiveSection>
-
+                      <p className="px-1 text-[11px] text-muted-foreground">
+                        Tip: drag a pending order's label on the chart to re-price it, or press × to cancel.
+                      </p>
                     </div>
                   )}
+
+                  {activeTab === "account" && (
+                    <div
+                      role="tabpanel"
+                      id="ws-panel-account"
+                      aria-labelledby="ws-tab-account"
+                      className="space-y-3 animate-in fade-in duration-150"
+                    >
+                      <TodayPnLWidget />
+                      <AccountSummary />
+                    </div>
+                  )}
+
+
 
                   {activeTab === "alerts" && (
                     <div
