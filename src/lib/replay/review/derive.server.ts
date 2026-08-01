@@ -16,6 +16,10 @@ import { buildSessionSummary, type ReplaySessionSummary } from "./summary";
 
 type DB = SupabaseClient<any, any, any>;
 
+/** Rows cross the SSR boundary, so they must stay plain JSON. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type JsonRow = Record<string, any>;
+
 export async function loadSessionTrades(supabase: DB, sessionId: string): Promise<ClosedTrade[]> {
   const { data, error } = await supabase
     .from("chart_closed_trades")
@@ -24,7 +28,7 @@ export async function loadSessionTrades(supabase: DB, sessionId: string): Promis
     .order("closed_at", { ascending: true })
     .limit(1000);
   if (error) throw error;
-  return (data ?? []).map((r: Record<string, unknown>) => closedTradeFromRow(r));
+  return (data ?? []).map((r: JsonRow) => closedTradeFromRow(r));
 }
 
 export async function loadReflectionCounts(supabase: DB, sessionId: string) {
@@ -47,13 +51,13 @@ export async function loadReflectionCounts(supabase: DB, sessionId: string) {
 }
 
 export interface SessionReview {
-  session: Record<string, unknown> | null;
+  session: JsonRow | null;
   summary: ReplaySessionSummary;
   trades: ClosedTrade[];
-  score: Record<string, unknown> | null;
-  comparisons: Record<string, unknown>[];
-  screenshots: Record<string, unknown>[];
-  homework: Record<string, unknown>[];
+  score: JsonRow | null;
+  comparisons: JsonRow[];
+  screenshots: JsonRow[];
+  homework: JsonRow[];
 }
 
 export async function buildSessionReview(supabase: DB, sessionId: string): Promise<SessionReview> {
@@ -69,7 +73,7 @@ export async function buildSessionReview(supabase: DB, sessionId: string): Promi
     supabase.from("replay_homework").select("*").eq("source_session_id", sessionId).order("created_at", { ascending: false }),
   ]);
 
-  const session = (sessionRes.data ?? null) as Record<string, unknown> | null;
+  const session = (sessionRes.data ?? null) as JsonRow | null;
   const initialBalance = session && typeof session.initial_balance !== "undefined"
     ? Number(session.initial_balance)
     : null;
@@ -90,10 +94,10 @@ export async function buildSessionReview(supabase: DB, sessionId: string): Promi
     session,
     summary,
     trades,
-    score: (scoreRes.data ?? null) as Record<string, unknown> | null,
-    comparisons: (comparisonsRes.data ?? []) as Record<string, unknown>[],
-    screenshots: (shotsRes.data ?? []) as Record<string, unknown>[],
-    homework: (homeworkRes.data ?? []) as Record<string, unknown>[],
+    score: (scoreRes.data ?? null) as JsonRow | null,
+    comparisons: (comparisonsRes.data ?? []) as JsonRow[],
+    screenshots: (shotsRes.data ?? []) as JsonRow[],
+    homework: (homeworkRes.data ?? []) as JsonRow[],
   };
 }
 
@@ -139,7 +143,7 @@ export async function buildHistory(
     .range(opts.offset, opts.offset + opts.limit - 1);
   if (error) throw error;
 
-  const sessions = (data ?? []) as Record<string, unknown>[];
+  const sessions = (data ?? []) as JsonRow[];
   const ids = sessions.map((s) => String(s.id));
   if (ids.length === 0) return { rows: [], total: count ?? 0 };
 
