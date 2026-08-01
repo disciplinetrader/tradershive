@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router";
 import {
   BarChart3,
+  Dumbbell,
   Film,
   History,
   Home,
@@ -12,9 +13,8 @@ import {
 import { SegmentedTabs } from "@/components/ui/segmented-tabs";
 
 // Natural trading workflow ordering: Home → Trading Workspace → Saved
-// Sessions → Trade Review → Performance → Settings. Challenge Mode lives
-// elsewhere in the platform and no longer interrupts the core backtesting
-// workflow.
+// Sessions → Trade Review → Performance → Settings. Practice keeps its own
+// section but is entered from here now that it left the main sidebar.
 const TABS = [
   { to: "/replay", label: "Home", icon: Home, exact: true },
   { to: "/replay/studio", label: "Trading Workspace", icon: Play },
@@ -23,8 +23,10 @@ const TABS = [
   { to: "/replay/history", label: "History", icon: History },
   { to: "/replay/improvement", label: "Improvement", icon: TrendingUp },
   { to: "/replay/performance", label: "Performance", icon: BarChart3 },
+  { to: "/practice", label: "Practice", icon: Dumbbell },
   { to: "/replay/settings", label: "Settings", icon: Settings2 },
 ];
+
 
 export const Route = createFileRoute("/_authenticated/replay")({
   head: () => ({
