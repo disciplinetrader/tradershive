@@ -921,11 +921,16 @@ function TradingWorkspaceInner() {
               <aside
                 className={cn(
                   "relative flex min-h-0 shrink-0 flex-col overflow-hidden bg-card/30 animate-workspace-slide",
-                  isMobile && "absolute inset-0 z-40 w-full border-l-0 bg-background",
+                  isMobile &&
+                    "absolute inset-x-0 bottom-0 top-auto z-40 h-[75dvh] w-full rounded-t-2xl border-l-0 border-t border-border/60 bg-background shadow-2xl",
                 )}
                 style={isMobile ? undefined : { width: `min(100%, ${rightWidth}px)` }}
                 aria-label="Workspace panel"
               >
+                {isMobile && (
+                  <div className="mx-auto mt-1.5 h-1 w-10 shrink-0 rounded-full bg-border" aria-hidden="true" />
+                )}
+
 
                 <div className="flex items-center justify-between border-b border-border/40 bg-background/40 px-1.5 py-1">
                   <div
