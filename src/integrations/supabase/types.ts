@@ -2939,6 +2939,7 @@ export type Database = {
           position_size: number | null
           quantity: number | null
           realized_r: number
+          replay_session_id: string | null
           requested_entry: number | null
           return_percent: number
           risk_amount: number
@@ -2978,6 +2979,7 @@ export type Database = {
           position_size?: number | null
           quantity?: number | null
           realized_r?: number
+          replay_session_id?: string | null
           requested_entry?: number | null
           return_percent?: number
           risk_amount?: number
@@ -3017,6 +3019,7 @@ export type Database = {
           position_size?: number | null
           quantity?: number | null
           realized_r?: number
+          replay_session_id?: string | null
           requested_entry?: number | null
           return_percent?: number
           risk_amount?: number
@@ -3025,7 +3028,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "chart_closed_trades_replay_session_id_fkey"
+            columns: ["replay_session_id"]
+            isOneToOne: false
+            referencedRelation: "replay_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       chart_drawings: {
         Row: {
@@ -8306,12 +8317,17 @@ export type Database = {
           created_at: string
           discipline: number
           execution: number
+          generated_at: string
           id: string
+          input_revision: string | null
+          input_source: string
           journal_completion: number
           patience: number
           risk: number
           score: number
+          score_version: number
           session_id: string
+          unknown_inputs: Json
           updated_at: string
           user_id: string
         }
@@ -8321,12 +8337,17 @@ export type Database = {
           created_at?: string
           discipline?: number
           execution?: number
+          generated_at?: string
           id?: string
+          input_revision?: string | null
+          input_source?: string
           journal_completion?: number
           patience?: number
           risk?: number
           score?: number
+          score_version?: number
           session_id: string
+          unknown_inputs?: Json
           updated_at?: string
           user_id: string
         }
@@ -8336,12 +8357,17 @@ export type Database = {
           created_at?: string
           discipline?: number
           execution?: number
+          generated_at?: string
           id?: string
+          input_revision?: string | null
+          input_source?: string
           journal_completion?: number
           patience?: number
           risk?: number
           score?: number
+          score_version?: number
           session_id?: string
+          unknown_inputs?: Json
           updated_at?: string
           user_id?: string
         }
@@ -8358,34 +8384,52 @@ export type Database = {
       replay_screenshots: {
         Row: {
           annotations: Json
+          bookmark_id: string | null
           caption: string | null
           captured_ts: string
           created_at: string
+          cursor_ts: string | null
+          dataset_checksum: string | null
           id: string
           session_id: string
           storage_path: string
+          symbol: string | null
+          timeframe: string | null
+          trade_id: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           annotations?: Json
+          bookmark_id?: string | null
           caption?: string | null
           captured_ts?: string
           created_at?: string
+          cursor_ts?: string | null
+          dataset_checksum?: string | null
           id?: string
           session_id: string
           storage_path: string
+          symbol?: string | null
+          timeframe?: string | null
+          trade_id?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           annotations?: Json
+          bookmark_id?: string | null
           caption?: string | null
           captured_ts?: string
           created_at?: string
+          cursor_ts?: string | null
+          dataset_checksum?: string | null
           id?: string
           session_id?: string
           storage_path?: string
+          symbol?: string | null
+          timeframe?: string | null
+          trade_id?: string | null
           updated_at?: string
           user_id?: string
         }
