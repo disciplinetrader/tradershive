@@ -205,11 +205,17 @@ export function PositionOrderDialog({
           <div>
             <div className="mb-1.5 text-[11px] uppercase tracking-wide text-muted-foreground">
               Order type
-              {inferredType && inferredType !== orderType ? (
-                <span className="ml-1 normal-case text-muted-foreground/70">
-                  (auto: {ORDER_TYPE_LABELS[inferredType]})
-                </span>
-              ) : null}
+              {typeLocked && autoType && autoType !== orderType ? (
+                <button
+                  type="button"
+                  onClick={() => { setTypeLocked(false); setOrderType(autoType); }}
+                  className="ml-1 normal-case text-primary underline-offset-2 hover:underline"
+                >
+                  auto-detect: {ORDER_TYPE_LABELS[autoType]}
+                </button>
+              ) : (
+                <span className="ml-1 normal-case text-muted-foreground/70">(auto-detected)</span>
+              )}
             </div>
             <div className="grid grid-cols-3 gap-1.5">
               {orderTypesFor(current.direction).map((t) => (
@@ -217,7 +223,7 @@ export function PositionOrderDialog({
                   key={t}
                   type="button"
                   data-testid={`order-type-${t}`}
-                  onClick={() => setOrderType(t)}
+                  onClick={() => { setTypeLocked(true); setOrderType(t); }}
                   className={cn(
                     "rounded-md border px-2 py-1.5 text-[12px] font-medium transition-colors",
                     t === orderType
@@ -233,20 +239,51 @@ export function PositionOrderDialog({
 
           <div className="grid grid-cols-3 gap-2">
             <LevelField
-              label="Entry" testId="order-entry" step={step}
+              label="Entry" testId="order-entry" step={step} decimals={decimals}
               value={levels.entry} onChange={(v) => setLevels((s) => ({ ...s, entry: v }))}
             />
             <LevelField
-              label="Stop loss" testId="order-stop" step={step} tone="down"
+              label="Stop loss" testId="order-stop" step={step} decimals={decimals} tone="down"
               value={levels.stop} onChange={(v) => setLevels((s) => ({ ...s, stop: v }))}
             />
             <LevelField
-              label="Take profit" testId="order-target" step={step} tone="up"
+              label="Take profit" testId="order-target" step={step} decimals={decimals} tone="up"
               value={levels.target} onChange={(v) => setLevels((s) => ({ ...s, target: v }))}
             />
           </div>
 
-          <div className="rounded-lg border bg-muted/30 px-3 py-1">
+          <div className="rounded-lg border bg-muted/30 px-3 py-2">
+            <div className="mb-1.5 flex items-center justify-between gap-2">
+              <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Risk per trade</span>
+              <div className="flex items-center gap-1">
+                {RISK_PRESETS.map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    data-testid={`risk-preset-${p}`}
+                    onClick={() => setRiskPct(p)}
+                    className={cn(
+                      "rounded border px-1.5 py-0.5 text-[11px] font-medium",
+                      riskPct === p
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border text-muted-foreground hover:bg-muted",
+                    )}
+                  >
+                    {p}%
+                  </button>
+                ))}
+                <input
+                  type="number"
+                  step={0.05}
+                  min={0}
+                  value={riskPct}
+                  aria-label="Risk percent"
+                  data-testid="order-risk-pct"
+                  onChange={(e) => setRiskPct(Number(e.target.value))}
+                  className="w-16 rounded-md border border-border bg-background px-1.5 py-0.5 text-center font-mono text-[11px] tabular-nums outline-none focus:border-primary"
+                />
+              </div>
+            </div>
             <Row label="Risk" value={fmt(risk)} tone="down" />
             <Row label="Reward" value={fmt(reward)} tone="up" />
             <Row label="Risk : Reward" value={`1 : ${rr.toFixed(2)}`} />
@@ -256,11 +293,17 @@ export function PositionOrderDialog({
               tone="muted"
             />
             <Row
-              label="Est. position size"
-              value={current.size == null ? "Not sized" : current.size.toFixed(2)}
+              label={`Risk amount (${riskPct}%)`}
+              value={riskAmount > 0 ? riskAmount.toFixed(2) : "—"}
+              tone="muted"
+            />
+            <Row
+              label={sym ? "Position size (lots)" : "Est. position size"}
+              value={current.size == null ? "Not sized" : current.size.toFixed(sym ? 2 : 2)}
               tone="muted"
             />
           </div>
+
 
           {!validation.ok ? (
             <Alert variant="destructive" className="py-2" data-testid="order-validation-errors">
