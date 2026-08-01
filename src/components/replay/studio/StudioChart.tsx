@@ -368,6 +368,18 @@ export function StudioChart({ onAdapterReady }: { onAdapterReady?: (a: ChartAdap
 
         <div ref={chartWrapRef} className="relative min-w-0 flex-1">
           <div ref={hostRef} className="absolute inset-0" data-testid="studio-chart" data-studio-chart="" />
+          <StudioTradeLayer
+            adapter={adapter}
+            tick={`${view?.transport.cursor ?? 0}:${displayTf}:${chartBounds.width}x${chartBounds.height}`}
+            decimals={decimals}
+            armed={armed}
+            onPlaced={() => setArmed(null)}
+          />
+          {armed ? (
+            <div className="pointer-events-none absolute left-1/2 top-3 z-40 -translate-x-1/2 rounded-full border border-border/60 bg-background/95 px-3 py-1 text-[11px] shadow-lg backdrop-blur">
+              Click the chart to place a {armed.direction === "buy" ? "buy" : "sell"} order · {riskPercent}% risk · Esc to cancel
+            </div>
+          ) : null}
           {textEditor ? (
             <ChartTextEditor
               state={textEditor}
