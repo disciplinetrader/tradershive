@@ -49,6 +49,14 @@ export const INDICATOR_PARAM_SCHEMA: Partial<Record<IndicatorKey, IndicatorParam
     { key: "ny_end", label: "New York close (UTC h)", min: 0, max: 24, step: 0.5 },
   ],
   fib: [{ key: "length", label: "Lookback bars", min: 20, max: 500 }],
+  sr: [
+    { key: "left", label: "Pivot left bars", min: 1, max: 30 },
+    { key: "right", label: "Pivot right bars", min: 1, max: 30 },
+    { key: "levels", label: "Max levels", min: 1, max: 20 },
+  ],
+};
+
+
 
 
 /** Clamp a user-entered value into the spec's allowed range. */
