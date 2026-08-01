@@ -6,7 +6,7 @@
  * design: the clock replays every observation on the way to the target so
  * pending orders, stops and targets in the skipped region still resolve.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   CalendarClock, ChevronRight, FastForward, Gauge, Pause, Play, SkipForward,
 } from "lucide-react";
@@ -17,6 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { MAX_SPEED, MIN_SPEED } from "@/lib/replay/session/clock";
 import { useReplayStudio } from "./context";
+import { StudioHotkeys } from "./StudioHotkeys";
 
 const SPEEDS = [0.25, 0.5, 1, 2, 4, 10, 25, 50, 100];
 
@@ -191,6 +192,8 @@ export function PlaybackControls() {
       <span className="shrink-0 whitespace-nowrap font-mono text-[11px] text-muted-foreground">
         {new Date(t.marketTime).toISOString().replace("T", " ").slice(0, 16)} UTC
       </span>
+
+      <StudioHotkeys />
     </div>
   );
 }
