@@ -111,7 +111,7 @@ function LandingPage() {
   }, [loading, user, navigate]);
 
   return (
-    <div className="relative min-h-dvh overflow-x-hidden bg-background text-foreground antialiased">
+    <div className="dark relative min-h-dvh overflow-x-hidden bg-background text-foreground antialiased">
       <AmbientBackground />
       <Navbar />
       <main id="main">
@@ -192,9 +192,7 @@ function Navbar() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link to="/" className="group flex items-center gap-2" aria-label={APP_NAME}>
           <LogoMark />
-          <span className="text-sm font-semibold tracking-tight sm:text-base">
-            {APP_NAME}
-          </span>
+          <span className="text-sm font-semibold tracking-tight sm:text-base">{APP_NAME}</span>
         </Link>
 
         <nav className="hidden items-center gap-1 lg:flex" aria-label="Primary">
@@ -217,7 +215,9 @@ function Navbar() {
         <div className="hidden items-center gap-2 lg:flex">
           {user ? (
             <Button asChild size="sm" className="rounded-full">
-              <Link to="/dashboard">Open App <ArrowRight className="ml-1.5 h-3.5 w-3.5" /></Link>
+              <Link to="/dashboard">
+                Open App <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+              </Link>
             </Button>
           ) : (
             <>
@@ -225,7 +225,9 @@ function Navbar() {
                 <Link to="/login">Sign in</Link>
               </Button>
               <Button asChild size="sm" className="rounded-full shadow-lg shadow-primary/20">
-                <Link to="/register">Join Closed Beta <ArrowRight className="ml-1.5 h-3.5 w-3.5" /></Link>
+                <Link to="/register">
+                  Join Closed Beta <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                </Link>
               </Button>
             </>
           )}
@@ -285,7 +287,12 @@ function Navbar() {
 function LogoMark() {
   return (
     <div className="relative grid h-8 w-8 place-items-center overflow-hidden rounded-xl bg-gradient-to-br from-primary to-primary/60 shadow-lg shadow-primary/25">
-      <svg viewBox="0 0 24 24" className="h-4 w-4 text-primary-foreground" fill="currentColor" aria-hidden>
+      <svg
+        viewBox="0 0 24 24"
+        className="h-4 w-4 text-primary-foreground"
+        fill="currentColor"
+        aria-hidden
+      >
         <path d="M12 2l3.5 6.1L22 9.3l-5 4.9 1.2 7L12 17.9 5.8 21.2 7 14.2l-5-4.9 6.5-1.2L12 2z" />
       </svg>
     </div>
@@ -366,81 +373,85 @@ const fadeUp: Variants = {
 
 function Hero() {
   const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
-  const y = useTransform(scrollYProgress, [0, 1], [0, 60]);
 
   return (
-    <section ref={ref} className="relative z-10 pt-32 sm:pt-40">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid gap-12 lg:grid-cols-[1.1fr_1fr] lg:items-center lg:gap-16">
-          <div>
-            <motion.div initial="hidden" animate="show" variants={fadeUp} custom={0}>
-              <EyebrowBadge icon={Sparkles}>Now in Closed Beta · Free to join</EyebrowBadge>
-            </motion.div>
-            <motion.h1
-              initial="hidden"
-              animate="show"
-              variants={fadeUp}
-              custom={1}
-              className="mt-6 text-balance text-4xl font-semibold leading-[1.05] tracking-tight sm:text-6xl md:text-7xl"
-            >
-              {HEADLINE.split(" You Were Meant to Be")[0]}{" "}
-              <span className="bg-gradient-to-br from-primary via-primary to-primary/60 bg-clip-text text-transparent">
-                You Were Meant to Be
-              </span>
-              .
-            </motion.h1>
-            <motion.p
-              initial="hidden"
-              animate="show"
-              variants={fadeUp}
-              custom={2}
-              className="mt-6 max-w-xl text-pretty text-lg leading-relaxed text-muted-foreground"
-            >
-              {SUBHEAD}
-            </motion.p>
-            <motion.div
-              initial="hidden"
-              animate="show"
-              variants={fadeUp}
-              custom={3}
-              className="mt-8 flex flex-wrap items-center gap-3"
-            >
-              <Button asChild size="lg" className="h-12 rounded-full px-6 shadow-xl shadow-primary/25">
-                <Link to="/register">
-                  Join Closed Beta <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-              <Button
-                asChild
-                variant="outline"
-                size="lg"
-                className="h-12 rounded-full border-border/70 bg-background/50 px-6 backdrop-blur"
-              >
-                <a href="#replay">
-                  <Play className="mr-2 h-4 w-4" /> Watch Demo
-                </a>
-              </Button>
-            </motion.div>
-            <motion.ul
-              initial="hidden"
-              animate="show"
-              variants={fadeUp}
-              custom={4}
-              className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground"
-            >
-              {["No credit card", "Forex · Crypto · Stocks", "Cancel anytime"].map((t) => (
-                <li key={t} className="inline-flex items-center gap-2">
-                  <Check className="h-4 w-4 text-success" /> {t}
-                </li>
-              ))}
-            </motion.ul>
-          </div>
+    <section ref={ref} className="relative z-10 pt-28 sm:pt-36">
+      <div className="mx-auto max-w-5xl px-4 text-center sm:px-6 lg:px-8">
+        <motion.div initial="hidden" animate="show" variants={fadeUp} custom={0}>
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+            </span>
+            Now in Closed Beta · Free to join
+          </span>
+        </motion.div>
 
-          <motion.div style={{ y }} className="relative">
-            <HeroMockup />
-          </motion.div>
-        </div>
+        <motion.h1
+          initial="hidden"
+          animate="show"
+          variants={fadeUp}
+          custom={1}
+          className="mt-8 text-balance font-display text-5xl font-bold leading-[1.05] tracking-tight sm:text-7xl md:text-8xl"
+        >
+          Master the markets
+          <br />
+          <span className="bg-gradient-to-r from-primary via-primary-glow to-primary bg-clip-text text-transparent">
+            in high fidelity.
+          </span>
+        </motion.h1>
+
+        <motion.p
+          initial="hidden"
+          animate="show"
+          variants={fadeUp}
+          custom={2}
+          className="mx-auto mt-8 max-w-2xl text-pretty text-lg font-light leading-relaxed text-muted-foreground sm:text-xl"
+        >
+          {SUBHEAD}
+        </motion.p>
+
+        <motion.div
+          initial="hidden"
+          animate="show"
+          variants={fadeUp}
+          custom={3}
+          className="mt-10 flex flex-wrap items-center justify-center gap-4"
+        >
+          <Button
+            asChild
+            size="lg"
+            className="h-14 rounded-xl px-8 text-base shadow-lg shadow-primary/25"
+          >
+            <Link to="/register">
+              Start training now <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
+          <Button
+            asChild
+            variant="outline"
+            size="lg"
+            className="h-14 rounded-xl border-border/70 bg-surface/60 px-8 text-base backdrop-blur"
+          >
+            <a href="#replay">
+              <Play className="mr-2 h-4 w-4" /> Watch demo
+            </a>
+          </Button>
+        </motion.div>
+
+        <motion.ul
+          initial="hidden"
+          animate="show"
+          variants={fadeUp}
+          custom={4}
+          className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground"
+        >
+          {["No credit card", "Forex · Crypto · Stocks", "Cancel anytime"].map((t) => (
+            <li key={t} className="inline-flex items-center gap-2">
+              <Check className="h-4 w-4 text-success" /> {t}
+            </li>
+          ))}
+        </motion.ul>
       </div>
     </section>
   );
@@ -472,7 +483,9 @@ function HeroMockup() {
           <div className="relative aspect-[16/10] bg-gradient-to-br from-background to-muted/30 p-4">
             <MockChart />
             <FloatingCard className="absolute left-4 top-4" tone="up">
-              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Session P&L</div>
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                Session P&L
+              </div>
               <div className="text-lg font-semibold text-success">+$1,284.50</div>
               <div className="text-[10px] text-success/80">▲ +2.14% · 7 trades</div>
             </FloatingCard>
@@ -485,12 +498,16 @@ function HeroMockup() {
             </FloatingCard>
           </div>
           <div className="border-l border-border/60 bg-muted/20 p-3 text-xs">
-            <div className="mb-2 text-[10px] uppercase tracking-wide text-muted-foreground">Positions</div>
+            <div className="mb-2 text-[10px] uppercase tracking-wide text-muted-foreground">
+              Positions
+            </div>
             <MockRow ticker="EURUSD" side="long" pnl="+$412" up />
             <MockRow ticker="XAUUSD" side="long" pnl="+$680" up />
             <MockRow ticker="BTCUSD" side="short" pnl="-$92" />
             <div className="my-3 h-px bg-border/60" />
-            <div className="mb-2 text-[10px] uppercase tracking-wide text-muted-foreground">Playbook</div>
+            <div className="mb-2 text-[10px] uppercase tracking-wide text-muted-foreground">
+              Playbook
+            </div>
             <MockRow ticker="Liquidity Sweep" side="setup" pnl="72% WR" up />
             <MockRow ticker="London Reversal" side="setup" pnl="61% WR" up />
           </div>
@@ -545,9 +562,7 @@ function MockChart() {
         initial={{ pathLength: 0, opacity: 0 }}
         animate={{ pathLength: 1, opacity: 1 }}
         transition={{ duration: 1.5, ease: "easeOut" }}
-        d={bars
-          .map((b, i) => `${i === 0 ? "M" : "L"} ${i * 10 + 5} ${220 - b.c * 3}`)
-          .join(" ")}
+        d={bars.map((b, i) => `${i === 0 ? "M" : "L"} ${i * 10 + 5} ${220 - b.c * 3}`).join(" ")}
         fill="none"
         stroke="hsl(var(--primary))"
         strokeWidth="1.5"
@@ -637,28 +652,34 @@ function MockRow({
 
 function TrustBar() {
   const stats = [
-    { label: "Total backtests", value: "—", hint: "unlocks at launch" },
-    { label: "Trades reviewed", value: "—", hint: "unlocks at launch" },
-    { label: "Hours replayed", value: "—", hint: "unlocks at launch" },
-    { label: "Avg. user rating", value: "—", hint: "closed beta" },
+    { label: "Markets covered", value: "Forex · Crypto · Stocks" },
+    { label: "Historical data", value: "Tick-accurate" },
+    { label: "Timeframes", value: "1m → 1M" },
+    { label: "AI coaching", value: "24/7" },
   ];
   return (
-    <Section className="!py-14">
+    <Section className="!py-16">
       <div className="text-center text-xs uppercase tracking-[0.2em] text-muted-foreground">
-        Trusted by early beta traders across Forex, Crypto & Stocks
+        Built for serious traders across Forex, Crypto &amp; Stocks
       </div>
-      <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        {stats.map((s) => (
-          <div
+      <div className="mx-auto mt-10 grid max-w-4xl grid-cols-2 gap-8 border-t border-border/40 pt-12 md:grid-cols-4">
+        {stats.map((s, i) => (
+          <motion.div
             key={s.label}
-            className="rounded-2xl border border-border/60 bg-background/40 p-5 text-center backdrop-blur"
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-60px" }}
+            variants={fadeUp}
+            custom={i}
+            className="text-center"
           >
-            <div className="text-2xl font-semibold tracking-tight">{s.value}</div>
-            <div className="mt-1 text-xs text-muted-foreground">{s.label}</div>
-            <div className="mt-2 text-[10px] uppercase tracking-wider text-muted-foreground/70">
-              {s.hint}
+            <div className="font-display text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+              {s.value}
             </div>
-          </div>
+            <div className="mt-1 text-xs uppercase tracking-widest text-muted-foreground">
+              {s.label}
+            </div>
+          </motion.div>
         ))}
       </div>
     </Section>
@@ -669,63 +690,55 @@ function TrustBar() {
 /* Feature Overview                                                     */
 /* ================================================================== */
 
-const FEATURES: {
-  icon: typeof Film;
-  title: string;
-  desc: string;
-  href: string;
-  tint: string;
-}[] = [
-  {
-    icon: Film,
-    title: "Replay Studio",
-    desc: "Rewind any market, any timeframe. Practice setups on real historical data.",
-    href: "#replay",
-    tint: "from-primary/20 to-transparent",
-  },
+const BENTO_SMALL: { icon: typeof Film; title: string; desc: string; href: string }[] = [
   {
     icon: BookOpen,
     title: "Trading Journal",
-    desc: "Auto-populated entries from every trade with screenshots, tags and R-multiples.",
+    desc: "Automatic logging with screenshots, tags, R-multiples and emotional context.",
     href: "#features",
-    tint: "from-info/20 to-transparent",
   },
   {
-    icon: BarChart3,
-    title: "Performance Analytics",
-    desc: "Sharpe, Sortino, drawdown, session heatmaps and strategy-level breakdowns.",
-    href: "#analytics",
-    tint: "from-success/20 to-transparent",
-  },
-  {
-    icon: Brain,
-    title: "AI Trading Coach",
-    desc: "A personal mentor that reads your data, spots leaks and builds your roadmap.",
-    href: "#ai",
-    tint: "from-primary/20 to-transparent",
-  },
-  {
-    icon: LineChart,
-    title: "Paper Trading",
-    desc: "Live-feel execution with realistic spreads, margin, SL/TP and risk controls.",
+    icon: Shield,
+    title: "Prop Challenges",
+    desc: "Simulate institutional evaluations with strict drawdown and payout rules.",
     href: "#workspace",
-    tint: "from-warning/20 to-transparent",
   },
   {
-    icon: Target,
-    title: "Trade Review",
-    desc: "Grade every trade A+ to F, run checklists, and jump back to the exact chart.",
+    icon: TrendingUp,
+    title: "Global Rankings",
+    desc: "Climb the leaderboard and prove your edge against traders worldwide.",
     href: "#workspace",
-    tint: "from-danger/20 to-transparent",
-  },
-  {
-    icon: Rocket,
-    title: "Saved Sessions",
-    desc: "Continue where you left off with one click. Favorite, archive and duplicate.",
-    href: "#replay",
-    tint: "from-info/20 to-transparent",
   },
 ];
+
+function BentoTile({
+  className,
+  children,
+  href,
+  delay = 0,
+}: {
+  className?: string;
+  children: ReactNode;
+  href: string;
+  delay?: number;
+}) {
+  return (
+    <motion.a
+      href={href}
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: true, margin: "-80px" }}
+      variants={fadeUp}
+      custom={delay}
+      className={cn(
+        "group relative overflow-hidden rounded-3xl border border-border/60 bg-surface p-8 transition-all duration-300 hover:-translate-y-1 hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/10",
+        className,
+      )}
+    >
+      {children}
+    </motion.a>
+  );
+}
 
 function FeatureOverview() {
   return (
@@ -741,35 +754,81 @@ function FeatureOverview() {
         description="Stop stitching together five apps. Replay, journal, analytics and coaching live in one professional cockpit."
       />
 
-      <div className="mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {FEATURES.map((f, i) => (
-          <motion.a
-            key={f.title}
-            href={f.href}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-80px" }}
-            variants={fadeUp}
-            custom={i}
-            className="group relative flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-background/50 p-6 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:bg-background/70 hover:shadow-2xl hover:shadow-primary/10"
-          >
-            <div
-              className={cn(
-                "pointer-events-none absolute inset-0 bg-gradient-to-br opacity-0 transition-opacity duration-500 group-hover:opacity-100",
-                f.tint,
-              )}
-            />
-            <div className="relative">
-              <div className="mb-5 inline-flex h-11 w-11 items-center justify-center rounded-xl border border-border/60 bg-background/70 text-primary shadow-sm">
-                <f.icon className="h-5 w-5" />
-              </div>
-              <h3 className="text-lg font-semibold tracking-tight">{f.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{f.desc}</p>
-              <div className="mt-6 inline-flex items-center gap-1 text-sm font-medium text-primary opacity-80 transition group-hover:gap-2 group-hover:opacity-100">
-                Learn more <ArrowRight className="h-3.5 w-3.5" />
-              </div>
+      <div className="mt-16 grid grid-cols-1 gap-6 md:grid-cols-12">
+        {/* Primary tile — replay engine with live product surface */}
+        <BentoTile href="#replay" className="md:col-span-8" delay={0}>
+          <div className="relative z-10">
+            <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/15 text-primary">
+              <Film className="h-6 w-6" />
             </div>
-          </motion.a>
+            <h3 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">
+              Advanced backtesting engine
+            </h3>
+            <p className="mt-2 max-w-md text-muted-foreground">
+              Replay historical market data with tick-level precision. Practise every order type in
+              a risk-free environment, at any speed.
+            </p>
+          </div>
+          <div className="relative mt-8">
+            <HeroMockup />
+          </div>
+        </BentoTile>
+
+        {/* AI coach */}
+        <BentoTile href="#ai" className="flex flex-col justify-between md:col-span-4" delay={1}>
+          <div>
+            <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/15 text-primary">
+              <Brain className="h-6 w-6" />
+            </div>
+            <h3 className="font-display text-2xl font-bold tracking-tight">AI Coach</h3>
+            <p className="mt-2 text-muted-foreground">
+              Real-time analysis of your execution, psychology and repeating patterns — with a
+              roadmap built from your own data.
+            </p>
+          </div>
+          <div className="mt-8 border-t border-border/50 pt-6 text-sm font-semibold text-primary">
+            <span className="inline-flex items-center gap-1 transition-all group-hover:gap-2">
+              Ask AI to review a trade <ArrowRight className="h-3.5 w-3.5" />
+            </span>
+          </div>
+        </BentoTile>
+
+        {/* Analytics — wide secondary */}
+        <BentoTile href="#analytics" className="md:col-span-12 lg:col-span-12" delay={2}>
+          <div className="grid gap-8 lg:grid-cols-[1fr_1.1fr] lg:items-center">
+            <div>
+              <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/15 text-primary">
+                <BarChart3 className="h-6 w-6" />
+              </div>
+              <h3 className="font-display text-2xl font-bold tracking-tight">
+                Institutional-grade analytics
+              </h3>
+              <p className="mt-2 max-w-md text-muted-foreground">
+                Expectancy, Sharpe, Sortino, drawdown, session heatmaps and strategy-level
+                breakdowns — computed on every trade you log.
+              </p>
+            </div>
+            <div className="flex h-40 items-end gap-2 rounded-2xl border border-border/50 bg-background/60 p-4">
+              {[22, 38, 31, 56, 47, 72, 63, 90].map((h, i) => (
+                <span
+                  key={i}
+                  className="flex-1 rounded-t bg-primary/70 transition-all duration-500 group-hover:bg-primary"
+                  style={{ height: `${h}%` }}
+                />
+              ))}
+            </div>
+          </div>
+        </BentoTile>
+
+        {/* Bottom trio */}
+        {BENTO_SMALL.map((f, i) => (
+          <BentoTile key={f.title} href={f.href} className="md:col-span-4" delay={i + 3}>
+            <div className="mb-5 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary/15 text-primary">
+              <f.icon className="h-5 w-5" />
+            </div>
+            <h3 className="font-display text-xl font-bold tracking-tight">{f.title}</h3>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{f.desc}</p>
+          </BentoTile>
         ))}
       </div>
     </Section>
@@ -1179,7 +1238,11 @@ function BetaSection() {
               support and a lifetime discount when pricing launches.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Button asChild size="lg" className="h-12 rounded-full px-6 shadow-xl shadow-primary/25">
+              <Button
+                asChild
+                size="lg"
+                className="h-12 rounded-full px-6 shadow-xl shadow-primary/25"
+              >
                 <Link to="/register">
                   Join Closed Beta <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
@@ -1220,12 +1283,24 @@ function BetaSection() {
 
 type RoadmapStatus = "done" | "now" | "next";
 const ROADMAP: { status: RoadmapStatus; title: string; desc: string }[] = [
-  { status: "done", title: "Replay Studio", desc: "Full historical replay across FX, crypto, stocks." },
+  {
+    status: "done",
+    title: "Replay Studio",
+    desc: "Full historical replay across FX, crypto, stocks.",
+  },
   { status: "done", title: "Trading Workspace", desc: "Professional charting with Focus Mode." },
   { status: "done", title: "AI Trading Coach", desc: "Personal mentor trained on your trades." },
   { status: "done", title: "Performance Analytics", desc: "Institution-grade metrics dashboard." },
-  { status: "now", title: "Community & Guilds", desc: "Share setups, follow traders, join guilds." },
-  { status: "next", title: "Billing & Pricing", desc: "Founding-member tiers and lifetime discounts." },
+  {
+    status: "now",
+    title: "Community & Guilds",
+    desc: "Share setups, follow traders, join guilds.",
+  },
+  {
+    status: "next",
+    title: "Billing & Pricing",
+    desc: "Founding-member tiers and lifetime discounts.",
+  },
   { status: "next", title: "Mobile App", desc: "Journal on the go, coach in your pocket." },
 ];
 
@@ -1317,10 +1392,7 @@ const FAQS: { q: string; a: string }[] = [
 function FAQ() {
   return (
     <Section id="faq">
-      <SectionHeading
-        eyebrow="FAQ"
-        title="Answers to the questions traders actually ask."
-      />
+      <SectionHeading eyebrow="FAQ" title="Answers to the questions traders actually ask." />
       <div className="mx-auto mt-12 max-w-3xl">
         <Accordion type="single" collapsible className="w-full space-y-3">
           {FAQS.map((f, i) => (
@@ -1364,7 +1436,11 @@ function FinalCTA() {
             Join the closed beta today. Free while it lasts, lifetime discount when we launch.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Button asChild size="lg" className="h-12 rounded-full px-6 shadow-xl shadow-primary/25">
+            <Button
+              asChild
+              size="lg"
+              className="h-12 rounded-full px-6 shadow-xl shadow-primary/25"
+            >
               <Link to="/register">
                 Join Closed Beta <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
@@ -1481,7 +1557,9 @@ function Footer() {
           ))}
         </div>
         <div className="mt-14 flex flex-col items-start justify-between gap-4 border-t border-border/60 pt-8 text-xs text-muted-foreground sm:flex-row sm:items-center">
-          <div>© {new Date().getFullYear()} {APP_NAME}. All rights reserved.</div>
+          <div>
+            © {new Date().getFullYear()} {APP_NAME}. All rights reserved.
+          </div>
           <div className="flex items-center gap-4">
             <span className="inline-flex items-center gap-1.5">
               <Code2 className="h-3.5 w-3.5" /> Built for serious traders
