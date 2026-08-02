@@ -205,8 +205,11 @@ function AuthPage() {
           </AnimatePresence>
 
           <p className="mt-6 text-center text-[11px] text-muted-foreground">
-            By continuing you agree to the Terms of Service and Privacy Policy.
+            By continuing you agree to the{" "}
+            <Link to="/terms" className="underline hover:text-foreground">Terms of Service</Link> and{" "}
+            <Link to="/privacy" className="underline hover:text-foreground">Privacy Policy</Link>.
           </p>
+
         </div>
       </div>
     </div>
