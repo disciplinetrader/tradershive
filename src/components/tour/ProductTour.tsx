@@ -174,6 +174,9 @@ function TourOverlay({
   const [rect, setRect] = useState<Rect | null>(null);
   const cardRef = useRef<HTMLDivElement | null>(null);
   const [cardPos, setCardPos] = useState<{ top: number; left: number } | null>(null);
+  // Keeps anchored steps in the same column when a target can't be measured.
+  const lastAnchorLeft = useRef(320);
+
 
   // Measure highlighted target when the step changes or the viewport moves.
   useLayoutEffect(() => {
