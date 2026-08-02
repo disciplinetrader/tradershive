@@ -722,7 +722,9 @@ export const getReplayCandles = createServerFn({ method: "POST" })
         }
         return {
           candles: [],
+          warmupCount: 0,
           provenance: null,
+
           providerId: null,
           providerLabel: null,
           sourceKind: null,
