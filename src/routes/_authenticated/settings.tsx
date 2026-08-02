@@ -19,13 +19,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AvatarUpload } from "@/components/auth/AvatarUpload";
+import { SearchableSelect } from "@/components/ui/searchable-select";
+import { getTimezoneOptions } from "@/lib/timezones";
+import { DeleteAccountDialog } from "@/components/settings/DeleteAccountDialog";
 import { PasswordStrength } from "@/components/auth/PasswordStrength";
+
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import {
   COUNTRIES,
   MARKETS,
-  TIMEZONES,
   TRADING_STYLES,
   type Market,
 } from "@/lib/constants";
@@ -63,6 +66,7 @@ function SettingsPage() {
     profile?.display_name || profile?.username || "T";
   const initials = name.split(" ").map((s) => s[0]).join("").slice(0, 2).toUpperCase();
   const [signOutOpen, setSignOutOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const doSignOut = async () => {
     setSigningOut(true);
@@ -104,26 +108,35 @@ function SettingsPage() {
         <h2 className="text-base font-semibold text-danger">Danger zone</h2>
         <p className="text-xs text-muted-foreground">
           Deleting your account permanently removes your profile, journal, and stats.
+          We&apos;ll email you a verification code to confirm.
         </p>
-        <Button
-          variant="destructive"
-          className="mt-5"
-          onClick={() => setSignOutOpen(true)}
-        >
-          Sign out & request deletion
-        </Button>
+        <div className="mt-5 flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => setSignOutOpen(true)}>
+            Sign out
+          </Button>
+          <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
+            Delete account
+          </Button>
+        </div>
       </GlassCard>
 
       <ConfirmDialog
         open={signOutOpen}
         onOpenChange={setSignOutOpen}
-        title="Sign out & request deletion?"
-        description="You will be signed out of this device. To permanently delete your data, please contact support after signing out."
+        title="Sign out?"
+        description="You will be signed out of this device."
         confirmLabel="Sign out"
         destructive
         loading={signingOut}
         onConfirm={doSignOut}
       />
+
+      <DeleteAccountDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        email={user?.email ?? ""}
+      />
+
     </div>
   );
 }
@@ -206,13 +219,19 @@ function ProfileSection() {
         </div>
         <div className="space-y-1.5">
           <Label>Timezone</Label>
-          <Select value={timezone} onValueChange={setTimezone}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent className="max-h-[280px]">
-              {TIMEZONES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          {/* Options are pre-sorted by UTC offset and labelled "UTC+X · Zone"
+              so long names stay readable inside the trigger. */}
+          <SearchableSelect
+            value={timezone}
+            onChange={setTimezone}
+            options={getTimezoneOptions()}
+            ariaLabel="Timezone"
+            placeholder="Select timezone"
+            searchPlaceholder="Search city or UTC offset…"
+            className="text-xs [&_*]:text-xs"
+          />
         </div>
+
       </div>
       <div className="mt-5 flex justify-end">
         <Button onClick={save} disabled={saving} className="gradient-primary text-primary-foreground">
@@ -471,12 +490,12 @@ function ProductTourSection() {
         <div>
           <h2 className="text-base font-semibold">Onboarding</h2>
           <p className="text-xs text-muted-foreground">
-            Replay the guided product tour to revisit the core features of TradersHIVE.
+            Take the quick guided tour again to revisit the core features of TradersHIVE.
           </p>
         </div>
         <Button variant="outline" onClick={start} className="gap-2">
           <Play className="h-4 w-4" />
-          Replay Product Tour
+          Quick Tour
         </Button>
       </div>
     </GlassCard>

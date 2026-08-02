@@ -44,7 +44,7 @@ export function InlineSearch({
       <button
         onClick={onOpenPalette}
         aria-label="Open search"
-        className="group hidden min-w-0 flex-1 items-center gap-2 rounded-xl border border-border bg-surface/60 px-3 text-left text-sm text-muted-foreground transition hover:border-primary/40 hover:bg-surface sm:flex sm:h-11"
+        className="group hidden min-w-0 flex-1 items-center gap-2 rounded-xl border border-border bg-surface/60 px-3 text-left text-sm text-muted-foreground transition hover:border-primary/40 hover:bg-surface focus:outline-none focus-visible:outline-none focus-visible:border-primary/50 focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-primary/40 sm:flex sm:h-11"
       >
         <Search className="h-4 w-4 shrink-0" aria-hidden />
         <span className="truncate">{placeholder}</span>
@@ -62,7 +62,7 @@ export function InlineSearch({
         )}
       >
         {expanded ? (
-          <div className="flex h-11 w-full items-center gap-1 rounded-xl border border-border bg-surface/70 px-2">
+          <div className="flex h-11 w-full items-center gap-1 rounded-xl border border-border bg-surface/70 px-2 focus-within:border-primary/50">
             <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
             <input
               ref={inputRef}
@@ -84,7 +84,7 @@ export function InlineSearch({
               enterKeyHint="search"
               inputMode="search"
               placeholder="Search…"
-              className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+              className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none focus-visible:outline-none placeholder:text-muted-foreground"
             />
             <button
               type="button"

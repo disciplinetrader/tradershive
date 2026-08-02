@@ -40,17 +40,18 @@ const STEPS: TourStep[] = [
     body: "This platform helps you practice, analyse and improve your trading. The tour takes under a minute.",
   },
   {
-    id: "replay",
-    title: "Replay Studio",
-    body: "Practice historical markets just like live trading. Rewind, pause and take deliberate trades on real data.",
-    target: '[data-tour="nav-replay"]',
-  },
-  {
     id: "trading",
     title: "Paper Trading",
     body: "Test ideas in the live Trading Workspace without risking real money. Full charts, orders and risk management.",
     target: '[data-tour="nav-trading"]',
   },
+  {
+    id: "replay",
+    title: "Replay Studio",
+    body: "Practice historical markets just like live trading. Rewind, pause and take deliberate trades on real data.",
+    target: '[data-tour="nav-replay"]',
+  },
+
   {
     id: "journal",
     title: "Journal",
@@ -173,6 +174,9 @@ function TourOverlay({
   const [rect, setRect] = useState<Rect | null>(null);
   const cardRef = useRef<HTMLDivElement | null>(null);
   const [cardPos, setCardPos] = useState<{ top: number; left: number } | null>(null);
+  // Keeps anchored steps in the same column when a target can't be measured.
+  const lastAnchorLeft = useRef(320);
+
 
   // Measure highlighted target when the step changes or the viewport moves.
   useLayoutEffect(() => {
@@ -218,38 +222,48 @@ function TourOverlay({
     const ch = card.offsetHeight;
     const margin = 16;
 
+    // Steps that highlight a nav item always sit in the same anchored column,
+    // so the card never jumps to the middle of the screen mid-tour. Only the
+    // intro/outro steps (no target) are centered.
+    const anchored = Boolean(s.target);
+
     if (!rect) {
-      setCardPos({
-        top: Math.max(margin, (vh - ch) / 2),
-        left: Math.max(margin, (vw - cw) / 2),
-      });
+      setCardPos(
+        anchored
+          ? {
+              top: clamp(96, margin, Math.max(margin, vh - ch - margin)),
+              left: clamp(lastAnchorLeft.current, margin, Math.max(margin, vw - cw - margin)),
+            }
+          : {
+              top: Math.max(margin, (vh - ch) / 2),
+              left: Math.max(margin, (vw - cw) / 2),
+            },
+      );
       return;
     }
 
     // Prefer right of the target (desktop sidebar), then below, then above.
     const spaceRight = vw - (rect.left + rect.width) - margin;
     const spaceBelow = vh - (rect.top + rect.height) - margin;
-    const spaceAbove = rect.top - margin;
 
     let top: number;
     let left: number;
 
     if (spaceRight >= cw + margin) {
       left = rect.left + rect.width + 12;
-      top = clamp(rect.top, margin, vh - ch - margin);
+      top = clamp(rect.top, margin, Math.max(margin, vh - ch - margin));
     } else if (spaceBelow >= ch + margin) {
       top = rect.top + rect.height + 12;
-      left = clamp(rect.left, margin, vw - cw - margin);
-    } else if (spaceAbove >= ch + margin) {
-      top = rect.top - ch - 12;
-      left = clamp(rect.left, margin, vw - cw - margin);
+      left = clamp(rect.left, margin, Math.max(margin, vw - cw - margin));
     } else {
-      top = Math.max(margin, (vh - ch) / 2);
-      left = Math.max(margin, (vw - cw) / 2);
+      top = clamp(rect.top - ch - 12, margin, Math.max(margin, vh - ch - margin));
+      left = clamp(rect.left, margin, Math.max(margin, vw - cw - margin));
     }
 
+    lastAnchorLeft.current = left;
     setCardPos({ top, left });
-  }, [rect, step]);
+
+  }, [rect, step, s.target]);
 
   // Keyboard: Esc closes, arrows navigate.
   useEffect(() => {
