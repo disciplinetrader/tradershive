@@ -192,7 +192,12 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
         isSynthetic: !!candleQuery.data!.isSynthetic,
         allowSynthetic: session.provider === "synthetic",
         snapshot,
-        startCursor: startCursorFor(session, candles.length),
+        // Warm-up bars sit *before* the session window: they are visible
+        // history, never replayable observations, so the cursor starts past
+        // them and the requested range still drives start-mode maths.
+        startCursor:
+          warmupCount + startCursorFor(session, Math.max(1, candles.length - warmupCount)),
+
       });
       if (cancelled) return;
       if (result.ok) {
