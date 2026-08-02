@@ -111,7 +111,7 @@ function LandingPage() {
   }, [loading, user, navigate]);
 
   return (
-    <div className="relative min-h-dvh overflow-x-hidden bg-background text-foreground antialiased">
+    <div className="dark relative min-h-dvh overflow-x-hidden bg-background text-foreground antialiased">
       <AmbientBackground />
       <Navbar />
       <main id="main">
