@@ -184,26 +184,28 @@ function Navbar() {
   }, []);
 
   return (
-    <header
-      className={cn(
-        "fixed inset-x-0 top-0 z-50 transition-all duration-300",
-        scrolled
-          ? "border-b border-border/50 bg-background/70 backdrop-blur-xl supports-[backdrop-filter]:bg-background/50"
-          : "border-b border-transparent bg-transparent",
-      )}
-    >
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+    <header className="fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-6 sm:pt-4">
+      <div
+        className={cn(
+          "mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 rounded-full border px-3 pl-5 transition-all duration-300 sm:h-16",
+          scrolled
+            ? "border-border/70 bg-background/80 shadow-[0_10px_40px_-12px_hsl(var(--background))] backdrop-blur-xl"
+            : "border-border/40 bg-background/50 backdrop-blur-md",
+        )}
+      >
         <Link to="/" className="group flex items-center gap-2" aria-label={APP_NAME}>
           <LogoMark />
-          <span className="text-sm font-semibold tracking-tight sm:text-base">{APP_NAME}</span>
+          <span className="text-sm font-semibold uppercase tracking-[0.14em] sm:text-base">
+            {APP_NAME}
+          </span>
         </Link>
 
-        <nav className="hidden items-center gap-1 lg:flex" aria-label="Primary">
+        <nav className="hidden items-center gap-0.5 lg:flex" aria-label="Primary">
           {NAV_LINKS.map((l) => (
             <a
               key={l.href}
               href={l.href}
-              className="group inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+              className="group inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
             >
               {l.label}
               {l.badge ? (
@@ -217,27 +219,30 @@ function Navbar() {
 
         <div className="hidden items-center gap-2 lg:flex">
           {user ? (
-            <Button asChild size="sm" className="rounded-full">
+            <Button asChild size="sm" className="h-10 rounded-full px-5">
               <Link to="/dashboard">
                 Open App <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
               </Link>
             </Button>
           ) : (
             <>
-              <Button asChild variant="ghost" size="sm" className="rounded-full">
+              <Button
+                asChild
+                variant="ghost"
+                size="sm"
+                className="h-10 rounded-full px-4 text-muted-foreground hover:text-foreground"
+              >
                 <Link to="/login">Sign in</Link>
               </Button>
-              <Button asChild size="sm" className="rounded-full shadow-lg shadow-primary/20">
-                <Link to="/register">
-                  Join Closed Beta <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-                </Link>
+              <Button asChild size="sm" className="h-10 rounded-full px-5 font-medium">
+                <Link to="/register">Get started</Link>
               </Button>
             </>
           )}
         </div>
 
         <button
-          className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-border/60 bg-background/60 lg:hidden"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border/60 bg-background/60 lg:hidden"
           aria-label="Toggle menu"
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
@@ -245,6 +250,7 @@ function Navbar() {
           {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
       </div>
+
 
       <AnimatePresence>
         {open ? (
