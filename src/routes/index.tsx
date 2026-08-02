@@ -192,9 +192,7 @@ function Navbar() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link to="/" className="group flex items-center gap-2" aria-label={APP_NAME}>
           <LogoMark />
-          <span className="text-sm font-semibold tracking-tight sm:text-base">
-            {APP_NAME}
-          </span>
+          <span className="text-sm font-semibold tracking-tight sm:text-base">{APP_NAME}</span>
         </Link>
 
         <nav className="hidden items-center gap-1 lg:flex" aria-label="Primary">
@@ -217,7 +215,9 @@ function Navbar() {
         <div className="hidden items-center gap-2 lg:flex">
           {user ? (
             <Button asChild size="sm" className="rounded-full">
-              <Link to="/dashboard">Open App <ArrowRight className="ml-1.5 h-3.5 w-3.5" /></Link>
+              <Link to="/dashboard">
+                Open App <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+              </Link>
             </Button>
           ) : (
             <>
@@ -225,7 +225,9 @@ function Navbar() {
                 <Link to="/login">Sign in</Link>
               </Button>
               <Button asChild size="sm" className="rounded-full shadow-lg shadow-primary/20">
-                <Link to="/register">Join Closed Beta <ArrowRight className="ml-1.5 h-3.5 w-3.5" /></Link>
+                <Link to="/register">
+                  Join Closed Beta <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                </Link>
               </Button>
             </>
           )}
@@ -285,7 +287,12 @@ function Navbar() {
 function LogoMark() {
   return (
     <div className="relative grid h-8 w-8 place-items-center overflow-hidden rounded-xl bg-gradient-to-br from-primary to-primary/60 shadow-lg shadow-primary/25">
-      <svg viewBox="0 0 24 24" className="h-4 w-4 text-primary-foreground" fill="currentColor" aria-hidden>
+      <svg
+        viewBox="0 0 24 24"
+        className="h-4 w-4 text-primary-foreground"
+        fill="currentColor"
+        aria-hidden
+      >
         <path d="M12 2l3.5 6.1L22 9.3l-5 4.9 1.2 7L12 17.9 5.8 21.2 7 14.2l-5-4.9 6.5-1.2L12 2z" />
       </svg>
     </div>
@@ -411,7 +418,11 @@ function Hero() {
           custom={3}
           className="mt-10 flex flex-wrap items-center justify-center gap-4"
         >
-          <Button asChild size="lg" className="h-14 rounded-xl px-8 text-base shadow-lg shadow-primary/25">
+          <Button
+            asChild
+            size="lg"
+            className="h-14 rounded-xl px-8 text-base shadow-lg shadow-primary/25"
+          >
             <Link to="/register">
               Start training now <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
@@ -446,7 +457,6 @@ function Hero() {
   );
 }
 
-
 function HeroMockup() {
   return (
     <div className="relative mx-auto w-full max-w-2xl">
@@ -473,7 +483,9 @@ function HeroMockup() {
           <div className="relative aspect-[16/10] bg-gradient-to-br from-background to-muted/30 p-4">
             <MockChart />
             <FloatingCard className="absolute left-4 top-4" tone="up">
-              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Session P&L</div>
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                Session P&L
+              </div>
               <div className="text-lg font-semibold text-success">+$1,284.50</div>
               <div className="text-[10px] text-success/80">▲ +2.14% · 7 trades</div>
             </FloatingCard>
@@ -486,12 +498,16 @@ function HeroMockup() {
             </FloatingCard>
           </div>
           <div className="border-l border-border/60 bg-muted/20 p-3 text-xs">
-            <div className="mb-2 text-[10px] uppercase tracking-wide text-muted-foreground">Positions</div>
+            <div className="mb-2 text-[10px] uppercase tracking-wide text-muted-foreground">
+              Positions
+            </div>
             <MockRow ticker="EURUSD" side="long" pnl="+$412" up />
             <MockRow ticker="XAUUSD" side="long" pnl="+$680" up />
             <MockRow ticker="BTCUSD" side="short" pnl="-$92" />
             <div className="my-3 h-px bg-border/60" />
-            <div className="mb-2 text-[10px] uppercase tracking-wide text-muted-foreground">Playbook</div>
+            <div className="mb-2 text-[10px] uppercase tracking-wide text-muted-foreground">
+              Playbook
+            </div>
             <MockRow ticker="Liquidity Sweep" side="setup" pnl="72% WR" up />
             <MockRow ticker="London Reversal" side="setup" pnl="61% WR" up />
           </div>
@@ -546,9 +562,7 @@ function MockChart() {
         initial={{ pathLength: 0, opacity: 0 }}
         animate={{ pathLength: 1, opacity: 1 }}
         transition={{ duration: 1.5, ease: "easeOut" }}
-        d={bars
-          .map((b, i) => `${i === 0 ? "M" : "L"} ${i * 10 + 5} ${220 - b.c * 3}`)
-          .join(" ")}
+        d={bars.map((b, i) => `${i === 0 ? "M" : "L"} ${i * 10 + 5} ${220 - b.c * 3}`).join(" ")}
         fill="none"
         stroke="hsl(var(--primary))"
         strokeWidth="1.5"
@@ -671,7 +685,6 @@ function TrustBar() {
     </Section>
   );
 }
-
 
 /* ================================================================== */
 /* Feature Overview                                                     */
@@ -821,7 +834,6 @@ function FeatureOverview() {
     </Section>
   );
 }
-
 
 /* ================================================================== */
 /* Showcase blocks                                                      */
@@ -1226,7 +1238,11 @@ function BetaSection() {
               support and a lifetime discount when pricing launches.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Button asChild size="lg" className="h-12 rounded-full px-6 shadow-xl shadow-primary/25">
+              <Button
+                asChild
+                size="lg"
+                className="h-12 rounded-full px-6 shadow-xl shadow-primary/25"
+              >
                 <Link to="/register">
                   Join Closed Beta <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
@@ -1267,12 +1283,24 @@ function BetaSection() {
 
 type RoadmapStatus = "done" | "now" | "next";
 const ROADMAP: { status: RoadmapStatus; title: string; desc: string }[] = [
-  { status: "done", title: "Replay Studio", desc: "Full historical replay across FX, crypto, stocks." },
+  {
+    status: "done",
+    title: "Replay Studio",
+    desc: "Full historical replay across FX, crypto, stocks.",
+  },
   { status: "done", title: "Trading Workspace", desc: "Professional charting with Focus Mode." },
   { status: "done", title: "AI Trading Coach", desc: "Personal mentor trained on your trades." },
   { status: "done", title: "Performance Analytics", desc: "Institution-grade metrics dashboard." },
-  { status: "now", title: "Community & Guilds", desc: "Share setups, follow traders, join guilds." },
-  { status: "next", title: "Billing & Pricing", desc: "Founding-member tiers and lifetime discounts." },
+  {
+    status: "now",
+    title: "Community & Guilds",
+    desc: "Share setups, follow traders, join guilds.",
+  },
+  {
+    status: "next",
+    title: "Billing & Pricing",
+    desc: "Founding-member tiers and lifetime discounts.",
+  },
   { status: "next", title: "Mobile App", desc: "Journal on the go, coach in your pocket." },
 ];
 
@@ -1364,10 +1392,7 @@ const FAQS: { q: string; a: string }[] = [
 function FAQ() {
   return (
     <Section id="faq">
-      <SectionHeading
-        eyebrow="FAQ"
-        title="Answers to the questions traders actually ask."
-      />
+      <SectionHeading eyebrow="FAQ" title="Answers to the questions traders actually ask." />
       <div className="mx-auto mt-12 max-w-3xl">
         <Accordion type="single" collapsible className="w-full space-y-3">
           {FAQS.map((f, i) => (
@@ -1411,7 +1436,11 @@ function FinalCTA() {
             Join the closed beta today. Free while it lasts, lifetime discount when we launch.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Button asChild size="lg" className="h-12 rounded-full px-6 shadow-xl shadow-primary/25">
+            <Button
+              asChild
+              size="lg"
+              className="h-12 rounded-full px-6 shadow-xl shadow-primary/25"
+            >
               <Link to="/register">
                 Join Closed Beta <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
@@ -1528,7 +1557,9 @@ function Footer() {
           ))}
         </div>
         <div className="mt-14 flex flex-col items-start justify-between gap-4 border-t border-border/60 pt-8 text-xs text-muted-foreground sm:flex-row sm:items-center">
-          <div>© {new Date().getFullYear()} {APP_NAME}. All rights reserved.</div>
+          <div>
+            © {new Date().getFullYear()} {APP_NAME}. All rights reserved.
+          </div>
           <div className="flex items-center gap-4">
             <span className="inline-flex items-center gap-1.5">
               <Code2 className="h-3.5 w-3.5" /> Built for serious traders
