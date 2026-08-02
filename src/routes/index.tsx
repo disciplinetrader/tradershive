@@ -385,15 +385,15 @@ function Hero() {
   const ref = useRef<HTMLDivElement>(null);
 
   return (
-    <section ref={ref} className="relative z-10 pt-28 sm:pt-36">
+    <section ref={ref} className="relative z-10 overflow-hidden pt-28 sm:pt-36">
       <div className="mx-auto max-w-5xl px-4 text-center sm:px-6 lg:px-8">
         <motion.div initial="hidden" animate="show" variants={fadeUp} custom={0}>
-          <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
-            <span className="relative flex h-2 w-2">
+          <span className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-surface/60 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur">
+            <span className="relative flex h-1.5 w-1.5">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
             </span>
-            Now in Closed Beta · Free to join
+            Now in closed beta · free to join
           </span>
         </motion.div>
 
@@ -402,12 +402,12 @@ function Hero() {
           animate="show"
           variants={fadeUp}
           custom={1}
-          className="mt-8 text-balance font-display text-5xl font-bold leading-[1.05] tracking-tight sm:text-7xl md:text-8xl"
+          className="mx-auto mt-8 max-w-4xl text-balance font-display text-[2.75rem] font-bold leading-[1.02] tracking-[-0.03em] sm:text-6xl md:text-7xl lg:text-[5.25rem]"
         >
-          Master the markets
+          Your strategy shouldn&apos;t be
           <br />
-          <span className="bg-gradient-to-r from-primary via-primary-glow to-primary bg-clip-text text-transparent">
-            in high fidelity.
+          <span className="bg-gradient-to-b from-foreground/70 to-muted-foreground/50 bg-clip-text text-transparent">
+            tested with real money
           </span>
         </motion.h1>
 
@@ -416,7 +416,7 @@ function Hero() {
           animate="show"
           variants={fadeUp}
           custom={2}
-          className="mx-auto mt-8 max-w-2xl text-pretty text-lg font-light leading-relaxed text-muted-foreground sm:text-xl"
+          className="mx-auto mt-7 max-w-2xl text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg"
         >
           {SUBHEAD}
         </motion.p>
@@ -426,46 +426,45 @@ function Hero() {
           animate="show"
           variants={fadeUp}
           custom={3}
-          className="mt-10 flex flex-wrap items-center justify-center gap-4"
+          className="mt-9 flex flex-col items-center gap-3"
         >
           <Button
             asChild
             size="lg"
-            className="h-14 rounded-xl px-8 text-base shadow-lg shadow-primary/25"
+            className="h-14 rounded-full px-9 text-base font-medium shadow-[0_16px_50px_-16px_hsl(var(--primary))]"
           >
-            <Link to="/register">
-              Start training now <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
+            <Link to="/register">Get started for free</Link>
           </Button>
-          <Button
-            asChild
-            variant="outline"
-            size="lg"
-            className="h-14 rounded-xl border-border/70 bg-surface/60 px-8 text-base backdrop-blur"
-          >
-            <a href="#replay">
-              <Play className="mr-2 h-4 w-4" /> Watch demo
-            </a>
-          </Button>
+          <p className="text-sm text-muted-foreground">
+            Start for free. No credit card required.
+          </p>
         </motion.div>
-
-        <motion.ul
-          initial="hidden"
-          animate="show"
-          variants={fadeUp}
-          custom={4}
-          className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground"
-        >
-          {["No credit card", "Forex · Crypto · Stocks", "Cancel anytime"].map((t) => (
-            <li key={t} className="inline-flex items-center gap-2">
-              <Check className="h-4 w-4 text-success" /> {t}
-            </li>
-          ))}
-        </motion.ul>
       </div>
+
+      {/* Product surface — the hero's centrepiece */}
+      <div className="relative mx-auto mt-16 max-w-7xl px-4 sm:mt-20 sm:px-6 lg:px-8">
+        <HeroMockup className="max-w-6xl" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-background to-transparent" />
+      </div>
+
+      <motion.ul
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true }}
+        variants={fadeUp}
+        custom={1}
+        className="mx-auto mt-12 flex max-w-3xl flex-wrap justify-center gap-x-8 gap-y-2 px-4 text-sm text-muted-foreground"
+      >
+        {["No credit card", "Forex · Crypto · Stocks", "Cancel anytime"].map((t) => (
+          <li key={t} className="inline-flex items-center gap-2">
+            <Check className="h-4 w-4 text-success" /> {t}
+          </li>
+        ))}
+      </motion.ul>
     </section>
   );
 }
+
 
 function HeroMockup() {
   return (
