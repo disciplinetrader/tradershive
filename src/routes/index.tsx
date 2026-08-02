@@ -466,9 +466,10 @@ function Hero() {
 }
 
 
-function HeroMockup() {
+function HeroMockup({ className }: { className?: string }) {
   return (
-    <div className="relative mx-auto w-full max-w-2xl">
+    <div className={cn("relative mx-auto w-full max-w-2xl", className)}>
+
       <div className="absolute -inset-6 rounded-[32px] bg-gradient-to-br from-primary/30 via-info/20 to-success/20 blur-3xl" />
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 20 }}
