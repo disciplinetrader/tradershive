@@ -105,6 +105,12 @@ export function useReplayStudio(): StudioValue {
   return v;
 }
 
+/**
+ * Bars of real history loaded *before* the session window so the studio opens
+ * with market context on screen (FXReplay-style) instead of a single candle.
+ */
+const WARMUP_BARS = 600;
+
 function rangeFor(session: any): { from: number; to: number } {
   if (session?.range_start && session?.range_end) {
     return { from: new Date(session.range_start).getTime(), to: new Date(session.range_end).getTime() };
