@@ -19,7 +19,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AvatarUpload } from "@/components/auth/AvatarUpload";
+import { SearchableSelect } from "@/components/ui/searchable-select";
+import { getTimezoneOptions } from "@/lib/timezones";
+import { DeleteAccountDialog } from "@/components/settings/DeleteAccountDialog";
 import { PasswordStrength } from "@/components/auth/PasswordStrength";
+
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import {
