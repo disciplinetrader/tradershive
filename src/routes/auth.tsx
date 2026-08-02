@@ -1,4 +1,4 @@
-import { createFileRoute, Link, redirect, useNavigate, useSearch } from "@tanstack/react-router";
+import { ClientOnly, createFileRoute, Link, redirect, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { useForm, Controller } from "react-hook-form";
@@ -67,7 +67,6 @@ const authSearchSchema = z.object({
 });
 
 export const Route = createFileRoute("/auth")({
-  ssr: false,
   validateSearch: authSearchSchema,
   beforeLoad: async ({ search }) => {
     const { data } = await supabase.auth.getSession();
