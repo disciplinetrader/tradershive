@@ -206,13 +206,19 @@ function ProfileSection() {
         </div>
         <div className="space-y-1.5">
           <Label>Timezone</Label>
-          <Select value={timezone} onValueChange={setTimezone}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent className="max-h-[280px]">
-              {TIMEZONES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          {/* Options are pre-sorted by UTC offset and labelled "UTC+X · Zone"
+              so long names stay readable inside the trigger. */}
+          <SearchableSelect
+            value={timezone}
+            onChange={setTimezone}
+            options={getTimezoneOptions()}
+            ariaLabel="Timezone"
+            placeholder="Select timezone"
+            searchPlaceholder="Search city or UTC offset…"
+            className="text-xs [&_*]:text-xs"
+          />
         </div>
+
       </div>
       <div className="mt-5 flex justify-end">
         <Button onClick={save} disabled={saving} className="gradient-primary text-primary-foreground">
