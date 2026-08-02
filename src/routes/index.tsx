@@ -259,9 +259,10 @@ function Navbar() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
-            className="border-t border-border/60 bg-background/95 backdrop-blur-xl lg:hidden"
+            className="mx-auto mt-2 max-w-6xl overflow-hidden rounded-3xl border border-border/60 bg-background/95 backdrop-blur-xl lg:hidden"
           >
-            <div className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-4">
+            <div className="flex flex-col gap-1 p-4">
+
               {NAV_LINKS.map((l) => (
                 <a
                   key={l.href}
