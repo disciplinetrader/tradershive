@@ -169,6 +169,10 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
     let cancelled = false;
     if (!session || !candleQuery.data) return;
     const candles = (candleQuery.data.candles ?? []) as Candle[];
+    const warmupCount = Math.min(
+      (candleQuery.data as { warmupCount?: number }).warmupCount ?? 0,
+      Math.max(0, candles.length - 1),
+    );
     if (candleQuery.data.unavailable) { setBoot(null); return; }
 
     (async () => {
