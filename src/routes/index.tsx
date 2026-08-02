@@ -677,63 +677,55 @@ function TrustBar() {
 /* Feature Overview                                                     */
 /* ================================================================== */
 
-const FEATURES: {
-  icon: typeof Film;
-  title: string;
-  desc: string;
-  href: string;
-  tint: string;
-}[] = [
-  {
-    icon: Film,
-    title: "Replay Studio",
-    desc: "Rewind any market, any timeframe. Practice setups on real historical data.",
-    href: "#replay",
-    tint: "from-primary/20 to-transparent",
-  },
+const BENTO_SMALL: { icon: typeof Film; title: string; desc: string; href: string }[] = [
   {
     icon: BookOpen,
     title: "Trading Journal",
-    desc: "Auto-populated entries from every trade with screenshots, tags and R-multiples.",
+    desc: "Automatic logging with screenshots, tags, R-multiples and emotional context.",
     href: "#features",
-    tint: "from-info/20 to-transparent",
   },
   {
-    icon: BarChart3,
-    title: "Performance Analytics",
-    desc: "Sharpe, Sortino, drawdown, session heatmaps and strategy-level breakdowns.",
-    href: "#analytics",
-    tint: "from-success/20 to-transparent",
-  },
-  {
-    icon: Brain,
-    title: "AI Trading Coach",
-    desc: "A personal mentor that reads your data, spots leaks and builds your roadmap.",
-    href: "#ai",
-    tint: "from-primary/20 to-transparent",
-  },
-  {
-    icon: LineChart,
-    title: "Paper Trading",
-    desc: "Live-feel execution with realistic spreads, margin, SL/TP and risk controls.",
+    icon: Shield,
+    title: "Prop Challenges",
+    desc: "Simulate institutional evaluations with strict drawdown and payout rules.",
     href: "#workspace",
-    tint: "from-warning/20 to-transparent",
   },
   {
-    icon: Target,
-    title: "Trade Review",
-    desc: "Grade every trade A+ to F, run checklists, and jump back to the exact chart.",
+    icon: TrendingUp,
+    title: "Global Rankings",
+    desc: "Climb the leaderboard and prove your edge against traders worldwide.",
     href: "#workspace",
-    tint: "from-danger/20 to-transparent",
-  },
-  {
-    icon: Rocket,
-    title: "Saved Sessions",
-    desc: "Continue where you left off with one click. Favorite, archive and duplicate.",
-    href: "#replay",
-    tint: "from-info/20 to-transparent",
   },
 ];
+
+function BentoTile({
+  className,
+  children,
+  href,
+  delay = 0,
+}: {
+  className?: string;
+  children: ReactNode;
+  href: string;
+  delay?: number;
+}) {
+  return (
+    <motion.a
+      href={href}
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: true, margin: "-80px" }}
+      variants={fadeUp}
+      custom={delay}
+      className={cn(
+        "group relative overflow-hidden rounded-3xl border border-border/60 bg-surface p-8 transition-all duration-300 hover:-translate-y-1 hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/10",
+        className,
+      )}
+    >
+      {children}
+    </motion.a>
+  );
+}
 
 function FeatureOverview() {
   return (
@@ -749,40 +741,87 @@ function FeatureOverview() {
         description="Stop stitching together five apps. Replay, journal, analytics and coaching live in one professional cockpit."
       />
 
-      <div className="mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {FEATURES.map((f, i) => (
-          <motion.a
-            key={f.title}
-            href={f.href}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-80px" }}
-            variants={fadeUp}
-            custom={i}
-            className="group relative flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-background/50 p-6 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:bg-background/70 hover:shadow-2xl hover:shadow-primary/10"
-          >
-            <div
-              className={cn(
-                "pointer-events-none absolute inset-0 bg-gradient-to-br opacity-0 transition-opacity duration-500 group-hover:opacity-100",
-                f.tint,
-              )}
-            />
-            <div className="relative">
-              <div className="mb-5 inline-flex h-11 w-11 items-center justify-center rounded-xl border border-border/60 bg-background/70 text-primary shadow-sm">
-                <f.icon className="h-5 w-5" />
-              </div>
-              <h3 className="text-lg font-semibold tracking-tight">{f.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{f.desc}</p>
-              <div className="mt-6 inline-flex items-center gap-1 text-sm font-medium text-primary opacity-80 transition group-hover:gap-2 group-hover:opacity-100">
-                Learn more <ArrowRight className="h-3.5 w-3.5" />
-              </div>
+      <div className="mt-16 grid grid-cols-1 gap-6 md:grid-cols-12">
+        {/* Primary tile — replay engine with live product surface */}
+        <BentoTile href="#replay" className="md:col-span-8" delay={0}>
+          <div className="relative z-10">
+            <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/15 text-primary">
+              <Film className="h-6 w-6" />
             </div>
-          </motion.a>
+            <h3 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">
+              Advanced backtesting engine
+            </h3>
+            <p className="mt-2 max-w-md text-muted-foreground">
+              Replay historical market data with tick-level precision. Practise every order type in
+              a risk-free environment, at any speed.
+            </p>
+          </div>
+          <div className="relative mt-8">
+            <HeroMockup />
+          </div>
+        </BentoTile>
+
+        {/* AI coach */}
+        <BentoTile href="#ai" className="flex flex-col justify-between md:col-span-4" delay={1}>
+          <div>
+            <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/15 text-primary">
+              <Brain className="h-6 w-6" />
+            </div>
+            <h3 className="font-display text-2xl font-bold tracking-tight">AI Coach</h3>
+            <p className="mt-2 text-muted-foreground">
+              Real-time analysis of your execution, psychology and repeating patterns — with a
+              roadmap built from your own data.
+            </p>
+          </div>
+          <div className="mt-8 border-t border-border/50 pt-6 text-sm font-semibold text-primary">
+            <span className="inline-flex items-center gap-1 transition-all group-hover:gap-2">
+              Ask AI to review a trade <ArrowRight className="h-3.5 w-3.5" />
+            </span>
+          </div>
+        </BentoTile>
+
+        {/* Analytics — wide secondary */}
+        <BentoTile href="#analytics" className="md:col-span-12 lg:col-span-12" delay={2}>
+          <div className="grid gap-8 lg:grid-cols-[1fr_1.1fr] lg:items-center">
+            <div>
+              <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/15 text-primary">
+                <BarChart3 className="h-6 w-6" />
+              </div>
+              <h3 className="font-display text-2xl font-bold tracking-tight">
+                Institutional-grade analytics
+              </h3>
+              <p className="mt-2 max-w-md text-muted-foreground">
+                Expectancy, Sharpe, Sortino, drawdown, session heatmaps and strategy-level
+                breakdowns — computed on every trade you log.
+              </p>
+            </div>
+            <div className="flex h-40 items-end gap-2 rounded-2xl border border-border/50 bg-background/60 p-4">
+              {[22, 38, 31, 56, 47, 72, 63, 90].map((h, i) => (
+                <span
+                  key={i}
+                  className="flex-1 rounded-t bg-primary/70 transition-all duration-500 group-hover:bg-primary"
+                  style={{ height: `${h}%` }}
+                />
+              ))}
+            </div>
+          </div>
+        </BentoTile>
+
+        {/* Bottom trio */}
+        {BENTO_SMALL.map((f, i) => (
+          <BentoTile key={f.title} href={f.href} className="md:col-span-4" delay={i + 3}>
+            <div className="mb-5 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary/15 text-primary">
+              <f.icon className="h-5 w-5" />
+            </div>
+            <h3 className="font-display text-xl font-bold tracking-tight">{f.title}</h3>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{f.desc}</p>
+          </BentoTile>
         ))}
       </div>
     </Section>
   );
 }
+
 
 /* ================================================================== */
 /* Showcase blocks                                                      */
