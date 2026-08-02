@@ -609,11 +609,12 @@ function RegisterForm() {
                   <SelectContent>
                     {TRADING_STYLES.map((s) => (
                       <SelectItem key={s.value} value={s.value}>
-                        <div className="flex items-center gap-2">
-                          <span>{s.label}</span>
-                          <span className="text-[11px] text-muted-foreground">· {s.hint}</span>
-                        </div>
+                        <span className="flex items-center gap-1.5 leading-none">
+                          <span className="text-sm">{s.label}</span>
+                          <span className="text-[11px] text-muted-foreground">— {s.hint}</span>
+                        </span>
                       </SelectItem>
+
                     ))}
                   </SelectContent>
                 </Select>
