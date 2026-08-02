@@ -6,7 +6,9 @@ import { PostCard } from "@/components/community/PostCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { MessageSquarePlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+
 
 export function FeedList({
   tab, categorySlug, hashtag, symbol, authorId,
@@ -42,16 +44,28 @@ export function FeedList({
   if (query.isLoading) {
     return (
       <div className="space-y-3">
-        {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-48 rounded-2xl" />)}
+        {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-44 rounded-2xl" />)}
       </div>
     );
   }
   if (!posts.length) {
-    return <EmptyState title="Nothing here yet" description="Be the first to post — share a trade, chart, or lesson." />;
+    return (
+      <EmptyState
+        icon={MessageSquarePlus}
+        title={tab === "following" ? "Your following feed is quiet" : "Nothing here yet"}
+        description={
+          tab === "following"
+            ? "Follow a few traders and their charts, ideas and lessons will land right here."
+            : "Be the first to post — share a setup, a chart or a lesson you learned this week."
+        }
+        action={{ label: tab === "following" ? "Find traders" : "Explore community", href: tab === "following" ? "/community/mentors" : "/community/explore" }}
+      />
+    );
   }
   return (
     <div className="space-y-3">
       {posts.map((p) => <PostCard key={p.id} post={p} />)}
+
       {query.hasNextPage ? (
         <div className="flex justify-center py-3">
           <Button size="sm" variant="outline" disabled={query.isFetchingNextPage} onClick={() => query.fetchNextPage()}>

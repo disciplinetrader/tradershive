@@ -3,7 +3,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { formatDistanceToNow } from "date-fns";
 import { Bookmark, BookmarkCheck, Flag, Heart, Lightbulb, MessageSquare, MoreHorizontal, Pin, Share2, Sparkles, Star, Target, TrendingDown, TrendingUp } from "lucide-react";
-import { GlassCard } from "@/components/ui/glass-card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -39,59 +38,83 @@ export function PostCard({ post }: { post: any }) {
     mutationFn: async () => bookmark({ data: { post_id: post.id } }),
     onSuccess: (r) => {
       qc.invalidateQueries({ queryKey: ["community"] });
-      toast.success(r.active ? "Bookmarked" : "Removed bookmark");
+      toast.success(r.active ? "Saved" : "Removed from saved");
     },
   });
 
   return (
-    <GlassCard className="p-5">
-      <div className="flex items-start gap-3">
-        <Link to="/community/profile/$username" params={{ username: author.username ?? "" }}>
-          <Avatar className="h-10 w-10 border border-border">
+    <article className="group rounded-2xl border border-border/50 bg-card/40 p-4 transition-colors hover:border-border sm:p-5">
+      <header className="flex items-start gap-3">
+        <Link to="/community/profile/$username" params={{ username: author.username ?? "" }} className="shrink-0">
+          <Avatar className="h-10 w-10 ring-1 ring-border/70">
             <AvatarImage src={author.avatar_url ?? undefined} />
-            <AvatarFallback>{(author.username ?? "T").slice(0, 2).toUpperCase()}</AvatarFallback>
+            <AvatarFallback className="text-xs">{(author.username ?? "T").slice(0, 2).toUpperCase()}</AvatarFallback>
           </Avatar>
         </Link>
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-            <Link to="/community/profile/$username" params={{ username: author.username ?? "" }} className="truncate text-sm font-semibold hover:text-primary">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
+            <Link
+              to="/community/profile/$username"
+              params={{ username: author.username ?? "" }}
+              className="truncate text-sm font-semibold hover:underline"
+            >
               {authorName}
             </Link>
-            <span className="text-xs text-muted-foreground">@{author.username}</span>
             {author.league ? (
-              <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-primary">{author.league}</span>
+              <span className="rounded-full bg-primary/10 px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide text-primary">
+                {author.league}
+              </span>
             ) : null}
+            <span className="truncate text-xs text-muted-foreground">@{author.username}</span>
             <span className="text-xs text-muted-foreground">·</span>
-            <span className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(post.published_at ?? post.created_at), { addSuffix: true })}</span>
-            {post.is_pinned ? <Pin className="h-3 w-3 text-primary" /> : null}
+            <span className="shrink-0 text-xs text-muted-foreground">
+              {formatDistanceToNow(new Date(post.published_at ?? post.created_at), { addSuffix: true })}
+            </span>
+            {post.is_pinned ? <Pin className="h-3 w-3 shrink-0 text-primary" /> : null}
+            {post.is_featured ? <Sparkles className="h-3 w-3 shrink-0 text-warning" /> : null}
           </div>
-          <div className="mt-1 flex flex-wrap items-center gap-2">
-            {typeMeta ? (
-              <span className="inline-flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                {typeMeta.label}
-              </span>
-            ) : null}
-            {category ? (
-              <span className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium" style={{ color: category.color, background: `${category.color}12` }}>
-                {category.name}
-              </span>
-            ) : null}
+
+          <div className="mt-1 flex flex-wrap items-center gap-1.5">
             {post.symbol ? (
-              <span className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-[10px] font-semibold">
+              <span className="rounded-full bg-primary/10 px-2 py-px font-mono text-[10px] font-semibold text-primary">
                 ${post.symbol}
               </span>
             ) : null}
             {post.direction ? (
-              <span className={cn("inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase", post.direction === "long" ? "bg-success/10 text-success" : "bg-danger/10 text-danger")}>
+              <span className={cn(
+                "inline-flex items-center gap-0.5 rounded-full px-2 py-px text-[10px] font-semibold uppercase",
+                post.direction === "long" ? "bg-success/10 text-success" : "bg-danger/10 text-danger",
+              )}>
                 {post.direction === "long" ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
                 {post.direction}
               </span>
             ) : null}
+            {typeMeta && typeMeta.value !== "text" ? (
+              <span className="rounded-full border border-border/60 px-2 py-px text-[10px] font-medium text-muted-foreground">
+                {typeMeta.label}
+              </span>
+            ) : null}
+            {category ? (
+              <span
+                className="rounded-full px-2 py-px text-[10px] font-medium"
+                style={{ color: category.color, background: `${category.color}14` }}
+              >
+                {category.name}
+              </span>
+            ) : null}
           </div>
         </div>
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button size="icon" variant="ghost" className="h-8 w-8" aria-label="Post options"><MoreHorizontal className="h-4 w-4" /></Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 shrink-0 text-muted-foreground opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100"
+              aria-label="Post options"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem
@@ -103,17 +126,17 @@ export function PostCard({ post }: { post: any }) {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
+      </header>
 
       <Link to="/community/post/$id" params={{ id: post.id }} className="mt-3 block">
-        {post.title ? <h3 className="text-base font-semibold leading-snug tracking-tight">{post.title}</h3> : null}
+        {post.title ? <h3 className="text-[15px] font-semibold leading-snug tracking-tight">{post.title}</h3> : null}
         {post.body_html ? (
           <div
-            className="prose prose-sm mt-1.5 max-w-none text-sm text-foreground/90 [&_a]:no-underline"
+            className="prose prose-sm mt-1.5 line-clamp-6 max-w-none text-sm leading-relaxed text-foreground/85 [&_a]:no-underline"
             dangerouslySetInnerHTML={{ __html: post.body_html }}
           />
         ) : post.excerpt ? (
-          <p className="mt-1.5 text-sm text-foreground/90">{post.excerpt}</p>
+          <p className="mt-1.5 line-clamp-6 text-sm leading-relaxed text-foreground/85">{post.excerpt}</p>
         ) : null}
       </Link>
 
@@ -122,78 +145,85 @@ export function PostCard({ post }: { post: any }) {
       ) : null}
 
       {Array.isArray(post.hashtags) && post.hashtags.length ? (
-        <div className="mt-2 flex flex-wrap gap-1">
+        <div className="mt-2 flex flex-wrap gap-x-2 gap-y-1">
           {post.hashtags.slice(0, 6).map((t: string) => (
-            <span key={t} className="text-xs text-primary">#{t}</span>
+            <span key={t} className="text-xs font-medium text-primary">#{t}</span>
           ))}
         </div>
       ) : null}
 
-      <div className="mt-4 flex items-center gap-1 border-t border-border/60 pt-3 text-xs text-muted-foreground">
+      <footer className="mt-3.5 flex items-center gap-0.5 border-t border-border/40 pt-2.5 text-xs text-muted-foreground">
         <ReactionButton
           active={liked}
+          activeClass="text-danger"
           onClick={() => mut.mutate({ kind: "like" })}
-          icon={<Heart className={cn("h-4 w-4", liked && "fill-current text-danger")} />}
+          icon={<Heart className={cn("h-[15px] w-[15px]", liked && "fill-current")} />}
           count={post.like_count}
           label="Like"
         />
         <ReactionButton
           active={helpful}
+          activeClass="text-warning"
           onClick={() => mut.mutate({ kind: "helpful" })}
-          icon={<Lightbulb className={cn("h-4 w-4", helpful && "fill-current text-warning")} />}
+          icon={<Lightbulb className={cn("h-[15px] w-[15px]", helpful && "fill-current")} />}
           count={post.helpful_count}
           label="Helpful"
         />
         <ReactionButton
           active={insightful}
+          activeClass="text-primary"
           onClick={() => mut.mutate({ kind: "insightful" })}
-          icon={<Target className={cn("h-4 w-4", insightful && "text-primary")} />}
+          icon={<Target className="h-[15px] w-[15px]" />}
           count={0}
           label="Insightful"
         />
         <Link
           to="/community/post/$id"
           params={{ id: post.id }}
-          className="ml-2 inline-flex items-center gap-1 rounded-md px-2 py-1 hover:bg-muted"
+          className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 transition hover:bg-muted/70 hover:text-foreground"
+          aria-label="Comments"
         >
-          <MessageSquare className="h-4 w-4" />
-          <span>{post.comment_count ?? 0}</span>
+          <MessageSquare className="h-[15px] w-[15px]" />
+          <span className="tabular-nums">{post.comment_count ?? 0}</span>
         </Link>
         <button
           onClick={() => {
             navigator.clipboard.writeText(`${window.location.origin}/community/post/${post.id}`).catch(() => {});
             toast.success("Link copied");
           }}
-          className="inline-flex items-center gap-1 rounded-md px-2 py-1 hover:bg-muted"
+          className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 transition hover:bg-muted/70 hover:text-foreground"
+          aria-label="Share post"
         >
-          <Share2 className="h-4 w-4" /> Share
+          <Share2 className="h-[15px] w-[15px]" />
         </button>
         <button
           onClick={() => bmut.mutate()}
-          className={cn("ml-auto inline-flex items-center gap-1 rounded-md px-2 py-1 hover:bg-muted", post.viewer_bookmarked && "text-primary")}
+          aria-label="Save post"
+          className={cn(
+            "ml-auto inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 transition hover:bg-muted/70 hover:text-foreground",
+            post.viewer_bookmarked && "text-primary",
+          )}
         >
-          {post.viewer_bookmarked ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
-          <span>{post.bookmark_count ?? 0}</span>
+          {post.viewer_bookmarked ? <BookmarkCheck className="h-[15px] w-[15px]" /> : <Bookmark className="h-[15px] w-[15px]" />}
+          <span className="tabular-nums">{post.bookmark_count ?? 0}</span>
         </button>
-      </div>
-
-      {post.is_featured ? (
-        <div className="mt-3 inline-flex items-center gap-1 rounded-md bg-warning/10 px-2 py-0.5 text-[10px] font-semibold text-warning">
-          <Sparkles className="h-3 w-3" /> Featured
-        </div>
-      ) : null}
-    </GlassCard>
+      </footer>
+    </article>
   );
 }
 
 function ReactionButton({
-  active, onClick, icon, count, label,
-}: { active: boolean; onClick: () => void; icon: React.ReactNode; count: number; label: string }) {
+  active, onClick, icon, count, label, activeClass,
+}: { active: boolean; onClick: () => void; icon: React.ReactNode; count: number; label: string; activeClass: string }) {
   return (
     <button
       onClick={onClick}
-      className={cn("inline-flex items-center gap-1 rounded-md px-2 py-1 transition hover:bg-muted", active && "text-primary")}
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 transition hover:bg-muted/70 hover:text-foreground",
+        active && activeClass,
+      )}
       aria-label={label}
+      aria-pressed={active}
     >
       {icon}
       <span className="tabular-nums">{count ?? 0}</span>

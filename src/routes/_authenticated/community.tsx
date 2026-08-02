@@ -1,57 +1,76 @@
-import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { cn } from "@/lib/utils";
-import {
-  Bookmark, Compass, Flame, Home, Users, Lightbulb, GraduationCap,
-  UsersRound, Video, Trophy, Star,
-} from "lucide-react";
-
-const TABS = [
-  { to: "/community", label: "Home", icon: Home, exact: true },
-  { to: "/community/explore", label: "Explore", icon: Compass },
-  { to: "/community/ideas", label: "Ideas", icon: Lightbulb },
-  { to: "/community/mentors", label: "Mentors", icon: GraduationCap },
-  { to: "/community/groups", label: "Study Groups", icon: UsersRound },
-  { to: "/community/live", label: "Live", icon: Video },
-  { to: "/community/challenges", label: "Challenges", icon: Trophy },
-  { to: "/community/reviews", label: "Reviews", icon: Star },
-  { to: "/community/following", label: "Following", icon: Users },
-  { to: "/community/trending", label: "Trending", icon: Flame },
-  { to: "/community/bookmarks", label: "Bookmarks", icon: Bookmark },
-];
+import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router";
+import { PenSquare } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { CommunityNavRail, CommunityNavStrip } from "@/components/community/CommunityNav";
+import { CommunitySidebar } from "@/components/community/CommunitySidebar";
+import { CreatePostDialog } from "@/components/community/CreatePostDialog";
 
 export const Route = createFileRoute("/_authenticated/community")({
   head: () => ({
     meta: [
       { title: "Community — TradersHIVE Arena" },
-      { name: "description", content: "Trade ideas, mentors, study groups, live sessions and community challenges for serious traders." },
+      { name: "description", content: "A trading community feed: ideas, charts, mentors, study groups, live sessions and challenges." },
     ],
   }),
   component: Layout,
 });
 
+/** Routes that read like a social feed get the discovery rail on the right. */
+const FEED_ROUTES = ["/community", "/community/explore", "/community/following", "/community/trending", "/community/bookmarks"];
+
 function Layout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const showRail = FEED_ROUTES.includes(pathname);
+
   return (
-    <div className="mx-auto w-full max-w-[1400px] space-y-4">
-      <nav className="no-scrollbar -mx-1 overflow-x-auto px-1">
-        <div className="inline-flex snap-x items-center gap-1 rounded-md border border-border/60 bg-card/60 p-1.5">
-          {TABS.map((t) => {
-            const active = t.exact ? pathname === t.to : pathname === t.to || pathname.startsWith(t.to + "/");
-            const Icon = t.icon;
-            return (
-              <Link key={t.to} to={t.to}
-                className={cn(
-                  "inline-flex shrink-0 snap-start items-center gap-1.5 rounded-sm px-3 py-1.5 text-sm font-medium transition",
-                  active ? "bg-primary/15 text-primary"
-                    : "text-muted-foreground hover:bg-background/40 hover:text-foreground",
-                )}>
-                <Icon className="h-4 w-4" /> {t.label}
-              </Link>
-            );
-          })}
+    <div className="mx-auto w-full max-w-[1400px]">
+      <div className="mb-4 lg:hidden">
+        <CommunityNavStrip />
+      </div>
+
+      <div
+        className={
+          showRail
+            ? "grid gap-6 lg:grid-cols-[204px_minmax(0,1fr)] xl:grid-cols-[204px_minmax(0,1fr)_312px]"
+            : "grid gap-6 lg:grid-cols-[204px_minmax(0,1fr)]"
+        }
+      >
+        <div className="hidden lg:block">
+          <div className="sticky top-4 space-y-4">
+            <CreatePostDialog
+              trigger={
+                <Button className="w-full rounded-full" size="sm">
+                  <PenSquare className="mr-1.5 h-4 w-4" /> Create post
+                </Button>
+              }
+            />
+            <CommunityNavRail />
+          </div>
         </div>
-      </nav>
-      <Outlet />
+
+        <main className="min-w-0">
+          <Outlet />
+        </main>
+
+        {showRail ? (
+          <aside className="hidden xl:block">
+            <div className="sticky top-4">
+              <CommunitySidebar />
+            </div>
+          </aside>
+        ) : null}
+      </div>
+
+      {/* Mobile create-post FAB — the familiar social shortcut. */}
+      <div className="fixed bottom-20 right-4 z-40 lg:hidden">
+        <CreatePostDialog
+          trigger={
+            <Button size="icon" className="h-12 w-12 rounded-full shadow-lg" aria-label="Create post">
+              <PenSquare className="h-5 w-5" />
+            </Button>
+          }
+        />
+      </div>
     </div>
   );
 }
