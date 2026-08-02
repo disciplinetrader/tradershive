@@ -525,10 +525,12 @@ function RegisterForm() {
                     placeholder="Select timezone"
                     searchPlaceholder="Search e.g. Tokyo, +9…"
                     ariaLabel="Timezone"
+                    className="text-xs"
                   />
                 )}
               />
             </Field>
+
           </div>
 
           <Field label="Trading experience" error={errors.experience?.message}>
