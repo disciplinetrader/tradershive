@@ -88,6 +88,8 @@ function Studio() {
         </div>
         <SessionSidebar className="hidden md:flex" />
       </div>
+      <StudioBlotter className="hidden md:flex" />
+
       <Sheet open={panelOpen} onOpenChange={setPanelOpen}>
         <SheetContent side="bottom" className="h-[75dvh] p-0 md:hidden">
           <SessionSidebar className="h-full border-l-0" />
