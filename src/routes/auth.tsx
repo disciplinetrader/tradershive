@@ -543,11 +543,12 @@ function RegisterForm() {
                   <SelectContent>
                     {EXPERIENCE_LEVELS.map((e) => (
                       <SelectItem key={e.value} value={e.value}>
-                        <div className="flex flex-col">
-                          <span>{e.label}</span>
-                          <span className="text-[11px] text-muted-foreground">{e.hint}</span>
-                        </div>
+                        <span className="flex items-center gap-1.5 leading-none">
+                          <span className="text-sm">{e.label}</span>
+                          <span className="text-[11px] text-muted-foreground">— {e.hint}</span>
+                        </span>
                       </SelectItem>
+
                     ))}
                   </SelectContent>
                 </Select>
