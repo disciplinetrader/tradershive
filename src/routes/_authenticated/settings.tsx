@@ -491,12 +491,12 @@ function ProductTourSection() {
         <div>
           <h2 className="text-base font-semibold">Onboarding</h2>
           <p className="text-xs text-muted-foreground">
-            Replay the guided product tour to revisit the core features of TradersHIVE.
+            Take the quick guided tour again to revisit the core features of TradersHIVE.
           </p>
         </div>
         <Button variant="outline" onClick={start} className="gap-2">
           <Play className="h-4 w-4" />
-          Replay Product Tour
+          Quick Tour
         </Button>
       </div>
     </GlassCard>
