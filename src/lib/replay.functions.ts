@@ -591,6 +591,13 @@ export const getReplayCandles = createServerFn({ method: "POST" })
       session_id: z.string().uuid().optional(),
       /** Only honoured for sessions explicitly created as demos. */
       allowSynthetic: z.boolean().optional(),
+      /**
+       * Extra candles loaded *before* `from` so the trader opens the session
+       * with real market context on screen instead of a single candle.
+       * Best-effort: never fails the request.
+       */
+      warmupBars: z.number().int().min(0).max(2000).optional(),
+
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
