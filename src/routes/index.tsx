@@ -638,33 +638,40 @@ function MockRow({
 
 function TrustBar() {
   const stats = [
-    { label: "Total backtests", value: "—", hint: "unlocks at launch" },
-    { label: "Trades reviewed", value: "—", hint: "unlocks at launch" },
-    { label: "Hours replayed", value: "—", hint: "unlocks at launch" },
-    { label: "Avg. user rating", value: "—", hint: "closed beta" },
+    { label: "Markets covered", value: "Forex · Crypto · Stocks" },
+    { label: "Historical data", value: "Tick-accurate" },
+    { label: "Timeframes", value: "1m → 1M" },
+    { label: "AI coaching", value: "24/7" },
   ];
   return (
-    <Section className="!py-14">
+    <Section className="!py-16">
       <div className="text-center text-xs uppercase tracking-[0.2em] text-muted-foreground">
-        Trusted by early beta traders across Forex, Crypto & Stocks
+        Built for serious traders across Forex, Crypto &amp; Stocks
       </div>
-      <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        {stats.map((s) => (
-          <div
+      <div className="mx-auto mt-10 grid max-w-4xl grid-cols-2 gap-8 border-t border-border/40 pt-12 md:grid-cols-4">
+        {stats.map((s, i) => (
+          <motion.div
             key={s.label}
-            className="rounded-2xl border border-border/60 bg-background/40 p-5 text-center backdrop-blur"
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-60px" }}
+            variants={fadeUp}
+            custom={i}
+            className="text-center"
           >
-            <div className="text-2xl font-semibold tracking-tight">{s.value}</div>
-            <div className="mt-1 text-xs text-muted-foreground">{s.label}</div>
-            <div className="mt-2 text-[10px] uppercase tracking-wider text-muted-foreground/70">
-              {s.hint}
+            <div className="font-display text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+              {s.value}
             </div>
-          </div>
+            <div className="mt-1 text-xs uppercase tracking-widest text-muted-foreground">
+              {s.label}
+            </div>
+          </motion.div>
         ))}
       </div>
     </Section>
   );
 }
+
 
 /* ================================================================== */
 /* Feature Overview                                                     */
