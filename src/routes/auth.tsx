@@ -404,15 +404,16 @@ function RegisterForm() {
       return;
     }
     clearSignupDraft();
-    // Beta: email confirmation is disabled, so signUp returns an active session.
-    // Auto-login the user straight into onboarding and skip the "check your inbox" screen.
-    if (data?.session || data?.user) {
+    // Email verification is required. Supabase only returns a session when the
+    // address is already confirmed; otherwise we show the "check your inbox"
+    // screen instead of dropping the user into onboarding unverified.
+    if (data?.session) {
       toast.success(`Welcome to ${APP_NAME}`);
       await navigate({ to: "/onboarding", replace: true });
       return;
     }
-    // Fallback (should not happen while auto-confirm is on): show the legacy verify screen.
     setSuccess({ email: values.email });
+
   });
 
 
