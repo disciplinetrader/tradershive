@@ -366,85 +366,86 @@ const fadeUp: Variants = {
 
 function Hero() {
   const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
-  const y = useTransform(scrollYProgress, [0, 1], [0, 60]);
 
   return (
-    <section ref={ref} className="relative z-10 pt-32 sm:pt-40">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid gap-12 lg:grid-cols-[1.1fr_1fr] lg:items-center lg:gap-16">
-          <div>
-            <motion.div initial="hidden" animate="show" variants={fadeUp} custom={0}>
-              <EyebrowBadge icon={Sparkles}>Now in Closed Beta · Free to join</EyebrowBadge>
-            </motion.div>
-            <motion.h1
-              initial="hidden"
-              animate="show"
-              variants={fadeUp}
-              custom={1}
-              className="mt-6 text-balance text-4xl font-semibold leading-[1.05] tracking-tight sm:text-6xl md:text-7xl"
-            >
-              {HEADLINE.split(" You Were Meant to Be")[0]}{" "}
-              <span className="bg-gradient-to-br from-primary via-primary to-primary/60 bg-clip-text text-transparent">
-                You Were Meant to Be
-              </span>
-              .
-            </motion.h1>
-            <motion.p
-              initial="hidden"
-              animate="show"
-              variants={fadeUp}
-              custom={2}
-              className="mt-6 max-w-xl text-pretty text-lg leading-relaxed text-muted-foreground"
-            >
-              {SUBHEAD}
-            </motion.p>
-            <motion.div
-              initial="hidden"
-              animate="show"
-              variants={fadeUp}
-              custom={3}
-              className="mt-8 flex flex-wrap items-center gap-3"
-            >
-              <Button asChild size="lg" className="h-12 rounded-full px-6 shadow-xl shadow-primary/25">
-                <Link to="/register">
-                  Join Closed Beta <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-              <Button
-                asChild
-                variant="outline"
-                size="lg"
-                className="h-12 rounded-full border-border/70 bg-background/50 px-6 backdrop-blur"
-              >
-                <a href="#replay">
-                  <Play className="mr-2 h-4 w-4" /> Watch Demo
-                </a>
-              </Button>
-            </motion.div>
-            <motion.ul
-              initial="hidden"
-              animate="show"
-              variants={fadeUp}
-              custom={4}
-              className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground"
-            >
-              {["No credit card", "Forex · Crypto · Stocks", "Cancel anytime"].map((t) => (
-                <li key={t} className="inline-flex items-center gap-2">
-                  <Check className="h-4 w-4 text-success" /> {t}
-                </li>
-              ))}
-            </motion.ul>
-          </div>
+    <section ref={ref} className="relative z-10 pt-28 sm:pt-36">
+      <div className="mx-auto max-w-5xl px-4 text-center sm:px-6 lg:px-8">
+        <motion.div initial="hidden" animate="show" variants={fadeUp} custom={0}>
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+            </span>
+            Now in Closed Beta · Free to join
+          </span>
+        </motion.div>
 
-          <motion.div style={{ y }} className="relative">
-            <HeroMockup />
-          </motion.div>
-        </div>
+        <motion.h1
+          initial="hidden"
+          animate="show"
+          variants={fadeUp}
+          custom={1}
+          className="mt-8 text-balance font-display text-5xl font-bold leading-[1.05] tracking-tight sm:text-7xl md:text-8xl"
+        >
+          Master the markets
+          <br />
+          <span className="bg-gradient-to-r from-primary via-primary-glow to-primary bg-clip-text text-transparent">
+            in high fidelity.
+          </span>
+        </motion.h1>
+
+        <motion.p
+          initial="hidden"
+          animate="show"
+          variants={fadeUp}
+          custom={2}
+          className="mx-auto mt-8 max-w-2xl text-pretty text-lg font-light leading-relaxed text-muted-foreground sm:text-xl"
+        >
+          {SUBHEAD}
+        </motion.p>
+
+        <motion.div
+          initial="hidden"
+          animate="show"
+          variants={fadeUp}
+          custom={3}
+          className="mt-10 flex flex-wrap items-center justify-center gap-4"
+        >
+          <Button asChild size="lg" className="h-14 rounded-xl px-8 text-base shadow-lg shadow-primary/25">
+            <Link to="/register">
+              Start training now <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
+          <Button
+            asChild
+            variant="outline"
+            size="lg"
+            className="h-14 rounded-xl border-border/70 bg-surface/60 px-8 text-base backdrop-blur"
+          >
+            <a href="#replay">
+              <Play className="mr-2 h-4 w-4" /> Watch demo
+            </a>
+          </Button>
+        </motion.div>
+
+        <motion.ul
+          initial="hidden"
+          animate="show"
+          variants={fadeUp}
+          custom={4}
+          className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground"
+        >
+          {["No credit card", "Forex · Crypto · Stocks", "Cancel anytime"].map((t) => (
+            <li key={t} className="inline-flex items-center gap-2">
+              <Check className="h-4 w-4 text-success" /> {t}
+            </li>
+          ))}
+        </motion.ul>
       </div>
     </section>
   );
 }
+
 
 function HeroMockup() {
   return (
