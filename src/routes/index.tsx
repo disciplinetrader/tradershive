@@ -447,20 +447,14 @@ function Hero() {
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-background to-transparent" />
       </div>
 
-      <motion.ul
-        initial="hidden"
-        whileInView="show"
-        viewport={{ once: true }}
-        variants={fadeUp}
-        custom={1}
-        className="mx-auto mt-12 flex max-w-3xl flex-wrap justify-center gap-x-8 gap-y-2 px-4 text-sm text-muted-foreground"
-      >
+      <ul className="mx-auto mt-12 flex max-w-3xl flex-wrap justify-center gap-x-8 gap-y-2 px-4 text-sm text-muted-foreground">
         {["No credit card", "Forex · Crypto · Stocks", "Cancel anytime"].map((t) => (
           <li key={t} className="inline-flex items-center gap-2">
             <Check className="h-4 w-4 text-success" /> {t}
           </li>
         ))}
-      </motion.ul>
+      </ul>
+
     </section>
   );
 }
