@@ -40,17 +40,18 @@ const STEPS: TourStep[] = [
     body: "This platform helps you practice, analyse and improve your trading. The tour takes under a minute.",
   },
   {
-    id: "replay",
-    title: "Replay Studio",
-    body: "Practice historical markets just like live trading. Rewind, pause and take deliberate trades on real data.",
-    target: '[data-tour="nav-replay"]',
-  },
-  {
     id: "trading",
     title: "Paper Trading",
     body: "Test ideas in the live Trading Workspace without risking real money. Full charts, orders and risk management.",
     target: '[data-tour="nav-trading"]',
   },
+  {
+    id: "replay",
+    title: "Replay Studio",
+    body: "Practice historical markets just like live trading. Rewind, pause and take deliberate trades on real data.",
+    target: '[data-tour="nav-replay"]',
+  },
+
   {
     id: "journal",
     title: "Journal",
