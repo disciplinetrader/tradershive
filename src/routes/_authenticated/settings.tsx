@@ -67,6 +67,7 @@ function SettingsPage() {
     profile?.display_name || profile?.username || "T";
   const initials = name.split(" ").map((s) => s[0]).join("").slice(0, 2).toUpperCase();
   const [signOutOpen, setSignOutOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const doSignOut = async () => {
     setSigningOut(true);
@@ -108,26 +109,35 @@ function SettingsPage() {
         <h2 className="text-base font-semibold text-danger">Danger zone</h2>
         <p className="text-xs text-muted-foreground">
           Deleting your account permanently removes your profile, journal, and stats.
+          We&apos;ll email you a verification code to confirm.
         </p>
-        <Button
-          variant="destructive"
-          className="mt-5"
-          onClick={() => setSignOutOpen(true)}
-        >
-          Sign out & request deletion
-        </Button>
+        <div className="mt-5 flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => setSignOutOpen(true)}>
+            Sign out
+          </Button>
+          <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
+            Delete account
+          </Button>
+        </div>
       </GlassCard>
 
       <ConfirmDialog
         open={signOutOpen}
         onOpenChange={setSignOutOpen}
-        title="Sign out & request deletion?"
-        description="You will be signed out of this device. To permanently delete your data, please contact support after signing out."
+        title="Sign out?"
+        description="You will be signed out of this device."
         confirmLabel="Sign out"
         destructive
         loading={signingOut}
         onConfirm={doSignOut}
       />
+
+      <DeleteAccountDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        email={user?.email ?? ""}
+      />
+
     </div>
   );
 }
