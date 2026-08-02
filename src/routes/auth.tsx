@@ -205,8 +205,11 @@ function AuthPage() {
           </AnimatePresence>
 
           <p className="mt-6 text-center text-[11px] text-muted-foreground">
-            By continuing you agree to the Terms of Service and Privacy Policy.
+            By continuing you agree to the{" "}
+            <Link to="/terms" className="underline hover:text-foreground">Terms of Service</Link> and{" "}
+            <Link to="/privacy" className="underline hover:text-foreground">Privacy Policy</Link>.
           </p>
+
         </div>
       </div>
     </div>
@@ -401,15 +404,16 @@ function RegisterForm() {
       return;
     }
     clearSignupDraft();
-    // Beta: email confirmation is disabled, so signUp returns an active session.
-    // Auto-login the user straight into onboarding and skip the "check your inbox" screen.
-    if (data?.session || data?.user) {
+    // Email verification is required. Supabase only returns a session when the
+    // address is already confirmed; otherwise we show the "check your inbox"
+    // screen instead of dropping the user into onboarding unverified.
+    if (data?.session) {
       toast.success(`Welcome to ${APP_NAME}`);
       await navigate({ to: "/onboarding", replace: true });
       return;
     }
-    // Fallback (should not happen while auto-confirm is on): show the legacy verify screen.
     setSuccess({ email: values.email });
+
   });
 
 
@@ -525,10 +529,12 @@ function RegisterForm() {
                     placeholder="Select timezone"
                     searchPlaceholder="Search e.g. Tokyo, +9…"
                     ariaLabel="Timezone"
+                    className="text-xs"
                   />
                 )}
               />
             </Field>
+
           </div>
 
           <Field label="Trading experience" error={errors.experience?.message}>
@@ -541,11 +547,12 @@ function RegisterForm() {
                   <SelectContent>
                     {EXPERIENCE_LEVELS.map((e) => (
                       <SelectItem key={e.value} value={e.value}>
-                        <div className="flex flex-col">
-                          <span>{e.label}</span>
-                          <span className="text-[11px] text-muted-foreground">{e.hint}</span>
-                        </div>
+                        <span className="flex items-center gap-1.5 leading-none">
+                          <span className="text-sm">{e.label}</span>
+                          <span className="text-[11px] text-muted-foreground">— {e.hint}</span>
+                        </span>
                       </SelectItem>
+
                     ))}
                   </SelectContent>
                 </Select>
@@ -606,11 +613,12 @@ function RegisterForm() {
                   <SelectContent>
                     {TRADING_STYLES.map((s) => (
                       <SelectItem key={s.value} value={s.value}>
-                        <div className="flex items-center gap-2">
-                          <span>{s.label}</span>
-                          <span className="text-[11px] text-muted-foreground">· {s.hint}</span>
-                        </div>
+                        <span className="flex items-center gap-1.5 leading-none">
+                          <span className="text-sm">{s.label}</span>
+                          <span className="text-[11px] text-muted-foreground">— {s.hint}</span>
+                        </span>
                       </SelectItem>
+
                     ))}
                   </SelectContent>
                 </Select>
@@ -629,9 +637,12 @@ function RegisterForm() {
                   className="mt-0.5"
                 />
                 <span>
-                  I accept the <a href="#" className="text-primary underline">Terms of Service</a>{" "}
-                  and <a href="#" className="text-primary underline">Privacy Policy</a>.
+                  I accept the{" "}
+                  <Link to="/terms" target="_blank" className="text-primary underline">Terms of Service</Link>{" "}
+                  and{" "}
+                  <Link to="/privacy" target="_blank" className="text-primary underline">Privacy Policy</Link>.
                 </span>
+
               </label>
             )}
           />

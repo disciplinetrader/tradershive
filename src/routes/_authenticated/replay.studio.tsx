@@ -19,6 +19,7 @@ import { SessionHeader } from "@/components/replay/studio/SessionHeader";
 import { PlaybackControls } from "@/components/replay/studio/PlaybackControls";
 import { SessionSidebar } from "@/components/replay/studio/SessionSidebar";
 import { StudioChart } from "@/components/replay/studio/StudioChart";
+import { StudioBlotter } from "@/components/replay/studio/StudioBlotter";
 import {
   SessionCompleteNotice, SnapshotDiscardedNotice, StudioBlockedView, StudioLoading,
 } from "@/components/replay/studio/StudioStates";
@@ -87,6 +88,8 @@ function Studio() {
         </div>
         <SessionSidebar className="hidden md:flex" />
       </div>
+      <StudioBlotter className="hidden md:flex" />
+
       <Sheet open={panelOpen} onOpenChange={setPanelOpen}>
         <SheetContent side="bottom" className="h-[75dvh] p-0 md:hidden">
           <SessionSidebar className="h-full border-l-0" />

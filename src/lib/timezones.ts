@@ -57,7 +57,9 @@ export function getTimezoneOptions(): TimezoneOption[] {
     const city = tz.split("/").slice(1).join(" / ").replace(/_/g, " ");
     return {
       value: tz,
-      label: `${tz.replace(/_/g, " ")} (${offsetLabel})`,
+      // Offset first so the list reads as an ordered UTC ladder and long
+      // zone names never hide the offset when the trigger truncates.
+      label: `${offsetLabel} · ${tz.replace(/_/g, " ")}`,
       offsetMinutes: off,
       offsetLabel,
       search: `${tz} ${city} ${offsetLabel}`.toLowerCase(),

@@ -105,6 +105,12 @@ export function useReplayStudio(): StudioValue {
   return v;
 }
 
+/**
+ * Bars of real history loaded *before* the session window so the studio opens
+ * with market context on screen (FXReplay-style) instead of a single candle.
+ */
+const WARMUP_BARS = 600;
+
 function rangeFor(session: any): { from: number; to: number } {
   if (session?.range_start && session?.range_end) {
     return { from: new Date(session.range_start).getTime(), to: new Date(session.range_end).getTime() };
@@ -134,7 +140,7 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
   const session = (sessionQuery.data?.session ?? null) as any;
 
   const candleQuery = useQuery({
-    queryKey: ["replay-studio-candles", id, session?.symbol, session?.timeframe, session?.range_start, session?.range_end],
+    queryKey: ["replay-studio-candles", id, session?.symbol, session?.timeframe, session?.range_start, session?.range_end, WARMUP_BARS],
     enabled: !!session,
     queryFn: async () => {
       const { from, to } = rangeFor(session);
@@ -147,10 +153,12 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
           market: session.market ?? undefined,
           session_id: id,
           allowSynthetic: session.provider === "synthetic",
+          warmupBars: WARMUP_BARS,
         },
       });
     },
   });
+
 
   const [boot, setBoot] = useState<BootstrapResult | null>(null);
   const bootRef = useRef<ReplaySessionController | null>(null);
@@ -161,6 +169,10 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
     let cancelled = false;
     if (!session || !candleQuery.data) return;
     const candles = (candleQuery.data.candles ?? []) as Candle[];
+    const warmupCount = Math.min(
+      (candleQuery.data as { warmupCount?: number }).warmupCount ?? 0,
+      Math.max(0, candles.length - 1),
+    );
     if (candleQuery.data.unavailable) { setBoot(null); return; }
 
     (async () => {
@@ -184,7 +196,12 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
         isSynthetic: !!candleQuery.data!.isSynthetic,
         allowSynthetic: session.provider === "synthetic",
         snapshot,
-        startCursor: startCursorFor(session, candles.length),
+        // Warm-up bars sit *before* the session window: they are visible
+        // history, never replayable observations, so the cursor starts past
+        // them and the requested range still drives start-mode maths.
+        startCursor:
+          warmupCount + startCursorFor(session, Math.max(1, candles.length - warmupCount)),
+
       });
       if (cancelled) return;
       if (result.ok) {

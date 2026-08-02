@@ -591,6 +591,13 @@ export const getReplayCandles = createServerFn({ method: "POST" })
       session_id: z.string().uuid().optional(),
       /** Only honoured for sessions explicitly created as demos. */
       allowSynthetic: z.boolean().optional(),
+      /**
+       * Extra candles loaded *before* `from` so the trader opens the session
+       * with real market context on screen instead of a single candle.
+       * Best-effort: never fails the request.
+       */
+      warmupBars: z.number().int().min(0).max(2000).optional(),
+
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -651,8 +658,37 @@ export const getReplayCandles = createServerFn({ method: "POST" })
         }
       }
 
+      // ── Warm-up context ────────────────────────────────────────────────
+      // Load bars *before* the session window so the chart opens with real
+      // history behind the cursor. Purely additive: any failure is swallowed
+      // and the session still boots on the requested range.
+      let warmup: typeof res.candles = [];
+      if (data.warmupBars && data.warmupBars > 0) {
+        // Generous padding for weekends/holidays/session gaps.
+        const span = data.warmupBars * stepSec * 1000 * 3;
+        try {
+          const w = await resolveHistoricalRange(context.supabase, {
+            symbol: data.symbol,
+            timeframe: (data.timeframe === "3m" ? "5m" : data.timeframe) as any,
+            from: data.from - span,
+            to: data.from - 1,
+            market: data.market,
+            allowBackfill: true,
+            allowSynthetic: data.allowSynthetic === true,
+            minRatio: 0,
+          } as any);
+          warmup = w.candles
+            .filter((c: any) => (c.time as number) < data.from)
+            .slice(-data.warmupBars);
+        } catch {
+          warmup = [];
+        }
+      }
+
       return {
-        candles: res.candles,
+        candles: [...warmup, ...res.candles],
+        warmupCount: warmup.length,
+
         provenance,
         providerId: res.source.providerCode,
         providerLabel: res.source.label,
@@ -686,7 +722,9 @@ export const getReplayCandles = createServerFn({ method: "POST" })
         }
         return {
           candles: [],
+          warmupCount: 0,
           provenance: null,
+
           providerId: null,
           providerLabel: null,
           sourceKind: null,
