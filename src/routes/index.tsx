@@ -490,7 +490,7 @@ function HeroMockup({ className }: { className?: string }) {
         </div>
 
         <div className="grid grid-cols-[1fr_180px] gap-0">
-          <div className="relative aspect-[16/10] bg-gradient-to-br from-background to-muted/30 p-4">
+          <div className="relative aspect-[16/8] bg-gradient-to-br from-background to-muted/30 p-4">
             <MockChart />
             <FloatingCard className="absolute left-4 top-4" tone="up">
               <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
