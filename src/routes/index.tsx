@@ -139,21 +139,24 @@ function LandingPage() {
 
 function AmbientBackground() {
   return (
-    <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-      <div className="absolute -top-40 left-1/2 h-[720px] w-[1200px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,hsl(var(--primary)/0.22),transparent_70%)] blur-3xl" />
-      <div className="absolute top-[40%] -left-32 h-[520px] w-[520px] rounded-full bg-[radial-gradient(closest-side,hsl(var(--info)/0.18),transparent_70%)] blur-3xl" />
-      <div className="absolute top-[70%] right-[-10%] h-[520px] w-[520px] rounded-full bg-[radial-gradient(closest-side,hsl(var(--success)/0.16),transparent_70%)] blur-3xl" />
+    <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden bg-background">
+      {/* Single restrained top glow — terminal-dark, no rainbow blobs */}
+      <div className="absolute -top-72 left-1/2 h-[900px] w-[1400px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,hsl(var(--primary)/0.14),transparent_72%)] blur-3xl" />
+      <div className="absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,hsl(var(--primary)/0.35),transparent)]" />
       <div
-        className="absolute inset-0 opacity-[0.35] mix-blend-overlay"
+        className="absolute inset-0 opacity-[0.14]"
         style={{
           backgroundImage:
-            "radial-gradient(circle at 1px 1px, hsl(var(--foreground)/0.08) 1px, transparent 0)",
-          backgroundSize: "28px 28px",
+            "linear-gradient(hsl(var(--foreground)/0.06) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)/0.06) 1px, transparent 1px)",
+          backgroundSize: "64px 64px",
+          maskImage: "radial-gradient(ellipse 80% 55% at 50% 0%, #000 40%, transparent 100%)",
+          WebkitMaskImage: "radial-gradient(ellipse 80% 55% at 50% 0%, #000 40%, transparent 100%)",
         }}
       />
     </div>
   );
 }
+
 
 /* ================================================================== */
 /* Navbar                                                               */
@@ -181,26 +184,28 @@ function Navbar() {
   }, []);
 
   return (
-    <header
-      className={cn(
-        "fixed inset-x-0 top-0 z-50 transition-all duration-300",
-        scrolled
-          ? "border-b border-border/50 bg-background/70 backdrop-blur-xl supports-[backdrop-filter]:bg-background/50"
-          : "border-b border-transparent bg-transparent",
-      )}
-    >
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+    <header className="fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-6 sm:pt-4">
+      <div
+        className={cn(
+          "mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 rounded-full border px-3 pl-5 transition-all duration-300 sm:h-16",
+          scrolled
+            ? "border-border/70 bg-background/80 shadow-[0_10px_40px_-12px_hsl(var(--background))] backdrop-blur-xl"
+            : "border-border/40 bg-background/50 backdrop-blur-md",
+        )}
+      >
         <Link to="/" className="group flex items-center gap-2" aria-label={APP_NAME}>
           <LogoMark />
-          <span className="text-sm font-semibold tracking-tight sm:text-base">{APP_NAME}</span>
+          <span className="text-sm font-semibold uppercase tracking-[0.14em] sm:text-base">
+            {APP_NAME}
+          </span>
         </Link>
 
-        <nav className="hidden items-center gap-1 lg:flex" aria-label="Primary">
+        <nav className="hidden items-center gap-0.5 lg:flex" aria-label="Primary">
           {NAV_LINKS.map((l) => (
             <a
               key={l.href}
               href={l.href}
-              className="group inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+              className="group inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
             >
               {l.label}
               {l.badge ? (
@@ -214,27 +219,30 @@ function Navbar() {
 
         <div className="hidden items-center gap-2 lg:flex">
           {user ? (
-            <Button asChild size="sm" className="rounded-full">
+            <Button asChild size="sm" className="h-10 rounded-full px-5">
               <Link to="/dashboard">
                 Open App <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
               </Link>
             </Button>
           ) : (
             <>
-              <Button asChild variant="ghost" size="sm" className="rounded-full">
+              <Button
+                asChild
+                variant="ghost"
+                size="sm"
+                className="h-10 rounded-full px-4 text-muted-foreground hover:text-foreground"
+              >
                 <Link to="/login">Sign in</Link>
               </Button>
-              <Button asChild size="sm" className="rounded-full shadow-lg shadow-primary/20">
-                <Link to="/register">
-                  Join Closed Beta <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-                </Link>
+              <Button asChild size="sm" className="h-10 rounded-full px-5 font-medium">
+                <Link to="/register">Get started</Link>
               </Button>
             </>
           )}
         </div>
 
         <button
-          className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-border/60 bg-background/60 lg:hidden"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border/60 bg-background/60 lg:hidden"
           aria-label="Toggle menu"
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
@@ -243,6 +251,7 @@ function Navbar() {
         </button>
       </div>
 
+
       <AnimatePresence>
         {open ? (
           <motion.div
@@ -250,9 +259,10 @@ function Navbar() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
-            className="border-t border-border/60 bg-background/95 backdrop-blur-xl lg:hidden"
+            className="mx-auto mt-2 max-w-6xl overflow-hidden rounded-3xl border border-border/60 bg-background/95 backdrop-blur-xl lg:hidden"
           >
-            <div className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-4">
+            <div className="flex flex-col gap-1 p-4">
+
               {NAV_LINKS.map((l) => (
                 <a
                   key={l.href}
@@ -375,15 +385,15 @@ function Hero() {
   const ref = useRef<HTMLDivElement>(null);
 
   return (
-    <section ref={ref} className="relative z-10 pt-28 sm:pt-36">
+    <section ref={ref} className="relative z-10 overflow-hidden pt-28 sm:pt-36">
       <div className="mx-auto max-w-5xl px-4 text-center sm:px-6 lg:px-8">
         <motion.div initial="hidden" animate="show" variants={fadeUp} custom={0}>
-          <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
-            <span className="relative flex h-2 w-2">
+          <span className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-surface/60 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur">
+            <span className="relative flex h-1.5 w-1.5">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
             </span>
-            Now in Closed Beta · Free to join
+            Now in closed beta · free to join
           </span>
         </motion.div>
 
@@ -392,12 +402,12 @@ function Hero() {
           animate="show"
           variants={fadeUp}
           custom={1}
-          className="mt-8 text-balance font-display text-5xl font-bold leading-[1.05] tracking-tight sm:text-7xl md:text-8xl"
+          className="mx-auto mt-8 max-w-4xl text-balance font-display text-[2.75rem] font-bold leading-[1.02] tracking-[-0.03em] sm:text-6xl md:text-7xl lg:text-[5.25rem]"
         >
-          Master the markets
+          Your strategy shouldn&apos;t be
           <br />
-          <span className="bg-gradient-to-r from-primary via-primary-glow to-primary bg-clip-text text-transparent">
-            in high fidelity.
+          <span className="bg-gradient-to-b from-foreground/70 to-muted-foreground/50 bg-clip-text text-transparent">
+            tested with real money
           </span>
         </motion.h1>
 
@@ -406,7 +416,7 @@ function Hero() {
           animate="show"
           variants={fadeUp}
           custom={2}
-          className="mx-auto mt-8 max-w-2xl text-pretty text-lg font-light leading-relaxed text-muted-foreground sm:text-xl"
+          className="mx-auto mt-7 max-w-2xl text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg"
         >
           {SUBHEAD}
         </motion.p>
@@ -416,51 +426,45 @@ function Hero() {
           animate="show"
           variants={fadeUp}
           custom={3}
-          className="mt-10 flex flex-wrap items-center justify-center gap-4"
+          className="mt-9 flex flex-col items-center gap-3"
         >
           <Button
             asChild
             size="lg"
-            className="h-14 rounded-xl px-8 text-base shadow-lg shadow-primary/25"
+            className="h-14 rounded-full px-9 text-base font-medium shadow-[0_16px_50px_-16px_hsl(var(--primary))]"
           >
-            <Link to="/register">
-              Start training now <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
+            <Link to="/register">Get started for free</Link>
           </Button>
-          <Button
-            asChild
-            variant="outline"
-            size="lg"
-            className="h-14 rounded-xl border-border/70 bg-surface/60 px-8 text-base backdrop-blur"
-          >
-            <a href="#replay">
-              <Play className="mr-2 h-4 w-4" /> Watch demo
-            </a>
-          </Button>
+          <p className="text-sm text-muted-foreground">
+            Start for free. No credit card required.
+          </p>
         </motion.div>
-
-        <motion.ul
-          initial="hidden"
-          animate="show"
-          variants={fadeUp}
-          custom={4}
-          className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground"
-        >
-          {["No credit card", "Forex · Crypto · Stocks", "Cancel anytime"].map((t) => (
-            <li key={t} className="inline-flex items-center gap-2">
-              <Check className="h-4 w-4 text-success" /> {t}
-            </li>
-          ))}
-        </motion.ul>
       </div>
+
+      {/* Product surface — the hero's centrepiece */}
+      <div className="relative mx-auto mt-16 max-w-7xl px-4 sm:mt-20 sm:px-6 lg:px-8">
+        <HeroMockup className="max-w-6xl" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-background to-transparent" />
+      </div>
+
+      <ul className="mx-auto mt-12 flex max-w-3xl flex-wrap justify-center gap-x-8 gap-y-2 px-4 text-sm text-muted-foreground">
+        {["No credit card", "Forex · Crypto · Stocks", "Cancel anytime"].map((t) => (
+          <li key={t} className="inline-flex items-center gap-2">
+            <Check className="h-4 w-4 text-success" /> {t}
+          </li>
+        ))}
+      </ul>
+
     </section>
   );
 }
 
-function HeroMockup() {
+
+function HeroMockup({ className }: { className?: string }) {
   return (
-    <div className="relative mx-auto w-full max-w-2xl">
-      <div className="absolute -inset-6 rounded-[32px] bg-gradient-to-br from-primary/30 via-info/20 to-success/20 blur-3xl" />
+    <div className={cn("relative mx-auto w-full max-w-2xl", className)}>
+
+      <div className="absolute -inset-8 rounded-[40px] bg-[radial-gradient(closest-side,hsl(var(--primary)/0.25),transparent_75%)] blur-3xl" />
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -480,7 +484,7 @@ function HeroMockup() {
         </div>
 
         <div className="grid grid-cols-[1fr_180px] gap-0">
-          <div className="relative aspect-[16/10] bg-gradient-to-br from-background to-muted/30 p-4">
+          <div className="relative aspect-[16/8] bg-gradient-to-br from-background to-muted/30 p-4">
             <MockChart />
             <FloatingCard className="absolute left-4 top-4" tone="up">
               <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -539,7 +543,7 @@ function MockChart() {
   }, []);
 
   return (
-    <svg viewBox="0 0 440 240" className="h-full w-full">
+    <svg viewBox="0 0 440 240" preserveAspectRatio="none" className="h-full w-full">
       <defs>
         <linearGradient id="g" x1="0" x2="0" y1="0" y2="1">
           <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.4" />
