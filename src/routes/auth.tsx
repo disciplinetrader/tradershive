@@ -633,9 +633,12 @@ function RegisterForm() {
                   className="mt-0.5"
                 />
                 <span>
-                  I accept the <a href="#" className="text-primary underline">Terms of Service</a>{" "}
-                  and <a href="#" className="text-primary underline">Privacy Policy</a>.
+                  I accept the{" "}
+                  <Link to="/terms" target="_blank" className="text-primary underline">Terms of Service</Link>{" "}
+                  and{" "}
+                  <Link to="/privacy" target="_blank" className="text-primary underline">Privacy Policy</Link>.
                 </span>
+
               </label>
             )}
           />
