@@ -134,7 +134,7 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
   const session = (sessionQuery.data?.session ?? null) as any;
 
   const candleQuery = useQuery({
-    queryKey: ["replay-studio-candles", id, session?.symbol, session?.timeframe, session?.range_start, session?.range_end],
+    queryKey: ["replay-studio-candles", id, session?.symbol, session?.timeframe, session?.range_start, session?.range_end, WARMUP_BARS],
     enabled: !!session,
     queryFn: async () => {
       const { from, to } = rangeFor(session);
@@ -147,10 +147,12 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
           market: session.market ?? undefined,
           session_id: id,
           allowSynthetic: session.provider === "synthetic",
+          warmupBars: WARMUP_BARS,
         },
       });
     },
   });
+
 
   const [boot, setBoot] = useState<BootstrapResult | null>(null);
   const bootRef = useRef<ReplaySessionController | null>(null);
