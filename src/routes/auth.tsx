@@ -92,6 +92,17 @@ export const Route = createFileRoute("/auth")({
 type Mode = "login" | "register" | "forgot";
 
 function AuthPage() {
+  // The form reads browser-only state (drafts, timezone), so render it after
+  // hydration to keep the server and client trees identical.
+  return (
+    <ClientOnly fallback={<div className="min-h-screen bg-background" />}>
+      <AuthPageContent />
+    </ClientOnly>
+  );
+}
+
+function AuthPageContent() {
+
   const searchParams = useSearch({ from: "/auth" });
   const [mode, setMode] = useState<Mode>((searchParams.mode as Mode) ?? "login");
 
