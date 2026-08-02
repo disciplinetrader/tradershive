@@ -263,7 +263,7 @@ function TourOverlay({
     lastAnchorLeft.current = left;
     setCardPos({ top, left });
 
-  }, [rect, step]);
+  }, [rect, step, s.target]);
 
   // Keyboard: Esc closes, arrows navigate.
   useEffect(() => {
