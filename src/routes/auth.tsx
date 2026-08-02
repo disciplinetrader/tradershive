@@ -1,4 +1,4 @@
-import { createFileRoute, Link, redirect, useNavigate, useSearch } from "@tanstack/react-router";
+import { ClientOnly, createFileRoute, Link, redirect, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { useForm, Controller } from "react-hook-form";
@@ -67,7 +67,6 @@ const authSearchSchema = z.object({
 });
 
 export const Route = createFileRoute("/auth")({
-  ssr: false,
   validateSearch: authSearchSchema,
   beforeLoad: async ({ search }) => {
     const { data } = await supabase.auth.getSession();
@@ -92,6 +91,17 @@ export const Route = createFileRoute("/auth")({
 type Mode = "login" | "register" | "forgot";
 
 function AuthPage() {
+  // The form reads browser-only state (drafts, timezone), so render it after
+  // hydration to keep the server and client trees identical.
+  return (
+    <ClientOnly fallback={<div className="min-h-screen bg-background" />}>
+      <AuthPageContent />
+    </ClientOnly>
+  );
+}
+
+function AuthPageContent() {
+
   const searchParams = useSearch({ from: "/auth" });
   const [mode, setMode] = useState<Mode>((searchParams.mode as Mode) ?? "login");
 
