@@ -139,21 +139,24 @@ function LandingPage() {
 
 function AmbientBackground() {
   return (
-    <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-      <div className="absolute -top-40 left-1/2 h-[720px] w-[1200px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,hsl(var(--primary)/0.22),transparent_70%)] blur-3xl" />
-      <div className="absolute top-[40%] -left-32 h-[520px] w-[520px] rounded-full bg-[radial-gradient(closest-side,hsl(var(--info)/0.18),transparent_70%)] blur-3xl" />
-      <div className="absolute top-[70%] right-[-10%] h-[520px] w-[520px] rounded-full bg-[radial-gradient(closest-side,hsl(var(--success)/0.16),transparent_70%)] blur-3xl" />
+    <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden bg-background">
+      {/* Single restrained top glow — terminal-dark, no rainbow blobs */}
+      <div className="absolute -top-72 left-1/2 h-[900px] w-[1400px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,hsl(var(--primary)/0.14),transparent_72%)] blur-3xl" />
+      <div className="absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,hsl(var(--primary)/0.35),transparent)]" />
       <div
-        className="absolute inset-0 opacity-[0.35] mix-blend-overlay"
+        className="absolute inset-0 opacity-[0.14]"
         style={{
           backgroundImage:
-            "radial-gradient(circle at 1px 1px, hsl(var(--foreground)/0.08) 1px, transparent 0)",
-          backgroundSize: "28px 28px",
+            "linear-gradient(hsl(var(--foreground)/0.06) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)/0.06) 1px, transparent 1px)",
+          backgroundSize: "64px 64px",
+          maskImage: "radial-gradient(ellipse 80% 55% at 50% 0%, #000 40%, transparent 100%)",
+          WebkitMaskImage: "radial-gradient(ellipse 80% 55% at 50% 0%, #000 40%, transparent 100%)",
         }}
       />
     </div>
   );
 }
+
 
 /* ================================================================== */
 /* Navbar                                                               */
