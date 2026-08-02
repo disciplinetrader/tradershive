@@ -29,7 +29,6 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   COUNTRIES,
   MARKETS,
-  TIMEZONES,
   TRADING_STYLES,
   type Market,
 } from "@/lib/constants";
