@@ -6,7 +6,9 @@ import { PostCard } from "@/components/community/PostCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { MessageSquarePlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+
 
 export function FeedList({
   tab, categorySlug, hashtag, symbol, authorId,
