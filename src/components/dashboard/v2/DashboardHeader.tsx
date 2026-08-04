@@ -69,20 +69,25 @@ export function DashboardHeader({
   };
 
   const name = profile?.display_name || profile?.username || user?.email?.split("@")[0] || "Trader";
+  const dateStr = new Intl.DateTimeFormat("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(new Date());
 
   return (
-    <header className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+    <header className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
       <div className="min-w-0">
-        <PageTitle>Dashboard</PageTitle>
-        <p className="mt-1 truncate text-sm text-muted-foreground">
-          {greeting()}, {name}
-        </p>
+        <p className="eyebrow mb-1 text-primary">{dateStr}</p>
+        <PageTitle>
+          {greeting()}, <span className="text-foreground/90">{name}</span>
+        </PageTitle>
       </div>
 
       <div className="flex shrink-0 flex-wrap items-center gap-2">
         {accounts && accounts.length > 0 ? (
           <Select value={accountId ?? undefined} onValueChange={onSelect}>
-            <SelectTrigger className="h-9 w-[190px] rounded-xl border-border/50 bg-card text-sm">
+            <SelectTrigger className="h-10 w-[200px] rounded-xl border-border/50 bg-card/50 text-sm backdrop-blur-sm">
               <SelectValue placeholder="Select account" />
             </SelectTrigger>
             <SelectContent>
@@ -94,7 +99,7 @@ export function DashboardHeader({
             </SelectContent>
           </Select>
         ) : null}
-        <MarketStatusBadge market="forex" className="h-9 rounded-xl px-3" />
+        <MarketStatusBadge market="forex" className="h-10 rounded-xl px-4" />
       </div>
     </header>
   );
