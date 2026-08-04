@@ -98,12 +98,22 @@ export function HistogramChart({
 }: { data: { label: string; count: number }[]; empty: string }) {
   if (data.length === 0) return <EmptyChart message={empty} />;
   return (
-    <ResponsiveContainer width="100%" height={200}>
+    <ResponsiveContainer width="100%" height={240}>
       <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
         <CartesianGrid strokeOpacity={0.12} vertical={false} />
-        <XAxis dataKey="label" tick={AXIS} tickLine={false} axisLine={false} interval={0} angle={-20} height={44} textAnchor="end" />
+        <XAxis 
+          dataKey="label" 
+          tick={AXIS} 
+          tickLine={false} 
+          axisLine={false} 
+          interval={0} 
+          angle={-35} 
+          height={60} 
+          textAnchor="end"
+          fontSize={9}
+        />
         <YAxis tick={AXIS} tickLine={false} axisLine={false} width={40} allowDecimals={false} />
-        <Tooltip contentStyle={{ fontSize: 12 }} />
+        <Tooltip contentStyle={{ fontSize: 12, borderRadius: '8px' }} />
         <Bar dataKey="count" radius={[3, 3, 0, 0]} fill="var(--primary)" />
       </BarChart>
     </ResponsiveContainer>

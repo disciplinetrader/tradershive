@@ -237,30 +237,30 @@ function CohortTable({ rows, minSample }: { rows: CohortRow[]; minSample: number
       <table className="w-full text-xs">
         <thead>
           <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground">
-            <th className="py-1 pr-2 font-medium">Name</th>
-            <th className="py-1 pr-2 text-right font-medium">Trades</th>
-            <th className="py-1 pr-2 text-right font-medium">Net P/L</th>
-            <th className="py-1 pr-2 text-right font-medium">Avg R</th>
-            <th className="py-1 pr-2 text-right font-medium">Win %</th>
-            <th className="py-1 text-right font-medium">PF</th>
+            <th className="py-2 pr-2 font-medium">Name</th>
+            <th className="py-2 pr-2 text-right font-medium">Trades</th>
+            <th className="py-2 pr-2 text-right font-medium">Net P/L</th>
+            <th className="py-2 pr-2 text-right font-medium">Avg R</th>
+            <th className="py-2 pr-2 text-right font-medium">Win %</th>
+            <th className="py-2 text-right font-medium">PF</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((r) => (
-            <tr key={r.key} className="border-t border-border/40">
-              <td className="py-1.5 pr-2">
-                <span className="truncate">{r.label}</span>
+            <tr key={r.key} className="border-t border-border/40 hover:bg-muted/30 transition-colors">
+              <td className="py-2.5 pr-2">
+                <div className="max-w-[120px] truncate" title={r.label}>{r.label}</div>
                 {!r.rankable ? (
-                  <span className="ml-1 text-[10px] text-muted-foreground" title={`Fewer than ${minSample} trades — excluded from rankings`}>
-                    · low sample
-                  </span>
+                  <div className="text-[9px] text-muted-foreground" title={`Fewer than ${minSample} trades`}>
+                    low sample
+                  </div>
                 ) : null}
               </td>
-              <td className="py-1.5 pr-2 text-right tabular-nums">{r.count}</td>
-              <td className="py-1.5 pr-2 text-right"><ToneNumber value={r.netPnl} format="currency" /></td>
-              <td className="py-1.5 pr-2 text-right"><ToneNumber value={r.averageR} format="r" /></td>
-              <td className="py-1.5 pr-2 text-right tabular-nums">{r.winRate.toFixed(0)}%</td>
-              <td className="py-1.5 text-right tabular-nums">{r.profitFactor == null ? "—" : r.profitFactor.toFixed(2)}</td>
+              <td className="py-2.5 pr-2 text-right tabular-nums">{r.count}</td>
+              <td className="py-2.5 pr-2 text-right"><ToneNumber value={r.netPnl} format="currency" /></td>
+              <td className="py-2.5 pr-2 text-right"><ToneNumber value={r.averageR} format="r" /></td>
+              <td className="py-2.5 pr-2 text-right tabular-nums">{r.winRate.toFixed(0)}%</td>
+              <td className="py-2.5 text-right tabular-nums">{r.profitFactor == null ? "—" : r.profitFactor.toFixed(2)}</td>
             </tr>
           ))}
         </tbody>
@@ -319,14 +319,14 @@ export function PlaybookSection() {
 function HeatStrip({ cells }: { cells: { label: string; netPnl: number; count: number }[] }) {
   const max = Math.max(1, ...cells.map((c) => Math.abs(c.netPnl)));
   return (
-    <div className="grid grid-cols-12 gap-1">
+    <div className="grid grid-cols-6 sm:grid-cols-8 lg:grid-cols-12 gap-1.5">
       {cells.map((c) => {
         const intensity = Math.abs(c.netPnl) / max;
         return (
           <div
             key={c.label}
             title={`${c.label} · ${c.count} trades · ${c.netPnl.toFixed(2)}`}
-            className="flex h-9 items-center justify-center rounded-sm border border-border/40 text-[10px] tabular-nums"
+            className="group relative flex h-10 items-center justify-center rounded-lg border border-border/40 text-[10px] font-medium tabular-nums transition-colors hover:border-border/80"
             style={{
               backgroundColor:
                 c.count === 0
@@ -336,7 +336,15 @@ function HeatStrip({ cells }: { cells: { label: string; netPnl: number; count: n
                     )}%, transparent)`,
             }}
           >
-            {c.label}
+            <span className={cn(
+              "transition-opacity duration-200 group-hover:opacity-0",
+              c.count === 0 && "opacity-30"
+            )}>
+              {c.label.split(':')[0]}
+            </span>
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+              <span className="font-bold">{c.count}</span>
+            </div>
           </div>
         );
       })}

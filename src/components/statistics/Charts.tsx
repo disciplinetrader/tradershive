@@ -284,11 +284,11 @@ export function ProfitFactorCard() {
   ];
   return (
     <ChartCard title="Profit factor" height={220}>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 h-full content-start">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 h-full content-start overflow-y-auto pr-1">
         {items.map((it) => (
-          <div key={it.label} className="rounded-xl border border-border/40 bg-background/40 p-3">
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{it.label}</div>
-            <div className={`mt-1 text-lg font-bold tabular-nums ${it.tone === "up" ? "text-success" : "text-danger"}`}>{it.value}</div>
+          <div key={it.label} className="rounded-xl border border-border/40 bg-background/40 p-3 min-w-0">
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground truncate">{it.label}</div>
+            <div className={`mt-1 text-base font-bold tabular-nums truncate ${it.tone === "up" ? "text-success" : "text-danger"}`}>{it.value}</div>
           </div>
         ))}
       </div>
@@ -346,7 +346,7 @@ export function RMultipleCard() {
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
-            <XAxis dataKey="bucket" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
+            <XAxis dataKey="bucket" tick={{ fontSize: 9, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} interval={0} angle={-30} textAnchor="end" height={45} />
             <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} width={32} />
             <Tooltip contentStyle={tooltipStyle} />
             <Bar dataKey="count" radius={[6,6,0,0]}>
@@ -369,7 +369,16 @@ export function TimeOfDayCard() {
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={hours} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
-            <XAxis dataKey="hour" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
+            <XAxis 
+              dataKey="hour" 
+              tick={{ fontSize: 9, fill: "var(--muted-foreground)" }} 
+              axisLine={false} 
+              tickLine={false} 
+              interval={0}
+              angle={-30}
+              textAnchor="end"
+              height={45}
+            />
             <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} width={32} />
             <Tooltip contentStyle={tooltipStyle} />
             <Bar dataKey="pnl" radius={[6,6,0,0]}>
