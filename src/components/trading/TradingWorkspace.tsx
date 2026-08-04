@@ -139,14 +139,14 @@ function RailButton({
           aria-label={label}
           aria-pressed={!!active}
           className={cn(
-            "grid h-8 w-8 place-items-center rounded-md transition-colors",
-            active ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+            "grid h-8 w-8 place-items-center rounded-md transition-all duration-200",
+            active ? "bg-primary/20 text-primary shadow-sm shadow-primary/10" : "text-muted-foreground hover:bg-muted/80 hover:text-foreground",
           )}
         >
           <Icon className="h-4 w-4" />
         </button>
       </TooltipTrigger>
-      <TooltipContent side="right">{label}</TooltipContent>
+      <TooltipContent side="right" sideOffset={10} className="rounded-md border-border/50 bg-popover/90 px-2.5 py-1.5 backdrop-blur-md shadow-xl">{label}</TooltipContent>
     </Tooltip>
   );
 }
