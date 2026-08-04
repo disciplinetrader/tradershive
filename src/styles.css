@@ -11,10 +11,10 @@
  * TradersHIVE Arena — Dual theme design system
  *
  * Light  → Milkinside "Safe One" / Vital Card:
- *          cloud-white canvas, ultra-rounded cards, soft
+ *          cloud-white canvas, ultra-rounded cards (12px), soft
  *          pastel gradient wash (lavender / mint / peach),
  *          quiet hairline borders, whisper-soft shadows,
- *          near-black text, violet + mint accents.
+ *          near-black text, premium electric indigo accents.
  *
  * Dark   → Fuselab "AI Policy" dashboard:
  *          deep ink background, teal / mint primary,
@@ -89,7 +89,7 @@
 
 /* =============== LIGHT — porcelain + indigo ============ */
 :root {
-  --radius: 10px; /* softened, 8pt-aligned corners */
+  --radius: 12px; /* softened, premium feel */
 
   --background: oklch(0.988 0.004 280);
   --foreground: oklch(0.16 0.03 278);
@@ -158,7 +158,7 @@
 .dark {
   color-scheme: dark;
 
-  --background: oklch(0.155 0.032 283);          /* #0a0a1a deep midnight */
+  --background: oklch(0.12 0.025 285);          /* deepened midnight indigo */
   --foreground: oklch(0.965 0.008 280);
   --surface: oklch(0.215 0.045 283);             /* #141432 panel */
   --surface-2: oklch(0.26 0.055 281);            /* #1e1e5a-leaning */

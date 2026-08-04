@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 /* --------------------------------------------------------------- Typography */
 
 export function PageTitle({ children, className }: { children: ReactNode; className?: string }) {
-  return <h1 className={cn("display-xl text-[clamp(1.65rem,1.3rem+1.2vw,2.25rem)]", className)}>{children}</h1>;
+  return <h1 className={cn("text-fluid-3xl font-bold tracking-tight", className)}>{children}</h1>;
 }
 
 /** Section labels read as editorial eyebrows, not as shouty headings. */
@@ -44,9 +44,9 @@ export function Panel({ className, flush, tone = "default", ...props }: PanelPro
   return (
     <div
       className={cn(
-        "premium-card",
-        tone === "hero" && "accent-wash",
-        !flush && "p-[var(--gutter-sm)] sm:p-[var(--gutter-md)]",
+        "premium-card transition-all duration-300",
+        tone === "hero" && "accent-wash border-primary/10 shadow-xl shadow-primary/5",
+        !flush && "p-6 sm:p-7",
         className,
       )}
       {...props}

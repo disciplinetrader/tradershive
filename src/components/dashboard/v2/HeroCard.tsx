@@ -26,9 +26,12 @@ export function HeroCard({ data }: { data?: HomeSummary }) {
   const tip = data?.tips?.[0] ?? null;
 
   return (
-    <Panel tone="hero" className="p-6 sm:p-8">
+    <Panel tone="hero" className="relative overflow-hidden p-6 sm:p-10">
+      {/* Decorative gradient orb for premium feel */}
+      <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
+
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)]">
-        <div className="min-w-0 space-y-6">
+        <div className="relative min-w-0 space-y-8">
           <div className="grid grid-cols-3 gap-4 sm:gap-8">
             <HeroStat
               label="Today's P&L"
@@ -50,13 +53,13 @@ export function HeroCard({ data }: { data?: HomeSummary }) {
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <Button asChild size="lg" className="rounded-2xl">
+            <Button asChild size="lg" className="h-12 rounded-xl px-8 shadow-lg shadow-primary/20">
               <Link to="/trading">
                 <LineChart className="mr-2 h-4 w-4" aria-hidden />
                 Start Trading
               </Link>
             </Button>
-            <Button asChild size="lg" variant="secondary" className="rounded-2xl">
+            <Button asChild size="lg" variant="secondary" className="h-12 rounded-xl border-border/50 bg-background/40 px-8 backdrop-blur-md">
               <Link to="/replay">
                 <PlayCircle className="mr-2 h-4 w-4" aria-hidden />
                 Start Replay
@@ -65,7 +68,7 @@ export function HeroCard({ data }: { data?: HomeSummary }) {
           </div>
         </div>
 
-        <div className="min-w-0 rounded-2xl bg-background/60 p-5">
+        <div className="relative min-w-0 rounded-2xl border border-white/5 bg-background/40 p-6 backdrop-blur-md">
           <div className="flex items-center gap-2 text-primary">
             <Sparkles className="h-3.5 w-3.5 shrink-0" aria-hidden />
             <span className="text-[11px] font-semibold uppercase tracking-wider">Today&rsquo;s AI insight</span>
@@ -98,7 +101,7 @@ function HeroStat({
       <p className="truncate text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
       <p
         className={cn(
-          "mt-1.5 flex items-center gap-1.5 text-2xl font-bold tabular-nums sm:text-4xl",
+          "mt-2.5 flex items-center gap-2 text-3xl font-bold tabular-nums tracking-tight sm:text-5xl",
           tone === "up" && "text-success",
           tone === "down" && "text-danger",
         )}
