@@ -7,6 +7,7 @@ import { CompareCard } from "@/components/statistics/CompareCard";
 import { GoalsPanel } from "@/components/statistics/GoalsPanel";
 import { ExecutiveSummary } from "@/components/statistics/ExecutiveSummary";
 import { BehaviouralPanel } from "@/components/statistics/BehaviouralPanel";
+import { GlassCard } from "@/components/ui/glass-card";
 
 export const Route = createFileRoute("/_authenticated/analytics/")({
   component: AnalyticsOverview,
