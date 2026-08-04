@@ -194,3 +194,37 @@ export function DisclosureSection({
     </section>
   );
 }
+
+/** TradersHIVE Design System — implementation roadmap and audit results. */
+export function DesignSystemAudit() {
+  return (
+    <div className="mx-auto max-w-4xl p-8 space-y-12">
+      <section className="space-y-4">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">TradersHIVE UI/UX Audit & Roadmap</h1>
+        <p className="text-muted-foreground leading-relaxed">
+          The goal is to iteratively transform the application into a premium, modern trading platform by studying the strongest industry patterns (TradingView, FXReplay, TradeZella) while maintaining our uniquely professional identity.
+        </p>
+      </section>
+
+      <div className="grid gap-6 sm:grid-cols-2">
+        <Surface tone="default" className="space-y-3">
+          <h3 className="font-semibold text-foreground">Phase 1: Foundation (Current)</h3>
+          <p className="text-sm text-muted-foreground">Standardizing spacing, typography, and premium tokens. Implementing ultra-rounded corners and deeper shadow systems.</p>
+        </Surface>
+        <Surface tone="muted" className="space-y-3 opacity-60">
+          <h3 className="font-semibold text-foreground">Phase 2: Trading Workspace</h3>
+          <p className="text-sm text-muted-foreground">Refining layout proportions, toolbars, and on-chart interaction depth to match TradingView standards.</p>
+        </Surface>
+      </div>
+
+      <div className="prose prose-invert max-w-none prose-sm opacity-50 border-t border-border/40 pt-8">
+        <h3 className="text-foreground">Competitive UX Inspiration</h3>
+        <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
+          <li><strong>TradeFXBook/TradeZella:</strong> Clean KPI hierarchy and learning-first journaling.</li>
+          <li><strong>FXReplay:</strong> Terminal-grade playback controls and focus modes.</li>
+          <li><strong>TradingView:</strong> Industry-standard charting interaction and object management.</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
