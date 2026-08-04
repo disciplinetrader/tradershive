@@ -225,9 +225,6 @@ export function DesignSystemAudit() {
           <li><strong>TradingView:</strong> Industry-standard charting interaction and object management.</li>
         </ul>
       </div>
-      <div className="mt-8 text-center text-xs text-muted-foreground/40 italic">
-        anything else we can improve here?
-      </div>
     </div>
   );
 }
