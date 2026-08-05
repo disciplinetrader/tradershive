@@ -36,7 +36,7 @@ export function LiveActivityFeed({ events, profiles, height = "h-[520px]" }: { e
   return (
     <div className="rounded-2xl border border-border/60 bg-card/40">
       <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
-        <div className="flex items-center gap-2 text-sm font-semibold"><Activity className="h-4 w-4 text-primary" />Live activity</div>
+        <div className="flex items-center gap-2 text-sm font-semibold"><Activity className="h-4 w-4 text-primary" />Arena Desk Activity</div>
         <span className="text-[11px] text-muted-foreground">{events.length} events</span>
       </div>
       <div className={cn("overflow-y-auto", height)}>
