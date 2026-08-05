@@ -70,7 +70,7 @@ function DashboardPage() {
 
   return (
     <div className="mx-auto w-full max-w-[1400px] space-y-[var(--gutter-md)] pb-[var(--gutter-lg)] sm:space-y-[var(--gutter-lg)]">
-      <DashboardHeader accountId={accountId} onAccountChange={setAccountId} />
+      <DashboardHeader />
 
       <BetaBanner />
 
