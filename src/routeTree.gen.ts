@@ -85,7 +85,6 @@ import { Route as AuthenticatedReplayPerformanceRouteImport } from './routes/_au
 import { Route as AuthenticatedReplayLibraryRouteImport } from './routes/_authenticated/replay.library'
 import { Route as AuthenticatedReplayImprovementRouteImport } from './routes/_authenticated/replay.improvement'
 import { Route as AuthenticatedReplayHistoryRouteImport } from './routes/_authenticated/replay.history'
-import { Route as AuthenticatedReplayChallengesRouteImport } from './routes/_authenticated/replay.challenges'
 import { Route as AuthenticatedProfileUsernameRouteImport } from './routes/_authenticated/profile.$username'
 import { Route as AuthenticatedPracticeSkillsRouteImport } from './routes/_authenticated/practice.skills'
 import { Route as AuthenticatedPracticeDrillsRouteImport } from './routes/_authenticated/practice.drills'
@@ -616,12 +615,6 @@ const AuthenticatedReplayHistoryRoute =
   AuthenticatedReplayHistoryRouteImport.update({
     id: '/history',
     path: '/history',
-    getParentRoute: () => AuthenticatedReplayRoute,
-  } as any)
-const AuthenticatedReplayChallengesRoute =
-  AuthenticatedReplayChallengesRouteImport.update({
-    id: '/challenges',
-    path: '/challenges',
     getParentRoute: () => AuthenticatedReplayRoute,
   } as any)
 const AuthenticatedProfileUsernameRoute =
@@ -1413,7 +1406,6 @@ export interface FileRoutesByFullPath {
   '/practice/drills': typeof AuthenticatedPracticeDrillsRoute
   '/practice/skills': typeof AuthenticatedPracticeSkillsRoute
   '/profile/$username': typeof AuthenticatedProfileUsernameRoute
-  '/replay/challenges': typeof AuthenticatedReplayChallengesRoute
   '/replay/history': typeof AuthenticatedReplayHistoryRoute
   '/replay/improvement': typeof AuthenticatedReplayImprovementRoute
   '/replay/library': typeof AuthenticatedReplayLibraryRoute
@@ -1588,7 +1580,6 @@ export interface FileRoutesByTo {
   '/practice/drills': typeof AuthenticatedPracticeDrillsRoute
   '/practice/skills': typeof AuthenticatedPracticeSkillsRoute
   '/profile/$username': typeof AuthenticatedProfileUsernameRoute
-  '/replay/challenges': typeof AuthenticatedReplayChallengesRoute
   '/replay/history': typeof AuthenticatedReplayHistoryRoute
   '/replay/improvement': typeof AuthenticatedReplayImprovementRoute
   '/replay/library': typeof AuthenticatedReplayLibraryRoute
@@ -1779,7 +1770,6 @@ export interface FileRoutesById {
   '/_authenticated/practice/drills': typeof AuthenticatedPracticeDrillsRoute
   '/_authenticated/practice/skills': typeof AuthenticatedPracticeSkillsRoute
   '/_authenticated/profile/$username': typeof AuthenticatedProfileUsernameRoute
-  '/_authenticated/replay/challenges': typeof AuthenticatedReplayChallengesRoute
   '/_authenticated/replay/history': typeof AuthenticatedReplayHistoryRoute
   '/_authenticated/replay/improvement': typeof AuthenticatedReplayImprovementRoute
   '/_authenticated/replay/library': typeof AuthenticatedReplayLibraryRoute
@@ -1970,7 +1960,6 @@ export interface FileRouteTypes {
     | '/practice/drills'
     | '/practice/skills'
     | '/profile/$username'
-    | '/replay/challenges'
     | '/replay/history'
     | '/replay/improvement'
     | '/replay/library'
@@ -2145,7 +2134,6 @@ export interface FileRouteTypes {
     | '/practice/drills'
     | '/practice/skills'
     | '/profile/$username'
-    | '/replay/challenges'
     | '/replay/history'
     | '/replay/improvement'
     | '/replay/library'
@@ -2335,7 +2323,6 @@ export interface FileRouteTypes {
     | '/_authenticated/practice/drills'
     | '/_authenticated/practice/skills'
     | '/_authenticated/profile/$username'
-    | '/_authenticated/replay/challenges'
     | '/_authenticated/replay/history'
     | '/_authenticated/replay/improvement'
     | '/_authenticated/replay/library'
@@ -2951,13 +2938,6 @@ declare module '@tanstack/react-router' {
       path: '/history'
       fullPath: '/replay/history'
       preLoaderRoute: typeof AuthenticatedReplayHistoryRouteImport
-      parentRoute: typeof AuthenticatedReplayRoute
-    }
-    '/_authenticated/replay/challenges': {
-      id: '/_authenticated/replay/challenges'
-      path: '/challenges'
-      fullPath: '/replay/challenges'
-      preLoaderRoute: typeof AuthenticatedReplayChallengesRouteImport
       parentRoute: typeof AuthenticatedReplayRoute
     }
     '/_authenticated/profile/$username': {
@@ -4147,7 +4127,6 @@ const AuthenticatedReplayPropFirmRouteWithChildren =
   )
 
 interface AuthenticatedReplayRouteChildren {
-  AuthenticatedReplayChallengesRoute: typeof AuthenticatedReplayChallengesRoute
   AuthenticatedReplayHistoryRoute: typeof AuthenticatedReplayHistoryRoute
   AuthenticatedReplayImprovementRoute: typeof AuthenticatedReplayImprovementRoute
   AuthenticatedReplayLibraryRoute: typeof AuthenticatedReplayLibraryRoute
@@ -4162,7 +4141,6 @@ interface AuthenticatedReplayRouteChildren {
 }
 
 const AuthenticatedReplayRouteChildren: AuthenticatedReplayRouteChildren = {
-  AuthenticatedReplayChallengesRoute: AuthenticatedReplayChallengesRoute,
   AuthenticatedReplayHistoryRoute: AuthenticatedReplayHistoryRoute,
   AuthenticatedReplayImprovementRoute: AuthenticatedReplayImprovementRoute,
   AuthenticatedReplayLibraryRoute: AuthenticatedReplayLibraryRoute,
