@@ -118,7 +118,7 @@ export function CreateBattleWizard({ onCancel, onCreated }: { onCancel: () => vo
         {step === 0 && (
           <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
             <div className="space-y-2">
-              <Label className="text-sm font-bold uppercase tracking-wide">Battle name</Label>
+              <Label className="text-sm font-bold uppercase tracking-wide">Arena Match name</Label>
               <Input value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="Friday Crypto Sprint" className="h-11 rounded-xl bg-background/50" maxLength={80} />
             </div>
             
