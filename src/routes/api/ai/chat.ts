@@ -21,14 +21,19 @@ import {
   type StrategyRef,
 } from "@/lib/ai/intelligence";
 
+// The server functions are imported dynamically inside tool handlers to avoid bundling issues
+// and to ensure they stay on the server side.
+
 const chatBodySchema = z.object({
   messages: z.array(z.any()).min(1).max(200),
   sessionId: z.string().uuid().optional(),
+  metadata: z.record(z.any()).optional(),
 });
 
 type ChatBody = {
   messages: UIMessage[];
   sessionId?: string;
+  metadata?: Record<string, any>;
 };
 
 async function loadContext(supabase: ReturnType<typeof createClient<Database>>, userId: string) {
@@ -159,13 +164,97 @@ export const Route = createFileRoute("/api/ai/chat")({
         const gateway = createLovableAiGatewayProvider(key, initialRunId);
         const model = gateway(DEFAULT_MODEL);
 
-        const systemPrompt = `${COACH_SYSTEM_PROMPT}\n\n${context}`;
+        const metadataContext = body.metadata ? `\n\nActive Context: ${JSON.stringify(body.metadata)}` : "";
+        const systemPrompt = `${COACH_SYSTEM_PROMPT}\n\n${context}${metadataContext}`;
 
-        const result = streamText({
+        const result = (streamText as any)({
           model,
           system: systemPrompt,
           messages: await convertToModelMessages(body.messages),
-          onFinish: async ({ text, usage }) => {
+          tools: {
+            getPerformanceSummary: {
+              description: "Get a high-level performance overview for the trader (pnl, win rate, etc.).",
+              parameters: z.object({ days: z.number().optional().default(30) }),
+              execute: async (args: any) => {
+                const { getPerformanceSummary } = await import("@/lib/ai/mentor.functions");
+                return (getPerformanceSummary as any)({ data: args });
+              },
+            },
+            getRecentTrades: {
+              description: "Get the most recent trades for context.",
+              parameters: z.object({ limit: z.number().optional().default(10) }),
+              execute: async (args: any) => {
+                const { getRecentTrades } = await import("@/lib/ai/mentor.functions");
+                return (getRecentTrades as any)({ data: args });
+              },
+            },
+            getTradeDetails: {
+              description: "Get detailed information for a single specific trade.",
+              parameters: z.object({ tradeId: z.string().uuid() }),
+              execute: async (args: any) => {
+                const { getTradeDetails } = await import("@/lib/ai/mentor.functions");
+                return (getTradeDetails as any)({ data: args });
+              },
+            },
+            getJournalPatterns: {
+              description: "Get journal patterns, mistakes, and emotions.",
+              parameters: z.object({ days: z.number().optional().default(30) }),
+              execute: async (args: any) => {
+                const { getJournalPatterns } = await import("@/lib/ai/mentor.functions");
+                return (getJournalPatterns as any)({ data: args });
+              },
+            },
+            getReplaySummary: {
+              description: "Get a summary of the user's replay sessions.",
+              parameters: z.object({}),
+              execute: async () => {
+                const { getReplaySummary } = await import("@/lib/ai/mentor.functions");
+                return (getReplaySummary as any)();
+              },
+            },
+            getPlaybookRules: {
+              description: "Get the user's playbook rules and checklists.",
+              parameters: z.object({}),
+              execute: async () => {
+                const { getPlaybookRules } = await import("@/lib/ai/mentor.functions");
+                return (getPlaybookRules as any)();
+              },
+            },
+            getPsychologySummary: {
+              description: "Get a summary of the user's psychology and consistency scores.",
+              parameters: z.object({}),
+              execute: async () => {
+                const { getPsychologySummary } = await import("@/lib/ai/mentor.functions");
+                return (getPsychologySummary as any)();
+              },
+            },
+            getBattlePerformance: {
+              description: "Get performance statistics from the Battle Arena.",
+              parameters: z.object({}),
+              execute: async () => {
+                const { getBattlePerformance } = await import("@/lib/ai/mentor.functions");
+                return (getBattlePerformance as any)();
+              },
+            },
+            getChampionshipPerformance: {
+              description: "Get performance statistics from Championships.",
+              parameters: z.object({}),
+              execute: async () => {
+                const { getChampionshipPerformance } = await import("@/lib/ai/mentor.functions");
+                return (getChampionshipPerformance as any)();
+              },
+            },
+            getPlatformHelp: {
+              description: "Get help information about TradersHIVE features.",
+              parameters: z.object({ topic: z.string().optional() }),
+              execute: async (args: any) => {
+                const { getPlatformHelp } = await import("@/lib/ai/mentor.functions");
+                return (getPlatformHelp as any)({ data: args });
+              },
+            },
+          },
+
+          onFinish: async ({ text, usage }: any) => {
             if (!body.sessionId) return;
             try {
               const userMsg = body.messages[body.messages.length - 1];
@@ -218,7 +307,7 @@ export const Route = createFileRoute("/api/ai/chat")({
           },
         });
 
-        const response = result.toUIMessageStreamResponse({
+        const response = (result as any).toUIMessageStreamResponse({
           originalMessages: body.messages,
           headers: getLovableAiGatewayResponseHeaders(undefined, {
             ...(initialRunId ? { "X-Lovable-AIG-Run-ID": initialRunId } : {}),
