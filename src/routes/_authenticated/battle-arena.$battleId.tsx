@@ -30,10 +30,10 @@ import { Badge } from "@/components/ui/badge";
 export const Route = createFileRoute("/_authenticated/battle-arena/$battleId")({
   component: BattleDetail,
   ...routeBoundaries({
-    label: "Battle",
-    boundary: "battle_detail_route",
+    label: "Arena",
+    boundary: "arena_detail_route",
     backHref: "/battle-arena",
-    backLabel: "Back to Battle Arena",
+    backLabel: "Back to HIVE Arena",
   }),
 });
 
