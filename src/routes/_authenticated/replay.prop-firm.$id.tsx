@@ -24,7 +24,7 @@ import { RuleProgressCards } from "@/components/prop-challenges/RuleProgressCard
 import { EquityCurve } from "@/components/prop-challenges/EquityCurve";
 import { ResultsPanel } from "@/components/prop-challenges/ResultsPanel";
 
-export const Route = createFileRoute("/_authenticated/prop-challenges/$id")({
+export const Route = createFileRoute("/_authenticated/replay/prop-firm/$id")({
   component: ChallengeDetail,
 });
 

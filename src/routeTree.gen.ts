@@ -86,7 +86,6 @@ import { Route as AuthenticatedReplayLibraryRouteImport } from './routes/_authen
 import { Route as AuthenticatedReplayImprovementRouteImport } from './routes/_authenticated/replay.improvement'
 import { Route as AuthenticatedReplayHistoryRouteImport } from './routes/_authenticated/replay.history'
 import { Route as AuthenticatedReplayChallengesRouteImport } from './routes/_authenticated/replay.challenges'
-import { Route as AuthenticatedPropChallengesIdRouteImport } from './routes/_authenticated/prop-challenges.$id'
 import { Route as AuthenticatedProfileUsernameRouteImport } from './routes/_authenticated/profile.$username'
 import { Route as AuthenticatedPracticeSkillsRouteImport } from './routes/_authenticated/practice.skills'
 import { Route as AuthenticatedPracticeDrillsRouteImport } from './routes/_authenticated/practice.drills'
@@ -187,6 +186,7 @@ import { Route as ApiPublicHooksEconomicCalendarRouteImport } from './routes/api
 import { Route as ApiPublicHooksBattleSettlementRouteImport } from './routes/api/public/hooks/battle-settlement'
 import { Route as AuthenticatedStrategiesPlaybooksIdRouteImport } from './routes/_authenticated/strategies.playbooks.$id'
 import { Route as AuthenticatedReplayPropFirmNewRouteImport } from './routes/_authenticated/replay.prop-firm.new'
+import { Route as AuthenticatedReplayPropFirmIdRouteImport } from './routes/_authenticated/replay.prop-firm.$id'
 import { Route as AuthenticatedJournalReplayAttemptIdRouteImport } from './routes/_authenticated/journal.replay.$attemptId'
 import { Route as AuthenticatedCommunityProfileUsernameRouteImport } from './routes/_authenticated/community.profile.$username'
 import { Route as AuthenticatedCommunityPostIdRouteImport } from './routes/_authenticated/community.post.$id'
@@ -622,12 +622,6 @@ const AuthenticatedReplayChallengesRoute =
     id: '/challenges',
     path: '/challenges',
     getParentRoute: () => AuthenticatedReplayRoute,
-  } as any)
-const AuthenticatedPropChallengesIdRoute =
-  AuthenticatedPropChallengesIdRouteImport.update({
-    id: '/prop-challenges/$id',
-    path: '/prop-challenges/$id',
-    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedProfileUsernameRoute =
   AuthenticatedProfileUsernameRouteImport.update({
@@ -1222,6 +1216,12 @@ const AuthenticatedReplayPropFirmNewRoute =
     path: '/new',
     getParentRoute: () => AuthenticatedReplayPropFirmRoute,
   } as any)
+const AuthenticatedReplayPropFirmIdRoute =
+  AuthenticatedReplayPropFirmIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => AuthenticatedReplayPropFirmRoute,
+  } as any)
 const AuthenticatedJournalReplayAttemptIdRoute =
   AuthenticatedJournalReplayAttemptIdRouteImport.update({
     id: '/replay/$attemptId',
@@ -1412,7 +1412,6 @@ export interface FileRoutesByFullPath {
   '/practice/drills': typeof AuthenticatedPracticeDrillsRoute
   '/practice/skills': typeof AuthenticatedPracticeSkillsRoute
   '/profile/$username': typeof AuthenticatedProfileUsernameRoute
-  '/prop-challenges/$id': typeof AuthenticatedPropChallengesIdRoute
   '/replay/challenges': typeof AuthenticatedReplayChallengesRoute
   '/replay/history': typeof AuthenticatedReplayHistoryRoute
   '/replay/improvement': typeof AuthenticatedReplayImprovementRoute
@@ -1461,6 +1460,7 @@ export interface FileRoutesByFullPath {
   '/community/post/$id': typeof AuthenticatedCommunityPostIdRoute
   '/community/profile/$username': typeof AuthenticatedCommunityProfileUsernameRoute
   '/journal/replay/$attemptId': typeof AuthenticatedJournalReplayAttemptIdRoute
+  '/replay/prop-firm/$id': typeof AuthenticatedReplayPropFirmIdRoute
   '/replay/prop-firm/new': typeof AuthenticatedReplayPropFirmNewRoute
   '/strategies/playbooks/$id': typeof AuthenticatedStrategiesPlaybooksIdRoute
   '/api/public/hooks/battle-settlement': typeof ApiPublicHooksBattleSettlementRoute
@@ -1587,7 +1587,6 @@ export interface FileRoutesByTo {
   '/practice/drills': typeof AuthenticatedPracticeDrillsRoute
   '/practice/skills': typeof AuthenticatedPracticeSkillsRoute
   '/profile/$username': typeof AuthenticatedProfileUsernameRoute
-  '/prop-challenges/$id': typeof AuthenticatedPropChallengesIdRoute
   '/replay/challenges': typeof AuthenticatedReplayChallengesRoute
   '/replay/history': typeof AuthenticatedReplayHistoryRoute
   '/replay/improvement': typeof AuthenticatedReplayImprovementRoute
@@ -1636,6 +1635,7 @@ export interface FileRoutesByTo {
   '/community/post/$id': typeof AuthenticatedCommunityPostIdRoute
   '/community/profile/$username': typeof AuthenticatedCommunityProfileUsernameRoute
   '/journal/replay/$attemptId': typeof AuthenticatedJournalReplayAttemptIdRoute
+  '/replay/prop-firm/$id': typeof AuthenticatedReplayPropFirmIdRoute
   '/replay/prop-firm/new': typeof AuthenticatedReplayPropFirmNewRoute
   '/strategies/playbooks/$id': typeof AuthenticatedStrategiesPlaybooksIdRoute
   '/api/public/hooks/battle-settlement': typeof ApiPublicHooksBattleSettlementRoute
@@ -1778,7 +1778,6 @@ export interface FileRoutesById {
   '/_authenticated/practice/drills': typeof AuthenticatedPracticeDrillsRoute
   '/_authenticated/practice/skills': typeof AuthenticatedPracticeSkillsRoute
   '/_authenticated/profile/$username': typeof AuthenticatedProfileUsernameRoute
-  '/_authenticated/prop-challenges/$id': typeof AuthenticatedPropChallengesIdRoute
   '/_authenticated/replay/challenges': typeof AuthenticatedReplayChallengesRoute
   '/_authenticated/replay/history': typeof AuthenticatedReplayHistoryRoute
   '/_authenticated/replay/improvement': typeof AuthenticatedReplayImprovementRoute
@@ -1827,6 +1826,7 @@ export interface FileRoutesById {
   '/_authenticated/community/post/$id': typeof AuthenticatedCommunityPostIdRoute
   '/_authenticated/community/profile/$username': typeof AuthenticatedCommunityProfileUsernameRoute
   '/_authenticated/journal/replay/$attemptId': typeof AuthenticatedJournalReplayAttemptIdRoute
+  '/_authenticated/replay/prop-firm/$id': typeof AuthenticatedReplayPropFirmIdRoute
   '/_authenticated/replay/prop-firm/new': typeof AuthenticatedReplayPropFirmNewRoute
   '/_authenticated/strategies/playbooks/$id': typeof AuthenticatedStrategiesPlaybooksIdRoute
   '/api/public/hooks/battle-settlement': typeof ApiPublicHooksBattleSettlementRoute
@@ -1969,7 +1969,6 @@ export interface FileRouteTypes {
     | '/practice/drills'
     | '/practice/skills'
     | '/profile/$username'
-    | '/prop-challenges/$id'
     | '/replay/challenges'
     | '/replay/history'
     | '/replay/improvement'
@@ -2018,6 +2017,7 @@ export interface FileRouteTypes {
     | '/community/post/$id'
     | '/community/profile/$username'
     | '/journal/replay/$attemptId'
+    | '/replay/prop-firm/$id'
     | '/replay/prop-firm/new'
     | '/strategies/playbooks/$id'
     | '/api/public/hooks/battle-settlement'
@@ -2144,7 +2144,6 @@ export interface FileRouteTypes {
     | '/practice/drills'
     | '/practice/skills'
     | '/profile/$username'
-    | '/prop-challenges/$id'
     | '/replay/challenges'
     | '/replay/history'
     | '/replay/improvement'
@@ -2193,6 +2192,7 @@ export interface FileRouteTypes {
     | '/community/post/$id'
     | '/community/profile/$username'
     | '/journal/replay/$attemptId'
+    | '/replay/prop-firm/$id'
     | '/replay/prop-firm/new'
     | '/strategies/playbooks/$id'
     | '/api/public/hooks/battle-settlement'
@@ -2334,7 +2334,6 @@ export interface FileRouteTypes {
     | '/_authenticated/practice/drills'
     | '/_authenticated/practice/skills'
     | '/_authenticated/profile/$username'
-    | '/_authenticated/prop-challenges/$id'
     | '/_authenticated/replay/challenges'
     | '/_authenticated/replay/history'
     | '/_authenticated/replay/improvement'
@@ -2383,6 +2382,7 @@ export interface FileRouteTypes {
     | '/_authenticated/community/post/$id'
     | '/_authenticated/community/profile/$username'
     | '/_authenticated/journal/replay/$attemptId'
+    | '/_authenticated/replay/prop-firm/$id'
     | '/_authenticated/replay/prop-firm/new'
     | '/_authenticated/strategies/playbooks/$id'
     | '/api/public/hooks/battle-settlement'
@@ -2958,13 +2958,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/replay/challenges'
       preLoaderRoute: typeof AuthenticatedReplayChallengesRouteImport
       parentRoute: typeof AuthenticatedReplayRoute
-    }
-    '/_authenticated/prop-challenges/$id': {
-      id: '/_authenticated/prop-challenges/$id'
-      path: '/prop-challenges/$id'
-      fullPath: '/prop-challenges/$id'
-      preLoaderRoute: typeof AuthenticatedPropChallengesIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/profile/$username': {
       id: '/_authenticated/profile/$username'
@@ -3666,6 +3659,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedReplayPropFirmNewRouteImport
       parentRoute: typeof AuthenticatedReplayPropFirmRoute
     }
+    '/_authenticated/replay/prop-firm/$id': {
+      id: '/_authenticated/replay/prop-firm/$id'
+      path: '/$id'
+      fullPath: '/replay/prop-firm/$id'
+      preLoaderRoute: typeof AuthenticatedReplayPropFirmIdRouteImport
+      parentRoute: typeof AuthenticatedReplayPropFirmRoute
+    }
     '/_authenticated/journal/replay/$attemptId': {
       id: '/_authenticated/journal/replay/$attemptId'
       path: '/replay/$attemptId'
@@ -4146,11 +4146,13 @@ const AuthenticatedProfileRouteWithChildren =
   AuthenticatedProfileRoute._addFileChildren(AuthenticatedProfileRouteChildren)
 
 interface AuthenticatedReplayPropFirmRouteChildren {
+  AuthenticatedReplayPropFirmIdRoute: typeof AuthenticatedReplayPropFirmIdRoute
   AuthenticatedReplayPropFirmNewRoute: typeof AuthenticatedReplayPropFirmNewRoute
 }
 
 const AuthenticatedReplayPropFirmRouteChildren: AuthenticatedReplayPropFirmRouteChildren =
   {
+    AuthenticatedReplayPropFirmIdRoute: AuthenticatedReplayPropFirmIdRoute,
     AuthenticatedReplayPropFirmNewRoute: AuthenticatedReplayPropFirmNewRoute,
   }
 
@@ -4298,7 +4300,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSupportRoute: typeof AuthenticatedSupportRoute
   AuthenticatedTradingRoute: typeof AuthenticatedTradingRouteWithChildren
   AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
-  AuthenticatedPropChallengesIdRoute: typeof AuthenticatedPropChallengesIdRoute
   AuthenticatedTradesTradeIdRoute: typeof AuthenticatedTradesTradeIdRoute
 }
 
@@ -4331,7 +4332,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSupportRoute: AuthenticatedSupportRoute,
   AuthenticatedTradingRoute: AuthenticatedTradingRouteWithChildren,
   AuthenticatedUsersRoute: AuthenticatedUsersRoute,
-  AuthenticatedPropChallengesIdRoute: AuthenticatedPropChallengesIdRoute,
   AuthenticatedTradesTradeIdRoute: AuthenticatedTradesTradeIdRoute,
 }
 
@@ -4363,13 +4363,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
