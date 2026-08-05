@@ -89,7 +89,7 @@ export const getBattle = createServerFn({ method: "GET" })
       supabase.from("battle_results").select("*").eq("battle_id", data.id).order("final_rank", { ascending: true }),
     ]);
     if (e1) throw e1;
-    if (!battle) throw new Error("Battle not found");
+    if (!battle) throw new Error("Arena match not found");
     const userIds = Array.from(new Set([
       ...(participantsRes.data ?? []).map((p: any) => p.user_id),
       battle.host_id,
