@@ -327,9 +327,9 @@ export const finalizeBattle = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: battle } = await context.supabase
       .from("battles").select("host_id, end_at").eq("id", data.battleId).maybeSingle();
-    if (!battle) throw new Error("Battle not found");
+    if (!battle) throw new Error("Arena match not found");
     if (battle.host_id !== context.userId) {
-      if (new Date(battle.end_at) > new Date()) throw new Error("Only the host may finalize before end time");
+      if (new Date(battle.end_at) > new Date()) throw new Error("Only the host may finalize before the scheduled end time");
     }
     const { error } = await context.supabase.rpc("finalize_battle", { _battle_id: data.battleId });
     if (error) throw error;
