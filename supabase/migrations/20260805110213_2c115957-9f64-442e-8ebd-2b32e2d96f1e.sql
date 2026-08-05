@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.enforce_community_challenge_creator() FROM PUBLIC, anon, authenticated;
