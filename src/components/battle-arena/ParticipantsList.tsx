@@ -66,7 +66,7 @@ export function ParticipantsList({
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-black text-foreground group-hover:text-primary transition-colors">{pr?.display_name ?? pr?.username ?? "Trader"}</span>
+                      <span className="text-sm font-black text-foreground group-hover:text-primary transition-colors">{pr?.display_name ?? pr?.username ?? "Competitor"}</span>
                       <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/40">{p.user_id === hostId ? "Host" : "Competitor"}</span>
                     </div>
                     <div className="flex items-center gap-2 mt-0.5">
