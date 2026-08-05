@@ -30,10 +30,6 @@ export const Route = createFileRoute("/_authenticated/replay/prop-firm/$id")({
       { title: "Challenge Detail — TradersHIVE" },
     ],
   }),
-  params: {
-    parse: (params) => ({ id: params.id as string }),
-    stringify: (params) => ({ id: params.id }),
-  },
   component: ChallengeDetail,
 });
 

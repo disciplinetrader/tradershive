@@ -5,7 +5,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Target, Plus, Play, ChevronRight, GraduationCap } from "lucide-react";
-import { DashboardHeader } from "@/components/dashboard/v2/DashboardHeader";
+
 import { listPropChallenges } from "@/lib/prop-challenges.functions";
 import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/glass-card";
