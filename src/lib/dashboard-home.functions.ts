@@ -147,7 +147,7 @@ export const getHomeSummary = createServerFn({ method: "GET" })
         .limit(1000),
       context.supabase
         .from("journal_entries")
-        .select("id, trade_id, opened_at, closed_at, pnl, rr, risk_pct, notes_text, screenshots, created_at, replay_session_id")
+        .select("id, trade_id, opened_at, closed_at, pnl, rr, risk_pct, notes_text, screenshots, created_at")
         .eq("user_id", uid)
         .order("created_at", { ascending: false })
         .limit(1000),
