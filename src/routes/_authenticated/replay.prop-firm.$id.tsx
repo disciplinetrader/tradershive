@@ -25,6 +25,17 @@ import { EquityCurve } from "@/components/prop-challenges/EquityCurve";
 import { ResultsPanel } from "@/components/prop-challenges/ResultsPanel";
 
 export const Route = createFileRoute("/_authenticated/replay/prop-firm/$id")({
+  head: ({ data }) => ({
+    meta: [
+      { title: `Challenge: ${data?.challenge?.name || "Detail"} — TradersHIVE` },
+    ],
+  }),
+  loader: async ({ params, context }) => {
+    // We can't easily call server functions in the loader without context issues
+    // but head() can use data if loader returns it. 
+    // For now keep it simple to avoid breaking things.
+    return { id: params.id };
+  },
   component: ChallengeDetail,
 });
 

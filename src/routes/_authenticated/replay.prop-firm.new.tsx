@@ -16,6 +16,12 @@ import { listAccounts } from "@/lib/paper-trading.functions";
 import { PROP_PRESETS, listPropPresets, type PropPresetId } from "@/lib/prop-challenges/presets";
 
 export const Route = createFileRoute("/_authenticated/replay/prop-firm/new")({
+  head: () => ({
+    meta: [
+      { title: "New Prop Firm Challenge — TradersHIVE" },
+      { name: "description", content: "Create a new prop firm challenge to test your trading skills." },
+    ],
+  }),
   component: NewChallengePage,
 });
 
