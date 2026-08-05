@@ -1848,7 +1848,9 @@ export type Database = {
           pnl: number
           r_multiple: number
           rank: number
+          rule_breaches_count: number | null
           score: number
+          target_reached_at: string | null
           trades_count: number
           updated_at: string
           user_id: string
@@ -1861,7 +1863,9 @@ export type Database = {
           pnl?: number
           r_multiple?: number
           rank?: number
+          rule_breaches_count?: number | null
           score?: number
+          target_reached_at?: string | null
           trades_count?: number
           updated_at?: string
           user_id: string
@@ -1874,7 +1878,9 @@ export type Database = {
           pnl?: number
           r_multiple?: number
           rank?: number
+          rule_breaches_count?: number | null
           score?: number
+          target_reached_at?: string | null
           trades_count?: number
           updated_at?: string
           user_id?: string
@@ -1902,6 +1908,8 @@ export type Database = {
           max_drawdown: number
           pnl: number
           r_multiple: number
+          rule_breaches_count: number | null
+          target_reached_at: string | null
           total_r: number | null
           total_trades: number | null
           trades_count: number
@@ -1920,6 +1928,8 @@ export type Database = {
           max_drawdown?: number
           pnl?: number
           r_multiple?: number
+          rule_breaches_count?: number | null
+          target_reached_at?: string | null
           total_r?: number | null
           total_trades?: number | null
           trades_count?: number
@@ -1938,6 +1948,8 @@ export type Database = {
           max_drawdown?: number
           pnl?: number
           r_multiple?: number
+          rule_breaches_count?: number | null
+          target_reached_at?: string | null
           total_r?: number | null
           total_trades?: number | null
           trades_count?: number
