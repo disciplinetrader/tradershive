@@ -181,7 +181,7 @@ function BattleArenaHome() {
 
           <Section
             title="Upcoming Events" icon={Clock} items={upcoming.data} loading={upcoming.isLoading}
-            empty={{ title: "Nothing scheduled", body: "Schedule a future battle to build hype." }}
+            empty={{ title: "Nothing scheduled", body: "Schedule a future match to build hype." }}
           />
         </div>
 
