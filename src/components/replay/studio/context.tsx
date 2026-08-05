@@ -139,6 +139,10 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
 
   const sessionQuery = useQuery({ queryKey: ["replay-studio-session", id], queryFn: () => getSess({ data: { id } }) });
   const session = (sessionQuery.data?.session ?? null) as any;
+  const logMarketReplayed = useServerFn(logHistoricalMarketReplayed);
+
+  // Track historical market time replayed
+  const lastLoggedTimeRef = useRef<number | null>(null);
 
   const candleQuery = useQuery({
     queryKey: ["replay-studio-candles", id, session?.symbol, session?.timeframe, session?.range_start, session?.range_end, WARMUP_BARS],
