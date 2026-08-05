@@ -46,6 +46,7 @@ function AuthenticatedLayout() {
       </FeedbackProvider>
       <TimezoneSuggestionModal />
       <MentorDrawer />
+      <MusicPlayer />
     </AppShell>
     </ClientOnly>
   );
