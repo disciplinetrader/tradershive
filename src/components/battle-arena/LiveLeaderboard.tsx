@@ -12,7 +12,7 @@ type Presence = { user_id: string; status: PresenceStatus; last_seen_at: string 
 
 export function LiveLeaderboard({
   rankings, profiles, presence, winCondition, openPositionsByUser,
-  lastTradeByUser,
+  lastTradeByUser, compact,
 }: {
   rankings: Ranking[];
   profiles: Profile[];
@@ -20,6 +20,7 @@ export function LiveLeaderboard({
   winCondition: string;
   openPositionsByUser?: Record<string, number>;
   lastTradeByUser?: Record<string, string>;
+  compact?: boolean;
 }) {
   const wc = findWinCondition(winCondition);
   const byId = new Map(profiles.map((p) => [p.id, p]));
@@ -57,12 +58,16 @@ export function LiveLeaderboard({
                 <th className="px-3 py-2 text-left">#</th>
                 <th className="px-3 py-2 text-left">Competitor</th>
                 <th className="px-2 py-2 text-right">PnL</th>
-                <th className="px-2 py-2 text-right">R</th>
-                <th className="px-2 py-2 text-right">Win %</th>
-                <th className="px-2 py-2 text-right">Trades</th>
-                <th className="px-2 py-2 text-right">Open</th>
-                <th className="px-2 py-2 text-right">Max DD</th>
-                <th className="px-2 py-2 text-right">Last trade</th>
+                {!compact && (
+                  <>
+                    <th className="px-2 py-2 text-right">R</th>
+                    <th className="px-2 py-2 text-right">Win %</th>
+                    <th className="px-2 py-2 text-right">Trades</th>
+                    <th className="px-2 py-2 text-right">Open</th>
+                    <th className="px-2 py-2 text-right">Max DD</th>
+                    <th className="px-2 py-2 text-right">Last trade</th>
+                  </>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -105,14 +110,18 @@ export function LiveLeaderboard({
                     <td className={cn("px-2 py-2 text-right tabular-nums font-semibold", Number(r.pnl) > 0 ? "text-success" : Number(r.pnl) < 0 ? "text-danger" : "")}>
                       {Number(r.pnl).toLocaleString(undefined, { style: "currency", currency: "USD" })}
                     </td>
-                    <td className="px-2 py-2 text-right tabular-nums">{Number(r.r_multiple).toFixed(2)}</td>
-                    <td className="px-2 py-2 text-right tabular-nums">{Number(r.win_rate).toFixed(1)}%</td>
-                    <td className="px-2 py-2 text-right tabular-nums">{r.trades_count}</td>
-                    <td className="px-2 py-2 text-right tabular-nums">{openCount || "—"}</td>
-                    <td className="px-2 py-2 text-right tabular-nums text-danger/80">-${Number(r.max_drawdown).toFixed(0)}</td>
-                    <td className="px-2 py-2 text-right text-[11px] text-muted-foreground">
-                      {last ? new Date(last).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"}
-                    </td>
+                    {!compact && (
+                      <>
+                        <td className="px-2 py-2 text-right tabular-nums">{Number(r.r_multiple).toFixed(2)}</td>
+                        <td className="px-2 py-2 text-right tabular-nums">{Number(r.win_rate).toFixed(1)}%</td>
+                        <td className="px-2 py-2 text-right tabular-nums">{r.trades_count}</td>
+                        <td className="px-2 py-2 text-right tabular-nums">{openCount || "—"}</td>
+                        <td className="px-2 py-2 text-right tabular-nums text-danger/80">-${Number(r.max_drawdown).toFixed(0)}</td>
+                        <td className="px-2 py-2 text-right text-[11px] text-muted-foreground">
+                          {last ? new Date(last).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"}
+                        </td>
+                      </>
+                    )}
                   </tr>
                 );
               })}

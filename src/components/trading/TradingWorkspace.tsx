@@ -92,6 +92,8 @@ import { INDICATOR_TOGGLES, type IndicatorDef } from "@/lib/chart/indicator-regi
 import { ChartTemplateMenu } from "@/components/chart/ChartTemplateMenu";
 import { hasSettings } from "@/lib/chart/indicator-schema";
 import type { ChartTemplate } from "@/lib/chart/templates";
+import { ArenaCommandRail } from "@/components/battle-arena/ArenaCommandRail";
+import { useActiveArena } from "@/components/battle-arena/useActiveArena";
 
 const CHART_TIMEFRAMES: Timeframe[] = ["1m", "5m", "15m", "30m", "1H", "4H", "1D", "1W"];
 /** One-click timeframes pinned in the toolbar, TradingView-style. */
@@ -169,6 +171,7 @@ function TradingWorkspaceInner() {
   useRiskMonitor(account);
   const { prefs, update, patch, hydrated } = useWorkspacePrefs();
   const { active: activeChallenge } = useActivePropChallenge();
+  const { data: arenaData } = useActiveArena(accountId);
 
   // Auto-bind the workspace to the challenge's paper account so every closed
   // trade updates the challenge in real time — no manual linking required.
@@ -1083,7 +1086,10 @@ function TradingWorkspaceInner() {
 
           {/* Right rail: tabbed, resizable, collapsible workspace panel */}
           {rightOpen ? (
-            <>
+            arenaData ? (
+              <ArenaCommandRail className={cn(isMobile && "absolute inset-x-0 bottom-0 top-auto z-40 h-[75dvh] w-full rounded-t-2xl border-l-0 border-t border-border/60 bg-background shadow-2xl")} onClose={() => setRightOpen(false)} />
+            ) : (
+              <>
               {/* Resize handle (desktop only) */}
               <div
                 role="separator"
@@ -1351,7 +1357,8 @@ function TradingWorkspaceInner() {
 
               </aside>
             </>
-          ) : (
+          )
+        ) : (
             <button
               onClick={() => setRightOpen(true)}
               className="hidden md:flex w-11 shrink-0 flex-col items-center gap-2 border-l border-border/40 bg-card/20 py-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground transition hover:bg-card/40 hover:text-foreground"
@@ -1359,7 +1366,7 @@ function TradingWorkspaceInner() {
               title="Expand panel"
             >
               <ChevronDown className="h-4 w-4 rotate-90" />
-              <span className="rotate-180 [writing-mode:vertical-rl]">Workspace</span>
+              <span className="rotate-180 [writing-mode:vertical-rl]">{arenaData ? "Arena" : "Workspace"}</span>
             </button>
           )}
 
