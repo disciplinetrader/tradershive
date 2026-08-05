@@ -26,7 +26,7 @@ export function ParticipantsList({
     )}>
       <div className="border-b border-border/60 px-6 py-4 flex items-center justify-between bg-background/20">
         <h3 className="text-sm font-black uppercase tracking-widest text-foreground">
-          Participants
+          Competitors
         </h3>
         <span className="text-[10px] font-black bg-primary/10 text-primary px-2 py-0.5 rounded-lg border border-primary/20">
           {participants.length} TOTAL
