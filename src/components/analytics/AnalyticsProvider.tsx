@@ -5,6 +5,7 @@ import { listBacktests, listBacktestTrades } from "@/lib/analytics.functions";
 import { StatisticsProvider } from "@/components/statistics/context";
 import { mapReplayTradesToAnalytics } from "@/lib/statistics/backtest-source";
 import type { AnalyticsTrade } from "@/lib/statistics/types";
+import { useSessionContext } from "@/hooks/use-session-context";
 
 type SourceKind = "live" | "backtest";
 
