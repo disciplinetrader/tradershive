@@ -213,8 +213,8 @@ export const leaveBattle = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ battleId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: battle } = await context.supabase.from("battles").select("status").eq("id", data.battleId).maybeSingle();
-    if (!battle) throw new Error("Battle not found");
-    if (!["draft", "upcoming", "open", "filling"].includes(battle.status)) throw new Error("Battle already started");
+    if (!battle) throw new Error("Arena match not found");
+    if (!["draft", "upcoming", "open", "filling"].includes(battle.status)) throw new Error("Arena match already started");
     const { error } = await context.supabase
       .from("battle_participants")
       .delete()
