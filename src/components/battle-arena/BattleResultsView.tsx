@@ -40,7 +40,7 @@ export function BattleResultsView({ battle, results, profiles }: { battle: any; 
               <div key={r.user_id} className={`rounded-2xl border p-4 text-center ${colors[r.final_rank - 1]}`}>
                 <div className="text-3xl font-black tabular-nums">#{r.final_rank}</div>
                 <Avatar className="mx-auto mt-2 h-12 w-12"><AvatarImage src={p?.avatar_url ?? undefined} /><AvatarFallback>{(p?.display_name ?? "?").slice(0, 1)}</AvatarFallback></Avatar>
-                <div className="mt-2 font-semibold">{p?.display_name ?? p?.username ?? "Trader"}</div>
+                <div className="mt-2 font-semibold">{p?.display_name ?? p?.username ?? "Competitor"}</div>
                 <div className="mt-1 text-sm text-muted-foreground tabular-nums">${Number(r.pnl).toFixed(2)} · {Number(r.r_multiple).toFixed(2)}R</div>
                 <div className="mt-2 flex items-center justify-center gap-2 text-[11px]">
                   <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5"><Sparkles className="h-3 w-3" />{r.xp_awarded} XP</span>
