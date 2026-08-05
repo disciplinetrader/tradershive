@@ -21,7 +21,7 @@ export const MARKETS = [
 export type BattleMarket = (typeof MARKETS)[number]["value"];
 
 export const WIN_CONDITIONS = [
-  { value: "highest_pnl", label: "Highest Net Profit" },
+  { value: "highest_pnl", label: "Highest Return %" },
   { value: "highest_r", label: "Highest R-Multiple" },
   { value: "highest_winrate", label: "Highest Win Rate" },
   { value: "lowest_dd", label: "Lowest Drawdown" },

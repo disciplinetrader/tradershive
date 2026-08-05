@@ -46,7 +46,7 @@ export function LiveLeaderboard({
           <Trophy className="h-4 w-4 text-primary" />
           <h3 className="font-semibold">HIVE Standings</h3>
         </div>
-        <span className="text-[11px] text-muted-foreground">Sorted by {wc.label.toLowerCase()}</span>
+        <span className="text-[11px] text-muted-foreground">Sorted by Return % (Primary)</span>
       </div>
       {rankings.length === 0 ? (
         <div className="p-8 text-center text-sm text-muted-foreground">No trades scored yet. Rankings update as trades close.</div>
@@ -108,7 +108,7 @@ export function LiveLeaderboard({
                         </div>
                       </div>
                     </td>
-                    <td className={cn("px-2 py-2 text-right tabular-nums font-semibold", Number(r.return_pct) > 0 ? "text-success" : Number(r.return_pct) < 0 ? "text-danger" : "")}>
+                    <td className={cn("px-2 py-2 text-right tabular-nums font-semibold", Number(r.return_pct) > 0 ? "text-success" : Number(r.return_pct) < 0 ? "text-danger" : "")} title={r.rank > rankings[rankings.indexOf(r)-1]?.rank ? "" : "Tied in Return %: Tie-breaker applied (Drawdown > Trades > Time)"}>
                       {Number(r.return_pct).toFixed(2)}%
                     </td>
                     <td className="px-2 py-2 text-right tabular-nums text-muted-foreground text-[10px]">
