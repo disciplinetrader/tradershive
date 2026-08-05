@@ -78,7 +78,7 @@ export function RulesPanel({ battle }: { battle: any }) {
       </div>
 
       <div className="space-y-2.5">
-        <div className="text-[9px] font-black text-muted-foreground/50 uppercase tracking-[0.2em] pl-1">Playable Assets</div>
+        <div className="text-[9px] font-black text-muted-foreground/50 uppercase tracking-[0.2em] pl-1">Eligible Markets</div>
         <div className="flex flex-wrap gap-1.5">
           {(battle.allowed_symbols ?? []).map((s: string) => (
             <Badge key={s} variant="secondary" className="rounded-lg bg-background/80 border border-border/40 px-2.5 py-1 font-mono text-[10px] font-black transition-transform hover:scale-105">
