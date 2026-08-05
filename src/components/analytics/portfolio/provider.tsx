@@ -1,19 +1,8 @@
-/**
- * Analytics workspace provider.
- *
- * Owns exactly three things:
- *   1. assembling the canonical dataset (normalize + dedupe + version stamps)
- *   2. the ONE shared filter state, mirrored into the URL so a refresh keeps it
- *   3. one cached engine run that every widget reads
- *
- * It deliberately exposes no formulas — components read `result` (engine
- * output) or selectors built on top of it.
- */
-
 import { createContext, useCallback, useContext, useMemo, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { useSessionContext } from "@/hooks/use-session-context";
 
 import { getAnalyticsDataset } from "@/lib/statistics.functions";
 import type { AnalyticsTrade } from "@/lib/statistics/types";
