@@ -51,8 +51,8 @@ const TRADING: NavItem[] = [
 const WORK: NavItem[] = [
   { to: "/journal", label: "Journal", icon: BookOpen },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
-  { to: "/ai/coach", label: "AI Coach", icon: Bot },
 ];
+
 
 const COMPETE: NavItem[] = [
   { to: "/prop-challenges", label: "Prop Firm", icon: GraduationCap },

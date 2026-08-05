@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
-import { useLocation, useParams } from "@tanstack/react-router";
+import { useLocation, useParams, Link } from "@tanstack/react-router";
+
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Sparkles, Send, Maximize2, Minimize2, MessageSquare, LineChart, Brain } from "lucide-react";
+import { X, Sparkles, Send, Maximize2, Minimize2, MessageSquare, LineChart, Brain, Layout, History, Settings as SettingsIcon, GraduationCap, AlertCircle, TrendingUp, BookOpen, BarChart3, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CoachChat } from "./CoachChat";
 import { AiAvatar } from "./AiAvatar";
@@ -121,20 +122,38 @@ export function MentorDrawer() {
             </div>
 
             {/* Chat Area */}
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 overflow-hidden flex flex-col">
               <CoachChat metadata={context} />
             </div>
 
-            {/* Quick Tools / Stats */}
-            {!isExpanded && (
-              <div className="border-t border-border/60 bg-muted/10 p-2 flex gap-2 overflow-x-auto no-scrollbar">
-                <TooltipProvider>
-                  <QuickTool icon={Brain} label="Analyze Psychology" />
-                  <QuickTool icon={LineChart} label="Review Last Trade" />
-                  <QuickTool icon={MessageSquare} label="Journal Help" />
-                </TooltipProvider>
+            {/* AI Workspace Section */}
+            <div className="border-t border-border/60 bg-muted/10 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                  <Layout className="h-3 w-3" />
+                  AI Workspace
+                </h4>
+                <Link 
+                  to="/ai" 
+                  className="text-[10px] font-semibold text-primary hover:underline flex items-center gap-1"
+                >
+                  Open Full Workspace
+                  <ChevronRight className="h-2.5 w-2.5" />
+                </Link>
               </div>
-            )}
+              
+              <div className="grid grid-cols-4 gap-2">
+                <WorkspaceLink to="/ai/playbooks" icon={BookOpen} label="Playbooks" />
+                <WorkspaceLink to="/ai/psychology" icon={Brain} label="Psychology" />
+                <WorkspaceLink to="/ai/reports" icon={BarChart3} label="Reports" />
+                <WorkspaceLink to="/ai/homework" icon={GraduationCap} label="Homework" />
+                <WorkspaceLink to="/mistakes" icon={AlertCircle} label="Mistakes" />
+                <WorkspaceLink to="/ai/coach/evolution" icon={TrendingUp} label="Evolution" />
+                <WorkspaceLink to="/ai/settings" icon={SettingsIcon} label="Settings" />
+                <WorkspaceLink to="/ai/history" icon={History} label="History" />
+              </div>
+            </div>
+
           </motion.div>
         )}
       </AnimatePresence>
@@ -179,14 +198,19 @@ export function MentorDrawer() {
   );
 }
 
-function QuickTool({ icon: Icon, label }: { icon: any, label: string }) {
+function WorkspaceLink({ to, icon: Icon, label }: { to: string; icon: any; label: string }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button variant="outline" size="sm" className="h-8 rounded-full text-[10px] px-3 gap-1.5 whitespace-nowrap border-border/40 hover:bg-primary/5 hover:border-primary/20">
-          <Icon className="h-3 w-3" />
-          {label}
-        </Button>
+        <Link
+          to={to}
+          className="flex flex-col items-center gap-1.5 rounded-xl border border-border/40 bg-background/50 p-2 text-center transition hover:bg-primary/5 hover:border-primary/20 group"
+        >
+          <Icon className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+          <span className="text-[9px] font-medium text-muted-foreground group-hover:text-foreground truncate w-full">
+            {label}
+          </span>
+        </Link>
       </TooltipTrigger>
       <TooltipContent side="top">
         {label}
@@ -194,3 +218,22 @@ function QuickTool({ icon: Icon, label }: { icon: any, label: string }) {
     </Tooltip>
   );
 }
+
+function QuickTool({ icon: Icon, label }: { icon: any, label: string }) {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="outline" size="sm" className="h-8 rounded-full text-[10px] px-3 gap-1.5 whitespace-nowrap border-border/40 hover:bg-primary/5 hover:border-primary/20">
+            <Icon className="h-3 w-3" />
+            {label}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="top">
+          {label}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
