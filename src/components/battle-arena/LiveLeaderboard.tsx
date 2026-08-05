@@ -58,12 +58,16 @@ export function LiveLeaderboard({
                 <th className="px-3 py-2 text-left">#</th>
                 <th className="px-3 py-2 text-left">Competitor</th>
                 <th className="px-2 py-2 text-right">PnL</th>
-                <th className="px-2 py-2 text-right">R</th>
-                <th className="px-2 py-2 text-right">Win %</th>
-                <th className="px-2 py-2 text-right">Trades</th>
-                <th className="px-2 py-2 text-right">Open</th>
-                <th className="px-2 py-2 text-right">Max DD</th>
-                <th className="px-2 py-2 text-right">Last trade</th>
+                {!compact && (
+                  <>
+                    <th className="px-2 py-2 text-right">R</th>
+                    <th className="px-2 py-2 text-right">Win %</th>
+                    <th className="px-2 py-2 text-right">Trades</th>
+                    <th className="px-2 py-2 text-right">Open</th>
+                    <th className="px-2 py-2 text-right">Max DD</th>
+                    <th className="px-2 py-2 text-right">Last trade</th>
+                  </>
+                )}
               </tr>
             </thead>
             <tbody>
