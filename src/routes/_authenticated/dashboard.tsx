@@ -41,6 +41,11 @@ function fmtR(v: number): string {
   return `${sign}${Math.abs(v).toFixed(2)}R`;
 }
 
+function fmtMoney(v: number): string {
+  const sign = v >= 0 ? "+" : "−";
+  return `${sign}$${Math.abs(v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
 function DashboardPage() {
   const fetchHome = useServerFn(getHomeSummary);
   const fetchHero = useServerFn(getHeroState);
@@ -80,7 +85,7 @@ function DashboardPage() {
             ))}
           </div>
         ) : (
-          <div className="stagger grid gap-[var(--gutter-sm)] sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          <div className="stagger grid gap-[var(--gutter-sm)] sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             <KpiCard
               label="Today's P&L"
               value={fmtR(p?.todayR ?? 0)}
@@ -93,6 +98,18 @@ function DashboardPage() {
               hint={`${p?.tradesWeek ?? 0} trades`}
               tone={(p?.weekR ?? 0) > 0 ? "up" : (p?.weekR ?? 0) < 0 ? "down" : "flat"}
             />
+            <KpiCard
+              label="Total Realized P&L"
+              value={fmtMoney(p?.totalRealizedPnl ?? 0)}
+              hint="Lifetime"
+              tone={(p?.totalRealizedPnl ?? 0) > 0 ? "up" : (p?.totalRealizedPnl ?? 0) < 0 ? "down" : "flat"}
+            />
+            <KpiCard
+              label="Total R"
+              value={fmtR(p?.totalR ?? 0)}
+              hint="Lifetime"
+              tone={(p?.totalR ?? 0) > 0 ? "up" : (p?.totalR ?? 0) < 0 ? "down" : "flat"}
+            />
             <KpiCard label="Profit factor" value={(p?.profitFactor ?? 0).toFixed(2)} hint="Last 30 days" />
             <KpiCard
               label="Average R"
@@ -101,11 +118,37 @@ function DashboardPage() {
               tone={(p?.avgR ?? 0) > 0 ? "up" : (p?.avgR ?? 0) < 0 ? "down" : "flat"}
             />
             <KpiCard label="Win rate" value={`${Math.round(p?.winRate ?? 0)}%`} hint="Last 30 days" />
+            <KpiCard label="Expectancy" value={fmtR(p?.expectancy ?? 0)} hint="Per trade (30d)" />
             <KpiCard
               label="Drawdown"
               value={`${(p?.currentDrawdownR ?? 0).toFixed(2)}R`}
               hint="Peak to trough"
               tone={(p?.currentDrawdownR ?? 0) > 0 ? "down" : "flat"}
+            />
+            <KpiCard
+              label="Practice Time"
+              value={(() => {
+                const s = home?.focus.activePracticeTimeToday ?? 0;
+                const h = Math.floor(s / 3600);
+                const m = Math.floor((s % 3600) / 60);
+                return h > 0 ? `${h}h ${m}m` : `${m}m`;
+              })()}
+              hint="Today's active time"
+            />
+            <KpiCard
+              label="Market Replayed"
+              value={(() => {
+                const s = home?.focus.historicalMarketTimeToday ?? 0;
+                const h = Math.floor(s / 3600);
+                const m = Math.floor((s % 3600) / 60);
+                return h > 0 ? `${h}h ${m}m` : `${m}m`;
+              })()}
+              hint="Today's chart progress"
+            />
+            <KpiCard
+              label="Current Streak"
+              value={`${home?.focus.streakDays ?? 0}d`}
+              hint={`Best: ${home?.focus.longestStreak ?? 0}d`}
             />
           </div>
         )}
