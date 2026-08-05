@@ -126,7 +126,7 @@ function BattleArenaHome() {
           )}
           <JoinByCodeDialog />
           <Button asChild size="sm" className="h-9 font-bold px-4 shadow-lg shadow-primary/20">
-            <Link to="/battle-arena/create"><Plus className="mr-1.5 h-4 w-4" />Create Battle</Link>
+            <Link to="/battle-arena/create"><Plus className="mr-1.5 h-4 w-4" />Create Arena Match</Link>
           </Button>
         </div>
       </div>
