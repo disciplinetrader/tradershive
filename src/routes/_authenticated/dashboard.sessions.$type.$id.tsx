@@ -1,19 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { 
-  ChevronLeft, 
-  LayoutDashboard, 
-  LineChart, 
-  History, 
-  Settings, 
-  Play,
-  Briefcase,
-  PlayCircle,
-  Target,
-  Swords,
-  Info
-} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { DashboardHeader } from "@/components/dashboard/v2/DashboardHeader";
 import { KpiCard, SectionTitle, Panel } from "@/components/dashboard/v2/primitives";
 import { AnalyticsProvider } from "@/components/analytics/AnalyticsProvider";
