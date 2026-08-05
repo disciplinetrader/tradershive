@@ -172,6 +172,14 @@ export const Route = createFileRoute("/api/ai/chat")({
           system: systemPrompt,
           messages: await convertToModelMessages(body.messages),
           tools: {
+            getMentorContext: {
+              description: "Get detailed trader metrics including streaks, practice time, win rate, and goals.",
+              parameters: z.object({}),
+              execute: async () => {
+                const { getMentorContext } = await import("@/lib/ai/mentor.functions");
+                return (getMentorContext as any)();
+              },
+            },
             getPerformanceSummary: {
               description: "Get a high-level performance overview for the trader (pnl, win rate, etc.).",
               parameters: z.object({ days: z.number().optional().default(30) }),
