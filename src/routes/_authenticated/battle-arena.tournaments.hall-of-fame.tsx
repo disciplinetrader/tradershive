@@ -46,7 +46,7 @@ function HallOfFame() {
             return (
               <Link
                 key={e.id}
-                to="/championship/$slug"
+                to="/battle-arena/tournaments/$slug"
                 params={{ slug: meta?.slug }}
                 className="group relative overflow-hidden rounded-2xl border border-warning/30 bg-gradient-to-br from-warning/10 via-primary/5 to-background p-5 shadow-sm transition hover:border-warning hover:shadow-elegant"
               >
