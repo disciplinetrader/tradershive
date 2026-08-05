@@ -15,12 +15,12 @@ type Action = {
 };
 
 const ACTIONS: Action[] = [
-  { to: "/paper-trading", title: "Start Paper Trading", description: "Practice risk-free with live-feel charts.", icon: LineChart, tint: "from-success/20 to-success/0", cta: "Open chart" },
-  { to: "/paper-trading", title: "Continue Session", description: "Resume where you left off.", icon: PlayCircle, tint: "from-sky-500/20 to-sky-500/0", cta: "Resume" },
+  { to: "/trading", title: "Start Paper Trading", description: "Practice risk-free with live-feel charts.", icon: LineChart, tint: "from-success/20 to-success/0", cta: "Open chart" },
+  { to: "/replay", title: "Continue Session", description: "Resume where you left off.", icon: PlayCircle, tint: "from-sky-500/20 to-sky-500/0", cta: "Resume" },
   { to: "/journal", title: "Open Journal", description: "Log setups, mistakes, and lessons.", icon: BookOpen, tint: "from-violet-500/20 to-violet-500/0", cta: "Write entry" },
-  { to: "/challenges", title: "Today's Challenge", description: "Earn XP and climb the ladder.", icon: Sparkles, tint: "from-warning/20 to-warning/0", cta: "Play now" },
+  { to: "/replay", title: "Replay Studio", description: "Master your strategy on history.", icon: Sparkles, tint: "from-warning/20 to-warning/0", cta: "Play now" },
   { to: "/leaderboard", title: "Leaderboard", description: "See where you rank this season.", icon: Trophy, tint: "from-danger/20 to-danger/0", cta: "View ranks" },
-  { to: "/analytics", title: "Analytics", description: "Deep dive into your edge.", icon: BarChart3, tint: "from-teal-500/20 to-teal-500/0", cta: "Open analytics" },
+  { to: "/dashboard/analytics", title: "Analytics", description: "Deep dive into your edge.", icon: BarChart3, tint: "from-teal-500/20 to-teal-500/0", cta: "Open analytics" },
 ];
 
 export function QuickActions() {
