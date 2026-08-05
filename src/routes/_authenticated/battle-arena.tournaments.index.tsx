@@ -100,7 +100,7 @@ function ChampionshipIndex() {
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">Arena Tournaments</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Compete in monthly championships, sponsored events, and community battles. Every result contributes to your career stats.
+            Compete in monthly championships, sponsored events, and community battles within the HIVE Arena. Every result contributes to your career stats.
           </p>
         </div>
         <Link to="/championship/hall-of-fame">
