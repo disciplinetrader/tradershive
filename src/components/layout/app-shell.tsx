@@ -59,7 +59,7 @@ const WORK: NavItem[] = [
 const COMPETE: NavItem[] = [
   { to: "/prop-challenges", label: "Prop Firm", icon: GraduationCap },
   { to: "/championship", label: "Championships", icon: Trophy },
-  { to: "/battle-arena", label: "Battle Arena", icon: Swords },
+  { to: "/battle-arena", label: "HIVE Arena", icon: Swords },
   { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
 ];
 
