@@ -25,6 +25,8 @@ export const Route = createFileRoute("/_authenticated/replay/prop-firm")({
 });
 
 function ReplayPropFirmPage() {
+  // Prop firm challenges now live inside Replay Studio.
+  // Sidebar highlights Replay Studio, and Replay tabs show Prop Firm as active.
   const [accountId, setAccountId] = useState<string | null>(null);
   const list = useServerFn(listPropChallenges);
   const { active: activeSession, setActive } = useActivePropChallenge();
