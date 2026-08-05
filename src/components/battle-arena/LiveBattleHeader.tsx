@@ -157,7 +157,7 @@ export function LiveBattleHeader({
             <div className="flex items-center gap-3 rounded-2xl border border-warning/30 bg-warning/5 px-4 py-2 text-sm shadow-lg shadow-warning/5">
               <Crown className="h-5 w-5 text-warning fill-warning" />
               <div className="flex flex-col items-end">
-                <div className="text-[9px] uppercase font-black tracking-widest text-warning/60">Current Leader</div>
+                <div className="text-[9px] uppercase font-black tracking-widest text-warning/60">Apex Competitor</div>
                 <div className="flex items-center gap-2">
                   <span className="font-black text-foreground">{leader.display_name ?? leader.username}</span>
                   <Avatar className="h-6 w-6 border border-warning/40"><AvatarImage src={leader.avatar_url ?? undefined} /><AvatarFallback>L</AvatarFallback></Avatar>
