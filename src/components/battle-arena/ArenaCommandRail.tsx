@@ -151,11 +151,12 @@ function RailIcon({ icon: Icon, label, onClick, active }: {
   );
 }
 
-function ExpandedRail({ battle, stats, events, isSpectator, account }: {
+function ExpandedRail({ battle, stats, events, isSpectator, isHost, account }: {
   battle: any;
   stats: any;
   events: any;
   isSpectator: boolean;
+  isHost: boolean;
   account: any;
 }) {
   return (
