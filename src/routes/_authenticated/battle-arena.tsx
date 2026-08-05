@@ -16,8 +16,8 @@ function BattleArenaLayout() {
 
   const tabs = [
     { label: "Overview", to: "/battle-arena" },
-    { label: "Tournaments", to: "/championship" },
-    { label: "Leaderboards", to: "/leaderboard" },
+    { label: "Tournaments", to: "/battle-arena/tournaments" },
+    { label: "Leaderboards", to: "/battle-arena/leaderboard" },
   ];
 
   return (
