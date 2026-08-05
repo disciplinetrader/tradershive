@@ -2,12 +2,40 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { Errors } from "@/lib/server-errors";
+import { getHomeSummary } from "../dashboard-home.functions";
 
 /**
  * Server functions to fetch relevant trader data for the AI Mentor.
  * Every function derives the user ID from the authenticated session
  * and returns only necessary fields for the AI.
  */
+
+/** Fetches a high-level performance overview for the AI coach, including streaks and practice time. */
+export const getMentorContext = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    // We use getHomeSummary to reuse the logic for streaks, pnl, and practice time
+    const summary = await getHomeSummary({ data: {} });
+    
+    return {
+      metrics: {
+        winRate: summary.performance.winRate,
+        profitFactor: summary.performance.profitFactor,
+        avgR: summary.performance.avgR,
+        todayR: summary.performance.todayR,
+        streak: summary.focus.streakDays,
+        bestStreak: summary.focus.longestStreak,
+        practiceTimeTodaySec: summary.focus.activePracticeTimeToday,
+        marketTimeTodaySec: summary.focus.historicalMarketTimeToday,
+        totalRealizedPnl: summary.performance.totalRealizedPnl,
+        totalR: summary.performance.totalR,
+        expectancy: summary.performance.expectancy,
+        netPnl30d: summary.performance.netPnl30d,
+        trades30d: summary.performance.trades30d,
+      },
+      goals: summary.goals,
+    };
+  });
 
 /** Fetches a high-level performance overview for the AI coach. */
 export const getPerformanceSummary = createServerFn({ method: "GET" })
