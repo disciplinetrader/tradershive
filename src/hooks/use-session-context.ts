@@ -42,6 +42,24 @@ export function useSessionContext() {
     }
   }, [context]);
 
+  // Handle default selection: Last valid -> Most recent active -> All Accounts
+  useEffect(() => {
+    // If we have a context loaded from localStorage, we're good
+    if (context.type !== "all" && context.id) return;
+    
+    // If context is "all", we stay on "all" unless it was just the default initialization
+    // and we want to find the most recent active account instead.
+    
+    if (!accounts.isPending && accounts.data && accounts.data.length > 0 && !context.id && context.type === "all") {
+        // Only auto-select if there's no stored context at all
+        const stored = typeof window !== "undefined" ? window.localStorage.getItem(STORAGE_KEY) : null;
+        if (!stored) {
+          const recent = accounts.data[0];
+          setContext({ type: "paper", id: recent.id, label: recent.name });
+        }
+    }
+  }, [accounts.isPending, accounts.data]);
+
   // Priority: Most recent active -> All Accounts
   useEffect(() => {
     if (context.type === "all") return; // Keep "all" if user selected it
