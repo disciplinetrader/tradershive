@@ -129,7 +129,7 @@ export function CreateBattleWizard({ onCancel, onCreated }: { onCancel: () => vo
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label className="text-sm font-bold uppercase tracking-wide">Battle Type</Label>
+                <Label className="text-sm font-bold uppercase tracking-wide">Arena Type</Label>
                 <Select value={form.battle_type} onValueChange={(v) => set("battle_type", v as any)}>
                   <SelectTrigger className="h-11 rounded-xl bg-background/50"><SelectValue /></SelectTrigger>
                   <SelectContent className="rounded-xl">{BATTLE_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
