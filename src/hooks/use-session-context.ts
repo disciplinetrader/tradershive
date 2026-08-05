@@ -6,7 +6,7 @@ import { listReplaySessions } from "@/lib/replay.functions";
 import { listPropChallenges } from "@/lib/prop-challenges.functions";
 import { listBattles } from "@/lib/battle-arena.functions";
 
-export type SessionContextType = "paper" | "replay" | "prop" | "arena";
+export type SessionContextType = "all" | "paper" | "replay" | "prop" | "arena";
 
 export interface SessionContext {
   type: SessionContextType;
@@ -23,12 +23,12 @@ export function useSessionContext() {
   const fetchBattles = useServerFn(listBattles);
 
   const [context, setContext] = useState<SessionContext>(() => {
-    if (typeof window === "undefined") return { type: "paper", id: null };
+    if (typeof window === "undefined") return { type: "all", id: null, label: "All Accounts" };
     try {
       const stored = window.localStorage.getItem(STORAGE_KEY);
       if (stored) return JSON.parse(stored);
     } catch (e) {}
-    return { type: "paper", id: null };
+    return { type: "all", id: null, label: "All Accounts" };
   });
 
   const accounts = useQuery({ queryKey: ["paper", "accounts"], queryFn: () => fetchAccounts() });
@@ -42,12 +42,16 @@ export function useSessionContext() {
     }
   }, [context]);
 
-  // Set default account if none selected for paper
+  // Priority: Most recent active -> All Accounts
   useEffect(() => {
-    if (context.type === "paper" && !context.id && accounts.data?.length) {
-      setContext({ type: "paper", id: accounts.data[0].id, label: accounts.data[0].name });
+    if (context.type === "all") return; // Keep "all" if user selected it
+
+    // If we have no ID but we are in a specific type, or if the current ID is stale/missing
+    if (!context.id && !accounts.isPending && !replays.isPending && !props.isPending && !battles.isPending) {
+       // Logic for default: last valid is handled by localStorage.
+       // If no localStorage, we start with "all".
     }
-  }, [accounts.data, context.type, context.id]);
+  }, [accounts.isPending, replays.isPending, props.isPending, battles.isPending, context.id, context.type]);
 
   const selectContext = (type: SessionContextType, id: string | null, label?: string) => {
     setContext({ type, id, label });
