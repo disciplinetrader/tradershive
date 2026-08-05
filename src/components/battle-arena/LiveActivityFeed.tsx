@@ -18,7 +18,7 @@ const ICONS: Record<string, { icon: any; tone: string }> = {
   rank_down:          { icon: TrendingDown, tone: "text-danger" },
   new_leader:         { icon: Crown, tone: "text-warning" },
   milestone:          { icon: Zap, tone: "text-purple-500" },
-  rule_violation:     { icon: ShieldAlert, tone: "text-danger" },
+  rule_violation:     { icon: ShieldAlert, tone: "text-danger" }, // Internal key remains for now, but label can be updated in DB if needed
   player_joined:      { icon: LogIn, tone: "text-blue-600" },
   player_left:        { icon: LogOut, tone: "text-slate-500" },
   player_disconnected:{ icon: LogOut, tone: "text-warning" },
