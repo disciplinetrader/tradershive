@@ -33,10 +33,10 @@ export function JoinByCodeDialog() {
         <Button size="sm" variant="outline"><KeyRound className="mr-1.5 h-4 w-4" />Join by code</Button>
       </DialogTrigger>
       <DialogContent>
-        <DialogHeader><DialogTitle>Join a private battle</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>Join a private arena</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <Input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="INVITE CODE" className="font-mono text-lg tracking-widest" />
-          <Button className="w-full" disabled={loading} onClick={submit}>{loading ? "Joining…" : "Join battle"}</Button>
+          <Button className="w-full" disabled={loading} onClick={submit}>{loading ? "Joining…" : "Join arena"}</Button>
         </div>
       </DialogContent>
     </Dialog>
