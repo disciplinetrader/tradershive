@@ -32,9 +32,24 @@ export const Route = createFileRoute("/_authenticated/settings")({
 });
 
 function SettingsPage() {
-  const { user } = useAuth();
+  const { user, profile, refresh } = useAuth();
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
+
+  const handleUpdateProfile = async (data: any) => {
+    if (!user?.id) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase.from("profiles").update(data).eq("id", user.id);
+      if (error) throw error;
+      toast.success("Settings updated");
+      await refresh();
+    } catch (err) {
+      toast.error("Failed to update settings");
+    } finally {
+      setSaving(false);
+    }
+  };
   
   return (
     <div className="space-y-6">
