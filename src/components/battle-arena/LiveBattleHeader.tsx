@@ -178,7 +178,7 @@ export function LiveBattleHeader({
             style={{ width: `${pct}%` }} />
           </div>
           <div className="flex justify-between text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
-            <span>{isCountdown ? "Syncing" : "Market Open"}</span>
+            <span>{isCountdown ? "Market Syncing" : "Market Open"}</span>
             <span>{pct.toFixed(1)}% {isCountdown ? "Ready" : "Remaining"}</span>
             <span>{isCountdown ? "Go" : "Market Close"}</span>
           </div>
