@@ -5,6 +5,7 @@ import { getAnalyticsDataset } from "@/lib/statistics.functions";
 import type { AnalyticsTrade, StatisticsFilters } from "@/lib/statistics/types";
 import { EMPTY_FILTERS } from "@/lib/statistics/types";
 import { resolveDateRange } from "@/lib/statistics/date-range";
+import { useSessionContext } from "@/hooks/use-session-context";
 
 interface Ctx {
   raw: AnalyticsTrade[];
