@@ -20,10 +20,7 @@ function DashboardSessionsPage() {
       <div className="mx-auto w-full max-w-[1400px] space-y-[var(--gutter-md)] pb-[var(--gutter-lg)] sm:space-y-[var(--gutter-lg)]">
         <DashboardHeader />
         <FiltersBar />
-        <div className="space-y-4">
-          <SessionCards />
-          <TimeOfDayCard />
-        </div>
+        <SessionManagement />
       </div>
     </AnalyticsProvider>
   );
