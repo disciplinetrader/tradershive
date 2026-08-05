@@ -166,7 +166,7 @@ function BattleArenaHome() {
         <div className="lg:col-span-2 space-y-10">
           <Section
             title="Featured Competitions" icon={Flame} items={featured.data} loading={featured.isLoading}
-            empty={{ title: "No featured battles", body: "Check back later for curated events." }}
+            empty={{ title: "No featured matches", body: "Check back later for curated events." }}
           />
           
           <Section
