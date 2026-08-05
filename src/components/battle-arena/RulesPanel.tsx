@@ -20,7 +20,7 @@ export function RulesPanel({ battle }: { battle: any }) {
         { icon: Users, label: "Format", val: bt.label },
         { icon: Globe, label: "Market", val: market.label },
         { icon: Trophy, label: "Win condition", val: wc.label },
-        { icon: Zap, label: "Ranked", val: battle.ranked ? "Yes" : "No", highlight: battle.ranked },
+        { icon: Zap, label: "Competitive", val: battle.ranked ? "Yes" : "No", highlight: battle.ranked },
       ]
     },
     {
