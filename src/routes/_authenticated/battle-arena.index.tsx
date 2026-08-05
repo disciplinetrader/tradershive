@@ -170,8 +170,8 @@ function BattleArenaHome() {
           />
           
           <Section
-            title="Live Battles" icon={Target} items={live.data} loading={live.isLoading} pulse
-            empty={{ title: "No live matches", body: "Kick off a session to get listed here." }}
+            title="Live Arenas" icon={Target} items={live.data} loading={live.isLoading} pulse
+            empty={{ title: "No live arenas", body: "Kick off a session to get listed here." }}
           />
 
           <Section
