@@ -28,8 +28,8 @@ export const Route = createFileRoute("/_authenticated/replay/history")({
 });
 
 function HistoryPage() {
-  const search = useSearch({ from: Route.fullPath });
-  const navigate = useNavigate({ from: Route.fullPath });
+  const search = useSearch({ from: "/_authenticated/replay/history" });
+  const navigate = useNavigate({ from: "/_authenticated/replay/history" });
   return (
     <HistoryView
       params={{
