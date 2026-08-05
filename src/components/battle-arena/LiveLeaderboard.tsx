@@ -43,7 +43,7 @@ export function LiveLeaderboard({
       <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
         <div className="flex items-center gap-2">
           <Trophy className="h-4 w-4 text-primary" />
-          <h3 className="font-semibold">Live leaderboard</h3>
+          <h3 className="font-semibold">HIVE Standings</h3>
         </div>
         <span className="text-[11px] text-muted-foreground">Sorted by {wc.label.toLowerCase()}</span>
       </div>
