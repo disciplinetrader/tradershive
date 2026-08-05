@@ -150,7 +150,7 @@ function BattleDetail() {
   }, [battleId]);
 
   if (battleQ.isLoading) return <div className="glass h-64 animate-pulse rounded-2xl" />;
-  if (!battleQ.data) return <div className="text-sm text-muted-foreground">Battle not found.</div>;
+  if (!battleQ.data) return <div className="text-sm text-muted-foreground">Arena match not found.</div>;
 
   const { participants = [], rankings = [], results = [], profiles = [] } = (battleQ.data as any) || {};
   
