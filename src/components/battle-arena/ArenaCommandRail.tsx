@@ -213,7 +213,7 @@ function ExpandedRail({ battle, stats, events, isSpectator, isHost, account, onC
             <Badge className="bg-primary/20 text-primary hover:bg-primary/30">RANK #{stats?.rankings?.find((r: any) => r.user_id === account.user_id)?.rank || "--"}</Badge>
           </div>
           <div className="mb-2 text-[10px] text-muted-foreground italic">
-            Placement determined by Return % &gt; Drawdown &gt; Trades &gt; Time
+            Placement determined by Return % &gt; Drawdown &gt; Breaches &gt; Target Time
           </div>
           <div className="grid grid-cols-2 gap-3">
             <MetricCard 
@@ -222,11 +222,11 @@ function ExpandedRail({ battle, stats, events, isSpectator, isHost, account, onC
               trend={(account.balance > account.starting_balance) ? "up" : (account.balance < account.starting_balance) ? "down" : "neutral"} 
             />
             <MetricCard label="Equity" value={`$${account.equity.toLocaleString()}`} />
-            <MetricCard label="Realized" value={`$${(account.balance - account.starting_balance).toLocaleString()}`} />
+            <MetricCard label="Drawdown" value={`${(stats?.rankings?.find((r: any) => r.user_id === account.user_id)?.max_drawdown || 0).toFixed(2)}%`} />
             <MetricCard 
-              label="Drawdown" 
-              value={`${(stats?.rankings?.find((r: any) => r.user_id === account.user_id)?.max_drawdown || 0).toFixed(2)}%`} 
-              trend="neutral" 
+              label="Breaches" 
+              value={`${stats?.rankings?.find((r: any) => r.user_id === account.user_id)?.rule_breaches_count || 0}`} 
+              trend={(stats?.rankings?.find((r: any) => r.user_id === account.user_id)?.rule_breaches_count > 0) ? "down" : "neutral"}
             />
           </div>
         </div>
