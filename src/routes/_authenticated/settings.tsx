@@ -58,8 +58,8 @@ function SettingsPage() {
         description="Manage your account, preferences and security."
       />
       
-      <ProfileSection />
-      <TradingSection />
+      <ProfileSection profile={profile} onSave={handleUpdateProfile} saving={saving} />
+      <TradingSection profile={profile} onSave={handleUpdateProfile} saving={saving} />
       <SecuritySection email={user?.email ?? ""} />
       <EmailSection />
       <NotificationsSection />
