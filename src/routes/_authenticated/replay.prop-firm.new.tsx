@@ -180,8 +180,9 @@ function NewChallengePage() {
         </div>
 
         <div className="mt-4 flex items-center justify-end gap-2">
-          <Button variant="ghost" onClick={() => navigate({ to: "/replay/prop-firm" })}>Cancel</Button>
+          <Button variant="ghost" className="rounded-xl" onClick={() => navigate({ to: "/replay/prop-firm" })}>Cancel</Button>
           <Button
+            className="gradient-primary text-white rounded-xl shadow-lg border-0"
             disabled={m.isPending || !form.name.trim()}
             onClick={() => m.mutate({
               ...form,

@@ -42,12 +42,12 @@ function ReplayPropFirmPage() {
   );
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] space-y-6 pb-[var(--gutter-lg)] animate-in fade-in duration-500">
+    <div className="mx-auto w-full max-w-[1400px] space-y-6 pb-[var(--gutter-lg)] animate-in fade-in duration-500 relative">
       <PageHeader
         title="Prop Firm Challenges"
         description="Practise prop-style evaluation rules using a virtual TradersHIVE account."
         actions={
-          <Button asChild className="gradient-primary text-primary-foreground rounded-xl shadow-elegant">
+          <Button asChild className="gradient-primary text-white rounded-xl shadow-lg border-0 relative z-20 cursor-pointer">
             <Link to="/replay/prop-firm/new">
               <Plus className="mr-2 h-4 w-4" /> Start Challenge
             </Link>
@@ -84,7 +84,7 @@ function ReplayPropFirmPage() {
                 </p>
               </div>
               <div className="flex justify-center pt-2">
-                <Button asChild className="gradient-primary text-primary-foreground rounded-xl">
+                <Button asChild className="gradient-primary text-white rounded-xl shadow-lg border-0 relative z-20">
                   <Link to="/replay/prop-firm/new">
                     <Plus className="mr-2 h-4 w-4" /> Start Challenge
                   </Link>
@@ -127,20 +127,29 @@ function ActiveChallengeOverview({ challenge }: { challenge: any }) {
           </div>
           <h2 className="text-2xl font-bold">{challenge.name}</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Linked Account: <span className="text-foreground font-medium">Prop Account #{challenge.paper_account_id?.slice(-4)}</span>
+            Linked Account: <span className="text-foreground font-medium">{challenge.paper_accounts?.name ?? `Prop Account #${challenge.paper_account_id?.slice(-4)}`}</span>
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          {!isLinked && (
-            <Button 
-              onClick={() => setActive({ id: challenge.id, paper_account_id: challenge.paper_account_id })}
-              className="gradient-primary text-primary-foreground rounded-xl shadow-lg shadow-primary/20"
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap relative z-10">
+          <Button 
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setActive({ id: challenge.id, paper_account_id: challenge.paper_account_id });
+              window.location.href = "/trading";
+            }}
+            className={cn(
+              "gradient-primary text-primary-foreground rounded-xl shadow-lg relative z-20",
+              isLinked && "ring-2 ring-primary ring-offset-2 ring-offset-background"
+            )}
+          >
+            <Play className="mr-2 h-4 w-4 fill-current" /> {isLinked ? "Continue Trading" : "Start Trading"}
+          </Button>
+          <Button asChild variant="outline" className="rounded-xl relative z-20">
+            <Link 
+              to="/dashboard/analytics" 
+              search={{ source: "prop-firm", session: challenge.id }}
             >
-              <Play className="mr-2 h-4 w-4 fill-current" /> Continue Trading
-            </Button>
-          )}
-          <Button asChild variant="outline" className="rounded-xl">
-            <Link to="/replay/prop-firm/$id" params={{ id: challenge.id }}>
               View Analytics <ChevronRight className="ml-1 h-4 w-4" />
             </Link>
           </Button>
@@ -240,30 +249,60 @@ function ChallengeCard({ challenge }: { challenge: any }) {
   const status = challenge.status;
   const isPassed = status === "passed";
   const isFailed = status === "failed";
+  const { active: activeSession, setActive } = useActivePropChallenge();
+  const isLinked = activeSession?.id === challenge.id;
   
   return (
-    <GlassCard className="group hover:border-primary/40 transition-all p-4">
-      <div className="flex items-start justify-between mb-3">
-        <div className="p-2 rounded-lg bg-primary/10 text-primary group-hover:scale-110 transition-transform">
-          <GraduationCap className="h-4 w-4" />
+    <GlassCard 
+      className={cn(
+        "group relative flex flex-col p-5 hover:border-primary/40 transition-all duration-300",
+        isLinked && "border-primary/40 bg-primary/5 ring-1 ring-primary/20"
+      )}
+    >
+      <Link 
+        to="/replay/prop-firm/$id" 
+        params={{ id: challenge.id }}
+        className="absolute inset-0 z-0"
+        aria-label={`View ${challenge.name} challenge details`}
+      />
+      
+      <div className="relative z-10 flex flex-col h-full space-y-4">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <h4 className="font-bold truncate text-base leading-tight">{challenge.name}</h4>
+            <p className="text-xs text-muted-foreground mt-1">
+              {challenge.preset.replace(/_/g, " ")}
+            </p>
+          </div>
+          <Badge 
+            variant={isPassed ? "secondary" : isFailed ? "destructive" : "outline"}
+            className={cn("capitalize text-[10px]", isPassed && "bg-emerald-500/10 text-emerald-500 border-none")}
+          >
+            {status}
+          </Badge>
         </div>
-        <Badge 
-          variant={isPassed ? "secondary" : isFailed ? "destructive" : "outline"}
-          className={cn("capitalize text-[10px]", isPassed && "bg-emerald-500/10 text-emerald-500 border-none")}
-        >
-          {status}
-        </Badge>
-      </div>
-      <h4 className="font-bold text-sm truncate">{challenge.name}</h4>
-      <div className="flex items-center justify-between mt-4">
-        <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
-          {formatCurrency(Number(challenge.account_size), challenge.currency)} · {challenge.preset.replace(/_/g, " ")}
+
+        <div className="space-y-3">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">Linked Account</span>
+            <span className="font-medium truncate max-w-[120px]">
+              {challenge.paper_accounts?.name ?? `Prop Account #${challenge.paper_account_id?.slice(-4)}`}
+            </span>
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">Account Size</span>
+            <span className="font-medium">{formatCurrency(Number(challenge.account_size), challenge.currency)}</span>
+          </div>
         </div>
-        <Button asChild size="icon" variant="ghost" className="h-8 w-8 rounded-full">
-          <Link to="/replay/prop-firm/$id" params={{ id: challenge.id }}>
-            <ChevronRight className="h-4 w-4" />
-          </Link>
-        </Button>
+
+        <div className="pt-2 mt-auto border-t border-border/40 flex items-center justify-between">
+          <span className="text-[10px] text-muted-foreground">
+            Created {new Date(challenge.created_at).toLocaleDateString()}
+          </span>
+          <div className="flex items-center text-primary text-xs font-medium group-hover:translate-x-1 transition-transform">
+            Details <ChevronRight className="ml-1 h-3 w-3" />
+          </div>
+        </div>
       </div>
     </GlassCard>
   );
