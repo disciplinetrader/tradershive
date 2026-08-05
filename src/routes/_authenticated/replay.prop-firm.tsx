@@ -84,7 +84,7 @@ function ReplayPropFirmPage() {
                 </p>
               </div>
               <div className="flex justify-center pt-2">
-                <Button asChild className="gradient-primary text-primary-foreground rounded-xl">
+                <Button asChild className="gradient-primary text-white rounded-xl shadow-lg border-0 relative z-20">
                   <Link to="/replay/prop-firm/new">
                     <Plus className="mr-2 h-4 w-4" /> Start Challenge
                   </Link>
