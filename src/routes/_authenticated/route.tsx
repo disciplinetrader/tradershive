@@ -6,6 +6,7 @@ import { RouteError } from "@/components/common/RouteError";
 import { FeedbackProvider } from "@/components/feedback/FeedbackProvider";
 import { TimezoneSuggestionModal } from "@/components/layout/TimezoneSuggestionModal";
 import { MentorDrawer } from "@/components/ai/MentorDrawer";
+import { MusicPlayer } from "@/components/audio/MusicPlayer";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -46,6 +47,7 @@ function AuthenticatedLayout() {
       </FeedbackProvider>
       <TimezoneSuggestionModal />
       <MentorDrawer />
+      <MusicPlayer />
     </AppShell>
     </ClientOnly>
   );

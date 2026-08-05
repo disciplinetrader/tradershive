@@ -29,6 +29,9 @@ import { CommandPalette, useCommandPalette } from "@/components/command-palette"
 import { APP_NAME } from "@/lib/constants";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ProductTourProvider } from "@/components/tour/ProductTour";
+import { MusicPlayer } from "@/components/audio/MusicPlayer";
+import { MentorDrawer } from "@/components/ai/MentorDrawer";
+
 
 
 type NavItem = { to: string; label: string; icon: typeof Home; admin?: boolean };
@@ -52,9 +55,7 @@ const TRADING: NavItem[] = [
 ];
 
 const COMPETE: NavItem[] = [
-  { to: "/championship", label: "Championships", icon: Trophy },
   { to: "/battle-arena", label: "Battle Arena", icon: Swords },
-  { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
 ];
 
 const COMMUNITY: NavItem[] = [
@@ -353,6 +354,17 @@ function NavSection({
 }
 
 function isActive(pathname: string, to: string) {
+  // Battle Arena consolidated highlighting
+  if (to === "/battle-arena") {
+    return (
+      pathname === "/battle-arena" || 
+      pathname.startsWith("/battle-arena/") ||
+      pathname === "/championship" ||
+      pathname.startsWith("/championship/") ||
+      pathname === "/leaderboard" ||
+      pathname.startsWith("/leaderboard/")
+    );
+  }
   return pathname === to || pathname.startsWith(`${to}/`);
 }
 
