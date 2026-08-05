@@ -43,7 +43,7 @@ export function LiveScoreboard({ stats, profiles }: { stats: Stats; profiles: Pr
           <div className="flex items-center gap-2 rounded-full bg-warning/10 px-2.5 py-1 text-xs">
             <Crown className="h-3.5 w-3.5 text-warning" />
             <Avatar className="h-5 w-5"><AvatarImage src={leader.avatar_url ?? undefined} /><AvatarFallback>{(leader.display_name ?? leader.username ?? "?").slice(0, 1)}</AvatarFallback></Avatar>
-            <span className="font-medium">{leader.display_name ?? leader.username ?? "Leader"}</span>
+            <span className="font-medium">{leader.display_name ?? leader.username ?? "Apex"}</span>
             <span className="text-success tabular-nums">{money(stats?.leader_pnl ?? 0)}</span>
           </div>
         )}
