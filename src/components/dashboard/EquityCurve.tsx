@@ -5,12 +5,15 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getDashboardOverview } from "@/lib/dashboard.functions";
 import { ChartA11ySummary } from "@/components/a11y/ChartA11ySummary";
+import { useSessionContext } from "@/hooks/use-session-context";
 
 export function EquityCurve() {
   const fetch = useServerFn(getDashboardOverview);
+  const { context } = useSessionContext();
+
   const { data, isLoading } = useQuery({
-    queryKey: ["dashboard_overview"],
-    queryFn: () => fetch(),
+    queryKey: ["dashboard_overview", context.type, context.id],
+    queryFn: () => fetch({ data: { contextType: context.type, contextId: context.id } }),
     staleTime: 30_000,
   });
   const points = data?.equityPoints ?? [];
