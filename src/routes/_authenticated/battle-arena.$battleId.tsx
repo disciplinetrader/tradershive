@@ -170,7 +170,7 @@ function BattleDetail() {
     setCancelling(true);
     try {
       await fnCancel({ data: { battleId } });
-      toast.success("Battle cancelled");
+      toast.success("Arena match cancelled");
       setCancelOpen(false);
       navigate({ to: "/battle-arena" });
     } catch (e: any) {
