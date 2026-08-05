@@ -242,8 +242,37 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
     const bump = () => setStoreTick((n) => n + 1);
     const offOrders = stores.orders.subscribe(bump);
     const offTrades = stores.trades?.subscribe(bump);
-    return () => { offOrders(); offTrades?.(); };
+    return () => {
+      offOrders();
+      offTrades?.();
+    };
   }, [stores]);
+
+  // Track and log historical market time replayed
+  useEffect(() => {
+    if (!view || !session) return;
+    const currentMarketTime = view.transport.marketTime;
+
+    if (lastLoggedTimeRef.current === null) {
+      lastLoggedTimeRef.current = currentMarketTime;
+      return;
+    }
+
+    const diffMs = currentMarketTime - lastLoggedTimeRef.current;
+    // Log in chunks of at least 1 minute of market time to reduce noise
+    if (diffMs >= 60_000) {
+      void logMarketReplayed({
+        data: {
+          session_id: id,
+          symbol: session.symbol,
+          start_ts: new Date(lastLoggedTimeRef.current).toISOString(),
+          end_ts: new Date(currentMarketTime).toISOString(),
+          duration_seconds: Math.floor(diffMs / 1000),
+        },
+      });
+      lastLoggedTimeRef.current = currentMarketTime;
+    }
+  }, [view?.transport.marketTime, session, id, logMarketReplayed]);
 
   // Flush on tab hide and on unload — an interrupted session loses nothing.
   useEffect(() => {
