@@ -17,7 +17,9 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  LifeBuoy,
 } from "lucide-react";
+
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/use-auth";
@@ -51,8 +53,8 @@ const TRADING: NavItem[] = [
 const WORK: NavItem[] = [
   { to: "/journal", label: "Journal", icon: BookOpen },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
-  { to: "/ai/coach", label: "AI Coach", icon: Bot },
 ];
+
 
 const COMPETE: NavItem[] = [
   { to: "/prop-challenges", label: "Prop Firm", icon: GraduationCap },
@@ -67,7 +69,9 @@ const COMMUNITY: NavItem[] = [
 
 const SYSTEM_ITEMS: NavItem[] = [
   { to: "/settings", label: "Settings", icon: Settings },
+  { to: "/support", label: "Support", icon: LifeBuoy },
 ];
+
 
 const ADMIN_ITEMS: NavItem[] = [{ to: "/admin", label: "Admin", icon: Shield, admin: true }];
 
@@ -78,7 +82,9 @@ const TOUR_TARGETS: Record<string, string | undefined> = {
   "/journal": "nav-journal",
   "/analytics": "nav-analytics",
   "/community": "nav-community",
-  "/ai/coach": "nav-ai-coach",
+  "/support": "nav-support",
+
+  
 };
 
 export function AppShell({ children }: { children: ReactNode }) {

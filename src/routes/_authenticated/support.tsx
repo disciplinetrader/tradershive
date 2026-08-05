@@ -1,7 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { toast } from "sonner";
+
 import { PageHeader } from "@/components/ui/page-header";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
+import { useFeedback } from "@/components/feedback/FeedbackProvider";
+
 import {
   Accordion,
   AccordionContent,
@@ -35,6 +39,8 @@ const FAQ = [
 ];
 
 function SupportPage() {
+  const { open: openFeedback } = useFeedback();
+  
   return (
     <div className="space-y-6">
       <PageHeader
@@ -42,11 +48,12 @@ function SupportPage() {
         description="We&apos;re here to help. Reach out anytime."
       />
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-4">
         {[
-          { icon: MessageCircle, title: "Live chat", desc: "Average reply < 5 min" },
-          { icon: Mail, title: "Email us", desc: "support@tradershive.io" },
-          { icon: LifeBuoy, title: "Help center", desc: "Guides & tutorials" },
+          { icon: MessageCircle, title: "Live chat", desc: "Average reply < 5 min", action: () => toast.info("Live chat is currently offline. Please use email or feedback.") },
+          { icon: Mail, title: "Email us", desc: "support@tradershive.io", action: () => window.location.href = "mailto:support@tradershive.io" },
+          { icon: LifeBuoy, title: "Help center", desc: "Guides & tutorials", action: () => window.open("https://docs.tradershive.app", "_blank") },
+          { icon: MessageCircle, title: "Feedback", desc: "Report bugs or ideas", action: () => openFeedback() },
         ].map((c) => (
           <GlassCard key={c.title} className="hover-lift p-6">
             <div className="mb-3 grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary">
@@ -54,12 +61,13 @@ function SupportPage() {
             </div>
             <h3 className="font-semibold">{c.title}</h3>
             <p className="mt-1 text-xs text-muted-foreground">{c.desc}</p>
-            <Button size="sm" variant="outline" className="mt-4 glass">
+            <Button size="sm" variant="outline" className="mt-4 glass" onClick={c.action}>
               Open
             </Button>
           </GlassCard>
         ))}
       </div>
+
 
       <GlassCard className="p-6">
         <h2 className="text-lg font-semibold">FAQ</h2>

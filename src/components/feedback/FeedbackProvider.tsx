@@ -44,9 +44,9 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
   return (
     <FeedbackContext.Provider value={value}>
       {children}
-      <FeedbackLauncher onClick={() => open()} />
       <FeedbackDialog open={isOpen} onOpenChange={setIsOpen} initialType={initialType} />
     </FeedbackContext.Provider>
+
   );
 }
 

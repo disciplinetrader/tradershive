@@ -65,11 +65,11 @@ const STEPS: TourStep[] = [
     target: '[data-tour="nav-analytics"]',
   },
   {
-    id: "coach",
-    title: "AI Trading Coach",
-    body: "Personalised feedback grounded in your actual trades — strengths, weaknesses and a weekly plan.",
-    target: '[data-tour="nav-ai"]',
+    id: "mentor",
+    title: "AI Trading Mentor",
+    body: "Your 24/7 personal coach. Ask questions about your trades, get psychology insights, or open the full AI Workspace for deep analysis.",
   },
+
   {
     id: "community",
     title: "Community",
@@ -77,10 +77,17 @@ const STEPS: TourStep[] = [
     target: '[data-tour="nav-community"]',
   },
   {
+    id: "support",
+    title: "Need Help?",
+    body: "Contact support or send us feedback directly from the Support page. Our AI Mentor is also always available in the bottom right.",
+    target: '[data-tour="nav-support"]',
+  },
+  {
     id: "finish",
     title: "You're ready",
     body: "Start improving your trading. You can replay this tour anytime from Settings.",
   },
+
 ];
 
 /* ------------------------------------------------------------------ context */
