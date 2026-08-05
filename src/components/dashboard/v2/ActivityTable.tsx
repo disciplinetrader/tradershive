@@ -19,6 +19,7 @@ import { getDashboardOverview } from "@/lib/dashboard.functions";
 import { fetchEntries, journalKeys } from "@/lib/journal/api";
 import { listReplaySessions } from "@/lib/replay.functions";
 import { cn } from "@/lib/utils";
+import { useSessionContext } from "@/hooks/use-session-context";
 
 type Row = {
   id: string;
