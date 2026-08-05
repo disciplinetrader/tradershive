@@ -1,14 +1,21 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { 
   User, Shield, Bell, CreditCard, Mail, 
   Loader2, Play, LineChart as TradingChart,
-  Search, Globe, Clock
+  Search, Globe, Clock, LifeBuoy, MessageCircle, ExternalLink
 } from "lucide-react";
 import { toast } from "sonner";
 import { useProductTour } from "@/components/tour/ProductTour";
 import { TIMEZONES } from "@/lib/constants";
 import { getLocalTime, getTimezoneOffset } from "@/lib/utils/date";
+import { useFeedback } from "@/components/feedback/FeedbackProvider";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 import { PageHeader } from "@/components/ui/page-header";
 import { GlassCard } from "@/components/ui/glass-card";
@@ -27,14 +34,27 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 
+import { z } from "zod";
+
+const settingsSearchSchema = z.object({
+  tab: z.string().optional().catch("account"),
+});
+
 export const Route = createFileRoute("/_authenticated/settings")({
+  validateSearch: settingsSearchSchema,
   component: SettingsPage,
 });
 
 function SettingsPage() {
   const { user, profile, refresh } = useAuth();
   const navigate = useNavigate();
+  const { tab } = Route.useSearch();
+  const [activeTab, setActiveTab] = useState(tab || "account");
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (tab) setActiveTab(tab);
+  }, [tab]);
 
   const handleUpdateProfile = async (data: any) => {
     if (!user?.id) return;
@@ -58,26 +78,145 @@ function SettingsPage() {
         description="Manage your account, preferences and security."
       />
       
-      <ProfileSection profile={profile} onSave={handleUpdateProfile} saving={saving} />
-      <TradingSection profile={profile} onSave={handleUpdateProfile} saving={saving} />
-      <SecuritySection email={user?.email ?? ""} />
-      <EmailSection />
-      <NotificationsSection />
-      
-      <GlassCard className="p-6 border-danger/20 bg-danger/5">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-base font-semibold text-danger">Danger Zone</h2>
-            <p className="text-xs text-muted-foreground">Permanently delete your account and all associated data.</p>
-          </div>
-          <Button variant="destructive" size="sm">
-            Delete Account
-          </Button>
+      <div className="flex flex-col gap-8 md:flex-row">
+        <aside className="w-full shrink-0 md:w-64">
+          <nav className="flex flex-row gap-1 overflow-x-auto pb-2 md:flex-col md:pb-0">
+            {[
+              { id: "account", label: "Account", icon: User },
+              { id: "trading", label: "Trading", icon: TradingChart },
+              { id: "security", label: "Security", icon: Shield },
+              { id: "notifications", label: "Notifications", icon: Bell },
+              { id: "support", label: "Support", icon: LifeBuoy },
+            ].map((t) => (
+              <button
+                key={t.id}
+                onClick={() => {
+                  setActiveTab(t.id);
+                  navigate({ search: { tab: t.id } as any, replace: true });
+                }}
+                className={cn(
+                  "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors whitespace-nowrap",
+                  activeTab === t.id
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+              >
+                <t.icon className="h-4 w-4" />
+                {t.label}
+              </button>
+            ))}
+          </nav>
+        </aside>
+
+        <div className="flex-1 space-y-6">
+          {activeTab === "account" && (
+            <>
+              <ProfileSection profile={profile} onSave={handleUpdateProfile} saving={saving} />
+              <EmailSection />
+            </>
+          )}
+          
+          {activeTab === "trading" && (
+            <TradingSection profile={profile} onSave={handleUpdateProfile} saving={saving} />
+          )}
+
+          {activeTab === "security" && (
+            <SecuritySection email={user?.email ?? ""} />
+          )}
+
+          {activeTab === "notifications" && (
+            <NotificationsSection />
+          )}
+
+          {activeTab === "support" && (
+            <SupportSection />
+          )}
+          
+          {activeTab === "account" && (
+            <GlassCard className="p-6 border-danger/20 bg-danger/5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-semibold text-danger">Danger Zone</h2>
+                  <p className="text-xs text-muted-foreground">Permanently delete your account and all associated data.</p>
+                </div>
+                <Button variant="destructive" size="sm">
+                  Delete Account
+                </Button>
+              </div>
+            </GlassCard>
+          )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+const FAQ = [
+  {
+    q: "Is TradersHIVE free?",
+    a: "Yes — training, journaling, and leaderboards are free forever. Elite challenges and prop-firm scoring are part of the Premium plan.",
+  },
+  {
+    q: "Does paper trading use real market data?",
+    a: "Yes. Prices, spreads, and volatility come from the same sources professional platforms use.",
+  },
+  {
+    q: "How is XP earned?",
+    a: "Complete challenges, journal trades, maintain your streak, and win league promotions.",
+  },
+  {
+    q: "Can I reset my account?",
+    a: "You can reset your paper-trading equity from Settings. Journal entries and stats are preserved.",
+  },
+];
+
+function SupportSection() {
+  const { open: openFeedback } = useFeedback();
+  
+  return (
+    <div className="space-y-6 animate-in fade-in duration-300">
+      <div className="grid gap-4 sm:grid-cols-2">
+        {[
+          { icon: MessageCircle, title: "Live chat", desc: "Average reply < 5 min", action: () => toast.info("Live chat is currently offline. Please use email or feedback.") },
+          { icon: Mail, title: "Email us", desc: "support@tradershive.io", action: () => window.location.href = "mailto:support@tradershive.io" },
+          { icon: LifeBuoy, title: "Help center", iconColor: "text-primary", desc: "Guides & tutorials", action: () => window.open("https://docs.tradershive.app", "_blank") },
+          { icon: MessageCircle, title: "Feedback", desc: "Report bugs or ideas", action: () => openFeedback() },
+        ].map((c) => (
+          <GlassCard key={c.title} className="hover-lift p-6">
+            <div className={cn(
+              "mb-3 grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary",
+              c.iconColor
+            )}>
+              <c.icon className="h-5 w-5" />
+            </div>
+            <h3 className="font-semibold">{c.title}</h3>
+            <p className="mt-1 text-xs text-muted-foreground">{c.desc}</p>
+            <Button size="sm" variant="outline" className="mt-4 glass" onClick={c.action}>
+              Open
+            </Button>
+          </GlassCard>
+        ))}
+      </div>
+
+      <GlassCard className="p-6">
+        <h2 className="text-lg font-semibold">FAQ</h2>
+        <Accordion type="single" collapsible className="mt-2">
+          {FAQ.map((f, i) => (
+            <AccordionItem key={i} value={`item-${i}`}>
+              <AccordionTrigger className="text-left font-medium">{f.q}</AccordionTrigger>
+              <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
+                {f.a}
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
       </GlassCard>
     </div>
   );
 }
+
+// Ensure cn is imported at top or used from lib
+import { cn } from "@/lib/utils";
 
 function ProfileSection({ profile, onSave, saving }: { profile: any, onSave: any, saving: boolean }) {
   const [displayName, setDisplayName] = useState(profile?.display_name || "");

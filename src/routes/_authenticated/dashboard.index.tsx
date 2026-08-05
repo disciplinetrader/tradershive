@@ -1,18 +1,23 @@
-import { useState } from "react";
-import { createFileRoute, useLocation } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { Link, useLocation, createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { BookOpen, LineChart, PlayCircle, Target, Zap } from "lucide-react";
+import { BookOpen, LineChart, PlayCircle, Target, Zap, GraduationCap, Trophy, ChevronRight } from "lucide-react";
 
 import { BetaBanner } from "@/components/beta/BetaBanner";
 import { ActivityTable } from "@/components/dashboard/v2/ActivityTable";
 import { DashboardHeader } from "@/components/dashboard/v2/DashboardHeader";
 import { EquitySection } from "@/components/dashboard/v2/EquitySection";
 import { HeroCard } from "@/components/dashboard/v2/HeroCard";
-import { KpiCard, QuickActionCard, SectionTitle } from "@/components/dashboard/v2/primitives";
+import { KpiCard, QuickActionCard, SectionTitle, Panel } from "@/components/dashboard/v2/primitives";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getHeroState } from "@/lib/dashboard-hero.functions";
 import { getHomeSummary } from "@/lib/dashboard-home.functions";
+import { listPropChallenges } from "@/lib/prop-challenges.functions";
+import { formatCurrency } from "@/lib/prop-challenges/evaluator";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/dashboard/")({
   component: DashboardOverviewPage,
@@ -32,6 +37,7 @@ function fmtMoney(v: number): string {
 function DashboardOverviewPage() {
   const fetchHome = useServerFn(getHomeSummary);
   const fetchHero = useServerFn(getHeroState);
+  const fetchProp = useServerFn(listPropChallenges);
   const [accountId, setAccountId] = useState<string | null>(null);
 
   const { data: home, isPending } = useQuery({
@@ -46,7 +52,12 @@ function DashboardOverviewPage() {
     staleTime: 30_000,
     refetchInterval: 60_000,
   });
+  const { data: challenges } = useQuery({
+    queryKey: ["prop-challenges"],
+    queryFn: () => fetchProp(),
+  });
 
+  const activeProp = challenges?.find(c => c.status === "active");
   const p = home?.performance;
 
   return (
@@ -54,6 +65,8 @@ function DashboardOverviewPage() {
       <DashboardHeader accountId={accountId} onAccountChange={setAccountId} />
 
       <BetaBanner />
+
+      {activeProp && <PropChallengeBanner challenge={activeProp} />}
 
       {/* 1 — Hero: the visual focus */}
       {isPending && !home ? <Skeleton className="h-64 w-full rounded-xl" /> : <HeroCard data={home} />}
@@ -159,9 +172,55 @@ function DashboardOverviewPage() {
               hint="Resume session" 
             />
           )}
-          <QuickActionCard to="/support" icon={BookOpen} label="How It Works" hint="Learn the platform" />
+          <QuickActionCard to="/settings?tab=support" icon={BookOpen} label="How It Works" hint="Learn the platform" />
         </div>
       </section>
     </div>
+  );
+}
+
+function PropChallengeBanner({ challenge }: { challenge: any }) {
+  const start = Number(challenge.starting_equity);
+  const eq = Number(challenge.current_equity);
+  const profit = eq - start;
+  const target = start * (challenge.profit_target_pct / 100);
+  const progress = Math.max(0, (profit / target) * 100);
+
+  return (
+    <Panel className="accent-wash border-primary/20 p-4 sm:p-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+            <GraduationCap className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-primary">Active Prop Challenge</span>
+              <Badge variant="outline" className="text-[10px] h-4 px-1.5">{challenge.preset.replace(/_/g, ' ')}</Badge>
+            </div>
+            <h4 className="font-bold text-sm sm:text-base">{challenge.name}</h4>
+          </div>
+        </div>
+        
+        <div className="flex-1 max-w-xs space-y-1.5">
+          <div className="flex justify-between text-[10px] font-bold">
+            <span className="text-muted-foreground uppercase">Target Progress</span>
+            <span className="text-primary">{progress.toFixed(1)}%</span>
+          </div>
+          <Progress value={progress} className="h-1.5" />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button asChild size="sm" variant="outline" className="h-8 rounded-lg text-xs">
+            <Link to="/dashboard/prop-firm">Manage</Link>
+          </Button>
+          <Button asChild size="sm" className="h-8 rounded-lg text-xs gradient-primary">
+            <Link to="/trading">
+              Trade <ChevronRight className="ml-1 h-3 w-3" />
+            </Link>
+          </Button>
+        </div>
+      </div>
+    </Panel>
   );
 }

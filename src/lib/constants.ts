@@ -1,4 +1,4 @@
-export const APP_NAME = "TradersHIVE Arena";
+export const APP_NAME = "TradersHIVE";
 export const APP_TAGLINE = "Train. Trade. Compete.";
 export const APP_DESCRIPTION =
   "The gamified arena where traders train with paper trading, journal every setup, complete challenges, and climb global leaderboards.";
