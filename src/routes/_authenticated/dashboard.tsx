@@ -2,7 +2,7 @@ import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { BookOpen, LineChart, PlayCircle } from "lucide-react";
+import { BookOpen, LineChart, PlayCircle, Target, Zap } from "lucide-react";
 
 import { BetaBanner } from "@/components/beta/BetaBanner";
 import { ActivityTable } from "@/components/dashboard/v2/ActivityTable";
@@ -39,6 +39,11 @@ function fmtR(v: number): string {
   if (!Number.isFinite(v)) return "0.00R";
   const sign = v > 0 ? "+" : v < 0 ? "−" : "";
   return `${sign}${Math.abs(v).toFixed(2)}R`;
+}
+
+function fmtMoney(v: number): string {
+  const sign = v >= 0 ? "+" : "−";
+  return `${sign}$${Math.abs(v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function DashboardPage() {
@@ -80,7 +85,7 @@ function DashboardPage() {
             ))}
           </div>
         ) : (
-          <div className="stagger grid gap-[var(--gutter-sm)] sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          <div className="stagger grid gap-[var(--gutter-sm)] sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             <KpiCard
               label="Today's P&L"
               value={fmtR(p?.todayR ?? 0)}
@@ -93,6 +98,18 @@ function DashboardPage() {
               hint={`${p?.tradesWeek ?? 0} trades`}
               tone={(p?.weekR ?? 0) > 0 ? "up" : (p?.weekR ?? 0) < 0 ? "down" : "flat"}
             />
+            <KpiCard
+              label="Total Realized P&L"
+              value={fmtMoney(p?.totalRealizedPnl ?? 0)}
+              hint="Lifetime"
+              tone={(p?.totalRealizedPnl ?? 0) > 0 ? "up" : (p?.totalRealizedPnl ?? 0) < 0 ? "down" : "flat"}
+            />
+            <KpiCard
+              label="Total R"
+              value={fmtR(p?.totalR ?? 0)}
+              hint="Lifetime"
+              tone={(p?.totalR ?? 0) > 0 ? "up" : (p?.totalR ?? 0) < 0 ? "down" : "flat"}
+            />
             <KpiCard label="Profit factor" value={(p?.profitFactor ?? 0).toFixed(2)} hint="Last 30 days" />
             <KpiCard
               label="Average R"
@@ -101,11 +118,37 @@ function DashboardPage() {
               tone={(p?.avgR ?? 0) > 0 ? "up" : (p?.avgR ?? 0) < 0 ? "down" : "flat"}
             />
             <KpiCard label="Win rate" value={`${Math.round(p?.winRate ?? 0)}%`} hint="Last 30 days" />
+            <KpiCard label="Expectancy" value={fmtR(p?.expectancy ?? 0)} hint="Per trade (30d)" />
             <KpiCard
               label="Drawdown"
               value={`${(p?.currentDrawdownR ?? 0).toFixed(2)}R`}
               hint="Peak to trough"
               tone={(p?.currentDrawdownR ?? 0) > 0 ? "down" : "flat"}
+            />
+            <KpiCard
+              label="Practice Time"
+              value={(() => {
+                const s = home?.focus.activePracticeTimeToday ?? 0;
+                const h = Math.floor(s / 3600);
+                const m = Math.floor((s % 3600) / 60);
+                return h > 0 ? `${h}h ${m}m` : `${m}m`;
+              })()}
+              hint="Today's active time"
+            />
+            <KpiCard
+              label="Market Replayed"
+              value={(() => {
+                const s = home?.focus.historicalMarketTimeToday ?? 0;
+                const h = Math.floor(s / 3600);
+                const m = Math.floor((s % 3600) / 60);
+                return h > 0 ? `${h}h ${m}m` : `${m}m`;
+              })()}
+              hint="Today's chart progress"
+            />
+            <KpiCard
+              label="Current Streak"
+              value={`${home?.focus.streakDays ?? 0}d`}
+              hint={`Best: ${home?.focus.longestStreak ?? 0}d`}
             />
           </div>
         )}
@@ -117,13 +160,23 @@ function DashboardPage() {
       {/* 4 — Recent activity: one table, three tabs */}
       <ActivityTable />
 
-      {/* 5 — Quick actions: exactly three */}
+      {/* 5 — Quick actions */}
       <section className="space-y-3">
         <SectionTitle>Quick actions</SectionTitle>
-        <div className="stagger grid gap-[var(--gutter-sm)] sm:grid-cols-3">
-          <QuickActionCard to="/trading" icon={LineChart} label="Start Trading" hint="Open the workspace" />
+        <div className="stagger grid gap-[var(--gutter-sm)] grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
           <QuickActionCard to="/replay" icon={PlayCircle} label="Start Replay" hint="Practise a setup" />
-          <QuickActionCard to="/journal" icon={BookOpen} label="Add Journal Entry" hint="Review your last trade" />
+          <QuickActionCard to="/trading" icon={LineChart} label="Paper Trade" hint="Open live market" />
+          <QuickActionCard to="/prop-challenges" icon={Target} label="Prop Challenge" hint="Get funded" />
+          <QuickActionCard to="/journal" icon={BookOpen} label="Trading Journal" hint="Review performance" />
+          {home?.actions.find(a => a.kind === "replay_unfinished") && (
+            <QuickActionCard 
+              to={home.actions.find(a => a.kind === "replay_unfinished")?.href || "/replay"} 
+              icon={Zap} 
+              label="Continue Last" 
+              hint="Resume session" 
+            />
+          )}
+          <QuickActionCard to="/education" icon={BookOpen} label="How It Works" hint="Learn the platform" />
         </div>
       </section>
     </div>

@@ -1,14 +1,13 @@
 /**
  * Trader Home 2.0 — server aggregator.
  *
- * Powers the four sections of the redesigned Dashboard:
+ * Powers the sections of the redesigned Dashboard:
  *   1. Today's Focus     – replay minutes, journal debt, streak, active goals, tasks
  *   2. Performance       – today/week/month R, win rate, profit factor, avg R, drawdown
  *   3. Action Items      – concrete things needing attention with a deep-link
  *   4. Coach Tips        – rule-based insights (AI-ready shape)
  *
- * All values are computed from real platform data (paper_trades,
- * journal_entries, replay_sessions, goal_tracking). No fake ranking.
+ * All values are computed from real platform data.
  */
 
 import { createServerFn } from "@tanstack/react-start";
@@ -46,10 +45,13 @@ export type HomeSummary = {
     replayMinutesToday: number;
     journalMissingToday: number;
     streakDays: number;
+    longestStreak: number;
     activeGoalsCount: number;
     completedTasks: number;
     totalTasks: number;
     allClear: boolean;
+    activePracticeTimeToday: number; // in seconds
+    historicalMarketTimeToday: number; // in seconds
   };
   performance: {
     todayR: number;
@@ -65,6 +67,9 @@ export type HomeSummary = {
     netPnl30d: number;       // sum of pnl in last 30d
     trades30d: number;       // count of closed trades in last 30d
     pnlSpark14d: number[];   // per-day pnl over the last 14 days
+    totalRealizedPnl: number;
+    totalR: number;
+    expectancy: number;
   };
   actions: HomeActionItem[];
   tips: HomeCoachTip[];
@@ -101,16 +106,16 @@ export const getHomeSummary = createServerFn({ method: "GET" })
     // Scope every performance metric to the selected paper account.
     if (accountId) tradesQuery = tradesQuery.eq("account_id", accountId);
 
-    const [tradesRes, journalRes, replayRes, goalsRes] = await Promise.all([
+    const [tradesRes, journalRes, replayRes, goalsRes, streakRes, activityRes, marketRes] = await Promise.all([
       tradesQuery
         .order("closed_at", { ascending: false, nullsFirst: false })
-        .limit(500),
+        .limit(1000),
       context.supabase
         .from("journal_entries")
         .select("id, trade_id, opened_at, closed_at, pnl, rr, risk_pct, notes_text, screenshots, created_at")
         .eq("user_id", uid)
         .order("created_at", { ascending: false })
-        .limit(500),
+        .limit(1000),
       context.supabase
         .from("replay_sessions")
         .select("id, symbol, duration_seconds, status, created_at, updated_at")
@@ -122,12 +127,28 @@ export const getHomeSummary = createServerFn({ method: "GET" })
         .select("*")
         .eq("user_id", uid)
         .order("created_at", { ascending: false }),
+      context.supabase
+        .from("practice_streaks")
+        .select("current_streak, longest_streak")
+        .eq("user_id", uid)
+        .maybeSingle(),
+      context.supabase
+        .from("activity_logs")
+        .select("duration_seconds")
+        .eq("user_id", uid)
+        .gte("created_at", startOfDay(now).toISOString()),
+      context.supabase
+        .from("historical_market_replayed")
+        .select("duration_seconds")
+        .eq("user_id", uid)
+        .gte("created_at", startOfDay(now).toISOString()),
     ]);
 
     const trades = tradesRes.data ?? [];
     const journal = journalRes.data ?? [];
     const replays = replayRes.data ?? [];
     const goals = (goalsRes.data ?? []) as unknown as GoalRow[];
+    const streakData = streakRes.data;
 
     // -------- Focus
     const today0 = startOfDay(now).getTime();
@@ -140,6 +161,9 @@ export const getHomeSummary = createServerFn({ method: "GET" })
         .reduce((s, r) => s + (Number(r.duration_seconds) || 0), 0) / 60,
     );
 
+    const activePracticeTimeToday = activityRes.data?.reduce((s, a) => s + (a.duration_seconds || 0), 0) || 0;
+    const historicalMarketTimeToday = marketRes.data?.reduce((s, m) => s + (m.duration_seconds || 0), 0) || 0;
+
     const journalByTradeId = new Map<string, any>();
     for (const j of journal) if (j.trade_id) journalByTradeId.set(j.trade_id, j);
 
@@ -148,24 +172,9 @@ export const getHomeSummary = createServerFn({ method: "GET" })
     );
     const journalMissingToday = closedToday.filter((t) => !journalByTradeId.has(t.id)).length;
 
-    // -------- Streak (consecutive days with ≥1 closed trade)
-    const dayKeys = new Set<string>();
-    for (const t of trades) {
-      const iso = t.closed_at ?? t.opened_at;
-      if (!iso) continue;
-      dayKeys.add(new Date(iso).toISOString().slice(0, 10));
-    }
-    let streakDays = 0;
-    const cursor = startOfDay(now);
-    for (let i = 0; i < 365; i++) {
-      const key = cursor.toISOString().slice(0, 10);
-      if (dayKeys.has(key)) {
-        streakDays += 1;
-        cursor.setDate(cursor.getDate() - 1);
-      } else if (i === 0) {
-        cursor.setDate(cursor.getDate() - 1);
-      } else break;
-    }
+    // -------- Streak
+    const streakDays = streakData?.current_streak ?? 0;
+    const longestStreak = streakData?.longest_streak ?? 0;
 
     // -------- Goals progress (reuse engine)
     const goalTrades: GoalTrade[] = trades
@@ -247,6 +256,10 @@ export const getHomeSummary = createServerFn({ method: "GET" })
       if (drop > dd) dd = drop;
     }
 
+    const totalRealizedPnl = closedAll.reduce((s, t) => s + Number(t.pnl ?? 0), 0);
+    const totalR = closedAll.reduce((s, t) => s + rrOf(t), 0);
+    const expectancy = w30.length ? (winRate / 100) * avgR - (1 - winRate / 100) * Math.abs(avgR) : 0; // Simplified expectancy
+
     const performance = {
       todayR: closedTodayR,
       weekR,
@@ -261,6 +274,9 @@ export const getHomeSummary = createServerFn({ method: "GET" })
       netPnl30d,
       trades30d: w30.length,
       pnlSpark14d: spark,
+      totalRealizedPnl,
+      totalR,
+      expectancy,
     };
 
     // -------- Action items (real)
@@ -412,6 +428,7 @@ export const getHomeSummary = createServerFn({ method: "GET" })
         replayMinutesToday,
         journalMissingToday,
         streakDays,
+        longestStreak,
         activeGoalsCount,
         completedTasks,
         totalTasks,
@@ -419,6 +436,8 @@ export const getHomeSummary = createServerFn({ method: "GET" })
           journalMissingToday === 0 &&
           (totalTasks === 0 || completedTasks === totalTasks) &&
           replayMinutesToday > 0,
+        activePracticeTimeToday,
+        historicalMarketTimeToday,
       },
       performance,
       actions: actions.slice(0, 8),
