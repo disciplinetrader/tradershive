@@ -80,12 +80,12 @@ import { Route as AuthenticatedReplayStudioRouteImport } from './routes/_authent
 import { Route as AuthenticatedReplaySettingsRouteImport } from './routes/_authenticated/replay.settings'
 import { Route as AuthenticatedReplaySessionRouteImport } from './routes/_authenticated/replay.session'
 import { Route as AuthenticatedReplayReviewRouteImport } from './routes/_authenticated/replay.review'
+import { Route as AuthenticatedReplayPropFirmRouteImport } from './routes/_authenticated/replay.prop-firm'
 import { Route as AuthenticatedReplayPerformanceRouteImport } from './routes/_authenticated/replay.performance'
 import { Route as AuthenticatedReplayLibraryRouteImport } from './routes/_authenticated/replay.library'
 import { Route as AuthenticatedReplayImprovementRouteImport } from './routes/_authenticated/replay.improvement'
 import { Route as AuthenticatedReplayHistoryRouteImport } from './routes/_authenticated/replay.history'
 import { Route as AuthenticatedReplayChallengesRouteImport } from './routes/_authenticated/replay.challenges'
-import { Route as AuthenticatedPropChallengesNewRouteImport } from './routes/_authenticated/prop-challenges.new'
 import { Route as AuthenticatedPropChallengesIdRouteImport } from './routes/_authenticated/prop-challenges.$id'
 import { Route as AuthenticatedProfileUsernameRouteImport } from './routes/_authenticated/profile.$username'
 import { Route as AuthenticatedPracticeSkillsRouteImport } from './routes/_authenticated/practice.skills'
@@ -109,7 +109,6 @@ import { Route as AuthenticatedJournalAnalyticsRouteImport } from './routes/_aut
 import { Route as AuthenticatedJournalEntryIdRouteImport } from './routes/_authenticated/journal.$entryId'
 import { Route as AuthenticatedDashboardTradesRouteImport } from './routes/_authenticated/dashboard.trades'
 import { Route as AuthenticatedDashboardSessionsRouteImport } from './routes/_authenticated/dashboard.sessions'
-import { Route as AuthenticatedDashboardPropFirmRouteImport } from './routes/_authenticated/dashboard.prop-firm'
 import { Route as AuthenticatedDashboardAnalyticsRouteImport } from './routes/_authenticated/dashboard.analytics'
 import { Route as AuthenticatedCommunityTrendingRouteImport } from './routes/_authenticated/community.trending'
 import { Route as AuthenticatedCommunityReviewsRouteImport } from './routes/_authenticated/community.reviews'
@@ -187,6 +186,7 @@ import { Route as ApiPublicHooksEmailMonthlyReportRouteImport } from './routes/a
 import { Route as ApiPublicHooksEconomicCalendarRouteImport } from './routes/api/public/hooks/economic-calendar'
 import { Route as ApiPublicHooksBattleSettlementRouteImport } from './routes/api/public/hooks/battle-settlement'
 import { Route as AuthenticatedStrategiesPlaybooksIdRouteImport } from './routes/_authenticated/strategies.playbooks.$id'
+import { Route as AuthenticatedReplayPropFirmNewRouteImport } from './routes/_authenticated/replay.prop-firm.new'
 import { Route as AuthenticatedJournalReplayAttemptIdRouteImport } from './routes/_authenticated/journal.replay.$attemptId'
 import { Route as AuthenticatedCommunityProfileUsernameRouteImport } from './routes/_authenticated/community.profile.$username'
 import { Route as AuthenticatedCommunityPostIdRouteImport } from './routes/_authenticated/community.post.$id'
@@ -587,6 +587,12 @@ const AuthenticatedReplayReviewRoute =
     path: '/review',
     getParentRoute: () => AuthenticatedReplayRoute,
   } as any)
+const AuthenticatedReplayPropFirmRoute =
+  AuthenticatedReplayPropFirmRouteImport.update({
+    id: '/prop-firm',
+    path: '/prop-firm',
+    getParentRoute: () => AuthenticatedReplayRoute,
+  } as any)
 const AuthenticatedReplayPerformanceRoute =
   AuthenticatedReplayPerformanceRouteImport.update({
     id: '/performance',
@@ -616,12 +622,6 @@ const AuthenticatedReplayChallengesRoute =
     id: '/challenges',
     path: '/challenges',
     getParentRoute: () => AuthenticatedReplayRoute,
-  } as any)
-const AuthenticatedPropChallengesNewRoute =
-  AuthenticatedPropChallengesNewRouteImport.update({
-    id: '/prop-challenges/new',
-    path: '/prop-challenges/new',
-    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedPropChallengesIdRoute =
   AuthenticatedPropChallengesIdRouteImport.update({
@@ -759,12 +759,6 @@ const AuthenticatedDashboardSessionsRoute =
   AuthenticatedDashboardSessionsRouteImport.update({
     id: '/sessions',
     path: '/sessions',
-    getParentRoute: () => AuthenticatedDashboardRoute,
-  } as any)
-const AuthenticatedDashboardPropFirmRoute =
-  AuthenticatedDashboardPropFirmRouteImport.update({
-    id: '/prop-firm',
-    path: '/prop-firm',
     getParentRoute: () => AuthenticatedDashboardRoute,
   } as any)
 const AuthenticatedDashboardAnalyticsRoute =
@@ -1222,6 +1216,12 @@ const AuthenticatedStrategiesPlaybooksIdRoute =
     path: '/$id',
     getParentRoute: () => AuthenticatedStrategiesPlaybooksRoute,
   } as any)
+const AuthenticatedReplayPropFirmNewRoute =
+  AuthenticatedReplayPropFirmNewRouteImport.update({
+    id: '/new',
+    path: '/new',
+    getParentRoute: () => AuthenticatedReplayPropFirmRoute,
+  } as any)
 const AuthenticatedJournalReplayAttemptIdRoute =
   AuthenticatedJournalReplayAttemptIdRouteImport.update({
     id: '/replay/$attemptId',
@@ -1390,7 +1390,6 @@ export interface FileRoutesByFullPath {
   '/community/reviews': typeof AuthenticatedCommunityReviewsRoute
   '/community/trending': typeof AuthenticatedCommunityTrendingRoute
   '/dashboard/analytics': typeof AuthenticatedDashboardAnalyticsRoute
-  '/dashboard/prop-firm': typeof AuthenticatedDashboardPropFirmRoute
   '/dashboard/sessions': typeof AuthenticatedDashboardSessionsRoute
   '/dashboard/trades': typeof AuthenticatedDashboardTradesRoute
   '/journal/$entryId': typeof AuthenticatedJournalEntryIdRoute
@@ -1414,12 +1413,12 @@ export interface FileRoutesByFullPath {
   '/practice/skills': typeof AuthenticatedPracticeSkillsRoute
   '/profile/$username': typeof AuthenticatedProfileUsernameRoute
   '/prop-challenges/$id': typeof AuthenticatedPropChallengesIdRoute
-  '/prop-challenges/new': typeof AuthenticatedPropChallengesNewRoute
   '/replay/challenges': typeof AuthenticatedReplayChallengesRoute
   '/replay/history': typeof AuthenticatedReplayHistoryRoute
   '/replay/improvement': typeof AuthenticatedReplayImprovementRoute
   '/replay/library': typeof AuthenticatedReplayLibraryRoute
   '/replay/performance': typeof AuthenticatedReplayPerformanceRoute
+  '/replay/prop-firm': typeof AuthenticatedReplayPropFirmRouteWithChildren
   '/replay/review': typeof AuthenticatedReplayReviewRoute
   '/replay/session': typeof AuthenticatedReplaySessionRoute
   '/replay/settings': typeof AuthenticatedReplaySettingsRoute
@@ -1462,6 +1461,7 @@ export interface FileRoutesByFullPath {
   '/community/post/$id': typeof AuthenticatedCommunityPostIdRoute
   '/community/profile/$username': typeof AuthenticatedCommunityProfileUsernameRoute
   '/journal/replay/$attemptId': typeof AuthenticatedJournalReplayAttemptIdRoute
+  '/replay/prop-firm/new': typeof AuthenticatedReplayPropFirmNewRoute
   '/strategies/playbooks/$id': typeof AuthenticatedStrategiesPlaybooksIdRoute
   '/api/public/hooks/battle-settlement': typeof ApiPublicHooksBattleSettlementRoute
   '/api/public/hooks/economic-calendar': typeof ApiPublicHooksEconomicCalendarRoute
@@ -1565,7 +1565,6 @@ export interface FileRoutesByTo {
   '/community/reviews': typeof AuthenticatedCommunityReviewsRoute
   '/community/trending': typeof AuthenticatedCommunityTrendingRoute
   '/dashboard/analytics': typeof AuthenticatedDashboardAnalyticsRoute
-  '/dashboard/prop-firm': typeof AuthenticatedDashboardPropFirmRoute
   '/dashboard/sessions': typeof AuthenticatedDashboardSessionsRoute
   '/dashboard/trades': typeof AuthenticatedDashboardTradesRoute
   '/journal/$entryId': typeof AuthenticatedJournalEntryIdRoute
@@ -1589,12 +1588,12 @@ export interface FileRoutesByTo {
   '/practice/skills': typeof AuthenticatedPracticeSkillsRoute
   '/profile/$username': typeof AuthenticatedProfileUsernameRoute
   '/prop-challenges/$id': typeof AuthenticatedPropChallengesIdRoute
-  '/prop-challenges/new': typeof AuthenticatedPropChallengesNewRoute
   '/replay/challenges': typeof AuthenticatedReplayChallengesRoute
   '/replay/history': typeof AuthenticatedReplayHistoryRoute
   '/replay/improvement': typeof AuthenticatedReplayImprovementRoute
   '/replay/library': typeof AuthenticatedReplayLibraryRoute
   '/replay/performance': typeof AuthenticatedReplayPerformanceRoute
+  '/replay/prop-firm': typeof AuthenticatedReplayPropFirmRouteWithChildren
   '/replay/review': typeof AuthenticatedReplayReviewRoute
   '/replay/session': typeof AuthenticatedReplaySessionRoute
   '/replay/settings': typeof AuthenticatedReplaySettingsRoute
@@ -1637,6 +1636,7 @@ export interface FileRoutesByTo {
   '/community/post/$id': typeof AuthenticatedCommunityPostIdRoute
   '/community/profile/$username': typeof AuthenticatedCommunityProfileUsernameRoute
   '/journal/replay/$attemptId': typeof AuthenticatedJournalReplayAttemptIdRoute
+  '/replay/prop-firm/new': typeof AuthenticatedReplayPropFirmNewRoute
   '/strategies/playbooks/$id': typeof AuthenticatedStrategiesPlaybooksIdRoute
   '/api/public/hooks/battle-settlement': typeof ApiPublicHooksBattleSettlementRoute
   '/api/public/hooks/economic-calendar': typeof ApiPublicHooksEconomicCalendarRoute
@@ -1756,7 +1756,6 @@ export interface FileRoutesById {
   '/_authenticated/community/reviews': typeof AuthenticatedCommunityReviewsRoute
   '/_authenticated/community/trending': typeof AuthenticatedCommunityTrendingRoute
   '/_authenticated/dashboard/analytics': typeof AuthenticatedDashboardAnalyticsRoute
-  '/_authenticated/dashboard/prop-firm': typeof AuthenticatedDashboardPropFirmRoute
   '/_authenticated/dashboard/sessions': typeof AuthenticatedDashboardSessionsRoute
   '/_authenticated/dashboard/trades': typeof AuthenticatedDashboardTradesRoute
   '/_authenticated/journal/$entryId': typeof AuthenticatedJournalEntryIdRoute
@@ -1780,12 +1779,12 @@ export interface FileRoutesById {
   '/_authenticated/practice/skills': typeof AuthenticatedPracticeSkillsRoute
   '/_authenticated/profile/$username': typeof AuthenticatedProfileUsernameRoute
   '/_authenticated/prop-challenges/$id': typeof AuthenticatedPropChallengesIdRoute
-  '/_authenticated/prop-challenges/new': typeof AuthenticatedPropChallengesNewRoute
   '/_authenticated/replay/challenges': typeof AuthenticatedReplayChallengesRoute
   '/_authenticated/replay/history': typeof AuthenticatedReplayHistoryRoute
   '/_authenticated/replay/improvement': typeof AuthenticatedReplayImprovementRoute
   '/_authenticated/replay/library': typeof AuthenticatedReplayLibraryRoute
   '/_authenticated/replay/performance': typeof AuthenticatedReplayPerformanceRoute
+  '/_authenticated/replay/prop-firm': typeof AuthenticatedReplayPropFirmRouteWithChildren
   '/_authenticated/replay/review': typeof AuthenticatedReplayReviewRoute
   '/_authenticated/replay/session': typeof AuthenticatedReplaySessionRoute
   '/_authenticated/replay/settings': typeof AuthenticatedReplaySettingsRoute
@@ -1828,6 +1827,7 @@ export interface FileRoutesById {
   '/_authenticated/community/post/$id': typeof AuthenticatedCommunityPostIdRoute
   '/_authenticated/community/profile/$username': typeof AuthenticatedCommunityProfileUsernameRoute
   '/_authenticated/journal/replay/$attemptId': typeof AuthenticatedJournalReplayAttemptIdRoute
+  '/_authenticated/replay/prop-firm/new': typeof AuthenticatedReplayPropFirmNewRoute
   '/_authenticated/strategies/playbooks/$id': typeof AuthenticatedStrategiesPlaybooksIdRoute
   '/api/public/hooks/battle-settlement': typeof ApiPublicHooksBattleSettlementRoute
   '/api/public/hooks/economic-calendar': typeof ApiPublicHooksEconomicCalendarRoute
@@ -1947,7 +1947,6 @@ export interface FileRouteTypes {
     | '/community/reviews'
     | '/community/trending'
     | '/dashboard/analytics'
-    | '/dashboard/prop-firm'
     | '/dashboard/sessions'
     | '/dashboard/trades'
     | '/journal/$entryId'
@@ -1971,12 +1970,12 @@ export interface FileRouteTypes {
     | '/practice/skills'
     | '/profile/$username'
     | '/prop-challenges/$id'
-    | '/prop-challenges/new'
     | '/replay/challenges'
     | '/replay/history'
     | '/replay/improvement'
     | '/replay/library'
     | '/replay/performance'
+    | '/replay/prop-firm'
     | '/replay/review'
     | '/replay/session'
     | '/replay/settings'
@@ -2019,6 +2018,7 @@ export interface FileRouteTypes {
     | '/community/post/$id'
     | '/community/profile/$username'
     | '/journal/replay/$attemptId'
+    | '/replay/prop-firm/new'
     | '/strategies/playbooks/$id'
     | '/api/public/hooks/battle-settlement'
     | '/api/public/hooks/economic-calendar'
@@ -2122,7 +2122,6 @@ export interface FileRouteTypes {
     | '/community/reviews'
     | '/community/trending'
     | '/dashboard/analytics'
-    | '/dashboard/prop-firm'
     | '/dashboard/sessions'
     | '/dashboard/trades'
     | '/journal/$entryId'
@@ -2146,12 +2145,12 @@ export interface FileRouteTypes {
     | '/practice/skills'
     | '/profile/$username'
     | '/prop-challenges/$id'
-    | '/prop-challenges/new'
     | '/replay/challenges'
     | '/replay/history'
     | '/replay/improvement'
     | '/replay/library'
     | '/replay/performance'
+    | '/replay/prop-firm'
     | '/replay/review'
     | '/replay/session'
     | '/replay/settings'
@@ -2194,6 +2193,7 @@ export interface FileRouteTypes {
     | '/community/post/$id'
     | '/community/profile/$username'
     | '/journal/replay/$attemptId'
+    | '/replay/prop-firm/new'
     | '/strategies/playbooks/$id'
     | '/api/public/hooks/battle-settlement'
     | '/api/public/hooks/economic-calendar'
@@ -2312,7 +2312,6 @@ export interface FileRouteTypes {
     | '/_authenticated/community/reviews'
     | '/_authenticated/community/trending'
     | '/_authenticated/dashboard/analytics'
-    | '/_authenticated/dashboard/prop-firm'
     | '/_authenticated/dashboard/sessions'
     | '/_authenticated/dashboard/trades'
     | '/_authenticated/journal/$entryId'
@@ -2336,12 +2335,12 @@ export interface FileRouteTypes {
     | '/_authenticated/practice/skills'
     | '/_authenticated/profile/$username'
     | '/_authenticated/prop-challenges/$id'
-    | '/_authenticated/prop-challenges/new'
     | '/_authenticated/replay/challenges'
     | '/_authenticated/replay/history'
     | '/_authenticated/replay/improvement'
     | '/_authenticated/replay/library'
     | '/_authenticated/replay/performance'
+    | '/_authenticated/replay/prop-firm'
     | '/_authenticated/replay/review'
     | '/_authenticated/replay/session'
     | '/_authenticated/replay/settings'
@@ -2384,6 +2383,7 @@ export interface FileRouteTypes {
     | '/_authenticated/community/post/$id'
     | '/_authenticated/community/profile/$username'
     | '/_authenticated/journal/replay/$attemptId'
+    | '/_authenticated/replay/prop-firm/new'
     | '/_authenticated/strategies/playbooks/$id'
     | '/api/public/hooks/battle-settlement'
     | '/api/public/hooks/economic-calendar'
@@ -2917,6 +2917,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedReplayReviewRouteImport
       parentRoute: typeof AuthenticatedReplayRoute
     }
+    '/_authenticated/replay/prop-firm': {
+      id: '/_authenticated/replay/prop-firm'
+      path: '/prop-firm'
+      fullPath: '/replay/prop-firm'
+      preLoaderRoute: typeof AuthenticatedReplayPropFirmRouteImport
+      parentRoute: typeof AuthenticatedReplayRoute
+    }
     '/_authenticated/replay/performance': {
       id: '/_authenticated/replay/performance'
       path: '/performance'
@@ -2951,13 +2958,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/replay/challenges'
       preLoaderRoute: typeof AuthenticatedReplayChallengesRouteImport
       parentRoute: typeof AuthenticatedReplayRoute
-    }
-    '/_authenticated/prop-challenges/new': {
-      id: '/_authenticated/prop-challenges/new'
-      path: '/prop-challenges/new'
-      fullPath: '/prop-challenges/new'
-      preLoaderRoute: typeof AuthenticatedPropChallengesNewRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/prop-challenges/$id': {
       id: '/_authenticated/prop-challenges/$id'
@@ -3118,13 +3118,6 @@ declare module '@tanstack/react-router' {
       path: '/sessions'
       fullPath: '/dashboard/sessions'
       preLoaderRoute: typeof AuthenticatedDashboardSessionsRouteImport
-      parentRoute: typeof AuthenticatedDashboardRoute
-    }
-    '/_authenticated/dashboard/prop-firm': {
-      id: '/_authenticated/dashboard/prop-firm'
-      path: '/prop-firm'
-      fullPath: '/dashboard/prop-firm'
-      preLoaderRoute: typeof AuthenticatedDashboardPropFirmRouteImport
       parentRoute: typeof AuthenticatedDashboardRoute
     }
     '/_authenticated/dashboard/analytics': {
@@ -3666,6 +3659,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStrategiesPlaybooksIdRouteImport
       parentRoute: typeof AuthenticatedStrategiesPlaybooksRoute
     }
+    '/_authenticated/replay/prop-firm/new': {
+      id: '/_authenticated/replay/prop-firm/new'
+      path: '/new'
+      fullPath: '/replay/prop-firm/new'
+      preLoaderRoute: typeof AuthenticatedReplayPropFirmNewRouteImport
+      parentRoute: typeof AuthenticatedReplayPropFirmRoute
+    }
     '/_authenticated/journal/replay/$attemptId': {
       id: '/_authenticated/journal/replay/$attemptId'
       path: '/replay/$attemptId'
@@ -4026,7 +4026,6 @@ const AuthenticatedCommunityRouteWithChildren =
 
 interface AuthenticatedDashboardRouteChildren {
   AuthenticatedDashboardAnalyticsRoute: typeof AuthenticatedDashboardAnalyticsRoute
-  AuthenticatedDashboardPropFirmRoute: typeof AuthenticatedDashboardPropFirmRoute
   AuthenticatedDashboardSessionsRoute: typeof AuthenticatedDashboardSessionsRoute
   AuthenticatedDashboardTradesRoute: typeof AuthenticatedDashboardTradesRoute
   AuthenticatedDashboardIndexRoute: typeof AuthenticatedDashboardIndexRoute
@@ -4035,7 +4034,6 @@ interface AuthenticatedDashboardRouteChildren {
 const AuthenticatedDashboardRouteChildren: AuthenticatedDashboardRouteChildren =
   {
     AuthenticatedDashboardAnalyticsRoute: AuthenticatedDashboardAnalyticsRoute,
-    AuthenticatedDashboardPropFirmRoute: AuthenticatedDashboardPropFirmRoute,
     AuthenticatedDashboardSessionsRoute: AuthenticatedDashboardSessionsRoute,
     AuthenticatedDashboardTradesRoute: AuthenticatedDashboardTradesRoute,
     AuthenticatedDashboardIndexRoute: AuthenticatedDashboardIndexRoute,
@@ -4147,12 +4145,27 @@ const AuthenticatedProfileRouteChildren: AuthenticatedProfileRouteChildren = {
 const AuthenticatedProfileRouteWithChildren =
   AuthenticatedProfileRoute._addFileChildren(AuthenticatedProfileRouteChildren)
 
+interface AuthenticatedReplayPropFirmRouteChildren {
+  AuthenticatedReplayPropFirmNewRoute: typeof AuthenticatedReplayPropFirmNewRoute
+}
+
+const AuthenticatedReplayPropFirmRouteChildren: AuthenticatedReplayPropFirmRouteChildren =
+  {
+    AuthenticatedReplayPropFirmNewRoute: AuthenticatedReplayPropFirmNewRoute,
+  }
+
+const AuthenticatedReplayPropFirmRouteWithChildren =
+  AuthenticatedReplayPropFirmRoute._addFileChildren(
+    AuthenticatedReplayPropFirmRouteChildren,
+  )
+
 interface AuthenticatedReplayRouteChildren {
   AuthenticatedReplayChallengesRoute: typeof AuthenticatedReplayChallengesRoute
   AuthenticatedReplayHistoryRoute: typeof AuthenticatedReplayHistoryRoute
   AuthenticatedReplayImprovementRoute: typeof AuthenticatedReplayImprovementRoute
   AuthenticatedReplayLibraryRoute: typeof AuthenticatedReplayLibraryRoute
   AuthenticatedReplayPerformanceRoute: typeof AuthenticatedReplayPerformanceRoute
+  AuthenticatedReplayPropFirmRoute: typeof AuthenticatedReplayPropFirmRouteWithChildren
   AuthenticatedReplayReviewRoute: typeof AuthenticatedReplayReviewRoute
   AuthenticatedReplaySessionRoute: typeof AuthenticatedReplaySessionRoute
   AuthenticatedReplaySettingsRoute: typeof AuthenticatedReplaySettingsRoute
@@ -4167,6 +4180,8 @@ const AuthenticatedReplayRouteChildren: AuthenticatedReplayRouteChildren = {
   AuthenticatedReplayImprovementRoute: AuthenticatedReplayImprovementRoute,
   AuthenticatedReplayLibraryRoute: AuthenticatedReplayLibraryRoute,
   AuthenticatedReplayPerformanceRoute: AuthenticatedReplayPerformanceRoute,
+  AuthenticatedReplayPropFirmRoute:
+    AuthenticatedReplayPropFirmRouteWithChildren,
   AuthenticatedReplayReviewRoute: AuthenticatedReplayReviewRoute,
   AuthenticatedReplaySessionRoute: AuthenticatedReplaySessionRoute,
   AuthenticatedReplaySettingsRoute: AuthenticatedReplaySettingsRoute,
@@ -4284,7 +4299,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedTradingRoute: typeof AuthenticatedTradingRouteWithChildren
   AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
   AuthenticatedPropChallengesIdRoute: typeof AuthenticatedPropChallengesIdRoute
-  AuthenticatedPropChallengesNewRoute: typeof AuthenticatedPropChallengesNewRoute
   AuthenticatedTradesTradeIdRoute: typeof AuthenticatedTradesTradeIdRoute
 }
 
@@ -4318,7 +4332,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedTradingRoute: AuthenticatedTradingRouteWithChildren,
   AuthenticatedUsersRoute: AuthenticatedUsersRoute,
   AuthenticatedPropChallengesIdRoute: AuthenticatedPropChallengesIdRoute,
-  AuthenticatedPropChallengesNewRoute: AuthenticatedPropChallengesNewRoute,
   AuthenticatedTradesTradeIdRoute: AuthenticatedTradesTradeIdRoute,
 }
 
@@ -4350,3 +4363,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

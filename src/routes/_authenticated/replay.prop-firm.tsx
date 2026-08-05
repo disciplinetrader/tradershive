@@ -13,7 +13,7 @@ import { useActivePropChallenge } from "@/lib/prop-challenges/active-session";
 import { formatCurrency } from "@/lib/prop-challenges/evaluator";
 import { Progress } from "@/components/ui/progress";
 
-export const Route = createFileRoute("/_authenticated/dashboard/prop-firm")({
+export const Route = createFileRoute("/_authenticated/replay/prop-firm")({
   head: () => ({
     meta: [
       { title: "Prop Firm Challenges — TradersHIVE" },

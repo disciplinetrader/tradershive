@@ -15,7 +15,7 @@ import { createPropChallenge } from "@/lib/prop-challenges.functions";
 import { listAccounts } from "@/lib/paper-trading.functions";
 import { PROP_PRESETS, listPropPresets, type PropPresetId } from "@/lib/prop-challenges/presets";
 
-export const Route = createFileRoute("/_authenticated/prop-challenges/new")({
+export const Route = createFileRoute("/_authenticated/replay/prop-firm/new")({
   component: NewChallengePage,
 });
 
