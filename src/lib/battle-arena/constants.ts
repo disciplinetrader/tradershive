@@ -3,9 +3,9 @@ export const BATTLE_TYPES = [
   { value: "2v2", label: "2 vs 2", max: 4 },
   { value: "ffa5", label: "5 Player FFA", max: 5 },
   { value: "ffa10", label: "10 Player FFA", max: 10 },
-  { value: "profit_target", label: "Profit Target", max: 20 },
-  { value: "time_trial", label: "Time Trial", max: 20 },
-  { value: "custom", label: "Custom Battle", max: 50 },
+  { value: "profit_target", label: "Target Chase", max: 20 },
+  { value: "time_trial", label: "Market Sprint", max: 20 },
+  { value: "custom", label: "Custom Arena", max: 50 },
 ] as const;
 
 export type BattleType = (typeof BATTLE_TYPES)[number]["value"];
