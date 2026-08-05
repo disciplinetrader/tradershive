@@ -14,11 +14,11 @@ export const Route = createFileRoute("/_authenticated/battle-arena/leaderboard")
 });
 
 const TABS = [
-  { to: "/leaderboard", label: "Overview", exact: true },
-  { to: "/leaderboard/global", label: "Global" },
-  { to: "/leaderboard/friends", label: "Friends" },
-  { to: "/leaderboard/country", label: "Country" },
-  { to: "/leaderboard/league", label: "League" },
+  { to: "/battle-arena/leaderboard", label: "Overview", exact: true },
+  { to: "/battle-arena/leaderboard/global", label: "Global" },
+  { to: "/battle-arena/leaderboard/friends", label: "Friends" },
+  { to: "/battle-arena/leaderboard/country", label: "Country" },
+  { to: "/battle-arena/leaderboard/league", label: "League" },
 ];
 
 function LeaderboardLayout() {
