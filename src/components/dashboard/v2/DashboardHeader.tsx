@@ -1,22 +1,10 @@
-/**
- * Dashboard header — title, greeting, account selector and market status.
- *
- * Notifications and the profile menu live in the global topbar; they are not
- * duplicated here.
- */
-
-import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
-
 import { PageTitle } from "@/components/dashboard/v2/primitives";
 import { DashboardSubNav } from "@/components/dashboard/v2/DashboardSubNav";
 import { MarketStatusBadge } from "@/components/market/MarketStatusBadge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue, SelectSeparator } from "@/components/ui/select";
 import { useAuth } from "@/hooks/use-auth";
-import { listAccounts } from "@/lib/paper-trading.functions";
-
-const ACCOUNT_KEY = "th_paper_account";
+import { useSessionContext } from "@/hooks/use-session-context";
+import { Briefcase, PlayCircle, Trophy, Swords, Globe } from "lucide-react";
 
 function greeting(d = new Date()): string {
   const h = d.getHours();
@@ -25,49 +13,9 @@ function greeting(d = new Date()): string {
   return "Good evening";
 }
 
-export function DashboardHeader({
-  accountId: controlledId,
-  onAccountChange,
-}: {
-  /** Controlled selection so the whole Dashboard reacts to the account. */
-  accountId?: string | null;
-  onAccountChange?: (id: string) => void;
-} = {}) {
+export function DashboardHeader() {
   const { profile, user } = useAuth();
-  const fetchAccounts = useServerFn(listAccounts);
-  const { data: accounts } = useQuery({
-    queryKey: ["paper", "accounts"],
-    queryFn: () => fetchAccounts(),
-    staleTime: 60_000,
-  });
-
-  const [internalId, setInternalId] = useState<string | null>(null);
-  const accountId = controlledId !== undefined ? controlledId : internalId;
-
-  useEffect(() => {
-    if (!accounts?.length) return;
-    if (accountId) return;
-    let stored: string | null = null;
-    try {
-      stored = window.localStorage.getItem(ACCOUNT_KEY);
-    } catch {
-      /* storage unavailable */
-    }
-    const valid = accounts.find((a) => a.id === stored) ?? accounts[0];
-    setInternalId(valid.id);
-    onAccountChange?.(valid.id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accounts]);
-
-  const onSelect = (id: string) => {
-    setInternalId(id);
-    onAccountChange?.(id);
-    try {
-      window.localStorage.setItem(ACCOUNT_KEY, id);
-    } catch {
-      /* storage unavailable */
-    }
-  };
+  const { context, selectContext, accounts, replays, props, battles } = useSessionContext();
 
   const name = profile?.display_name || profile?.username || user?.email?.split("@")[0] || "Trader";
   const dateStr = new Intl.DateTimeFormat("en-GB", {
@@ -75,6 +23,20 @@ export function DashboardHeader({
     day: "numeric",
     month: "long",
   }).format(new Date());
+
+  const currentValue = context.id ? `${context.type}:${context.id}` : "";
+
+  const handleValueChange = (val: string) => {
+    const [type, id] = val.split(":");
+    let label = "";
+    
+    if (type === "paper") label = accounts.find(a => a.id === id)?.name || "Paper Account";
+    else if (type === "replay") label = replays.find(r => r.id === id)?.symbol || "Replay Session";
+    else if (type === "prop") label = (props.find(p => p.id === id) as any)?.name || "Prop Challenge";
+    else if (type === "arena") label = (battles.find(b => b.id === id) as any)?.battle_name || "Arena Match";
+    
+    selectContext(type as any, id, label);
+  };
 
   return (
     <header className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
@@ -89,20 +51,77 @@ export function DashboardHeader({
       </div>
 
       <div className="flex shrink-0 flex-wrap items-center gap-2">
-        {accounts && accounts.length > 0 ? (
-          <Select value={accountId ?? undefined} onValueChange={onSelect}>
-            <SelectTrigger className="h-10 w-[200px] rounded-xl border-border/50 bg-card/50 text-sm backdrop-blur-sm">
-              <SelectValue placeholder="Select account" />
-            </SelectTrigger>
-            <SelectContent>
-              {accounts.map((a) => (
-                <SelectItem key={a.id} value={a.id}>
-                  {a.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ) : null}
+        <Select value={currentValue} onValueChange={handleValueChange}>
+          <SelectTrigger className="h-10 w-[240px] rounded-xl border-border/50 bg-card/50 text-sm backdrop-blur-sm shadow-sm ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2">
+            <SelectValue placeholder="Select context" />
+          </SelectTrigger>
+          <SelectContent className="max-h-[400px]">
+            {accounts.length > 0 && (
+              <SelectGroup>
+                <SelectLabel className="flex items-center gap-2 text-muted-foreground py-2">
+                  <Briefcase className="h-3.5 w-3.5" />
+                  Paper Accounts
+                </SelectLabel>
+                {accounts.map((a) => (
+                  <SelectItem key={a.id} value={`paper:${a.id}`}>
+                    {a.name}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            )}
+            
+            {props.length > 0 && (
+              <>
+                <SelectSeparator />
+                <SelectGroup>
+                  <SelectLabel className="flex items-center gap-2 text-muted-foreground py-2">
+                    <Trophy className="h-3.5 w-3.5" />
+                    Prop Challenges
+                  </SelectLabel>
+                  {props.map((p) => (
+                    <SelectItem key={p.id} value={`prop:${p.id}`}>
+                      {p.name || `Challenge ${p.id.slice(0, 4)}`}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </>
+            )}
+
+            {battles.length > 0 && (
+              <>
+                <SelectSeparator />
+                <SelectGroup>
+                  <SelectLabel className="flex items-center gap-2 text-muted-foreground py-2">
+                    <Swords className="h-3.5 w-3.5" />
+                    Arena Matches
+                  </SelectLabel>
+                  {battles.map((b: any) => (
+                    <SelectItem key={b.id} value={`arena:${b.id}`}>
+                      {b.battle_name || `Match ${b.id.slice(0, 4)}`}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </>
+            )}
+
+            {replays.length > 0 && (
+              <>
+                <SelectSeparator />
+                <SelectGroup>
+                  <SelectLabel className="flex items-center gap-2 text-muted-foreground py-2">
+                    <PlayCircle className="h-3.5 w-3.5" />
+                    Replay Sessions
+                  </SelectLabel>
+                  {replays.map((r) => (
+                    <SelectItem key={r.id} value={`replay:${r.id}`}>
+                      {r.symbol || "Session"} ({new Date(r.created_at).toLocaleDateString()})
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </>
+            )}
+          </SelectContent>
+        </Select>
         <MarketStatusBadge market="forex" className="h-10 rounded-xl px-4" />
       </div>
     </header>
