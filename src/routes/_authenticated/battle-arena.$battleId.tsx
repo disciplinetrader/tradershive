@@ -267,9 +267,9 @@ function BattleDetail() {
           <div className="rounded-3xl border border-border/60 bg-card/20 p-6 shadow-xl shadow-background/10">
             <Tabs defaultValue="chat" className="w-full">
               <TabsList className="grid w-full grid-cols-3 bg-background/40 p-1 rounded-2xl h-12">
-                <TabsTrigger value="chat" className="rounded-xl font-bold uppercase tracking-widest text-[10px]">Chat</TabsTrigger>
-                <TabsTrigger value="activity" className="rounded-xl font-bold uppercase tracking-widest text-[10px]">Log</TabsTrigger>
-                <TabsTrigger value="timeline" className="rounded-xl font-bold uppercase tracking-widest text-[10px]">Time</TabsTrigger>
+                <TabsTrigger value="chat" className="rounded-xl font-bold uppercase tracking-widest text-[10px]">Arena Chat</TabsTrigger>
+                <TabsTrigger value="activity" className="rounded-xl font-bold uppercase tracking-widest text-[10px]">Activity</TabsTrigger>
+                <TabsTrigger value="timeline" className="rounded-xl font-bold uppercase tracking-widest text-[10px]">Chronology</TabsTrigger>
               </TabsList>
               <TabsContent value="chat" className="mt-4 focus-visible:outline-none min-h-[400px] max-h-[600px] overflow-y-auto">
                 <BattleChat 
