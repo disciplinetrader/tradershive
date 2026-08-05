@@ -12,7 +12,7 @@ import { inferSession } from "./statistics/session";
 export const getAnalyticsDataset = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { contextType?: string | null; contextId?: string | null } | undefined) => ({
-    contextType: d?.contextType ?? "paper",
+    contextType: d?.contextType ?? "all",
     contextId: d?.contextId ?? null,
   }))
   .handler(async ({ context, data }) => {
