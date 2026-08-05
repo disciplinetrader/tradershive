@@ -193,6 +193,8 @@ import { Route as AuthenticatedCommunityProfileUsernameRouteImport } from './rou
 import { Route as AuthenticatedCommunityPostIdRouteImport } from './routes/_authenticated/community.post.$id'
 import { Route as AuthenticatedCommunityIdeasNewRouteImport } from './routes/_authenticated/community.ideas.new'
 import { Route as AuthenticatedCommunityGroupsSlugRouteImport } from './routes/_authenticated/community.groups.$slug'
+import { Route as AuthenticatedBattleArenaTournamentsHallOfFameRouteImport } from './routes/_authenticated/battle-arena.tournaments.hall-of-fame'
+import { Route as AuthenticatedBattleArenaTournamentsSlugRouteImport } from './routes/_authenticated/battle-arena.tournaments.$slug'
 import { Route as AuthenticatedAiCoachReportsRouteImport } from './routes/_authenticated/ai.coach.reports'
 import { Route as AuthenticatedAiCoachProfileRouteImport } from './routes/_authenticated/ai.coach.profile'
 import { Route as AuthenticatedAiCoachMistakesRouteImport } from './routes/_authenticated/ai.coach.mistakes'
@@ -1261,6 +1263,18 @@ const AuthenticatedCommunityGroupsSlugRoute =
     path: '/$slug',
     getParentRoute: () => AuthenticatedCommunityGroupsRoute,
   } as any)
+const AuthenticatedBattleArenaTournamentsHallOfFameRoute =
+  AuthenticatedBattleArenaTournamentsHallOfFameRouteImport.update({
+    id: '/hall-of-fame',
+    path: '/hall-of-fame',
+    getParentRoute: () => AuthenticatedBattleArenaTournamentsRoute,
+  } as any)
+const AuthenticatedBattleArenaTournamentsSlugRoute =
+  AuthenticatedBattleArenaTournamentsSlugRouteImport.update({
+    id: '/$slug',
+    path: '/$slug',
+    getParentRoute: () => AuthenticatedBattleArenaTournamentsRoute,
+  } as any)
 const AuthenticatedAiCoachReportsRoute =
   AuthenticatedAiCoachReportsRouteImport.update({
     id: '/reports',
@@ -1470,6 +1484,8 @@ export interface FileRoutesByFullPath {
   '/ai/coach/mistakes': typeof AuthenticatedAiCoachMistakesRoute
   '/ai/coach/profile': typeof AuthenticatedAiCoachProfileRoute
   '/ai/coach/reports': typeof AuthenticatedAiCoachReportsRoute
+  '/battle-arena/tournaments/$slug': typeof AuthenticatedBattleArenaTournamentsSlugRoute
+  '/battle-arena/tournaments/hall-of-fame': typeof AuthenticatedBattleArenaTournamentsHallOfFameRoute
   '/community/groups/$slug': typeof AuthenticatedCommunityGroupsSlugRoute
   '/community/ideas/new': typeof AuthenticatedCommunityIdeasNewRoute
   '/community/post/$id': typeof AuthenticatedCommunityPostIdRoute
@@ -1646,6 +1662,8 @@ export interface FileRoutesByTo {
   '/ai/coach/mistakes': typeof AuthenticatedAiCoachMistakesRoute
   '/ai/coach/profile': typeof AuthenticatedAiCoachProfileRoute
   '/ai/coach/reports': typeof AuthenticatedAiCoachReportsRoute
+  '/battle-arena/tournaments/$slug': typeof AuthenticatedBattleArenaTournamentsSlugRoute
+  '/battle-arena/tournaments/hall-of-fame': typeof AuthenticatedBattleArenaTournamentsHallOfFameRoute
   '/community/groups/$slug': typeof AuthenticatedCommunityGroupsSlugRoute
   '/community/ideas/new': typeof AuthenticatedCommunityIdeasNewRoute
   '/community/post/$id': typeof AuthenticatedCommunityPostIdRoute
@@ -1839,6 +1857,8 @@ export interface FileRoutesById {
   '/_authenticated/ai/coach/mistakes': typeof AuthenticatedAiCoachMistakesRoute
   '/_authenticated/ai/coach/profile': typeof AuthenticatedAiCoachProfileRoute
   '/_authenticated/ai/coach/reports': typeof AuthenticatedAiCoachReportsRoute
+  '/_authenticated/battle-arena/tournaments/$slug': typeof AuthenticatedBattleArenaTournamentsSlugRoute
+  '/_authenticated/battle-arena/tournaments/hall-of-fame': typeof AuthenticatedBattleArenaTournamentsHallOfFameRoute
   '/_authenticated/community/groups/$slug': typeof AuthenticatedCommunityGroupsSlugRoute
   '/_authenticated/community/ideas/new': typeof AuthenticatedCommunityIdeasNewRoute
   '/_authenticated/community/post/$id': typeof AuthenticatedCommunityPostIdRoute
@@ -2032,6 +2052,8 @@ export interface FileRouteTypes {
     | '/ai/coach/mistakes'
     | '/ai/coach/profile'
     | '/ai/coach/reports'
+    | '/battle-arena/tournaments/$slug'
+    | '/battle-arena/tournaments/hall-of-fame'
     | '/community/groups/$slug'
     | '/community/ideas/new'
     | '/community/post/$id'
@@ -2208,6 +2230,8 @@ export interface FileRouteTypes {
     | '/ai/coach/mistakes'
     | '/ai/coach/profile'
     | '/ai/coach/reports'
+    | '/battle-arena/tournaments/$slug'
+    | '/battle-arena/tournaments/hall-of-fame'
     | '/community/groups/$slug'
     | '/community/ideas/new'
     | '/community/post/$id'
@@ -2400,6 +2424,8 @@ export interface FileRouteTypes {
     | '/_authenticated/ai/coach/mistakes'
     | '/_authenticated/ai/coach/profile'
     | '/_authenticated/ai/coach/reports'
+    | '/_authenticated/battle-arena/tournaments/$slug'
+    | '/_authenticated/battle-arena/tournaments/hall-of-fame'
     | '/_authenticated/community/groups/$slug'
     | '/_authenticated/community/ideas/new'
     | '/_authenticated/community/post/$id'
@@ -3733,6 +3759,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCommunityGroupsSlugRouteImport
       parentRoute: typeof AuthenticatedCommunityGroupsRoute
     }
+    '/_authenticated/battle-arena/tournaments/hall-of-fame': {
+      id: '/_authenticated/battle-arena/tournaments/hall-of-fame'
+      path: '/hall-of-fame'
+      fullPath: '/battle-arena/tournaments/hall-of-fame'
+      preLoaderRoute: typeof AuthenticatedBattleArenaTournamentsHallOfFameRouteImport
+      parentRoute: typeof AuthenticatedBattleArenaTournamentsRoute
+    }
+    '/_authenticated/battle-arena/tournaments/$slug': {
+      id: '/_authenticated/battle-arena/tournaments/$slug'
+      path: '/$slug'
+      fullPath: '/battle-arena/tournaments/$slug'
+      preLoaderRoute: typeof AuthenticatedBattleArenaTournamentsSlugRouteImport
+      parentRoute: typeof AuthenticatedBattleArenaTournamentsRoute
+    }
     '/_authenticated/ai/coach/reports': {
       id: '/_authenticated/ai/coach/reports'
       path: '/reports'
@@ -3937,11 +3977,17 @@ const AuthenticatedAnalyticsRouteWithChildren =
   )
 
 interface AuthenticatedBattleArenaTournamentsRouteChildren {
+  AuthenticatedBattleArenaTournamentsSlugRoute: typeof AuthenticatedBattleArenaTournamentsSlugRoute
+  AuthenticatedBattleArenaTournamentsHallOfFameRoute: typeof AuthenticatedBattleArenaTournamentsHallOfFameRoute
   AuthenticatedBattleArenaTournamentsIndexRoute: typeof AuthenticatedBattleArenaTournamentsIndexRoute
 }
 
 const AuthenticatedBattleArenaTournamentsRouteChildren: AuthenticatedBattleArenaTournamentsRouteChildren =
   {
+    AuthenticatedBattleArenaTournamentsSlugRoute:
+      AuthenticatedBattleArenaTournamentsSlugRoute,
+    AuthenticatedBattleArenaTournamentsHallOfFameRoute:
+      AuthenticatedBattleArenaTournamentsHallOfFameRoute,
     AuthenticatedBattleArenaTournamentsIndexRoute:
       AuthenticatedBattleArenaTournamentsIndexRoute,
   }

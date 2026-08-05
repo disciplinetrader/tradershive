@@ -26,7 +26,7 @@ import { MyPerformancePanel } from "@/components/championship/MyPerformancePanel
 import { TournamentSummary } from "@/components/championship/TournamentSummary";
 import { routeBoundaries } from "@/lib/route-boundaries";
 
-export const Route = createFileRoute("/_authenticated/championship/$slug")({
+export const Route = createFileRoute("/_authenticated/battle-arena/tournaments/$slug")({
   component: ChampionshipDetail,
   ...routeBoundaries({
     label: "Championship",

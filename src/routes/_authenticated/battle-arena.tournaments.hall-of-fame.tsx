@@ -6,7 +6,7 @@ import { listHallOfFame } from "@/lib/championship.functions";
 import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/_authenticated/championship/hall-of-fame")({
+export const Route = createFileRoute("/_authenticated/battle-arena/tournaments/hall-of-fame")({
   component: HallOfFame,
 });
 

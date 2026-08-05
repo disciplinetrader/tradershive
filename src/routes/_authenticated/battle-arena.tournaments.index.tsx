@@ -12,7 +12,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/ui/empty-state";
 import { TournamentCard } from "@/components/championship/TournamentCard";
 
-export const Route = createFileRoute("/_authenticated/championship/")({
+export const Route = createFileRoute("/_authenticated/battle-arena/tournaments/")({
   component: ChampionshipIndex,
 });
 

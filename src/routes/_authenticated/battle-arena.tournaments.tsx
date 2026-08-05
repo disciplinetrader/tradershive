@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/_authenticated/championship")({
+export const Route = createFileRoute("/_authenticated/battle-arena/tournaments")({
   head: () => ({
     meta: [
       { title: "Monthly Championship — TradersHIVE Arena" },
