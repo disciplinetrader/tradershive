@@ -37,6 +37,15 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
   const [backtestId, setBacktestId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
+  // Auto-sync backtestId with context if context is replay
+  useMemo(() => {
+    if (context.type === "replay" && context.id && context.id !== backtestId) {
+      setBacktestId(context.id);
+    } else if (context.type !== "replay" && backtestId !== null) {
+      setBacktestId(null);
+    }
+  }, [context.type, context.id]);
+
   const backtestsQuery = useQuery({
     queryKey: ["analytics", "backtests"],
     queryFn: () => listFn(),
