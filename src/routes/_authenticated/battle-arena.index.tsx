@@ -150,7 +150,7 @@ function BattleArenaHome() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48 rounded-xl">
-            <DropdownMenuLabel>Battle Type</DropdownMenuLabel>
+            <DropdownMenuLabel>Arena Type</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuRadioGroup value={filterType} onValueChange={setFilterType}>
               <DropdownMenuRadioItem value="all">All Types</DropdownMenuRadioItem>
