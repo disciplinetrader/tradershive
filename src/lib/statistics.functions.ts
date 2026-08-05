@@ -89,8 +89,8 @@ export const getAnalyticsDataset = createServerFn({ method: "GET" })
 
     const journalByTrade = new Map<string, any>();
     const standaloneJournal: any[] = [];
-    for (const j of journalRes.data ?? []) {
-      if (j.trade_id) journalByTrade.set(j.trade_id, j);
+    for (const j of (journalRes.data ?? [])) {
+      if ((j as any).trade_id) journalByTrade.set((j as any).trade_id, j);
       else standaloneJournal.push(j);
     }
 
