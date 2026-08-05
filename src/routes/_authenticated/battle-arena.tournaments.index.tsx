@@ -189,7 +189,7 @@ function ChampionshipIndex() {
                 }
                 action={
                   tab === "mine"
-                    ? { label: "Browse Tournaments", href: "/championship" }
+                    ? { label: "Browse Tournaments", href: "/battle-arena/tournaments" }
                     : { label: "Open Battle Arena", href: "/battle-arena" }
                 }
                 secondaryAction={{ label: "Practice in Replay", href: "/replay" }}
