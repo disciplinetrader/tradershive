@@ -1357,7 +1357,8 @@ function TradingWorkspaceInner() {
 
               </aside>
             </>
-          ) : (
+          )
+        ) : (
             <button
               onClick={() => setRightOpen(true)}
               className="hidden md:flex w-11 shrink-0 flex-col items-center gap-2 border-l border-border/40 bg-card/20 py-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground transition hover:bg-card/40 hover:text-foreground"
