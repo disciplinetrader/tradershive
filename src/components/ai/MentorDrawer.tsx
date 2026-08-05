@@ -11,7 +11,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 export function MentorDrawer() {
   const location = useLocation();
-  const params = useParams({ strict: false });
+  const params = useParams({ strict: false }) as any;
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [hasNewMessage, setHasNewMessage] = useState(false);
