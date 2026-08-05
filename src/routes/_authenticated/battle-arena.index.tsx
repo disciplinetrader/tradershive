@@ -154,7 +154,7 @@ function BattleArenaHome() {
             <DropdownMenuSeparator />
             <DropdownMenuRadioGroup value={filterType} onValueChange={setFilterType}>
               <DropdownMenuRadioItem value="all">All Types</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="ranked">Ranked Only</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="ranked">Competitive Only</DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="profit_target">Target Chase</DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="time_trial">Market Sprint</DropdownMenuRadioItem>
             </DropdownMenuRadioGroup>
