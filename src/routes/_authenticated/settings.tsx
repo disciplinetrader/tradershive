@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { 
   User, Shield, Bell, CreditCard, Mail, 
   Loader2, Play, LineChart as TradingChart 
