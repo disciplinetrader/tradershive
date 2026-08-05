@@ -6,7 +6,20 @@ import { PresenceDot, type PresenceStatus } from "./PresenceDot";
 import { CountryFlag } from "@/components/social/CountryFlag";
 import { cn } from "@/lib/utils";
 
-type Ranking = { user_id: string; rank: number; pnl: number; return_pct: number; r_multiple: number; win_rate: number; trades_count: number; max_drawdown: number; score: number; updated_at?: string };
+type Ranking = { 
+  user_id: string; 
+  rank: number; 
+  pnl: number; 
+  return_pct: number; 
+  r_multiple: number; 
+  win_rate: number; 
+  trades_count: number; 
+  max_drawdown: number; 
+  score: number; 
+  rule_breaches_count: number;
+  target_reached_at?: string;
+  updated_at?: string 
+};
 type Profile = { id: string; username: string | null; display_name: string | null; avatar_url: string | null; country?: string | null };
 type Presence = { user_id: string; status: PresenceStatus; last_seen_at: string };
 
