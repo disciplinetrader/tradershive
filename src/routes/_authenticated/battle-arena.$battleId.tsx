@@ -293,9 +293,9 @@ function BattleDetail() {
       <ConfirmDialog
         open={cancelOpen}
         onOpenChange={setCancelOpen}
-        title="Cancel Battle Arena?"
-        description="All players will be ejected and the event will be permanently terminated. ELO ratings will not be affected."
-        confirmLabel="Terminate Battle"
+        title="Cancel Arena Match?"
+        description="All competitors will be ejected and the event will be permanently terminated. HIVE Ratings will not be affected."
+        confirmLabel="Terminate Arena"
         destructive
         loading={cancelling}
         onConfirm={doCancel}
