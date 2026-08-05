@@ -12,8 +12,8 @@ type Event = {
 type Profile = { id: string; username: string | null; display_name: string | null; avatar_url: string | null };
 
 const ICONS: Record<string, { icon: any; tone: string }> = {
-  trade_opened:       { icon: TrendingUp, tone: "text-blue-600" },
-  trade_closed:       { icon: TrendingDown, tone: "text-success" },
+  trade_opened:       { icon: TrendingUp, tone: "text-blue-600/0 hidden" },
+  trade_closed:       { icon: TrendingDown, tone: "text-success/0 hidden" },
   rank_up:            { icon: Trophy, tone: "text-warning" },
   rank_down:          { icon: TrendingDown, tone: "text-danger" },
   new_leader:         { icon: Crown, tone: "text-warning" },
@@ -49,7 +49,10 @@ export function LiveActivityFeed({ events, profiles, height = "h-[520px]" }: { e
               const Icon = meta.icon;
               const p = e.user_id ? byId.get(e.user_id) : null;
               return (
-                <li key={e.id} className="flex items-start gap-3 px-4 py-2.5 transition-colors hover:bg-background/60">
+                <li key={e.id} className={cn(
+                  "flex items-start gap-3 px-4 py-2.5 transition-colors hover:bg-background/60",
+                  (e.event_type === "trade_opened" || e.event_type === "trade_closed") && "hidden"
+                )}>
                   <div className={cn("mt-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-background/60", meta.tone)}>
                     <Icon className="h-3.5 w-3.5" />
                   </div>
