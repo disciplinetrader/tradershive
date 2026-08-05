@@ -43,7 +43,7 @@ export function StatisticsProvider({ children, overrideTrades, disableFetch }: P
   });
 
   const raw = (overrideTrades ?? (query.data?.trades ?? [])) as AnalyticsTrade[];
-  const accounts = (query.data?.accounts ?? []) as Ctx["accounts"];
+  const accounts = (query.data?.accounts ?? []) as unknown as Ctx["accounts"];
 
   const filtered = useMemo(() => {
     const range = resolveDateRange(filters.preset, filters.from, filters.to);
