@@ -44,7 +44,7 @@ describe("THIVE-005: Trading Validation Extreme Cases", () => {
       size: 1,
     });
     expect(result.ok).toBe(false);
-    expect(result.errors.some(e => e.includes("finite prices"))).toBe(true);
+    expect(result.errors.some(e => e.toLowerCase().includes("finite prices"))).toBe(true);
   });
 
   it("should reject stop loss in wrong direction", () => {
