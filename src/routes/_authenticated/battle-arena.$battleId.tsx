@@ -205,7 +205,7 @@ function BattleDetail() {
         </Badge>
         
         <div className="ml-auto flex items-center gap-2">
-          {canJoin && <Button size="sm" onClick={doJoin} className="font-bold rounded-xl shadow-lg shadow-primary/20"><LogIn className="mr-1.5 h-4 w-4" />Join Battle</Button>}
+          {canJoin && <Button size="sm" onClick={doJoin} className="font-bold rounded-xl shadow-lg shadow-primary/20"><LogIn className="mr-1.5 h-4 w-4" />Join Arena</Button>}
           {canLeave && <Button size="sm" variant="outline" onClick={doLeave} className="font-bold rounded-xl border-border/60"><LogOut className="mr-1.5 h-4 w-4" />Leave</Button>}
           {canCancel && <Button size="sm" variant="destructive" onClick={() => setCancelOpen(true)} className="font-bold rounded-xl"><Trash2 className="mr-1.5 h-4 w-4" />Cancel</Button>}
           {canFinalize && <Button size="sm" variant="secondary" onClick={doFinalize} className="font-bold rounded-xl"><Play className="mr-1.5 h-4 w-4" />Finalize</Button>}
