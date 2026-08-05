@@ -160,13 +160,23 @@ function DashboardPage() {
       {/* 4 — Recent activity: one table, three tabs */}
       <ActivityTable />
 
-      {/* 5 — Quick actions: exactly three */}
+      {/* 5 — Quick actions */}
       <section className="space-y-3">
         <SectionTitle>Quick actions</SectionTitle>
-        <div className="stagger grid gap-[var(--gutter-sm)] sm:grid-cols-3">
-          <QuickActionCard to="/trading" icon={LineChart} label="Start Trading" hint="Open the workspace" />
+        <div className="stagger grid gap-[var(--gutter-sm)] grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
           <QuickActionCard to="/replay" icon={PlayCircle} label="Start Replay" hint="Practise a setup" />
-          <QuickActionCard to="/journal" icon={BookOpen} label="Add Journal Entry" hint="Review your last trade" />
+          <QuickActionCard to="/trading" icon={LineChart} label="Paper Trade" hint="Open live market" />
+          <QuickActionCard to="/prop-challenges" icon={Target} label="Prop Challenge" hint="Get funded" />
+          <QuickActionCard to="/journal" icon={BookOpen} label="Trading Journal" hint="Review performance" />
+          {home?.actions.find(a => a.kind === "replay_unfinished") && (
+            <QuickActionCard 
+              to={home.actions.find(a => a.kind === "replay_unfinished")?.href || "/replay"} 
+              icon={Zap} 
+              label="Continue Last" 
+              hint="Resume session" 
+            />
+          )}
+          <QuickActionCard to="/education" icon={BookOpen} label="How It Works" hint="Learn the platform" />
         </div>
       </section>
     </div>
