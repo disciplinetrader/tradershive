@@ -17,12 +17,10 @@ export const Route = createFileRoute("/_authenticated/dashboard/trades")({
 });
 
 function DashboardTradesPage() {
-  const [accountId, setAccountId] = useState<string | null>(null);
-
   return (
     <AnalyticsProvider>
       <div className="mx-auto w-full max-w-[1400px] space-y-[var(--gutter-md)] pb-[var(--gutter-lg)] sm:space-y-[var(--gutter-lg)]">
-        <DashboardHeader accountId={accountId} onAccountChange={setAccountId} />
+        <DashboardHeader />
         <FiltersBar />
         <div className="space-y-4">
           <div className="grid gap-4 xl:grid-cols-2">

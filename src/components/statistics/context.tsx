@@ -5,6 +5,7 @@ import { getAnalyticsDataset } from "@/lib/statistics.functions";
 import type { AnalyticsTrade, StatisticsFilters } from "@/lib/statistics/types";
 import { EMPTY_FILTERS } from "@/lib/statistics/types";
 import { resolveDateRange } from "@/lib/statistics/date-range";
+import { useSessionContext } from "@/hooks/use-session-context";
 
 interface Ctx {
   raw: AnalyticsTrade[];
@@ -30,18 +31,19 @@ interface Props {
 
 export function StatisticsProvider({ children, overrideTrades, disableFetch }: Props) {
   const fetchData = useServerFn(getAnalyticsDataset);
+  const { context } = useSessionContext();
   const [filters, setFilters] = useState<StatisticsFilters>(EMPTY_FILTERS);
 
   const query = useQuery({
-    queryKey: ["statistics", "dataset"],
-    queryFn: () => fetchData(),
+    queryKey: ["statistics", "dataset", context.type, context.id],
+    queryFn: () => fetchData({ data: { contextType: context.type, contextId: context.id } }),
     staleTime: 30_000,
     refetchOnWindowFocus: false,
     enabled: !disableFetch,
   });
 
   const raw = (overrideTrades ?? (query.data?.trades ?? [])) as AnalyticsTrade[];
-  const accounts = (query.data?.accounts ?? []) as Ctx["accounts"];
+  const accounts = (query.data?.accounts ?? []) as unknown as Ctx["accounts"];
 
   const filtered = useMemo(() => {
     const range = resolveDateRange(filters.preset, filters.from, filters.to);

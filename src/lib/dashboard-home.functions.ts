@@ -91,20 +91,39 @@ function startOfMonth(d = new Date()) {
 
 export const getHomeSummary = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { accountId?: string | null } | undefined) => ({
-    accountId: data?.accountId ?? null,
+  .inputValidator((data: { contextType?: string | null; contextId?: string | null } | undefined) => ({
+    contextType: data?.contextType ?? "paper",
+    contextId: data?.contextId ?? null,
   }))
   .handler(async ({ context, data }): Promise<HomeSummary> => {
     const uid = context.userId;
-    const accountId = data.accountId;
+    const { contextType, contextId } = data;
     const now = new Date();
-    let tradesQuery = context.supabase
-      .from("paper_trades")
-      .select("id, symbol, direction, entry_price, opened_at, closed_at, pnl, rr_realized, rr_planned, status")
-      .eq("user_id", uid)
-      .is("deleted_at", null);
-    // Scope every performance metric to the selected paper account.
-    if (accountId) tradesQuery = tradesQuery.eq("account_id", accountId);
+
+    // Map context to database queries
+    let tradesQuery: any;
+    
+    if (contextType === "replay" && contextId) {
+      tradesQuery = context.supabase
+        .from("replay_trades")
+        .select("id, symbol, market, direction, entry_price, opened_at, closed_at, pnl, rr_realized, rr_planned, status")
+        .eq("session_id", contextId);
+    } else if (contextType === "arena" && contextId) {
+      // Battles use paper_trades table but filtered by battle_id
+      tradesQuery = context.supabase
+        .from("paper_trades")
+        .select("id, symbol, direction, entry_price, opened_at, closed_at, pnl, rr_realized, rr_planned, status")
+        .eq("battle_id", contextId)
+        .is("deleted_at", null);
+    } else {
+      // Default: paper (or fallback if id missing)
+      tradesQuery = context.supabase
+        .from("paper_trades")
+        .select("id, symbol, direction, entry_price, opened_at, closed_at, pnl, rr_realized, rr_planned, status")
+        .eq("user_id", uid)
+        .is("deleted_at", null);
+      if (contextId && contextType === "paper") tradesQuery = tradesQuery.eq("account_id", contextId);
+    }
 
     const [tradesRes, journalRes, replayRes, goalsRes, streakRes, activityRes, marketRes] = await Promise.all([
       tradesQuery
@@ -157,20 +176,20 @@ export const getHomeSummary = createServerFn({ method: "GET" })
 
     const replayMinutesToday = Math.round(
       replays
-        .filter((r) => new Date(r.updated_at ?? r.created_at).getTime() >= today0)
+        .filter((r: any) => new Date(r.updated_at ?? r.created_at).getTime() >= today0)
         .reduce((s, r) => s + (Number(r.duration_seconds) || 0), 0) / 60,
     );
 
-    const activePracticeTimeToday = activityRes.data?.reduce((s, a) => s + (a.duration_seconds || 0), 0) || 0;
-    const historicalMarketTimeToday = marketRes.data?.reduce((s, m) => s + (m.duration_seconds || 0), 0) || 0;
+    const activePracticeTimeToday = activityRes.data?.reduce((s: number, a: any) => s + (a.duration_seconds || 0), 0) || 0;
+    const historicalMarketTimeToday = marketRes.data?.reduce((s: number, m: any) => s + (m.duration_seconds || 0), 0) || 0;
 
     const journalByTradeId = new Map<string, any>();
     for (const j of journal) if (j.trade_id) journalByTradeId.set(j.trade_id, j);
 
     const closedToday = trades.filter(
-      (t) => t.status === "closed" && t.closed_at && new Date(t.closed_at).getTime() >= today0,
+      (t: any) => t.status === "closed" && t.closed_at && new Date(t.closed_at).getTime() >= today0,
     );
-    const journalMissingToday = closedToday.filter((t) => !journalByTradeId.has(t.id)).length;
+    const journalMissingToday = closedToday.filter((t: any) => !journalByTradeId.has(t.id)).length;
 
     // -------- Streak
     const streakDays = streakData?.current_streak ?? 0;
@@ -178,8 +197,8 @@ export const getHomeSummary = createServerFn({ method: "GET" })
 
     // -------- Goals progress (reuse engine)
     const goalTrades: GoalTrade[] = trades
-      .filter((t) => t.status === "closed" && t.closed_at)
-      .map((t) => {
+      .filter((t: any) => t.status === "closed" && t.closed_at)
+      .map((t: any) => {
         const j = journalByTradeId.get(t.id);
         return {
           id: t.id,
@@ -206,35 +225,35 @@ export const getHomeSummary = createServerFn({ method: "GET" })
       const raw = t.rr_realized ?? t.rr_planned;
       return raw != null && Number.isFinite(Number(raw)) ? Number(raw) : 0;
     };
-    const closedAll = trades.filter((t) => t.status === "closed" && t.closed_at);
-    const closedTodayR = closedToday.reduce((s, t) => s + rrOf(t), 0);
-    const closedWeek = closedAll.filter((t) => new Date(t.closed_at!).getTime() >= week0);
-    const closedMonth = closedAll.filter((t) => new Date(t.closed_at!).getTime() >= month0);
-    const weekR = closedWeek.reduce((s, t) => s + rrOf(t), 0);
-    const monthR = closedMonth.reduce((s, t) => s + rrOf(t), 0);
+    const closedAll = trades.filter((t: any) => t.status === "closed" && t.closed_at);
+    const closedTodayR = closedToday.reduce((s: number, t: any) => s + rrOf(t), 0);
+    const closedWeek = closedAll.filter((t: any) => new Date(t.closed_at!).getTime() >= week0);
+    const closedMonth = closedAll.filter((t: any) => new Date(t.closed_at!).getTime() >= month0);
+    const weekR = closedWeek.reduce((s: number, t: any) => s + rrOf(t), 0);
+    const monthR = closedMonth.reduce((s: number, t: any) => s + rrOf(t), 0);
 
     // Previous week
     const prevWeekStart = daysAgo(14, now).getTime();
     const prevWeekEnd = daysAgo(7, now).getTime();
     const prevWeekR = closedAll
-      .filter((t) => {
+      .filter((t: any) => {
         const ts = new Date(t.closed_at!).getTime();
         return ts >= prevWeekStart && ts < prevWeekEnd;
       })
-      .reduce((s, t) => s + rrOf(t), 0);
+      .reduce((s: number, t: any) => s + rrOf(t), 0);
 
     // 30-day window for aggregate KPIs
     const win30 = daysAgo(30, now).getTime();
-    const w30 = closedAll.filter((t) => new Date(t.closed_at!).getTime() >= win30);
-    const wins = w30.filter((t) => Number(t.pnl ?? 0) > 0);
-    const losses = w30.filter((t) => Number(t.pnl ?? 0) < 0);
+    const w30 = closedAll.filter((t: any) => new Date(t.closed_at!).getTime() >= win30);
+    const wins = w30.filter((t: any) => Number(t.pnl ?? 0) > 0);
+    const losses = w30.filter((t: any) => Number(t.pnl ?? 0) < 0);
     const winRate = w30.length ? (wins.length / w30.length) * 100 : 0;
-    const gross = wins.reduce((s, t) => s + Number(t.pnl ?? 0), 0);
-    const grossLoss = Math.abs(losses.reduce((s, t) => s + Number(t.pnl ?? 0), 0));
+    const gross = wins.reduce((s: number, t: any) => s + Number(t.pnl ?? 0), 0);
+    const grossLoss = Math.abs(losses.reduce((s: number, t: any) => s + Number(t.pnl ?? 0), 0));
     const profitFactor = grossLoss > 0 ? gross / grossLoss : gross > 0 ? gross : 0;
-    const rrs = w30.map(rrOf).filter((x) => Number.isFinite(x));
-    const avgR = rrs.length ? rrs.reduce((a, b) => a + b, 0) / rrs.length : 0;
-    const netPnl30d = w30.reduce((s, t) => s + Number(t.pnl ?? 0), 0);
+    const rrs = w30.map(rrOf).filter((x: number) => Number.isFinite(x));
+    const avgR = rrs.length ? rrs.reduce((a: number, b: number) => a + b, 0) / rrs.length : 0;
+    const netPnl30d = w30.reduce((s: number, t: any) => s + Number(t.pnl ?? 0), 0);
 
     // 14-day per-day PnL sparkline (oldest → newest)
     const sparkStart = daysAgo(13, startOfDay(now));
@@ -256,8 +275,8 @@ export const getHomeSummary = createServerFn({ method: "GET" })
       if (drop > dd) dd = drop;
     }
 
-    const totalRealizedPnl = closedAll.reduce((s, t) => s + Number(t.pnl ?? 0), 0);
-    const totalR = closedAll.reduce((s, t) => s + rrOf(t), 0);
+    const totalRealizedPnl = closedAll.reduce((s: number, t: any) => s + Number(t.pnl ?? 0), 0);
+    const totalR = closedAll.reduce((s: number, t: any) => s + rrOf(t), 0);
     const expectancy = w30.length ? (winRate / 100) * avgR - (1 - winRate / 100) * Math.abs(avgR) : 0; // Simplified expectancy
 
     const performance = {
@@ -373,7 +392,7 @@ export const getHomeSummary = createServerFn({ method: "GET" })
 
     const yesterdayStart = daysAgo(1, startOfDay(now)).getTime();
     const yesterdayEnd = startOfDay(now).getTime();
-    const yLosers = closedAll.filter((t) => {
+    const yLosers = closedAll.filter((t: any) => {
       const ts = new Date(t.closed_at!).getTime();
       return ts >= yesterdayStart && ts < yesterdayEnd && Number(t.pnl ?? 0) < 0;
     });
@@ -386,7 +405,7 @@ export const getHomeSummary = createServerFn({ method: "GET" })
       });
     }
 
-    const runners = w30.filter((t) => Number(t.pnl ?? 0) > 0 && Math.abs(rrOf(t)) > 0 && Math.abs(rrOf(t)) < 1);
+    const runners = w30.filter((t: any) => Number(t.pnl ?? 0) > 0 && Math.abs(rrOf(t)) > 0 && Math.abs(rrOf(t)) < 1);
     if (runners.length >= 3 && wins.length > 0 && runners.length / wins.length >= 0.4) {
       tips.push({
         id: "exit_winners_early",

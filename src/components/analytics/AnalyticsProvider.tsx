@@ -5,6 +5,7 @@ import { listBacktests, listBacktestTrades } from "@/lib/analytics.functions";
 import { StatisticsProvider } from "@/components/statistics/context";
 import { mapReplayTradesToAnalytics } from "@/lib/statistics/backtest-source";
 import type { AnalyticsTrade } from "@/lib/statistics/types";
+import { useSessionContext } from "@/hooks/use-session-context";
 
 type SourceKind = "live" | "backtest";
 
@@ -31,9 +32,19 @@ export function useAnalytics(): AnalyticsCtx {
 export function AnalyticsProvider({ children }: { children: ReactNode }) {
   const listFn = useServerFn(listBacktests);
   const tradesFn = useServerFn(listBacktestTrades);
+  const { context } = useSessionContext();
 
   const [backtestId, setBacktestId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+
+  // Auto-sync backtestId with context if context is replay
+  useMemo(() => {
+    if (context.type === "replay" && context.id && context.id !== backtestId) {
+      setBacktestId(context.id);
+    } else if (context.type !== "replay" && backtestId !== null) {
+      setBacktestId(null);
+    }
+  }, [context.type, context.id]);
 
   const backtestsQuery = useQuery({
     queryKey: ["analytics", "backtests"],
@@ -76,7 +87,7 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
 
   return (
     <Ctx.Provider value={value}>
-      <StatisticsProvider overrideTrades={overrideTrades} disableFetch={!!backtestId}>
+      <StatisticsProvider overrideTrades={overrideTrades} disableFetch={!!backtestId || context.type === "replay"}>
         {children}
       </StatisticsProvider>
     </Ctx.Provider>

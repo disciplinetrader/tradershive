@@ -25,12 +25,10 @@ export const Route = createFileRoute("/_authenticated/dashboard/analytics")({
 });
 
 function DashboardAnalyticsPage() {
-  const [accountId, setAccountId] = useState<string | null>(null);
-
   return (
     <AnalyticsProvider>
       <div className="mx-auto w-full max-w-[1400px] space-y-[var(--gutter-md)] pb-[var(--gutter-lg)] sm:space-y-[var(--gutter-lg)]">
-        <DashboardHeader accountId={accountId} onAccountChange={setAccountId} />
+        <DashboardHeader />
         <FiltersBar />
         <AnalyticsContent />
       </div>

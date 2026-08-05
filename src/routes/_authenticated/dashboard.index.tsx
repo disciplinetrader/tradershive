@@ -3,6 +3,7 @@ import { Link, useLocation, createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { BookOpen, LineChart, PlayCircle, Target, Zap, GraduationCap, Trophy, ChevronRight } from "lucide-react";
+import { useSessionContext } from "@/hooks/use-session-context";
 
 import { BetaBanner } from "@/components/beta/BetaBanner";
 import { ActivityTable } from "@/components/dashboard/v2/ActivityTable";
@@ -38,11 +39,12 @@ function DashboardOverviewPage() {
   const fetchHome = useServerFn(getHomeSummary);
   const fetchHero = useServerFn(getHeroState);
   const fetchProp = useServerFn(listPropChallenges);
+  const { context } = useSessionContext();
   const [accountId, setAccountId] = useState<string | null>(null);
 
   const { data: home, isPending } = useQuery({
-    queryKey: ["home_summary", accountId],
-    queryFn: () => fetchHome({ data: { accountId } }),
+    queryKey: ["home_summary", context.type, context.id],
+    queryFn: () => fetchHome({ data: { contextType: context.type, contextId: context.id } }),
     staleTime: 30_000,
     refetchInterval: 60_000,
   });
@@ -62,7 +64,7 @@ function DashboardOverviewPage() {
 
   return (
     <div className="mx-auto w-full max-w-[1400px] space-y-[var(--gutter-md)] pb-[var(--gutter-lg)] sm:space-y-[var(--gutter-lg)]">
-      <DashboardHeader accountId={accountId} onAccountChange={setAccountId} />
+      <DashboardHeader />
 
       <BetaBanner />
 
