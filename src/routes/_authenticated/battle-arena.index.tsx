@@ -187,8 +187,8 @@ function BattleArenaHome() {
 
         <div className="space-y-10">
           <Section
-            title="My History" icon={History} items={mine.data} loading={mine.isLoading} isCompact
-            empty={{ title: "No participation yet", body: "Join your first match to see history." }}
+            title="Arena Records" icon={History} items={mine.data} loading={mine.isLoading} isCompact
+            empty={{ title: "No records yet", body: "Join your first arena to see history." }}
           />
           
           <Section
