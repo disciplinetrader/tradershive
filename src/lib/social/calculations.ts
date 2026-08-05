@@ -39,8 +39,9 @@ type JournalRow = { grade: string | null; followed_plan: boolean | null; pnl: nu
 
 export function aggregateTrades(trades: ClosedTrade[], journal: JournalRow[]): TradeAgg {
   const agg = emptyAgg();
-  const journalByPlan = journal.filter((j) => j.followed_plan != null);
-  for (const t of trades) {
+  const validTrades = trades.filter(t => t && t.closed_at != null);
+  const journalByPlan = journal.filter((j) => j && j.followed_plan != null);
+  for (const t of validTrades) {
     if (t.closed_at == null) continue;
     agg.totalTrades += 1;
     const pnl = Number(t.pnl ?? 0);
