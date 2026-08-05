@@ -231,7 +231,7 @@ function ExpandedRail({ battle, stats, events, isSpectator, isHost, account }: {
              />
           </TabsContent>
           <TabsContent value="chat" className="h-full mt-0 focus-visible:outline-none">
-            <BattleChat battleId={battle.id} canPost={!isSpectator} />
+            <BattleChat battleId={battle.id} canPost={!isSpectator} isHost={isHost} />
           </TabsContent>
           <TabsContent value="rules" className="h-full mt-0 focus-visible:outline-none overflow-y-auto">
             <RulesPanel battle={battle} />
