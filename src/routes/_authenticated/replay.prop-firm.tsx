@@ -42,12 +42,12 @@ function ReplayPropFirmPage() {
   );
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] space-y-6 pb-[var(--gutter-lg)] animate-in fade-in duration-500">
+    <div className="mx-auto w-full max-w-[1400px] space-y-6 pb-[var(--gutter-lg)] animate-in fade-in duration-500 relative">
       <PageHeader
         title="Prop Firm Challenges"
         description="Practise prop-style evaluation rules using a virtual TradersHIVE account."
         actions={
-          <Button asChild className="gradient-primary text-white rounded-xl shadow-lg border-0 relative z-20">
+          <Button asChild className="gradient-primary text-white rounded-xl shadow-lg border-0 relative z-20 cursor-pointer">
             <Link to="/replay/prop-firm/new">
               <Plus className="mr-2 h-4 w-4" /> Start Challenge
             </Link>
