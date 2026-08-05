@@ -2,7 +2,7 @@ import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { BookOpen, LineChart, PlayCircle } from "lucide-react";
+import { BookOpen, LineChart, PlayCircle, Target, Zap } from "lucide-react";
 
 import { BetaBanner } from "@/components/beta/BetaBanner";
 import { ActivityTable } from "@/components/dashboard/v2/ActivityTable";
