@@ -398,11 +398,23 @@ export function CreatorWizard({ open, onOpenChange }: { open: boolean; onOpenCha
 
           <div className="space-y-1.5">
             <Label htmlFor="bt-from">From</Label>
-            <Input id="bt-from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+            <Input 
+              id="bt-from" 
+              type="date" 
+              max={todayISO()}
+              value={from} 
+              onChange={(e) => setFrom(e.target.value)} 
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="bt-to">To</Label>
-            <Input id="bt-to" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+            <Input 
+              id="bt-to" 
+              type="date" 
+              max={todayISO()}
+              value={to} 
+              onChange={(e) => setTo(e.target.value)} 
+            />
           </div>
 
 
