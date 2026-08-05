@@ -243,7 +243,9 @@ export function validateOrder(
   const reward = Math.abs(target - entry);
 
   if (!Number.isFinite(risk) || risk > 1_000_000_000_000) errors.push("Invalid risk value.");
-  if (!Number.isFinite(reward) || reward > 1_000_000_000_000) errors.push("Invalid reward value.");
+  if (!Number.isFinite(reward) || reward > 1_000_000_000_000) {
+    errors.push("Invalid reward value. Take profit might be too far or infinite.");
+  }
 
   const tick = opts.tick && opts.tick > 0 ? opts.tick : 0;
   if (risk <= 0 || (tick > 0 && risk < tick)) {

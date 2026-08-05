@@ -6,6 +6,7 @@ describe("THIVE-005: Trading Validation Extreme Cases", () => {
     const result = validateOrder({
       symbol: "EURUSD",
       orderType: "market",
+      drawingId: "test-drawing",
       entry: 1.1,
       stop: 1.05,
       target: 1.2,
@@ -20,6 +21,7 @@ describe("THIVE-005: Trading Validation Extreme Cases", () => {
     const result = validateOrder({
       symbol: "EURUSD",
       orderType: "market",
+      drawingId: "test-drawing",
       entry: 1.1,
       stop: 1.1,
       target: 1.2,
@@ -34,6 +36,7 @@ describe("THIVE-005: Trading Validation Extreme Cases", () => {
     const result = validateOrder({
       symbol: "EURUSD",
       orderType: "market",
+      drawingId: "test-drawing",
       entry: 1.1,
       stop: 1.05,
       target: Infinity,
@@ -41,13 +44,14 @@ describe("THIVE-005: Trading Validation Extreme Cases", () => {
       size: 1,
     });
     expect(result.ok).toBe(false);
-    expect(result.errors.some(e => e.includes("Invalid reward"))).toBe(true);
+    expect(result.errors.some(e => e.includes("reward value"))).toBe(true);
   });
 
   it("should reject stop loss in wrong direction", () => {
     const result = validateOrder({
       symbol: "EURUSD",
       orderType: "market",
+      drawingId: "test-drawing",
       entry: 1.1,
       stop: 1.15, // sl above entry for buy
       target: 1.2,
