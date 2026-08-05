@@ -103,7 +103,7 @@ function ChampionshipIndex() {
             Compete in monthly championships, sponsored events, and community battles within the HIVE Arena. Every result contributes to your career stats.
           </p>
         </div>
-        <Link to="/championship/hall-of-fame">
+        <Link to="/battle-arena/tournaments/hall-of-fame">
           <Button variant="outline" size="sm">
             <History className="mr-1.5 h-3.5 w-3.5" /> Hall of Fame
           </Button>
