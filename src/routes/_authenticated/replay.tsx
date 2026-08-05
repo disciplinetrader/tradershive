@@ -17,7 +17,7 @@ import { SegmentedTabs } from "@/components/ui/segmented-tabs";
 // Sessions → Trade Review → Performance → Settings. Practice keeps its own
 // section but is entered from here now that it left the main sidebar.
 const TABS = [
-  { to: "/replay", label: "Home", icon: Home, activeOptions: { exact: true } },
+  { to: "/replay", label: "Home", icon: Home, exact: true },
   { to: "/replay/studio", label: "Trading Workspace", icon: Play },
   { to: "/replay/prop-firm", label: "Prop Firm Challenges", icon: Target },
   { to: "/replay/library", label: "Saved Sessions", icon: Library },
