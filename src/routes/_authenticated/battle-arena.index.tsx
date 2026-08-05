@@ -98,8 +98,8 @@ function BattleArenaHome() {
             <h1 className="text-3xl font-black tracking-tight">HIVE Arena</h1>
           </div>
           <p className="text-sm text-muted-foreground max-w-lg font-medium leading-relaxed">
-            Compete in real-time paper trading battles. Dominate the ELO leaderboard, 
-            prove your consistency, and climb from Bronze to Master.
+            Compete in real-time paper trading matches. Dominate the HIVE Rating leaderboard, 
+            prove your consistency, and climb from Initiate to Sovereign.
           </p>
         </div>
         
