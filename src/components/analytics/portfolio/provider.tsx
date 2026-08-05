@@ -76,7 +76,7 @@ export function AnalyticsWorkspaceProvider({
     const legacyRecords = ((legacy.data?.trades ?? []) as AnalyticsTrade[]).map(fromAnalyticsTrade);
     const records = dedupeRecords([...toolRecords, ...legacyRecords]);
 
-    const accounts = ((legacy.data?.accounts ?? []) as Parameters<typeof accountSnapshotOf>[0][]).map((a) =>
+    const accounts = ((legacy.data?.accounts ?? []) as unknown as Parameters<typeof accountSnapshotOf>[0][]).map((a) =>
       accountSnapshotOf(a),
     );
 
