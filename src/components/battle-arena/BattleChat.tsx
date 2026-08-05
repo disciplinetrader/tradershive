@@ -93,7 +93,7 @@ export function BattleChat({ battleId, canPost, isHost }: { battleId: string; ca
               </Avatar>
               <div className={cn("max-w-[80%] rounded-2xl px-3 py-2 text-sm", mine ? "bg-primary/10" : "bg-background/60")}>
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-medium">{p?.display_name ?? p?.username ?? "Trader"}</span>
+                  <span className="text-[11px] font-medium">{p?.display_name ?? p?.username ?? "Competitor"}</span>
                   <span className="text-[10px] text-muted-foreground">{formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}</span>
                 </div>
                 <div className="mt-0.5 break-words">{m.message}</div>
