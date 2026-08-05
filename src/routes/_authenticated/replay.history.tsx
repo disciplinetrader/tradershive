@@ -44,7 +44,7 @@ function HistoryPage() {
           search: (prev) => ({
             ...prev,
             ...patch,
-          }),
+          } as any),
         });
       }}
     />
