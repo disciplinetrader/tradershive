@@ -219,7 +219,7 @@ const SOURCE_EMPTY: Record<Exclude<TradeSourceTab, "all">, {
     title: "No Paper Trades yet.",
     body: "Open your first simulated position to start building live Paper Trading analytics.",
     icon: LineChart,
-    cta: { label: "Go to Paper Trading", to: "/paper-trading" },
+    cta: { label: "Go to Paper Trading", to: "/trading" },
   },
   journal: {
     title: "Your Journal is empty.",
