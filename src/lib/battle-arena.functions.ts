@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const battleTypeSchema = z.enum(["1v1", "2v2", "ffa5", "ffa10"]);
+const battleTypeSchema = z.enum(["1v1", "2v2", "ffa5", "ffa10", "profit_target", "time_trial", "custom"]);
 const marketSchema = z.enum(["crypto", "forex", "indices", "metals", "mixed"]);
 const winCondSchema = z.enum([
   "highest_pnl", "highest_r", "highest_winrate", "lowest_dd",
@@ -17,12 +17,20 @@ function randomCode(len = 8) {
   return out;
 }
 
-const MAX_PARTICIPANTS: Record<string, number> = { "1v1": 2, "2v2": 4, ffa5: 5, ffa10: 10 };
+const MAX_PARTICIPANTS: Record<string, number> = { 
+  "1v1": 2, 
+  "2v2": 4, 
+  "ffa5": 5, 
+  "ffa10": 10,
+  "profit_target": 20,
+  "time_trial": 20,
+  "custom": 50
+};
 
 /* ================= List ================= */
 
 const listScopeSchema = z.object({
-  scope: z.enum(["featured", "live", "upcoming", "mine", "history", "all"]).default("all"),
+  scope: z.enum(["featured", "live", "upcoming", "mine", "history", "ranked", "all"]).default("all"),
   limit: z.number().int().positive().max(100).default(24),
 });
 
@@ -34,13 +42,16 @@ export const listBattles = createServerFn({ method: "GET" })
     let q = supabase.from("battles").select("*").limit(data.limit);
     switch (data.scope) {
       case "featured":
-        q = q.eq("featured", true).in("status", ["upcoming", "live"]).order("start_at", { ascending: true });
+        q = q.eq("featured", true).in("status", ["open", "filling", "live"]).order("start_at", { ascending: true });
         break;
       case "live":
         q = q.eq("status", "live").order("end_at", { ascending: true });
         break;
       case "upcoming":
-        q = q.eq("status", "upcoming").order("start_at", { ascending: true });
+        q = q.in("status", ["open", "filling", "ready", "countdown"]).order("start_at", { ascending: true });
+        break;
+      case "ranked":
+        q = q.eq("ranked", true).in("status", ["open", "filling", "live"]).order("start_at", { ascending: true });
         break;
       case "history":
         q = q.eq("status", "completed").order("end_at", { ascending: false });
@@ -84,7 +95,7 @@ export const getBattle = createServerFn({ method: "GET" })
       battle.host_id,
     ]));
     const { data: profiles } = await supabase
-      .from("profiles").select("id, username, display_name, avatar_url, country").in("id", userIds);
+      .from("profiles").select("id, username, display_name, avatar_url, country, elo").in("id", userIds);
     return {
       battle,
       participants: participantsRes.data ?? [],
@@ -102,19 +113,26 @@ const createSchema = z.object({
   name: z.string().trim().min(3).max(80),
   description: z.string().trim().max(500).optional().nullable(),
   visibility: visibilitySchema.default("public"),
+  ranked: z.boolean().default(false),
   battle_type: battleTypeSchema,
   market: marketSchema,
   allowed_symbols: z.array(z.string().min(1)).max(30),
   starting_balance: z.number().positive().max(1_000_000).default(10000),
+  min_participants: z.number().int().min(2).max(50).default(2),
+  max_participants: z.number().int().min(2).max(50).default(10),
   max_risk_pct: z.number().positive().max(20).default(2),
   max_daily_loss_pct: z.number().positive().max(50).default(5),
   max_drawdown_pct: z.number().positive().max(80).default(10),
+  profit_target_pct: z.number().positive().max(500).optional().nullable(),
   max_trades: z.number().int().positive().max(500).nullable().optional(),
+  max_open_positions: z.number().int().min(1).max(20).default(5),
   win_condition: winCondSchema,
   target_value: z.number().nullable().optional(),
   start_at: z.string(),
   end_at: z.string(),
   timezone: z.string().default("UTC"),
+  allow_late_join: z.boolean().default(false),
+  rules_config: z.record(z.any()).optional().nullable(),
 });
 
 export const createBattle = createServerFn({ method: "POST" })
@@ -128,8 +146,8 @@ export const createBattle = createServerFn({ method: "POST" })
     if (data.allowed_symbols.length === 0) throw new Error("Pick at least one symbol");
 
     const invite = data.visibility === "private" ? randomCode(8) : null;
-    const max = MAX_PARTICIPANTS[data.battle_type] ?? 10;
-    const status = start.getTime() <= Date.now() ? "live" : "upcoming";
+    const max = Math.min(data.max_participants, MAX_PARTICIPANTS[data.battle_type] ?? 10);
+    const status = start.getTime() <= Date.now() ? "open" : "upcoming";
 
     const { data: battle, error } = await context.supabase
       .from("battles")
@@ -138,22 +156,28 @@ export const createBattle = createServerFn({ method: "POST" })
         name: data.name,
         description: data.description ?? null,
         visibility: data.visibility,
+        ranked: data.ranked,
         invite_code: invite,
         battle_type: data.battle_type,
         market: data.market,
         allowed_symbols: data.allowed_symbols,
         starting_balance: data.starting_balance,
+        min_participants: data.min_participants,
+        max_participants: max,
         max_risk_pct: data.max_risk_pct,
         max_daily_loss_pct: data.max_daily_loss_pct,
         max_drawdown_pct: data.max_drawdown_pct,
+        profit_target_pct: data.profit_target_pct ?? null,
         max_trades: data.max_trades ?? null,
+        max_open_positions: data.max_open_positions,
         win_condition: data.win_condition,
         target_value: data.target_value ?? null,
         start_at: start.toISOString(),
         end_at: end.toISOString(),
         timezone: data.timezone,
         status,
-        max_participants: max,
+        allow_late_join: data.allow_late_join,
+        rules_config: data.rules_config ?? {},
       })
       .select()
       .single();
@@ -190,7 +214,7 @@ export const leaveBattle = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: battle } = await context.supabase.from("battles").select("status").eq("id", data.battleId).maybeSingle();
     if (!battle) throw new Error("Battle not found");
-    if (!["draft", "upcoming"].includes(battle.status)) throw new Error("Battle already started");
+    if (!["draft", "upcoming", "open", "filling"].includes(battle.status)) throw new Error("Battle already started");
     const { error } = await context.supabase
       .from("battle_participants")
       .delete()
@@ -213,14 +237,85 @@ export const cancelBattle = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/* ================= Matchmaking ================= */
+
+export const joinRandom = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ 
+    battleType: battleTypeSchema,
+    isRanked: z.boolean().default(false)
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: profile } = await supabase.from("profiles").select("elo").eq("id", userId).single();
+    if (!profile) throw new Error("Profile not found");
+
+    // 1. Check for available battles
+    const { data: battles } = await supabase
+      .from("battles")
+      .select("id, max_participants, status, ranked")
+      .eq("battle_type", data.battleType)
+      .eq("ranked", data.isRanked)
+      .eq("visibility", "public")
+      .in("status", ["open", "filling"])
+      .order("created_at", { ascending: true });
+
+    if (battles && battles.length > 0) {
+      for (const b of battles) {
+        const { count } = await supabase
+          .from("battle_participants")
+          .select("id", { count: "exact", head: true })
+          .eq("battle_id", b.id);
+        
+        if ((count ?? 0) < b.max_participants) {
+          await supabase.rpc("join_battle", { _battle_id: b.id });
+          return { battleId: b.id };
+        }
+      }
+    }
+
+    // 2. Otherwise join queue
+    const { error } = await supabase
+      .from("matchmaking_queue")
+      .upsert({
+        user_id: userId,
+        battle_type: data.battleType,
+        is_ranked: data.isRanked,
+        elo_at_join: profile.elo || 1000
+      });
+    
+    if (error) throw error;
+    return { queued: true };
+  });
+
+export const cancelMatchmaking = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { error } = await context.supabase
+      .from("matchmaking_queue")
+      .delete()
+      .eq("user_id", context.userId);
+    if (error) throw error;
+    return { ok: true };
+  });
+
+export const getMatchmakingStatus = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase
+      .from("matchmaking_queue")
+      .select("*")
+      .eq("user_id", context.userId)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  });
+
 /* ================= Tick / Finalize ================= */
 
 export const tickBattles = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    // Best-effort state advancement. The underlying RPC may be admin-only or
-    // RLS-restricted for regular users — swallow those failures so periodic
-    // client-driven ticks never surface as errors.
     const { error } = await context.supabase.rpc("tick_battles");
     return { ok: !error };
   });
@@ -234,7 +329,6 @@ export const finalizeBattle = createServerFn({ method: "POST" })
       .from("battles").select("host_id, end_at").eq("id", data.battleId).maybeSingle();
     if (!battle) throw new Error("Battle not found");
     if (battle.host_id !== context.userId) {
-      // still allow if end passed
       if (new Date(battle.end_at) > new Date()) throw new Error("Only the host may finalize before end time");
     }
     const { error } = await context.supabase.rpc("finalize_battle", { _battle_id: data.battleId });
@@ -248,10 +342,10 @@ export const listMyBattleStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
-    const { data: results } = await supabase
-      .from("battle_results")
-      .select("battle_id, final_rank, pnl, xp_awarded, coins_awarded")
-      .eq("user_id", userId);
+    const [{ data: results }, { data: profile }] = await Promise.all([
+      supabase.from("battle_results").select("*").eq("user_id", userId),
+      supabase.from("profiles").select("elo, battle_wins, battles_played, current_battle_streak, best_battle_streak, peak_elo").eq("id", userId).single()
+    ]);
     const total = results?.length ?? 0;
     const wins = (results ?? []).filter((r) => r.final_rank === 1).length;
     const avgFinish = total > 0
@@ -260,7 +354,20 @@ export const listMyBattleStats = createServerFn({ method: "GET" })
     const totalPnl = (results ?? []).reduce((s, r) => s + Number(r.pnl || 0), 0);
     const xp = (results ?? []).reduce((s, r) => s + (r.xp_awarded || 0), 0);
     const coins = (results ?? []).reduce((s, r) => s + (r.coins_awarded || 0), 0);
-    return { total, wins, losses: total - wins, winRate: total > 0 ? Math.round((wins / total) * 1000) / 10 : 0, avgFinish, totalPnl, xp, coins };
+    return { 
+      total, 
+      wins, 
+      losses: total - wins, 
+      winRate: total > 0 ? Math.round((wins / total) * 1000) / 10 : 0, 
+      avgFinish, 
+      totalPnl, 
+      xp, 
+      coins,
+      elo: profile?.elo || 1000,
+      streak: profile?.current_battle_streak || 0,
+      bestStreak: profile?.best_battle_streak || 0,
+      peakElo: profile?.peak_elo || 1000
+    };
   });
 
 /* ================= Battle history detail ================= */
@@ -279,7 +386,7 @@ export const getBattleHistoryDetail = createServerFn({ method: "GET" })
     ]);
     const userIds = Array.from(new Set([...(resultsRes.data ?? []).map((r) => r.user_id), ...(tradesRes.data ?? []).map((t) => t.user_id)]));
     const { data: profiles } = await supabase
-      .from("profiles").select("id, username, display_name, avatar_url").in("id", userIds);
+      .from("profiles").select("id, username, display_name, avatar_url, elo").in("id", userIds);
     return { battle, results: resultsRes.data ?? [], trades: tradesRes.data ?? [], logs: logsRes.data ?? [], profiles: profiles ?? [] };
   });
 

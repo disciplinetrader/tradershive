@@ -27,7 +27,7 @@ function ReviewPage() {
       <div className="m-6 space-y-3 rounded-md border border-border/60 bg-card/40 p-8 text-center">
         <div className="font-medium">No session selected</div>
         <p className="text-sm text-muted-foreground">Pick a finished session from your replay history to review it.</p>
-        <Button asChild><Link to="/replay/history">Open history</Link></Button>
+        <Button asChild><Link to="/replay/history" search={{}}>Open history</Link></Button>
       </div>
     );
   }

@@ -3,11 +3,11 @@ import { z } from "zod";
 import { HistoryView } from "@/components/replay/review/HistoryView";
 
 const searchSchema = z.object({
-  limit: z.number().optional().default(25),
-  offset: z.number().optional().default(0),
-  status: z.string().nullable().optional().default(null),
-  symbol: z.string().nullable().optional().default(null),
-  search: z.string().nullable().optional().default(null),
+  limit: z.number().optional(),
+  offset: z.number().optional(),
+  status: z.string().nullable().optional(),
+  symbol: z.string().nullable().optional(),
+  search: z.string().nullable().optional(),
 });
 
 export const Route = createFileRoute("/_authenticated/replay/history")({
@@ -29,17 +29,24 @@ export const Route = createFileRoute("/_authenticated/replay/history")({
 
 function HistoryPage() {
   const search = useSearch({ from: "/_authenticated/replay/history" });
-  const navigate = useNavigate({ from: "/replay/history" });
+  const navigate = useNavigate({ from: "/_authenticated/replay/history" });
   return (
     <HistoryView
       params={{
-        limit: search.limit,
-        offset: search.offset,
+        limit: search.limit ?? 25,
+        offset: search.offset ?? 0,
         status: search.status ?? null,
         symbol: search.symbol ?? null,
         search: search.search ?? null,
       }}
-      onChange={(patch) => void navigate({ search: (prev: Record<string, unknown>) => ({ ...prev, ...patch }) })}
+      onChange={(patch) => {
+        void navigate({
+          search: (prev: any) => ({
+            ...prev,
+            ...patch,
+          }),
+        });
+      }}
     />
   );
 }

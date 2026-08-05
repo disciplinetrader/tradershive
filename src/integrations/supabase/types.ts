@@ -1895,11 +1895,15 @@ export type Database = {
           battle_id: string
           coins_awarded: number
           created_at: string
+          elo_after: number | null
+          elo_before: number | null
           final_rank: number
           id: string
           max_drawdown: number
           pnl: number
           r_multiple: number
+          total_r: number | null
+          total_trades: number | null
           trades_count: number
           user_id: string
           win_rate: number
@@ -1909,11 +1913,15 @@ export type Database = {
           battle_id: string
           coins_awarded?: number
           created_at?: string
+          elo_after?: number | null
+          elo_before?: number | null
           final_rank: number
           id?: string
           max_drawdown?: number
           pnl?: number
           r_multiple?: number
+          total_r?: number | null
+          total_trades?: number | null
           trades_count?: number
           user_id: string
           win_rate?: number
@@ -1923,11 +1931,15 @@ export type Database = {
           battle_id?: string
           coins_awarded?: number
           created_at?: string
+          elo_after?: number | null
+          elo_before?: number | null
           final_rank?: number
           id?: string
           max_drawdown?: number
           pnl?: number
           r_multiple?: number
+          total_r?: number | null
+          total_trades?: number | null
           trades_count?: number
           user_id?: string
           win_rate?: number
@@ -2079,26 +2091,37 @@ export type Database = {
       }
       battles: {
         Row: {
+          allow_late_join: boolean | null
           allowed_symbols: string[]
           battle_type: Database["public"]["Enums"]["battle_type_kind"]
+          countdown_started_at: string | null
           created_at: string
+          data_snapshot_id: string | null
           description: string | null
           end_at: string
           featured: boolean
           host_id: string
           id: string
           invite_code: string | null
+          lobby_opened_at: string | null
           market: Database["public"]["Enums"]["battle_market"]
           max_daily_loss_pct: number
           max_drawdown_pct: number
+          max_open_positions: number | null
           max_participants: number
           max_risk_pct: number
           max_trades: number | null
+          min_participants: number | null
           name: string
+          profit_target_pct: number | null
+          ranked: boolean | null
+          rules_config: Json | null
+          scheduled_start_at: string | null
           start_at: string
           starting_balance: number
           status: Database["public"]["Enums"]["battle_status"]
           target_value: number | null
+          time_limit_seconds: number | null
           timezone: string
           updated_at: string
           visibility: Database["public"]["Enums"]["battle_visibility"]
@@ -2106,26 +2129,37 @@ export type Database = {
           winner_user_id: string | null
         }
         Insert: {
+          allow_late_join?: boolean | null
           allowed_symbols?: string[]
           battle_type?: Database["public"]["Enums"]["battle_type_kind"]
+          countdown_started_at?: string | null
           created_at?: string
+          data_snapshot_id?: string | null
           description?: string | null
           end_at: string
           featured?: boolean
           host_id: string
           id?: string
           invite_code?: string | null
+          lobby_opened_at?: string | null
           market?: Database["public"]["Enums"]["battle_market"]
           max_daily_loss_pct?: number
           max_drawdown_pct?: number
+          max_open_positions?: number | null
           max_participants?: number
           max_risk_pct?: number
           max_trades?: number | null
+          min_participants?: number | null
           name: string
+          profit_target_pct?: number | null
+          ranked?: boolean | null
+          rules_config?: Json | null
+          scheduled_start_at?: string | null
           start_at: string
           starting_balance?: number
           status?: Database["public"]["Enums"]["battle_status"]
           target_value?: number | null
+          time_limit_seconds?: number | null
           timezone?: string
           updated_at?: string
           visibility?: Database["public"]["Enums"]["battle_visibility"]
@@ -2133,26 +2167,37 @@ export type Database = {
           winner_user_id?: string | null
         }
         Update: {
+          allow_late_join?: boolean | null
           allowed_symbols?: string[]
           battle_type?: Database["public"]["Enums"]["battle_type_kind"]
+          countdown_started_at?: string | null
           created_at?: string
+          data_snapshot_id?: string | null
           description?: string | null
           end_at?: string
           featured?: boolean
           host_id?: string
           id?: string
           invite_code?: string | null
+          lobby_opened_at?: string | null
           market?: Database["public"]["Enums"]["battle_market"]
           max_daily_loss_pct?: number
           max_drawdown_pct?: number
+          max_open_positions?: number | null
           max_participants?: number
           max_risk_pct?: number
           max_trades?: number | null
+          min_participants?: number | null
           name?: string
+          profit_target_pct?: number | null
+          ranked?: boolean | null
+          rules_config?: Json | null
+          scheduled_start_at?: string | null
           start_at?: string
           starting_balance?: number
           status?: Database["public"]["Enums"]["battle_status"]
           target_value?: number | null
+          time_limit_seconds?: number | null
           timezone?: string
           updated_at?: string
           visibility?: Database["public"]["Enums"]["battle_visibility"]
@@ -4610,6 +4655,44 @@ export type Database = {
         }
         Relationships: []
       }
+      elo_history: {
+        Row: {
+          battle_id: string | null
+          created_at: string | null
+          elo_after: number
+          elo_before: number
+          elo_change: number
+          id: string
+          user_id: string
+        }
+        Insert: {
+          battle_id?: string | null
+          created_at?: string | null
+          elo_after: number
+          elo_before: number
+          elo_change: number
+          id?: string
+          user_id: string
+        }
+        Update: {
+          battle_id?: string | null
+          created_at?: string | null
+          elo_after?: number
+          elo_before?: number
+          elo_change?: number
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "elo_history_battle_id_fkey"
+            columns: ["battle_id"]
+            isOneToOne: false
+            referencedRelation: "battles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_events: {
         Row: {
           category: string
@@ -6502,6 +6585,33 @@ export type Database = {
         }
         Relationships: []
       }
+      matchmaking_queue: {
+        Row: {
+          battle_type: Database["public"]["Enums"]["battle_type_kind"]
+          elo_at_join: number
+          id: string
+          is_ranked: boolean | null
+          joined_at: string | null
+          user_id: string
+        }
+        Insert: {
+          battle_type: Database["public"]["Enums"]["battle_type_kind"]
+          elo_at_join: number
+          id?: string
+          is_ranked?: boolean | null
+          joined_at?: string | null
+          user_id: string
+        }
+        Update: {
+          battle_type?: Database["public"]["Enums"]["battle_type_kind"]
+          elo_at_join?: number
+          id?: string
+          is_ranked?: boolean | null
+          joined_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       mentor_assignments: {
         Row: {
           created_at: string
@@ -7466,12 +7576,17 @@ export type Database = {
           accepted_terms_at: string | null
           admin_notes: string | null
           avatar_url: string | null
+          battle_wins: number | null
+          battles_played: number | null
+          best_battle_streak: number | null
           bio: string | null
           coins: number
           country: string | null
           created_at: string
+          current_battle_streak: number | null
           deleted_at: string | null
           display_name: string | null
+          elo: number | null
           email: string | null
           experience: Database["public"]["Enums"]["trading_experience"] | null
           first_name: string | null
@@ -7483,6 +7598,7 @@ export type Database = {
           league: Database["public"]["Enums"]["league"]
           level: number
           onboarded: boolean
+          peak_elo: number | null
           preferred_market:
             | Database["public"]["Enums"]["preferred_market"]
             | null
@@ -7499,12 +7615,17 @@ export type Database = {
           accepted_terms_at?: string | null
           admin_notes?: string | null
           avatar_url?: string | null
+          battle_wins?: number | null
+          battles_played?: number | null
+          best_battle_streak?: number | null
           bio?: string | null
           coins?: number
           country?: string | null
           created_at?: string
+          current_battle_streak?: number | null
           deleted_at?: string | null
           display_name?: string | null
+          elo?: number | null
           email?: string | null
           experience?: Database["public"]["Enums"]["trading_experience"] | null
           first_name?: string | null
@@ -7516,6 +7637,7 @@ export type Database = {
           league?: Database["public"]["Enums"]["league"]
           level?: number
           onboarded?: boolean
+          peak_elo?: number | null
           preferred_market?:
             | Database["public"]["Enums"]["preferred_market"]
             | null
@@ -7532,12 +7654,17 @@ export type Database = {
           accepted_terms_at?: string | null
           admin_notes?: string | null
           avatar_url?: string | null
+          battle_wins?: number | null
+          battles_played?: number | null
+          best_battle_streak?: number | null
           bio?: string | null
           coins?: number
           country?: string | null
           created_at?: string
+          current_battle_streak?: number | null
           deleted_at?: string | null
           display_name?: string | null
+          elo?: number | null
           email?: string | null
           experience?: Database["public"]["Enums"]["trading_experience"] | null
           first_name?: string | null
@@ -7549,6 +7676,7 @@ export type Database = {
           league?: Database["public"]["Enums"]["league"]
           level?: number
           onboarded?: boolean
+          peak_elo?: number | null
           preferred_market?:
             | Database["public"]["Enums"]["preferred_market"]
             | null
@@ -11945,6 +12073,15 @@ export type Database = {
           remaining: number
         }[]
       }
+      calculate_elo_change: {
+        Args: {
+          _k_factor?: number
+          _opponent_elo: number
+          _result: number
+          _user_elo: number
+        }
+        Returns: number
+      }
       cancel_championship_registration: {
         Args: { _champ: string }
         Returns: undefined
@@ -11991,12 +12128,17 @@ export type Database = {
           accepted_terms_at: string | null
           admin_notes: string | null
           avatar_url: string | null
+          battle_wins: number | null
+          battles_played: number | null
+          best_battle_streak: number | null
           bio: string | null
           coins: number
           country: string | null
           created_at: string
+          current_battle_streak: number | null
           deleted_at: string | null
           display_name: string | null
+          elo: number | null
           email: string | null
           experience: Database["public"]["Enums"]["trading_experience"] | null
           first_name: string | null
@@ -12008,6 +12150,7 @@ export type Database = {
           league: Database["public"]["Enums"]["league"]
           level: number
           onboarded: boolean
+          peak_elo: number | null
           preferred_market:
             | Database["public"]["Enums"]["preferred_market"]
             | null
@@ -12162,8 +12305,33 @@ export type Database = {
         | "idle"
         | "disconnected"
         | "finished"
-      battle_status: "draft" | "upcoming" | "live" | "completed" | "cancelled"
-      battle_type_kind: "1v1" | "2v2" | "ffa5" | "ffa10"
+      battle_rank:
+        | "bronze"
+        | "silver"
+        | "gold"
+        | "platinum"
+        | "diamond"
+        | "master"
+      battle_status:
+        | "draft"
+        | "upcoming"
+        | "live"
+        | "completed"
+        | "cancelled"
+        | "open"
+        | "filling"
+        | "ready"
+        | "countdown"
+        | "paused"
+        | "failed"
+      battle_type_kind:
+        | "1v1"
+        | "2v2"
+        | "ffa5"
+        | "ffa10"
+        | "profit_target"
+        | "time_trial"
+        | "custom"
       battle_visibility: "public" | "private"
       battle_win_condition:
         | "highest_pnl"
@@ -12597,8 +12765,36 @@ export const Constants = {
         "disconnected",
         "finished",
       ],
-      battle_status: ["draft", "upcoming", "live", "completed", "cancelled"],
-      battle_type_kind: ["1v1", "2v2", "ffa5", "ffa10"],
+      battle_rank: [
+        "bronze",
+        "silver",
+        "gold",
+        "platinum",
+        "diamond",
+        "master",
+      ],
+      battle_status: [
+        "draft",
+        "upcoming",
+        "live",
+        "completed",
+        "cancelled",
+        "open",
+        "filling",
+        "ready",
+        "countdown",
+        "paused",
+        "failed",
+      ],
+      battle_type_kind: [
+        "1v1",
+        "2v2",
+        "ffa5",
+        "ffa10",
+        "profit_target",
+        "time_trial",
+        "custom",
+      ],
       battle_visibility: ["public", "private"],
       battle_win_condition: [
         "highest_pnl",
