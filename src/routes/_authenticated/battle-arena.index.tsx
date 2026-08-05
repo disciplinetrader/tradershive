@@ -117,7 +117,7 @@ function BattleArenaHome() {
           ) : (
             <>
               <Button size="sm" variant="outline" className="h-9 font-bold px-4" onClick={() => handleJoinRandom(true)}>
-                <Zap className="mr-2 h-4 w-4 fill-primary text-primary" /> Ranked Match
+                <Zap className="mr-2 h-4 w-4 fill-primary text-primary" /> Competitive Match
               </Button>
               <Button size="sm" variant="outline" className="h-9 font-bold px-4" onClick={() => handleJoinRandom(false)}>
                 Join Random
