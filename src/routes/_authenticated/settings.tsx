@@ -79,37 +79,118 @@ function SettingsPage() {
   );
 }
 
-function ProfileSection() {
+function ProfileSection({ profile, onSave, saving }: { profile: any, onSave: any, saving: boolean }) {
+  const [displayName, setDisplayName] = useState(profile?.display_name || "");
+
+  useEffect(() => {
+    if (profile?.display_name) setDisplayName(profile.display_name);
+  }, [profile?.display_name]);
+
   return (
     <GlassCard className="p-6">
-      <h2 className="text-base font-semibold mb-4">Profile</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-base font-semibold">Profile</h2>
+        <Button 
+          size="sm" 
+          onClick={() => onSave({ display_name: displayName })}
+          disabled={saving || displayName === profile?.display_name}
+        >
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Changes"}
+        </Button>
+      </div>
       <div className="space-y-4">
         <div className="grid gap-2">
+          <Label>Display Name</Label>
+          <Input 
+            value={displayName} 
+            onChange={(e) => setDisplayName(e.target.value)}
+            placeholder="How other traders see you" 
+          />
+        </div>
+        <div className="grid gap-2">
           <Label>Username</Label>
-          <Input placeholder="Username" disabled />
+          <Input value={profile?.username || ""} disabled className="bg-muted/30" />
         </div>
       </div>
     </GlassCard>
   );
 }
 
-function TradingSection() {
+function TradingSection({ profile, onSave, saving }: { profile: any, onSave: any, saving: boolean }) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+
+  const filteredTimezones = useMemo(() => {
+    if (!searchQuery) return TIMEZONES;
+    return TIMEZONES.filter(tz => tz.toLowerCase().includes(searchQuery.toLowerCase()));
+  }, [searchQuery]);
+
+  const currentTz = profile?.timezone || "UTC";
+
   return (
     <GlassCard className="p-6">
       <h2 className="text-base font-semibold mb-4">Trading Preferences</h2>
-      <div className="space-y-4">
-        <div className="grid gap-2">
-          <Label>Default Timezone</Label>
-          <Select defaultValue="UTC">
-            <SelectTrigger>
-              <SelectValue />
+      <div className="space-y-6">
+        <div className="grid gap-3">
+          <Label className="text-sm font-medium">Platform Timezone</Label>
+          <p className="text-xs text-muted-foreground">This affects your journal charts and replay session times.</p>
+          
+          <Select 
+            value={currentTz} 
+            onValueChange={(val) => onSave({ timezone: val })}
+            open={isOpen}
+            onOpenChange={setIsOpen}
+          >
+            <SelectTrigger className="w-full sm:w-[350px]">
+              <SelectValue>
+                <div className="flex items-center gap-2">
+                  <Globe className="h-4 w-4 text-primary" />
+                  <span>{currentTz}</span>
+                </div>
+              </SelectValue>
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="UTC">UTC (Universal Time)</SelectItem>
-              <SelectItem value="America/New_York">New York (EST)</SelectItem>
-              <SelectItem value="London">London (GMT)</SelectItem>
+            <SelectContent className="glass-strong">
+              <div className="flex items-center border-b border-border/40 px-3 py-2">
+                <Search className="mr-2 h-4 w-4 text-muted-foreground" />
+                <input
+                  className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                  placeholder="Search timezones..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.stopPropagation()}
+                />
+              </div>
+              <div className="max-h-[300px] overflow-y-auto">
+                {filteredTimezones.length > 0 ? (
+                  filteredTimezones.map((tz) => (
+                    <SelectItem key={tz} value={tz}>
+                      <div className="flex items-center justify-between w-full min-w-[300px]">
+                        <span>{tz.replace(/_/g, ' ')}</span>
+                        <span className="text-[10px] text-muted-foreground bg-muted/30 px-1.5 py-0.5 rounded ml-auto">
+                          {getTimezoneOffset(tz)}
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))
+                ) : (
+                  <div className="p-4 text-center text-sm text-muted-foreground">No matches found</div>
+                )}
+              </div>
             </SelectContent>
           </Select>
+          
+          <div className="flex items-center gap-4 mt-2 p-3 rounded-lg bg-surface/40 border border-border/40 w-fit">
+            <div className="flex items-center gap-2 text-xs">
+              <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-muted-foreground">Local Time:</span>
+              <span className="font-mono font-medium">{getLocalTime(currentTz)}</span>
+            </div>
+            <div className="h-3 w-px bg-border/60" />
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-muted-foreground">Offset:</span>
+              <span className="font-mono font-medium">{getTimezoneOffset(currentTz)}</span>
+            </div>
+          </div>
         </div>
       </div>
     </GlassCard>
