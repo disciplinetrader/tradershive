@@ -17,7 +17,9 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  LifeBuoy,
 } from "lucide-react";
+
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/use-auth";
