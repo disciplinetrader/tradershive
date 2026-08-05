@@ -45,7 +45,7 @@ function IdeasPage() {
       <PageHeader
         title="Trade Ideas"
         description="Structured setups from the community — entry, stop, target, R:R and linked context."
-        actions={<Button asChild size="sm" variant="outline" className="opacity-50 cursor-not-allowed"><Link to="#" onClick={(e) => { e.preventDefault(); toast.info("Publishing ideas is coming soon."); }}>Publish idea (Coming soon)</Link></Button>}
+        actions={<Button disabled size="sm" variant="outline" className="opacity-50 cursor-not-allowed">Publish idea (Coming soon)</Button>}
       />
 
       <div className="flex flex-wrap items-center gap-2">
