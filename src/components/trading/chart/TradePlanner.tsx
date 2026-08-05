@@ -250,13 +250,13 @@ export function TradePlanner({
               <Label htmlFor="plan-risk-pct" className="text-[10px] uppercase text-muted-foreground">Risk %</Label>
               <input
                 id="plan-risk-pct"
-
                 type="number" min={0.1} max={100} step={0.1} value={riskPct}
                 onChange={(e) => setRiskPct(Math.max(0.1, Number(e.target.value) || 0.1))}
                 className="w-10 bg-transparent text-right text-xs font-bold outline-none"
               />
-            </label>
+            </div>
           </div>
+
 
           <StatRow label="RR" value={`1 : ${result.rr.toFixed(2)}`} accent={result.rr >= 2 ? "green" : result.rr >= 1 ? "amber" : "red"} />
           <StatRow label="Pips risk / reward" value={`${result.pipsRisk.toFixed(1)} / ${result.pipsReward.toFixed(1)}`} />
