@@ -27,9 +27,11 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface ArenaCommandRailProps {
   className?: string;
+  onClose?: () => void;
 }
 
-export function ArenaCommandRail({ className }: ArenaCommandRailProps) {
+export function ArenaCommandRail({ className, onClose }: ArenaCommandRailProps) {
+  const isMobile = useIsMobile();
   const { accountId, account } = usePaper();
   const { data: arenaData, isLoading } = useActiveArena(accountId);
   const [isCollapsed, setIsCollapsed] = useState(false);
