@@ -151,6 +151,10 @@ function BattleDetail() {
   if (!battleQ.data) return <div className="text-sm text-muted-foreground">Battle not found.</div>;
 
   const { participants = [], rankings = [], results = [], profiles = [] } = (battleQ.data as any) || {};
+  
+  // A battle detail crash (THIVE-008) often happens if 'battle' is undefined in a re-render.
+  if (!battle) return null;
+
   const canJoin = !isParticipant && battle?.visibility === "public" && ["draft", "upcoming"].includes(battle?.status || "") && participants.length < (battle?.max_participants || 0);
   const canLeave = isParticipant && ["draft", "upcoming"].includes(battle?.status || "");
   const canCancel = isHost && ["draft", "upcoming"].includes(battle?.status || "");

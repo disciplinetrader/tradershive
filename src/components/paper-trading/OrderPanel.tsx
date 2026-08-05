@@ -288,11 +288,12 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
       </Select>
 
       <div className="grid grid-cols-2 gap-2">
-        <Field label="Entry price" htmlFor="order-entry">
+        <Field label="Entry price" htmlFor="order-entry" error={validation?.errors.find(e => e.toLowerCase().includes("entry"))}>
           <div className="flex gap-1">
             <Input id="order-entry" inputMode="decimal" value={entry} onChange={(e) => setEntry(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); attemptPlace(); } }}
               aria-invalid={!validation?.ok && validation?.errors.some(m => m.toLowerCase().includes("entry"))}
+              aria-describedby={validation?.errors.some(m => m.toLowerCase().includes("entry")) ? "order-entry-error" : undefined}
               className="h-8 font-mono" />
             {livePrice != null && (
               <Button
@@ -302,22 +303,25 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
             )}
           </div>
         </Field>
-        <Field label="Lot size" htmlFor="order-lot">
+        <Field label="Lot size" htmlFor="order-lot" error={validation?.errors.find(e => e.toLowerCase().includes("lot"))}>
           <Input id="order-lot" inputMode="decimal" value={lot} onChange={(e) => setLot(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); attemptPlace(); } }}
             aria-invalid={!validation?.ok && validation?.errors.some(m => m.toLowerCase().includes("lot"))}
+            aria-describedby={validation?.errors.some(m => m.toLowerCase().includes("lot")) ? "order-lot-error" : undefined}
             className="h-8 font-mono" />
         </Field>
-        <Field label="Stop loss" htmlFor="order-sl">
+        <Field label="Stop loss" htmlFor="order-sl" error={validation?.errors.find(e => e.toLowerCase().includes("stop"))}>
           <Input id="order-sl" inputMode="decimal" value={sl} onChange={(e) => setSl(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); attemptPlace(); } }}
             aria-invalid={!validation?.ok && validation?.errors.some(m => m.toLowerCase().includes("stop"))}
+            aria-describedby={validation?.errors.some(m => m.toLowerCase().includes("stop")) ? "order-sl-error" : undefined}
             className="h-8 font-mono" placeholder="—" />
         </Field>
-        <Field label="Take profit" htmlFor="order-tp">
+        <Field label="Take profit" htmlFor="order-tp" error={validation?.errors.find(e => e.toLowerCase().includes("profit"))}>
           <Input id="order-tp" inputMode="decimal" value={tp} onChange={(e) => setTp(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); attemptPlace(); } }}
             aria-invalid={!validation?.ok && validation?.errors.some(m => m.toLowerCase().includes("profit"))}
+            aria-describedby={validation?.errors.some(m => m.toLowerCase().includes("profit")) ? "order-tp-error" : undefined}
             className="h-8 font-mono" placeholder="—" />
         </Field>
 
@@ -553,11 +557,16 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
   );
 }
 
-function Field({ label, htmlFor, children }: { label: string; htmlFor?: string; children: React.ReactNode }) {
+function Field({ label, htmlFor, children, error }: { label: string; htmlFor?: string; children: React.ReactNode; error?: string }) {
   return (
-    <div>
+    <div className="space-y-1">
       <Label htmlFor={htmlFor} className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</Label>
       <div className="mt-1">{children}</div>
+      {error && (
+        <p id={htmlFor ? `${htmlFor}-error` : undefined} className="text-[10px] font-medium text-danger">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

@@ -34,50 +34,63 @@ function requireLovableKey() {
   return key;
 }
 
+const inflightStructured = new Map<string, Promise<any>>();
+
 async function runStructured<T>(args: {
+  userId: string;
+  kind: string;
   modelKey: string;
   system: string;
   prompt: string;
   schema: z.ZodType<T>;
   maxTokens?: number;
 }): Promise<{ output: T; tokensIn: number; tokensOut: number; latencyMs: number; runId?: string }> {
-  const key = requireLovableKey();
-  const gateway = createLovableAiGatewayProvider(key, undefined, { structuredOutputs: true });
-  const model = gateway(args.modelKey);
-  const started = Date.now();
-  try {
-    const result = await generateText({
-      model,
-      system: args.system,
-      prompt: args.prompt,
-      output: Output.object({ schema: args.schema }),
-      abortSignal: AbortSignal.timeout(30000), // 30s timeout
-    });
-    return {
-      output: result.output as T,
-      tokensIn: result.usage?.inputTokens ?? 0,
-      tokensOut: result.usage?.outputTokens ?? 0,
-      latencyMs: Date.now() - started,
-      runId: gateway.getRunId(),
-    };
-  } catch (err) {
-    if (NoObjectGeneratedError.isInstance(err)) {
-      try {
-        const parsed = JSON.parse((err as { text?: string }).text ?? "{}");
-        const validated = args.schema.parse(parsed);
-        return {
-          output: validated,
-          tokensIn: (err as { usage?: { inputTokens?: number } }).usage?.inputTokens ?? 0,
-          tokensOut: (err as { usage?: { outputTokens?: number } }).usage?.outputTokens ?? 0,
-          latencyMs: Date.now() - started,
-          runId: gateway.getRunId(),
-        };
-      } catch {
-        // fallthrough
+  const coalesceKey = `${args.userId}:${args.kind}:${args.modelKey}:${args.prompt.slice(0, 100)}`;
+  const existing = inflightStructured.get(coalesceKey);
+  if (existing) return existing;
+
+  const promise = (async () => {
+    const key = requireLovableKey();
+    const gateway = createLovableAiGatewayProvider(key, undefined, { structuredOutputs: true });
+    const model = gateway(args.modelKey);
+    const started = Date.now();
+    try {
+      const result = await generateText({
+        model,
+        system: args.system,
+        prompt: args.prompt,
+        output: Output.object({ schema: args.schema }),
+        abortSignal: AbortSignal.timeout(30000), // 30s timeout
+      });
+      return {
+        output: result.output as T,
+        tokensIn: result.usage?.inputTokens ?? 0,
+        tokensOut: result.usage?.outputTokens ?? 0,
+        latencyMs: Date.now() - started,
+        runId: gateway.getRunId(),
+      };
+    } catch (err) {
+      if (NoObjectGeneratedError.isInstance(err)) {
+        try {
+          const parsed = JSON.parse((err as { text?: string }).text ?? "{}");
+          const validated = args.schema.parse(parsed);
+          return {
+            output: validated,
+            tokensIn: (err as { usage?: { inputTokens?: number } }).usage?.inputTokens ?? 0,
+            tokensOut: (err as { usage?: { outputTokens?: number } }).usage?.outputTokens ?? 0,
+            latencyMs: Date.now() - started,
+            runId: gateway.getRunId(),
+          };
+        } catch {
+          // fallthrough
+        }
       }
+      throw err;
     }
-    throw err;
-  }
+  })().finally(() => inflightStructured.delete(coalesceKey));
+
+  inflightStructured.set(coalesceKey, promise);
+  return promise;
 }
 
 async function logUsage(
@@ -328,6 +341,8 @@ Grade the trade (A+..F), give confidence 0-100, and produce the structured revie
 
     try {
       const res = await runStructured({
+        userId,
+        kind: "trade_review",
         modelKey,
         system: COACH_SYSTEM_PROMPT,
         prompt,
@@ -413,6 +428,8 @@ export const reviewJournalEntry = createServerFn({ method: "POST" })
     const modelKey = settings.data?.preferred_model ?? DEFAULT_MODEL;
 
     const res = await runStructured({
+      userId,
+      kind: "journal_review",
       modelKey,
       system: COACH_SYSTEM_PROMPT,
       prompt: `Evaluate this journal entry for quality, completeness, psychology, risk, emotion and consistency. Provide scores 0-100.
@@ -482,6 +499,8 @@ ${JSON.stringify((journals ?? []).slice(0, 60))}
 Return emotion scores 0-100 for fear, greed, fomo, revenge, overconfidence, impatience, discipline, confidence. List detected patterns with severity (low/medium/high). Then correlate emotion vs profit.`;
 
     const res = await runStructured({
+      userId,
+      kind: "psychology_review",
       modelKey,
       system: COACH_SYSTEM_PROMPT,
       prompt,
@@ -594,6 +613,8 @@ Total closed trades: ${trades?.length ?? 0}
 Detect best/worst sessions (Asian/London/NY), strategies (from patterns), pairs, days, times. Provide specific suggestions.`;
 
     const res = await runStructured({
+      userId,
+      kind: "performance_review",
       modelKey,
       system: COACH_SYSTEM_PROMPT,
       prompt,
@@ -668,6 +689,8 @@ ${JSON.stringify(score, null, 2)}
 Write an honest, constructive review. Include specific wins, losses, biggest improvement, biggest weakness, and 3-5 recommended goals with metric targets.`;
 
     const res = await runStructured({
+      userId,
+      kind: "report_review",
       modelKey,
       system: COACH_SYSTEM_PROMPT,
       prompt,
@@ -729,6 +752,8 @@ export const generatePlaybook = createServerFn({ method: "POST" })
 
     const modelKey = DEFAULT_MODEL;
     const res = await runStructured({
+      userId,
+      kind: "playbook_generation",
       modelKey,
       system: COACH_SYSTEM_PROMPT,
       prompt: `Generate a personalized trading playbook for: "${data.topic}".
@@ -815,6 +840,8 @@ export const generateRecommendations = createServerFn({ method: "POST" })
     const score = computeAiScore(inputs);
     const modelKey = DEFAULT_MODEL;
     const res = await runStructured({
+      userId,
+      kind: "recommendations",
       modelKey,
       system: COACH_SYSTEM_PROMPT,
       prompt: `Generate 5-8 personalized recommendations. Rank by priority (critical > high > medium > low), rate impact 1-5 and difficulty 1-5.

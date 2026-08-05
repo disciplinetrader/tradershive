@@ -162,6 +162,7 @@ const createSessionSchema = z.object({
   provider: z.string().default("historical"),
   tags: z.array(z.string()).default([]),
   initial_balance: z.number().finite().positive().max(100_000_000_000).optional(),
+  warmup_bars: z.number().int().min(0).max(1000).default(600),
 });
 
 export const createReplaySession = createServerFn({ method: "POST" })

@@ -178,16 +178,28 @@ export const ensureHistoricalRange = createServerFn({ method: "POST" })
       from: z.number().int(),
       to: z.number().int(),
       market: z.string().optional(),
+      warmupBars: z.number().int().optional(),
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
     const { resolveHistoricalRange, HistoricalDataUnavailableError } =
       await import("./historical/service.server");
+    
+    // THIVE-002: If warmup bars are requested, extend the 'from' date backwards.
+    let targetFrom = data.from;
+    if (data.warmupBars && data.warmupBars > 0) {
+      const barMs = {
+        "1m": 60_000, "5m": 300_000, "15m": 900_000, "30m": 1_800_000,
+        "1H": 3_600_000, "4H": 14_400_000, "1D": 86_400_000, "1W": 604_800_000, "1M": 2_592_000_000
+      }[data.timeframe] || 60_000;
+      targetFrom = data.from - (data.warmupBars * barMs * 1.5);
+    }
+
     try {
       const r = await resolveHistoricalRange(context.supabase, {
         symbol: data.symbol,
         timeframe: data.timeframe as any,
-        from: data.from,
+        from: targetFrom,
         to: data.to,
         market: data.market,
         allowBackfill: true,
