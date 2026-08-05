@@ -48,7 +48,7 @@ export function RulesPanel({ battle }: { battle: any }) {
       <div className="space-y-1">
         <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
           <ShieldAlert className="h-4 w-4 text-primary" />
-          Execution Rules
+          Arena Conditions
         </h3>
         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Automated server-side enforcement</p>
       </div>
