@@ -17,18 +17,15 @@ function greeting(d = new Date()): string {
 export function DashboardHeader() {
   const { profile, user } = useAuth();
   const { context, selectContext, accounts, replays, props, battles, isLoading } = useSessionContext();
-  const [internalValue, setInternalValue] = useState(context.id ? `${context.type}:${context.id}` : "");
+  const [internalValue, setInternalValue] = useState(context.id ? `${context.type}:${context.id}` : context.type === "all" ? "all" : "");
 
   useEffect(() => {
-    if (context.id) {
+    if (context.type === "all") {
+      setInternalValue("all");
+    } else if (context.id) {
       setInternalValue(`${context.type}:${context.id}`);
-    } else if (!isLoading && accounts.length > 0) {
-      // Auto-select first account if nothing selected
-      const first = accounts[0];
-      selectContext("paper", first.id, first.name);
-      setInternalValue(`paper:${first.id}`);
     }
-  }, [context.type, context.id, accounts, isLoading, selectContext]);
+  }, [context.type, context.id]);
 
   const name = profile?.display_name || profile?.username || user?.email?.split("@")[0] || "Trader";
   const dateStr = new Intl.DateTimeFormat("en-GB", {
