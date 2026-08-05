@@ -36,8 +36,8 @@ export function ParticipantsList({
       {participants.length === 0 ? (
         <div className="flex-1 grid place-items-center p-8 text-center">
           <div className="space-y-1">
-            <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Empty Lobby</div>
-            <p className="text-[10px] text-muted-foreground/60 max-w-[150px] mx-auto">Waiting for traders to join the arena...</p>
+            <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Empty Staging Room</div>
+            <p className="text-[10px] text-muted-foreground/60 max-w-[150px] mx-auto">Waiting for competitors to join the arena...</p>
           </div>
         </div>
       ) : (
