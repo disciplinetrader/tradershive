@@ -35,6 +35,12 @@ export function DashboardHeader() {
   }).format(new Date());
 
   const handleValueChange = (val: string) => {
+    if (val === "all") {
+      setInternalValue("all");
+      selectContext("all", null, "All Accounts");
+      return;
+    }
+
     const [type, id] = val.split(":");
     let label = "";
     
