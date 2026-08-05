@@ -16,7 +16,19 @@ function greeting(d = new Date()): string {
 
 export function DashboardHeader() {
   const { profile, user } = useAuth();
-  const { context, selectContext, accounts, replays, props, battles } = useSessionContext();
+  const { context, selectContext, accounts, replays, props, battles, isLoading } = useSessionContext();
+  const [internalValue, setInternalValue] = useState(context.id ? `${context.type}:${context.id}` : "");
+
+  useEffect(() => {
+    if (context.id) {
+      setInternalValue(`${context.type}:${context.id}`);
+    } else if (!isLoading && accounts.length > 0) {
+      // Auto-select first account if nothing selected
+      const first = accounts[0];
+      selectContext("paper", first.id, first.name);
+      setInternalValue(`paper:${first.id}`);
+    }
+  }, [context.type, context.id, accounts, isLoading, selectContext]);
 
   const name = profile?.display_name || profile?.username || user?.email?.split("@")[0] || "Trader";
   const dateStr = new Intl.DateTimeFormat("en-GB", {
@@ -24,8 +36,6 @@ export function DashboardHeader() {
     day: "numeric",
     month: "long",
   }).format(new Date());
-
-  const currentValue = context.id ? `${context.type}:${context.id}` : "";
 
   const handleValueChange = (val: string) => {
     const [type, id] = val.split(":");
@@ -36,6 +46,7 @@ export function DashboardHeader() {
     else if (type === "prop") label = (props.find(p => p.id === id) as any)?.name || "Prop Challenge";
     else if (type === "arena") label = (battles.find(b => b.id === id) as any)?.battle_name || "Arena Match";
     
+    setInternalValue(val);
     selectContext(type as any, id, label);
   };
 
