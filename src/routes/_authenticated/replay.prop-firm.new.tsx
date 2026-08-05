@@ -15,7 +15,13 @@ import { createPropChallenge } from "@/lib/prop-challenges.functions";
 import { listAccounts } from "@/lib/paper-trading.functions";
 import { PROP_PRESETS, listPropPresets, type PropPresetId } from "@/lib/prop-challenges/presets";
 
-export const Route = createFileRoute("/_authenticated/prop-challenges/new")({
+export const Route = createFileRoute("/_authenticated/replay/prop-firm/new")({
+  head: () => ({
+    meta: [
+      { title: "New Prop Firm Challenge — TradersHIVE" },
+      { name: "description", content: "Create a new prop firm challenge to test your trading skills." },
+    ],
+  }),
   component: NewChallengePage,
 });
 
@@ -74,7 +80,7 @@ function NewChallengePage() {
     onSuccess: (row) => {
       toast.success("Challenge created");
       qc.invalidateQueries({ queryKey: ["prop-challenges"] });
-      navigate({ to: "/prop-challenges/$id", params: { id: row.id } });
+      navigate({ to: "/replay/prop-firm/$id", params: { id: row.id } });
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Could not create challenge"),
   });
@@ -174,7 +180,7 @@ function NewChallengePage() {
         </div>
 
         <div className="mt-4 flex items-center justify-end gap-2">
-          <Button variant="ghost" onClick={() => navigate({ to: "/prop-challenges" })}>Cancel</Button>
+          <Button variant="ghost" onClick={() => navigate({ to: "/replay/prop-firm" })}>Cancel</Button>
           <Button
             disabled={m.isPending || !form.name.trim()}
             onClick={() => m.mutate({

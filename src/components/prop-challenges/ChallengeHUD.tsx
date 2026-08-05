@@ -53,7 +53,7 @@ export function ChallengeHUD({ challengeId }: { challengeId: string }) {
           </div>
         </div>
         <Link
-          to="/prop-challenges/$id" params={{ id: challenge.id }}
+          to="/replay/prop-firm/$id" params={{ id: challenge.id }}
           className="rounded p-1 text-muted-foreground hover:text-foreground"
           title="Open challenge"
         >

@@ -162,7 +162,7 @@ function DashboardOverviewPage() {
         <div className="stagger grid gap-[var(--gutter-sm)] grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
           <QuickActionCard to="/replay" icon={PlayCircle} label="Start Replay" hint="Practise a setup" />
           <QuickActionCard to="/trading" icon={LineChart} label="Paper Trade" hint="Open live market" />
-          <QuickActionCard to="/dashboard/prop-firm" icon={Target} label="Prop Challenge" hint="Get funded" />
+          <QuickActionCard to="/replay/prop-firm" icon={Target} label="Prop Challenge" hint="Get funded" />
           <QuickActionCard to="/journal" icon={BookOpen} label="Trading Journal" hint="Review performance" />
           {home?.actions.find(a => a.kind === "replay_unfinished") && (
             <QuickActionCard 
@@ -212,7 +212,7 @@ function PropChallengeBanner({ challenge }: { challenge: any }) {
 
         <div className="flex items-center gap-2">
           <Button asChild size="sm" variant="outline" className="h-8 rounded-lg text-xs">
-            <Link to="/dashboard/prop-firm">Manage</Link>
+            <Link to="/replay/prop-firm">Manage</Link>
           </Button>
           <Button asChild size="sm" className="h-8 rounded-lg text-xs gradient-primary">
             <Link to="/trading">

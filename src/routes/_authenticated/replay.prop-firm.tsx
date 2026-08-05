@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { PageHeader } from "@/components/ui/page-header";
 import { cn } from "@/lib/utils";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -13,17 +14,19 @@ import { useActivePropChallenge } from "@/lib/prop-challenges/active-session";
 import { formatCurrency } from "@/lib/prop-challenges/evaluator";
 import { Progress } from "@/components/ui/progress";
 
-export const Route = createFileRoute("/_authenticated/dashboard/prop-firm")({
+export const Route = createFileRoute("/_authenticated/replay/prop-firm")({
   head: () => ({
     meta: [
-      { title: "Prop Firm Challenges — TradersHIVE" },
+      { title: "Prop Firm Challenges — Replay Studio — TradersHIVE" },
       { name: "description", content: "Practise prop-style evaluation rules using a virtual TradersHIVE account." },
     ],
   }),
-  component: DashboardPropFirmPage,
+  component: ReplayPropFirmPage,
 });
 
-function DashboardPropFirmPage() {
+function ReplayPropFirmPage() {
+  // Prop firm challenges now live inside Replay Studio.
+  // Sidebar highlights Replay Studio, and Replay tabs show Prop Firm as active.
   const [accountId, setAccountId] = useState<string | null>(null);
   const list = useServerFn(listPropChallenges);
   const { active: activeSession, setActive } = useActivePropChallenge();
@@ -39,8 +42,19 @@ function DashboardPropFirmPage() {
   );
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] space-y-[var(--gutter-md)] pb-[var(--gutter-lg)] sm:space-y-[var(--gutter-lg)] animate-in fade-in duration-500">
-      <DashboardHeader accountId={accountId} onAccountChange={setAccountId} />
+    <div className="mx-auto w-full max-w-[1400px] space-y-6 pb-[var(--gutter-lg)] animate-in fade-in duration-500">
+      <PageHeader
+        title="Prop Firm Challenges"
+        description="Practise prop-style evaluation rules using a virtual TradersHIVE account."
+        actions={
+          <Button asChild className="gradient-primary text-primary-foreground rounded-xl shadow-elegant">
+            <Link to="/replay/prop-firm/new">
+              <Plus className="mr-2 h-4 w-4" /> Start Challenge
+            </Link>
+          </Button>
+        }
+      />
+      
       
       <div className="space-y-6">
         {/* Notice Section */}
@@ -71,7 +85,7 @@ function DashboardPropFirmPage() {
               </div>
               <div className="flex justify-center pt-2">
                 <Button asChild className="gradient-primary text-primary-foreground rounded-xl">
-                  <Link to="/prop-challenges/new">
+                  <Link to="/replay/prop-firm/new">
                     <Plus className="mr-2 h-4 w-4" /> Start Challenge
                   </Link>
                 </Button>
@@ -126,7 +140,7 @@ function ActiveChallengeOverview({ challenge }: { challenge: any }) {
             </Button>
           )}
           <Button asChild variant="outline" className="rounded-xl">
-            <Link to="/prop-challenges/$id" params={{ id: challenge.id }}>
+            <Link to="/replay/prop-firm/$id" params={{ id: challenge.id }}>
               View Analytics <ChevronRight className="ml-1 h-4 w-4" />
             </Link>
           </Button>
@@ -246,7 +260,7 @@ function ChallengeCard({ challenge }: { challenge: any }) {
           {formatCurrency(Number(challenge.account_size), challenge.currency)} · {challenge.preset.replace(/_/g, " ")}
         </div>
         <Button asChild size="icon" variant="ghost" className="h-8 w-8 rounded-full">
-          <Link to="/prop-challenges/$id" params={{ id: challenge.id }}>
+          <Link to="/replay/prop-firm/$id" params={{ id: challenge.id }}>
             <ChevronRight className="h-4 w-4" />
           </Link>
         </Button>

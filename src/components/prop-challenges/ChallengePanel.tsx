@@ -160,7 +160,7 @@ export function ChallengePanel({ compact = false }: { compact?: boolean }) {
           variant="outline"
           className="h-7 flex-1 text-[11px]"
         >
-          <Link to="/prop-challenges/$id" params={{ id: challenge.id }}>
+          <Link to="/replay/prop-firm/$id" params={{ id: challenge.id }}>
             <ExternalLink className="mr-1 h-3 w-3" /> View Challenge
           </Link>
         </Button>
@@ -179,7 +179,7 @@ export function ChallengePanel({ compact = false }: { compact?: boolean }) {
             className="h-7 flex-1 text-[11px]"
             onClick={() => {
               endSession();
-              navigate({ to: "/prop-challenges/$id", params: { id: challenge.id } });
+              navigate({ to: "/replay/prop-firm/$id", params: { id: challenge.id } });
             }}
           >
             View Results

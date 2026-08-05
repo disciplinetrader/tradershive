@@ -166,7 +166,7 @@ function DashboardPage() {
         <div className="stagger grid gap-[var(--gutter-sm)] grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
           <QuickActionCard to="/replay" icon={PlayCircle} label="Start Replay" hint="Practise a setup" />
           <QuickActionCard to="/trading" icon={LineChart} label="Paper Trade" hint="Open live market" />
-          <QuickActionCard to="/prop-challenges" icon={Target} label="Prop Challenge" hint="Get funded" />
+          <QuickActionCard to="/replay/prop-firm" icon={Target} label="Prop Challenge" hint="Get funded" />
           <QuickActionCard to="/journal" icon={BookOpen} label="Trading Journal" hint="Review performance" />
           {home?.actions.find(a => a.kind === "replay_unfinished") && (
             <QuickActionCard 
