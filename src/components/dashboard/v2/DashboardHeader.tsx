@@ -63,7 +63,7 @@ export function DashboardHeader() {
       </div>
 
       <div className="flex shrink-0 flex-wrap items-center gap-2">
-        <Select value={currentValue} onValueChange={handleValueChange}>
+        <Select value={internalValue} onValueChange={handleValueChange}>
           <SelectTrigger className="h-10 w-[240px] rounded-xl border-border/50 bg-card/50 text-sm backdrop-blur-sm shadow-sm ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2">
             <SelectValue placeholder="Select context" />
           </SelectTrigger>
