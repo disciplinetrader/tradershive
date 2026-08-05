@@ -174,7 +174,7 @@ function BattleDetail() {
       setCancelOpen(false);
       navigate({ to: "/battle-arena" });
     } catch (e: any) {
-      toast.error(e?.message ?? "Failed to cancel battle");
+      toast.error(e?.message ?? "Failed to cancel arena match");
     } finally {
       setCancelling(false);
     }
