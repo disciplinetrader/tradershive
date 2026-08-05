@@ -235,7 +235,7 @@ function ExpandedRail({ battle, stats, events, isSpectator, isHost, account, onC
       <Tabs defaultValue="standings" className="flex flex-1 flex-col overflow-hidden">
         <TabsList className="mx-4 mt-4 grid grid-cols-4 bg-muted/40 p-1 h-10 rounded-xl">
           <TabsTrigger value="standings" className="text-[10px] font-bold uppercase">Standings</TabsTrigger>
-          <TabsTrigger value="chat" className="text-[10px] font-bold uppercase">Chat</TabsTrigger>
+          <TabsTrigger value="chat" className="text-[10px] font-bold uppercase">Conversation</TabsTrigger>
           <TabsTrigger value="rules" className="text-[10px] font-bold uppercase">Rules</TabsTrigger>
           <TabsTrigger value="feed" className="text-[10px] font-bold uppercase">Feed</TabsTrigger>
         </TabsList>
