@@ -62,12 +62,12 @@ export const STATUS_STYLES: Record<BattleStatus, { label: string; className: str
 };
 
 export const RANKS = [
-  { value: "bronze",   label: "Bronze",   minElo: 0,    color: "#CD7F32" },
-  { value: "silver",   label: "Silver",   minElo: 1200, color: "#C0C0C0" },
-  { value: "gold",     label: "Gold",     minElo: 1500, color: "#FFD700" },
-  { value: "platinum", label: "Platinum", minElo: 1800, color: "#E5E4E2" },
-  { value: "diamond",  label: "Diamond",  minElo: 2200, color: "#B9F2FF" },
-  { value: "master",   label: "Master",   minElo: 2600, color: "#FF0000" },
+  { value: "initiate",  label: "Initiate",  minElo: 0,    color: "#64748b" },
+  { value: "forager",   label: "Forager",   minElo: 1200, color: "#94a3b8" },
+  { value: "sentinel",  label: "Sentinel",  minElo: 1500, color: "#fbbf24" },
+  { value: "vanguard",  label: "Vanguard",  minElo: 1800, color: "#38bdf8" },
+  { value: "apex",      label: "Apex",      minElo: 2200, color: "#818cf8" },
+  { value: "sovereign", label: "Sovereign", minElo: 2600, color: "#f43f5e" },
 ] as const;
 
 export type BattleRank = (typeof RANKS)[number]["value"];
