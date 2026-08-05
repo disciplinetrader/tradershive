@@ -44,6 +44,8 @@ function AuthenticatedLayout() {
           <Outlet />
         </ErrorBoundary>
       </FeedbackProvider>
+      <TimezoneSuggestionModal />
+      <MentorDrawer />
     </AppShell>
     </ClientOnly>
   );
