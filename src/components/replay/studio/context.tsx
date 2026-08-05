@@ -14,6 +14,7 @@ import {
   useSyncExternalStore, type ReactNode,
 } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { logHistoricalMarketReplayed } from "@/lib/activity.functions";
 import { useQuery } from "@tanstack/react-query";
 import { getReplayCandles, getReplaySession } from "@/lib/replay.functions";
 import { makeDrawing } from "@/lib/chart/drawings/store";
