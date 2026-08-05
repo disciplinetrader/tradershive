@@ -267,7 +267,7 @@ function ChallengeCard({ challenge }: { challenge: any }) {
           <div className="min-w-0">
             <h4 className="font-bold truncate text-base leading-tight">{challenge.name}</h4>
             <p className="text-xs text-muted-foreground mt-1">
-              {challenge.preset.replace(/g, " ")}
+              {challenge.preset.replace(/_/g, " ")}
             </p>
           </div>
           <Badge 
