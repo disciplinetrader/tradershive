@@ -133,7 +133,12 @@ export function CreatorWizard({ open, onOpenChange }: { open: boolean; onOpenCha
 
   const submit = async () => {
     if (!instrument || !canSubmit) return;
-    const balanceNum = Math.max(100, Math.round(Number(balance) || 10000));
+    const balanceNum = Number(balance);
+    if (!Number.isFinite(balanceNum) || balanceNum <= 0 || balanceNum > 100_000_000_000) {
+      setPreload({ status: "error", progress: 0, message: "Please enter a valid starting balance (positive, up to 100B)." });
+      return;
+    }
+
     const label = title.trim() || `${instrument.symbol} · ${from}`;
     const market = REPLAY_MARKETS.has(instrument.market as JournalMarket)
       ? instrument.market

@@ -161,7 +161,7 @@ const createSessionSchema = z.object({
   source_journal_id: z.string().uuid().optional().nullable(),
   provider: z.string().default("historical"),
   tags: z.array(z.string()).default([]),
-  initial_balance: z.number().positive().optional(),
+  initial_balance: z.number().finite().positive().max(100_000_000_000).optional(),
 });
 
 export const createReplaySession = createServerFn({ method: "POST" })
