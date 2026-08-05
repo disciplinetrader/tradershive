@@ -72,7 +72,7 @@ export function BattleResultsView({ battle, results, profiles }: { battle: any; 
                 return (
                   <tr key={r.user_id} className="border-t border-border/60">
                     <td className="px-4 py-2 font-bold tabular-nums">{r.final_rank}</td>
-                    <td className="px-4 py-2">{p?.display_name ?? p?.username ?? "Trader"}</td>
+                    <td className="px-4 py-2">{p?.display_name ?? p?.username ?? "Competitor"}</td>
                     <td className="px-4 py-2 text-right tabular-nums">${Number(r.pnl).toFixed(2)}</td>
                     <td className="px-4 py-2 text-right tabular-nums">{Number(r.r_multiple).toFixed(2)}</td>
                     <td className="px-4 py-2 text-right tabular-nums">{Number(r.win_rate).toFixed(1)}%</td>
