@@ -2,7 +2,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { 
   User, Shield, Bell, CreditCard, Mail, 
-  Loader2, Play, LineChart as TradingChart 
+  Loader2, Play, LineChart as TradingChart,
+  Search, Globe, Clock
 } from "lucide-react";
 import { toast } from "sonner";
 import { useProductTour } from "@/components/tour/ProductTour";
