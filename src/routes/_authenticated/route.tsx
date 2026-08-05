@@ -4,6 +4,8 @@ import { AppShell } from "@/components/layout/app-shell";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { RouteError } from "@/components/common/RouteError";
 import { FeedbackProvider } from "@/components/feedback/FeedbackProvider";
+import { TimezoneSuggestionModal } from "@/components/layout/TimezoneSuggestionModal";
+import { MentorDrawer } from "@/components/ai/MentorDrawer";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
