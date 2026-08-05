@@ -263,7 +263,7 @@ export function MusicPlayer() {
               <SkipBack className="h-4 w-4" />
             </Button>
             <Button
-              variant="primary"
+              variant="default"
               size="icon"
               className="h-10 w-10 rounded-full shadow-lg"
               onClick={togglePlay}
