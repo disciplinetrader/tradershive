@@ -222,11 +222,11 @@ function ExpandedRail({ battle, stats, events, isSpectator, isHost, account, onC
               trend={(account.balance > account.starting_balance) ? "up" : (account.balance < account.starting_balance) ? "down" : "neutral"} 
             />
             <MetricCard label="Equity" value={`$${account.equity.toLocaleString()}`} />
-            <MetricCard label="Realized" value={`$${(account.balance - account.starting_balance).toLocaleString()}`} />
+            <MetricCard label="Drawdown" value={`${(stats?.rankings?.find((r: any) => r.user_id === account.user_id)?.max_drawdown || 0).toFixed(2)}%`} />
             <MetricCard 
-              label="Drawdown" 
-              value={`${(stats?.rankings?.find((r: any) => r.user_id === account.user_id)?.max_drawdown || 0).toFixed(2)}%`} 
-              trend="neutral" 
+              label="Breaches" 
+              value={`${stats?.rankings?.find((r: any) => r.user_id === account.user_id)?.rule_breaches_count || 0}`} 
+              trend={(stats?.rankings?.find((r: any) => r.user_id === account.user_id)?.rule_breaches_count > 0) ? "down" : "neutral"}
             />
           </div>
         </div>
