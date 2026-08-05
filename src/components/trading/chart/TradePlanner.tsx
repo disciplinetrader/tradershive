@@ -15,6 +15,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Crosshair, Target, X } from "lucide-react";
+import { Label } from "@/components/ui/label";
+
 import type { ChartAdapter } from "@/lib/chart/adapter";
 import type { SymbolMeta } from "@/lib/paper-trading/symbols";
 import type { TradeSide } from "@/lib/paper-trading/calculations";
