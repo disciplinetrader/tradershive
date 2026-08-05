@@ -24,6 +24,8 @@ import { LineChart, LogIn, LogOut, Trash2, Copy, Play, Eye } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth";
 import { routeBoundaries } from "@/lib/route-boundaries";
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/battle-arena/$battleId")({
   component: BattleDetail,
@@ -155,9 +157,9 @@ function BattleDetail() {
   // A battle detail crash (THIVE-008) often happens if 'battle' is undefined in a re-render.
   if (!battle) return null;
 
-  const canJoin = !isParticipant && battle?.visibility === "public" && ["draft", "upcoming"].includes(battle?.status || "") && participants.length < (battle?.max_participants || 0);
-  const canLeave = isParticipant && ["draft", "upcoming"].includes(battle?.status || "");
-  const canCancel = isHost && ["draft", "upcoming"].includes(battle?.status || "");
+  const canJoin = !isParticipant && battle?.visibility === "public" && ["draft", "upcoming", "open", "filling"].includes(battle?.status || "") && participants.length < (battle?.max_participants || 0);
+  const canLeave = isParticipant && ["draft", "upcoming", "open", "filling", "ready"].includes(battle?.status || "");
+  const canCancel = isHost && ["draft", "upcoming", "open", "filling", "ready", "countdown"].includes(battle?.status || "");
   const canFinalize = isHost && battle?.status === "live";
 
   const doJoin = async () => { try { await fnJoin({ data: { battleId } }); toast.success("Joined!"); qc.invalidateQueries({ queryKey: ["battle", battleId] }); } catch (e: any) { toast.error(e?.message ?? "Failed"); } };
@@ -181,8 +183,10 @@ function BattleDetail() {
 
   const onlineCount = (presenceQ.data ?? []).filter((p: any) => p.status !== "disconnected").length;
 
+  const isLobby = ["draft", "upcoming", "open", "filling", "ready", "countdown"].includes(battle.status);
+
   return (
-    <div className="space-y-5">
+    <div className={cn("space-y-6 animate-in fade-in duration-500", battle.status === 'countdown' && "animate-pulse")}>
       <LiveBattleHeader
         battle={battle || { name: "Loading...", status: "upcoming" } as any}
         stats={statsQ.data as any}
@@ -190,78 +194,108 @@ function BattleDetail() {
         participantCount={participants.length}
       />
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-3">
         {!isParticipant && (
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/60 px-3 py-1 text-xs">
-            <Eye className="h-3.5 w-3.5" /> Spectator mode
-          </span>
+          <Badge variant="outline" className="h-7 px-3 bg-card/40 border-border/60 text-muted-foreground font-bold">
+            <Eye className="mr-2 h-3.5 w-3.5" /> SPECTATOR MODE
+          </Badge>
         )}
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/60 px-3 py-1 text-xs">
-          <span className="h-2 w-2 rounded-full bg-success animate-pulse" /> {onlineCount} online
-        </span>
-        {canJoin && <Button size="sm" onClick={doJoin}><LogIn className="mr-1.5 h-4 w-4" />Join battle</Button>}
-        {canLeave && <Button size="sm" variant="outline" onClick={doLeave}><LogOut className="mr-1.5 h-4 w-4" />Leave</Button>}
-        {canCancel && <Button size="sm" variant="destructive" onClick={() => setCancelOpen(true)}><Trash2 className="mr-1.5 h-4 w-4" />Cancel</Button>}
-        {canFinalize && <Button size="sm" variant="secondary" onClick={doFinalize}><Play className="mr-1.5 h-4 w-4" />Finalize now</Button>}
-        {isParticipant && battle!.status === "live" && (
-          <Button size="sm" asChild><Link to="/trading"><LineChart className="mr-1.5 h-4 w-4" />Open trading workspace</Link></Button>
-        )}
-        {battle!.visibility === "private" && battle!.invite_code && isHost && (
-          <div className="ml-auto flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-1 text-xs">
-            <span className="text-muted-foreground">Invite:</span>
-            <code className="rounded bg-background px-2 py-0.5 font-mono">{battle!.invite_code}</code>
-            <Button size="sm" variant="ghost" onClick={() => { navigator.clipboard.writeText(battle!.invite_code ?? ""); toast.success("Copied"); }}><Copy className="h-3 w-3" /></Button>
+        <Badge variant="outline" className="h-7 px-3 bg-card/40 border-border/60 text-muted-foreground font-bold">
+          <div className="mr-2 h-1.5 w-1.5 rounded-full bg-success animate-pulse" /> {onlineCount} ONLINE
+        </Badge>
+        
+        <div className="ml-auto flex items-center gap-2">
+          {canJoin && <Button size="sm" onClick={doJoin} className="font-bold rounded-xl shadow-lg shadow-primary/20"><LogIn className="mr-1.5 h-4 w-4" />Join Battle</Button>}
+          {canLeave && <Button size="sm" variant="outline" onClick={doLeave} className="font-bold rounded-xl border-border/60"><LogOut className="mr-1.5 h-4 w-4" />Leave</Button>}
+          {canCancel && <Button size="sm" variant="destructive" onClick={() => setCancelOpen(true)} className="font-bold rounded-xl"><Trash2 className="mr-1.5 h-4 w-4" />Cancel</Button>}
+          {canFinalize && <Button size="sm" variant="secondary" onClick={doFinalize} className="font-bold rounded-xl"><Play className="mr-1.5 h-4 w-4" />Finalize</Button>}
+          {isParticipant && battle.status === "live" && (
+            <Button size="sm" asChild className="font-bold rounded-xl shadow-lg shadow-primary/20">
+              <Link to="/trading"><LineChart className="mr-1.5 h-4 w-4" />Trade Now</Link>
+            </Button>
+          )}
+        </div>
+
+        {battle.visibility === "private" && battle.invite_code && isHost && (
+          <div className="flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-1 text-xs">
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Invite:</span>
+            <code className="rounded bg-background px-2 py-0.5 font-mono font-bold">{battle.invite_code}</code>
+            <Button size="sm" variant="ghost" className="h-6 w-6 p-0 rounded-lg" onClick={() => { navigator.clipboard.writeText(battle.invite_code ?? ""); toast.success("Copied"); }}><Copy className="h-3 w-3" /></Button>
           </div>
         )}
       </div>
 
-      {battle!.status === "completed" && (
-        <BattleResultsView battle={battle!} results={results} profiles={profiles} />
+      {battle.status === "completed" && (
+        <BattleResultsView battle={battle} results={results} profiles={profiles} />
       )}
 
-      <LiveScoreboard stats={statsQ.data as any} profiles={profiles} />
+      {!isLobby && <LiveScoreboard stats={statsQ.data as any} profiles={profiles} />}
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
-        <div className="space-y-4">
-          <LiveLeaderboard
-            rankings={rankings}
-            profiles={profiles}
-            presence={(presenceQ.data ?? []) as any}
-            winCondition={battle!.win_condition}
-            openPositionsByUser={openByUser}
-            lastTradeByUser={lastTradeByUser}
-          />
-          <ParticipantsList participants={participants} profiles={profiles} hostId={battle!.host_id} />
-          <LiveStatistics stats={statsQ.data as any} />
+      <div className={cn(
+        "grid grid-cols-1 gap-6",
+        isLobby ? "lg:grid-cols-[1fr_400px]" : "xl:grid-cols-[minmax(0,1fr)_400px]"
+      )}>
+        <div className="space-y-6">
+          {!isLobby && (
+            <LiveLeaderboard
+              rankings={rankings}
+              profiles={profiles}
+              presence={(presenceQ.data ?? []) as any}
+              winCondition={battle.win_condition}
+              openPositionsByUser={openByUser}
+              lastTradeByUser={lastTradeByUser}
+            />
+          )}
+          
+          <div className={cn(
+            "grid gap-6",
+            isLobby ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1"
+          )}>
+            <ParticipantsList 
+              participants={participants} 
+              profiles={profiles} 
+              hostId={battle.host_id} 
+              isLobby={isLobby}
+            />
+            {isLobby && <RulesPanel battle={battle} />}
+          </div>
+          
+          {!isLobby && <LiveStatistics stats={statsQ.data as any} />}
         </div>
 
-        <div className="space-y-4">
-          <Tabs defaultValue="activity">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="activity">Activity</TabsTrigger>
-              <TabsTrigger value="chat">Chat</TabsTrigger>
-              <TabsTrigger value="timeline">Timeline</TabsTrigger>
-            </TabsList>
-            <TabsContent value="activity" className="mt-3">
-              <LiveActivityFeed events={(eventsQ.data?.events ?? []) as any} profiles={(eventsQ.data?.profiles ?? []) as any} />
-            </TabsContent>
-            <TabsContent value="chat" className="mt-3">
-              <BattleChat battleId={battleId} canPost={!!user && (isParticipant || isHost || battle!.visibility === "public")} isHost={isHost} />
-            </TabsContent>
-            <TabsContent value="timeline" className="mt-3">
-              <BattleTimeline events={(eventsQ.data?.events ?? []) as any} />
-            </TabsContent>
-          </Tabs>
-          <RulesPanel battle={battle!} />
+        <div className="space-y-6">
+          <div className="rounded-3xl border border-border/60 bg-card/20 p-6 shadow-xl shadow-background/10">
+            <Tabs defaultValue="chat" className="w-full">
+              <TabsList className="grid w-full grid-cols-3 bg-background/40 p-1 rounded-2xl h-12">
+                <TabsTrigger value="chat" className="rounded-xl font-bold uppercase tracking-widest text-[10px]">Chat</TabsTrigger>
+                <TabsTrigger value="activity" className="rounded-xl font-bold uppercase tracking-widest text-[10px]">Log</TabsTrigger>
+                <TabsTrigger value="timeline" className="rounded-xl font-bold uppercase tracking-widest text-[10px]">Time</TabsTrigger>
+              </TabsList>
+              <TabsContent value="chat" className="mt-4 focus-visible:outline-none min-h-[400px] max-h-[600px] overflow-y-auto">
+                <BattleChat 
+                  battleId={battleId} 
+                  canPost={!!user && (isParticipant || isHost || battle.visibility === "public")} 
+                  isHost={isHost} 
+                />
+              </TabsContent>
+              <TabsContent value="activity" className="mt-4 focus-visible:outline-none">
+                <LiveActivityFeed events={(eventsQ.data?.events ?? []) as any} profiles={(eventsQ.data?.profiles ?? []) as any} />
+              </TabsContent>
+              <TabsContent value="timeline" className="mt-4 focus-visible:outline-none">
+                <BattleTimeline events={(eventsQ.data?.events ?? []) as any} />
+              </TabsContent>
+            </Tabs>
+          </div>
+          {!isLobby && <RulesPanel battle={battle} />}
         </div>
       </div>
 
       <ConfirmDialog
         open={cancelOpen}
         onOpenChange={setCancelOpen}
-        title="Cancel this battle?"
-        description="All participants will be removed and the battle will end for everyone. This can't be undone."
-        confirmLabel="Cancel battle"
+        title="Cancel Battle Arena?"
+        description="All players will be ejected and the event will be permanently terminated. ELO ratings will not be affected."
+        confirmLabel="Terminate Battle"
         destructive
         loading={cancelling}
         onConfirm={doCancel}
