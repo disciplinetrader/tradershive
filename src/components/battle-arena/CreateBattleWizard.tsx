@@ -118,18 +118,18 @@ export function CreateBattleWizard({ onCancel, onCreated }: { onCancel: () => vo
         {step === 0 && (
           <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
             <div className="space-y-2">
-              <Label className="text-sm font-bold uppercase tracking-wide">Battle name</Label>
+              <Label className="text-sm font-bold uppercase tracking-wide">Arena Match name</Label>
               <Input value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="Friday Crypto Sprint" className="h-11 rounded-xl bg-background/50" maxLength={80} />
             </div>
             
             <div className="space-y-2">
               <Label className="text-sm font-bold uppercase tracking-wide">Description</Label>
-              <Textarea value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="What are the goals of this battle?" className="rounded-xl bg-background/50 min-h-[80px]" maxLength={500} rows={3} />
+              <Textarea value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="What are the conditions of this arena match?" className="rounded-xl bg-background/50 min-h-[80px]" maxLength={500} rows={3} />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label className="text-sm font-bold uppercase tracking-wide">Battle Type</Label>
+                <Label className="text-sm font-bold uppercase tracking-wide">Arena Type</Label>
                 <Select value={form.battle_type} onValueChange={(v) => set("battle_type", v as any)}>
                   <SelectTrigger className="h-11 rounded-xl bg-background/50"><SelectValue /></SelectTrigger>
                   <SelectContent className="rounded-xl">{BATTLE_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
@@ -140,9 +140,9 @@ export function CreateBattleWizard({ onCancel, onCreated }: { onCancel: () => vo
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
                     <Trophy className={`h-4 w-4 ${form.ranked ? "text-primary animate-pulse" : "text-muted-foreground"}`} />
-                    <Label className="font-bold cursor-pointer">Ranked Battle</Label>
+                    <Label className="font-bold cursor-pointer">Competitive Match</Label>
                   </div>
-                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight">Affects ELO Rating</p>
+                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight">Affects HIVE Rating</p>
                 </div>
                 <Switch checked={form.ranked} onCheckedChange={(v) => set("ranked", v)} />
               </div>
@@ -258,9 +258,9 @@ export function CreateBattleWizard({ onCancel, onCreated }: { onCancel: () => vo
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="text-sm font-bold uppercase tracking-wide">Lobby Timezone</Label>
+              <Label className="text-sm font-bold uppercase tracking-wide">Arena Timezone</Label>
               <Input value={form.timezone} onChange={(e) => set("timezone", e.target.value)} className="h-11 rounded-xl bg-background/50" />
-              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider pl-1">Auto-detected based on your current location</p>
+              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider pl-1">Auto-detected based on your current region</p>
             </div>
           </div>
         )}
@@ -272,7 +272,7 @@ export function CreateBattleWizard({ onCancel, onCreated }: { onCancel: () => vo
                 <Info className="h-4 w-4 text-primary" />
                 <span className="text-xs font-black uppercase tracking-wider text-primary">Final Confirmation</span>
               </div>
-              {form.ranked && <Badge className="bg-primary text-primary-foreground font-black tracking-tighter uppercase px-2 py-0.5 text-[9px]">RANKED</Badge>}
+              {form.ranked && <Badge className="bg-primary text-primary-foreground font-black tracking-tighter uppercase px-2 py-0.5 text-[9px]">COMPETITIVE</Badge>}
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

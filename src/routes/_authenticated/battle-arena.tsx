@@ -3,8 +3,8 @@ import { createFileRoute, Outlet } from "@tanstack/react-router";
 export const Route = createFileRoute("/_authenticated/battle-arena")({
   head: () => ({
     meta: [
-      { title: "Battle Arena — TradersHIVE Arena" },
-      { name: "description", content: "Head-to-head paper trading battles with real-time market data, live leaderboards and XP rewards." },
+      { title: "HIVE Arena — TradersHIVE" },
+      { name: "description", content: "Competitive paper trading matches with real-time market data, live standings and HIVE Rating rewards." },
     ],
   }),
   component: () => (

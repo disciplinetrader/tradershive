@@ -40,7 +40,7 @@ export function BattleResultsView({ battle, results, profiles }: { battle: any; 
               <div key={r.user_id} className={`rounded-2xl border p-4 text-center ${colors[r.final_rank - 1]}`}>
                 <div className="text-3xl font-black tabular-nums">#{r.final_rank}</div>
                 <Avatar className="mx-auto mt-2 h-12 w-12"><AvatarImage src={p?.avatar_url ?? undefined} /><AvatarFallback>{(p?.display_name ?? "?").slice(0, 1)}</AvatarFallback></Avatar>
-                <div className="mt-2 font-semibold">{p?.display_name ?? p?.username ?? "Trader"}</div>
+                <div className="mt-2 font-semibold">{p?.display_name ?? p?.username ?? "Competitor"}</div>
                 <div className="mt-1 text-sm text-muted-foreground tabular-nums">${Number(r.pnl).toFixed(2)} · {Number(r.r_multiple).toFixed(2)}R</div>
                 <div className="mt-2 flex items-center justify-center gap-2 text-[11px]">
                   <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5"><Sparkles className="h-3 w-3" />{r.xp_awarded} XP</span>
@@ -58,7 +58,7 @@ export function BattleResultsView({ battle, results, profiles }: { battle: any; 
             <thead className="text-[11px] uppercase tracking-wide text-muted-foreground">
               <tr>
                 <th className="px-4 py-2 text-left">#</th>
-                <th className="px-4 py-2 text-left">Trader</th>
+                <th className="px-4 py-2 text-left">Competitor</th>
                 <th className="px-4 py-2 text-right">PnL</th>
                 <th className="px-4 py-2 text-right">R</th>
                 <th className="px-4 py-2 text-right">Win %</th>
@@ -72,7 +72,7 @@ export function BattleResultsView({ battle, results, profiles }: { battle: any; 
                 return (
                   <tr key={r.user_id} className="border-t border-border/60">
                     <td className="px-4 py-2 font-bold tabular-nums">{r.final_rank}</td>
-                    <td className="px-4 py-2">{p?.display_name ?? p?.username ?? "Trader"}</td>
+                    <td className="px-4 py-2">{p?.display_name ?? p?.username ?? "Competitor"}</td>
                     <td className="px-4 py-2 text-right tabular-nums">${Number(r.pnl).toFixed(2)}</td>
                     <td className="px-4 py-2 text-right tabular-nums">{Number(r.r_multiple).toFixed(2)}</td>
                     <td className="px-4 py-2 text-right tabular-nums">{Number(r.win_rate).toFixed(1)}%</td>

@@ -89,7 +89,7 @@ export const getBattle = createServerFn({ method: "GET" })
       supabase.from("battle_results").select("*").eq("battle_id", data.id).order("final_rank", { ascending: true }),
     ]);
     if (e1) throw e1;
-    if (!battle) throw new Error("Battle not found");
+    if (!battle) throw new Error("Arena match not found");
     const userIds = Array.from(new Set([
       ...(participantsRes.data ?? []).map((p: any) => p.user_id),
       battle.host_id,
@@ -142,7 +142,7 @@ export const createBattle = createServerFn({ method: "POST" })
     const start = new Date(data.start_at);
     const end = new Date(data.end_at);
     if (!(start < end)) throw new Error("End time must be after start time");
-    if (end.getTime() - start.getTime() < 5 * 60 * 1000) throw new Error("Battle must be at least 5 minutes long");
+    if (end.getTime() - start.getTime() < 5 * 60 * 1000) throw new Error("Arena match must be at least 5 minutes long");
     if (data.allowed_symbols.length === 0) throw new Error("Pick at least one symbol");
 
     const invite = data.visibility === "private" ? randomCode(8) : null;
@@ -213,8 +213,8 @@ export const leaveBattle = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ battleId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: battle } = await context.supabase.from("battles").select("status").eq("id", data.battleId).maybeSingle();
-    if (!battle) throw new Error("Battle not found");
-    if (!["draft", "upcoming", "open", "filling"].includes(battle.status)) throw new Error("Battle already started");
+    if (!battle) throw new Error("Arena match not found");
+    if (!["draft", "upcoming", "open", "filling"].includes(battle.status)) throw new Error("Arena match already started");
     const { error } = await context.supabase
       .from("battle_participants")
       .delete()
@@ -327,9 +327,9 @@ export const finalizeBattle = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: battle } = await context.supabase
       .from("battles").select("host_id, end_at").eq("id", data.battleId).maybeSingle();
-    if (!battle) throw new Error("Battle not found");
+    if (!battle) throw new Error("Arena match not found");
     if (battle.host_id !== context.userId) {
-      if (new Date(battle.end_at) > new Date()) throw new Error("Only the host may finalize before end time");
+      if (new Date(battle.end_at) > new Date()) throw new Error("Only the host may finalize before the scheduled end time");
     }
     const { error } = await context.supabase.rpc("finalize_battle", { _battle_id: data.battleId });
     if (error) throw error;

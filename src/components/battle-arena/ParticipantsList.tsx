@@ -26,7 +26,7 @@ export function ParticipantsList({
     )}>
       <div className="border-b border-border/60 px-6 py-4 flex items-center justify-between bg-background/20">
         <h3 className="text-sm font-black uppercase tracking-widest text-foreground">
-          Participants
+          Competitors
         </h3>
         <span className="text-[10px] font-black bg-primary/10 text-primary px-2 py-0.5 rounded-lg border border-primary/20">
           {participants.length} TOTAL
@@ -36,8 +36,8 @@ export function ParticipantsList({
       {participants.length === 0 ? (
         <div className="flex-1 grid place-items-center p-8 text-center">
           <div className="space-y-1">
-            <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Empty Lobby</div>
-            <p className="text-[10px] text-muted-foreground/60 max-w-[150px] mx-auto">Waiting for traders to join the arena...</p>
+            <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Empty Staging Room</div>
+            <p className="text-[10px] text-muted-foreground/60 max-w-[150px] mx-auto">Waiting for competitors to join the arena...</p>
           </div>
         </div>
       ) : (
@@ -66,7 +66,7 @@ export function ParticipantsList({
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-black text-foreground group-hover:text-primary transition-colors">{pr?.display_name ?? pr?.username ?? "Trader"}</span>
+                      <span className="text-sm font-black text-foreground group-hover:text-primary transition-colors">{pr?.display_name ?? pr?.username ?? "Competitor"}</span>
                       <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/40">{p.user_id === hostId ? "Host" : "Competitor"}</span>
                     </div>
                     <div className="flex items-center gap-2 mt-0.5">

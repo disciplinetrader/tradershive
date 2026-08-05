@@ -18,7 +18,7 @@ const ICONS: Record<string, { icon: any; tone: string }> = {
   rank_down:          { icon: TrendingDown, tone: "text-danger" },
   new_leader:         { icon: Crown, tone: "text-warning" },
   milestone:          { icon: Zap, tone: "text-purple-500" },
-  rule_violation:     { icon: ShieldAlert, tone: "text-danger" },
+  rule_violation:     { icon: ShieldAlert, tone: "text-danger" }, // Internal key remains for now, but label can be updated in DB if needed
   player_joined:      { icon: LogIn, tone: "text-blue-600" },
   player_left:        { icon: LogOut, tone: "text-slate-500" },
   player_disconnected:{ icon: LogOut, tone: "text-warning" },
@@ -36,7 +36,7 @@ export function LiveActivityFeed({ events, profiles, height = "h-[520px]" }: { e
   return (
     <div className="rounded-2xl border border-border/60 bg-card/40">
       <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
-        <div className="flex items-center gap-2 text-sm font-semibold"><Activity className="h-4 w-4 text-primary" />Live activity</div>
+        <div className="flex items-center gap-2 text-sm font-semibold"><Activity className="h-4 w-4 text-primary" />Arena Desk Activity</div>
         <span className="text-[11px] text-muted-foreground">{events.length} events</span>
       </div>
       <div className={cn("overflow-y-auto", height)}>
@@ -59,7 +59,7 @@ export function LiveActivityFeed({ events, profiles, height = "h-[520px]" }: { e
                         <Avatar className="h-4 w-4"><AvatarImage src={p.avatar_url ?? undefined} /><AvatarFallback className="text-[9px]">{(p.display_name ?? p.username ?? "?").slice(0, 1)}</AvatarFallback></Avatar>
                       )}
                       <span className="truncate text-sm">
-                        {p && <span className="font-medium">{p.display_name ?? p.username ?? "Trader"}</span>}
+                        {p && <span className="font-medium">{p.display_name ?? p.username ?? "Competitor"}</span>}
                         {p ? " · " : ""}
                         <span className={e.severity === "error" ? "text-danger" : e.severity === "warning" ? "text-warning" : ""}>{e.message}</span>
                       </span>

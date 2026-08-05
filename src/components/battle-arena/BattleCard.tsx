@@ -31,7 +31,7 @@ export function BattleCard({ battle }: { battle: BattleRow }) {
 
   return (
     <Link
-      to="/battle-arena/$battleId"
+      to="/battle-arena/$battleId"  
       params={{ battleId: battle.id }}
       className={cn(
         "card-interactive group relative flex flex-col gap-4 rounded-3xl border border-border/40 bg-card/20 p-5 hover:border-primary/40 hover:bg-card/40 transition-all duration-300",
@@ -41,7 +41,7 @@ export function BattleCard({ battle }: { battle: BattleRow }) {
       {battle.ranked && (
         <div className="absolute -right-2 -top-2 z-10 flex items-center gap-1.5 rounded-full bg-primary px-3 py-1 text-[10px] font-black uppercase tracking-widest text-primary-foreground shadow-lg shadow-primary/20 ring-4 ring-background">
           <Star className="h-3 w-3 fill-current" />
-          Ranked
+          Competitive
         </div>
       )}
 

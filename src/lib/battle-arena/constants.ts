@@ -3,9 +3,9 @@ export const BATTLE_TYPES = [
   { value: "2v2", label: "2 vs 2", max: 4 },
   { value: "ffa5", label: "5 Player FFA", max: 5 },
   { value: "ffa10", label: "10 Player FFA", max: 10 },
-  { value: "profit_target", label: "Profit Target", max: 20 },
-  { value: "time_trial", label: "Time Trial", max: 20 },
-  { value: "custom", label: "Custom Battle", max: 50 },
+  { value: "profit_target", label: "Target Chase", max: 20 },
+  { value: "time_trial", label: "Market Sprint", max: 20 },
+  { value: "custom", label: "Custom Arena", max: 50 },
 ] as const;
 
 export type BattleType = (typeof BATTLE_TYPES)[number]["value"];
@@ -37,9 +37,10 @@ export type BattleStatus =
   | "upcoming"
   | "open" 
   | "filling" 
-  | "ready" 
-  | "countdown" 
-  | "live" 
+  | "staging_room" 
+  | "locked_in" 
+  | "market_syncing"  
+  | "live"  
   | "paused" 
   | "completed" 
   | "cancelled" 
@@ -52,9 +53,10 @@ export const STATUS_STYLES: Record<BattleStatus, { label: string; className: str
   upcoming:  { label: "Upcoming",  className: "bg-info/10 text-info border border-info/20" },
   open:      { label: "Open",      className: "bg-info/10 text-info border border-info/20" },
   filling:   { label: "Filling",   className: "bg-warning/10 text-warning border border-warning/20" },
-  ready:     { label: "Ready",     className: "bg-primary/10 text-primary border border-primary/20" },
-  countdown: { label: "Countdown", className: "bg-primary text-primary-foreground animate-pulse" },
-  live:      { label: "Live",      className: "bg-success/15 text-success border border-success/25 animate-pulse" },
+  staging_room:   { label: "Staging Room",  className: "bg-primary/10 text-primary border border-primary/20" },
+  locked_in:      { label: "Locked In",     className: "bg-primary/20 text-primary border border-primary/30" },
+  market_syncing: { label: "Market Syncing", className: "bg-primary text-primary-foreground animate-pulse" },
+  live:           { label: "Live",      className: "bg-success/15 text-success border border-success/25 animate-pulse" },
   paused:    { label: "Paused",    className: "bg-warning/15 text-warning border border-warning/25" },
   completed: { label: "Completed", className: "bg-muted text-muted-foreground border border-border" },
   cancelled: { label: "Cancelled", className: "bg-danger/15 text-danger border border-danger/25" },
@@ -62,12 +64,12 @@ export const STATUS_STYLES: Record<BattleStatus, { label: string; className: str
 };
 
 export const RANKS = [
-  { value: "bronze",   label: "Bronze",   minElo: 0,    color: "#CD7F32" },
-  { value: "silver",   label: "Silver",   minElo: 1200, color: "#C0C0C0" },
-  { value: "gold",     label: "Gold",     minElo: 1500, color: "#FFD700" },
-  { value: "platinum", label: "Platinum", minElo: 1800, color: "#E5E4E2" },
-  { value: "diamond",  label: "Diamond",  minElo: 2200, color: "#B9F2FF" },
-  { value: "master",   label: "Master",   minElo: 2600, color: "#FF0000" },
+  { value: "initiate",  label: "Initiate",  minElo: 0,    color: "#64748b" },
+  { value: "forager",   label: "Forager",   minElo: 1200, color: "#94a3b8" },
+  { value: "sentinel",  label: "Sentinel",  minElo: 1500, color: "#fbbf24" },
+  { value: "vanguard",  label: "Vanguard",  minElo: 1800, color: "#38bdf8" },
+  { value: "apex",      label: "Apex",      minElo: 2200, color: "#818cf8" },
+  { value: "sovereign", label: "Sovereign", minElo: 2600, color: "#f43f5e" },
 ] as const;
 
 export type BattleRank = (typeof RANKS)[number]["value"];

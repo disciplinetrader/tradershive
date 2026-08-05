@@ -95,7 +95,7 @@ export function LiveBattleHeader({
             <BattleStatusBadge status={battle.status as any} />
             {battle.ranked && (
               <Badge variant="outline" className="h-5 px-2 bg-primary/10 text-primary border-primary/20 font-black tracking-tighter animate-pulse">
-                <Trophy className="mr-1 h-3 w-3" /> RANKED
+                <Trophy className="mr-1 h-3 w-3" /> COMPETITIVE
               </Badge>
             )}
             <Badge variant="secondary" className="h-5 rounded-md font-bold px-2 text-[10px] uppercase tracking-wide bg-background/60">
@@ -123,7 +123,7 @@ export function LiveBattleHeader({
           <div className="flex flex-wrap items-center gap-6 text-xs text-muted-foreground font-bold tracking-tight uppercase">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-background/40 border border-border/40">
               <Users className="h-4 w-4 text-primary" />
-              <span>{participantCount} <span className="text-muted-foreground/60">/ {battle.max_participants} joined</span></span>
+              <span>{participantCount} <span className="text-muted-foreground/60">/ {battle.max_participants} locked in</span></span>
             </div>
             {isLive && (
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-background/40 border border-border/40">
@@ -157,7 +157,7 @@ export function LiveBattleHeader({
             <div className="flex items-center gap-3 rounded-2xl border border-warning/30 bg-warning/5 px-4 py-2 text-sm shadow-lg shadow-warning/5">
               <Crown className="h-5 w-5 text-warning fill-warning" />
               <div className="flex flex-col items-end">
-                <div className="text-[9px] uppercase font-black tracking-widest text-warning/60">Current Leader</div>
+                <div className="text-[9px] uppercase font-black tracking-widest text-warning/60">Apex Competitor</div>
                 <div className="flex items-center gap-2">
                   <span className="font-black text-foreground">{leader.display_name ?? leader.username}</span>
                   <Avatar className="h-6 w-6 border border-warning/40"><AvatarImage src={leader.avatar_url ?? undefined} /><AvatarFallback>L</AvatarFallback></Avatar>
@@ -178,7 +178,7 @@ export function LiveBattleHeader({
             style={{ width: `${pct}%` }} />
           </div>
           <div className="flex justify-between text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
-            <span>{isCountdown ? "Standby" : "Market Open"}</span>
+            <span>{isCountdown ? "Market Syncing" : "Market Open"}</span>
             <span>{pct.toFixed(1)}% {isCountdown ? "Ready" : "Remaining"}</span>
             <span>{isCountdown ? "Go" : "Market Close"}</span>
           </div>

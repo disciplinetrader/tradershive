@@ -20,7 +20,7 @@ export function RulesPanel({ battle }: { battle: any }) {
         { icon: Users, label: "Format", val: bt.label },
         { icon: Globe, label: "Market", val: market.label },
         { icon: Trophy, label: "Win condition", val: wc.label },
-        { icon: Zap, label: "Ranked", val: battle.ranked ? "Yes" : "No", highlight: battle.ranked },
+        { icon: Zap, label: "Competitive", val: battle.ranked ? "Yes" : "No", highlight: battle.ranked },
       ]
     },
     {
@@ -48,7 +48,7 @@ export function RulesPanel({ battle }: { battle: any }) {
       <div className="space-y-1">
         <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
           <ShieldAlert className="h-4 w-4 text-primary" />
-          Execution Rules
+          Arena Conditions
         </h3>
         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Automated server-side enforcement</p>
       </div>
@@ -78,7 +78,7 @@ export function RulesPanel({ battle }: { battle: any }) {
       </div>
 
       <div className="space-y-2.5">
-        <div className="text-[9px] font-black text-muted-foreground/50 uppercase tracking-[0.2em] pl-1">Playable Assets</div>
+        <div className="text-[9px] font-black text-muted-foreground/50 uppercase tracking-[0.2em] pl-1">Eligible Markets</div>
         <div className="flex flex-wrap gap-1.5">
           {(battle.allowed_symbols ?? []).map((s: string) => (
             <Badge key={s} variant="secondary" className="rounded-lg bg-background/80 border border-border/40 px-2.5 py-1 font-mono text-[10px] font-black transition-transform hover:scale-105">
@@ -94,7 +94,7 @@ export function RulesPanel({ battle }: { battle: any }) {
           <span className="text-[10px] font-black uppercase tracking-wider text-primary">Live Scoring Active</span>
         </div>
         <p className="text-[10px] font-medium text-muted-foreground leading-relaxed">
-          Rule violations result in immediate disqualification. Profit targets and drawdowns are calculated based on authoritative server price data.
+          Rule breaches result in immediate disqualification. Profit targets and drawdowns are calculated based on authoritative server price data.
         </p>
       </div>
     </aside>

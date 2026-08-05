@@ -69,7 +69,7 @@ function BattleArenaHome() {
     try {
       const res = await fnJoinRandom({ data: { battleType: "profit_target", isRanked: ranked } });
       if (res.battleId) {
-        toast.success("Found a match! Joining battle...");
+        toast.success("Found a match! Joining arena...");
       } else {
         toast.success("Joined matchmaking queue.");
         qc.invalidateQueries({ queryKey: ["matchmaking"] });
@@ -95,11 +95,11 @@ function BattleArenaHome() {
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
             <Swords className="h-6 w-6 text-primary" />
-            <h1 className="text-3xl font-black tracking-tight">Battle Arena</h1>
+            <h1 className="text-3xl font-black tracking-tight">HIVE Arena</h1>
           </div>
           <p className="text-sm text-muted-foreground max-w-lg font-medium leading-relaxed">
-            Compete in real-time paper trading battles. Dominate the ELO leaderboard, 
-            prove your consistency, and climb from Bronze to Master.
+            Compete in real-time paper trading matches. Dominate the HIVE Rating leaderboard, 
+            prove your consistency, and climb from Initiate to Sovereign.
           </p>
         </div>
         
@@ -117,16 +117,16 @@ function BattleArenaHome() {
           ) : (
             <>
               <Button size="sm" variant="outline" className="h-9 font-bold px-4" onClick={() => handleJoinRandom(true)}>
-                <Zap className="mr-2 h-4 w-4 fill-primary text-primary" /> Ranked Match
+                <Zap className="mr-2 h-4 w-4 fill-primary text-primary" /> Competitive Match
               </Button>
               <Button size="sm" variant="outline" className="h-9 font-bold px-4" onClick={() => handleJoinRandom(false)}>
-                Join Random
+                Quick Match
               </Button>
             </>
           )}
           <JoinByCodeDialog />
           <Button asChild size="sm" className="h-9 font-bold px-4 shadow-lg shadow-primary/20">
-            <Link to="/battle-arena/create"><Plus className="mr-1.5 h-4 w-4" />Create Battle</Link>
+            <Link to="/battle-arena/create"><Plus className="mr-1.5 h-4 w-4" />Create Arena Match</Link>
           </Button>
         </div>
       </div>
@@ -137,7 +137,7 @@ function BattleArenaHome() {
         <div className="relative w-full sm:max-w-md group">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" />
           <Input 
-            placeholder="Search battles..." 
+            placeholder="Search matches..." 
             className="pl-9 bg-card/40 border-border/60 rounded-xl focus:ring-primary/20"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -150,13 +150,13 @@ function BattleArenaHome() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48 rounded-xl">
-            <DropdownMenuLabel>Battle Type</DropdownMenuLabel>
+            <DropdownMenuLabel>Arena Type</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuRadioGroup value={filterType} onValueChange={setFilterType}>
               <DropdownMenuRadioItem value="all">All Types</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="ranked">Ranked Only</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="profit_target">Profit Target</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="time_trial">Time Trial</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="ranked">Competitive Only</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="profit_target">Target Chase</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="time_trial">Market Sprint</DropdownMenuRadioItem>
             </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -165,30 +165,30 @@ function BattleArenaHome() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-10">
           <Section
-            title="Featured Competitions" icon={Flame} items={featured.data} loading={featured.isLoading}
-            empty={{ title: "No featured battles", body: "Check back later for curated events." }}
+            title="Featured Events" icon={Flame} items={featured.data} loading={featured.isLoading}
+            empty={{ title: "No featured events", body: "Check back later for curated competitions." }}
           />
           
           <Section
-            title="Live Battles" icon={Target} items={live.data} loading={live.isLoading} pulse
-            empty={{ title: "No live battles", body: "Kick off a session to get listed here." }}
+            title="Live Arenas" icon={Target} items={live.data} loading={live.isLoading} pulse
+            empty={{ title: "No live arenas", body: "Kick off a session to get listed here." }}
           />
 
           <Section
-            title="Ranked Play" icon={Zap} items={ranked.data} loading={ranked.isLoading}
-            empty={{ title: "No ranked battles", body: "Competitive play is quiet right now." }}
+            title="Competitive Standings" icon={Zap} items={ranked.data} loading={ranked.isLoading}
+            empty={{ title: "No competitive activity", body: "Arena matches are quiet right now." }}
           />
 
           <Section
             title="Upcoming Events" icon={Clock} items={upcoming.data} loading={upcoming.isLoading}
-            empty={{ title: "Nothing scheduled", body: "Schedule a future battle to build hype." }}
+            empty={{ title: "Nothing scheduled", body: "Schedule a future match to build hype." }}
           />
         </div>
 
         <div className="space-y-10">
           <Section
-            title="My History" icon={History} items={mine.data} loading={mine.isLoading} isCompact
-            empty={{ title: "No participation yet", body: "Join your first battle to see history." }}
+            title="Arena Records" icon={History} items={mine.data} loading={mine.isLoading} isCompact
+            empty={{ title: "No records yet", body: "Join your first arena to see history." }}
           />
           
           <Section

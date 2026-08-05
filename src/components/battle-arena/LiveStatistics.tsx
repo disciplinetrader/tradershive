@@ -20,7 +20,7 @@ export function LiveStatistics({ stats }: { stats: Stats }) {
   ];
   return (
     <div className="rounded-2xl border border-border/60 bg-card/40">
-      <div className="border-b border-border/60 px-4 py-3 text-sm font-semibold">Live statistics</div>
+      <div className="border-b border-border/60 px-4 py-3 text-sm font-semibold">Arena Desk Metrics</div>
       <dl className="grid grid-cols-2 gap-x-4 gap-y-2 p-4 text-sm">
         {rows.map((r) => (
           <div key={r.label} className="flex items-center justify-between border-b border-border/40 py-1.5 last:border-b-0">

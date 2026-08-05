@@ -30,10 +30,10 @@ import { Badge } from "@/components/ui/badge";
 export const Route = createFileRoute("/_authenticated/battle-arena/$battleId")({
   component: BattleDetail,
   ...routeBoundaries({
-    label: "Battle",
-    boundary: "battle_detail_route",
+    label: "Arena",
+    boundary: "arena_detail_route",
     backHref: "/battle-arena",
-    backLabel: "Back to Battle Arena",
+    backLabel: "Back to HIVE Arena",
   }),
 });
 
@@ -107,7 +107,7 @@ function BattleDetail() {
   const battle = battleQ.data?.battle;
   const isParticipant = battleQ.data?.isParticipant ?? false;
   const isHost = battleQ.data?.isHost ?? false;
-  const role = isHost ? "host" : isParticipant ? "participant" : "spectator";
+  const role = isHost ? "host" : isParticipant ? "competitor" : "spectator";
   useEffect(() => {
     if (!battle) return;
     const beat = () => fnHeartbeat({ data: { battleId, status: isParticipant ? "trading" : "watching", role } }).catch(() => {});
@@ -150,7 +150,7 @@ function BattleDetail() {
   }, [battleId]);
 
   if (battleQ.isLoading) return <div className="glass h-64 animate-pulse rounded-2xl" />;
-  if (!battleQ.data) return <div className="text-sm text-muted-foreground">Battle not found.</div>;
+  if (!battleQ.data) return <div className="text-sm text-muted-foreground">Arena match not found.</div>;
 
   const { participants = [], rankings = [], results = [], profiles = [] } = (battleQ.data as any) || {};
   
@@ -170,11 +170,11 @@ function BattleDetail() {
     setCancelling(true);
     try {
       await fnCancel({ data: { battleId } });
-      toast.success("Battle cancelled");
+      toast.success("Arena match cancelled");
       setCancelOpen(false);
       navigate({ to: "/battle-arena" });
     } catch (e: any) {
-      toast.error(e?.message ?? "Failed to cancel battle");
+      toast.error(e?.message ?? "Failed to cancel arena match");
     } finally {
       setCancelling(false);
     }
@@ -205,7 +205,7 @@ function BattleDetail() {
         </Badge>
         
         <div className="ml-auto flex items-center gap-2">
-          {canJoin && <Button size="sm" onClick={doJoin} className="font-bold rounded-xl shadow-lg shadow-primary/20"><LogIn className="mr-1.5 h-4 w-4" />Join Battle</Button>}
+          {canJoin && <Button size="sm" onClick={doJoin} className="font-bold rounded-xl shadow-lg shadow-primary/20"><LogIn className="mr-1.5 h-4 w-4" />Join Arena</Button>}
           {canLeave && <Button size="sm" variant="outline" onClick={doLeave} className="font-bold rounded-xl border-border/60"><LogOut className="mr-1.5 h-4 w-4" />Leave</Button>}
           {canCancel && <Button size="sm" variant="destructive" onClick={() => setCancelOpen(true)} className="font-bold rounded-xl"><Trash2 className="mr-1.5 h-4 w-4" />Cancel</Button>}
           {canFinalize && <Button size="sm" variant="secondary" onClick={doFinalize} className="font-bold rounded-xl"><Play className="mr-1.5 h-4 w-4" />Finalize</Button>}
@@ -267,9 +267,9 @@ function BattleDetail() {
           <div className="rounded-3xl border border-border/60 bg-card/20 p-6 shadow-xl shadow-background/10">
             <Tabs defaultValue="chat" className="w-full">
               <TabsList className="grid w-full grid-cols-3 bg-background/40 p-1 rounded-2xl h-12">
-                <TabsTrigger value="chat" className="rounded-xl font-bold uppercase tracking-widest text-[10px]">Chat</TabsTrigger>
-                <TabsTrigger value="activity" className="rounded-xl font-bold uppercase tracking-widest text-[10px]">Log</TabsTrigger>
-                <TabsTrigger value="timeline" className="rounded-xl font-bold uppercase tracking-widest text-[10px]">Time</TabsTrigger>
+                <TabsTrigger value="chat" className="rounded-xl font-bold uppercase tracking-widest text-[10px]">Arena Chat</TabsTrigger>
+                <TabsTrigger value="activity" className="rounded-xl font-bold uppercase tracking-widest text-[10px]">Activity</TabsTrigger>
+                <TabsTrigger value="timeline" className="rounded-xl font-bold uppercase tracking-widest text-[10px]">Chronology</TabsTrigger>
               </TabsList>
               <TabsContent value="chat" className="mt-4 focus-visible:outline-none min-h-[400px] max-h-[600px] overflow-y-auto">
                 <BattleChat 
@@ -293,9 +293,9 @@ function BattleDetail() {
       <ConfirmDialog
         open={cancelOpen}
         onOpenChange={setCancelOpen}
-        title="Cancel Battle Arena?"
-        description="All players will be ejected and the event will be permanently terminated. ELO ratings will not be affected."
-        confirmLabel="Terminate Battle"
+        title="Cancel Arena Match?"
+        description="All competitors will be ejected and the event will be permanently terminated. HIVE Ratings will not be affected."
+        confirmLabel="Terminate Arena"
         destructive
         loading={cancelling}
         onConfirm={doCancel}

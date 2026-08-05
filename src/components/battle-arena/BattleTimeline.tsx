@@ -23,7 +23,7 @@ export function BattleTimeline({ events }: { events: Event[] }) {
   const key = events.filter((e) => KEY_EVENTS.has(e.event_type)).slice(0, 12).reverse();
   return (
     <div className="rounded-2xl border border-border/60 bg-card/40">
-      <div className="border-b border-border/60 px-4 py-3 text-sm font-semibold">Battle timeline</div>
+      <div className="border-b border-border/60 px-4 py-3 text-sm font-semibold">Arena Chronology</div>
       {key.length === 0 ? (
         <div className="p-6 text-center text-sm text-muted-foreground">No milestones yet.</div>
       ) : (
