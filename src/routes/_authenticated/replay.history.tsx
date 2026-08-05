@@ -29,7 +29,7 @@ export const Route = createFileRoute("/_authenticated/replay/history")({
 
 function HistoryPage() {
   const search = useSearch({ from: "/_authenticated/replay/history" });
-  const navigate = useNavigate({ from: "/replay/history" });
+  const navigate = useNavigate({ from: "/_authenticated/replay/history" });
   return (
     <HistoryView
       params={{
@@ -39,7 +39,18 @@ function HistoryPage() {
         symbol: search.symbol ?? null,
         search: search.search ?? null,
       }}
-      onChange={(patch) => void navigate({ search: (prev: Record<string, unknown>) => ({ ...prev, ...patch }) })}
+      onChange={(patch) => {
+        void navigate({
+          search: (prev) => ({
+            limit: prev.limit ?? 25,
+            offset: prev.offset ?? 0,
+            status: prev.status ?? null,
+            symbol: prev.symbol ?? null,
+            search: prev.search ?? null,
+            ...patch,
+          }),
+        });
+      }}
     />
   );
 }
