@@ -307,7 +307,7 @@ export const Route = createFileRoute("/api/ai/chat")({
           },
         });
 
-        const response = result.toUIMessageStreamResponse({
+        const response = (result as any).toUIMessageStreamResponse({
           originalMessages: body.messages,
           headers: getLovableAiGatewayResponseHeaders(undefined, {
             ...(initialRunId ? { "X-Lovable-AIG-Run-ID": initialRunId } : {}),
