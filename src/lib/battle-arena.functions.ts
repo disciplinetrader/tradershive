@@ -142,7 +142,7 @@ export const createBattle = createServerFn({ method: "POST" })
     const start = new Date(data.start_at);
     const end = new Date(data.end_at);
     if (!(start < end)) throw new Error("End time must be after start time");
-    if (end.getTime() - start.getTime() < 5 * 60 * 1000) throw new Error("Battle must be at least 5 minutes long");
+    if (end.getTime() - start.getTime() < 5 * 60 * 1000) throw new Error("Arena match must be at least 5 minutes long");
     if (data.allowed_symbols.length === 0) throw new Error("Pick at least one symbol");
 
     const invite = data.visibility === "private" ? randomCode(8) : null;
