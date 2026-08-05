@@ -6,7 +6,7 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { cn } from "@/lib/utils";
 
 type Action = {
-  to: "/paper-trading" | "/journal" | "/challenges" | "/leaderboard" | "/analytics";
+  to: "/trading" | "/journal" | "/replay" | "/leaderboard" | "/dashboard/analytics";
   title: string;
   description: string;
   icon: LucideIcon;
