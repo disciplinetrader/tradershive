@@ -122,6 +122,7 @@ import { Route as AuthenticatedChampionshipHallOfFameRouteImport } from './route
 import { Route as AuthenticatedChampionshipSlugRouteImport } from './routes/_authenticated/championship.$slug'
 import { Route as AuthenticatedChallengesRewardsRouteImport } from './routes/_authenticated/challenges/rewards'
 import { Route as AuthenticatedChallengesHistoryRouteImport } from './routes/_authenticated/challenges/history'
+import { Route as AuthenticatedBattleArenaTournamentsRouteImport } from './routes/_authenticated/battle-arena.tournaments'
 import { Route as AuthenticatedBattleArenaHistoryRouteImport } from './routes/_authenticated/battle-arena.history'
 import { Route as AuthenticatedBattleArenaCreateRouteImport } from './routes/_authenticated/battle-arena.create'
 import { Route as AuthenticatedBattleArenaBattleIdRouteImport } from './routes/_authenticated/battle-arena.$battleId'
@@ -175,6 +176,7 @@ import { Route as AuthenticatedAdminChallengesRouteImport } from './routes/_auth
 import { Route as AuthenticatedAdminAnnouncementsRouteImport } from './routes/_authenticated/admin.announcements'
 import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin.analytics'
 import { Route as AuthenticatedAdminAchievementsRouteImport } from './routes/_authenticated/admin.achievements'
+import { Route as AuthenticatedBattleArenaTournamentsIndexRouteImport } from './routes/_authenticated/battle-arena.tournaments.index'
 import { Route as AuthenticatedAiCoachIndexRouteImport } from './routes/_authenticated/ai.coach.index'
 import { Route as ApiPublicHooksHistoricalSyncRouteImport } from './routes/api/public/hooks/historical-sync'
 import { Route as ApiPublicHooksEmailWeeklyReportRouteImport } from './routes/api/public/hooks/email-weekly-report'
@@ -840,6 +842,12 @@ const AuthenticatedChallengesHistoryRoute =
     path: '/challenges/history',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedBattleArenaTournamentsRoute =
+  AuthenticatedBattleArenaTournamentsRouteImport.update({
+    id: '/tournaments',
+    path: '/tournaments',
+    getParentRoute: () => AuthenticatedBattleArenaRoute,
+  } as any)
 const AuthenticatedBattleArenaHistoryRoute =
   AuthenticatedBattleArenaHistoryRouteImport.update({
     id: '/history',
@@ -1151,6 +1159,12 @@ const AuthenticatedAdminAchievementsRoute =
     path: '/achievements',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedBattleArenaTournamentsIndexRoute =
+  AuthenticatedBattleArenaTournamentsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedBattleArenaTournamentsRoute,
+  } as any)
 const AuthenticatedAiCoachIndexRoute =
   AuthenticatedAiCoachIndexRouteImport.update({
     id: '/',
@@ -1376,6 +1390,7 @@ export interface FileRoutesByFullPath {
   '/battle-arena/$battleId': typeof AuthenticatedBattleArenaBattleIdRoute
   '/battle-arena/create': typeof AuthenticatedBattleArenaCreateRoute
   '/battle-arena/history': typeof AuthenticatedBattleArenaHistoryRoute
+  '/battle-arena/tournaments': typeof AuthenticatedBattleArenaTournamentsRouteWithChildren
   '/challenges/history': typeof AuthenticatedChallengesHistoryRoute
   '/challenges/rewards': typeof AuthenticatedChallengesRewardsRoute
   '/championship/$slug': typeof AuthenticatedChampionshipSlugRoute
@@ -1471,6 +1486,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/email-weekly-report': typeof ApiPublicHooksEmailWeeklyReportRoute
   '/api/public/hooks/historical-sync': typeof ApiPublicHooksHistoricalSyncRoute
   '/ai/coach/': typeof AuthenticatedAiCoachIndexRoute
+  '/battle-arena/tournaments/': typeof AuthenticatedBattleArenaTournamentsIndexRoute
   '/dashboard/sessions/$type/$id': typeof AuthenticatedDashboardSessionsTypeIdRoute
 }
 export interface FileRoutesByTo {
@@ -1646,6 +1662,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/email-weekly-report': typeof ApiPublicHooksEmailWeeklyReportRoute
   '/api/public/hooks/historical-sync': typeof ApiPublicHooksHistoricalSyncRoute
   '/ai/coach': typeof AuthenticatedAiCoachIndexRoute
+  '/battle-arena/tournaments': typeof AuthenticatedBattleArenaTournamentsIndexRoute
   '/dashboard/sessions/$type/$id': typeof AuthenticatedDashboardSessionsTypeIdRoute
 }
 export interface FileRoutesById {
@@ -1742,6 +1759,7 @@ export interface FileRoutesById {
   '/_authenticated/battle-arena/$battleId': typeof AuthenticatedBattleArenaBattleIdRoute
   '/_authenticated/battle-arena/create': typeof AuthenticatedBattleArenaCreateRoute
   '/_authenticated/battle-arena/history': typeof AuthenticatedBattleArenaHistoryRoute
+  '/_authenticated/battle-arena/tournaments': typeof AuthenticatedBattleArenaTournamentsRouteWithChildren
   '/_authenticated/challenges/history': typeof AuthenticatedChallengesHistoryRoute
   '/_authenticated/challenges/rewards': typeof AuthenticatedChallengesRewardsRoute
   '/_authenticated/championship/$slug': typeof AuthenticatedChampionshipSlugRoute
@@ -1837,6 +1855,7 @@ export interface FileRoutesById {
   '/api/public/hooks/email-weekly-report': typeof ApiPublicHooksEmailWeeklyReportRoute
   '/api/public/hooks/historical-sync': typeof ApiPublicHooksHistoricalSyncRoute
   '/_authenticated/ai/coach/': typeof AuthenticatedAiCoachIndexRoute
+  '/_authenticated/battle-arena/tournaments/': typeof AuthenticatedBattleArenaTournamentsIndexRoute
   '/_authenticated/dashboard/sessions/$type/$id': typeof AuthenticatedDashboardSessionsTypeIdRoute
 }
 export interface FileRouteTypes {
@@ -1933,6 +1952,7 @@ export interface FileRouteTypes {
     | '/battle-arena/$battleId'
     | '/battle-arena/create'
     | '/battle-arena/history'
+    | '/battle-arena/tournaments'
     | '/challenges/history'
     | '/challenges/rewards'
     | '/championship/$slug'
@@ -2028,6 +2048,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/email-weekly-report'
     | '/api/public/hooks/historical-sync'
     | '/ai/coach/'
+    | '/battle-arena/tournaments/'
     | '/dashboard/sessions/$type/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -2203,6 +2224,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/email-weekly-report'
     | '/api/public/hooks/historical-sync'
     | '/ai/coach'
+    | '/battle-arena/tournaments'
     | '/dashboard/sessions/$type/$id'
   id:
     | '__root__'
@@ -2298,6 +2320,7 @@ export interface FileRouteTypes {
     | '/_authenticated/battle-arena/$battleId'
     | '/_authenticated/battle-arena/create'
     | '/_authenticated/battle-arena/history'
+    | '/_authenticated/battle-arena/tournaments'
     | '/_authenticated/challenges/history'
     | '/_authenticated/challenges/rewards'
     | '/_authenticated/championship/$slug'
@@ -2393,6 +2416,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/email-weekly-report'
     | '/api/public/hooks/historical-sync'
     | '/_authenticated/ai/coach/'
+    | '/_authenticated/battle-arena/tournaments/'
     | '/_authenticated/dashboard/sessions/$type/$id'
   fileRoutesById: FileRoutesById
 }
@@ -3212,6 +3236,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedChallengesHistoryRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/battle-arena/tournaments': {
+      id: '/_authenticated/battle-arena/tournaments'
+      path: '/tournaments'
+      fullPath: '/battle-arena/tournaments'
+      preLoaderRoute: typeof AuthenticatedBattleArenaTournamentsRouteImport
+      parentRoute: typeof AuthenticatedBattleArenaRoute
+    }
     '/_authenticated/battle-arena/history': {
       id: '/_authenticated/battle-arena/history'
       path: '/history'
@@ -3583,6 +3614,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAchievementsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/battle-arena/tournaments/': {
+      id: '/_authenticated/battle-arena/tournaments/'
+      path: '/'
+      fullPath: '/battle-arena/tournaments/'
+      preLoaderRoute: typeof AuthenticatedBattleArenaTournamentsIndexRouteImport
+      parentRoute: typeof AuthenticatedBattleArenaTournamentsRoute
+    }
     '/_authenticated/ai/coach/': {
       id: '/_authenticated/ai/coach/'
       path: '/'
@@ -3898,10 +3936,26 @@ const AuthenticatedAnalyticsRouteWithChildren =
     AuthenticatedAnalyticsRouteChildren,
   )
 
+interface AuthenticatedBattleArenaTournamentsRouteChildren {
+  AuthenticatedBattleArenaTournamentsIndexRoute: typeof AuthenticatedBattleArenaTournamentsIndexRoute
+}
+
+const AuthenticatedBattleArenaTournamentsRouteChildren: AuthenticatedBattleArenaTournamentsRouteChildren =
+  {
+    AuthenticatedBattleArenaTournamentsIndexRoute:
+      AuthenticatedBattleArenaTournamentsIndexRoute,
+  }
+
+const AuthenticatedBattleArenaTournamentsRouteWithChildren =
+  AuthenticatedBattleArenaTournamentsRoute._addFileChildren(
+    AuthenticatedBattleArenaTournamentsRouteChildren,
+  )
+
 interface AuthenticatedBattleArenaRouteChildren {
   AuthenticatedBattleArenaBattleIdRoute: typeof AuthenticatedBattleArenaBattleIdRoute
   AuthenticatedBattleArenaCreateRoute: typeof AuthenticatedBattleArenaCreateRoute
   AuthenticatedBattleArenaHistoryRoute: typeof AuthenticatedBattleArenaHistoryRoute
+  AuthenticatedBattleArenaTournamentsRoute: typeof AuthenticatedBattleArenaTournamentsRouteWithChildren
   AuthenticatedBattleArenaIndexRoute: typeof AuthenticatedBattleArenaIndexRoute
 }
 
@@ -3911,6 +3965,8 @@ const AuthenticatedBattleArenaRouteChildren: AuthenticatedBattleArenaRouteChildr
       AuthenticatedBattleArenaBattleIdRoute,
     AuthenticatedBattleArenaCreateRoute: AuthenticatedBattleArenaCreateRoute,
     AuthenticatedBattleArenaHistoryRoute: AuthenticatedBattleArenaHistoryRoute,
+    AuthenticatedBattleArenaTournamentsRoute:
+      AuthenticatedBattleArenaTournamentsRouteWithChildren,
     AuthenticatedBattleArenaIndexRoute: AuthenticatedBattleArenaIndexRoute,
   }
 
