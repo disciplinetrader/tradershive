@@ -99,6 +99,7 @@ export function ArenaCommandRail({ className }: ArenaCommandRailProps) {
             stats={statsQ.data as any}
             events={eventsQ.data as any}
             isSpectator={isSpectator}
+            isHost={arenaData.isHost}
             account={account}
           />
         )}
