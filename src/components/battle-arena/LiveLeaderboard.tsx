@@ -55,7 +55,7 @@ export function LiveLeaderboard({
             <thead className="sticky top-0 bg-card/80 text-[11px] uppercase tracking-wide text-muted-foreground backdrop-blur">
               <tr>
                 <th className="px-3 py-2 text-left">#</th>
-                <th className="px-3 py-2 text-left">Trader</th>
+                <th className="px-3 py-2 text-left">Competitor</th>
                 <th className="px-2 py-2 text-right">PnL</th>
                 <th className="px-2 py-2 text-right">R</th>
                 <th className="px-2 py-2 text-right">Win %</th>
