@@ -71,6 +71,13 @@ export function DashboardHeader() {
             <SelectValue placeholder="Select context" />
           </SelectTrigger>
           <SelectContent className="max-h-[400px]">
+            <SelectGroup>
+              <SelectItem value="all" className="flex items-center gap-2 font-semibold">
+                <Globe className="mr-2 h-3.5 w-3.5 inline-block" />
+                All Accounts
+              </SelectItem>
+            </SelectGroup>
+            <SelectSeparator />
             {accounts.length > 0 && (
               <SelectGroup>
                 <SelectLabel className="flex items-center gap-2 text-muted-foreground py-2">
