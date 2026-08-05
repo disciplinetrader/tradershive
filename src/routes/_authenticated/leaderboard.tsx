@@ -1,9 +1,10 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/leaderboard")({
-  beforeLoad: () => {
+  beforeLoad: ({ location }) => {
+    const destination = location.pathname.replace("/leaderboard", "/battle-arena/leaderboard");
     throw redirect({
-      to: "/battle-arena/leaderboard",
+      to: destination,
       replace: true,
     });
   },
