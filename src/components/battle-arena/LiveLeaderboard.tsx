@@ -6,7 +6,7 @@ import { PresenceDot, type PresenceStatus } from "./PresenceDot";
 import { CountryFlag } from "@/components/social/CountryFlag";
 import { cn } from "@/lib/utils";
 
-type Ranking = { user_id: string; rank: number; pnl: number; r_multiple: number; win_rate: number; trades_count: number; max_drawdown: number; score: number; updated_at?: string };
+type Ranking = { user_id: string; rank: number; pnl: number; return_pct: number; r_multiple: number; win_rate: number; trades_count: number; max_drawdown: number; score: number; updated_at?: string };
 type Profile = { id: string; username: string | null; display_name: string | null; avatar_url: string | null; country?: string | null };
 type Presence = { user_id: string; status: PresenceStatus; last_seen_at: string };
 
@@ -57,7 +57,8 @@ export function LiveLeaderboard({
               <tr>
                 <th className="px-3 py-2 text-left">#</th>
                 <th className="px-3 py-2 text-left">Competitor</th>
-                <th className="px-2 py-2 text-right">PnL</th>
+                <th className="px-2 py-2 text-right">Return %</th>
+                <th className="px-2 py-2 text-right text-muted-foreground font-normal">PnL</th>
                 {!compact && (
                   <>
                     <th className="px-2 py-2 text-right">R</th>
@@ -107,7 +108,10 @@ export function LiveLeaderboard({
                         </div>
                       </div>
                     </td>
-                    <td className={cn("px-2 py-2 text-right tabular-nums font-semibold", Number(r.pnl) > 0 ? "text-success" : Number(r.pnl) < 0 ? "text-danger" : "")}>
+                    <td className={cn("px-2 py-2 text-right tabular-nums font-semibold", Number(r.return_pct) > 0 ? "text-success" : Number(r.return_pct) < 0 ? "text-danger" : "")}>
+                      {Number(r.return_pct).toFixed(2)}%
+                    </td>
+                    <td className="px-2 py-2 text-right tabular-nums text-muted-foreground text-[10px]">
                       {Number(r.pnl).toLocaleString(undefined, { style: "currency", currency: "USD" })}
                     </td>
                     {!compact && (
@@ -116,7 +120,7 @@ export function LiveLeaderboard({
                         <td className="px-2 py-2 text-right tabular-nums">{Number(r.win_rate).toFixed(1)}%</td>
                         <td className="px-2 py-2 text-right tabular-nums">{r.trades_count}</td>
                         <td className="px-2 py-2 text-right tabular-nums">{openCount || "—"}</td>
-                        <td className="px-2 py-2 text-right tabular-nums text-danger/80">-${Number(r.max_drawdown).toFixed(0)}</td>
+                        <td className="px-2 py-2 text-right tabular-nums text-danger/80">{Number(r.max_drawdown).toFixed(2)}%</td>
                         <td className="px-2 py-2 text-right text-[11px] text-muted-foreground">
                           {last ? new Date(last).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"}
                         </td>

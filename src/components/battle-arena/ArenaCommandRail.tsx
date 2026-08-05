@@ -210,13 +210,21 @@ function ExpandedRail({ battle, stats, events, isSpectator, isHost, account, onC
         <div className="p-4">
           <div className="mb-3 flex items-center justify-between">
             <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">My Performance</span>
-            <Badge className="bg-primary/20 text-primary hover:bg-primary/30">RANK #--</Badge>
+            <Badge className="bg-primary/20 text-primary hover:bg-primary/30">RANK #{stats?.rankings?.find((r: any) => r.user_id === account.user_id)?.rank || "--"}</Badge>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <MetricCard label="Return" value={`${((account.balance / account.starting_balance - 1) * 100).toFixed(2)}%`} trend="up" />
+            <MetricCard 
+              label="Return" 
+              value={`${((account.balance / account.starting_balance - 1) * 100).toFixed(2)}%`} 
+              trend={(account.balance > account.starting_balance) ? "up" : (account.balance < account.starting_balance) ? "down" : "neutral"} 
+            />
             <MetricCard label="Equity" value={`$${account.equity.toLocaleString()}`} />
             <MetricCard label="Realized" value={`$${(account.balance - account.starting_balance).toLocaleString()}`} />
-            <MetricCard label="Drawdown" value="0.00%" trend="neutral" />
+            <MetricCard 
+              label="Drawdown" 
+              value={`${(stats?.rankings?.find((r: any) => r.user_id === account.user_id)?.max_drawdown || 0).toFixed(2)}%`} 
+              trend="neutral" 
+            />
           </div>
         </div>
       )}
@@ -227,7 +235,7 @@ function ExpandedRail({ battle, stats, events, isSpectator, isHost, account, onC
       <Tabs defaultValue="standings" className="flex flex-1 flex-col overflow-hidden">
         <TabsList className="mx-4 mt-4 grid grid-cols-4 bg-muted/40 p-1 h-10 rounded-xl">
           <TabsTrigger value="standings" className="text-[10px] font-bold uppercase">Standings</TabsTrigger>
-          <TabsTrigger value="chat" className="text-[10px] font-bold uppercase">Chat</TabsTrigger>
+          <TabsTrigger value="chat" className="text-[10px] font-bold uppercase">Conversation</TabsTrigger>
           <TabsTrigger value="rules" className="text-[10px] font-bold uppercase">Rules</TabsTrigger>
           <TabsTrigger value="feed" className="text-[10px] font-bold uppercase">Feed</TabsTrigger>
         </TabsList>
@@ -255,15 +263,11 @@ function ExpandedRail({ battle, stats, events, isSpectator, isHost, account, onC
       </Tabs>
 
       {/* Rule Warning (Mocked for now) */}
-      {!isSpectator && (
-        <div className="border-t border-border/40 bg-warning/5 p-3">
-          <div className="flex items-center gap-2 text-warning">
-            <AlertTriangle className="h-4 w-4 shrink-0" />
-            <span className="text-[10px] font-bold leading-tight">
-              APPROACHING DAILY LOSS LIMIT (1.2% / 2.0%)
-            </span>
-          </div>
-        </div>
+      {!isSpectator && account && (
+        <RuleWarning 
+          account={account} 
+          battle={battle} 
+        />
       )}
     </div>
   );
@@ -279,6 +283,32 @@ function MetricCard({ label, value, trend }: { label: string; value: string; tre
       )}>
         {value}
       </span>
+    </div>
+  );
+}
+
+function RuleWarning({ account, battle }: { account: any; battle: any }) {
+  // Use authoritative values from account/battle
+  const dailyLoss = account.daily_loss_pct || 0;
+  const maxDailyLoss = battle.max_daily_loss_pct || 5;
+  const drawdown = account.drawdown_pct || 0;
+  const maxDrawdown = battle.max_drawdown_pct || 10;
+  
+  const isApproachingDaily = dailyLoss > maxDailyLoss * 0.8;
+  const isApproachingDD = drawdown > maxDrawdown * 0.8;
+  
+  if (!isApproachingDaily && !isApproachingDD) return null;
+  
+  return (
+    <div className="border-t border-border/40 bg-warning/5 p-3">
+      <div className="flex items-center gap-2 text-warning">
+        <AlertTriangle className="h-4 w-4 shrink-0" />
+        <span className="text-[10px] font-bold leading-tight uppercase">
+          {isApproachingDaily && `Approaching daily loss limit (${dailyLoss.toFixed(2)}% / ${maxDailyLoss}%)`}
+          {isApproachingDaily && isApproachingDD && " | "}
+          {isApproachingDD && `Approaching drawdown limit (${drawdown.toFixed(2)}% / ${maxDrawdown}%)`}
+        </span>
+      </div>
     </div>
   );
 }
