@@ -154,13 +154,14 @@ function RailIcon({ icon: Icon, label, onClick, active }: {
   );
 }
 
-function ExpandedRail({ battle, stats, events, isSpectator, isHost, account }: {
+function ExpandedRail({ battle, stats, events, isSpectator, isHost, account, onClose }: {
   battle: any;
   stats: any;
   events: any;
   isSpectator: boolean;
   isHost: boolean;
   account: any;
+  onClose?: () => void;
 }) {
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -171,9 +172,16 @@ function ExpandedRail({ battle, stats, events, isSpectator, isHost, account }: {
             <Trophy className="h-4 w-4 text-primary" />
             <span className="text-xs font-bold uppercase tracking-wider">{battle.name}</span>
           </div>
-          <Badge variant="outline" className="h-5 px-2 text-[10px] font-bold">
-            {battle.status.toUpperCase()}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="h-5 px-2 text-[10px] font-bold">
+              {battle.status.toUpperCase()}
+            </Badge>
+            {onClose && (
+              <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full" onClick={onClose}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center justify-between rounded-xl bg-muted/40 p-3">
