@@ -272,7 +272,7 @@ export function CreateBattleWizard({ onCancel, onCreated }: { onCancel: () => vo
                 <Info className="h-4 w-4 text-primary" />
                 <span className="text-xs font-black uppercase tracking-wider text-primary">Final Confirmation</span>
               </div>
-              {form.ranked && <Badge className="bg-primary text-primary-foreground font-black tracking-tighter uppercase px-2 py-0.5 text-[9px]">RANKED</Badge>}
+              {form.ranked && <Badge className="bg-primary text-primary-foreground font-black tracking-tighter uppercase px-2 py-0.5 text-[9px]">COMPETITIVE</Badge>}
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
