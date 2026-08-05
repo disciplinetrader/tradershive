@@ -503,7 +503,6 @@ function OnboardingPage() {
                       </div>
                     )}
                   </div>
-                  </div>
                 ) : null}
 
                 {step === 7 ? (
