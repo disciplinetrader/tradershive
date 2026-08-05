@@ -77,10 +77,17 @@ const STEPS: TourStep[] = [
     target: '[data-tour="nav-community"]',
   },
   {
+    id: "support",
+    title: "Need Help?",
+    body: "Contact support or send us feedback directly from the Support page. Our AI Mentor is also always available in the bottom right.",
+    target: '[data-tour="nav-support"]',
+  },
+  {
     id: "finish",
     title: "You're ready",
     body: "Start improving your trading. You can replay this tour anytime from Settings.",
   },
+
 ];
 
 /* ------------------------------------------------------------------ context */
