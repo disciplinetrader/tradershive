@@ -51,7 +51,7 @@ function DashboardPage() {
   const fetchHome = useServerFn(getHomeSummary);
   const fetchHero = useServerFn(getHeroState);
   const { context } = useSessionContext();
-  const [accountId, setAccountId] = useState<string | null>(null);
+  
 
   const { data: home, isPending } = useQuery({
     queryKey: ["home_summary", context.type, context.id],
