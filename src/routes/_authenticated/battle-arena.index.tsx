@@ -95,7 +95,7 @@ function BattleArenaHome() {
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
             <Swords className="h-6 w-6 text-primary" />
-            <h1 className="text-3xl font-black tracking-tight">Battle Arena</h1>
+            <h1 className="text-3xl font-black tracking-tight">HIVE Arena</h1>
           </div>
           <p className="text-sm text-muted-foreground max-w-lg font-medium leading-relaxed">
             Compete in real-time paper trading battles. Dominate the ELO leaderboard, 
