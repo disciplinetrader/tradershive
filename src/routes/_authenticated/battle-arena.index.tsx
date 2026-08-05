@@ -137,7 +137,7 @@ function BattleArenaHome() {
         <div className="relative w-full sm:max-w-md group">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" />
           <Input 
-            placeholder="Search battles..." 
+            placeholder="Search matches..." 
             className="pl-9 bg-card/40 border-border/60 rounded-xl focus:ring-primary/20"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
