@@ -89,7 +89,7 @@ export function TodaysChallenge() {
 
         <div className="mt-4 flex justify-end">
           <Button asChild className="gradient-primary text-primary-foreground shadow-elegant">
-            <Link to="/challenges">{completed ? "View challenge" : "Start challenge"}</Link>
+            <Link to="/leaderboard">{completed ? "View challenge" : "Start challenge"}</Link>
           </Button>
         </div>
       </div>
