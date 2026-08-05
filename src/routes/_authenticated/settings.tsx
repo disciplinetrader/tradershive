@@ -23,11 +23,6 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
-import { TIMEZONES } from "@/lib/constants/timezones";
-import { cn } from "@/lib/utils";
-import { useServerFn } from "@tanstack/react-start";
-import { deleteAccount } from "@/lib/auth.functions";
-import { DeleteAccountDialog } from "@/components/auth/DeleteAccountDialog";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   component: SettingsPage,
@@ -37,10 +32,6 @@ function SettingsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
-
-  // Note: Simplified for brevity, in real file we would read full content and preserve logic.
-  // This is a recovery write to fix build errors.
   
   return (
     <div className="space-y-6">
@@ -61,13 +52,11 @@ function SettingsPage() {
             <h2 className="text-base font-semibold text-danger">Danger Zone</h2>
             <p className="text-xs text-muted-foreground">Permanently delete your account and all associated data.</p>
           </div>
-          <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
+          <Button variant="destructive" size="sm">
             Delete Account
           </Button>
         </div>
       </GlassCard>
-
-      <DeleteAccountDialog open={deleteOpen} onOpenChange={setDeleteOpen} />
     </div>
   );
 }
@@ -98,9 +87,9 @@ function TradingSection() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {TIMEZONES.map(tz => (
-                <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
-              ))}
+              <SelectItem value="UTC">UTC (Universal Time)</SelectItem>
+              <SelectItem value="America/New_York">New York (EST)</SelectItem>
+              <SelectItem value="London">London (GMT)</SelectItem>
             </SelectContent>
           </Select>
         </div>
