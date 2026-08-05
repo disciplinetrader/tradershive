@@ -3,11 +3,11 @@ import { z } from "zod";
 import { HistoryView } from "@/components/replay/review/HistoryView";
 
 const searchSchema = z.object({
-  limit: z.number().optional().default(25),
-  offset: z.number().optional().default(0),
-  status: z.string().nullable().optional().default(null),
-  symbol: z.string().nullable().optional().default(null),
-  search: z.string().nullable().optional().default(null),
+  limit: z.number().optional(),
+  offset: z.number().optional(),
+  status: z.string().nullable().optional(),
+  symbol: z.string().nullable().optional(),
+  search: z.string().nullable().optional(),
 });
 
 export const Route = createFileRoute("/_authenticated/replay/history")({
