@@ -11,8 +11,62 @@ import { inferSession } from "./statistics/session";
  */
 export const getAnalyticsDataset = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((d: { contextType?: string | null; contextId?: string | null } | undefined) => ({
+    contextType: d?.contextType ?? "paper",
+    contextId: d?.contextId ?? null,
+  }))
+  .handler(async ({ context, data }) => {
+    const { contextType, contextId } = data;
+    const uid = context.userId;
+
+    let tradesQuery: any;
+    if (contextType === "replay" && contextId) {
+      tradesQuery = context.supabase
+        .from("replay_trades")
+        .select("id, symbol, market, direction, entry_price, exit_price, stop_loss, take_profit, lot_size, rr_planned, rr_realized, pnl, commission, swap, opened_at, closed_at")
+        .eq("session_id", contextId)
+        .order("opened_at", { ascending: false });
+    } else if (contextType === "arena" && contextId) {
+      tradesQuery = context.supabase
+        .from("paper_trades")
+        .select("id, account_id, symbol, market, direction, entry_price, exit_price, stop_loss, take_profit, lot_size, rr_planned, rr_realized, pnl, commission, swap, opened_at, closed_at")
+        .eq("battle_id", contextId)
+        .is("deleted_at", null)
+        .order("opened_at", { ascending: false });
+    } else if (contextType === "prop" && contextId) {
+      // For props, we need to find the linked paper account
+      const { data: prop } = await context.supabase
+        .from("prop_challenges")
+        .select("paper_account_id")
+        .eq("id", contextId)
+        .single();
+      
+      tradesQuery = context.supabase
+        .from("paper_trades")
+        .select("id, account_id, symbol, market, direction, entry_price, exit_price, stop_loss, take_profit, lot_size, rr_planned, rr_realized, pnl, commission, swap, opened_at, closed_at")
+        .is("deleted_at", null);
+      
+      if (prop?.paper_account_id) {
+        tradesQuery = tradesQuery.eq("account_id", prop.paper_account_id);
+      } else {
+        // No account linked yet or not found
+        tradesQuery = tradesQuery.eq("user_id", uid).limit(0);
+      }
+      tradesQuery = tradesQuery.order("opened_at", { ascending: false });
+    } else {
+      // Default paper
+      tradesQuery = context.supabase
+        .from("paper_trades")
+        .select("id, account_id, symbol, market, direction, entry_price, exit_price, stop_loss, take_profit, lot_size, rr_planned, rr_realized, pnl, commission, swap, opened_at, closed_at")
+        .eq("user_id", uid)
+        .is("deleted_at", null);
+      
+      if (contextId) tradesQuery = tradesQuery.eq("account_id", contextId);
+      tradesQuery = tradesQuery.order("opened_at", { ascending: false });
+    }
+
     const [tradesRes, journalRes, accountsRes] = await Promise.all([
+      tradesQuery.limit(5000),
       context.supabase
         .from("paper_trades")
         .select("id, account_id, symbol, market, direction, entry_price, exit_price, stop_loss, take_profit, lot_size, rr_planned, rr_realized, pnl, commission, swap, opened_at, closed_at")
