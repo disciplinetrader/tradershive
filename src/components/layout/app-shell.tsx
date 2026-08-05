@@ -55,9 +55,7 @@ const TRADING: NavItem[] = [
 ];
 
 const COMPETE: NavItem[] = [
-  { to: "/championship", label: "Championships", icon: Trophy },
   { to: "/battle-arena", label: "Battle Arena", icon: Swords },
-  { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
 ];
 
 const COMMUNITY: NavItem[] = [
