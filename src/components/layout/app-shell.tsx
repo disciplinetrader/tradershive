@@ -78,7 +78,7 @@ const TOUR_TARGETS: Record<string, string | undefined> = {
   "/journal": "nav-journal",
   "/analytics": "nav-analytics",
   "/community": "nav-community",
-  "/ai/coach": "nav-ai-coach",
+  
 };
 
 export function AppShell({ children }: { children: ReactNode }) {
