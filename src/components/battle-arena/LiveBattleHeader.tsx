@@ -123,7 +123,7 @@ export function LiveBattleHeader({
           <div className="flex flex-wrap items-center gap-6 text-xs text-muted-foreground font-bold tracking-tight uppercase">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-background/40 border border-border/40">
               <Users className="h-4 w-4 text-primary" />
-              <span>{participantCount} <span className="text-muted-foreground/60">/ {battle.max_participants} joined</span></span>
+              <span>{participantCount} <span className="text-muted-foreground/60">/ {battle.max_participants} locked in</span></span>
             </div>
             {isLive && (
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-background/40 border border-border/40">
