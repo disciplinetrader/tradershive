@@ -153,7 +153,6 @@ export function MentorDrawer() {
                 <WorkspaceLink to="/ai/history" icon={History} label="History" />
               </div>
             </div>
-
           </motion.div>
         )}
       </AnimatePresence>
@@ -169,17 +168,26 @@ export function MentorDrawer() {
                   setHasNewMessage(false);
                 }}
                 className={cn(
-                  "group relative flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95",
-                  isOpen && "bg-muted text-muted-foreground shadow-none"
+                  "group relative flex h-14 w-14 items-center justify-center rounded-full transition-all duration-300 hover:scale-105 active:scale-95",
+                  "bg-gradient-to-br from-[#4F46E5] via-[#7C3AED] to-[#9333EA] text-white shadow-xl shadow-indigo-500/25",
+                  "before:absolute before:inset-0 before:rounded-full before:bg-indigo-400/20 before:blur-md before:transition-opacity before:duration-300 hover:before:opacity-100",
+                  "after:absolute after:inset-[-2px] after:rounded-full after:border after:border-indigo-400/30 after:transition-all after:duration-500 group-hover:after:rotate-180",
+                  isOpen && "from-muted via-muted to-muted text-muted-foreground shadow-none before:opacity-0 after:opacity-0",
+                  !isOpen && hasNewMessage && "animate-[pulse_3s_infinite]"
                 )}
               >
                 {isOpen ? (
                   <X className="h-6 w-6" />
                 ) : (
                   <>
-                    <Sparkles className="h-6 w-6" />
+                    <div className={cn(
+                      "relative z-10 transition-transform duration-300 group-hover:scale-110",
+                      // Generating state could be added here if 'status' was available in this component
+                    )}>
+                      <Sparkles className="h-6 w-6 drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
+                    </div>
                     {hasNewMessage && (
-                      <span className="absolute -right-1 -top-1 flex h-4 w-4">
+                      <span className="absolute -right-1 -top-1 z-20 flex h-4 w-4">
                         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                         <span className="relative inline-flex h-4 w-4 rounded-full bg-emerald-500 border-2 border-background" />
                       </span>
@@ -188,9 +196,10 @@ export function MentorDrawer() {
                 )}
               </button>
             </TooltipTrigger>
-            <TooltipContent side="left" sideOffset={16}>
-              {isOpen ? "Close Mentor" : "Talk to Mentor"}
+            <TooltipContent side="left" sideOffset={16} className="bg-popover/90 backdrop-blur-md border-border/50 text-[11px] font-medium px-2 py-1">
+              {isOpen ? "Close Mentor" : "Ask TradersHIVE Mentor"}
             </TooltipContent>
+
           </Tooltip>
         </TooltipProvider>
       </div>
