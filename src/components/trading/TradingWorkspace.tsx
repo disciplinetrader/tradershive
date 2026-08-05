@@ -170,6 +170,7 @@ function TradingWorkspaceInner() {
   useRiskMonitor(account);
   const { prefs, update, patch, hydrated } = useWorkspacePrefs();
   const { active: activeChallenge } = useActivePropChallenge();
+  const { data: arenaData } = useActiveArena(accountId);
 
   // Auto-bind the workspace to the challenge's paper account so every closed
   // trade updates the challenge in real time — no manual linking required.
