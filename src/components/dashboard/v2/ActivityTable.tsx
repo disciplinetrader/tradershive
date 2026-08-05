@@ -45,10 +45,11 @@ function relTime(iso: string | null | undefined): string {
 export function ActivityTable() {
   const fetchOverview = useServerFn(getDashboardOverview);
   const fetchReplays = useServerFn(listReplaySessions);
+  const { context } = useSessionContext();
 
   const { data: overview, isPending: tradesPending } = useQuery({
-    queryKey: ["dashboard_overview"],
-    queryFn: () => fetchOverview(),
+    queryKey: ["dashboard_overview", context.type, context.id],
+    queryFn: () => fetchOverview({ data: { contextType: context.type, contextId: context.id } }),
     staleTime: 30_000,
   });
   const { data: replays, isPending: replayPending } = useQuery({
