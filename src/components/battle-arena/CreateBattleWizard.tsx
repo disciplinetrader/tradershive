@@ -142,7 +142,7 @@ export function CreateBattleWizard({ onCancel, onCreated }: { onCancel: () => vo
                     <Trophy className={`h-4 w-4 ${form.ranked ? "text-primary animate-pulse" : "text-muted-foreground"}`} />
                     <Label className="font-bold cursor-pointer">Competitive Match</Label>
                   </div>
-                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight">Affects ELO Rating</p>
+                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight">Affects HIVE Rating</p>
                 </div>
                 <Switch checked={form.ranked} onCheckedChange={(v) => set("ranked", v)} />
               </div>
