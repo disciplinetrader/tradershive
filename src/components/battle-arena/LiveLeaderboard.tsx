@@ -12,7 +12,7 @@ type Presence = { user_id: string; status: PresenceStatus; last_seen_at: string 
 
 export function LiveLeaderboard({
   rankings, profiles, presence, winCondition, openPositionsByUser,
-  lastTradeByUser,
+  lastTradeByUser, compact,
 }: {
   rankings: Ranking[];
   profiles: Profile[];
@@ -20,6 +20,7 @@ export function LiveLeaderboard({
   winCondition: string;
   openPositionsByUser?: Record<string, number>;
   lastTradeByUser?: Record<string, string>;
+  compact?: boolean;
 }) {
   const wc = findWinCondition(winCondition);
   const byId = new Map(profiles.map((p) => [p.id, p]));
