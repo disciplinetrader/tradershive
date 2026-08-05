@@ -1085,10 +1085,11 @@ function TradingWorkspaceInner() {
 
 
           {/* Right rail: tabbed, resizable, collapsible workspace panel */}
-          {arenaData ? (
-            <ArenaCommandRail className={cn(isMobile && "absolute inset-x-0 bottom-0 top-auto z-40 h-[75dvh] w-full rounded-t-2xl border-l-0 border-t border-border/60 bg-background shadow-2xl")} />
-          ) : rightOpen ? (
-            <>
+          {rightOpen ? (
+            arenaData ? (
+              <ArenaCommandRail className={cn(isMobile && "absolute inset-x-0 bottom-0 top-auto z-40 h-[75dvh] w-full rounded-t-2xl border-l-0 border-t border-border/60 bg-background shadow-2xl")} onClose={() => setRightOpen(false)} />
+            ) : (
+              <>
               {/* Resize handle (desktop only) */}
               <div
                 role="separator"
