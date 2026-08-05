@@ -281,7 +281,11 @@ export function CreatorWizard({ open, onOpenChange }: { open: boolean; onOpenCha
                 <button
                   key={t}
                   type="button"
-                  onClick={() => setTf(t)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setTf(t);
+                  }}
                   className={cn(
                     "cursor-pointer rounded-lg border py-2 text-xs font-medium transition",
                     tf === t
