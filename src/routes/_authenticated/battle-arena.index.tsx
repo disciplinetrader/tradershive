@@ -176,7 +176,7 @@ function BattleArenaHome() {
 
           <Section
             title="Ranked Play" icon={Zap} items={ranked.data} loading={ranked.isLoading}
-            empty={{ title: "No ranked battles", body: "Competitive play is quiet right now." }}
+            empty={{ title: "No competitive play", body: "Ranked play is quiet right now." }}
           />
 
           <Section
