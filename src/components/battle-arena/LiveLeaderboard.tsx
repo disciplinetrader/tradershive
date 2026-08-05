@@ -58,6 +58,7 @@ export function LiveLeaderboard({
                 <th className="px-3 py-2 text-left">#</th>
                 <th className="px-3 py-2 text-left">Competitor</th>
                 <th className="px-2 py-2 text-right">Return %</th>
+                <th className="px-2 py-2 text-right text-muted-foreground font-normal">PnL</th>
                 {!compact && (
                   <>
                     <th className="px-2 py-2 text-right">R</th>
@@ -109,6 +110,9 @@ export function LiveLeaderboard({
                     </td>
                     <td className={cn("px-2 py-2 text-right tabular-nums font-semibold", Number(r.return_pct) > 0 ? "text-success" : Number(r.return_pct) < 0 ? "text-danger" : "")}>
                       {Number(r.return_pct).toFixed(2)}%
+                    </td>
+                    <td className="px-2 py-2 text-right tabular-nums text-muted-foreground text-[10px]">
+                      {Number(r.pnl).toLocaleString(undefined, { style: "currency", currency: "USD" })}
                     </td>
                     {!compact && (
                       <>
