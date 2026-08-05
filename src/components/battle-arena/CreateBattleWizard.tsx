@@ -140,7 +140,7 @@ export function CreateBattleWizard({ onCancel, onCreated }: { onCancel: () => vo
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
                     <Trophy className={`h-4 w-4 ${form.ranked ? "text-primary animate-pulse" : "text-muted-foreground"}`} />
-                    <Label className="font-bold cursor-pointer">Ranked Battle</Label>
+                    <Label className="font-bold cursor-pointer">Competitive Match</Label>
                   </div>
                   <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight">Affects ELO Rating</p>
                 </div>
