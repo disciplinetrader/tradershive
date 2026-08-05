@@ -230,24 +230,64 @@ function sessionOf(iso: string): "Asia" | "London" | "NY" {
 
 export const getDashboardOverview = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { data: acct } = await context.supabase
+  .inputValidator((d: { contextType?: string | null; contextId?: string | null } | undefined) => ({
+    contextType: d?.contextType ?? "paper",
+    contextId: d?.contextId ?? null,
+  }))
+  .handler(async ({ context, data }) => {
+    const { contextType, contextId } = data;
+    const uid = context.userId;
+
+    let acctQuery = context.supabase
       .from("paper_accounts")
       .select("id, balance, equity, starting_balance")
-      .eq("user_id", context.userId)
-      .is("deleted_at", null)
-      .order("is_active", { ascending: false })
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
+      .eq("user_id", uid)
+      .is("deleted_at", null);
+    
+    if (contextType === "paper" && contextId) {
+      acctQuery = acctQuery.eq("id", contextId);
+    } else if (contextType === "prop" && contextId) {
+      const { data: prop } = await context.supabase
+        .from("prop_challenges")
+        .select("paper_account_id")
+        .eq("id", contextId)
+        .single();
+      if (prop?.paper_account_id) {
+        acctQuery = acctQuery.eq("id", prop.paper_account_id);
+      } else {
+        acctQuery = acctQuery.limit(0);
+      }
+    } else {
+      acctQuery = acctQuery.order("is_active", { ascending: false }).order("created_at", { ascending: true }).limit(1);
+    }
+
+    const { data: acct } = await acctQuery.maybeSingle();
 
     const startBal = Number(acct?.starting_balance ?? 10000);
     const equity = Number(acct?.equity ?? startBal);
 
-    const { data: closedRaw } = await context.supabase
-      .from("paper_trades")
-      .select("id, symbol, direction, entry_price, exit_price, pnl, rr_realized, rr_planned, opened_at, closed_at")
-      .eq("user_id", context.userId)
+    let tradesQuery: any;
+    if (contextType === "replay" && contextId) {
+      tradesQuery = context.supabase
+        .from("replay_trades")
+        .select("id, symbol, direction, entry_price, exit_price, pnl, rr_realized, rr_planned, opened_at, closed_at")
+        .eq("session_id", contextId);
+    } else if (contextType === "arena" && contextId) {
+      tradesQuery = context.supabase
+        .from("paper_trades")
+        .select("id, symbol, direction, entry_price, exit_price, pnl, rr_realized, rr_planned, opened_at, closed_at")
+        .eq("battle_id", contextId)
+        .is("deleted_at", null);
+    } else {
+      tradesQuery = context.supabase
+        .from("paper_trades")
+        .select("id, symbol, direction, entry_price, exit_price, pnl, rr_realized, rr_planned, opened_at, closed_at")
+        .eq("user_id", uid)
+        .is("deleted_at", null);
+      if (contextId) tradesQuery = tradesQuery.eq("account_id", contextId);
+    }
+
+    const { data: closedRaw } = await tradesQuery
       .eq("status", "closed")
       .is("deleted_at", null)
       .order("closed_at", { ascending: false })
