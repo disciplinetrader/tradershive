@@ -6,7 +6,7 @@ import { listReplaySessions } from "@/lib/replay.functions";
 import { listPropChallenges } from "@/lib/prop-challenges.functions";
 import { listBattles } from "@/lib/battle-arena.functions";
 
-export type SessionContextType = "paper" | "replay" | "prop" | "arena";
+export type SessionContextType = "all" | "paper" | "replay" | "prop" | "arena";
 
 export interface SessionContext {
   type: SessionContextType;
@@ -23,12 +23,12 @@ export function useSessionContext() {
   const fetchBattles = useServerFn(listBattles);
 
   const [context, setContext] = useState<SessionContext>(() => {
-    if (typeof window === "undefined") return { type: "paper", id: null };
+    if (typeof window === "undefined") return { type: "all", id: null, label: "All Accounts" };
     try {
       const stored = window.localStorage.getItem(STORAGE_KEY);
       if (stored) return JSON.parse(stored);
     } catch (e) {}
-    return { type: "paper", id: null };
+    return { type: "all", id: null, label: "All Accounts" };
   });
 
   const accounts = useQuery({ queryKey: ["paper", "accounts"], queryFn: () => fetchAccounts() });
@@ -42,12 +42,34 @@ export function useSessionContext() {
     }
   }, [context]);
 
-  // Set default account if none selected for paper
+  // Handle default selection: Last valid -> Most recent active -> All Accounts
   useEffect(() => {
-    if (context.type === "paper" && !context.id && accounts.data?.length) {
-      setContext({ type: "paper", id: accounts.data[0].id, label: accounts.data[0].name });
+    // If we have a context loaded from localStorage, we're good
+    if (context.type !== "all" && context.id) return;
+    
+    // If context is "all", we stay on "all" unless it was just the default initialization
+    // and we want to find the most recent active account instead.
+    
+    if (!accounts.isPending && accounts.data && accounts.data.length > 0 && !context.id && context.type === "all") {
+        // Only auto-select if there's no stored context at all
+        const stored = typeof window !== "undefined" ? window.localStorage.getItem(STORAGE_KEY) : null;
+        if (!stored) {
+          const recent = accounts.data[0];
+          setContext({ type: "paper", id: recent.id, label: recent.name });
+        }
     }
-  }, [accounts.data, context.type, context.id]);
+  }, [accounts.isPending, accounts.data]);
+
+  // Priority: Most recent active -> All Accounts
+  useEffect(() => {
+    if (context.type === "all") return; // Keep "all" if user selected it
+
+    // If we have no ID but we are in a specific type, or if the current ID is stale/missing
+    if (!context.id && !accounts.isPending && !replays.isPending && !props.isPending && !battles.isPending) {
+       // Logic for default: last valid is handled by localStorage.
+       // If no localStorage, we start with "all".
+    }
+  }, [accounts.isPending, replays.isPending, props.isPending, battles.isPending, context.id, context.type]);
 
   const selectContext = (type: SessionContextType, id: string | null, label?: string) => {
     setContext({ type, id, label });

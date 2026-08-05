@@ -103,26 +103,42 @@ export const getHomeSummary = createServerFn({ method: "GET" })
     // Map context to database queries
     let tradesQuery: any;
     
-    if (contextType === "replay" && contextId) {
+    if (contextType === "all") {
+      // Aggregate everything for "All Accounts"
+      // In a real implementation, you might need to combine paper_trades and replay_trades
+      // For now, we aggregate all paper_trades (which includes Arena and Prop)
+      tradesQuery = context.supabase
+        .from("paper_trades")
+        .select("id, symbol, direction, entry_price, opened_at, closed_at, pnl, rr_realized, rr_planned, status")
+        .eq("user_id", uid)
+        .is("deleted_at", null);
+    } else if (contextType === "replay" && contextId) {
       tradesQuery = context.supabase
         .from("replay_trades")
         .select("id, symbol, market, direction, entry_price, opened_at, closed_at, pnl, rr_realized, rr_planned, status")
         .eq("session_id", contextId);
     } else if (contextType === "arena" && contextId) {
-      // Battles use paper_trades table but filtered by battle_id
       tradesQuery = context.supabase
         .from("paper_trades")
         .select("id, symbol, direction, entry_price, opened_at, closed_at, pnl, rr_realized, rr_planned, status")
         .eq("battle_id", contextId)
         .is("deleted_at", null);
     } else {
-      // Default: paper (or fallback if id missing)
       tradesQuery = context.supabase
         .from("paper_trades")
         .select("id, symbol, direction, entry_price, opened_at, closed_at, pnl, rr_realized, rr_planned, status")
         .eq("user_id", uid)
         .is("deleted_at", null);
       if (contextId && contextType === "paper") tradesQuery = tradesQuery.eq("account_id", contextId);
+      else if (contextId && contextType === "prop") {
+         // Handle prop challenge context
+         const { data: prop } = await context.supabase
+          .from("prop_challenges")
+          .select("paper_account_id")
+          .eq("id", contextId)
+          .single();
+        if (prop?.paper_account_id) tradesQuery = tradesQuery.eq("account_id", prop.paper_account_id);
+      }
     }
 
     const [tradesRes, journalRes, replayRes, goalsRes, streakRes, activityRes, marketRes] = await Promise.all([

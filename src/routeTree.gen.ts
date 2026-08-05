@@ -196,6 +196,7 @@ import { Route as AuthenticatedAiCoachProfileRouteImport } from './routes/_authe
 import { Route as AuthenticatedAiCoachMistakesRouteImport } from './routes/_authenticated/ai.coach.mistakes'
 import { Route as AuthenticatedAiCoachHomeworkRouteImport } from './routes/_authenticated/ai.coach.homework'
 import { Route as AuthenticatedAiCoachEvolutionRouteImport } from './routes/_authenticated/ai.coach.evolution'
+import { Route as AuthenticatedDashboardSessionsTypeIdRouteImport } from './routes/_authenticated/dashboard.sessions.$type.$id'
 
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
   id: '/verify-email',
@@ -1276,6 +1277,12 @@ const AuthenticatedAiCoachEvolutionRoute =
     path: '/evolution',
     getParentRoute: () => AuthenticatedAiCoachRoute,
   } as any)
+const AuthenticatedDashboardSessionsTypeIdRoute =
+  AuthenticatedDashboardSessionsTypeIdRouteImport.update({
+    id: '/$type/$id',
+    path: '/$type/$id',
+    getParentRoute: () => AuthenticatedDashboardSessionsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -1384,7 +1391,7 @@ export interface FileRoutesByFullPath {
   '/community/reviews': typeof AuthenticatedCommunityReviewsRoute
   '/community/trending': typeof AuthenticatedCommunityTrendingRoute
   '/dashboard/analytics': typeof AuthenticatedDashboardAnalyticsRoute
-  '/dashboard/sessions': typeof AuthenticatedDashboardSessionsRoute
+  '/dashboard/sessions': typeof AuthenticatedDashboardSessionsRouteWithChildren
   '/dashboard/trades': typeof AuthenticatedDashboardTradesRoute
   '/journal/$entryId': typeof AuthenticatedJournalEntryIdRoute
   '/journal/analytics': typeof AuthenticatedJournalAnalyticsRoute
@@ -1464,6 +1471,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/email-weekly-report': typeof ApiPublicHooksEmailWeeklyReportRoute
   '/api/public/hooks/historical-sync': typeof ApiPublicHooksHistoricalSyncRoute
   '/ai/coach/': typeof AuthenticatedAiCoachIndexRoute
+  '/dashboard/sessions/$type/$id': typeof AuthenticatedDashboardSessionsTypeIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -1558,7 +1566,7 @@ export interface FileRoutesByTo {
   '/community/reviews': typeof AuthenticatedCommunityReviewsRoute
   '/community/trending': typeof AuthenticatedCommunityTrendingRoute
   '/dashboard/analytics': typeof AuthenticatedDashboardAnalyticsRoute
-  '/dashboard/sessions': typeof AuthenticatedDashboardSessionsRoute
+  '/dashboard/sessions': typeof AuthenticatedDashboardSessionsRouteWithChildren
   '/dashboard/trades': typeof AuthenticatedDashboardTradesRoute
   '/journal/$entryId': typeof AuthenticatedJournalEntryIdRoute
   '/journal/analytics': typeof AuthenticatedJournalAnalyticsRoute
@@ -1638,6 +1646,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/email-weekly-report': typeof ApiPublicHooksEmailWeeklyReportRoute
   '/api/public/hooks/historical-sync': typeof ApiPublicHooksHistoricalSyncRoute
   '/ai/coach': typeof AuthenticatedAiCoachIndexRoute
+  '/dashboard/sessions/$type/$id': typeof AuthenticatedDashboardSessionsTypeIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -1748,7 +1757,7 @@ export interface FileRoutesById {
   '/_authenticated/community/reviews': typeof AuthenticatedCommunityReviewsRoute
   '/_authenticated/community/trending': typeof AuthenticatedCommunityTrendingRoute
   '/_authenticated/dashboard/analytics': typeof AuthenticatedDashboardAnalyticsRoute
-  '/_authenticated/dashboard/sessions': typeof AuthenticatedDashboardSessionsRoute
+  '/_authenticated/dashboard/sessions': typeof AuthenticatedDashboardSessionsRouteWithChildren
   '/_authenticated/dashboard/trades': typeof AuthenticatedDashboardTradesRoute
   '/_authenticated/journal/$entryId': typeof AuthenticatedJournalEntryIdRoute
   '/_authenticated/journal/analytics': typeof AuthenticatedJournalAnalyticsRoute
@@ -1828,6 +1837,7 @@ export interface FileRoutesById {
   '/api/public/hooks/email-weekly-report': typeof ApiPublicHooksEmailWeeklyReportRoute
   '/api/public/hooks/historical-sync': typeof ApiPublicHooksHistoricalSyncRoute
   '/_authenticated/ai/coach/': typeof AuthenticatedAiCoachIndexRoute
+  '/_authenticated/dashboard/sessions/$type/$id': typeof AuthenticatedDashboardSessionsTypeIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -2018,6 +2028,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/email-weekly-report'
     | '/api/public/hooks/historical-sync'
     | '/ai/coach/'
+    | '/dashboard/sessions/$type/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -2192,6 +2203,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/email-weekly-report'
     | '/api/public/hooks/historical-sync'
     | '/ai/coach'
+    | '/dashboard/sessions/$type/$id'
   id:
     | '__root__'
     | '/'
@@ -2381,6 +2393,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/email-weekly-report'
     | '/api/public/hooks/historical-sync'
     | '/_authenticated/ai/coach/'
+    | '/_authenticated/dashboard/sessions/$type/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -3717,6 +3730,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAiCoachEvolutionRouteImport
       parentRoute: typeof AuthenticatedAiCoachRoute
     }
+    '/_authenticated/dashboard/sessions/$type/$id': {
+      id: '/_authenticated/dashboard/sessions/$type/$id'
+      path: '/$type/$id'
+      fullPath: '/dashboard/sessions/$type/$id'
+      preLoaderRoute: typeof AuthenticatedDashboardSessionsTypeIdRouteImport
+      parentRoute: typeof AuthenticatedDashboardSessionsRoute
+    }
   }
 }
 
@@ -3989,9 +4009,24 @@ const AuthenticatedCommunityRouteWithChildren =
     AuthenticatedCommunityRouteChildren,
   )
 
+interface AuthenticatedDashboardSessionsRouteChildren {
+  AuthenticatedDashboardSessionsTypeIdRoute: typeof AuthenticatedDashboardSessionsTypeIdRoute
+}
+
+const AuthenticatedDashboardSessionsRouteChildren: AuthenticatedDashboardSessionsRouteChildren =
+  {
+    AuthenticatedDashboardSessionsTypeIdRoute:
+      AuthenticatedDashboardSessionsTypeIdRoute,
+  }
+
+const AuthenticatedDashboardSessionsRouteWithChildren =
+  AuthenticatedDashboardSessionsRoute._addFileChildren(
+    AuthenticatedDashboardSessionsRouteChildren,
+  )
+
 interface AuthenticatedDashboardRouteChildren {
   AuthenticatedDashboardAnalyticsRoute: typeof AuthenticatedDashboardAnalyticsRoute
-  AuthenticatedDashboardSessionsRoute: typeof AuthenticatedDashboardSessionsRoute
+  AuthenticatedDashboardSessionsRoute: typeof AuthenticatedDashboardSessionsRouteWithChildren
   AuthenticatedDashboardTradesRoute: typeof AuthenticatedDashboardTradesRoute
   AuthenticatedDashboardIndexRoute: typeof AuthenticatedDashboardIndexRoute
 }
@@ -3999,7 +4034,8 @@ interface AuthenticatedDashboardRouteChildren {
 const AuthenticatedDashboardRouteChildren: AuthenticatedDashboardRouteChildren =
   {
     AuthenticatedDashboardAnalyticsRoute: AuthenticatedDashboardAnalyticsRoute,
-    AuthenticatedDashboardSessionsRoute: AuthenticatedDashboardSessionsRoute,
+    AuthenticatedDashboardSessionsRoute:
+      AuthenticatedDashboardSessionsRouteWithChildren,
     AuthenticatedDashboardTradesRoute: AuthenticatedDashboardTradesRoute,
     AuthenticatedDashboardIndexRoute: AuthenticatedDashboardIndexRoute,
   }

@@ -12,7 +12,7 @@ import { inferSession } from "./statistics/session";
 export const getAnalyticsDataset = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { contextType?: string | null; contextId?: string | null } | undefined) => ({
-    contextType: d?.contextType ?? "paper",
+    contextType: d?.contextType ?? "all",
     contextId: d?.contextId ?? null,
   }))
   .handler(async ({ context, data }) => {
@@ -20,7 +20,14 @@ export const getAnalyticsDataset = createServerFn({ method: "GET" })
     const uid = context.userId;
 
     let tradesQuery: any;
-    if (contextType === "replay" && contextId) {
+    if (contextType === "all") {
+      tradesQuery = context.supabase
+        .from("paper_trades")
+        .select("id, account_id, symbol, market, direction, entry_price, exit_price, stop_loss, take_profit, lot_size, rr_planned, rr_realized, pnl, commission, swap, opened_at, closed_at")
+        .eq("user_id", uid)
+        .is("deleted_at", null)
+        .order("opened_at", { ascending: false });
+    } else if (contextType === "replay" && contextId) {
       tradesQuery = context.supabase
         .from("replay_trades")
         .select("id, symbol, market, direction, entry_price, exit_price, stop_loss, take_profit, lot_size, rr_planned, rr_realized, pnl, commission, swap, opened_at, closed_at")

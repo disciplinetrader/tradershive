@@ -7,6 +7,20 @@ import { validateNewOrder, type OpenTradeInput } from "./paper-trading/risk";
 
 /* ---------------- Accounts ---------------- */
 
+export const getAccount = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: acct, error } = await context.supabase
+      .from("paper_accounts")
+      .select("*")
+      .eq("id", data.id)
+      .eq("user_id", context.userId)
+      .single();
+    if (error) throw error;
+    return acct;
+  });
+
 export const listAccounts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
