@@ -78,6 +78,8 @@ const TOUR_TARGETS: Record<string, string | undefined> = {
   "/journal": "nav-journal",
   "/analytics": "nav-analytics",
   "/community": "nav-community",
+  "/support": "nav-support",
+
   
 };
 
