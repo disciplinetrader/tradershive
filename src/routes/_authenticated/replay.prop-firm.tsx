@@ -40,7 +40,7 @@ function ReplayPropFirmPage() {
   );
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] space-y-[var(--gutter-md)] pb-[var(--gutter-lg)] sm:space-y-[var(--gutter-lg)] animate-in fade-in duration-500">
+    <div className="mx-auto w-full max-w-[1400px] space-y-6 pb-[var(--gutter-lg)] animate-in fade-in duration-500">
       <PageHeader
         title="Prop Firm Challenges"
         description="Practise prop-style evaluation rules using a virtual TradersHIVE account."
