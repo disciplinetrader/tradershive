@@ -104,6 +104,7 @@ export function ArenaCommandRail({ className, onClose }: ArenaCommandRailProps) 
             isSpectator={isSpectator}
             isHost={arenaData.isHost}
             account={account}
+            onClose={onClose}
           />
         )}
       </div>
