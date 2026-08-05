@@ -34,50 +34,63 @@ function requireLovableKey() {
   return key;
 }
 
+const inflightStructured = new Map<string, Promise<any>>();
+
 async function runStructured<T>(args: {
+  userId: string;
+  kind: string;
   modelKey: string;
   system: string;
   prompt: string;
   schema: z.ZodType<T>;
   maxTokens?: number;
 }): Promise<{ output: T; tokensIn: number; tokensOut: number; latencyMs: number; runId?: string }> {
-  const key = requireLovableKey();
-  const gateway = createLovableAiGatewayProvider(key, undefined, { structuredOutputs: true });
-  const model = gateway(args.modelKey);
-  const started = Date.now();
-  try {
-    const result = await generateText({
-      model,
-      system: args.system,
-      prompt: args.prompt,
-      output: Output.object({ schema: args.schema }),
-      abortSignal: AbortSignal.timeout(30000), // 30s timeout
-    });
-    return {
-      output: result.output as T,
-      tokensIn: result.usage?.inputTokens ?? 0,
-      tokensOut: result.usage?.outputTokens ?? 0,
-      latencyMs: Date.now() - started,
-      runId: gateway.getRunId(),
-    };
-  } catch (err) {
-    if (NoObjectGeneratedError.isInstance(err)) {
-      try {
-        const parsed = JSON.parse((err as { text?: string }).text ?? "{}");
-        const validated = args.schema.parse(parsed);
-        return {
-          output: validated,
-          tokensIn: (err as { usage?: { inputTokens?: number } }).usage?.inputTokens ?? 0,
-          tokensOut: (err as { usage?: { outputTokens?: number } }).usage?.outputTokens ?? 0,
-          latencyMs: Date.now() - started,
-          runId: gateway.getRunId(),
-        };
-      } catch {
-        // fallthrough
+  const coalesceKey = `${args.userId}:${args.kind}:${args.modelKey}:${args.prompt.slice(0, 100)}`;
+  const existing = inflightStructured.get(coalesceKey);
+  if (existing) return existing;
+
+  const promise = (async () => {
+    const key = requireLovableKey();
+    const gateway = createLovableAiGatewayProvider(key, undefined, { structuredOutputs: true });
+    const model = gateway(args.modelKey);
+    const started = Date.now();
+    try {
+      const result = await generateText({
+        model,
+        system: args.system,
+        prompt: args.prompt,
+        output: Output.object({ schema: args.schema }),
+        abortSignal: AbortSignal.timeout(30000), // 30s timeout
+      });
+      return {
+        output: result.output as T,
+        tokensIn: result.usage?.inputTokens ?? 0,
+        tokensOut: result.usage?.outputTokens ?? 0,
+        latencyMs: Date.now() - started,
+        runId: gateway.getRunId(),
+      };
+    } catch (err) {
+      if (NoObjectGeneratedError.isInstance(err)) {
+        try {
+          const parsed = JSON.parse((err as { text?: string }).text ?? "{}");
+          const validated = args.schema.parse(parsed);
+          return {
+            output: validated,
+            tokensIn: (err as { usage?: { inputTokens?: number } }).usage?.inputTokens ?? 0,
+            tokensOut: (err as { usage?: { outputTokens?: number } }).usage?.outputTokens ?? 0,
+            latencyMs: Date.now() - started,
+            runId: gateway.getRunId(),
+          };
+        } catch {
+          // fallthrough
+        }
       }
+      throw err;
     }
-    throw err;
-  }
+  })().finally(() => inflightStructured.delete(coalesceKey));
+
+  inflightStructured.set(coalesceKey, promise);
+  return promise;
 }
 
 async function logUsage(
@@ -328,6 +341,8 @@ Grade the trade (A+..F), give confidence 0-100, and produce the structured revie
 
     try {
       const res = await runStructured({
+        userId,
+        kind: "trade_review",
         modelKey,
         system: COACH_SYSTEM_PROMPT,
         prompt,
@@ -413,6 +428,8 @@ export const reviewJournalEntry = createServerFn({ method: "POST" })
     const modelKey = settings.data?.preferred_model ?? DEFAULT_MODEL;
 
     const res = await runStructured({
+      userId,
+      kind: "journal_review",
       modelKey,
       system: COACH_SYSTEM_PROMPT,
       prompt: `Evaluate this journal entry for quality, completeness, psychology, risk, emotion and consistency. Provide scores 0-100.

@@ -223,12 +223,17 @@ export function validateOrder(
   const errors: string[] = [];
   const { entry, stop, target, direction, orderType, size } = draft;
 
-  if (![entry, stop, target].every((v) => Number.isFinite(v) && v > 0)) {
-    return { ok: false, errors: ["Entry, stop and target must all be positive finite prices."] };
+  const values = [entry, stop, target, size, opts.marketPrice, opts.maxRiskPct].filter(v => v !== undefined && v !== null);
+  if (values.some(v => !Number.isFinite(v))) {
+    return { ok: false, errors: ["Trading values must be finite numbers. Infinity and NaN are rejected."] };
   }
 
-  if (size != null && (!Number.isFinite(size) || size <= 0 || size > 1_000_000_000)) {
-    errors.push("Lot size must be a finite number between 0 and 1,000,000,000.");
+  if (![entry, stop, target].every((v) => v > 0)) {
+    return { ok: false, errors: ["Entry, stop and target must all be positive prices."] };
+  }
+
+  if (size != null && (size <= 0 || size > 1_000_000_000)) {
+    errors.push("Lot size must be between 0 and 1,000,000,000.");
   }
 
   if (direction === "buy") {
@@ -242,17 +247,15 @@ export function validateOrder(
   const risk = Math.abs(entry - stop);
   const reward = Math.abs(target - entry);
 
-  if (!Number.isFinite(risk) || risk > 1_000_000_000_000) errors.push("Invalid risk value.");
-  if (!Number.isFinite(reward) || reward > 1_000_000_000_000) {
-    errors.push("Invalid reward value. Take profit might be too far or infinite.");
-  }
-  
+  if (risk > 1_000_000_000_000) errors.push("Invalid risk value (numeric overflow).");
+  if (reward > 1_000_000_000_000) errors.push("Invalid reward value (numeric overflow).");
+
   const tick = opts.tick && opts.tick > 0 ? opts.tick : 0;
   if (risk <= 0 || (tick > 0 && risk < tick)) {
-    errors.push("Risk is zero — move the stop away from the entry price.");
+    errors.push("Risk is zero or negative — move the stop away from the entry price.");
   }
   if (reward <= 0) {
-    errors.push("Reward is zero — move the target away from the entry price.");
+    errors.push("Reward is zero or negative — move the target away from the entry price.");
   }
 
 
