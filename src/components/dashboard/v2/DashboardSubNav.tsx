@@ -13,7 +13,6 @@ export const DASHBOARD_TABS = [
   { to: "/dashboard/sessions", label: "Sessions", icon: LineChart },
   { to: "/dashboard/trades", label: "Trades", icon: PieChart },
   { to: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
-  { to: "/dashboard/prop-firm", label: "Prop Firm", icon: Target },
 ] as const;
 
 export function DashboardSubNav() {

@@ -18,6 +18,7 @@ import { SegmentedTabs } from "@/components/ui/segmented-tabs";
 const TABS = [
   { to: "/replay", label: "Home", icon: Home, exact: true },
   { to: "/replay/studio", label: "Trading Workspace", icon: Play },
+  { to: "/replay/prop-firm", label: "Prop Firm Challenges", icon: Target },
   { to: "/replay/library", label: "Saved Sessions", icon: Library },
   { to: "/replay/trades", label: "Trade Review", icon: Film },
   { to: "/replay/history", label: "History", icon: History },

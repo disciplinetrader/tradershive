@@ -64,7 +64,7 @@ function ChallengeDetail() {
     onSuccess: () => {
       toast.success("Challenge deleted");
       qc.invalidateQueries({ queryKey: ["prop-challenges"] });
-      navigate({ to: "/prop-challenges" });
+      navigate({ to: "/replay/prop-firm" });
     },
   });
 
@@ -83,7 +83,7 @@ function ChallengeDetail() {
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/prop-challenges" })}>
+        <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/replay/prop-firm" })}>
           <ArrowLeft className="mr-1 h-4 w-4" /> All challenges
         </Button>
       </div>

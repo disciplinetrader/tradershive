@@ -16,14 +16,14 @@ import { Progress } from "@/components/ui/progress";
 export const Route = createFileRoute("/_authenticated/replay/prop-firm")({
   head: () => ({
     meta: [
-      { title: "Prop Firm Challenges — TradersHIVE" },
+      { title: "Prop Firm Challenges — Replay Studio — TradersHIVE" },
       { name: "description", content: "Practise prop-style evaluation rules using a virtual TradersHIVE account." },
     ],
   }),
-  component: DashboardPropFirmPage,
+  component: ReplayPropFirmPage,
 });
 
-function DashboardPropFirmPage() {
+function ReplayPropFirmPage() {
   const [accountId, setAccountId] = useState<string | null>(null);
   const list = useServerFn(listPropChallenges);
   const { active: activeSession, setActive } = useActivePropChallenge();
@@ -40,7 +40,15 @@ function DashboardPropFirmPage() {
 
   return (
     <div className="mx-auto w-full max-w-[1400px] space-y-[var(--gutter-md)] pb-[var(--gutter-lg)] sm:space-y-[var(--gutter-lg)] animate-in fade-in duration-500">
-      <DashboardHeader accountId={accountId} onAccountChange={setAccountId} />
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold tracking-tight">Prop Firm Challenges</h1>
+        <Button asChild className="gradient-primary text-primary-foreground rounded-xl">
+          <Link to="/replay/prop-firm/new">
+            <Plus className="mr-2 h-4 w-4" /> Start Challenge
+          </Link>
+        </Button>
+      </div>
+      
       
       <div className="space-y-6">
         {/* Notice Section */}
@@ -71,7 +79,7 @@ function DashboardPropFirmPage() {
               </div>
               <div className="flex justify-center pt-2">
                 <Button asChild className="gradient-primary text-primary-foreground rounded-xl">
-                  <Link to="/prop-challenges/new">
+                  <Link to="/replay/prop-firm/new">
                     <Plus className="mr-2 h-4 w-4" /> Start Challenge
                   </Link>
                 </Button>
@@ -126,7 +134,7 @@ function ActiveChallengeOverview({ challenge }: { challenge: any }) {
             </Button>
           )}
           <Button asChild variant="outline" className="rounded-xl">
-            <Link to="/prop-challenges/$id" params={{ id: challenge.id }}>
+            <Link to="/replay/prop-firm/$id" params={{ id: challenge.id }}>
               View Analytics <ChevronRight className="ml-1 h-4 w-4" />
             </Link>
           </Button>
@@ -246,7 +254,7 @@ function ChallengeCard({ challenge }: { challenge: any }) {
           {formatCurrency(Number(challenge.account_size), challenge.currency)} · {challenge.preset.replace(/_/g, " ")}
         </div>
         <Button asChild size="icon" variant="ghost" className="h-8 w-8 rounded-full">
-          <Link to="/prop-challenges/$id" params={{ id: challenge.id }}>
+          <Link to="/replay/prop-firm/$id" params={{ id: challenge.id }}>
             <ChevronRight className="h-4 w-4" />
           </Link>
         </Button>
