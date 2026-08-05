@@ -346,7 +346,7 @@ export function RMultipleCard() {
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
-            <XAxis dataKey="bucket" tick={{ fontSize: 9, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} interval={0} angle={-30} textAnchor="end" height={45} />
+            <XAxis dataKey="bucket" tick={{ fontSize: 9, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} interval={0} angle={-45} textAnchor="end" height={60} />
             <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} width={32} />
             <Tooltip contentStyle={tooltipStyle} />
             <Bar dataKey="count" radius={[6,6,0,0]}>

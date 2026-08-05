@@ -16,7 +16,8 @@ export const Route = createFileRoute("/_authenticated/analytics/")({
 function AnalyticsOverview() {
   const { filtered } = useStatistics();
   const kpis = useMemo(() => computeKpis(filtered), [filtered]);
-  const up = kpis.expectancy >= 0;
+  const totalPnl = kpis.netProfit;
+  const up = totalPnl >= 0;
 
   return (
     <div className="space-y-4">
@@ -30,13 +31,13 @@ function AnalyticsOverview() {
               "text-3xl font-bold mt-1 tabular-nums",
               up ? "text-success" : "text-danger"
             )}>
-              {fmtCurrency(kpis.expectancy * kpis.totalTrades)}
+              {fmtCurrency(totalPnl)}
             </h2>
           </div>
           <div className="text-right">
             <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground font-semibold">Total R/R</p>
             <p className="text-xl font-bold mt-1 text-primary">
-              {fmtNumber(kpis.avgRR * kpis.totalTrades)}R
+              {fmtNumber(kpis.netR)}R
             </p>
           </div>
         </div>

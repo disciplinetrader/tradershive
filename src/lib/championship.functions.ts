@@ -125,7 +125,17 @@ export const joinChampionshipLive = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ championship_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
+    
+    // Server-authoritative status check
+    const { data: champ, error: cErr } = await supabase.from("championships").select("status, end_at").eq("id", data.championship_id).single();
+    if (cErr || !champ) throw new Error("Championship not found");
+    
+    const now = new Date().toISOString();
+    if (champ.status === "completed" || champ.status === "cancelled" || (champ.end_at && now > champ.end_at)) {
+      throw new Error("This championship has already ended.");
+    }
+
     const { data: rows, error } = await supabase.rpc("join_championship_live" as any, { _champ: data.championship_id });
     if (error) throw new Error(error.message);
     const row = Array.isArray(rows) ? rows[0] : rows;
