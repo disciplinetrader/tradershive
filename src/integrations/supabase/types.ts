@@ -124,6 +124,39 @@ export type Database = {
         }
         Relationships: []
       }
+      activity_logs: {
+        Row: {
+          activity_type: string
+          created_at: string
+          duration_seconds: number | null
+          ended_at: string | null
+          id: string
+          metadata: Json | null
+          started_at: string
+          user_id: string
+        }
+        Insert: {
+          activity_type: string
+          created_at?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          metadata?: Json | null
+          started_at?: string
+          user_id: string
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          metadata?: Json | null
+          started_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       admin_audit_logs: {
         Row: {
           action: string
@@ -5286,6 +5319,47 @@ export type Database = {
           },
         ]
       }
+      historical_market_replayed: {
+        Row: {
+          created_at: string
+          duration_seconds: number
+          end_ts: string
+          id: string
+          session_id: string
+          start_ts: string
+          symbol: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds: number
+          end_ts: string
+          id?: string
+          session_id: string
+          start_ts: string
+          symbol: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number
+          end_ts?: string
+          id?: string
+          session_id?: string
+          start_ts?: string
+          symbol?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historical_market_replayed_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "replay_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       historical_notifications: {
         Row: {
           created_at: string
@@ -7215,6 +7289,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      practice_streaks: {
+        Row: {
+          current_streak: number
+          last_activity_at: string | null
+          last_activity_date: string | null
+          longest_streak: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          current_streak?: number
+          last_activity_at?: string | null
+          last_activity_date?: string | null
+          longest_streak?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          current_streak?: number
+          last_activity_at?: string | null
+          last_activity_date?: string | null
+          longest_streak?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       price_alerts: {
         Row: {
@@ -11970,6 +12071,10 @@ export type Database = {
       }
       recompute_championship_ranking: {
         Args: { _champ: string; _user: string }
+        Returns: undefined
+      }
+      record_practice_activity: {
+        Args: { _activity_type: string; _metadata?: Json; _user_id: string }
         Returns: undefined
       }
       register_for_championship: { Args: { _champ: string }; Returns: string }
