@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { LineChart as LineChartIcon } from "lucide-react";
 import { KpiGrid } from "@/components/statistics/KpiGrid";
 import { EquityCurveCard } from "@/components/statistics/Charts";
 import { StrengthsWeaknessesCard } from "@/components/analytics/StrengthsWeaknessesCard";
@@ -14,7 +15,7 @@ export const Route = createFileRoute("/_authenticated/analytics/")({
 });
 
 function AnalyticsOverview() {
-  const { filtered } = useStatistics();
+  const { filtered, loading } = useStatistics();
   const kpis = useMemo(() => computeKpis(filtered), [filtered]);
   const totalPnl = kpis.netProfit;
   const up = totalPnl >= 0;

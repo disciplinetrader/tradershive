@@ -4,7 +4,7 @@ export function fmtCurrency(n: number | null | undefined, currency = "USD"): str
 }
 
 export function fmtNumber(n: number | null | undefined, digits = 2): string {
-  if (n == null || Number.isNaN(n)) return "—";
+  if (n == null || Number.isNaN(n) || n === 0) return "0";
   return new Intl.NumberFormat("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(n);
 }
 

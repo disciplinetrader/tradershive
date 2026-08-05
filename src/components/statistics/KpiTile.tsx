@@ -8,7 +8,7 @@ export interface KpiTileProps {
   label: string;
   value: number | string;
   icon: LucideIcon;
-  tone?: "up" | "down" | "info" | "flat";
+  tone?: "up" | "down" | "info" | "flat" | "success" | "danger";
   decimals?: number;
   prefix?: string;
   suffix?: string;
@@ -27,8 +27,8 @@ export function KpiTile({
           <div
             className={cn(
               "grid h-8 w-8 place-items-center rounded-xl",
-              tone === "up" && "bg-success/10 text-success",
-              tone === "down" && "bg-danger/10 text-danger",
+              (tone === "up" || tone === "success") && "bg-success/10 text-success",
+              (tone === "down" || tone === "danger") && "bg-danger/10 text-danger",
               tone === "info" && "bg-primary/10 text-primary",
               tone === "flat" && "bg-muted/40 text-muted-foreground",
             )}

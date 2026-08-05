@@ -97,6 +97,7 @@ function SettingsPage() {
       <EmailVerificationNotice />
       <TradingSection />
       <SecuritySection email={user?.email ?? ""} />
+      <EmailSection />
       <NotificationsSection />
       <ProductTourSection />
       <QaModeSection />
@@ -138,6 +139,23 @@ function SettingsPage() {
       />
 
     </div>
+  );
+}
+
+function EmailSection() {
+  const navigate = useNavigate();
+  return (
+    <GlassCard className="p-6">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold">Email preferences</h2>
+          <p className="text-xs text-muted-foreground">Manage reports, notifications and product updates.</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => navigate({ to: "/settings/email" })}>
+          Configure emails
+        </Button>
+      </div>
+    </GlassCard>
   );
 }
 

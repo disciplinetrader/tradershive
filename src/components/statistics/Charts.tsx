@@ -374,8 +374,8 @@ export function TimeOfDayCard() {
               tick={{ fontSize: 9, fill: "var(--muted-foreground)" }} 
               axisLine={false} 
               tickLine={false} 
-              interval={0}
-              angle={-30}
+              interval={2}
+              angle={-45}
               textAnchor="end"
               height={45}
             />

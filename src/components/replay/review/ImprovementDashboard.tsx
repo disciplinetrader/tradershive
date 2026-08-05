@@ -38,12 +38,12 @@ export function ImprovementView_({ view }: { view: ImprovementView }) {
 
       <Card className="p-4">
         <div className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">Score trend</div>
-        {view.trend.length < 2 ? (
+        {(view.trend?.length ?? 0) < 2 ? (
           <p className="text-xs text-muted-foreground">Score at least two sessions to see a trend.</p>
         ) : (
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={view.trend}>
+              <LineChart data={view.trend ?? []}>
                 <XAxis
                   dataKey="time" tickFormatter={(t) => new Date(t).toLocaleDateString()}
                   fontSize={10} stroke="currentColor" opacity={0.5}
@@ -61,7 +61,7 @@ export function ImprovementView_({ view }: { view: ImprovementView }) {
         <Card className="p-4">
           <div className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">Skills</div>
           <ul className="space-y-1 text-xs">
-            {view.dimensions.map((d) => (
+            {(view.dimensions ?? []).map((d) => (
               <li key={d.key} className="flex items-center justify-between rounded border border-border/50 px-2 py-1">
                 <span>{d.label}</span>
                 <span className="flex items-center gap-2 font-mono">
@@ -113,7 +113,7 @@ export function ImprovementDashboard() {
 
       {q.isLoading ? (
         <div className="text-sm text-muted-foreground">Loading…</div>
-      ) : !view || view.trend.length === 0 ? (
+      ) : !view || (view.trend?.length ?? 0) === 0 ? (
         <Card className="space-y-3 p-8 text-center">
           <div className="font-medium">No scored replays yet</div>
           <p className="text-sm text-muted-foreground">
