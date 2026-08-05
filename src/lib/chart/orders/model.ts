@@ -247,8 +247,6 @@ export function validateOrder(
     errors.push("Invalid reward value. Take profit might be too far or infinite.");
   }
   
-  console.log('Validation debug:', { risk, reward, errors });
-
   const tick = opts.tick && opts.tick > 0 ? opts.tick : 0;
   if (risk <= 0 || (tick > 0 && risk < tick)) {
     errors.push("Risk is zero — move the stop away from the entry price.");

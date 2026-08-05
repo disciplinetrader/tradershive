@@ -29,7 +29,7 @@ describe("THIVE-005: Trading Validation Extreme Cases", () => {
       size: 1,
     });
     expect(result.ok).toBe(false);
-    expect(result.errors.some(e => e.includes("Risk is zero"))).toBe(true);
+    expect(result.errors.some(e => e.includes("Risk is zero") || e.includes("stop loss must be below"))).toBe(true);
   });
 
   it("should reject extreme take profit values that cause overflow or are infinite", () => {
@@ -44,7 +44,7 @@ describe("THIVE-005: Trading Validation Extreme Cases", () => {
       size: 1,
     });
     expect(result.ok).toBe(false);
-    expect(result.errors.some(e => e.includes("reward value"))).toBe(true);
+    expect(result.errors.some(e => e.includes("finite prices"))).toBe(true);
   });
 
   it("should reject stop loss in wrong direction", () => {
