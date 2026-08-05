@@ -46,10 +46,14 @@ function SessionDetailPage() {
   const { data: sessionInfo, isLoading: infoLoading } = useQuery({
     queryKey: ["session-info", type, id],
     queryFn: async () => {
-      if (type === "paper") return fetchAccount({ data: { id } });
-      if (type === "replay") return fetchReplay({ data: { id } });
-      if (type === "prop") return fetchProp({ data: { id } });
-      if (type === "arena") return fetchBattle({ data: { id } });
+      try {
+        if (type === "paper") return fetchAccount({ data: { id } });
+        if (type === "replay") return fetchReplay({ data: { id } });
+        if (type === "prop") return fetchProp({ data: { id } });
+        if (type === "arena") return fetchBattle({ data: { id } });
+      } catch (e) {
+        console.error("Failed to fetch session info:", e);
+      }
       return null;
     }
   });
