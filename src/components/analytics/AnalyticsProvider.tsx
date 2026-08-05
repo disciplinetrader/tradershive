@@ -32,6 +32,7 @@ export function useAnalytics(): AnalyticsCtx {
 export function AnalyticsProvider({ children }: { children: ReactNode }) {
   const listFn = useServerFn(listBacktests);
   const tradesFn = useServerFn(listBacktestTrades);
+  const { context } = useSessionContext();
 
   const [backtestId, setBacktestId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
