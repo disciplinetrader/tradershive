@@ -33,20 +33,16 @@ function HistoryPage() {
   return (
     <HistoryView
       params={{
-        limit: search.limit,
-        offset: search.offset,
+        limit: search.limit ?? 25,
+        offset: search.offset ?? 0,
         status: search.status ?? null,
         symbol: search.symbol ?? null,
         search: search.search ?? null,
       }}
       onChange={(patch) => {
         void navigate({
-          search: (prev) => ({
-            limit: prev.limit ?? 25,
-            offset: prev.offset ?? 0,
-            status: prev.status ?? null,
-            symbol: prev.symbol ?? null,
-            search: prev.search ?? null,
+          search: (prev: any) => ({
+            ...prev,
             ...patch,
           }),
         });
