@@ -30,11 +30,12 @@ interface Props {
 
 export function StatisticsProvider({ children, overrideTrades, disableFetch }: Props) {
   const fetchData = useServerFn(getAnalyticsDataset);
+  const { context } = useSessionContext();
   const [filters, setFilters] = useState<StatisticsFilters>(EMPTY_FILTERS);
 
   const query = useQuery({
-    queryKey: ["statistics", "dataset"],
-    queryFn: () => fetchData(),
+    queryKey: ["statistics", "dataset", context.type, context.id],
+    queryFn: () => fetchData({ data: { contextType: context.type, contextId: context.id } }),
     staleTime: 30_000,
     refetchOnWindowFocus: false,
     enabled: !disableFetch,
