@@ -94,7 +94,7 @@ export function RulesPanel({ battle }: { battle: any }) {
           <span className="text-[10px] font-black uppercase tracking-wider text-primary">Live Scoring Active</span>
         </div>
         <p className="text-[10px] font-medium text-muted-foreground leading-relaxed">
-          Rule violations result in immediate disqualification. Profit targets and drawdowns are calculated based on authoritative server price data.
+          Rule breaches result in immediate disqualification. Profit targets and drawdowns are calculated based on authoritative server price data.
         </p>
       </div>
     </aside>
