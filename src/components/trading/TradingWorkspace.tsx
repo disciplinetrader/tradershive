@@ -93,6 +93,7 @@ import { ChartTemplateMenu } from "@/components/chart/ChartTemplateMenu";
 import { hasSettings } from "@/lib/chart/indicator-schema";
 import type { ChartTemplate } from "@/lib/chart/templates";
 import { ArenaCommandRail } from "@/components/battle-arena/ArenaCommandRail";
+import { useActiveArena } from "@/components/battle-arena/useActiveArena";
 
 const CHART_TIMEFRAMES: Timeframe[] = ["1m", "5m", "15m", "30m", "1H", "4H", "1D", "1W"];
 /** One-click timeframes pinned in the toolbar, TradingView-style. */
