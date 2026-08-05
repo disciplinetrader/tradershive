@@ -33,7 +33,7 @@ export function EquitySection({ home, hero }: { home?: HomeSummary; hero?: HeroS
           title={challenge?.name ?? "Prop firm"}
           footer={
             <Button asChild size="sm" variant="ghost" className="w-full rounded-xl">
-              <Link to="/prop-challenges">{challenge ? "View challenge" : "Start a challenge"}</Link>
+              <Link to="/replay/prop-firm">{challenge ? "View challenge" : "Start a challenge"}</Link>
             </Button>
           }
         >

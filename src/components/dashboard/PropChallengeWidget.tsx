@@ -37,7 +37,7 @@ export function PropChallengeWidget() {
           <div className="mt-0.5 truncate text-xs text-muted-foreground">{active.name}</div>
         </div>
         <Button asChild size="sm" variant="ghost">
-          <Link to="/prop-challenges/$id" params={{ id: active.id }}>
+          <Link to="/replay/prop-firm/$id" params={{ id: active.id }}>
             View <ChevronRight className="ml-1 h-3 w-3" />
           </Link>
         </Button>

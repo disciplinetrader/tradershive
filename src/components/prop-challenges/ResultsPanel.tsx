@@ -73,7 +73,7 @@ export function ResultsPanel({ challenge, days, progress }: {
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <Button asChild size="sm">
-          <Link to="/prop-challenges/new">
+          <Link to="/replay/prop-firm/new">
             {passed ? <Plus className="mr-1.5 h-3.5 w-3.5" /> : <RotateCcw className="mr-1.5 h-3.5 w-3.5" />}
             {passed ? "Start a new challenge" : "Retry challenge"}
           </Link>
