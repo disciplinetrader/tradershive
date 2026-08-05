@@ -557,11 +557,16 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
   );
 }
 
-function Field({ label, htmlFor, children }: { label: string; htmlFor?: string; children: React.ReactNode }) {
+function Field({ label, htmlFor, children, error }: { label: string; htmlFor?: string; children: React.ReactNode; error?: string }) {
   return (
-    <div>
+    <div className="space-y-1">
       <Label htmlFor={htmlFor} className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</Label>
       <div className="mt-1">{children}</div>
+      {error && (
+        <p id={htmlFor ? `${htmlFor}-error` : undefined} className="text-[10px] font-medium text-danger">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

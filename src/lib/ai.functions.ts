@@ -499,6 +499,8 @@ ${JSON.stringify((journals ?? []).slice(0, 60))}
 Return emotion scores 0-100 for fear, greed, fomo, revenge, overconfidence, impatience, discipline, confidence. List detected patterns with severity (low/medium/high). Then correlate emotion vs profit.`;
 
     const res = await runStructured({
+      userId,
+      kind: "psychology_review",
       modelKey,
       system: COACH_SYSTEM_PROMPT,
       prompt,
@@ -611,6 +613,8 @@ Total closed trades: ${trades?.length ?? 0}
 Detect best/worst sessions (Asian/London/NY), strategies (from patterns), pairs, days, times. Provide specific suggestions.`;
 
     const res = await runStructured({
+      userId,
+      kind: "performance_review",
       modelKey,
       system: COACH_SYSTEM_PROMPT,
       prompt,
@@ -685,6 +689,8 @@ ${JSON.stringify(score, null, 2)}
 Write an honest, constructive review. Include specific wins, losses, biggest improvement, biggest weakness, and 3-5 recommended goals with metric targets.`;
 
     const res = await runStructured({
+      userId,
+      kind: "report_review",
       modelKey,
       system: COACH_SYSTEM_PROMPT,
       prompt,
