@@ -482,6 +482,27 @@ function OnboardingPage() {
                         </>
                       )}
                     </Button>
+                    
+                    {launchError && (
+                      <div className="mt-4 rounded-xl border border-danger/20 bg-danger/5 p-4 text-left animate-in fade-in slide-in-from-top-2">
+                        <div className="flex items-start gap-3">
+                          <div className="mt-0.5 rounded-full bg-danger/10 p-1">
+                            <Rocket className="h-4 w-4 text-danger rotate-180" />
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-sm font-semibold text-danger">{launchError.message}</p>
+                            <p className="text-xs text-muted-foreground leading-relaxed">{launchError.remedy}</p>
+                            <button 
+                              onClick={launchFirstBacktest}
+                              className="mt-2 text-[10px] font-bold uppercase tracking-wider text-primary hover:underline"
+                            >
+                              Try again
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   </div>
                 ) : null}
 
