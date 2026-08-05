@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { PageHeader } from "@/components/ui/page-header";
 import { cn } from "@/lib/utils";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -40,14 +41,17 @@ function ReplayPropFirmPage() {
 
   return (
     <div className="mx-auto w-full max-w-[1400px] space-y-[var(--gutter-md)] pb-[var(--gutter-lg)] sm:space-y-[var(--gutter-lg)] animate-in fade-in duration-500">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Prop Firm Challenges</h1>
-        <Button asChild className="gradient-primary text-primary-foreground rounded-xl">
-          <Link to="/replay/prop-firm/new">
-            <Plus className="mr-2 h-4 w-4" /> Start Challenge
-          </Link>
-        </Button>
-      </div>
+      <PageHeader
+        title="Prop Firm Challenges"
+        description="Practise prop-style evaluation rules using a virtual TradersHIVE account."
+        actions={
+          <Button asChild className="gradient-primary text-primary-foreground rounded-xl shadow-elegant">
+            <Link to="/replay/prop-firm/new">
+              <Plus className="mr-2 h-4 w-4" /> Start Challenge
+            </Link>
+          </Button>
+        }
+      />
       
       
       <div className="space-y-6">
