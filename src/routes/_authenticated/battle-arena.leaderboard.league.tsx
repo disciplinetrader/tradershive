@@ -6,7 +6,7 @@ import { LEAGUE_META } from "@/lib/social/constants";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 
-export const Route = createFileRoute("/_authenticated/leaderboard/league")({
+export const Route = createFileRoute("/_authenticated/battle-arena/leaderboard/league")({
   component: LeagueLeaderboard,
 });
 

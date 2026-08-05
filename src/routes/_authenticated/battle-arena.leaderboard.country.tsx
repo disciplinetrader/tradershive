@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { LeaderboardScope } from "./leaderboard.index";
 import { useAuth } from "@/hooks/use-auth";
 
-export const Route = createFileRoute("/_authenticated/leaderboard/country")({
+export const Route = createFileRoute("/_authenticated/battle-arena/leaderboard/country")({
   component: CountryLeaderboard,
 });
 

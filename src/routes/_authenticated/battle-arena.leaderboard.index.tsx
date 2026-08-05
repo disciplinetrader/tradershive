@@ -9,7 +9,7 @@ import { LeaderboardFilters, INITIAL_FILTERS, type LeaderboardFiltersState } fro
 import { GlassCard } from "@/components/ui/glass-card";
 import { getCategory } from "@/lib/social/constants";
 
-export const Route = createFileRoute("/_authenticated/leaderboard/")({
+export const Route = createFileRoute("/_authenticated/battle-arena/leaderboard/")({
   component: LeaderboardIndex,
 });
 

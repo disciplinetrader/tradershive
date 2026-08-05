@@ -8,7 +8,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Settings2 } from "lucide-react";
 
-export const Route = createFileRoute("/_authenticated/leaderboard")({
+export const Route = createFileRoute("/_authenticated/battle-arena/leaderboard")({
   head: () => ({ meta: [{ title: "Leaderboard — TradersHIVE Arena" }] }),
   component: LeaderboardLayout,
 });
