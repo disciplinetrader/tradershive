@@ -57,6 +57,7 @@ import { Route as AuthenticatedPracticeIndexRouteImport } from './routes/_authen
 import { Route as AuthenticatedMarketIndexRouteImport } from './routes/_authenticated/market.index'
 import { Route as AuthenticatedLeaderboardIndexRouteImport } from './routes/_authenticated/leaderboard.index'
 import { Route as AuthenticatedJournalIndexRouteImport } from './routes/_authenticated/journal.index'
+import { Route as AuthenticatedDashboardIndexRouteImport } from './routes/_authenticated/dashboard.index'
 import { Route as AuthenticatedCommunityIndexRouteImport } from './routes/_authenticated/community.index'
 import { Route as AuthenticatedChampionshipIndexRouteImport } from './routes/_authenticated/championship.index'
 import { Route as AuthenticatedBattleArenaIndexRouteImport } from './routes/_authenticated/battle-arena.index'
@@ -108,6 +109,10 @@ import { Route as AuthenticatedJournalCoachRouteImport } from './routes/_authent
 import { Route as AuthenticatedJournalCalendarRouteImport } from './routes/_authenticated/journal.calendar'
 import { Route as AuthenticatedJournalAnalyticsRouteImport } from './routes/_authenticated/journal.analytics'
 import { Route as AuthenticatedJournalEntryIdRouteImport } from './routes/_authenticated/journal.$entryId'
+import { Route as AuthenticatedDashboardTradesRouteImport } from './routes/_authenticated/dashboard.trades'
+import { Route as AuthenticatedDashboardSessionsRouteImport } from './routes/_authenticated/dashboard.sessions'
+import { Route as AuthenticatedDashboardPropFirmRouteImport } from './routes/_authenticated/dashboard.prop-firm'
+import { Route as AuthenticatedDashboardAnalyticsRouteImport } from './routes/_authenticated/dashboard.analytics'
 import { Route as AuthenticatedCommunityTrendingRouteImport } from './routes/_authenticated/community.trending'
 import { Route as AuthenticatedCommunityReviewsRouteImport } from './routes/_authenticated/community.reviews'
 import { Route as AuthenticatedCommunityMentorsRouteImport } from './routes/_authenticated/community.mentors'
@@ -449,6 +454,12 @@ const AuthenticatedJournalIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedJournalRoute,
   } as any)
+const AuthenticatedDashboardIndexRoute =
+  AuthenticatedDashboardIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedDashboardRoute,
+  } as any)
 const AuthenticatedCommunityIndexRoute =
   AuthenticatedCommunityIndexRouteImport.update({
     id: '/',
@@ -751,6 +762,30 @@ const AuthenticatedJournalEntryIdRoute =
     id: '/$entryId',
     path: '/$entryId',
     getParentRoute: () => AuthenticatedJournalRoute,
+  } as any)
+const AuthenticatedDashboardTradesRoute =
+  AuthenticatedDashboardTradesRouteImport.update({
+    id: '/trades',
+    path: '/trades',
+    getParentRoute: () => AuthenticatedDashboardRoute,
+  } as any)
+const AuthenticatedDashboardSessionsRoute =
+  AuthenticatedDashboardSessionsRouteImport.update({
+    id: '/sessions',
+    path: '/sessions',
+    getParentRoute: () => AuthenticatedDashboardRoute,
+  } as any)
+const AuthenticatedDashboardPropFirmRoute =
+  AuthenticatedDashboardPropFirmRouteImport.update({
+    id: '/prop-firm',
+    path: '/prop-firm',
+    getParentRoute: () => AuthenticatedDashboardRoute,
+  } as any)
+const AuthenticatedDashboardAnalyticsRoute =
+  AuthenticatedDashboardAnalyticsRouteImport.update({
+    id: '/analytics',
+    path: '/analytics',
+    getParentRoute: () => AuthenticatedDashboardRoute,
   } as any)
 const AuthenticatedCommunityTrendingRoute =
   AuthenticatedCommunityTrendingRouteImport.update({
@@ -1282,7 +1317,7 @@ export interface FileRoutesByFullPath {
   '/championship': typeof AuthenticatedChampionshipRouteWithChildren
   '/charts': typeof AuthenticatedChartsRoute
   '/community': typeof AuthenticatedCommunityRouteWithChildren
-  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/dashboard': typeof AuthenticatedDashboardRouteWithChildren
   '/education': typeof AuthenticatedEducationRoute
   '/feedback': typeof AuthenticatedFeedbackRoute
   '/goals': typeof AuthenticatedGoalsRoute
@@ -1369,6 +1404,10 @@ export interface FileRoutesByFullPath {
   '/community/mentors': typeof AuthenticatedCommunityMentorsRoute
   '/community/reviews': typeof AuthenticatedCommunityReviewsRoute
   '/community/trending': typeof AuthenticatedCommunityTrendingRoute
+  '/dashboard/analytics': typeof AuthenticatedDashboardAnalyticsRoute
+  '/dashboard/prop-firm': typeof AuthenticatedDashboardPropFirmRoute
+  '/dashboard/sessions': typeof AuthenticatedDashboardSessionsRoute
+  '/dashboard/trades': typeof AuthenticatedDashboardTradesRoute
   '/journal/$entryId': typeof AuthenticatedJournalEntryIdRoute
   '/journal/analytics': typeof AuthenticatedJournalAnalyticsRoute
   '/journal/calendar': typeof AuthenticatedJournalCalendarRoute
@@ -1420,6 +1459,7 @@ export interface FileRoutesByFullPath {
   '/battle-arena/': typeof AuthenticatedBattleArenaIndexRoute
   '/championship/': typeof AuthenticatedChampionshipIndexRoute
   '/community/': typeof AuthenticatedCommunityIndexRoute
+  '/dashboard/': typeof AuthenticatedDashboardIndexRoute
   '/journal/': typeof AuthenticatedJournalIndexRoute
   '/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
   '/market/': typeof AuthenticatedMarketIndexRoute
@@ -1463,7 +1503,6 @@ export interface FileRoutesByTo {
   '/ai': typeof AuthenticatedAiRouteWithChildren
   '/challenges': typeof AuthenticatedChallengesRouteWithChildren
   '/charts': typeof AuthenticatedChartsRoute
-  '/dashboard': typeof AuthenticatedDashboardRoute
   '/education': typeof AuthenticatedEducationRoute
   '/feedback': typeof AuthenticatedFeedbackRoute
   '/goals': typeof AuthenticatedGoalsRoute
@@ -1541,6 +1580,10 @@ export interface FileRoutesByTo {
   '/community/mentors': typeof AuthenticatedCommunityMentorsRoute
   '/community/reviews': typeof AuthenticatedCommunityReviewsRoute
   '/community/trending': typeof AuthenticatedCommunityTrendingRoute
+  '/dashboard/analytics': typeof AuthenticatedDashboardAnalyticsRoute
+  '/dashboard/prop-firm': typeof AuthenticatedDashboardPropFirmRoute
+  '/dashboard/sessions': typeof AuthenticatedDashboardSessionsRoute
+  '/dashboard/trades': typeof AuthenticatedDashboardTradesRoute
   '/journal/$entryId': typeof AuthenticatedJournalEntryIdRoute
   '/journal/analytics': typeof AuthenticatedJournalAnalyticsRoute
   '/journal/calendar': typeof AuthenticatedJournalCalendarRoute
@@ -1592,6 +1635,7 @@ export interface FileRoutesByTo {
   '/battle-arena': typeof AuthenticatedBattleArenaIndexRoute
   '/championship': typeof AuthenticatedChampionshipIndexRoute
   '/community': typeof AuthenticatedCommunityIndexRoute
+  '/dashboard': typeof AuthenticatedDashboardIndexRoute
   '/journal': typeof AuthenticatedJournalIndexRoute
   '/leaderboard': typeof AuthenticatedLeaderboardIndexRoute
   '/market': typeof AuthenticatedMarketIndexRoute
@@ -1642,7 +1686,7 @@ export interface FileRoutesById {
   '/_authenticated/championship': typeof AuthenticatedChampionshipRouteWithChildren
   '/_authenticated/charts': typeof AuthenticatedChartsRoute
   '/_authenticated/community': typeof AuthenticatedCommunityRouteWithChildren
-  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRouteWithChildren
   '/_authenticated/education': typeof AuthenticatedEducationRoute
   '/_authenticated/feedback': typeof AuthenticatedFeedbackRoute
   '/_authenticated/goals': typeof AuthenticatedGoalsRoute
@@ -1729,6 +1773,10 @@ export interface FileRoutesById {
   '/_authenticated/community/mentors': typeof AuthenticatedCommunityMentorsRoute
   '/_authenticated/community/reviews': typeof AuthenticatedCommunityReviewsRoute
   '/_authenticated/community/trending': typeof AuthenticatedCommunityTrendingRoute
+  '/_authenticated/dashboard/analytics': typeof AuthenticatedDashboardAnalyticsRoute
+  '/_authenticated/dashboard/prop-firm': typeof AuthenticatedDashboardPropFirmRoute
+  '/_authenticated/dashboard/sessions': typeof AuthenticatedDashboardSessionsRoute
+  '/_authenticated/dashboard/trades': typeof AuthenticatedDashboardTradesRoute
   '/_authenticated/journal/$entryId': typeof AuthenticatedJournalEntryIdRoute
   '/_authenticated/journal/analytics': typeof AuthenticatedJournalAnalyticsRoute
   '/_authenticated/journal/calendar': typeof AuthenticatedJournalCalendarRoute
@@ -1780,6 +1828,7 @@ export interface FileRoutesById {
   '/_authenticated/battle-arena/': typeof AuthenticatedBattleArenaIndexRoute
   '/_authenticated/championship/': typeof AuthenticatedChampionshipIndexRoute
   '/_authenticated/community/': typeof AuthenticatedCommunityIndexRoute
+  '/_authenticated/dashboard/': typeof AuthenticatedDashboardIndexRoute
   '/_authenticated/journal/': typeof AuthenticatedJournalIndexRoute
   '/_authenticated/leaderboard/': typeof AuthenticatedLeaderboardIndexRoute
   '/_authenticated/market/': typeof AuthenticatedMarketIndexRoute
@@ -1917,6 +1966,10 @@ export interface FileRouteTypes {
     | '/community/mentors'
     | '/community/reviews'
     | '/community/trending'
+    | '/dashboard/analytics'
+    | '/dashboard/prop-firm'
+    | '/dashboard/sessions'
+    | '/dashboard/trades'
     | '/journal/$entryId'
     | '/journal/analytics'
     | '/journal/calendar'
@@ -1968,6 +2021,7 @@ export interface FileRouteTypes {
     | '/battle-arena/'
     | '/championship/'
     | '/community/'
+    | '/dashboard/'
     | '/journal/'
     | '/leaderboard/'
     | '/market/'
@@ -2011,7 +2065,6 @@ export interface FileRouteTypes {
     | '/ai'
     | '/challenges'
     | '/charts'
-    | '/dashboard'
     | '/education'
     | '/feedback'
     | '/goals'
@@ -2089,6 +2142,10 @@ export interface FileRouteTypes {
     | '/community/mentors'
     | '/community/reviews'
     | '/community/trending'
+    | '/dashboard/analytics'
+    | '/dashboard/prop-firm'
+    | '/dashboard/sessions'
+    | '/dashboard/trades'
     | '/journal/$entryId'
     | '/journal/analytics'
     | '/journal/calendar'
@@ -2140,6 +2197,7 @@ export interface FileRouteTypes {
     | '/battle-arena'
     | '/championship'
     | '/community'
+    | '/dashboard'
     | '/journal'
     | '/leaderboard'
     | '/market'
@@ -2276,6 +2334,10 @@ export interface FileRouteTypes {
     | '/_authenticated/community/mentors'
     | '/_authenticated/community/reviews'
     | '/_authenticated/community/trending'
+    | '/_authenticated/dashboard/analytics'
+    | '/_authenticated/dashboard/prop-firm'
+    | '/_authenticated/dashboard/sessions'
+    | '/_authenticated/dashboard/trades'
     | '/_authenticated/journal/$entryId'
     | '/_authenticated/journal/analytics'
     | '/_authenticated/journal/calendar'
@@ -2327,6 +2389,7 @@ export interface FileRouteTypes {
     | '/_authenticated/battle-arena/'
     | '/_authenticated/championship/'
     | '/_authenticated/community/'
+    | '/_authenticated/dashboard/'
     | '/_authenticated/journal/'
     | '/_authenticated/leaderboard/'
     | '/_authenticated/market/'
@@ -2717,6 +2780,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedJournalIndexRouteImport
       parentRoute: typeof AuthenticatedJournalRoute
     }
+    '/_authenticated/dashboard/': {
+      id: '/_authenticated/dashboard/'
+      path: '/'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof AuthenticatedDashboardIndexRouteImport
+      parentRoute: typeof AuthenticatedDashboardRoute
+    }
     '/_authenticated/community/': {
       id: '/_authenticated/community/'
       path: '/'
@@ -3073,6 +3143,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/journal/$entryId'
       preLoaderRoute: typeof AuthenticatedJournalEntryIdRouteImport
       parentRoute: typeof AuthenticatedJournalRoute
+    }
+    '/_authenticated/dashboard/trades': {
+      id: '/_authenticated/dashboard/trades'
+      path: '/trades'
+      fullPath: '/dashboard/trades'
+      preLoaderRoute: typeof AuthenticatedDashboardTradesRouteImport
+      parentRoute: typeof AuthenticatedDashboardRoute
+    }
+    '/_authenticated/dashboard/sessions': {
+      id: '/_authenticated/dashboard/sessions'
+      path: '/sessions'
+      fullPath: '/dashboard/sessions'
+      preLoaderRoute: typeof AuthenticatedDashboardSessionsRouteImport
+      parentRoute: typeof AuthenticatedDashboardRoute
+    }
+    '/_authenticated/dashboard/prop-firm': {
+      id: '/_authenticated/dashboard/prop-firm'
+      path: '/prop-firm'
+      fullPath: '/dashboard/prop-firm'
+      preLoaderRoute: typeof AuthenticatedDashboardPropFirmRouteImport
+      parentRoute: typeof AuthenticatedDashboardRoute
+    }
+    '/_authenticated/dashboard/analytics': {
+      id: '/_authenticated/dashboard/analytics'
+      path: '/analytics'
+      fullPath: '/dashboard/analytics'
+      preLoaderRoute: typeof AuthenticatedDashboardAnalyticsRouteImport
+      parentRoute: typeof AuthenticatedDashboardRoute
     }
     '/_authenticated/community/trending': {
       id: '/_authenticated/community/trending'
@@ -3964,6 +4062,28 @@ const AuthenticatedCommunityRouteWithChildren =
     AuthenticatedCommunityRouteChildren,
   )
 
+interface AuthenticatedDashboardRouteChildren {
+  AuthenticatedDashboardAnalyticsRoute: typeof AuthenticatedDashboardAnalyticsRoute
+  AuthenticatedDashboardPropFirmRoute: typeof AuthenticatedDashboardPropFirmRoute
+  AuthenticatedDashboardSessionsRoute: typeof AuthenticatedDashboardSessionsRoute
+  AuthenticatedDashboardTradesRoute: typeof AuthenticatedDashboardTradesRoute
+  AuthenticatedDashboardIndexRoute: typeof AuthenticatedDashboardIndexRoute
+}
+
+const AuthenticatedDashboardRouteChildren: AuthenticatedDashboardRouteChildren =
+  {
+    AuthenticatedDashboardAnalyticsRoute: AuthenticatedDashboardAnalyticsRoute,
+    AuthenticatedDashboardPropFirmRoute: AuthenticatedDashboardPropFirmRoute,
+    AuthenticatedDashboardSessionsRoute: AuthenticatedDashboardSessionsRoute,
+    AuthenticatedDashboardTradesRoute: AuthenticatedDashboardTradesRoute,
+    AuthenticatedDashboardIndexRoute: AuthenticatedDashboardIndexRoute,
+  }
+
+const AuthenticatedDashboardRouteWithChildren =
+  AuthenticatedDashboardRoute._addFileChildren(
+    AuthenticatedDashboardRouteChildren,
+  )
+
 interface AuthenticatedJournalRouteChildren {
   AuthenticatedJournalEntryIdRoute: typeof AuthenticatedJournalEntryIdRoute
   AuthenticatedJournalAnalyticsRoute: typeof AuthenticatedJournalAnalyticsRoute
@@ -4201,7 +4321,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedChampionshipRoute: typeof AuthenticatedChampionshipRouteWithChildren
   AuthenticatedChartsRoute: typeof AuthenticatedChartsRoute
   AuthenticatedCommunityRoute: typeof AuthenticatedCommunityRouteWithChildren
-  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRouteWithChildren
   AuthenticatedEducationRoute: typeof AuthenticatedEducationRoute
   AuthenticatedFeedbackRoute: typeof AuthenticatedFeedbackRoute
   AuthenticatedGoalsRoute: typeof AuthenticatedGoalsRoute
@@ -4234,7 +4354,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedChampionshipRoute: AuthenticatedChampionshipRouteWithChildren,
   AuthenticatedChartsRoute: AuthenticatedChartsRoute,
   AuthenticatedCommunityRoute: AuthenticatedCommunityRouteWithChildren,
-  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRouteWithChildren,
   AuthenticatedEducationRoute: AuthenticatedEducationRoute,
   AuthenticatedFeedbackRoute: AuthenticatedFeedbackRoute,
   AuthenticatedGoalsRoute: AuthenticatedGoalsRoute,
@@ -4286,3 +4406,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

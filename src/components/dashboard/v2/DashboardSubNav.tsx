@@ -23,7 +23,7 @@ export function DashboardSubNav() {
     <nav aria-label="Dashboard sections" className="h-scroll -mx-1 flex items-center gap-1 overflow-x-auto px-1">
       {DASHBOARD_TABS.map((item) => {
         const active =
-          item.exact ? pathname === item.to : pathname.startsWith(item.to);
+          "exact" in item && item.exact ? pathname === item.to : pathname.startsWith(item.to);
         return (
           <Link
             key={item.to}
