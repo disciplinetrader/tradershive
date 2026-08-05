@@ -1356,6 +1356,7 @@ function TradingWorkspaceInner() {
 
               </aside>
             </>
+            </>
           ) : (
             <button
               onClick={() => setRightOpen(true)}
