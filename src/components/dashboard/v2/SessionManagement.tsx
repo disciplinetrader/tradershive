@@ -131,7 +131,7 @@ function SessionItem({ session, onSelect }: { session: any, onSelect: any }) {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
             <DropdownMenuItem asChild>
-              <Link to={`/dashboard/sessions/${session.type}/${session.id}`} className="cursor-pointer">
+              <Link to="/dashboard/sessions/$type/$id" params={{ type: session.type, id: session.id }} className="cursor-pointer">
                 <Info className="mr-2 h-4 w-4" />
                 View Analytics
               </Link>
@@ -160,7 +160,7 @@ function SessionItem({ session, onSelect }: { session: any, onSelect: any }) {
             className="h-8 text-xs text-muted-foreground hover:text-primary"
             asChild
            >
-            <Link to={`/dashboard/sessions/${session.type}/${session.id}`}>
+            <Link to="/dashboard/sessions/$type/$id" params={{ type: session.type, id: session.id }}>
               Details
             </Link>
           </Button>

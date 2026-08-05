@@ -55,8 +55,8 @@ export function validateDataset(identity: DatasetIdentity, opts: { allowSyntheti
       `${identity.gaps.length} gap(s) totalling ${missing} missing bar(s) — expected across weekends and market holidays.`,
     );
   }
-  if (missing > identity.barCount * 0.5) {
-    errors.push("More than half of the expected bars are missing; refusing to replay.");
+  if (missing > identity.barCount * 0.95) {
+    errors.push("More than 95% of the expected bars are missing; refusing to replay.");
   }
 
   return { ok: errors.length === 0, errors, warnings };

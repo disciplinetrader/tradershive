@@ -28,8 +28,8 @@ export const Route = createFileRoute("/_authenticated/replay/history")({
 });
 
 function HistoryPage() {
-  const search = useSearch({ from: "/_authenticated/replay/history" });
-  const navigate = useNavigate({ from: "/_authenticated/replay/history" });
+  const search = useSearch({ from: Route.id });
+  const navigate = useNavigate({ from: Route.id });
   return (
     <HistoryView
       params={{
@@ -41,10 +41,10 @@ function HistoryPage() {
       }}
       onChange={(patch) => {
         void navigate({
-          search: (prev: any) => ({
+          search: (prev: Record<string, any>) => ({
             ...prev,
             ...patch,
-          }),
+          } as any),
         });
       }}
     />
