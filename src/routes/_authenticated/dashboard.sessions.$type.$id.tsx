@@ -77,7 +77,7 @@ function SessionDetailPage() {
   };
 
   return (
-    <AnalyticsProvider contextType={type as any} contextId={id}>
+    <AnalyticsProvider>
       <div className="mx-auto w-full max-w-[1400px] space-y-6 pb-[var(--gutter-lg)] animate-in fade-in duration-500">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center justify-between">
           <div className="flex items-center gap-4">
