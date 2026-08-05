@@ -1,8 +1,6 @@
-import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { DashboardHeader } from "@/components/dashboard/v2/DashboardHeader";
-import { SessionCards } from "@/components/statistics/SessionCards";
-import { TimeOfDayCard } from "@/components/statistics/Charts";
+import { SessionManagement } from "@/components/dashboard/v2/SessionManagement";
 import { AnalyticsProvider } from "@/components/analytics/AnalyticsProvider";
 import { FiltersBar } from "@/components/statistics/FiltersBar";
 
