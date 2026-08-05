@@ -145,7 +145,22 @@ export function CreatorWizard({ open, onOpenChange }: { open: boolean; onOpenCha
       : "forex";
 
     // Verify (and, if needed, import) REAL market history for this range.
+    const fromDate = new Date(`${from}T00:00:00Z`);
+    const toDate = new Date(`${to}T23:59:59Z`);
+    
+    // Check for valid range before creating
+    if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+      setPreload({ status: "error", progress: 0, message: "Please enter valid dates." });
+      return;
+    }
+
+    if (fromDate > new Date()) {
+      setPreload({ status: "error", progress: 0, message: "Cannot replay future dates." });
+      return;
+    }
+
     // We never create a session that would have to fall back to fake data.
+
     setPreload({ progress: 0.1, status: "loading" });
     const fromMs = new Date(`${from}T00:00:00Z`).getTime();
     const toMs = new Date(`${to}T23:59:59Z`).getTime();
