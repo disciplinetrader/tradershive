@@ -43,7 +43,6 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedCommunityRouteImport } from './routes/_authenticated/community'
 import { Route as AuthenticatedChartsRouteImport } from './routes/_authenticated/charts'
 import { Route as AuthenticatedChampionshipRouteImport } from './routes/_authenticated/championship'
-import { Route as AuthenticatedChallengesRouteImport } from './routes/_authenticated/challenges'
 import { Route as AuthenticatedBattleArenaRouteImport } from './routes/_authenticated/battle-arena'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
 import { Route as AuthenticatedAiRouteImport } from './routes/_authenticated/ai'
@@ -373,11 +372,6 @@ const AuthenticatedChampionshipRoute =
     path: '/championship',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedChallengesRoute = AuthenticatedChallengesRouteImport.update({
-  id: '/challenges',
-  path: '/challenges',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedBattleArenaRoute =
   AuthenticatedBattleArenaRouteImport.update({
     id: '/battle-arena',
@@ -842,15 +836,15 @@ const AuthenticatedChampionshipSlugRoute =
   } as any)
 const AuthenticatedChallengesRewardsRoute =
   AuthenticatedChallengesRewardsRouteImport.update({
-    id: '/rewards',
-    path: '/rewards',
-    getParentRoute: () => AuthenticatedChallengesRoute,
+    id: '/challenges/rewards',
+    path: '/challenges/rewards',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedChallengesHistoryRoute =
   AuthenticatedChallengesHistoryRouteImport.update({
-    id: '/history',
-    path: '/history',
-    getParentRoute: () => AuthenticatedChallengesRoute,
+    id: '/challenges/history',
+    path: '/challenges/history',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedBattleArenaHistoryRoute =
   AuthenticatedBattleArenaHistoryRouteImport.update({
@@ -1306,7 +1300,6 @@ export interface FileRoutesByFullPath {
   '/ai': typeof AuthenticatedAiRouteWithChildren
   '/analytics': typeof AuthenticatedAnalyticsRouteWithChildren
   '/battle-arena': typeof AuthenticatedBattleArenaRouteWithChildren
-  '/challenges': typeof AuthenticatedChallengesRouteWithChildren
   '/championship': typeof AuthenticatedChampionshipRouteWithChildren
   '/charts': typeof AuthenticatedChartsRoute
   '/community': typeof AuthenticatedCommunityRouteWithChildren
@@ -1493,7 +1486,6 @@ export interface FileRoutesByTo {
   '/verify-email': typeof VerifyEmailRoute
   '/achievements': typeof AuthenticatedAchievementsRoute
   '/ai': typeof AuthenticatedAiRouteWithChildren
-  '/challenges': typeof AuthenticatedChallengesRouteWithChildren
   '/charts': typeof AuthenticatedChartsRoute
   '/education': typeof AuthenticatedEducationRoute
   '/feedback': typeof AuthenticatedFeedbackRoute
@@ -1674,7 +1666,6 @@ export interface FileRoutesById {
   '/_authenticated/ai': typeof AuthenticatedAiRouteWithChildren
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRouteWithChildren
   '/_authenticated/battle-arena': typeof AuthenticatedBattleArenaRouteWithChildren
-  '/_authenticated/challenges': typeof AuthenticatedChallengesRouteWithChildren
   '/_authenticated/championship': typeof AuthenticatedChampionshipRouteWithChildren
   '/_authenticated/charts': typeof AuthenticatedChartsRoute
   '/_authenticated/community': typeof AuthenticatedCommunityRouteWithChildren
@@ -1866,7 +1857,6 @@ export interface FileRouteTypes {
     | '/ai'
     | '/analytics'
     | '/battle-arena'
-    | '/challenges'
     | '/championship'
     | '/charts'
     | '/community'
@@ -2053,7 +2043,6 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/achievements'
     | '/ai'
-    | '/challenges'
     | '/charts'
     | '/education'
     | '/feedback'
@@ -2233,7 +2222,6 @@ export interface FileRouteTypes {
     | '/_authenticated/ai'
     | '/_authenticated/analytics'
     | '/_authenticated/battle-arena'
-    | '/_authenticated/challenges'
     | '/_authenticated/championship'
     | '/_authenticated/charts'
     | '/_authenticated/community'
@@ -2669,13 +2657,6 @@ declare module '@tanstack/react-router' {
       path: '/championship'
       fullPath: '/championship'
       preLoaderRoute: typeof AuthenticatedChampionshipRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/challenges': {
-      id: '/_authenticated/challenges'
-      path: '/challenges'
-      fullPath: '/challenges'
-      preLoaderRoute: typeof AuthenticatedChallengesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/battle-arena': {
@@ -3226,17 +3207,17 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/challenges/rewards': {
       id: '/_authenticated/challenges/rewards'
-      path: '/rewards'
+      path: '/challenges/rewards'
       fullPath: '/challenges/rewards'
       preLoaderRoute: typeof AuthenticatedChallengesRewardsRouteImport
-      parentRoute: typeof AuthenticatedChallengesRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/challenges/history': {
       id: '/_authenticated/challenges/history'
-      path: '/history'
+      path: '/challenges/history'
       fullPath: '/challenges/history'
       preLoaderRoute: typeof AuthenticatedChallengesHistoryRouteImport
-      parentRoute: typeof AuthenticatedChallengesRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/battle-arena/history': {
       id: '/_authenticated/battle-arena/history'
@@ -3938,22 +3919,6 @@ const AuthenticatedBattleArenaRouteWithChildren =
     AuthenticatedBattleArenaRouteChildren,
   )
 
-interface AuthenticatedChallengesRouteChildren {
-  AuthenticatedChallengesHistoryRoute: typeof AuthenticatedChallengesHistoryRoute
-  AuthenticatedChallengesRewardsRoute: typeof AuthenticatedChallengesRewardsRoute
-}
-
-const AuthenticatedChallengesRouteChildren: AuthenticatedChallengesRouteChildren =
-  {
-    AuthenticatedChallengesHistoryRoute: AuthenticatedChallengesHistoryRoute,
-    AuthenticatedChallengesRewardsRoute: AuthenticatedChallengesRewardsRoute,
-  }
-
-const AuthenticatedChallengesRouteWithChildren =
-  AuthenticatedChallengesRoute._addFileChildren(
-    AuthenticatedChallengesRouteChildren,
-  )
-
 interface AuthenticatedChampionshipRouteChildren {
   AuthenticatedChampionshipSlugRoute: typeof AuthenticatedChampionshipSlugRoute
   AuthenticatedChampionshipHallOfFameRoute: typeof AuthenticatedChampionshipHallOfFameRoute
@@ -4297,7 +4262,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAiRoute: typeof AuthenticatedAiRouteWithChildren
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRouteWithChildren
   AuthenticatedBattleArenaRoute: typeof AuthenticatedBattleArenaRouteWithChildren
-  AuthenticatedChallengesRoute: typeof AuthenticatedChallengesRouteWithChildren
   AuthenticatedChampionshipRoute: typeof AuthenticatedChampionshipRouteWithChildren
   AuthenticatedChartsRoute: typeof AuthenticatedChartsRoute
   AuthenticatedCommunityRoute: typeof AuthenticatedCommunityRouteWithChildren
@@ -4321,6 +4285,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSupportRoute: typeof AuthenticatedSupportRoute
   AuthenticatedTradingRoute: typeof AuthenticatedTradingRouteWithChildren
   AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
+  AuthenticatedChallengesHistoryRoute: typeof AuthenticatedChallengesHistoryRoute
+  AuthenticatedChallengesRewardsRoute: typeof AuthenticatedChallengesRewardsRoute
   AuthenticatedTradesTradeIdRoute: typeof AuthenticatedTradesTradeIdRoute
 }
 
@@ -4330,7 +4296,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAiRoute: AuthenticatedAiRouteWithChildren,
   AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRouteWithChildren,
   AuthenticatedBattleArenaRoute: AuthenticatedBattleArenaRouteWithChildren,
-  AuthenticatedChallengesRoute: AuthenticatedChallengesRouteWithChildren,
   AuthenticatedChampionshipRoute: AuthenticatedChampionshipRouteWithChildren,
   AuthenticatedChartsRoute: AuthenticatedChartsRoute,
   AuthenticatedCommunityRoute: AuthenticatedCommunityRouteWithChildren,
@@ -4354,6 +4319,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSupportRoute: AuthenticatedSupportRoute,
   AuthenticatedTradingRoute: AuthenticatedTradingRouteWithChildren,
   AuthenticatedUsersRoute: AuthenticatedUsersRoute,
+  AuthenticatedChallengesHistoryRoute: AuthenticatedChallengesHistoryRoute,
+  AuthenticatedChallengesRewardsRoute: AuthenticatedChallengesRewardsRoute,
   AuthenticatedTradesTradeIdRoute: AuthenticatedTradesTradeIdRoute,
 }
 
