@@ -12202,6 +12202,7 @@ export type Database = {
         Returns: boolean
       }
       is_platform_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_privileged_admin: { Args: { _user_id: string }; Returns: boolean }
       is_study_group_visible: {
         Args: { _group_id: string; _user_id: string }
         Returns: boolean
