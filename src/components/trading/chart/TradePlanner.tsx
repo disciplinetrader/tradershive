@@ -246,9 +246,11 @@ export function TradePlanner({
             <button onClick={flipSide} className={cn("flex-1 rounded px-2 py-1 text-[11px] font-bold uppercase", plan.side === "long" ? "bg-success/20 text-success" : "bg-danger/20 text-danger")}>
               {plan.side}
             </button>
-            <label className="flex items-center gap-1 rounded border border-border/50 px-1.5 py-1">
-              <span className="text-[10px] uppercase text-muted-foreground">Risk %</span>
+            <div className="flex items-center gap-1 rounded border border-border/50 px-1.5 py-1">
+              <Label htmlFor="plan-risk-pct" className="text-[10px] uppercase text-muted-foreground">Risk %</Label>
               <input
+                id="plan-risk-pct"
+
                 type="number" min={0.1} max={100} step={0.1} value={riskPct}
                 onChange={(e) => setRiskPct(Math.max(0.1, Number(e.target.value) || 0.1))}
                 className="w-10 bg-transparent text-right text-xs font-bold outline-none"
