@@ -95,7 +95,7 @@ export function LiveBattleHeader({
             <BattleStatusBadge status={battle.status as any} />
             {battle.ranked && (
               <Badge variant="outline" className="h-5 px-2 bg-primary/10 text-primary border-primary/20 font-black tracking-tighter animate-pulse">
-                <Trophy className="mr-1 h-3 w-3" /> RANKED
+                <Trophy className="mr-1 h-3 w-3" /> COMPETITIVE
               </Badge>
             )}
             <Badge variant="secondary" className="h-5 rounded-md font-bold px-2 text-[10px] uppercase tracking-wide bg-background/60">
