@@ -81,6 +81,7 @@ function OnboardingPage() {
   const [step, setStep] = useState<Step>(0);
   const [saving, setSaving] = useState(false);
   const [launching, setLaunching] = useState(false);
+  const [launchError, setLaunchError] = useState<{ message: string; remedy: string } | null>(null);
 
   const [experience, setExperience] = useState<ExperienceLevel>(
     ((profile?.experience as ExperienceLevel) ?? "beginner"),
@@ -172,30 +173,34 @@ function OnboardingPage() {
   };
 
   const launchFirstBacktest = async () => {
-    if (!user) return;
+    if (!user || launching) return;
     setLaunching(true);
+    setLaunchError(null);
     try {
       await persistPreferences(false);
       trackOnboarding("onboarding_completed", {
         meta: { markets: markets.length, styles: styles.length, goals: goals.length, strategy },
       });
       markChecklist("complete_onboarding", true);
+      
       const res = await createRandom();
+      if (!res.session || res.unavailable) {
+        setLaunchError({
+          message: res.unavailable?.message ?? "Could not find a valid historical range for your preferences.",
+          remedy: res.unavailable?.remedy ?? "Try updating your preferred markets in Settings or retry now.",
+        });
+        setLaunching(false);
+        return;
+      }
+
       const row = res.session;
       trackOnboarding("first_backtest_launched");
       markChecklist("create_first_backtest", true);
-      if (row?.id) {
-        toast.success("🎉 First backtest ready — enjoy the arena");
-        await navigate({ to: "/replay/studio", search: { id: row.id } as never });
-      } else {
-        if (res.unavailable) {
-          toast.info(res.unavailable.message, { description: res.unavailable.remedy });
-        }
-        await navigate({ to: "/replay", replace: true });
-      }
+      toast.success("🎉 First backtest ready — enjoy the arena");
+      await navigate({ to: "/replay/studio", search: { id: row.id } as any });
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Could not launch backtest";
-      toast.error(msg);
+      setLaunchError({ message: msg, remedy: "Please try again in a moment." });
       setLaunching(false);
     }
   };
@@ -477,6 +482,26 @@ function OnboardingPage() {
                         </>
                       )}
                     </Button>
+                    
+                    {launchError && (
+                      <div className="mt-4 rounded-xl border border-danger/20 bg-danger/5 p-4 text-left animate-in fade-in slide-in-from-top-2">
+                        <div className="flex items-start gap-3">
+                          <div className="mt-0.5 rounded-full bg-danger/10 p-1">
+                            <Rocket className="h-4 w-4 text-danger rotate-180" />
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-sm font-semibold text-danger">{launchError.message}</p>
+                            <p className="text-xs text-muted-foreground leading-relaxed">{launchError.remedy}</p>
+                            <button 
+                              onClick={launchFirstBacktest}
+                              className="mt-2 text-[10px] font-bold uppercase tracking-wider text-primary hover:underline"
+                            >
+                              Try again
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : null}
 

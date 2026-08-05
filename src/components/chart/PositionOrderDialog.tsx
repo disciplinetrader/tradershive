@@ -83,6 +83,7 @@ function LevelField({
           <Minus className="h-3 w-3" />
         </button>
         <input
+          id={testId}
           type="number"
           inputMode="decimal"
           step={step}
@@ -273,9 +274,10 @@ export function PositionOrderDialog({
                   </button>
                 ))}
                 <input
+                  id="order-risk-pct"
                   type="number"
                   step={0.05}
-                  min={0}
+                  min={0.01}
                   value={riskPct}
                   aria-label="Risk percent"
                   data-testid="order-risk-pct"

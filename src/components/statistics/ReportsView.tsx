@@ -108,7 +108,7 @@ export function ReportsView() {
                   <TableCell className="text-right tabular-nums text-success">{r.wins}</TableCell>
                   <TableCell className="text-right tabular-nums text-danger">{r.losses}</TableCell>
                   <TableCell className="text-right tabular-nums">{fmtPercent(r.winRate)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{fmtNumber(r.avgRR)}R</TableCell>
+                  <TableCell className="text-right tabular-nums">{fmtNumber(r.avgRR, 2)}R</TableCell>
                   <TableCell className={`text-right tabular-nums font-semibold ${r.netProfit >= 0 ? "text-success" : "text-danger"}`}>{fmtCurrency(r.netProfit)}</TableCell>
                 </TableRow>
               ))}

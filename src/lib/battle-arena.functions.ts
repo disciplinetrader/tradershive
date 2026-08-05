@@ -64,9 +64,13 @@ export const listBattles = createServerFn({ method: "GET" })
 
 export const getBattle = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    const { data: res, error: rpcErr } = await supabase.rpc("get_battle_details" as any, { _battle_id: data.id });
+    if (!rpcErr && res?.battle) return res;
+
+    // Fallback if RPC fails or is missing
     const [{ data: battle, error: e1 }, participantsRes, rankingsRes, resultsRes] = await Promise.all([
       supabase.from("battles").select("*").eq("id", data.id).maybeSingle(),
       supabase.from("battle_participants").select("*").eq("battle_id", data.id),
@@ -76,7 +80,7 @@ export const getBattle = createServerFn({ method: "GET" })
     if (e1) throw e1;
     if (!battle) throw new Error("Battle not found");
     const userIds = Array.from(new Set([
-      ...(participantsRes.data ?? []).map((p) => p.user_id),
+      ...(participantsRes.data ?? []).map((p: any) => p.user_id),
       battle.host_id,
     ]));
     const { data: profiles } = await supabase
@@ -88,7 +92,7 @@ export const getBattle = createServerFn({ method: "GET" })
       results: resultsRes.data ?? [],
       profiles: profiles ?? [],
       isHost: battle.host_id === userId,
-      isParticipant: (participantsRes.data ?? []).some((p) => p.user_id === userId),
+      isParticipant: (participantsRes.data ?? []).some((p: any) => p.user_id === userId),
     };
   });
 

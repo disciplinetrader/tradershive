@@ -218,15 +218,22 @@ export interface OrderValidation {
  */
 export function validateOrder(
   draft: OrderDraft,
-  opts: { marketPrice?: number | null; tick?: number } = {},
+  opts: { marketPrice?: number | null; tick?: number; maxRiskPct?: number } = {},
 ): OrderValidation {
   const errors: string[] = [];
-  const { entry, stop, target, direction, orderType } = draft;
+  const { entry, stop, target, direction, orderType, size } = draft;
 
   if (![entry, stop, target].every((v) => Number.isFinite(v) && v > 0)) {
-    return { ok: false, errors: ["Entry, stop and target must all be valid prices."] };
+    return { ok: false, errors: ["Entry, stop and target must all be positive finite prices."] };
   }
 
+  if (size != null && (!Number.isFinite(size) || size <= 0)) {
+    errors.push("Lot size must be a finite number greater than zero.");
+  }
+
+  // If size calculation depends on riskPct, it's often passed via draft.size.
+  // We don't have riskPct in OrderDraft, but we can validate derived metrics.
+  
   if (direction === "buy") {
     if (stop >= entry) errors.push("Buy order: stop loss must be below entry.");
     if (target <= entry) errors.push("Buy order: take profit must be above entry.");

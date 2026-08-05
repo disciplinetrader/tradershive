@@ -150,11 +150,11 @@ function BattleDetail() {
   if (battleQ.isLoading) return <div className="glass h-64 animate-pulse rounded-2xl" />;
   if (!battleQ.data) return <div className="text-sm text-muted-foreground">Battle not found.</div>;
 
-  const { participants, rankings, results, profiles } = battleQ.data as any;
-  const canJoin = !isParticipant && battle!.visibility === "public" && ["draft", "upcoming"].includes(battle!.status) && participants.length < battle!.max_participants;
-  const canLeave = isParticipant && ["draft", "upcoming"].includes(battle!.status);
-  const canCancel = isHost && ["draft", "upcoming"].includes(battle!.status);
-  const canFinalize = isHost && battle!.status === "live";
+  const { participants = [], rankings = [], results = [], profiles = [] } = (battleQ.data as any) || {};
+  const canJoin = !isParticipant && battle?.visibility === "public" && ["draft", "upcoming"].includes(battle?.status || "") && participants.length < (battle?.max_participants || 0);
+  const canLeave = isParticipant && ["draft", "upcoming"].includes(battle?.status || "");
+  const canCancel = isHost && ["draft", "upcoming"].includes(battle?.status || "");
+  const canFinalize = isHost && battle?.status === "live";
 
   const doJoin = async () => { try { await fnJoin({ data: { battleId } }); toast.success("Joined!"); qc.invalidateQueries({ queryKey: ["battle", battleId] }); } catch (e: any) { toast.error(e?.message ?? "Failed"); } };
   const doLeave = async () => { try { await fnLeave({ data: { battleId } }); toast.success("Left"); qc.invalidateQueries({ queryKey: ["battle", battleId] }); } catch (e: any) { toast.error(e?.message ?? "Failed"); } };
@@ -180,7 +180,7 @@ function BattleDetail() {
   return (
     <div className="space-y-5">
       <LiveBattleHeader
-        battle={battle!}
+        battle={battle || { name: "Loading...", status: "upcoming" } as any}
         stats={statsQ.data as any}
         profiles={profiles}
         participantCount={participants.length}

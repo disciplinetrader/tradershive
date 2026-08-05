@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { toast } from "sonner";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Plus } from "lucide-react";
@@ -44,7 +45,7 @@ function IdeasPage() {
       <PageHeader
         title="Trade Ideas"
         description="Structured setups from the community — entry, stop, target, R:R and linked context."
-        actions={<Button asChild size="sm"><Link to="/community/ideas/new"><Plus className="mr-1 h-4 w-4" />Publish idea</Link></Button>}
+        actions={<Button asChild size="sm" variant="outline" className="opacity-50 cursor-not-allowed"><Link to="#" onClick={(e) => { e.preventDefault(); toast.info("Publishing ideas is coming soon."); }}>Publish idea (Coming soon)</Link></Button>}
       />
 
       <div className="flex flex-wrap items-center gap-2">
@@ -65,8 +66,7 @@ function IdeasPage() {
           {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-40" />)}
         </div>
       ) : ideas.length === 0 ? (
-        <EmptyState title="No ideas match your filters" description="Try widening the filter or publish the first one."
-          action={{ label: "Publish idea", href: "/community/ideas/new" }} />
+        <EmptyState title="No ideas available" description="Structured trade ideas from the community will appear here soon." />
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {ideas.map((i: any) => <IdeaCard key={i.id} idea={i} />)}
