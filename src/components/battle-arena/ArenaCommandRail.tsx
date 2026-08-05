@@ -178,7 +178,7 @@ function ExpandedRail({ battle, stats, events, isSpectator, isHost, account }: {
             <span className="text-[10px] font-medium text-muted-foreground uppercase">Time Remaining</span>
             <div className="flex items-center gap-2">
               <Timer className="h-3.5 w-3.5 text-primary" />
-              <CountdownTimer targetDate={battle.end_at} className="text-sm font-bold tabular-nums" />
+              <CountdownTimer to={battle.end_at} />
             </div>
           </div>
           <div className="flex flex-col items-end">
