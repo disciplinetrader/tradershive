@@ -31,7 +31,7 @@ export function BattleCard({ battle }: { battle: BattleRow }) {
 
   return (
     <Link
-      to="/battle-arena/$battleId"
+      to="/battle-arena/$battleId"  
       params={{ battleId: battle.id }}
       className={cn(
         "card-interactive group relative flex flex-col gap-4 rounded-3xl border border-border/40 bg-card/20 p-5 hover:border-primary/40 hover:bg-card/40 transition-all duration-300",
