@@ -98,7 +98,7 @@ function ChampionshipIndex() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Tournaments</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">Arena Tournaments</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Compete in monthly championships, sponsored events, and community battles. Every result contributes to your career stats.
           </p>
