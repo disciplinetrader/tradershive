@@ -58,7 +58,7 @@ export function BattleResultsView({ battle, results, profiles }: { battle: any; 
             <thead className="text-[11px] uppercase tracking-wide text-muted-foreground">
               <tr>
                 <th className="px-4 py-2 text-left">#</th>
-                <th className="px-4 py-2 text-left">Trader</th>
+                <th className="px-4 py-2 text-left">Competitor</th>
                 <th className="px-4 py-2 text-right">PnL</th>
                 <th className="px-4 py-2 text-right">R</th>
                 <th className="px-4 py-2 text-right">Win %</th>
