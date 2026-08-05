@@ -260,7 +260,7 @@ export function CreateBattleWizard({ onCancel, onCreated }: { onCancel: () => vo
             <div className="space-y-2">
               <Label className="text-sm font-bold uppercase tracking-wide">Arena Timezone</Label>
               <Input value={form.timezone} onChange={(e) => set("timezone", e.target.value)} className="h-11 rounded-xl bg-background/50" />
-              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider pl-1">Auto-detected based on your current location</p>
+              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider pl-1">Auto-detected based on your current region</p>
             </div>
           </div>
         )}
