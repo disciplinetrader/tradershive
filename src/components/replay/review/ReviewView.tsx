@@ -29,7 +29,7 @@ export function ReviewView({ sessionId }: { sessionId: string }) {
       <div className="m-6 space-y-3 rounded-md border border-border/60 bg-card/40 p-8 text-center">
         <div className="font-medium">Review unavailable</div>
         <p className="text-sm text-muted-foreground">This session could not be loaded. It may have been deleted.</p>
-        <Button asChild variant="secondary"><Link to="/replay/history">Back to history</Link></Button>
+        <Button asChild variant="secondary"><Link to="/replay/history" search={{}}>Back to history</Link></Button>
       </div>
     );
   }
@@ -53,7 +53,7 @@ export function ReviewView({ sessionId }: { sessionId: string }) {
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Button asChild size="icon" variant="ghost" aria-label="Back to history">
-              <Link to="/replay/history"><ArrowLeft className="h-4 w-4" /></Link>
+              <Link to="/replay/history" search={{}}><ArrowLeft className="h-4 w-4" /></Link>
             </Button>
             <h1 className="text-xl font-semibold">{String(session.title ?? "Replay review")}</h1>
             <Badge variant="outline">{String(session.status ?? "completed")}</Badge>
@@ -67,7 +67,7 @@ export function ReviewView({ sessionId }: { sessionId: string }) {
             <Link to="/replay/studio" search={{ id: sessionId }}>Open in Studio</Link>
           </Button>
           <Button asChild variant="ghost" size="sm">
-            <Link to="/replay/history"><History className="mr-2 h-4 w-4" />History</Link>
+            <Link to="/replay/history" search={{}}><History className="mr-2 h-4 w-4" />History</Link>
           </Button>
         </div>
       </header>
