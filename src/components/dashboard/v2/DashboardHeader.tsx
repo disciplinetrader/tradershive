@@ -10,6 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 
 import { PageTitle } from "@/components/dashboard/v2/primitives";
+import { DashboardSubNav } from "@/components/dashboard/v2/DashboardSubNav";
 import { MarketStatusBadge } from "@/components/market/MarketStatusBadge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/use-auth";
@@ -77,11 +78,14 @@ export function DashboardHeader({
 
   return (
     <header className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-      <div className="min-w-0">
-        <p className="eyebrow mb-1 text-primary">{dateStr}</p>
-        <PageTitle>
-          {greeting()}, <span className="text-foreground/90">{name}</span>
-        </PageTitle>
+      <div className="min-w-0 space-y-3">
+        <div>
+          <p className="eyebrow mb-1 text-primary">{dateStr}</p>
+          <PageTitle>
+            {greeting()}, <span className="text-foreground/90">{name}</span>
+          </PageTitle>
+        </div>
+        <DashboardSubNav />
       </div>
 
       <div className="flex shrink-0 flex-wrap items-center gap-2">

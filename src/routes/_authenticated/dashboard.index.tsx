@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createFileRoute, Outlet, useLocation } from "@tanstack/react-router";
+import { createFileRoute, useLocation } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { BookOpen, LineChart, PlayCircle, Target, Zap } from "lucide-react";
@@ -14,25 +14,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getHeroState } from "@/lib/dashboard-hero.functions";
 import { getHomeSummary } from "@/lib/dashboard-home.functions";
 
-/**
- * Dashboard — rebuilt around a single question: "What should I do today?"
- *
- * Header → Hero → 6 KPIs → Equity + 3 sidebar cards → Recent activity → 3
- * quick actions. Anything that did not help answer that question now lives on
- * its dedicated page (Analytics, Journal, Goals, Community, Watchlist).
- */
-export const Route = createFileRoute("/_authenticated/dashboard")({
-  head: () => ({
-    meta: [
-      { title: "Dashboard — TradersHIVE Arena" },
-      { name: "description", content: "One screen that answers what to trade, review and journal today." },
-      { property: "og:title", content: "Dashboard — TradersHIVE Arena" },
-      { property: "og:description", content: "Today's P&L, win rate, streak and your next best action." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
-  component: () => <Outlet />,
+export const Route = createFileRoute("/_authenticated/dashboard/")({
+  component: DashboardOverviewPage,
 });
 
 function fmtR(v: number): string {
@@ -46,7 +29,7 @@ function fmtMoney(v: number): string {
   return `${sign}$${Math.abs(v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-function DashboardPage() {
+function DashboardOverviewPage() {
   const fetchHome = useServerFn(getHomeSummary);
   const fetchHero = useServerFn(getHeroState);
   const [accountId, setAccountId] = useState<string | null>(null);
@@ -166,7 +149,7 @@ function DashboardPage() {
         <div className="stagger grid gap-[var(--gutter-sm)] grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
           <QuickActionCard to="/replay" icon={PlayCircle} label="Start Replay" hint="Practise a setup" />
           <QuickActionCard to="/trading" icon={LineChart} label="Paper Trade" hint="Open live market" />
-          <QuickActionCard to="/prop-challenges" icon={Target} label="Prop Challenge" hint="Get funded" />
+          <QuickActionCard to="/dashboard/prop-firm" icon={Target} label="Prop Challenge" hint="Get funded" />
           <QuickActionCard to="/journal" icon={BookOpen} label="Trading Journal" hint="Review performance" />
           {home?.actions.find(a => a.kind === "replay_unfinished") && (
             <QuickActionCard 
@@ -176,7 +159,7 @@ function DashboardPage() {
               hint="Resume session" 
             />
           )}
-          <QuickActionCard to="/education" icon={BookOpen} label="How It Works" hint="Learn the platform" />
+          <QuickActionCard to="/support" icon={BookOpen} label="How It Works" hint="Learn the platform" />
         </div>
       </section>
     </div>

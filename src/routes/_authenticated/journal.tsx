@@ -12,12 +12,12 @@ import { routeBoundaries } from "@/lib/route-boundaries";
 export const Route = createFileRoute("/_authenticated/journal")({
   head: () => ({
     meta: [
-      { title: "Trade Journal — TradersHIVE Arena" },
+      { title: "Trade Journal — TradersHIVE" },
       {
         name: "description",
         content: "Turn every trade into a story, an insight and an improvement with the TradersHIVE journal.",
       },
-      { property: "og:title", content: "Trade Journal — TradersHIVE Arena" },
+      { property: "og:title", content: "Trade Journal — TradersHIVE" },
       {
         property: "og:description",
         content: "Turn every trade into a story, an insight and an improvement with the TradersHIVE journal.",

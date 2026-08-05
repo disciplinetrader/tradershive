@@ -52,14 +52,12 @@ const TRADING: NavItem[] = [
 
 const WORK: NavItem[] = [
   { to: "/journal", label: "Journal", icon: BookOpen },
-  { to: "/analytics", label: "Analytics", icon: BarChart3 },
 ];
 
 
 const COMPETE: NavItem[] = [
-  { to: "/prop-challenges", label: "Prop Firm", icon: GraduationCap },
   { to: "/championship", label: "Championships", icon: Trophy },
-  { to: "/battle-arena", label: "HIVE Arena", icon: Swords },
+  { to: "/battle-arena", label: "Battle Arena", icon: Swords },
   { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
 ];
 
@@ -261,7 +259,7 @@ function SidebarInner({
           <Link to="/dashboard" className="flex min-w-0 items-center gap-2">
             <img
               src="/logo.png"
-              alt="TradersHIVE Arena"
+              alt="Battle Arena"
               className={cn("shrink-0 rounded-full object-cover shadow-elegant", collapsed ? "h-6 w-6" : "h-8 w-8")}
             />
 
@@ -288,7 +286,7 @@ function SidebarInner({
           <NavSection label="Trading" items={TRADING} collapsed={collapsed} currentPath={currentPath} className="mt-5" />
           <NavSection items={WORK} collapsed={collapsed} currentPath={currentPath} className="mt-5" />
           <NavSection label="Compete" items={COMPETE} collapsed={collapsed} currentPath={currentPath} className="mt-5" />
-          <NavSection items={COMMUNITY} collapsed={collapsed} currentPath={currentPath} className="mt-5" />
+          <NavSection label="Community" items={COMMUNITY} collapsed={collapsed} currentPath={currentPath} className="mt-5" />
           <NavSection
             items={showAdmin ? [...SYSTEM_ITEMS, ...ADMIN_ITEMS] : SYSTEM_ITEMS}
             collapsed={collapsed}

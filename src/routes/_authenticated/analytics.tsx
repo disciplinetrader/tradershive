@@ -16,8 +16,8 @@ import type { TradeSourceTab } from "@/lib/statistics/types";
 export const Route = createFileRoute("/_authenticated/analytics")({
   head: () => ({
     meta: [
-      { title: "Analytics Center — TradersHIVE Arena" },
-      { name: "description", content: "Performance laboratory: benchmark live trading, replay backtests, coach scores, and championship history side by side." },
+      { title: "Analytics Center — TradersHIVE" },
+      { name: "description", content: "Performance laboratory: benchmark live trading, replay backtests, and championship history." },
     ],
   }),
   component: AnalyticsLayout,
