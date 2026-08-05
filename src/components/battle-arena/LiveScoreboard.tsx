@@ -38,7 +38,7 @@ export function LiveScoreboard({ stats, profiles }: { stats: Stats; profiles: Pr
   return (
     <div className="rounded-2xl border border-border/60 bg-card/40 p-4">
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-semibold">Live scoreboard</h3>
+        <h3 className="text-sm font-semibold">Arena Desk Summary</h3>
         {leader && (
           <div className="flex items-center gap-2 rounded-full bg-warning/10 px-2.5 py-1 text-xs">
             <Crown className="h-3.5 w-3.5 text-warning" />
