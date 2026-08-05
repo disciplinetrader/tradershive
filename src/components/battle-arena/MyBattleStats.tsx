@@ -26,9 +26,9 @@ export function MyBattleStats({ data }: { data?: Stats }) {
   const rank = getRankFromElo(s.elo);
   
   const items = [
-    { icon: Star, label: "Current ELO", value: s.elo, sub: rank.label, color: rank.color },
+    { icon: Star, label: "HIVE Rating", value: s.elo, sub: rank.label, color: rank.color },
     { icon: Zap, label: "Streak", value: s.streak, sub: `Best: ${s.bestStreak}` },
-    { icon: Swords, label: "Battles", value: s.total },
+    { icon: Swords, label: "Arena Matches", value: s.total },
     { icon: Trophy, label: "Wins", value: s.wins },
     { icon: Target, label: "Win rate", value: `${s.winRate}%` },
     { icon: Award, label: "Avg finish", value: s.avgFinish || "—" },
