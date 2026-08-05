@@ -51,7 +51,7 @@ async function runStructured<T>(args: {
       system: args.system,
       prompt: args.prompt,
       output: Output.object({ schema: args.schema }),
-      // maxOutputTokens is optional; the SDK also respects the provider default
+      abortSignal: AbortSignal.timeout(30000), // 30s timeout
     });
     return {
       output: result.output as T,

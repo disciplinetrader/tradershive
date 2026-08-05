@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
-import { GlassCard } from "@/components/layout/glass-card";
+import { GlassCard } from "@/components/ui/glass-card";
 import { KpiGrid } from "@/components/statistics/KpiGrid";
 import { EquityCurveCard } from "@/components/statistics/EquityCurveCard";
 import { StrengthsWeaknessesCard } from "@/components/statistics/StrengthsWeaknessesCard";

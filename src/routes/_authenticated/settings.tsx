@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState, useEffect } from "react";
 import { 
-  User, Shield, Bell, CreditCard, TradingChart, Mail, 
+  User, Shield, Bell, CreditCard, Mail, 
   Loader2, Play 
 } from "lucide-react";
 import { toast } from "sonner";
@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Skeleton } from "@/components/ui/skeleton";
+import { LineChart as TradingChart } from "lucide-react";
 import {
   Select,
   SelectContent,
