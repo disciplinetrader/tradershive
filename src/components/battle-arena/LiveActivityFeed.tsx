@@ -59,7 +59,7 @@ export function LiveActivityFeed({ events, profiles, height = "h-[520px]" }: { e
                         <Avatar className="h-4 w-4"><AvatarImage src={p.avatar_url ?? undefined} /><AvatarFallback className="text-[9px]">{(p.display_name ?? p.username ?? "?").slice(0, 1)}</AvatarFallback></Avatar>
                       )}
                       <span className="truncate text-sm">
-                        {p && <span className="font-medium">{p.display_name ?? p.username ?? "Trader"}</span>}
+                        {p && <span className="font-medium">{p.display_name ?? p.username ?? "Competitor"}</span>}
                         {p ? " · " : ""}
                         <span className={e.severity === "error" ? "text-danger" : e.severity === "warning" ? "text-warning" : ""}>{e.message}</span>
                       </span>
