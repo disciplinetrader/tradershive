@@ -41,7 +41,7 @@ function HistoryPage() {
       }}
       onChange={(patch) => {
         void navigate({
-          search: (prev: any) => ({
+          search: (prev) => ({
             ...prev,
             ...patch,
           }),
