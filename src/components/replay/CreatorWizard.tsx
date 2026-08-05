@@ -165,22 +165,46 @@ export function CreatorWizard({ open, onOpenChange }: { open: boolean; onOpenCha
     const fromMs = new Date(`${from}T00:00:00Z`).getTime();
     const toMs = new Date(`${to}T23:59:59Z`).getTime();
     let sourceCode = "historical";
+    
     try {
+      // 1. Probe coverage first to see if we have data or if it's registered.
+      const { probeHistoricalCoverage } = await import("@/lib/market-data/historical.functions");
+      const probeRes = await probeHistoricalCoverage({
+        data: { symbol: instrument.symbol, timeframe: tf as never, from: fromMs, to: toMs, market }
+      });
+      
+      // 2. If not registered or disabled, fail with admin message.
+      if (!probeRes.registered) {
+        setPreload({ 
+          status: "error", 
+          progress: 0, 
+          message: `${instrument.symbol} is not yet available for backtesting. Please contact support to enable this instrument.` 
+        });
+        return;
+      }
+
+      // 3. Attempt automatic import (ensureHistoricalRange)
       const res = await ensureHistoricalRange({
         data: { symbol: instrument.symbol, timeframe: tf as never, from: fromMs, to: toMs, market },
       });
+
       if (!res.ok) {
+        const remedy = res.unavailable?.message.includes("ratio") 
+          ? "We don't have enough historical data for this specific date range yet." 
+          : "Market data for this period is currently unavailable.";
+          
         setPreload({
           progress: 0,
           status: "error",
-          message: `${res.unavailable?.message ?? "No market data for this range."} ${res.unavailable?.remedy ?? ""}`.trim(),
+          message: `${remedy} Please try a different date range or a higher timeframe.`,
         });
-        return; // Block creation — a session without data is not usable.
+        return; 
       }
+      
       sourceCode = res.source?.providerCode ?? "historical";
       setPreload({ progress: 1, status: res.source?.kind === "stored" ? "cached" : "downloaded" });
     } catch (e) {
-      setPreload({ progress: 0, status: "error", message: (e as Error).message });
+      setPreload({ progress: 0, status: "error", message: "Failed to verify market data. Please try again." });
       return;
     }
 
