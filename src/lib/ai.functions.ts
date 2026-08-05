@@ -752,6 +752,8 @@ export const generatePlaybook = createServerFn({ method: "POST" })
 
     const modelKey = DEFAULT_MODEL;
     const res = await runStructured({
+      userId,
+      kind: "playbook_generation",
       modelKey,
       system: COACH_SYSTEM_PROMPT,
       prompt: `Generate a personalized trading playbook for: "${data.topic}".
@@ -838,6 +840,8 @@ export const generateRecommendations = createServerFn({ method: "POST" })
     const score = computeAiScore(inputs);
     const modelKey = DEFAULT_MODEL;
     const res = await runStructured({
+      userId,
+      kind: "recommendations",
       modelKey,
       system: COACH_SYSTEM_PROMPT,
       prompt: `Generate 5-8 personalized recommendations. Rank by priority (critical > high > medium > low), rate impact 1-5 and difficulty 1-5.
