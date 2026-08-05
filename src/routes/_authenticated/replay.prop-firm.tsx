@@ -130,22 +130,26 @@ function ActiveChallengeOverview({ challenge }: { challenge: any }) {
             Linked Account: <span className="text-foreground font-medium">{challenge.paper_accounts?.name ?? `Prop Account #${challenge.paper_account_id?.slice(-4)}`}</span>
           </p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap relative z-10">
           <Button 
-            onClick={() => {
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
               setActive({ id: challenge.id, paper_account_id: challenge.paper_account_id });
-              // Navigate to trading workspace to actually "Continue Trading"
               window.location.href = "/trading";
             }}
             className={cn(
-              "gradient-primary text-primary-foreground rounded-xl shadow-lg",
+              "gradient-primary text-primary-foreground rounded-xl shadow-lg relative z-20",
               isLinked && "ring-2 ring-primary ring-offset-2 ring-offset-background"
             )}
           >
             <Play className="mr-2 h-4 w-4 fill-current" /> {isLinked ? "Continue Trading" : "Start Trading"}
           </Button>
-          <Button asChild variant="outline" className="rounded-xl">
-            <Link to="/replay/prop-firm/$id" params={{ id: challenge.id }}>
+          <Button asChild variant="outline" className="rounded-xl relative z-20">
+            <Link 
+              to="/dashboard/analytics" 
+              search={{ source: "prop-firm", session: challenge.id }}
+            >
               View Analytics <ChevronRight className="ml-1 h-4 w-4" />
             </Link>
           </Button>
