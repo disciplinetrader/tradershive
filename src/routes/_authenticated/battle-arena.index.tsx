@@ -95,7 +95,205 @@ function BattleArenaHome() {
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
             <Swords className="h-6 w-6 text-primary" />
-            <h1 className="text-3xl font-black tracking-tight">HIVE Arena</h1>
+            <h1 className="text-3xl font-black tracking-tight">Enhance the completed HIVE Arena implementation with the following missing experience features. Extend the current system; do not rebuild it.
+
+Keep all naming, layout, styling and copy original to TradersHIVE.
+
+## 1. Competitor readiness check
+
+Before a user can become `Locked In`, verify:
+
+* Profile has a display name and avatar
+* Arena virtual account exists
+* Selected market is eligible
+* Historical dataset is ready
+* Browser connection is stable
+* User accepted the Arena Conditions
+* No conflicting active Arena participation exists
+
+Show individual readiness indicators and a clear reason when someone is not ready.
+
+Do not expose private account details.
+
+## 2. Rich Staging Room
+
+Improve the waiting experience with:
+
+* Competitor avatar cards
+* Host indicator
+* HIVE Rating level
+* Ready/not-ready status
+* Join and leave activity
+* Minimum competitor progress
+* Server-synchronized start timer
+* Shareable invite link
+* Copy invite code
+* Eligible Market selector
+* Collapsible Arena Conditions
+* Text chat
+* Smooth but original `Market Syncing` transition
+
+Use an original TradersHIVE layout—not the reference product’s avatar arrangement or visual treatment.
+
+## 3. Host controls
+
+Before the Arena locks, allow the host to:
+
+* Cancel the Arena
+* Remove a disruptive competitor
+* Transfer host ownership
+* Adjust only permitted pre-start settings
+* Start when minimum requirements are satisfied
+* Delay the start once within a controlled limit
+
+After `Market Syncing` begins, lock all core conditions.
+
+Record important host actions in the audit trail.
+
+## 4. Reconnection experience
+
+If a competitor disconnects during a live Arena:
+
+* Display a reconnecting banner.
+* Preserve the server-authoritative clock and market progression.
+* Restore the virtual account, positions, orders, chart position, chat and standings.
+* Do not give the returning user missed future candles in advance.
+* Do not restart or pause the Arena.
+* Show an honest connection status.
+
+Handle refresh, temporary internet loss and opening the Arena on another tab.
+
+Prevent two active tabs from submitting duplicate orders.
+
+## 5. Spectator mode
+
+Add a safe read-only spectator mode for supported public Arenas.
+
+Spectators may see:
+
+* Public chart state
+* Time remaining
+* Public standings
+* Competitors
+* Arena Conditions
+* Public chat if allowed
+
+Spectators must not see:
+
+* Private open positions
+* Pending orders
+* Hidden risk details
+* Future candles
+* Private competitor data
+* Invite-only Arena content
+
+Spectators cannot trade, affect results or post messages unless explicitly permitted.
+
+Allow hosts/admins to disable spectators.
+
+## 6. Improved live standings
+
+Enhance HIVE Standings with:
+
+* Pinned row for the current user
+* Movement indicator
+* Previous position
+* Return percentage
+* Maximum drawdown
+* Rule status
+* Target progress
+* Completed, active or breached state
+* Expand to full standings
+* Deterministic tie explanation
+
+Do not expose another competitor’s private positions or trade direction during a live Arena.
+
+## 7. Live event feed
+
+Add a compact Arena activity feed for public events:
+
+* Competitor joined
+* Competitor became ready
+* Arena started
+* Target reached
+* Rule breach
+* Competitor finished
+* Arena completed
+
+Do not reveal private trade entries, exits, position sizes or pending orders.
+
+Avoid duplicate events after reconnecting.
+
+## 8. Player card
+
+When permitted, clicking a competitor should open a privacy-safe Arena card showing:
+
+* Display name
+* Avatar
+* HIVE Rating
+* Rating level
+* Arenas completed
+* Wins
+* Podium finishes
+* Current streak
+* Completion rate
+* Recent public results
+
+Never show email, private journal data, open positions or account settings.
+
+## 9. Arena Recap improvements
+
+Add a detailed post-Arena recap:
+
+* Podium
+* Final standings
+* HIVE Rating before/change/after
+* Equity curve
+* Drawdown curve
+* Trade timeline
+* Best and worst trade
+* Rule-compliance summary
+* Performance by market
+* Comparison with Arena average
+* Personal lessons
+* AI-generated improvement plan
+* View trades
+* Share result
+* `Run It Back`
+
+The AI recap must use actual finalized Arena data and must not invent statistics.
+
+Do not reveal another competitor’s private trade details unless the Arena rules explicitly make them public after completion.
+
+## 10. Practice Arena
+
+Add an unranked Practice Arena option:
+
+* Single user or invited friends
+* No HIVE Rating impact
+* Uses the same synchronized and server-authoritative engine
+* Suitable for learning Arena mechanics
+* Clearly labelled as unranked
+* Results remain separate from competitive statistics
+
+## Verification
+
+Test:
+
+1. Incomplete profiles cannot become Locked In.
+2. Dataset failure prevents the start.
+3. Host transfer and cancellation work correctly.
+4. Refresh restores the live Arena state.
+5. Two tabs cannot submit duplicate orders.
+6. Spectators cannot trade or access private information.
+7. Current user remains visible in long standings.
+8. Event feed does not expose private trades.
+9. Player cards contain only public fields.
+10. Recap calculations match finalized results.
+11. Run It Back creates a completely new Arena.
+12. Practice Arena never changes HIVE Rating.
+
+Do not add voice chat, cash rewards, subscription prizes or copied reference-product language in this pass.</h1>
           </div>
           <p className="text-sm text-muted-foreground max-w-lg font-medium leading-relaxed">
             Compete in real-time paper trading matches. Dominate the HIVE Rating leaderboard, 
