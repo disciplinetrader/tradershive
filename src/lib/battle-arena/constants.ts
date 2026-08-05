@@ -56,7 +56,7 @@ export const STATUS_STYLES: Record<BattleStatus, { label: string; className: str
   staging_room:   { label: "Staging Room",  className: "bg-primary/10 text-primary border border-primary/20" },
   locked_in:      { label: "Locked In",     className: "bg-primary/20 text-primary border border-primary/30" },
   market_syncing: { label: "Market Syncing", className: "bg-primary text-primary-foreground animate-pulse" },
-  live:           { label: "Arena Desk",      className: "bg-success/15 text-success border border-success/25 animate-pulse" },
+  live:           { label: "Live",      className: "bg-success/15 text-success border border-success/25 animate-pulse" },
   paused:    { label: "Paused",    className: "bg-warning/15 text-warning border border-warning/25" },
   completed: { label: "Completed", className: "bg-muted text-muted-foreground border border-border" },
   cancelled: { label: "Cancelled", className: "bg-danger/15 text-danger border border-danger/25" },
