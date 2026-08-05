@@ -108,7 +108,7 @@ export function ImprovementDashboard() {
             What your replay practice is actually changing, measured across every scored session.
           </p>
         </div>
-        <Button asChild size="sm" variant="secondary"><Link to="/replay/history">Replay history</Link></Button>
+        <Button asChild size="sm" variant="secondary"><Link to="/replay/history" search={{}}>Replay history</Link></Button>
       </header>
 
       {q.isLoading ? (
@@ -122,7 +122,7 @@ export function ImprovementDashboard() {
           </p>
           <div className="flex justify-center gap-2">
             <Button asChild><Link to="/replay">Start a replay</Link></Button>
-            <Button asChild variant="secondary"><Link to="/replay/history">View history</Link></Button>
+            <Button asChild variant="secondary"><Link to="/replay/history" search={{}}>View history</Link></Button>
           </div>
         </Card>
       ) : (
