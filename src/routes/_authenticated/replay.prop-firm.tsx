@@ -127,18 +127,23 @@ function ActiveChallengeOverview({ challenge }: { challenge: any }) {
           </div>
           <h2 className="text-2xl font-bold">{challenge.name}</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Linked Account: <span className="text-foreground font-medium">Prop Account #{challenge.paper_account_id?.slice(-4)}</span>
+            Linked Account: <span className="text-foreground font-medium">{challenge.paper_accounts?.name ?? `Prop Account #${challenge.paper_account_id?.slice(-4)}`}</span>
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          {!isLinked && (
-            <Button 
-              onClick={() => setActive({ id: challenge.id, paper_account_id: challenge.paper_account_id })}
-              className="gradient-primary text-primary-foreground rounded-xl shadow-lg shadow-primary/20"
-            >
-              <Play className="mr-2 h-4 w-4 fill-current" /> Continue Trading
-            </Button>
-          )}
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+          <Button 
+            onClick={() => {
+              setActive({ id: challenge.id, paper_account_id: challenge.paper_account_id });
+              // Navigate to trading workspace to actually "Continue Trading"
+              window.location.href = "/trading";
+            }}
+            className={cn(
+              "gradient-primary text-primary-foreground rounded-xl shadow-lg",
+              isLinked && "ring-2 ring-primary ring-offset-2 ring-offset-background"
+            )}
+          >
+            <Play className="mr-2 h-4 w-4 fill-current" /> {isLinked ? "Continue Trading" : "Start Trading"}
+          </Button>
           <Button asChild variant="outline" className="rounded-xl">
             <Link to="/replay/prop-firm/$id" params={{ id: challenge.id }}>
               View Analytics <ChevronRight className="ml-1 h-4 w-4" />
