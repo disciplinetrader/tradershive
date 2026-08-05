@@ -67,7 +67,9 @@ const COMMUNITY: NavItem[] = [
 
 const SYSTEM_ITEMS: NavItem[] = [
   { to: "/settings", label: "Settings", icon: Settings },
+  { to: "/support", label: "Support", icon: LifeBuoy },
 ];
+
 
 const ADMIN_ITEMS: NavItem[] = [{ to: "/admin", label: "Admin", icon: Shield, admin: true }];
 
