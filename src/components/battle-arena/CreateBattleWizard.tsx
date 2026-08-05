@@ -124,7 +124,7 @@ export function CreateBattleWizard({ onCancel, onCreated }: { onCancel: () => vo
             
             <div className="space-y-2">
               <Label className="text-sm font-bold uppercase tracking-wide">Description</Label>
-              <Textarea value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="What are the goals of this battle?" className="rounded-xl bg-background/50 min-h-[80px]" maxLength={500} rows={3} />
+              <Textarea value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="What are the conditions of this arena match?" className="rounded-xl bg-background/50 min-h-[80px]" maxLength={500} rows={3} />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
