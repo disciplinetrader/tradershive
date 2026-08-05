@@ -69,7 +69,7 @@ function BattleArenaHome() {
     try {
       const res = await fnJoinRandom({ data: { battleType: "profit_target", isRanked: ranked } });
       if (res.battleId) {
-        toast.success("Found a match! Joining battle...");
+        toast.success("Found a match! Joining arena...");
       } else {
         toast.success("Joined matchmaking queue.");
         qc.invalidateQueries({ queryKey: ["matchmaking"] });
