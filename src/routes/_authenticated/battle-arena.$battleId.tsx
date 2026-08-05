@@ -107,7 +107,7 @@ function BattleDetail() {
   const battle = battleQ.data?.battle;
   const isParticipant = battleQ.data?.isParticipant ?? false;
   const isHost = battleQ.data?.isHost ?? false;
-  const role = isHost ? "host" : isParticipant ? "participant" : "spectator";
+  const role = isHost ? "host" : isParticipant ? "competitor" : "spectator";
   useEffect(() => {
     if (!battle) return;
     const beat = () => fnHeartbeat({ data: { battleId, status: isParticipant ? "trading" : "watching", role } }).catch(() => {});
