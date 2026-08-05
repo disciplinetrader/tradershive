@@ -133,14 +133,34 @@ export function CreatorWizard({ open, onOpenChange }: { open: boolean; onOpenCha
 
   const submit = async () => {
     if (!instrument || !canSubmit) return;
-    const balanceNum = Math.max(100, Math.round(Number(balance) || 10000));
+    const balanceNum = Number(balance);
+    if (!Number.isFinite(balanceNum) || balanceNum <= 0 || balanceNum > 100_000_000_000) {
+      setPreload({ status: "error", progress: 0, message: "Please enter a valid starting balance (positive, up to 100B)." });
+      return;
+    }
+
     const label = title.trim() || `${instrument.symbol} · ${from}`;
     const market = REPLAY_MARKETS.has(instrument.market as JournalMarket)
       ? instrument.market
       : "forex";
 
     // Verify (and, if needed, import) REAL market history for this range.
+    const fromDate = new Date(`${from}T00:00:00Z`);
+    const toDate = new Date(`${to}T23:59:59Z`);
+    
+    // Check for valid range before creating
+    if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+      setPreload({ status: "error", progress: 0, message: "Please enter valid dates." });
+      return;
+    }
+
+    if (fromDate > new Date()) {
+      setPreload({ status: "error", progress: 0, message: "Cannot replay future dates." });
+      return;
+    }
+
     // We never create a session that would have to fall back to fake data.
+
     setPreload({ progress: 0.1, status: "loading" });
     const fromMs = new Date(`${from}T00:00:00Z`).getTime();
     const toMs = new Date(`${to}T23:59:59Z`).getTime();

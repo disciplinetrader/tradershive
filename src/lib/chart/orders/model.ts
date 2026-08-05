@@ -227,13 +227,10 @@ export function validateOrder(
     return { ok: false, errors: ["Entry, stop and target must all be positive finite prices."] };
   }
 
-  if (size != null && (!Number.isFinite(size) || size <= 0)) {
-    errors.push("Lot size must be a finite number greater than zero.");
+  if (size != null && (!Number.isFinite(size) || size <= 0 || size > 1_000_000_000)) {
+    errors.push("Lot size must be a finite number between 0 and 1,000,000,000.");
   }
 
-  // If size calculation depends on riskPct, it's often passed via draft.size.
-  // We don't have riskPct in OrderDraft, but we can validate derived metrics.
-  
   if (direction === "buy") {
     if (stop >= entry) errors.push("Buy order: stop loss must be below entry.");
     if (target <= entry) errors.push("Buy order: take profit must be above entry.");
@@ -243,13 +240,21 @@ export function validateOrder(
   }
 
   const risk = Math.abs(entry - stop);
+  const reward = Math.abs(target - entry);
+
+  if (!Number.isFinite(risk) || risk > 1_000_000_000_000) errors.push("Invalid risk value.");
+  if (!Number.isFinite(reward) || reward > 1_000_000_000_000) {
+    errors.push("Invalid reward value. Take profit might be too far or infinite.");
+  }
+  
   const tick = opts.tick && opts.tick > 0 ? opts.tick : 0;
   if (risk <= 0 || (tick > 0 && risk < tick)) {
     errors.push("Risk is zero — move the stop away from the entry price.");
   }
-  if (Math.abs(target - entry) <= 0) {
+  if (reward <= 0) {
     errors.push("Reward is zero — move the target away from the entry price.");
   }
+
 
   const market = opts.marketPrice;
   if (orderType !== "market" && Number.isFinite(market ?? NaN)) {

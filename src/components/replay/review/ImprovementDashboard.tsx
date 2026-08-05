@@ -113,7 +113,7 @@ export function ImprovementDashboard() {
 
       {q.isLoading ? (
         <div className="text-sm text-muted-foreground">Loading…</div>
-      ) : !view || (view.trend?.length ?? 0) === 0 ? (
+      ) : !view || !view.trend || (view.trend?.length ?? 0) === 0 ? (
         <Card className="space-y-3 p-8 text-center">
           <div className="font-medium">No scored replays yet</div>
           <p className="text-sm text-muted-foreground">

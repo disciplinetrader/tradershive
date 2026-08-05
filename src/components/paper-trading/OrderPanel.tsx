@@ -288,10 +288,11 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
       </Select>
 
       <div className="grid grid-cols-2 gap-2">
-        <Field label={orderType === "market" ? "Entry (live)" : "Trigger price"}>
+        <Field label="Entry price" htmlFor="order-entry">
           <div className="flex gap-1">
-            <Input inputMode="decimal" value={entry} onChange={(e) => setEntry(e.target.value)}
+            <Input id="order-entry" inputMode="decimal" value={entry} onChange={(e) => setEntry(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); attemptPlace(); } }}
+              aria-invalid={!validation?.ok && validation?.errors.some(m => m.toLowerCase().includes("entry"))}
               className="h-8 font-mono" />
             {livePrice != null && (
               <Button
@@ -301,28 +302,33 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
             )}
           </div>
         </Field>
-        <Field label="Lot size">
-          <Input inputMode="decimal" value={lot} onChange={(e) => setLot(e.target.value)}
+        <Field label="Lot size" htmlFor="order-lot">
+          <Input id="order-lot" inputMode="decimal" value={lot} onChange={(e) => setLot(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); attemptPlace(); } }}
+            aria-invalid={!validation?.ok && validation?.errors.some(m => m.toLowerCase().includes("lot"))}
             className="h-8 font-mono" />
         </Field>
-        <Field label="Stop loss">
-          <Input inputMode="decimal" value={sl} onChange={(e) => setSl(e.target.value)}
+        <Field label="Stop loss" htmlFor="order-sl">
+          <Input id="order-sl" inputMode="decimal" value={sl} onChange={(e) => setSl(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); attemptPlace(); } }}
+            aria-invalid={!validation?.ok && validation?.errors.some(m => m.toLowerCase().includes("stop"))}
             className="h-8 font-mono" placeholder="—" />
         </Field>
-        <Field label="Take profit">
-          <Input inputMode="decimal" value={tp} onChange={(e) => setTp(e.target.value)}
+        <Field label="Take profit" htmlFor="order-tp">
+          <Input id="order-tp" inputMode="decimal" value={tp} onChange={(e) => setTp(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); attemptPlace(); } }}
+            aria-invalid={!validation?.ok && validation?.errors.some(m => m.toLowerCase().includes("profit"))}
             className="h-8 font-mono" placeholder="—" />
         </Field>
-        <Field label="Risk %">
+
+        <Field label="Risk %" htmlFor="order-risk-pct">
           <div className="flex gap-1">
-            <Input inputMode="decimal" value={riskPct} onChange={(e) => setRiskPct(e.target.value)} className="h-8 font-mono" />
+            <Input id="order-risk-pct" inputMode="decimal" value={riskPct} onChange={(e) => setRiskPct(e.target.value)} className="h-8 font-mono" />
             <Button size="icon" variant="outline" className="h-8 w-8 transition-transform active:scale-95" aria-label="Calculate lot from risk" title="Calculate lot from risk" onClick={calculateSizeFromRisk}>
               <Calculator className="h-3.5 w-3.5" />
             </Button>
           </div>
+
           <div className="mt-1 flex gap-1">
             {["0.25", "0.5", "1", "2"].map((r) => (
               <button
@@ -547,14 +553,15 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, htmlFor, children }: { label: string; htmlFor?: string; children: React.ReactNode }) {
   return (
     <div>
-      <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</Label>
+      <Label htmlFor={htmlFor} className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</Label>
       <div className="mt-1">{children}</div>
     </div>
   );
 }
+
 function Row({ label, value, accent }: { label: string; value: React.ReactNode; accent?: "emerald" | "rose" }) {
   return (
     <>
