@@ -44,10 +44,11 @@ export function AnalyticsWorkspaceProvider({
 }: ProviderProps) {
   const navigate = useNavigate();
   const fetchLegacy = useServerFn(getAnalyticsDataset);
+  const { context } = useSessionContext();
 
   const legacy = useQuery({
-    queryKey: ["analytics", "legacy-dataset"],
-    queryFn: () => fetchLegacy(),
+    queryKey: ["analytics", "legacy-dataset", context.type, context.id],
+    queryFn: () => fetchLegacy({ data: { contextType: context.type, contextId: context.id } }),
     staleTime: 30_000,
     refetchOnWindowFocus: false,
   });
