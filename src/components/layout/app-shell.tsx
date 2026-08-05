@@ -354,6 +354,17 @@ function NavSection({
 }
 
 function isActive(pathname: string, to: string) {
+  // Battle Arena consolidated highlighting
+  if (to === "/battle-arena") {
+    return (
+      pathname === "/battle-arena" || 
+      pathname.startsWith("/battle-arena/") ||
+      pathname === "/championship" ||
+      pathname.startsWith("/championship/") ||
+      pathname === "/leaderboard" ||
+      pathname.startsWith("/leaderboard/")
+    );
+  }
   return pathname === to || pathname.startsWith(`${to}/`);
 }
 
