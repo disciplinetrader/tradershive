@@ -30,10 +30,12 @@ export function CoachChat({
   sessionId,
   initialMessages = [],
   onFirstMessage,
+  metadata = {},
 }: {
   sessionId?: string;
   initialMessages?: UIMessage[];
   onFirstMessage?: (text: string) => void;
+  metadata?: Record<string, any>;
 }) {
   const [input, setInput] = useState("");
   const composerRef = useRef<HTMLTextAreaElement>(null);
@@ -48,12 +50,12 @@ export function CoachChat({
           const headers: Record<string, string> = {};
           if (token) headers.Authorization = `Bearer ${token}`;
           return {
-            body: { messages, sessionId },
+            body: { messages, sessionId, metadata },
             headers,
           };
         },
       }),
-    [sessionId],
+    [sessionId, metadata],
   );
 
   const { messages, sendMessage, status, error } = useChat({

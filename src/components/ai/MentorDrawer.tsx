@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useLocation, useParams } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Sparkles, Send, Maximize2, Minimize2, MessageSquare, LineChart, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,9 +9,39 @@ import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function MentorDrawer() {
+  const location = useLocation();
+  const params = useParams({ strict: false });
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [hasNewMessage, setHasNewMessage] = useState(false);
+
+  // Derive context from route and params
+  const context = useMemo(() => {
+    const ctx: Record<string, any> = {
+      path: location.pathname,
+    };
+
+    if (location.pathname.includes("/trading")) {
+      ctx.page = "Trading Workspace";
+      if (params.symbol) ctx.symbol = params.symbol;
+    } else if (location.pathname.includes("/replay")) {
+      ctx.page = "Replay Studio";
+      if (params.sessionId) ctx.sessionId = params.sessionId;
+    } else if (location.pathname.includes("/journal")) {
+      ctx.page = "Journal X";
+      if (params.tradeId) ctx.tradeId = params.tradeId;
+    } else if (location.pathname.includes("/analytics")) {
+      ctx.page = "Analytics";
+    } else if (location.pathname.includes("/battle")) {
+      ctx.page = "Battle Arena";
+      if (params.battleId) ctx.battleId = params.battleId;
+    } else if (location.pathname.includes("/championship")) {
+      ctx.page = "Championship";
+      if (params.id) ctx.championshipId = params.id;
+    }
+
+    return ctx;
+  }, [location.pathname, params]);
 
   // Auto-suggest message after 30s of inactivity or on specific pages
   useEffect(() => {
@@ -76,9 +107,22 @@ export function MentorDrawer() {
               </div>
             </div>
 
+            {/* Context Badge */}
+            <div className="bg-primary/5 px-4 py-1.5 border-b border-border/40 flex items-center justify-between">
+              <span className="text-[10px] font-medium text-primary uppercase tracking-wider flex items-center gap-1.5">
+                <Brain className="h-3 w-3" />
+                Context: {context.page || "Global"}
+              </span>
+              {context.page && (
+                <span className="text-[10px] text-muted-foreground italic">
+                  AI is page-aware
+                </span>
+              )}
+            </div>
+
             {/* Chat Area */}
             <div className="flex-1 overflow-hidden">
-              <CoachChat />
+              <CoachChat metadata={context} />
             </div>
 
             {/* Quick Tools / Stats */}
