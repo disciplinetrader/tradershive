@@ -8,6 +8,7 @@ import {
   Library,
   Play,
   Settings2,
+  Target,
   TrendingUp,
 } from "lucide-react";
 import { SegmentedTabs } from "@/components/ui/segmented-tabs";
