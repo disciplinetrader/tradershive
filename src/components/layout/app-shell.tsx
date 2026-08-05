@@ -29,6 +29,9 @@ import { CommandPalette, useCommandPalette } from "@/components/command-palette"
 import { APP_NAME } from "@/lib/constants";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ProductTourProvider } from "@/components/tour/ProductTour";
+import { MusicPlayer } from "@/components/audio/MusicPlayer";
+import { MentorDrawer } from "@/components/ai/MentorDrawer";
+
 
 
 type NavItem = { to: string; label: string; icon: typeof Home; admin?: boolean };
