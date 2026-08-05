@@ -159,12 +159,12 @@ function SessionDetailPage() {
                 <div className="pt-4 flex flex-col gap-2">
                    <Button variant="outline" size="sm" className="w-full justify-start h-9 rounded-xl" asChild>
                     <Link to="/journal">
-                      <History className="mr-2 h-4 w-4" /> View in Journal
+                      <HistoryIcon className="mr-2 h-4 w-4" /> View in Journal
                     </Link>
                   </Button>
                   <Button variant="outline" size="sm" className="w-full justify-start h-9 rounded-xl" asChild>
                     <Link to="/settings">
-                      <Settings className="mr-2 h-4 w-4" /> Session Settings
+                      <SettingsIcon className="mr-2 h-4 w-4" /> Session Settings
                     </Link>
                   </Button>
                 </div>
