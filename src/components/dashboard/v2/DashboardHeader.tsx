@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { PageTitle } from "@/components/dashboard/v2/primitives";
 import { DashboardSubNav } from "@/components/dashboard/v2/DashboardSubNav";
 import { MarketStatusBadge } from "@/components/market/MarketStatusBadge";
