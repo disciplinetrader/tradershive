@@ -96,7 +96,7 @@ export function LiveLeaderboard({
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5">
-                            <span className="truncate font-medium">{p?.display_name ?? p?.username ?? "Trader"}</span>
+                            <span className="truncate font-medium">{p?.display_name ?? p?.username ?? "Competitor"}</span>
                             {p?.country && <CountryFlag country={p.country} className="h-3 w-4" />}
                           </div>
                         </div>
