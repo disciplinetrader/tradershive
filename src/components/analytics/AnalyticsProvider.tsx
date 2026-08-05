@@ -87,7 +87,7 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
 
   return (
     <Ctx.Provider value={value}>
-      <StatisticsProvider overrideTrades={overrideTrades} disableFetch={!!backtestId}>
+      <StatisticsProvider overrideTrades={overrideTrades} disableFetch={!!backtestId || context.type === "replay"}>
         {children}
       </StatisticsProvider>
     </Ctx.Provider>
