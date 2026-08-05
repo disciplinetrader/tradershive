@@ -121,7 +121,7 @@ export function LiveLeaderboard({
                         </div>
                       </div>
                     </td>
-                    <td className={cn("px-2 py-2 text-right tabular-nums font-semibold", Number(r.return_pct) > 0 ? "text-success" : Number(r.return_pct) < 0 ? "text-danger" : "")} title={r.rank > rankings[rankings.indexOf(r)-1]?.rank ? "" : "Tied in Return %: Tie-breaker applied (Drawdown > Trades > Time)"}>
+                    <td className={cn("px-2 py-2 text-right tabular-nums font-semibold", Number(r.return_pct) > 0 ? "text-success" : Number(r.return_pct) < 0 ? "text-danger" : "")} title={r.rank > rankings[rankings.indexOf(r)-1]?.rank ? "" : "Tied in Return %: Authoritative Tie-breaker (Drawdown > Breaches > Target Completion)"}>
                       {Number(r.return_pct).toFixed(2)}%
                     </td>
                     <td className="px-2 py-2 text-right tabular-nums text-muted-foreground text-[10px]">
@@ -131,8 +131,10 @@ export function LiveLeaderboard({
                       <>
                         <td className="px-2 py-2 text-right tabular-nums">{Number(r.r_multiple).toFixed(2)}</td>
                         <td className="px-2 py-2 text-right tabular-nums">{Number(r.win_rate).toFixed(1)}%</td>
-                        <td className="px-2 py-2 text-right tabular-nums">{r.trades_count}</td>
-                        <td className="px-2 py-2 text-right tabular-nums">{openCount || "—"}</td>
+                        <td className="px-2 py-2 text-right tabular-nums font-bold text-danger">{r.rule_breaches_count || 0}</td>
+                        <td className="px-2 py-2 text-right tabular-nums text-[10px] text-muted-foreground">
+                          {r.target_reached_at ? new Date(r.target_reached_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"}
+                        </td>
                         <td className="px-2 py-2 text-right tabular-nums text-danger/80">{Number(r.max_drawdown).toFixed(2)}%</td>
                         <td className="px-2 py-2 text-right text-[11px] text-muted-foreground">
                           {last ? new Date(last).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"}
