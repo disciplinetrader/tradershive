@@ -1366,7 +1366,7 @@ function TradingWorkspaceInner() {
               title="Expand panel"
             >
               <ChevronDown className="h-4 w-4 rotate-90" />
-              <span className="rotate-180 [writing-mode:vertical-rl]">Workspace</span>
+              <span className="rotate-180 [writing-mode:vertical-rl]">{arenaData ? "Arena" : "Workspace"}</span>
             </button>
           )}
 
