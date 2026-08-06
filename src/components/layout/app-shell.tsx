@@ -269,7 +269,7 @@ function SidebarInner({
         </div>
 
 
-        <nav className={cn("flex-1 overflow-y-auto", collapsed ? "px-2 py-3" : "p-3")}>
+        <nav className={cn("flex flex-1 flex-col overflow-y-auto", collapsed ? "px-2 py-3" : "p-3")}>
           <NavSection items={PRIMARY} collapsed={collapsed} currentPath={currentPath} />
           <div className="flex-1" />
           <NavSection
