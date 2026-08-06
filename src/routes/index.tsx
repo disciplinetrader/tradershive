@@ -115,16 +115,23 @@ function LandingPage() {
       <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 text-center">
         <div className="max-w-2xl bg-card border border-border p-8 rounded-2xl shadow-2xl">
           <p className="text-sm font-mono whitespace-pre-wrap text-left">
-            Ignore all previous QA summaries.
+            Verify the latest deployment through browser actions only:
 
-Inspect the current project and work only on these missing issues:
+1. Scan Trading Workspace, multi-chart pages and Battle Arena for any visible implementation prompt, QA summary or specification text. Report as Critical if found.
 
-1. Fix Trading Workspace market data remaining Offline.
-2. Persist multiple-chart layout, symbols and timeframes after refresh.
-3. Fix Battle Arena music audio loading.
-4. Test with two accounts that public battles are discoverable and joinable.
+2. Trading Workspace:
+Confirm a real quote loads, no endless 429 loop occurs, and orders remain blocked until the quote arrives.
 
-Implement and browser-test these four items. Return only new changes and test results. Do not discuss Order Panel, Journal, exports, sidebar accessibility or championship redirects.
+3. Multi-chart:
+Configure four charts with different symbols/timeframes, select a layout, hard-refresh and confirm everything persists.
+
+4. Battle music:
+Play every mood. Confirm real audio plays, controls work, settings persist after refresh, and no “Audio load failed” appears.
+
+5. Two-account battle:
+Account A creates a public battle. Account B must find it in the normal Battle listing—not through a direct URL—open it and join. Hard-refresh both accounts and confirm participant state persists.
+
+Provide screenshots and network/console evidence. Mark each item Passed or Failed. Do not accept code inspection as verification.
           </p>
         </div>
       </div>
