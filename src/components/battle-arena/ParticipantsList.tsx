@@ -3,8 +3,9 @@ import { Crown, Star } from "lucide-react";
 import { getRankFromElo } from "@/lib/battle-arena/constants";
 import { cn } from "@/lib/utils";
 
-type P = { user_id: string; status: string; joined_at: string };
-type Profile = { id: string; username: string | null; display_name: string | null; avatar_url: string | null; elo?: number };
+type P = { user_id: string; status: string; joined_at: string; is_ready?: boolean };
+type Profile = { id: string; username: string | null; display_name: string | null; avatar_url: string | null; elo?: number; country?: string | null };
+
 
 export function ParticipantsList({ 
   participants, 
