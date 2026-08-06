@@ -157,8 +157,9 @@ export function LiveBattleHeader({
                 ? (participantCount < battle.min_participants 
                   ? `Waiting for ${battle.min_participants - participantCount} more` 
                   : "Arena Ready")
-
-                : fmtRemaining(remainingMs)}
+                : (isLive || isCountdown)
+                  ? fmtRemaining(remainingMs)
+                  : "Arena Closed"}
             </div>
 
           </div>

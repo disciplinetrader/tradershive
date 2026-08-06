@@ -33,6 +33,7 @@ import { PaperTradingProvider } from "@/components/paper-trading/context";
 import { TradingWorkspace } from "@/components/trading/TradingWorkspace";
 import { ArenaCommandRail } from "@/components/battle-arena/ArenaCommandRail";
 import { BattleStartIntro } from "@/components/battle-arena/lobby/BattleStartIntro";
+import { CountdownTimer } from "@/components/battle-arena/CountdownTimer";
 
 
 
@@ -245,11 +246,12 @@ function BattleDetail() {
                 <Badge variant="default" className="bg-success text-success-foreground font-black text-[10px] animate-pulse">LIVE</Badge>
               </div>
               <div className="flex items-center gap-6">
-                <div className="flex flex-col items-center">
-                  <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Timer</span>
-                  <div className="font-mono text-sm font-bold">{/* Timer handled by Header or internal */}</div>
+                <div className="flex flex-col items-end">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Remaining</span>
+                  <div className="font-mono text-sm font-bold text-success">
+                    <CountdownTimer to={battle.end_at} />
+                  </div>
                 </div>
-                {/* Stats summary can go here or be part of Command Rail */}
               </div>
             </div>
             

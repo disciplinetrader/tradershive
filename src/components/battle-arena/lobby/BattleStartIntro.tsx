@@ -27,7 +27,10 @@ export function BattleStartIntro({ onComplete }: { onComplete: () => void }) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-[100] flex items-center justify-center bg-background/95 backdrop-blur-xl"
-          onClick={onComplete}
+          onClick={(e) => {
+            e.stopPropagation();
+            onComplete();
+          }}
         >
           <div className="absolute inset-0 overflow-hidden opacity-20">
             <div className="absolute -top-1/2 left-1/2 h-[1000px] w-[1000px] -translate-x-1/2 rounded-full bg-primary/30 blur-[120px] animate-pulse" />

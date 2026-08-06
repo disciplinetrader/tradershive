@@ -286,6 +286,12 @@ function SidebarInner({
           />
         </nav>
 
+        <div className="flex-1" />
+        
+        <div className="px-3 py-2">
+          <MusicPlayer />
+        </div>
+
         {!collapsed ? (
           <div className="m-3 rounded-md border border-sidebar-border bg-sidebar-accent/50 p-4">
             <div className="flex items-center gap-2 text-xs font-semibold text-primary">

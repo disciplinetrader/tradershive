@@ -146,8 +146,8 @@ export function MusicPlayer({ embedded = false }: { embedded?: boolean }) {
     if (isPlaying) {
       audioRef.current?.pause();
     } else {
-      audioRef.current?.play().catch(() => {
-        // Handle autoplay restrictions
+      audioRef.current?.play().catch((e) => {
+        console.warn("Autoplay blocked or audio error:", e);
         setHasError(true);
       });
     }
@@ -184,21 +184,21 @@ export function MusicPlayer({ embedded = false }: { embedded?: boolean }) {
 
   return (
     <div className={cn(
-      embedded ? "w-full" : "fixed bottom-6 left-6 z-[100] transition-all duration-300",
-      !embedded && (isCollapsed ? "w-12 h-12" : "w-72 bg-background/95 border border-border/60 rounded-2xl shadow-2xl backdrop-blur-xl p-4")
+      embedded ? "w-full" : "relative z-[100] transition-all duration-300",
+      !embedded && (isCollapsed ? "w-full flex justify-center" : "w-full bg-background/95 border border-border/60 rounded-2xl shadow-2xl backdrop-blur-xl p-4")
     )}>
       <audio
         ref={audioRef}
         src={currentTrack.url}
-        preload="none"
+        preload="auto"
       />
 
       {isCollapsed && !embedded ? (
         <Button
-          variant="outline"
+          variant="ghost"
           size="icon"
           onClick={() => setIsCollapsed(false)}
-          className="w-12 h-12 rounded-full border-primary/20 bg-background/80 hover:bg-primary/5 transition-all shadow-lg"
+          className="w-10 h-10 rounded-xl text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all"
           aria-label="Expand music player"
         >
           {isPlaying ? (
