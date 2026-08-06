@@ -221,10 +221,37 @@ export const joinBattle = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ battleId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    const { data: id, error } = await context.supabase.rpc("join_battle", { _battle_id: data.battleId });
+    const { supabase } = context;
+    const { data: id, error } = await supabase.rpc("join_battle", { _battle_id: data.battleId });
     if (error) throw error;
+
+    // Auto-start 1v1 if 2 players joined
+    const { data: battle } = await supabase
+      .from("battles")
+      .select("battle_type, min_participants, status")
+      .eq("id", data.battleId)
+      .maybeSingle();
+
+    if (battle && battle.battle_type === "1v1" && ["open", "filling", "upcoming", "ready"].includes(battle.status)) {
+      const { count } = await supabase
+        .from("battle_participants")
+        .select("id", { count: "exact", head: true })
+        .eq("battle_id", data.battleId);
+
+      if ((count ?? 0) >= 2) {
+        await supabase
+          .from("battles")
+          .update({ 
+            status: "live",
+            start_at: new Date().toISOString()
+          })
+          .eq("id", data.battleId);
+      }
+    }
+
     return { battleId: id as string };
   });
+
 
 export const joinByInviteCode = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

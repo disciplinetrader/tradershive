@@ -219,10 +219,38 @@ function BattleDetail() {
 
     return (
       <div className="flex h-[calc(100dvh-64px)] w-full flex-col overflow-hidden bg-background">
-        <TradingWorkspace accountId={battleAccountId} />
+        <div className="flex h-full w-full overflow-hidden">
+          <div className="flex-1 flex flex-col min-w-0">
+            {/* Header Area within live workspace */}
+            <div className="h-14 border-b border-border/40 bg-card/20 px-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Link to="/battle-arena" className="text-muted-foreground hover:text-foreground">
+                  <Badge variant="outline" className="h-7 font-black bg-background/50">HIVE ARENA</Badge>
+                </Link>
+                <div className="h-4 w-[1px] bg-border/40" />
+                <h1 className="font-bold tracking-tight text-sm uppercase">{battle.name}</h1>
+                <Badge variant="default" className="bg-success text-success-foreground font-black text-[10px] animate-pulse">LIVE</Badge>
+              </div>
+              <div className="flex items-center gap-6">
+                <div className="flex flex-col items-center">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Timer</span>
+                  <div className="font-mono text-sm font-bold">{/* Timer handled by Header or internal */}</div>
+                </div>
+                {/* Stats summary can go here or be part of Command Rail */}
+              </div>
+            </div>
+            
+            <TradingWorkspace accountId={battleAccountId} />
+          </div>
+          
+          <div className="w-80 border-l border-border/40 hidden xl:block overflow-hidden">
+            <ArenaCommandRail battle={battle} stats={statsQ.data as any} profiles={profiles} />
+          </div>
+        </div>
       </div>
     );
   }
+
 
   return (
 
