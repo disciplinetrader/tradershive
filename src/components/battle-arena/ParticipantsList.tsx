@@ -1,5 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Crown, Star, ShieldCheck, Timer } from "lucide-react";
+import { Crown, Star, ShieldCheck, Timer, Check, Users } from "lucide-react";
 import { getRankFromElo } from "@/lib/battle-arena/constants";
 import { cn } from "@/lib/utils";
 
@@ -19,7 +19,7 @@ export function ParticipantsList({
   isLobby?: boolean;
 }) {
   const byId = new Map(profiles.map((p) => [p.id, p]));
-  
+
   return (
     <div className={cn(
       "rounded-3xl border border-border/60 bg-card/20 overflow-hidden shadow-xl shadow-background/10",
@@ -50,64 +50,79 @@ export function ParticipantsList({
             const pr = byId.get(p.user_id);
             const elo = pr?.elo || 1000;
             const rank = getRankFromElo(elo);
+            const isHost = p.user_id === hostId;
             
             return (
-              <li key={p.user_id} className="group flex items-center justify-between px-6 py-3.5 transition-colors hover:bg-background/40">
+              <li 
+                key={p.user_id} 
+                className={cn(
+                  "group flex items-center justify-between px-6 py-3.5 transition-all duration-300",
+                  p.is_ready ? "bg-success/5" : "hover:bg-background/40"
+                )}
+              >
                 <div className="flex items-center gap-3">
                   <div className="relative">
-                    <Avatar className="h-10 w-10 border-2 border-border/40 group-hover:border-primary/40 transition-colors shadow-lg shadow-background/20">
+                    <Avatar className={cn(
+                      "h-10 w-10 border-2 transition-colors shadow-lg shadow-background/20",
+                      p.is_ready ? "border-success" : "border-border/40 group-hover:border-primary/40"
+                    )}>
                       <AvatarImage src={pr?.avatar_url ?? undefined} />
                       <AvatarFallback className="font-black text-xs">{(pr?.display_name ?? pr?.username ?? "?").slice(0, 1)}</AvatarFallback>
                     </Avatar>
-                    {p.user_id === hostId && (
-                      <div className="absolute -top-1 -right-1 bg-warning rounded-full p-0.5 border border-background shadow-lg shadow-warning/20">
-                        <Crown className="h-2.5 w-2.5 text-warning-foreground" />
+                    {isHost && (
+                      <div className="absolute -right-1 -top-1 rounded-full bg-primary p-0.5 text-white shadow-lg shadow-primary/40">
+                        <Crown className="h-3 w-3" />
                       </div>
                     )}
                   </div>
-                  <div>
+                  <div className="flex flex-col">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-black text-foreground group-hover:text-primary transition-colors">{pr?.display_name ?? pr?.username ?? "Competitor"}</span>
-                      <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/40">{p.user_id === hostId ? "Host" : "Competitor"}</span>
+                      <span className="text-sm font-bold tracking-tight">
+                        {pr?.display_name || pr?.username || "Competitor"}
+                      </span>
+                      {p.is_ready && (
+                        <div className="flex items-center gap-1 rounded-full bg-success/10 px-1.5 py-0.5 text-[8px] font-black uppercase text-success">
+                          <Check className="h-2.5 w-2.5" /> Locked In
+                        </div>
+                      )}
                     </div>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <div className="flex items-center gap-1 text-[10px] font-bold" style={{ color: rank.color }}>
-                        <Star className="h-3 w-3 fill-current" />
-                        {elo}
-                      </div>
-                      <span className="text-muted-foreground/30">•</span>
-                      <div className="text-[10px] text-muted-foreground/60 font-bold uppercase tracking-tight">
-                        Joined {new Date(p.joined_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <span className={cn("text-[10px] font-black uppercase tracking-tighter", rank.color)}>
+                        {rank.name}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground/60">•</span>
+                      <span className="text-[10px] font-bold text-muted-foreground/80">{elo} HR</span>
                     </div>
                   </div>
                 </div>
-                <div className="flex flex-col items-end gap-1.5">
-                  <div className="flex items-center gap-2">
-                    {p.is_ready ? (
-                      <span className="flex items-center gap-1.5 rounded-lg bg-success/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-success border border-success/20">
-                        <ShieldCheck className="h-3 w-3" /> Ready
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1.5 rounded-lg bg-warning/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-warning border border-warning/20">
-                        <Timer className="h-3 w-3" /> Waiting
-                      </span>
-                    )}
-                    <span className={cn(
-                      "rounded-lg px-2 py-0.5 text-[9px] font-black uppercase tracking-widest border",
-                      p.status === 'trading' ? "bg-success/5 text-success border-success/20 animate-pulse" : 
-                      p.status === 'watching' ? "bg-primary/5 text-primary border-primary/20" :
-                      "bg-muted/40 text-muted-foreground/60 border-border/40"
-                    )}>
-                      {p.status}
-                    </span>
-                  </div>
 
+                <div className="flex items-center gap-2">
+                  {isLobby && (
+                    <div className={cn(
+                      "flex h-8 w-8 items-center justify-center rounded-xl border transition-all duration-500",
+                      p.is_ready 
+                        ? "border-success/30 bg-success/10 text-success shadow-sm shadow-success/10" 
+                        : "border-border/60 bg-muted/40 text-muted-foreground/40"
+                    )}>
+                      {p.is_ready ? <ShieldCheck className="h-4 w-4" /> : <Timer className="h-4 w-4" />}
+                    </div>
+                  )}
                 </div>
               </li>
             );
           })}
         </ul>
+      )}
+
+      {isLobby && participants.length > 0 && participants.length < 4 && (
+        <div className="p-4 border-t border-border/60 bg-primary/5">
+           <div className="flex flex-col items-center text-center">
+             <div className="text-[10px] font-black uppercase tracking-widest text-primary/60 mb-1">Staging Area</div>
+             <p className="text-[10px] text-muted-foreground leading-relaxed">
+               Arena requires at least 2 competitors to begin countdown. Invite more allies to the HIVE.
+             </p>
+           </div>
+        </div>
       )}
     </div>
   );
