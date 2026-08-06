@@ -165,7 +165,9 @@ function TradingWorkspaceInner() {
     setActiveSlot,
     updatePane,
     promotePane,
+    sendSymbolToActiveSlot,
   } = useChartLayout();
+
 
   useSlTpMonitor(account);
   useRiskMonitor(account);
