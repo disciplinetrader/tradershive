@@ -2,7 +2,7 @@ import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, MoreHorizontal, PlayCircle, RefreshCw } from "lucide-react";
+import { ArrowLeft, BarChart3, MoreHorizontal, PlayCircle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useActivePropChallenge } from "@/lib/prop-challenges/active-session";
 import { PageHeader } from "@/components/ui/page-header";
