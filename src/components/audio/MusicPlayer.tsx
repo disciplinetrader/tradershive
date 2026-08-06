@@ -36,28 +36,28 @@ const TRACKS: Track[] = [
     id: "focus-1",
     title: "Focus Pulse",
     artist: "TradersHIVE Original",
-    url: "https://cdn.pixabay.com/audio/2022/05/27/audio_1808f3030e.mp3", // Ambient focus
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
     mood: "Focus"
   },
   {
     id: "calm-1",
     title: "Midnight Market",
     artist: "TradersHIVE Original",
-    url: "https://cdn.pixabay.com/audio/2022/03/15/audio_730623194a.mp3", // Calm lo-fi
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
     mood: "Calm"
   },
   {
     id: "momentum-1",
     title: "Bull Run",
     artist: "TradersHIVE Original",
-    url: "https://cdn.pixabay.com/audio/2022/01/18/audio_d0a13f69d2.mp3", // Energetic
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
     mood: "Momentum"
   },
   {
     id: "deep-work-1",
     title: "The Zone",
     artist: "TradersHIVE Original",
-    url: "https://cdn.pixabay.com/audio/2021/11/25/audio_91b32e02d9.mp3", // Deep ambient
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
     mood: "Deep Work"
   }
 ];
