@@ -24,13 +24,18 @@ import {
   Rocket,
   Shield,
   Sparkles,
+  Star,
+  Swords,
   Target,
   TrendingUp,
+  Trophy,
   Twitter,
   Video,
   X,
   Zap,
 } from "lucide-react";
+
+
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -118,10 +123,12 @@ function LandingPage() {
         <Hero />
         <TrustBar />
         <FeatureOverview />
+        <BattleArenaShowcase />
         <ReplayShowcase />
         <AICoachShowcase />
         <AnalyticsShowcase />
         <WorkspaceShowcase />
+
         <Comparison />
         <BetaSection />
         <Roadmap />
@@ -164,8 +171,10 @@ function AmbientBackground() {
 
 const NAV_LINKS: { label: string; href: string; badge?: string }[] = [
   { label: "Features", href: "#features" },
+  { label: "Battle Arena", href: "#battles" },
   { label: "Replay Studio", href: "#replay" },
   { label: "AI Coach", href: "#ai" },
+
   { label: "Pricing", href: "#pricing", badge: "Soon" },
   { label: "Roadmap", href: "#roadmap" },
   { label: "FAQ", href: "#faq" },
@@ -708,11 +717,12 @@ const BENTO_SMALL: { icon: typeof Film; title: string; desc: string; href: strin
     href: "#workspace",
   },
   {
-    icon: TrendingUp,
-    title: "Global Rankings",
-    desc: "Climb the leaderboard and prove your edge against traders worldwide.",
-    href: "#workspace",
+    icon: Swords,
+    title: "Battle Arena",
+    desc: "Prove your edge in real-time competitive trading matches with the HIVE community.",
+    href: "#battles",
   },
+
 ];
 
 function BentoTile({
@@ -1152,12 +1162,88 @@ function WorkspaceShowcase() {
   );
 }
 
+function BattleArenaShowcase() {
+  return (
+    <Showcase
+      id="battles"
+      eyebrow="HIVE Battle Arena"
+      title={
+        <>
+          Competitive trading,{" "}
+          <span className="bg-gradient-to-br from-primary to-primary/60 bg-clip-text text-transparent">
+            proven in the arena.
+          </span>
+        </>
+      }
+      description="Compete in real-time trading battles against the community. Climb the HIVE Rankings from Initiate to Sovereign, prove your strategy under pressure, and earn seasonal rewards."
+      bullets={[
+        { icon: Swords, label: "Live 1v1 and multiplayer FFA matches" },
+        { icon: Trophy, label: "HIVE Ranking Points (RP) & ELO tiers" },
+        { icon: Target, label: "Time Trial & Profit Target formats" },
+        { icon: Star, label: "Global leaderboards & seasonal rewards" },
+      ]}
+      visual={
+        <MockPanel title="HIVE Arena · Active Match" tag="Live">
+          <div className="p-5 space-y-4">
+            <div className="flex items-center justify-between gap-4 rounded-2xl bg-primary/5 border border-primary/20 p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                  <Swords className="h-5 w-5" />
+                </div>
+                <div>
+                  <div className="text-[10px] font-black uppercase tracking-widest text-primary/60">Arena Match</div>
+                  <div className="text-sm font-black italic">SOLANA SPRINT #42</div>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Ends In</div>
+                <div className="text-sm font-black tabular-nums">14:52</div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">Leaderboard</div>
+              {[
+                { rank: 1, name: "Apex_Trader", pnl: "+4.2%", RP: "+12", avatar: "A" },
+                { rank: 2, name: "HiveMind", pnl: "+2.8%", RP: "+8", avatar: "H" },
+                { rank: 3, name: "MarketMaker", pnl: "+1.5%", RP: "+4", avatar: "M" },
+              ].map((p, i) => (
+                <div key={p.name} className={cn(
+                  "flex items-center gap-3 rounded-xl p-2 bg-background/40 border border-border/20 transition-all hover:bg-background/60",
+                  i === 0 && "ring-1 ring-warning/30 bg-warning/5 border-warning/20"
+                )}>
+                  <div className={cn(
+                    "h-6 w-6 rounded-lg flex items-center justify-center text-[10px] font-black",
+                    i === 0 ? "bg-warning text-warning-foreground" : "bg-muted text-muted-foreground"
+                  )}>{p.rank}</div>
+                  <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold">{p.avatar}</div>
+                  <div className="flex-1 text-xs font-bold">{p.name}</div>
+                  <div className="text-xs font-black text-success italic">{p.pnl}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-2">
+              <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                <div className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
+                12 Players Active in HIVE
+              </div>
+            </div>
+          </div>
+        </MockPanel>
+      }
+    />
+  );
+}
+
+
 /* ================================================================== */
 /* Comparison                                                           */
 /* ================================================================== */
 
 function Comparison() {
   const rows = [
+    { l: "Competitive trading (HIVE Arena)", a: false, b: true },
     { l: "Market replay & backtesting", a: false, b: true },
     { l: "Auto-populated trade journal", a: false, b: true },
     { l: "Sharpe, Sortino, drawdown analytics", a: false, b: true },

@@ -9,7 +9,7 @@ type BattleRow = {
   id: string; 
   name: string; 
   description: string | null; 
-  status: BattleStatus; 
+  status: any; 
   visibility: string;
   battle_type: string; 
   market: string; 
@@ -19,7 +19,7 @@ type BattleRow = {
   max_participants: number; 
   starting_balance: number; 
   featured: boolean;
-  ranked?: boolean;
+  ranked?: boolean | null;
   profit_target_pct?: number | null;
   duration_minutes?: number | null;
 };

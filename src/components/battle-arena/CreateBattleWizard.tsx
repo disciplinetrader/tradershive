@@ -312,8 +312,8 @@ export function CreateBattleWizard({ onCancel, onCreated }: { onCancel: () => vo
             Continue <ChevronRight className="ml-2 h-4 w-4" />
           </Button>
         ) : (
-          <Button disabled={loading} onClick={submit} className="font-bold rounded-xl h-11 px-10 shadow-lg shadow-primary/30">
-            {loading ? "Preparing Battle..." : "Launch Battle Arena"}
+          <Button disabled={loading} onClick={submit} className="font-black rounded-xl h-11 px-10 shadow-lg shadow-primary/30">
+            {loading ? "Creating..." : "Launch Arena"}
           </Button>
         )}
       </div>
@@ -321,11 +321,11 @@ export function CreateBattleWizard({ onCancel, onCreated }: { onCancel: () => vo
   );
 }
 
-function Review({ label, value }: { label: string; value: string }) {
+function Review({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="flex items-center justify-between rounded-xl bg-card/30 border border-border/40 px-4 py-2.5 hover:bg-card/50 transition-colors">
-      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{label}</span>
-      <span className="text-xs font-black text-foreground">{value}</span>
+    <div className="flex flex-col gap-0.5 rounded-xl border border-border/20 bg-background/40 p-3">
+      <div className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">{label}</div>
+      <div className="text-xs font-black tracking-tight truncate">{value}</div>
     </div>
   );
 }

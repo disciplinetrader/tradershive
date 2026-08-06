@@ -1,28 +1,15 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
-import { PageHeader } from "@/components/ui/page-header";
-import { Button } from "@/components/ui/button";
-import { Plus, Flame, Clock, History, Swords, Search, Filter, Zap, Target } from "lucide-react";
-import { listBattles, listMyBattleStats, tickBattles, joinRandom, getMatchmakingStatus, cancelMatchmaking } from "@/lib/battle-arena.functions";
-import { BattleCard } from "@/components/battle-arena/BattleCard";
-import { MyBattleStats } from "@/components/battle-arena/MyBattleStats";
-import { JoinByCodeDialog } from "@/components/battle-arena/JoinByCodeDialog";
+import { createFileRoute } from "@tanstack/react-router";
+import { Suspense, useState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RankingCard } from "@/components/battle-arena/lobby/RankingCard";
+import { LobbyRightRail } from "@/components/battle-arena/lobby/LobbyRightRail";
+import { BattleList } from "@/components/battle-arena/lobby/BattleList";
+import { Swords, History, BookOpen, Sparkles } from "lucide-react";
 import { CardGridSkeleton } from "@/components/ui/skeletons";
+
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuLabel, 
-  DropdownMenuRadioGroup, 
-  DropdownMenuRadioItem, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
-} from "@/components/ui/dropdown-menu";
 
 export const Route = createFileRoute("/_authenticated/battle-arena/")({
   head: () => ({
@@ -30,44 +17,20 @@ export const Route = createFileRoute("/_authenticated/battle-arena/")({
       { title: "Battle Arena — TradersHIVE" },
       {
         name: "description",
-        content:
-          "Compete in live trading battles, climb the ranks from Initiate to Sovereign, and win prizes.",
+        content: "Compete in live trading battles, climb the Ranking, and dominate the arena.",
       },
     ],
   }),
-  component: BattleArenaHome,
+  component: BattleArenaLobby,
 });
 
-function BattleArenaHome() {
+function BattleArenaLobby() {
   const qc = useQueryClient();
-  const fnList = useServerFn(listBattles);
-  const fnStats = useServerFn(listMyBattleStats);
-  const fnTick = useServerFn(tickBattles);
-  const fnJoinRandom = useServerFn(joinRandom);
-  const fnGetQueue = useServerFn(getMatchmakingStatus);
-  const fnCancelQueue = useServerFn(cancelMatchmaking);
-
-  const [search, setSearch] = useState("");
-  const [filterType, setFilterType] = useState<string>("all");
-
-  const featured = useQuery({ queryKey: ["battles", "featured"], queryFn: () => fnList({ data: { scope: "featured", limit: 6 } }) });
-  const live = useQuery({ queryKey: ["battles", "live"], queryFn: () => fnList({ data: { scope: "live", limit: 12 } }), refetchInterval: 15000 });
-  const upcoming = useQuery({ queryKey: ["battles", "upcoming"], queryFn: () => fnList({ data: { scope: "upcoming", limit: 12 } }) });
-  const ranked = useQuery({ queryKey: ["battles", "ranked"], queryFn: () => fnList({ data: { scope: "ranked", limit: 12 } }) });
-  const mine = useQuery({ queryKey: ["battles", "mine"], queryFn: () => fnList({ data: { scope: "mine", limit: 12 } }) });
-  const history = useQuery({ queryKey: ["battles", "history"], queryFn: () => fnList({ data: { scope: "history", limit: 6 } }) });
-  const stats = useQuery({ queryKey: ["battles", "stats"], queryFn: () => fnStats() });
-  const queue = useQuery({ queryKey: ["matchmaking", "status"], queryFn: () => fnGetQueue(), refetchInterval: 5000 });
-
-  useEffect(() => {
-    const t = setInterval(() => { fnTick().catch(() => {}); }, 30000);
-    fnTick().catch(() => {});
-    return () => clearInterval(t);
-  }, [fnTick]);
+  const [activeTab, setActiveTab] = useState("all");
 
   useEffect(() => {
     const ch = supabase
-      .channel("battles-home")
+      .channel("battles-lobby")
       .on("postgres_changes", { event: "*", schema: "public", table: "battles" }, () => {
         qc.invalidateQueries({ queryKey: ["battles"] });
       })
@@ -75,195 +38,81 @@ function BattleArenaHome() {
     return () => { supabase.removeChannel(ch); };
   }, [qc]);
 
-  const handleJoinRandom = async (ranked: boolean) => {
-    try {
-      const res = await fnJoinRandom({ data: { battleType: "profit_target", isRanked: ranked } });
-      if (res.battleId) {
-        toast.success("Found a match! Joining arena...");
-      } else {
-        toast.success("Joined matchmaking queue.");
-        qc.invalidateQueries({ queryKey: ["matchmaking"] });
-      }
-    } catch (err: any) {
-      toast.error(err.message || "Matchmaking failed");
-    }
-  };
-
-  const handleCancelQueue = async () => {
-    try {
-      await fnCancelQueue();
-      toast.success("Left matchmaking queue.");
-      qc.invalidateQueries({ queryKey: ["matchmaking"] });
-    } catch (err: any) {
-      toast.error("Failed to leave queue");
-    }
-  };
-
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2">
-            <Swords className="h-6 w-6 text-primary" />
+    <div className="flex h-full w-full gap-8 animate-in fade-in duration-500">
+      <div className="flex-1 space-y-8 min-w-0">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <Swords className="h-5 w-5" />
+            </div>
             <h1 className="text-3xl font-black tracking-tight">Battle Arena</h1>
           </div>
-          <p className="text-sm text-muted-foreground max-w-lg font-medium leading-relaxed">
-            Compete in real-time paper trading matches. Dominate the HIVE Rating leaderboard, 
-            prove your consistency, and climb from Initiate to Sovereign.
+          <p className="text-sm text-muted-foreground font-medium max-w-2xl">
+            Real-time competitive trading. Prove your edge, climb from Initiate to Sovereign, 
+            and earn Ranking Points by outperforming the market and your peers.
           </p>
         </div>
-        
-        <div className="flex flex-wrap items-center gap-2">
-          {queue.data ? (
-            <div className="flex items-center gap-3 rounded-full bg-primary/10 pl-4 pr-1 py-1 border border-primary/20">
-              <span className="flex items-center gap-2 text-xs font-bold text-primary animate-pulse">
-                <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                Finding Match...
-              </span>
-              <Button size="icon" variant="ghost" className="h-7 w-7 rounded-full hover:bg-primary/20 hover:text-primary" onClick={handleCancelQueue}>
-                <Plus className="h-3.5 w-3.5 rotate-45" />
-              </Button>
+
+        <Suspense fallback={<div className="h-40 w-full animate-pulse rounded-3xl bg-muted/20" />}>
+          <RankingCard />
+        </Suspense>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="mb-6 h-auto w-full justify-start gap-1 rounded-2xl border border-border/40 bg-card/20 p-1 backdrop-blur-md sm:w-auto">
+            <TabsTrigger value="all" className="rounded-xl px-4 py-2 text-xs font-black uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Zap className="mr-2 h-3.5 w-3.5" /> All Battles
+            </TabsTrigger>
+            <TabsTrigger value="mine" className="rounded-xl px-4 py-2 text-xs font-black uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <History className="mr-2 h-3.5 w-3.5" /> My Battles
+            </TabsTrigger>
+            <TabsTrigger value="guide" className="rounded-xl px-4 py-2 text-xs font-black uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <BookOpen className="mr-2 h-3.5 w-3.5" /> How to use?
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="all" className="mt-0 focus-visible:outline-none">
+            <Suspense fallback={<CardGridSkeleton count={6} />}>
+              <BattleList scope="all" />
+            </Suspense>
+          </TabsContent>
+
+          <TabsContent value="mine" className="mt-0 focus-visible:outline-none">
+            <Suspense fallback={<CardGridSkeleton count={6} />}>
+              <BattleList scope="mine" />
+            </Suspense>
+          </TabsContent>
+
+          <TabsContent value="guide" className="mt-0 focus-visible:outline-none">
+            <div className="flex flex-col items-center gap-6 rounded-[40px] border border-border/40 bg-card/20 px-6 py-16 text-center backdrop-blur-xl">
+              <div className="grid h-16 w-16 place-items-center rounded-[20px] bg-primary/10 text-primary">
+                <Sparkles className="h-8 w-8" />
+              </div>
+              <div className="max-w-md space-y-2">
+                <h3 className="text-xl font-black tracking-tight">Arena Masterclass</h3>
+                <p className="text-sm text-muted-foreground font-medium">
+                  Learn how to master the arena, manage your risk, and climb the tiers efficiently.
+                </p>
+              </div>
+              <div className="aspect-video w-full max-w-2xl overflow-hidden rounded-[32px] border border-border/60 bg-muted/20 shadow-2xl">
+                <div className="flex h-full w-full items-center justify-center">
+                  <BookOpen className="h-12 w-12 text-muted-foreground/20" />
+                </div>
+              </div>
             </div>
-          ) : (
-            <>
-              <Button size="sm" variant="outline" className="h-9 font-bold px-4" onClick={() => handleJoinRandom(true)}>
-                <Zap className="mr-2 h-4 w-4 fill-primary text-primary" /> Competitive Match
-              </Button>
-              <Button size="sm" variant="outline" className="h-9 font-bold px-4" onClick={() => handleJoinRandom(false)}>
-                Quick Match
-              </Button>
-            </>
-          )}
-          <JoinByCodeDialog />
-          <Button asChild size="sm" className="h-9 font-bold px-4 shadow-lg shadow-primary/20">
-            <Link to="/battle-arena/create"><Plus className="mr-1.5 h-4 w-4" />Create Arena Match</Link>
-          </Button>
-        </div>
+          </TabsContent>
+        </Tabs>
       </div>
 
-      <MyBattleStats data={stats.data} />
-
-      <div className="flex flex-col sm:flex-row items-center gap-3">
-        <div className="relative w-full sm:max-w-md group">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" />
-          <Input 
-            placeholder="Search matches..." 
-            className="pl-9 bg-card/40 border-border/60 rounded-xl focus:ring-primary/20"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="rounded-xl border-border/60 bg-card/40 font-bold">
-              <Filter className="mr-2 h-4 w-4" /> Filter
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48 rounded-xl">
-            <DropdownMenuLabel>Arena Type</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuRadioGroup value={filterType} onValueChange={setFilterType}>
-              <DropdownMenuRadioItem value="all">All Types</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="ranked">Competitive Only</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="profit_target">Target Chase</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="time_trial">Market Sprint</DropdownMenuRadioItem>
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-10">
-          <Section
-            title="Featured Events" icon={Flame} items={featured.data} loading={featured.isLoading}
-            empty={{ title: "No featured events", body: "Check back later for curated competitions." }}
-          />
-          
-          <Section
-            title="Live Arenas" icon={Target} items={live.data} loading={live.isLoading} pulse
-            empty={{ title: "No live arenas", body: "Kick off a session to get listed here." }}
-          />
-
-          <Section
-            title="Competitive Standings" icon={Zap} items={ranked.data} loading={ranked.isLoading}
-            empty={{ title: "No competitive activity", body: "Arena matches are quiet right now." }}
-          />
-
-          <Section
-            title="Upcoming Events" icon={Clock} items={upcoming.data} loading={upcoming.isLoading}
-            empty={{ title: "Nothing scheduled", body: "Schedule a future match to build hype." }}
-          />
-        </div>
-
-        <div className="space-y-10">
-          <Section
-            title="Arena Records" icon={History} items={mine.data} loading={mine.isLoading} isCompact
-            empty={{ title: "No records yet", body: "Join your first arena to see history." }}
-          />
-          
-          <Section
-            title="Recent Hall of Fame" icon={History} items={history.data} loading={history.isLoading} isCompact
-            empty={{ title: "Arena is new", body: "Finished results will appear here." }}
-          />
-        </div>
-      </div>
+      <Suspense fallback={<div className="hidden w-80 animate-pulse rounded-3xl bg-muted/20 xl:block" />}>
+        <LobbyRightRail />
+      </Suspense>
     </div>
   );
 }
 
-type EmptyCopy = {
-  title: string;
-  body?: string;
-};
-
-function Section({ 
-  title, 
-  icon: Icon, 
-  items, 
-  loading, 
-  empty, 
-  pulse,
-  isCompact
-}: { 
-  title: string; 
-  icon: React.ComponentType<{ className?: string }>; 
-  items?: any[]; 
-  loading?: boolean; 
-  empty: EmptyCopy; 
-  pulse?: boolean;
-  isCompact?: boolean;
-}) {
-  return (
-    <section className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className={`p-2 rounded-xl bg-primary/5 border border-primary/10 ${pulse ? "animate-pulse" : ""}`}>
-            <Icon className="h-4 w-4 text-primary" />
-          </div>
-          <h2 className="text-xl font-black tracking-tight">{title}</h2>
-        </div>
-        {items && items.length > 0 && (
-          <Badge variant="outline" className="rounded-full font-bold px-2.5 bg-card/30">
-            {items.length}
-          </Badge>
-        )}
-      </div>
-
-      {loading && !items ? (
-        <CardGridSkeleton count={isCompact ? 2 : 3} cardClassName={isCompact ? "h-32" : "h-48"} />
-      ) : !items?.length ? (
-        <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border/60 bg-card/20 px-6 py-10 text-center">
-          <div className="grid h-12 w-12 place-items-center rounded-2xl bg-muted/40 text-muted-foreground/60"><Icon className="h-6 w-6" /></div>
-          <div>
-            <div className="text-sm font-bold text-foreground">{empty.title}</div>
-            {empty.body ? <p className="mt-1 max-w-sm text-xs text-muted-foreground font-medium">{empty.body}</p> : null}
-          </div>
-        </div>
-      ) : (
-        <div className={`animate-content-in grid grid-cols-1 gap-4 ${isCompact ? "" : "sm:grid-cols-2"}`}>
-          {items.map((b) => <BattleCard key={b.id} battle={b} />)}
-        </div>
-      )}
-    </section>
-  );
-}
+const Zap = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+  </svg>
+);
