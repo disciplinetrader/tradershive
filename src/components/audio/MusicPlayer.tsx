@@ -190,7 +190,7 @@ export function MusicPlayer({ embedded = false }: { embedded?: boolean }) {
       <audio
         ref={audioRef}
         src={currentTrack.url}
-        preload="none"
+        preload="auto"
       />
 
       {isCollapsed && !embedded ? (
