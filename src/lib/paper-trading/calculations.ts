@@ -70,8 +70,9 @@ export function tradeCalculation(params: {
   // Orientational sanity: if stop loss or take profit are on the wrong side
   // for the trade direction, we treat them as unset to avoid showing misleading
   // risk/reward or distance numbers in the UI.
-  const effectiveSl = sl != null ? (side === "buy" ? (sl < entry ? sl : null) : (sl > entry ? sl : null)) : null;
-  const effectiveTp = tp != null ? (side === "buy" ? (tp > entry ? tp : null) : (tp < entry ? tp : null)) : null;
+  const effectiveSl = sl != null ? (side === "long" ? (sl < entry ? sl : null) : (sl > entry ? sl : null)) : null;
+  const effectiveTp = tp != null ? (side === "long" ? (tp > entry ? tp : null) : (tp < entry ? tp : null)) : null;
+
 
   const pipDistance = effectiveSl ? pipsBetween(sym, entry, effectiveSl) : 0;
   const pipReward = effectiveTp ? pipsBetween(sym, entry, effectiveTp) : 0;
