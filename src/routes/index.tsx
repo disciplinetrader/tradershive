@@ -717,11 +717,12 @@ const BENTO_SMALL: { icon: typeof Film; title: string; desc: string; href: strin
     href: "#workspace",
   },
   {
-    icon: TrendingUp,
-    title: "Global Rankings",
-    desc: "Climb the leaderboard and prove your edge against traders worldwide.",
-    href: "#workspace",
+    icon: Swords,
+    title: "Battle Arena",
+    desc: "Prove your edge in real-time competitive trading matches with the HIVE community.",
+    href: "#battles",
   },
+
 ];
 
 function BentoTile({
