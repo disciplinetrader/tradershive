@@ -211,8 +211,21 @@ function BattleDetail() {
   const onlineCount = (presenceQ.data ?? []).filter((p: any) => p.status !== "disconnected").length;
 
   const isLobby = ["draft", "upcoming", "open", "filling", "ready", "countdown"].includes(battle.status);
+  const isLive = battle.status === "live";
+
+  if (isLive) {
+    const myParticipant = participants.find((p: any) => p.user_id === user?.id);
+    const battleAccountId = myParticipant?.paper_account_id;
+
+    return (
+      <div className="flex h-[calc(100dvh-64px)] w-full flex-col overflow-hidden bg-background">
+        <TradingWorkspace accountId={battleAccountId} />
+      </div>
+    );
+  }
 
   return (
+
     <div className={cn("space-y-6 animate-in fade-in duration-500", battle.status === 'countdown' && "animate-pulse")}>
       <LiveBattleHeader
         battle={battle || { name: "Loading...", status: "upcoming" } as any}
