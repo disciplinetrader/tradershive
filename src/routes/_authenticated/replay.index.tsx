@@ -228,7 +228,7 @@ function ReplayDashboard() {
               </Button>
             </div>
           ) : (
-            <Button size="sm" onClick={() => setWiz(true)} className="w-full">
+            <Button size="sm" onClick={() => setWiz(true)} className="w-full shadow-elegant">
               <Sparkles className="mr-2 h-3.5 w-3.5" /> Create Backtest
             </Button>
           )}
