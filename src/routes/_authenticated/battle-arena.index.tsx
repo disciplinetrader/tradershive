@@ -213,3 +213,16 @@ const Zap = ({ className }: { className?: string }) => (
     <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
   </svg>
 );
+
+function GuideItem({ number, title, description }: { number: string; title: string; description: string }) {
+  return (
+    <div className="flex gap-4">
+      <div className="text-xl font-black text-primary/20 italic tabular-nums">{number}</div>
+      <div className="space-y-1">
+        <h4 className="text-sm font-bold uppercase tracking-wide">{title}</h4>
+        <p className="text-xs text-muted-foreground font-medium leading-relaxed">{description}</p>
+      </div>
+    </div>
+  );
+}
+
