@@ -4,7 +4,10 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { getBattle, joinBattle, leaveBattle, cancelBattle, finalizeBattle } from "@/lib/battle-arena.functions";
+import { 
+  getBattle, joinBattle, leaveBattle, cancelBattle, finalizeBattle,
+  setParticipantReady
+} from "@/lib/battle-arena.functions";
 import {
   listBattleEvents, getBattleLiveStats, heartbeatPresence, listBattlePresence, leavePresence,
 } from "@/lib/battle-arena-live.functions";
@@ -20,12 +23,16 @@ import { ParticipantsList } from "@/components/battle-arena/ParticipantsList";
 import { BattleResultsView } from "@/components/battle-arena/BattleResultsView";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { LineChart, LogIn, LogOut, Trash2, Copy, Play, Eye } from "lucide-react";
+import { LineChart, LogIn, LogOut, Trash2, Copy, Play, Eye, ShieldCheck, Check } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { routeBoundaries } from "@/lib/route-boundaries";
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { PaperTradingProvider } from "@/components/paper-trading/context";
+import { TradingWorkspace } from "@/components/trading/TradingWorkspace";
+import { ArenaCommandRail } from "@/components/battle-arena/ArenaCommandRail";
+
 
 export const Route = createFileRoute("/_authenticated/battle-arena/$battleId")({
   component: BattleDetail,
