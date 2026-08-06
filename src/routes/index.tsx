@@ -1242,7 +1242,9 @@ function BattleArenaShowcase() {
 
 function Comparison() {
   const rows = [
+    { l: "Competitive trading (HIVE Arena)", a: false, b: true },
     { l: "Market replay & backtesting", a: false, b: true },
+
     { l: "Auto-populated trade journal", a: false, b: true },
     { l: "Sharpe, Sortino, drawdown analytics", a: false, b: true },
     { l: "Personal AI coach on your data", a: false, b: true },
