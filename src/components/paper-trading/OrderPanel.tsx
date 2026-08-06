@@ -86,10 +86,18 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
 
   const liveQuotes = useLiveQuotes(openTrades?.map((t) => t.symbol));
 
+  const [touched, setTouched] = useState(false);
+
   useEffect(() => {
     if (!entry && livePrice != null) setEntry(String(livePrice));
   }, [symbol, livePrice, entry]);
-  useEffect(() => { setEntry(livePrice != null ? String(livePrice) : ""); setSl(""); setTp(""); }, [symbol]); // eslint-disable-line
+
+  useEffect(() => {
+    setEntry(livePrice != null ? String(livePrice) : "");
+    setSl("");
+    setTp("");
+    setTouched(false);
+  }, [symbol]); // eslint-disable-line
 
   const entryNum = Number(entry) || 0;
   const slNum = sl === "" ? null : Number(sl);
@@ -99,12 +107,21 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
   const leverage = Number(account?.leverage ?? 100);
 
   const calc = useMemo(() => {
-    if (!symbolMeta) return null;
+    if (!symbolMeta || !touched) return null;
+    const isValidStops = validateStops(side, entryNum, slNum, tpNum) === null;
+    if (!isValidStops) return null;
+
     return tradeCalculation({
-      sym: symbolMeta, side, entry: entryNum, sl: slNum, tp: tpNum, lot: lotNum,
-      leverage, balance,
+      sym: symbolMeta,
+      side,
+      entry: entryNum,
+      sl: slNum,
+      tp: tpNum,
+      lot: lotNum,
+      leverage,
+      balance,
     });
-  }, [symbolMeta, side, entryNum, slNum, tpNum, lotNum, leverage, balance]);
+  }, [symbolMeta, side, entryNum, slNum, tpNum, lotNum, leverage, balance, touched]);
 
   // Broker-style pre-flight: reject the same orders the server will reject,
   // and warn on the same ones. Runs on every keystroke so the CTA reflects
@@ -113,6 +130,7 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
   // non-finite inputs must block the CTA even before the broker pre-flight
   // (which needs a usable entry/lot to run at all).
   const localErrors = useMemo(() => {
+    if (!touched) return [];
     const errs: string[] = [];
     if (!Number.isFinite(entryNum) || entryNum <= 0) errs.push("Entry price must be a positive number");
     else if (entryNum > 1e12) errs.push("Entry price is out of range");
