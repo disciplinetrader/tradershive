@@ -87,9 +87,10 @@ export function ParticipantsList({
                       )}
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={cn("text-[10px] font-black uppercase tracking-tighter", rank.color)}>
-                        {rank.name}
-                      </span>
+                    <span className={cn("text-[10px] font-black uppercase tracking-tighter")}>
+                      {rank.label}
+                    </span>
+
                       <span className="text-[10px] text-muted-foreground/60">•</span>
                       <span className="text-[10px] font-bold text-muted-foreground/80">{elo} HR</span>
                     </div>
