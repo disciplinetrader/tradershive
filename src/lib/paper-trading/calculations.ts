@@ -81,6 +81,15 @@ export function tradeCalculation(params: {
 
 /** Whether stop/take-profit is on the correct side of entry. */
 export function validateStops(side: TradeSide, entry: number, sl: number | null, tp: number | null): string | null {
+  // Sanity first — a negative or non-finite level can otherwise slip past the
+  // orientation checks below (e.g. long entry 67550 with stop loss -10).
+  if (!Number.isFinite(entry) || entry <= 0) return "Entry price must be a positive number";
+  for (const [label, v] of [["Stop loss", sl], ["Take profit", tp]] as const) {
+    if (v == null) continue;
+    if (!Number.isFinite(v)) return `${label} must be a finite number`;
+    if (v <= 0) return `${label} must be a positive price`;
+    if (v > 1e12) return `${label} is out of range`;
+  }
   if (sl != null) {
     if (side === "long" && sl >= entry) return "Stop loss must be below entry for a long";
     if (side === "short" && sl <= entry) return "Stop loss must be above entry for a short";
