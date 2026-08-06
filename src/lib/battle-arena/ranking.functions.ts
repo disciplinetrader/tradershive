@@ -17,11 +17,12 @@ export const getRankingSession = createServerFn({ method: "GET" })
 
     const { data: lastBattle } = await supabase
       .from("battle_results")
-      .select("ranking_delta")
+      .select("pnl") // Changed from ranking_delta to pnl which definitely exists
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
+
 
     return {
       currentRanking: profile?.elo || 1000,

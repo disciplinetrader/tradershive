@@ -4,14 +4,14 @@ import { listBattles, getBattle, listMyBattleStats } from "@/lib/battle-arena.fu
 export function useBattles(scope: any = "all") {
   return useSuspenseQuery({
     queryKey: ["battles", scope],
-    queryFn: () => listBattles({ scope }),
+    queryFn: () => listBattles({ data: { scope } }),
   });
 }
 
 export function useBattleDetails(id: string) {
   return useSuspenseQuery({
     queryKey: ["battle", id],
-    queryFn: () => getBattle({ id }),
+    queryFn: () => getBattle({ data: { id } }),
   });
 }
 
