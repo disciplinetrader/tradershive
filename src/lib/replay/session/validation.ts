@@ -12,15 +12,16 @@ import type { SessionLifecycle, SessionSnapshot } from "./model";
 import { SESSION_SNAPSHOT_VERSION } from "./model";
 
 const TRANSITIONS: Record<SessionLifecycle, SessionLifecycle[]> = {
-  // A trader may finish a session they opened but never played — the studio
-  // must not throw "Illegal transition" behind the Finish button.
-  created: ["ready", "completed", "abandoned"],
+  // A session must actually be opened (`ready`) before it can be finished.
+  // An untouched `created` session may only be abandoned — never completed.
+  created: ["ready", "abandoned"],
   ready: ["running", "completed", "abandoned"],
   running: ["paused", "completed", "abandoned"],
   paused: ["running", "completed", "abandoned"],
   completed: [],
   abandoned: [],
 };
+
 
 export function canTransition(from: SessionLifecycle, to: SessionLifecycle): boolean {
   return from === to || TRANSITIONS[from].includes(to);
