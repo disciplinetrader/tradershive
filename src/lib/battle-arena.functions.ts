@@ -39,7 +39,7 @@ export const listBattles = createServerFn({ method: "GET" })
   .inputValidator((d) => listScopeSchema.parse(d ?? {}))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    let q = supabase.from("battles").select("*");
+    let q = supabase.from("battles").select("*").eq("is_test", false);
     
     // Visibility filter: Public battles are always visible. 
     // Private battles only visible to host or if the user is already a participant.
