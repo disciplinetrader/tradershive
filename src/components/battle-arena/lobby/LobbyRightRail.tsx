@@ -6,7 +6,7 @@ import { Trophy, TrendingUp, Star } from "lucide-react";
 
 export function LobbyRightRail() {
   const { user } = useAuth();
-  const { data: leaderboard } = useLeaderboard(10);
+  const { data: leaderboard = [] } = useLeaderboard(10);
 
   return (
     <aside className="hidden w-80 flex-shrink-0 flex-col gap-8 xl:flex">
