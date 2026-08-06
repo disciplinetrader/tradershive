@@ -93,7 +93,10 @@ export function AppShell({ children }: { children: ReactNode }) {
     pathname === "/trading" ||
     pathname.startsWith("/trading/") ||
     pathname === "/replay/studio" ||
-    pathname.startsWith("/replay/prop-firm/");
+    pathname.startsWith("/replay/prop-firm/") ||
+    pathname === "/battle-arena" ||
+    pathname.startsWith("/battle-arena/");
+
 
 
 
@@ -377,6 +380,8 @@ function SidebarLink({
       to={item.to}
       data-tour={tourId}
       aria-current={active ? "page" : undefined}
+      aria-label={collapsed ? item.label : undefined}
+
 
       className={cn(
         "group relative flex items-center gap-3 rounded-md text-sm font-medium outline-none transition-colors duration-150",

@@ -165,7 +165,9 @@ function TradingWorkspaceInner() {
     setActiveSlot,
     updatePane,
     promotePane,
+
   } = useChartLayout();
+
 
   useSlTpMonitor(account);
   useRiskMonitor(account);
@@ -363,6 +365,8 @@ function TradingWorkspaceInner() {
   const bid = quote?.bid ?? last;
   const ask = quote?.ask ?? last;
   const spread = quote?.spread ?? Math.max(0, ask - bid);
+
+
 
   // Drawings are scoped per symbol so switching instruments swaps the set.
   useEffect(() => { drawingStore.setScope(symbol); }, [drawingStore, symbol]);

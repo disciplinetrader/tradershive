@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-// Final text update pass: August 2026.
+
 
 import { motion, useScroll, useTransform, AnimatePresence, type Variants } from "framer-motion";
 import {

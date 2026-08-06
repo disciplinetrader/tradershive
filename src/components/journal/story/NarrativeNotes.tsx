@@ -5,10 +5,12 @@
  */
 import { useEffect, useState } from "react";
 import { Check, Loader2, TriangleAlert } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Textarea } from "@/components/ui/textarea";
 import { useAutosave } from "@/hooks/use-autosave";
-import { updateEntry, type EntryUpdate, type JournalEntry } from "@/lib/journal/api";
+import { updateEntry, journalKeys, type EntryUpdate, type JournalEntry } from "@/lib/journal/api";
 import { NARRATIVE_SECTIONS, readNarrative, type Narrative, type NarrativeKey } from "@/lib/journal/story";
+
 import { cn } from "@/lib/utils";
 
 const PLACEHOLDERS: Record<NarrativeKey, string> = {
@@ -31,19 +33,29 @@ export function NarrativeNotes({
   focusRef?: React.MutableRefObject<(() => void) | null>;
   onSaved?: () => void;
 }) {
+  const qc = useQueryClient();
   const [draft, setDraft] = useState<Narrative>(() => readNarrative(entry));
 
   // Re-sync when navigating between trades without unmounting.
   useEffect(() => setDraft(readNarrative(entry)), [entry.id]);
 
   const autosave = useAutosave<Narrative>(async (patch) => {
-    const next = { ...readNarrative(entry), ...patch };
+    const currentNar = readNarrative(entry);
+    const next = { ...currentNar, ...patch };
     const update: EntryUpdate = { narrative: next as unknown as EntryUpdate["narrative"] };
     if ("thesis" in patch) update.entry_reason_text = patch.thesis ?? null;
     if ("free" in patch) update.notes_text = patch.free ?? null;
+
+    // Optimistic update to prevent the re-render from entryId sync wiping the draft
+    qc.setQueryData(journalKeys.entry(entry.id), (prev: JournalEntry | undefined) => {
+      if (!prev) return prev;
+      return { ...prev, ...update };
+    });
+
     await updateEntry(entry.id, update);
     onSaved?.();
   });
+
 
   const setField = (key: NarrativeKey, value: string) => {
     setDraft((d) => ({ ...d, [key]: value }));

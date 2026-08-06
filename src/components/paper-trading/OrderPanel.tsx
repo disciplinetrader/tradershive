@@ -86,10 +86,18 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
 
   const liveQuotes = useLiveQuotes(openTrades?.map((t) => t.symbol));
 
+  const [touched, setTouched] = useState(false);
+
   useEffect(() => {
     if (!entry && livePrice != null) setEntry(String(livePrice));
   }, [symbol, livePrice, entry]);
-  useEffect(() => { setEntry(livePrice != null ? String(livePrice) : ""); setSl(""); setTp(""); }, [symbol]); // eslint-disable-line
+
+  useEffect(() => {
+    setEntry(livePrice != null ? String(livePrice) : "");
+    setSl("");
+    setTp("");
+    setTouched(false);
+  }, [symbol]); // eslint-disable-line
 
   const entryNum = Number(entry) || 0;
   const slNum = sl === "" ? null : Number(sl);
@@ -99,12 +107,21 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
   const leverage = Number(account?.leverage ?? 100);
 
   const calc = useMemo(() => {
-    if (!symbolMeta) return null;
+    if (!symbolMeta || !touched) return null;
+    const isValidStops = validateStops(side, entryNum, slNum, tpNum) === null;
+    if (!isValidStops) return null;
+
     return tradeCalculation({
-      sym: symbolMeta, side, entry: entryNum, sl: slNum, tp: tpNum, lot: lotNum,
-      leverage, balance,
+      sym: symbolMeta,
+      side,
+      entry: entryNum,
+      sl: slNum,
+      tp: tpNum,
+      lot: lotNum,
+      leverage,
+      balance,
     });
-  }, [symbolMeta, side, entryNum, slNum, tpNum, lotNum, leverage, balance]);
+  }, [symbolMeta, side, entryNum, slNum, tpNum, lotNum, leverage, balance, touched]);
 
   // Broker-style pre-flight: reject the same orders the server will reject,
   // and warn on the same ones. Runs on every keystroke so the CTA reflects
@@ -113,6 +130,7 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
   // non-finite inputs must block the CTA even before the broker pre-flight
   // (which needs a usable entry/lot to run at all).
   const localErrors = useMemo(() => {
+    if (!touched) return [];
     const errs: string[] = [];
     if (!Number.isFinite(entryNum) || entryNum <= 0) errs.push("Entry price must be a positive number");
     else if (entryNum > 1e12) errs.push("Entry price is out of range");
@@ -327,7 +345,7 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
       <div className="grid grid-cols-2 gap-2">
         <Field label="Entry price" htmlFor="order-entry" error={errorList.find(e => e.toLowerCase().includes("entry"))}>
           <div className="flex gap-1">
-            <Input id="order-entry" inputMode="decimal" value={entry} onChange={(e) => setEntry(e.target.value)}
+            <Input id="order-entry" inputMode="decimal" value={entry} onChange={(e) => { setEntry(e.target.value); setTouched(true); }}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); attemptPlace(); } }}
               aria-invalid={errorList.some(m => m.toLowerCase().includes("entry"))}
               aria-describedby={errorList.some(m => m.toLowerCase().includes("entry")) ? "order-entry-error" : undefined}
@@ -335,27 +353,27 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
             {livePrice != null && (
               <Button
                 type="button" size="sm" variant="outline" className="h-8 shrink-0 px-2 text-[10px] font-semibold uppercase"
-                onClick={() => setEntry(String(livePrice))} title="Use live price"
+                onClick={() => { setEntry(String(livePrice)); setTouched(true); }} title="Use live price"
               >Live</Button>
             )}
           </div>
         </Field>
         <Field label="Lot size" htmlFor="order-lot" error={errorList.find(e => e.toLowerCase().includes("lot"))}>
-          <Input id="order-lot" inputMode="decimal" value={lot} onChange={(e) => setLot(e.target.value)}
+          <Input id="order-lot" inputMode="decimal" value={lot} onChange={(e) => { setLot(e.target.value); setTouched(true); }}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); attemptPlace(); } }}
             aria-invalid={errorList.some(m => m.toLowerCase().includes("lot"))}
             aria-describedby={errorList.some(m => m.toLowerCase().includes("lot")) ? "order-lot-error" : undefined}
             className="h-8 font-mono" />
         </Field>
         <Field label="Stop loss" htmlFor="order-sl" error={errorList.find(e => e.toLowerCase().includes("stop"))}>
-          <Input id="order-sl" inputMode="decimal" value={sl} onChange={(e) => setSl(e.target.value)}
+          <Input id="order-sl" inputMode="decimal" value={sl} onChange={(e) => { setSl(e.target.value); setTouched(true); }}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); attemptPlace(); } }}
             aria-invalid={errorList.some(m => m.toLowerCase().includes("stop"))}
             aria-describedby={errorList.some(m => m.toLowerCase().includes("stop")) ? "order-sl-error" : undefined}
             className="h-8 font-mono" placeholder="—" />
         </Field>
         <Field label="Take profit" htmlFor="order-tp" error={errorList.find(e => e.toLowerCase().includes("profit"))}>
-          <Input id="order-tp" inputMode="decimal" value={tp} onChange={(e) => setTp(e.target.value)}
+          <Input id="order-tp" inputMode="decimal" value={tp} onChange={(e) => { setTp(e.target.value); setTouched(true); }}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); attemptPlace(); } }}
             aria-invalid={errorList.some(m => m.toLowerCase().includes("profit"))}
             aria-describedby={errorList.some(m => m.toLowerCase().includes("profit")) ? "order-tp-error" : undefined}
@@ -365,10 +383,11 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
         <Field label="Risk %" htmlFor="order-risk-pct">
           <div className="flex gap-1">
             <Input id="order-risk-pct" inputMode="decimal" value={riskPct} onChange={(e) => setRiskPct(e.target.value)} className="h-8 font-mono" />
-            <Button size="icon" variant="outline" className="h-8 w-8 transition-transform active:scale-95" aria-label="Calculate lot from risk" title="Calculate lot from risk" onClick={calculateSizeFromRisk}>
+            <Button size="icon" variant="outline" className="h-8 w-8 transition-transform active:scale-95" aria-label="Calculate lot from risk" title="Calculate lot from risk" onClick={() => { calculateSizeFromRisk(); setTouched(true); }}>
               <Calculator className="h-3.5 w-3.5" />
             </Button>
           </div>
+
 
           <div className="mt-1 flex gap-1">
             {["0.25", "0.5", "1", "2"].map((r) => (

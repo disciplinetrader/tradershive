@@ -147,9 +147,12 @@ export function TradeTable({
     const a = document.createElement("a");
     a.href = url;
     a.download = `journal-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a); // Fix: Must be in DOM for some browsers
     a.click();
+    a.remove();
     URL.revokeObjectURL(url);
   };
+
 
   return (
     <div className="space-y-3">
