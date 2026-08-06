@@ -28,9 +28,17 @@ import {
   TrendingUp,
   Twitter,
   Video,
+  Star,
+  Swords,
+  Target,
+  TrendingUp,
+  Trophy,
+  Twitter,
+  Video,
   X,
   Zap,
 } from "lucide-react";
+
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
