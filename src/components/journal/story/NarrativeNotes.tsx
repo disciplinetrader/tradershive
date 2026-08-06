@@ -5,10 +5,12 @@
  */
 import { useEffect, useState } from "react";
 import { Check, Loader2, TriangleAlert } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Textarea } from "@/components/ui/textarea";
 import { useAutosave } from "@/hooks/use-autosave";
-import { updateEntry, type EntryUpdate, type JournalEntry } from "@/lib/journal/api";
+import { updateEntry, journalKeys, type EntryUpdate, type JournalEntry } from "@/lib/journal/api";
 import { NARRATIVE_SECTIONS, readNarrative, type Narrative, type NarrativeKey } from "@/lib/journal/story";
+
 import { cn } from "@/lib/utils";
 
 const PLACEHOLDERS: Record<NarrativeKey, string> = {
