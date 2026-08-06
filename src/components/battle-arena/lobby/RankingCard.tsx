@@ -14,7 +14,7 @@ export function RankingCard() {
   const hr = session.currentRanking;
   const tiers = Object.entries(LEAGUE_META);
   
-  // Define tier thresholds (Rank Points / HR)
+  // Define tier thresholds (Rank Points)
   const thresholds = {
     bronze: 0,
     silver: 800,
