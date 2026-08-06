@@ -45,7 +45,7 @@ export function RankingCard() {
   return (
     <div className="space-y-4">
       <div className="relative overflow-hidden rounded-3xl border border-border/40 bg-card/30 p-6 backdrop-blur-xl">
-        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+        <div className={cn("flex flex-col gap-6 md:flex-row md:items-center md:justify-between transition-opacity duration-300", isLoading && "opacity-50 pointer-events-none")}>
           <div className="flex items-center gap-4">
             <div 
               className="flex h-16 w-16 items-center justify-center rounded-2xl text-3xl shadow-lg ring-1 ring-white/10"
