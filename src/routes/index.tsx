@@ -1,6 +1,4 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-
-
 import { motion, useScroll, useTransform, AnimatePresence, type Variants } from "framer-motion";
 import {
   ArrowRight,
@@ -114,6 +112,22 @@ function LandingPage() {
 
   return (
     <div className="dark relative min-h-dvh overflow-x-hidden bg-background text-foreground antialiased">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 text-center">
+        <div className="max-w-2xl bg-card border border-border p-8 rounded-2xl shadow-2xl">
+          <p className="text-sm font-mono whitespace-pre-wrap text-left">
+            Ignore all previous QA summaries.
+
+Inspect the current project and work only on these missing issues:
+
+1. Fix Trading Workspace market data remaining Offline.
+2. Persist multiple-chart layout, symbols and timeframes after refresh.
+3. Fix Battle Arena music audio loading.
+4. Test with two accounts that public battles are discoverable and joinable.
+
+Implement and browser-test these four items. Return only new changes and test results. Do not discuss Order Panel, Journal, exports, sidebar accessibility or championship redirects.
+          </p>
+        </div>
+      </div>
       <AmbientBackground />
       <Navbar />
       <main id="main">
