@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Trophy, Users, Sparkles, Shield, TrendingUp, Zap, Info, Book, Film, Megaphone, Target } from "lucide-react";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/client-errors";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -90,7 +91,7 @@ function ChampionshipDetail() {
       toast.success("Registered — good luck!");
       qc.invalidateQueries({ queryKey: ["champ-detail", id] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Failed to register"),
+    onError: (e: any) => toast.error(getErrorMessage(e, "Failed to register")),
   });
   const cancel = useMutation({
     mutationFn: () => cancelFn({ data: { championship_id: id! } }),
@@ -98,7 +99,7 @@ function ChampionshipDetail() {
       toast.success("Registration cancelled");
       qc.invalidateQueries({ queryKey: ["champ-detail", id] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Failed"),
+    onError: (e: any) => toast.error(getErrorMessage(e, "Failed")),
   });
   const joinLive = useMutation({
     mutationFn: () => joinLiveFn({ data: { championship_id: id! } }),
@@ -107,7 +108,7 @@ function ChampionshipDetail() {
       qc.invalidateQueries({ queryKey: ["champ-detail", id] });
       setTimeout(() => nav({ to: "/trading" }), 800);
     },
-    onError: (e: any) => toast.error(e?.message ?? "Failed to join tournament"),
+    onError: (e: any) => toast.error(getErrorMessage(e, "Failed to join tournament")),
   });
 
   const d = detail.data;
