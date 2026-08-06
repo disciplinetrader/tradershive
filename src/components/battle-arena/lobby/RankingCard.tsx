@@ -52,9 +52,10 @@ export function RankingCard() {
               {currentTier.icon}
             </div>
             <div>
-              <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Current Ranking</h3>
+              <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">HIVE Rating (HR)</h3>
               <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-black tracking-tighter">{elo}</span>
+                <span className="text-4xl font-black tracking-tighter">{hr}</span>
+
                 <span className={cn(
                   "flex items-center text-xs font-bold",
                   session.lastDelta >= 0 ? "text-success" : "text-danger"
