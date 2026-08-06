@@ -95,7 +95,7 @@ export const getBattle = createServerFn({ method: "GET" })
     // Check if the battle is private and the user is NOT the host/participant
     const { data: bPriv, error: ePriv } = await supabase
       .from("battles")
-      .select("visibility, host_id")
+      .select("visibility, host_id, invite_code")
       .eq("id", data.id)
       .maybeSingle();
 
@@ -106,7 +106,11 @@ export const getBattle = createServerFn({ method: "GET" })
         .eq("battle_id", data.id)
         .eq("user_id", userId)
         .maybeSingle();
-      if (!isP) throw new Error("This Arena match is private");
+      if (!isP) {
+        // Only throw if no valid invite code was provided via some means
+        // (currently getBattle input doesn't take inviteCode, but joinBattle does)
+        throw new Error("This Arena match is private");
+      }
     }
 
     const { data: res, error: rpcErr } = await supabase.rpc("get_battle_details" as any, { _battle_id: data.id });
