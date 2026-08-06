@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarIcon, Save, X } from "lucide-react";
+import { CalendarIcon, Download, Save, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -14,6 +14,7 @@ import { useStatistics } from "./context";
 import { DATE_PRESETS } from "@/lib/statistics/date-range";
 import type { StatisticsFilters } from "@/lib/statistics/types";
 import { EMPTY_FILTERS } from "@/lib/statistics/types";
+import { exportToCsv, exportToJson } from "@/lib/utils/export-utils";
 import {
   deleteSavedFilter, listSavedFilters, saveFilter,
 } from "@/lib/statistics.functions";
@@ -63,7 +64,7 @@ function MultiSelect({
 }
 
 export function FiltersBar() {
-  const { filters, setFilters, resetFilters, raw, accounts } = useStatistics();
+  const { filters, setFilters, resetFilters, raw, filtered, accounts } = useStatistics();
   const [customOpen, setCustomOpen] = useState(false);
   const qc = useQueryClient();
   const saveFn = useServerFn(saveFilter);
@@ -147,6 +148,43 @@ export function FiltersBar() {
             </PopoverContent>
           </Popover>
         ) : null}
+
+        <div className="flex-1" />
+
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-9 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+            onClick={() => {
+              const headers = ["Symbol", "Market", "Direction", "Status", "PnL", "RR", "Open", "Close", "Tags"];
+              const rows = (filtered ?? []).map((t: any) => [
+                t.symbol,
+                t.market,
+                t.direction,
+                t.status,
+                String(t.pnl ?? 0),
+                String(t.rr ?? 0),
+                t.opened_at,
+                t.closed_at ?? "",
+                (t.tags ?? []).join("|")
+              ]);
+              exportToCsv(`analytics-${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
+            }}
+          >
+            <Download className="h-3.5 w-3.5" /> CSV
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-9 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+            onClick={() => {
+              exportToJson(`analytics-${new Date().toISOString().slice(0, 10)}.json`, filtered ?? []);
+            }}
+          >
+            <Download className="h-3.5 w-3.5" /> JSON
+          </Button>
+        </div>
       </div>
     </div>
   );

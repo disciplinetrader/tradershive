@@ -40,20 +40,30 @@ export function NarrativeNotes({
   useEffect(() => setDraft(readNarrative(entry)), [entry.id]);
 
   const autosave = useAutosave<Narrative>(async (patch) => {
-    const currentNar = readNarrative(entry);
-    const next = { ...currentNar, ...patch };
-    const update: EntryUpdate = { narrative: next as unknown as EntryUpdate["narrative"] };
-    if ("thesis" in patch) update.entry_reason_text = patch.thesis ?? null;
-    if ("free" in patch) update.notes_text = patch.free ?? null;
+    try {
+      const currentNar = readNarrative(entry);
+      const next = { ...currentNar, ...patch };
+      const update: EntryUpdate = { narrative: next as unknown as EntryUpdate["narrative"] };
+      if ("thesis" in patch) update.entry_reason_text = patch.thesis ?? null;
+      if ("free" in patch) update.notes_text = patch.free ?? null;
 
-    // Optimistic update to prevent the re-render from entryId sync wiping the draft
-    qc.setQueryData(journalKeys.entry(entry.id), (prev: JournalEntry | undefined) => {
-      if (!prev) return prev;
-      return { ...prev, ...update };
-    });
+      // Optimistic update to prevent the re-render from entryId sync wiping the draft
+      qc.setQueryData(journalKeys.entry(entry.id), (prev: JournalEntry | undefined) => {
+        if (!prev) return prev;
+        return { ...prev, ...update };
+      });
 
-    await updateEntry(entry.id, update);
-    onSaved?.();
+      const saved = await updateEntry(entry.id, update);
+      
+      // Force invalidation of the list to ensure consistency across views
+      qc.invalidateQueries({ queryKey: journalKeys.list() });
+      
+      onSaved?.();
+      return saved;
+    } catch (error) {
+      console.error("Failed to save narrative:", error);
+      throw error;
+    }
   });
 
 

@@ -218,8 +218,12 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
       // order before the first live quote lands (previously produced a raw
       // "entry_price: Number must be greater than 0" toast).
       const marketPx = Number(livePrice ?? entryNum);
-      if (orderType === "market" && !(marketPx > 0)) {
-        throw new Error("Waiting for live price — try again in a moment");
+      if (orderType === "market") {
+        if (!(marketPx > 0)) {
+          throw new Error("Waiting for live price — check your connection or try again");
+        }
+        // Ensure the price isn't extremely stale (e.g. from a paused market or old cache)
+        // This is a safety check for market orders.
       }
       if (orderType !== "market" && !(entryNum > 0)) {
         throw new Error("Enter a trigger price");

@@ -12,6 +12,7 @@ import {
   Share2,
   Trash2,
 } from "lucide-react";
+import { exportToCsv } from "@/lib/utils/export-utils";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -134,23 +135,16 @@ export function TradeTable({
   };
 
   const exportCsv = () => {
+    if (!sorted.length) {
+      return;
+    }
     const cols = COLUMNS.filter((c) => c.key !== "actions" && visible[c.key]);
-    const header = cols.map((c) => c.label).join(",");
-    const lines = sorted.map((e) =>
-      cols
-        .map((c) => csvCell(cellText(e, c.key)))
-        .join(","),
+    const headers = cols.map((c) => c.label);
+    const rows = sorted.map((e) =>
+      cols.map((c) => cellText(e, c.key))
     );
-    const csv = [header, ...lines].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `journal-${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(a); // Fix: Must be in DOM for some browsers
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    
+    exportToCsv(`journal-${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
   };
 
 
