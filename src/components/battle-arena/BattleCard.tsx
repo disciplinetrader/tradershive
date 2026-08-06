@@ -19,7 +19,7 @@ type BattleRow = {
   max_participants: number; 
   starting_balance: number; 
   featured: boolean;
-  ranked?: boolean;
+  ranked?: boolean | null;
   profit_target_pct?: number | null;
   duration_minutes?: number | null;
 };
