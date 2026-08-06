@@ -34,6 +34,9 @@ import { TradingWorkspace } from "@/components/trading/TradingWorkspace";
 import { ArenaCommandRail } from "@/components/battle-arena/ArenaCommandRail";
 import { BattleStartIntro } from "@/components/battle-arena/lobby/BattleStartIntro";
 import { CountdownTimer } from "@/components/battle-arena/CountdownTimer";
+import { BattleScrubber } from "@/components/battle-arena/BattleScrubber";
+import { BattleOrderTicket } from "@/components/battle-arena/BattleOrderTicket";
+import { BattleStatusBar } from "@/components/battle-arena/BattleStatusBar";
 
 
 
@@ -130,7 +133,7 @@ function BattleDetail() {
   const [introSeen, setIntroSeen] = useState(false);
 
   useEffect(() => {
-    if (battle?.status === "countdown" && !introSeen) {
+    if ((battle?.status === "countdown" || battle?.status === "live") && !introSeen) {
       setShowIntro(true);
       setIntroSeen(true);
     }
@@ -181,7 +184,8 @@ function BattleDetail() {
     return () => { cancelled = true; supabase.removeChannel(ch); };
   }, [battleId]);
 
-  if (battleQ.isLoading) return <div className="glass h-64 animate-pulse rounded-2xl" />;
+  if (battleQ.isLoading) return <div className="grid place-items-center h-[calc(100dvh-64px)]"><div className="flex flex-col items-center gap-4"><div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" /><p className="text-sm font-black uppercase tracking-widest animate-pulse">Entering Arena Match...</p></div></div>;
+  if (battleQ.isError) return <div className="flex flex-col items-center justify-center h-[calc(100dvh-64px)] p-8 text-center"><Badge variant="destructive" className="mb-4">Error</Badge><h3 className="text-xl font-black mb-2">Failed to load Arena</h3><p className="text-muted-foreground mb-6">{(battleQ.error as any)?.message || "The Arena match could not be found or you don't have access."}</p><Button onClick={() => navigate({ to: "/battle-arena" })}>Return to Lobby</Button></div>;
   if (!battleQ.data || !battle) return <div className="text-sm text-muted-foreground p-8 text-center">Arena match not found.</div>;
 
   const { participants = [], rankings = [], results = [], profiles = [] } = (battleQ.data as any) || {};
@@ -225,7 +229,7 @@ function BattleDetail() {
   const onlineCount = (presenceQ.data ?? []).filter((p: any) => p.status !== "disconnected").length;
 
   const isLobby = ["draft", "upcoming", "open", "filling", "ready", "countdown"].includes(battle.status);
-  const isLive = battle.status === "live";
+  const isLive = battle.status === "live" || battle.status === "ready" || battle.status === "countdown";
 
   if (isLive) {
     const myParticipant = participants.find((p: any) => p.user_id === user?.id);
@@ -235,17 +239,22 @@ function BattleDetail() {
       <PaperTradingProvider initialAccountId={battleAccountId}>
         <div className="flex h-[calc(100dvh-64px)] w-full flex-col overflow-hidden bg-background">
           <div className="flex h-full w-full overflow-hidden">
-            <div className="flex-1 flex flex-col min-w-0">
+            <div className="flex-1 flex flex-col min-w-0 relative">
               {/* Header Area within live workspace */}
-              <div className="h-14 border-b border-border/40 bg-card/20 px-4 flex items-center justify-between">
+              <div className="h-14 border-b border-border/40 bg-card/20 px-4 flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-3">
                   <Link to="/battle-arena" className="text-muted-foreground hover:text-foreground">
                     <Badge variant="outline" className="h-7 font-black bg-background/50">HIVE ARENA</Badge>
                   </Link>
                   <div className="h-4 w-[1px] bg-border/40" />
-                  <h1 className="font-bold tracking-tight text-sm uppercase">{battle.name}</h1>
+                  <h1 className="font-bold tracking-tight text-sm uppercase truncate max-w-[200px]">{battle.name}</h1>
                   <Badge variant="default" className="bg-success text-success-foreground font-black text-[10px] animate-pulse">LIVE</Badge>
                 </div>
+                
+                <div className="flex-1 max-w-2xl px-4">
+                  <BattleScrubber />
+                </div>
+
                 <div className="flex items-center gap-6">
                   <div className="flex flex-col items-end">
                     <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Remaining</span>
@@ -256,10 +265,15 @@ function BattleDetail() {
                 </div>
               </div>
               
-              <TradingWorkspace accountId={battleAccountId} />
+              <div className="flex-1 min-h-0 relative">
+                <TradingWorkspace accountId={battleAccountId} />
+                <BattleOrderTicket />
+              </div>
+
+              <BattleStatusBar />
             </div>
             
-            <div className="w-80 border-l border-border/40 hidden xl:block overflow-hidden">
+            <div className="w-80 border-l border-border/40 hidden xl:block overflow-hidden shrink-0">
               <ArenaCommandRail />
             </div>
           </div>

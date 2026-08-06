@@ -1,16 +1,19 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { getRankingSession, getLeaderboard } from "@/lib/battle-arena/ranking.functions";
 
 export function useRankingSession() {
-  return useSuspenseQuery({
+  const fn = useServerFn(getRankingSession);
+  return useQuery({
     queryKey: ["ranking-session"],
-    queryFn: () => getRankingSession(),
+    queryFn: () => fn(),
   });
 }
 
 export function useLeaderboard(limit: number = 10) {
-  return useSuspenseQuery({
+  const fn = useServerFn(getLeaderboard);
+  return useQuery({
     queryKey: ["leaderboard", limit],
-    queryFn: () => getLeaderboard({ data: { limit } }),
+    queryFn: () => fn({ data: { limit } }),
   });
 }

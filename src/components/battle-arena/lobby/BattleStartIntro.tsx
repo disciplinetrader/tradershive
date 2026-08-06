@@ -29,6 +29,7 @@ export function BattleStartIntro({ onComplete }: { onComplete: () => void }) {
           className="fixed inset-0 z-[100] flex items-center justify-center bg-background/95 backdrop-blur-xl"
           onClick={(e) => {
             e.stopPropagation();
+            setShow(false);
             onComplete();
           }}
         >
