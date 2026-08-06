@@ -160,8 +160,6 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
     [localErrors, preflight],
   );
   const blocked = errorList.length > 0;
-  // Log for debug
-  console.log('OrderPanel Validation:', { blocked, errors: errorList, side });
 
 
 
