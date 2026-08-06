@@ -32,6 +32,21 @@ export function validateIntent(
   if (!meta) { errors.push(`Unknown symbol ${intent.symbol}`); return fallback; }
   if (!(currentPrice > 0)) { errors.push("No live price for symbol"); return fallback; }
 
+  // Numeric sanity for every user-supplied level.
+  for (const [label, v] of [
+    ["Quantity", intent.quantity],
+    ["Stop loss", intent.stop_loss],
+    ["Take profit", intent.take_profit],
+    ["Limit price", intent.limit_price],
+    ["Stop price", intent.stop_price],
+  ] as [string, number | null | undefined][]) {
+    if (v == null) continue;
+    if (!Number.isFinite(v)) errors.push(`${label} must be a finite number`);
+    else if (v <= 0) errors.push(`${label} must be a positive number`);
+    else if (v > 1e12) errors.push(`${label} is out of range`);
+  }
+  if (errors.length > 0) return { ...fallback, errors };
+
   const qty = Number(intent.quantity);
   if (!(qty > 0)) errors.push("Quantity must be positive");
   if (qty < meta.minLot) errors.push(`Minimum lot for ${meta.symbol} is ${meta.minLot}`);
