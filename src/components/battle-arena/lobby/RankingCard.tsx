@@ -52,7 +52,7 @@ export function RankingCard() {
               {currentTier.icon}
             </div>
             <div>
-              <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">HIVE Rating (HR)</h3>
+              <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Hive Rating</h3>
               <div className="flex items-baseline gap-2">
                 <span className="text-4xl font-black tracking-tighter">{hr}</span>
 
