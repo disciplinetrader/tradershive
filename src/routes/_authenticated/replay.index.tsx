@@ -157,9 +157,6 @@ function ReplayDashboard() {
             <Button variant="outline" size="sm" onClick={() => setPicker("free")} className="w-full sm:w-auto">
               <Compass className="mr-2 h-4 w-4" />Scenario Picker
             </Button>
-            <Button size="default" onClick={() => setWiz(true)} className="w-full sm:w-auto shadow-elegant">
-              <Sparkles className="mr-2 h-4 w-4" />Create Backtest
-            </Button>
           </div>
         }
       />
