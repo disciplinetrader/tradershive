@@ -5,16 +5,9 @@ import { toast } from "sonner";
 import { Loader2, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { parseTradeNarrative } from "@/lib/journal/quick-log.functions";
 import { ManualEntryDialog, type PrefillTrade } from "./ManualEntryDialog";
 import { journalKeys } from "@/lib/journal/api";
-
-const EXAMPLES = [
-  "Bought 1 lot EURUSD at 1.0820, out at 1.0865, +$450, London open sweep",
-  "Shorted gold 0.5 lots 2412.5, stop 2418, target 2398, closed -$85 too early",
-  "NAS100 long this morning, 2R winner, followed the plan for once",
-];
 
 /**
  * Natural-language trade capture. The trader types (or pastes) a sentence, the
@@ -112,24 +105,7 @@ export function QuickLogInput({ compact = false }: { compact?: boolean }) {
         </Button>
       </div>
 
-      {!compact && (
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-xs text-muted-foreground">Try:</span>
-          {EXAMPLES.map((example) => (
-            <Badge
-              key={example}
-              variant="outline"
-              role="button"
-              tabIndex={0}
-              onClick={() => setText(example)}
-              onKeyDown={(e) => e.key === "Enter" && setText(example)}
-              className="cursor-pointer text-[11px] font-normal text-muted-foreground hover:text-foreground"
-            >
-              {example.length > 46 ? `${example.slice(0, 46)}…` : example}
-            </Badge>
-          ))}
-        </div>
-      )}
+      {null}
 
       {prefill && (
         <ManualEntryDialog

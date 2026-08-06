@@ -64,7 +64,7 @@ const TRACKS: Track[] = [
 
 const STORAGE_KEY = "th_music_settings";
 
-export function MusicPlayer() {
+export function MusicPlayer({ embedded = false }: { embedded?: boolean }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [volume, setVolume] = useState(50);
@@ -182,8 +182,8 @@ export function MusicPlayer() {
 
   return (
     <div className={cn(
-      "fixed bottom-6 left-6 z-[100] transition-all duration-300",
-      isCollapsed ? "w-12 h-12" : "w-72 bg-background/95 border border-border/60 rounded-2xl shadow-2xl backdrop-blur-xl p-4"
+      embedded ? "w-full" : "fixed bottom-6 left-6 z-[100] transition-all duration-300",
+      !embedded && (isCollapsed ? "w-12 h-12" : "w-72 bg-background/95 border border-border/60 rounded-2xl shadow-2xl backdrop-blur-xl p-4")
     )}>
       <audio
         ref={audioRef}
@@ -191,7 +191,7 @@ export function MusicPlayer() {
         preload="none"
       />
 
-      {isCollapsed ? (
+      {isCollapsed && !embedded ? (
         <Button
           variant="outline"
           size="icon"
@@ -226,15 +226,17 @@ export function MusicPlayer() {
                 </span>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 rounded-md hover:bg-muted"
-              onClick={() => setIsCollapsed(true)}
-              aria-label="Collapse music player"
-            >
-              <ChevronDown className="h-4 w-4" />
-            </Button>
+            {!embedded && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 rounded-md hover:bg-muted"
+                onClick={() => setIsCollapsed(true)}
+                aria-label="Collapse music player"
+              >
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            )}
           </div>
 
           <div className="space-y-1">

@@ -25,6 +25,12 @@ export const Route = createFileRoute("/_authenticated")({
 
 function AuthenticatedLayout() {
   const router = useRouter();
+  const MusicPlayerOnlyOutsideArena = () => {
+    const isArena = router.state.location.pathname.startsWith("/battle-arena") || router.state.location.pathname.startsWith("/championship");
+    if (isArena) return null;
+    return <MusicPlayer />;
+  };
+
   return (
     <ClientOnly fallback={<div className="min-h-dvh w-full bg-background" />}>
     <AppShell>
@@ -47,7 +53,7 @@ function AuthenticatedLayout() {
       </FeedbackProvider>
       <TimezoneSuggestionModal />
       <MentorDrawer />
-      <MusicPlayer />
+      <MusicPlayerOnlyOutsideArena />
     </AppShell>
     </ClientOnly>
   );
