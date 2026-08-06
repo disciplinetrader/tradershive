@@ -16,7 +16,6 @@ export function BattleOrderTicket() {
       kind: "submit",
       side,
       orderType: "market",
-      symbol: symbol,
       lot: Number(lot),
     });
   };
