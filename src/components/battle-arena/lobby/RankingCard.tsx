@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function RankingCard() {
-  const { data: session } = useRankingSession();
+  const { data: session = { currentRanking: 0, lastDelta: 0, sessionNet: 0, sessionPeak: 0, bestDay: 0, worstDay: 0 } } = useRankingSession();
   const [isExpanded, setIsExpanded] = useState(false);
 
   // HIVE Rating (HR) tiers
