@@ -83,14 +83,26 @@ export function ParticipantsList({
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-1.5">
-                  <span className={cn(
-                    "rounded-lg px-2 py-0.5 text-[9px] font-black uppercase tracking-widest border",
-                    p.status === 'trading' ? "bg-success/5 text-success border-success/20 animate-pulse" : 
-                    p.status === 'watching' ? "bg-primary/5 text-primary border-primary/20" :
-                    "bg-muted/40 text-muted-foreground/60 border-border/40"
-                  )}>
-                    {p.status}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {p.is_ready ? (
+                      <span className="flex items-center gap-1.5 rounded-lg bg-success/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-success border border-success/20">
+                        <ShieldCheck className="h-3 w-3" /> Ready
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1.5 rounded-lg bg-warning/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-warning border border-warning/20">
+                        <Timer className="h-3 w-3" /> Waiting
+                      </span>
+                    )}
+                    <span className={cn(
+                      "rounded-lg px-2 py-0.5 text-[9px] font-black uppercase tracking-widest border",
+                      p.status === 'trading' ? "bg-success/5 text-success border-success/20 animate-pulse" : 
+                      p.status === 'watching' ? "bg-primary/5 text-primary border-primary/20" :
+                      "bg-muted/40 text-muted-foreground/60 border-border/40"
+                    )}>
+                      {p.status}
+                    </span>
+                  </div>
+
                 </div>
               </li>
             );
