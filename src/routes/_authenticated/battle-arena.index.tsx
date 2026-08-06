@@ -28,7 +28,9 @@ export const Route = createFileRoute("/_authenticated/battle-arena/")({
 
 function BattleArenaLobby() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("all");
+
 
   useEffect(() => {
     const ch = supabase
