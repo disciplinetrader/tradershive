@@ -244,7 +244,7 @@ function BattleDetail() {
           </div>
           
           <div className="w-80 border-l border-border/40 hidden xl:block overflow-hidden">
-            <ArenaCommandRail battle={battle} stats={statsQ.data as any} profiles={profiles} />
+            <ArenaCommandRail />
           </div>
         </div>
       </div>
