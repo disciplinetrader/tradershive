@@ -184,7 +184,8 @@ function BattleDetail() {
     return () => { cancelled = true; supabase.removeChannel(ch); };
   }, [battleId]);
 
-  if (battleQ.isLoading) return <div className="glass h-64 animate-pulse rounded-2xl" />;
+  if (battleQ.isLoading) return <div className="grid place-items-center h-[calc(100dvh-64px)]"><div className="flex flex-col items-center gap-4"><div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" /><p className="text-sm font-black uppercase tracking-widest animate-pulse">Entering Arena Match...</p></div></div>;
+  if (battleQ.isError) return <div className="flex flex-col items-center justify-center h-[calc(100dvh-64px)] p-8 text-center"><Badge variant="destructive" className="mb-4">Error</Badge><h3 className="text-xl font-black mb-2">Failed to load Arena</h3><p className="text-muted-foreground mb-6">{(battleQ.error as any)?.message || "The Arena match could not be found or you don't have access."}</p><Button onClick={() => navigate({ to: "/battle-arena" })}>Return to Lobby</Button></div>;
   if (!battleQ.data || !battle) return <div className="text-sm text-muted-foreground p-8 text-center">Arena match not found.</div>;
 
   const { participants = [], rankings = [], results = [], profiles = [] } = (battleQ.data as any) || {};
