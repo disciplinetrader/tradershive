@@ -528,8 +528,8 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
                 : "bg-danger text-white hover:bg-danger/90 focus-visible:ring-danger/60")}
           >
             <Send className="mr-1.5 h-4 w-4" />
-            {blocked
-              ? "Insufficient margin"
+            {errorList.length > 0
+              ? errorList[0]
               : waitingForPrice
               ? "Waiting for price…"
               : orderType === "market"
