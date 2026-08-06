@@ -124,8 +124,8 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
     return errs;
   }, [entryNum, lotNum, symbolMeta, sl, tp, slNum, tpNum]);
 
-  const validation = useMemo(() => {
-    if (localErrors.length) return { ok: false, errors: localErrors, warnings: [] as string[] };
+  const preflight = useMemo(() => {
+    if (localErrors.length) return null;
     if (!account || !symbolMeta || !entryNum || !lotNum) return null;
     return validateNewOrder(
       account as any,
@@ -142,6 +142,14 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
       (s) => liveQuotes[s]?.price ?? null,
     );
   }, [localErrors, account, symbolMeta, openTrades, symbol, side, entryNum, lotNum, slNum, tpNum, calc?.riskAmount, liveQuotes]);
+
+  const validation = preflight;
+  const errorList = useMemo(
+    () => (localErrors.length ? localErrors : preflight?.errors ?? []),
+    [localErrors, preflight],
+  );
+  const blocked = errorList.length > 0;
+
 
 
   const liqPrice = useMemo(
