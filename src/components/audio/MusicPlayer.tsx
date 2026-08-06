@@ -195,10 +195,10 @@ export function MusicPlayer({ embedded = false }: { embedded?: boolean }) {
 
       {isCollapsed && !embedded ? (
         <Button
-          variant="outline"
+          variant="ghost"
           size="icon"
           onClick={() => setIsCollapsed(false)}
-          className="w-12 h-12 rounded-full border-primary/20 bg-background/80 hover:bg-primary/5 transition-all shadow-lg"
+          className="w-10 h-10 rounded-xl text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all"
           aria-label="Expand music player"
         >
           {isPlaying ? (
