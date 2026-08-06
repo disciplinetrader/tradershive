@@ -149,6 +149,10 @@ function BattleDetail() {
     return () => { cancelled = true; supabase.removeChannel(ch); };
   }, [battleId]);
 
+  // Hooks must stay above every early return (React error #310).
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+
   if (battleQ.isLoading) return <div className="glass h-64 animate-pulse rounded-2xl" />;
   if (!battleQ.data) return <div className="text-sm text-muted-foreground">Arena match not found.</div>;
 
@@ -164,8 +168,6 @@ function BattleDetail() {
 
   const doJoin = async () => { try { await fnJoin({ data: { battleId } }); toast.success("Joined!"); qc.invalidateQueries({ queryKey: ["battle", battleId] }); } catch (e: any) { toast.error(e?.message ?? "Failed"); } };
   const doLeave = async () => { try { await fnLeave({ data: { battleId } }); toast.success("Left"); qc.invalidateQueries({ queryKey: ["battle", battleId] }); } catch (e: any) { toast.error(e?.message ?? "Failed"); } };
-  const [cancelOpen, setCancelOpen] = useState(false);
-  const [cancelling, setCancelling] = useState(false);
   const doCancel = async () => {
     setCancelling(true);
     try {
