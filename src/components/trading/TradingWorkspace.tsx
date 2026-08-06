@@ -1173,7 +1173,7 @@ function TradingWorkspaceInner() {
 
                   {activeTab === "watchlist" && (
                     <div role="tabpanel" id="ws-panel-watchlist" aria-labelledby="ws-tab-watchlist" className="animate-in fade-in duration-150">
-                      <WatchlistPanel onSymbol={handleWatchlistSymbol} />
+                      <WatchlistPanel />
                     </div>
                   )}
 
