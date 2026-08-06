@@ -231,15 +231,21 @@ function TradingWorkspaceInner() {
     setSmcParts(prefs.smcParts);
     setTemplateId(prefs.chartTemplateId);
     if (prefs.timeframe && prefs.timeframe !== timeframe) setTimeframe(prefs.timeframe);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrated]);
+    
+    // Multi-chart layout is handled by its own provider (readPersisted)
+    // and syncs symbols/timeframes there.
+  }, [hydrated]); // eslint-disable-line
 
   // Persist toolbar-driven changes.
-  useEffect(() => { if (hydrated) update("indicators", enabled); }, [enabled, hydrated, update]);
-  useEffect(() => { if (hydrated) update("chartType", chartType); }, [chartType, hydrated, update]);
-  useEffect(() => { if (hydrated) update("smcOn", smcOn); }, [smcOn, hydrated, update]);
-  useEffect(() => { if (hydrated) patch({ indicatorParams, smcParts, chartTemplateId: templateId }); }, [indicatorParams, smcParts, templateId, hydrated, patch]);
-  useEffect(() => { if (hydrated && timeframe) update("timeframe", timeframe); }, [timeframe, hydrated, update]);
+  useEffect(() => { 
+    if (hydrated) {
+      update("indicators", enabled); 
+      update("chartType", chartType);
+      update("smcOn", smcOn);
+      patch({ indicatorParams, smcParts, chartTemplateId: templateId });
+      if (timeframe) update("timeframe", timeframe);
+    }
+  }, [enabled, chartType, smcOn, indicatorParams, smcParts, templateId, timeframe, hydrated, update, patch]);
 
   const handleReady = useCallback((api: ChartHandle) => {
     chartApi.current = api;

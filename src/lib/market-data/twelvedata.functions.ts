@@ -114,20 +114,33 @@ function key(): string {
 
 async function td(path: string, params: Record<string, string>): Promise<any> {
   const gate = canCall();
+  // If soft-throttled or exhausted, we might still want to allow a manual retry to "burst"
+  // but for now we enforce the gate.
   if (!gate.ok) throw new Error(gate.reason);
+  
   const qs = new URLSearchParams({ ...params, apikey: key() }).toString();
   recordCall();
-  const res = await fetch(`${BASE}${path}?${qs}`);
+  
+  const res = await fetch(`${BASE}${path}?${qs}`, {
+    // Ensure we don't get cached 429s or stale data from intermediate proxies
+    cache: "no-store",
+  });
+
   if (res.status === 429) {
     recordError("rate_limited", 60_000);
     throw new Error("twelvedata_429");
   }
-  if (!res.ok) { recordError(`http_${res.status}`, 15_000); throw new Error(`twelvedata_${res.status}`); }
+  
+  if (!res.ok) { 
+    const text = await res.text().catch(() => "");
+    recordError(`http_${res.status}`, 15_000); 
+    throw new Error(`twelvedata_${res.status}: ${text.slice(0, 100)}`); 
+  }
+
   const json = await res.json();
   if (json && typeof json === "object" && json.status === "error") {
     const code = String(json.code ?? "");
     const message = (json.message ?? "").toString();
-    // 429 sometimes surfaces as JSON error with code 429.
     if (code === "429" || /rate/i.test(message)) recordError("rate_limited", 60_000);
     else recordError(`api_${code}`, 5_000);
     throw new Error(`twelvedata_api:${code}:${message.slice(0, 200)}`);

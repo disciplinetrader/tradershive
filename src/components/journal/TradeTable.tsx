@@ -134,6 +134,9 @@ export function TradeTable({
   };
 
   const exportCsv = () => {
+    if (!sorted.length) {
+      return;
+    }
     const cols = COLUMNS.filter((c) => c.key !== "actions" && visible[c.key]);
     const header = cols.map((c) => c.label).join(",");
     const lines = sorted.map((e) =>
@@ -144,13 +147,15 @@ export function TradeTable({
     const csv = [header, ...lines].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
+    const a = document.body.appendChild(document.createElement("a"));
     a.href = url;
     a.download = `journal-${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(a); // Fix: Must be in DOM for some browsers
+    a.style.display = "none";
     a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    setTimeout(() => {
+      a.remove();
+      URL.revokeObjectURL(url);
+    }, 100);
   };
 
 

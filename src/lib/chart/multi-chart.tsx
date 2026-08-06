@@ -162,12 +162,18 @@ export function ChartLayoutProvider({
     if (saved) {
       setLayoutState(saved.layout);
       setPanes(saved.panes);
+    } else {
+      // Initialize with default single chart if nothing persisted
+      setLayoutState("1");
+      setPanes([]);
     }
     setHydrated(true);
   }, []);
 
   useEffect(() => {
-    if (hydrated) writePersisted({ layout, panes });
+    if (hydrated) {
+      writePersisted({ layout, panes });
+    }
   }, [hydrated, layout, panes]);
 
   const setLayout = useCallback(
