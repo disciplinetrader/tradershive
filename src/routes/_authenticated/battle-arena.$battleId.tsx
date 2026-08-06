@@ -233,24 +233,33 @@ function BattleDetail() {
         
         <div className="ml-auto flex items-center gap-2">
           {canJoin && <Button size="sm" onClick={doJoin} className="font-bold rounded-xl shadow-lg shadow-primary/20"><LogIn className="mr-1.5 h-4 w-4" />Join Arena</Button>}
+          {isParticipant && isLobby && (
+            <Button 
+              size="sm" 
+              onClick={doReady} 
+              variant={isReady ? "secondary" : "default"}
+              className={cn("font-bold rounded-xl transition-all", isReady ? "bg-success/20 text-success border-success/30 hover:bg-success/30" : "shadow-lg shadow-primary/20")}
+            >
+              {isReady ? <Check className="mr-1.5 h-4 w-4" /> : <ShieldCheck className="mr-1.5 h-4 w-4" />}
+              {isReady ? "Locked In" : "Ready to Fight"}
+            </Button>
+          )}
           {canLeave && <Button size="sm" variant="outline" onClick={doLeave} className="font-bold rounded-xl border-border/60"><LogOut className="mr-1.5 h-4 w-4" />Leave</Button>}
           {canCancel && <Button size="sm" variant="destructive" onClick={() => setCancelOpen(true)} className="font-bold rounded-xl"><Trash2 className="mr-1.5 h-4 w-4" />Cancel</Button>}
           {canFinalize && <Button size="sm" variant="secondary" onClick={doFinalize} className="font-bold rounded-xl"><Play className="mr-1.5 h-4 w-4" />Finalize</Button>}
-          {isParticipant && battle.status === "live" && (
-            <Button size="sm" asChild className="font-bold rounded-xl shadow-lg shadow-primary/20">
-              <Link to="/trading"><LineChart className="mr-1.5 h-4 w-4" />Trade Now</Link>
-            </Button>
-          )}
         </div>
 
-        {battle.visibility === "private" && battle.invite_code && isHost && (
+        {battle.invite_code && (isHost || isParticipant) && (
           <div className="flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-1 text-xs">
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Invite:</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Invite Code:</span>
             <code className="rounded bg-background px-2 py-0.5 font-mono font-bold">{battle.invite_code}</code>
-            <Button size="sm" variant="ghost" className="h-6 w-6 p-0 rounded-lg" onClick={() => { navigator.clipboard.writeText(battle.invite_code ?? ""); toast.success("Copied"); }}><Copy className="h-3 w-3" /></Button>
+            <Button size="sm" variant="ghost" className="h-6 w-6 p-0 rounded-lg" onClick={() => { navigator.clipboard.writeText(battle.invite_code ?? ""); toast.success("Code Copied"); }}><Copy className="h-3 w-3" /></Button>
+            <div className="h-3 w-[1px] bg-border/40 mx-1" />
+            <Button size="sm" variant="ghost" className="h-6 flex gap-1 px-2 rounded-lg text-[10px] font-bold" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/battle-arena/${battleId}`); toast.success("Link Copied"); }}><Copy className="h-3 w-3" /> Copy Link</Button>
           </div>
         )}
       </div>
+
 
       {battle.status === "completed" && (
         <BattleResultsView battle={battle} results={results} profiles={profiles} />
