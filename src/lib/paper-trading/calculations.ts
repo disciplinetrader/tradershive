@@ -66,18 +66,25 @@ export function tradeCalculation(params: {
   balance: number;
 }): TradeCalc {
   const { sym, side, entry, sl, tp, lot, leverage, balance } = params;
-  const pipDistance = sl ? pipsBetween(sym, entry, sl) : 0;
-  const pipReward = tp ? pipsBetween(sym, entry, tp) : 0;
+
+  // Orientational sanity: if stop loss or take profit are on the wrong side
+  // for the trade direction, we treat them as unset to avoid showing misleading
+  // risk/reward or distance numbers in the UI.
+  const effectiveSl = sl != null ? (side === "buy" ? (sl < entry ? sl : null) : (sl > entry ? sl : null)) : null;
+  const effectiveTp = tp != null ? (side === "buy" ? (tp > entry ? tp : null) : (tp < entry ? tp : null)) : null;
+
+  const pipDistance = effectiveSl ? pipsBetween(sym, entry, effectiveSl) : 0;
+  const pipReward = effectiveTp ? pipsBetween(sym, entry, effectiveTp) : 0;
   const riskAmount = pipDistance * sym.pipValuePerLot * lot;
   const rewardAmount = pipReward * sym.pipValuePerLot * lot;
   const rr = riskAmount > 0 ? rewardAmount / riskAmount : 0;
   const notional = notionalValue(sym, lot, entry);
   const margin = marginRequired(sym, lot, entry, leverage);
   const riskPct = balance > 0 ? (riskAmount / balance) * 100 : 0;
-  // Validate SL/TP orientation: warn silently by ignoring bad configs upstream.
-  void side;
+
   return { pipDistance, pipReward, riskAmount, rewardAmount, rr, notional, margin, riskPct };
 }
+
 
 /** Whether stop/take-profit is on the correct side of entry. */
 export function validateStops(side: TradeSide, entry: number, sl: number | null, tp: number | null): string | null {
