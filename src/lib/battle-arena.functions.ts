@@ -281,7 +281,7 @@ export const setParticipantReady = createServerFn({ method: "POST" })
       .eq("battle_id", data.battleId);
 
     const readyCount = participants?.filter(p => p.is_ready).length ?? 0;
-    const allReady = (participants?.length ?? 0) >= battle.min_participants && (participants?.every(p => p.is_ready) ?? false);
+    const allReady = (participants?.length ?? 0) >= (battle.min_participants ?? 2) && (participants?.every(p => p.is_ready) ?? false);
 
     if (["open", "filling", "upcoming", "ready"].includes(battle.status)) {
       if (allReady) {
