@@ -146,8 +146,8 @@ export function MusicPlayer({ embedded = false }: { embedded?: boolean }) {
     if (isPlaying) {
       audioRef.current?.pause();
     } else {
-      audioRef.current?.play().catch(() => {
-        // Handle autoplay restrictions
+      audioRef.current?.play().catch((e) => {
+        console.warn("Autoplay blocked or audio error:", e);
         setHasError(true);
       });
     }
