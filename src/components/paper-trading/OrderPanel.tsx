@@ -109,7 +109,23 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
   // Broker-style pre-flight: reject the same orders the server will reject,
   // and warn on the same ones. Runs on every keystroke so the CTA reflects
   // reality instantly.
-  const validation = useMemo(() => {
+  // Local field-level guards run first: malformed, zero, negative or
+  // non-finite inputs must block the CTA even before the broker pre-flight
+  // (which needs a usable entry/lot to run at all).
+  const localErrors = useMemo(() => {
+    const errs: string[] = [];
+    if (!Number.isFinite(entryNum) || entryNum <= 0) errs.push("Entry price must be a positive number");
+    else if (entryNum > 1e12) errs.push("Entry price is out of range");
+    if (!Number.isFinite(lotNum) || lotNum <= 0) errs.push("Lot size must be a positive number");
+    else if (symbolMeta && lotNum < symbolMeta.minLot) errs.push(`Minimum lot size is ${symbolMeta.minLot}`);
+    else if (symbolMeta && lotNum > symbolMeta.maxLot) errs.push(`Maximum lot size is ${symbolMeta.maxLot}`);
+    if (sl !== "" && (!Number.isFinite(slNum as number) || (slNum as number) <= 0)) errs.push("Stop loss must be a positive number");
+    if (tp !== "" && (!Number.isFinite(tpNum as number) || (tpNum as number) <= 0)) errs.push("Take profit must be a positive number");
+    return errs;
+  }, [entryNum, lotNum, symbolMeta, sl, tp, slNum, tpNum]);
+
+  const preflight = useMemo(() => {
+    if (localErrors.length) return null;
     if (!account || !symbolMeta || !entryNum || !lotNum) return null;
     return validateNewOrder(
       account as any,
@@ -125,7 +141,16 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
       },
       (s) => liveQuotes[s]?.price ?? null,
     );
-  }, [account, symbolMeta, openTrades, symbol, side, entryNum, lotNum, slNum, tpNum, calc?.riskAmount, liveQuotes]);
+  }, [localErrors, account, symbolMeta, openTrades, symbol, side, entryNum, lotNum, slNum, tpNum, calc?.riskAmount, liveQuotes]);
+
+  const validation = preflight;
+  const errorList = useMemo(
+    () => (localErrors.length ? localErrors : preflight?.errors ?? []),
+    [localErrors, preflight],
+  );
+  const blocked = errorList.length > 0;
+
+
 
   const liqPrice = useMemo(
     () => symbolMeta && entryNum && leverage > 1 ? liquidationPrice(entryNum, side, leverage) : null,
@@ -156,8 +181,8 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
       if (!lotNum || lotNum < symbolMeta.minLot) throw new Error(`Minimum lot is ${symbolMeta.minLot}`);
 
       // Hard errors block regardless of user choice — server enforces these too.
-      if (validation && !validation.ok) {
-        throw new Error(validation.errors[0] ?? "Order rejected");
+      if (errorList.length) {
+        throw new Error(errorList[0] ?? "Order rejected");
       }
 
       // Server rejects entry_price <= 0. Guard against submitting a market
@@ -289,12 +314,12 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
       </Select>
 
       <div className="grid grid-cols-2 gap-2">
-        <Field label="Entry price" htmlFor="order-entry" error={validation?.errors.find(e => e.toLowerCase().includes("entry"))}>
+        <Field label="Entry price" htmlFor="order-entry" error={errorList.find(e => e.toLowerCase().includes("entry"))}>
           <div className="flex gap-1">
             <Input id="order-entry" inputMode="decimal" value={entry} onChange={(e) => setEntry(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); attemptPlace(); } }}
-              aria-invalid={!validation?.ok && validation?.errors.some(m => m.toLowerCase().includes("entry"))}
-              aria-describedby={validation?.errors.some(m => m.toLowerCase().includes("entry")) ? "order-entry-error" : undefined}
+              aria-invalid={errorList.some(m => m.toLowerCase().includes("entry"))}
+              aria-describedby={errorList.some(m => m.toLowerCase().includes("entry")) ? "order-entry-error" : undefined}
               className="h-8 font-mono" />
             {livePrice != null && (
               <Button
@@ -304,25 +329,25 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
             )}
           </div>
         </Field>
-        <Field label="Lot size" htmlFor="order-lot" error={validation?.errors.find(e => e.toLowerCase().includes("lot"))}>
+        <Field label="Lot size" htmlFor="order-lot" error={errorList.find(e => e.toLowerCase().includes("lot"))}>
           <Input id="order-lot" inputMode="decimal" value={lot} onChange={(e) => setLot(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); attemptPlace(); } }}
-            aria-invalid={!validation?.ok && validation?.errors.some(m => m.toLowerCase().includes("lot"))}
-            aria-describedby={validation?.errors.some(m => m.toLowerCase().includes("lot")) ? "order-lot-error" : undefined}
+            aria-invalid={errorList.some(m => m.toLowerCase().includes("lot"))}
+            aria-describedby={errorList.some(m => m.toLowerCase().includes("lot")) ? "order-lot-error" : undefined}
             className="h-8 font-mono" />
         </Field>
-        <Field label="Stop loss" htmlFor="order-sl" error={validation?.errors.find(e => e.toLowerCase().includes("stop"))}>
+        <Field label="Stop loss" htmlFor="order-sl" error={errorList.find(e => e.toLowerCase().includes("stop"))}>
           <Input id="order-sl" inputMode="decimal" value={sl} onChange={(e) => setSl(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); attemptPlace(); } }}
-            aria-invalid={!validation?.ok && validation?.errors.some(m => m.toLowerCase().includes("stop"))}
-            aria-describedby={validation?.errors.some(m => m.toLowerCase().includes("stop")) ? "order-sl-error" : undefined}
+            aria-invalid={errorList.some(m => m.toLowerCase().includes("stop"))}
+            aria-describedby={errorList.some(m => m.toLowerCase().includes("stop")) ? "order-sl-error" : undefined}
             className="h-8 font-mono" placeholder="—" />
         </Field>
-        <Field label="Take profit" htmlFor="order-tp" error={validation?.errors.find(e => e.toLowerCase().includes("profit"))}>
+        <Field label="Take profit" htmlFor="order-tp" error={errorList.find(e => e.toLowerCase().includes("profit"))}>
           <Input id="order-tp" inputMode="decimal" value={tp} onChange={(e) => setTp(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); attemptPlace(); } }}
-            aria-invalid={!validation?.ok && validation?.errors.some(m => m.toLowerCase().includes("profit"))}
-            aria-describedby={validation?.errors.some(m => m.toLowerCase().includes("profit")) ? "order-tp-error" : undefined}
+            aria-invalid={errorList.some(m => m.toLowerCase().includes("profit"))}
+            aria-describedby={errorList.some(m => m.toLowerCase().includes("profit")) ? "order-tp-error" : undefined}
             className="h-8 font-mono" placeholder="—" />
         </Field>
 
@@ -386,16 +411,16 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
               <Row label="Est. liquidation" value={liqPrice.toFixed(symbolMeta?.decimals ?? 2)} accent="rose" />
             )}
           </div>
-          {validation && validation.errors.length > 0 && (
+          {errorList.length > 0 && (
             <div className="mt-2 space-y-1">
-              {validation.errors.map((msg, i) => (
+              {errorList.map((msg, i) => (
                 <p key={i} className="flex items-start gap-1.5 rounded-md bg-danger/10 px-2 py-1 text-danger">
                   <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {msg}
                 </p>
               ))}
             </div>
           )}
-          {validation && validation.errors.length === 0 && validation.warnings.length > 0 && (
+          {!blocked && validation && validation.warnings.length > 0 && (
             <div className="mt-2 space-y-1">
               {validation.warnings.map((msg, i) => (
                 <p key={i} className="flex items-start gap-1.5 rounded-md bg-warning/10 px-2 py-1 text-warning">
@@ -484,7 +509,7 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
           <Button variant="outline" onClick={reset} className="cursor-pointer transition-all duration-150 active:scale-[0.98]"><RotateCcw className="mr-1.5 h-4 w-4" /> Reset</Button>
           <Button
             onClick={attemptPlace}
-            disabled={openMut.isPending || !accountId || !symbolMeta || (validation != null && !validation.ok) || waitingForPrice}
+            disabled={openMut.isPending || !accountId || !symbolMeta || blocked || waitingForPrice}
             aria-label={waitingForPrice ? "Waiting for live price" : (side === "long" ? "Buy market order" : "Sell market order")}
             className={cn("flex-1 cursor-pointer shadow-elegant transition-all duration-150 hover:shadow-md active:scale-[0.98] focus-visible:ring-2",
               side === "long"
@@ -492,7 +517,7 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
                 : "bg-danger text-white hover:bg-danger/90 focus-visible:ring-danger/60")}
           >
             <Send className="mr-1.5 h-4 w-4" />
-            {validation && !validation.ok
+            {blocked
               ? "Insufficient margin"
               : waitingForPrice
               ? "Waiting for price…"
