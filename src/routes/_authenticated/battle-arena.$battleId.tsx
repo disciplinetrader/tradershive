@@ -33,6 +33,7 @@ import { PaperTradingProvider } from "@/components/paper-trading/context";
 import { TradingWorkspace } from "@/components/trading/TradingWorkspace";
 import { ArenaCommandRail } from "@/components/battle-arena/ArenaCommandRail";
 import { BattleStartIntro } from "@/components/battle-arena/lobby/BattleStartIntro";
+import { CountdownTimer } from "@/components/battle-arena/CountdownTimer";
 
 
 
