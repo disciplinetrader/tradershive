@@ -1,5 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Crown, Star } from "lucide-react";
+import { Crown, Star, ShieldCheck, Timer } from "lucide-react";
 import { getRankFromElo } from "@/lib/battle-arena/constants";
 import { cn } from "@/lib/utils";
 
