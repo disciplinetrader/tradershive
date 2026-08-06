@@ -158,7 +158,7 @@ export function FiltersBar() {
             className="h-9 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
             onClick={() => {
               const headers = ["Symbol", "Market", "Direction", "Status", "PnL", "RR", "Open", "Close", "Tags"];
-              const rows = filtered.map(t => [
+              const rows = (filtered ?? []).map((t: any) => [
                 t.symbol,
                 t.market,
                 t.direction,
@@ -179,7 +179,7 @@ export function FiltersBar() {
             size="sm"
             className="h-9 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
             onClick={() => {
-              exportToJson(`analytics-${new Date().toISOString().slice(0, 10)}.json`, filtered);
+              exportToJson(`analytics-${new Date().toISOString().slice(0, 10)}.json`, filtered ?? []);
             }}
           >
             <Download className="h-3.5 w-3.5" /> JSON
