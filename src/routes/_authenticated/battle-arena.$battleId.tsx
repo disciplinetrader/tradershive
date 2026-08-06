@@ -229,7 +229,7 @@ function BattleDetail() {
   const onlineCount = (presenceQ.data ?? []).filter((p: any) => p.status !== "disconnected").length;
 
   const isLobby = ["draft", "upcoming", "open", "filling", "ready", "countdown"].includes(battle.status);
-  const isLive = battle.status === "live";
+  const isLive = battle.status === "live" || battle.status === "ready" || battle.status === "countdown";
 
   if (isLive) {
     const myParticipant = participants.find((p: any) => p.user_id === user?.id);
