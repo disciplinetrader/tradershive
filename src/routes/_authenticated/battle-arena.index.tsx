@@ -84,9 +84,17 @@ function BattleArenaLobby() {
           </TabsContent>
 
           <TabsContent value="guide" className="mt-0 focus-visible:outline-none">
+            <div className="flex flex-col items-center gap-6 rounded-[40px] border border-border/40 bg-card/20 px-6 py-16 text-center backdrop-blur-xl">
+              <div className="grid h-16 w-16 place-items-center rounded-[20px] bg-primary/10 text-primary">
+                <Sparkles className="h-8 w-8" />
+              </div>
+              <div className="max-w-md space-y-2">
+                <h3 className="text-xl font-black tracking-tight">Arena Masterclass</h3>
+                <p className="text-sm text-muted-foreground font-medium">
+                  Learn how to master the arena, manage your risk, and climb the tiers efficiently.
+                </p>
+              </div>
               <div className="aspect-video w-full max-w-2xl overflow-hidden rounded-[32px] border border-border/60 bg-muted/20 shadow-2xl">
-
-                {/* Embed video/GIF placeholder */}
                 <div className="flex h-full w-full items-center justify-center">
                   <BookOpen className="h-12 w-12 text-muted-foreground/20" />
                 </div>
