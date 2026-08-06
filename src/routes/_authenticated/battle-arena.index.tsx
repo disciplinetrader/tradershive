@@ -164,6 +164,7 @@ function BattleArenaLobby() {
                     title="Climb the Ranks" 
                     description="Win matches to earn Rank Points (RP) and move from Initiate up to the Sovereign tier for exclusive rewards." 
                   />
+
                 </div>
               </div>
 
