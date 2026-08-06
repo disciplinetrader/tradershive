@@ -32,6 +32,8 @@ import { Badge } from "@/components/ui/badge";
 import { PaperTradingProvider } from "@/components/paper-trading/context";
 import { TradingWorkspace } from "@/components/trading/TradingWorkspace";
 import { ArenaCommandRail } from "@/components/battle-arena/ArenaCommandRail";
+import { BattleStartIntro } from "@/components/battle-arena/lobby/BattleStartIntro";
+
 
 
 export const Route = createFileRoute("/_authenticated/battle-arena/$battleId")({
@@ -122,6 +124,17 @@ function BattleDetail() {
   const isParticipant = battleQ.data?.isParticipant ?? false;
   const isHost = battleQ.data?.isHost ?? false;
   const role = isHost ? "host" : isParticipant ? "competitor" : "spectator";
+
+  const [showIntro, setShowIntro] = useState(false);
+  const [introSeen, setIntroSeen] = useState(false);
+
+  useEffect(() => {
+    if (battle?.status === "countdown" && !introSeen) {
+      setShowIntro(true);
+      setIntroSeen(true);
+    }
+  }, [battle?.status, introSeen]);
+
 
   // Hooks must stay above every early return (React error #310).
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -255,6 +268,8 @@ function BattleDetail() {
   return (
 
     <div className={cn("space-y-6 animate-in fade-in duration-500", battle.status === 'countdown' && "animate-pulse")}>
+      {showIntro && <BattleStartIntro onComplete={() => setShowIntro(false)} />}
+
       <LiveBattleHeader
         battle={battle || { name: "Loading...", status: "upcoming" } as any}
         stats={statsQ.data as any}
