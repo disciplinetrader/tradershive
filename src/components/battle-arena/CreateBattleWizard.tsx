@@ -329,21 +329,3 @@ function Review({ label, value }: { label: string; value: string | number }) {
     </div>
   );
 }
-
-          <Button disabled={loading} onClick={submit} className="font-bold rounded-xl h-11 px-10 shadow-lg shadow-primary/30">
-            {loading ? "Preparing Battle..." : "Launch Battle Arena"}
-          </Button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function Review({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between rounded-xl bg-card/30 border border-border/40 px-4 py-2.5 hover:bg-card/50 transition-colors">
-      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{label}</span>
-      <span className="text-xs font-black text-foreground">{value}</span>
-    </div>
-  );
-}
