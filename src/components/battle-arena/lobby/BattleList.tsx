@@ -7,7 +7,7 @@ import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 
 export function BattleList({ scope }: { scope: string }) {
-  const { data: battles } = useBattles(scope);
+  const { data: battles = [] } = useBattles(scope);
   const [search, setSearch] = useState("");
 
   const filtered = battles.filter(b => 
