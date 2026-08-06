@@ -116,13 +116,24 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
     const errs: string[] = [];
     if (!Number.isFinite(entryNum) || entryNum <= 0) errs.push("Entry price must be a positive number");
     else if (entryNum > 1e12) errs.push("Entry price is out of range");
+
     if (!Number.isFinite(lotNum) || lotNum <= 0) errs.push("Lot size must be a positive number");
     else if (symbolMeta && lotNum < symbolMeta.minLot) errs.push(`Minimum lot size is ${symbolMeta.minLot}`);
     else if (symbolMeta && lotNum > symbolMeta.maxLot) errs.push(`Maximum lot size is ${symbolMeta.maxLot}`);
-    if (sl !== "" && (!Number.isFinite(slNum as number) || (slNum as number) <= 0)) errs.push("Stop loss must be a positive number");
-    if (tp !== "" && (!Number.isFinite(tpNum as number) || (tpNum as number) <= 0)) errs.push("Take profit must be a positive number");
+
+    if (sl !== "" && (!Number.isFinite(slNum as number) || (slNum as number) <= 0)) {
+      errs.push("Stop loss must be a positive number");
+    }
+    if (tp !== "" && (!Number.isFinite(tpNum as number) || (tpNum as number) <= 0)) {
+      errs.push("Take profit must be a positive number");
+    }
+
+    // Directional sanity for protective levels.
+    const stopsMsg = validateStops(side, entryNum, slNum, tpNum);
+    if (stopsMsg) errs.push(stopsMsg);
+
     return errs;
-  }, [entryNum, lotNum, symbolMeta, sl, tp, slNum, tpNum]);
+  }, [entryNum, lotNum, symbolMeta, sl, tp, slNum, tpNum, side]);
 
   const preflight = useMemo(() => {
     if (localErrors.length) return null;
