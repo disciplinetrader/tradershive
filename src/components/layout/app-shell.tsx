@@ -61,9 +61,6 @@ const SECONDARY: NavItem[] = [
 
 const ADMIN_ITEMS: NavItem[] = [{ to: "/admin", label: "Admin", icon: Shield, admin: true }];
 
-
-const ADMIN_ITEMS: NavItem[] = [{ to: "/admin", label: "Admin", icon: Shield, admin: true }];
-
 /** Sidebar links tagged so the product tour can spotlight them. */
 const TOUR_TARGETS: Record<string, string | undefined> = {
   "/replay": "nav-replay",
