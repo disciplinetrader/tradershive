@@ -133,7 +133,7 @@ function BattleDetail() {
   const [introSeen, setIntroSeen] = useState(false);
 
   useEffect(() => {
-    if (battle?.status === "countdown" && !introSeen) {
+    if ((battle?.status === "countdown" || battle?.status === "live") && !introSeen) {
       setShowIntro(true);
       setIntroSeen(true);
     }
