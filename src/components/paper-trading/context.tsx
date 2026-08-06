@@ -35,8 +35,15 @@ const STORAGE = {
   timeframe: "th_paper_tf",
 };
 
-export function PaperTradingProvider({ children }: { children: ReactNode }) {
+export function PaperTradingProvider({ 
+  children,
+  initialAccountId 
+}: { 
+  children: ReactNode;
+  initialAccountId?: string;
+}) {
   const qc = useQueryClient();
+
   const fetchAccounts = useServerFn(listAccounts);
   const createAcct = useServerFn(createAccount);
   const { data: accounts, isLoading } = useQuery({
@@ -95,10 +102,20 @@ export function PaperTradingProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!accounts?.length) return;
+    
+    if (initialAccountId) {
+      const match = accounts.find((a) => a.id === initialAccountId);
+      if (match) {
+        setAccountIdState(match.id);
+        return;
+      }
+    }
+
     const stored = typeof window !== "undefined" ? localStorage.getItem(STORAGE.account) : null;
     const match = accounts.find((a) => a.id === stored);
     setAccountIdState(match?.id ?? accounts[0].id);
-  }, [accounts]);
+  }, [accounts, initialAccountId]);
+
 
   const setAccountId = (id: string) => {
     setAccountIdState(id);

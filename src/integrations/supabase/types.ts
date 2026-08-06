@@ -1761,6 +1761,7 @@ export type Database = {
         Row: {
           battle_id: string
           id: string
+          is_ready: boolean | null
           joined_at: string
           left_at: string | null
           paper_account_id: string | null
@@ -1771,6 +1772,7 @@ export type Database = {
         Insert: {
           battle_id: string
           id?: string
+          is_ready?: boolean | null
           joined_at?: string
           left_at?: string | null
           paper_account_id?: string | null
@@ -1781,6 +1783,7 @@ export type Database = {
         Update: {
           battle_id?: string
           id?: string
+          is_ready?: boolean | null
           joined_at?: string
           left_at?: string | null
           paper_account_id?: string | null

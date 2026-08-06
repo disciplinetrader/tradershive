@@ -1656,9 +1656,9 @@ function BottomDock({
 
 
 import { useMarketCadence } from "@/lib/market-data/hooks";
-export function TradingWorkspace({ fullscreen: _fullscreen }: { fullscreen?: boolean } = {}) {
+export function TradingWorkspace({ fullscreen: _fullscreen, accountId }: { fullscreen?: boolean; accountId?: string } = {}) {
   return (
-    <PaperTradingProvider>
+    <PaperTradingProvider initialAccountId={accountId}>
       <WorkspaceChartLayout>
         <TradingWorkspaceInner />
       </WorkspaceChartLayout>
@@ -1666,6 +1666,7 @@ export function TradingWorkspace({ fullscreen: _fullscreen }: { fullscreen?: boo
     </PaperTradingProvider>
   );
 }
+
 
 /** Bridges the paper-trading symbol into the multi-chart grid so slot 0 stays
  *  the tradable chart while companion panes carry their own symbols. */
