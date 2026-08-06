@@ -28,6 +28,19 @@ let quotes: Record<string, Quote> = {};
 // one upstream subscription.
 const subs = new Map<string, { handle: SubscriptionHandle; refs: number }>();
 
+/** Snapshot poller per symbol, used until/while the streaming feed is silent. */
+const snapshots = new Map<string, ReturnType<typeof setInterval>>();
+
+function publish(meta: { symbol: string; refPrice: number }, price: number) {
+  if (!Number.isFinite(price) || price <= 0) return;
+  const base = meta.refPrice;
+  quotes = {
+    ...quotes,
+    [meta.symbol]: { symbol: meta.symbol, price, change: base ? ((price - base) / base) * 100 : 0 },
+  };
+  listeners.forEach((l) => l(quotes));
+}
+
 function acquire(symbol: string) {
   const meta = SYMBOL_BY_KEY[symbol];
   if (!meta) return;
@@ -35,20 +48,26 @@ function acquire(symbol: string) {
   if (existing) { existing.refs += 1; return; }
   try {
     marketData.init();
+    let lastTickAt = 0;
     const handle = marketData.subscribe(engineSymbol(meta.symbol), (q) => {
-      const base = meta.refPrice;
-      const price = q.last ?? q.bid ?? base;
-      quotes = {
-        ...quotes,
-        [meta.symbol]: {
-          symbol: meta.symbol,
-          price,
-          change: base ? ((price - base) / base) * 100 : 0,
-        },
-      };
-      listeners.forEach((l) => l(quotes));
+      lastTickAt = Date.now();
+      publish(meta, q.last ?? q.bid ?? meta.refPrice);
     }, meta.market);
     subs.set(symbol, { handle, refs: 1 });
+
+    // Streaming feeds drop (WS 1006, provider cooldown) and can stay silent
+    // forever. Seed immediately from the REST snapshot and keep polling while
+    // no tick has arrived, so the ticket never sits on "Waiting for price".
+    // These are real provider quotes — never synthesised.
+    const pull = () => {
+      if (lastTickAt && Date.now() - lastTickAt < 30_000) return;
+      void marketData
+        .getQuote(engineSymbol(meta.symbol), meta.market)
+        .then((q) => publish(meta, (q as any).last ?? (q as any).bid ?? 0))
+        .catch(() => { /* stay on the last real price */ });
+    };
+    pull();
+    snapshots.set(symbol, setInterval(pull, 15_000));
   } catch { /* engine unavailable — UI falls back to last known / refPrice */ }
 }
 
@@ -59,6 +78,8 @@ function release(symbol: string) {
   if (entry.refs <= 0) {
     try { entry.handle.unsubscribe(); } catch { /* noop */ }
     subs.delete(symbol);
+    const timer = snapshots.get(symbol);
+    if (timer) { clearInterval(timer); snapshots.delete(symbol); }
   }
 }
 

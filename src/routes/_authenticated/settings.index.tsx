@@ -40,7 +40,7 @@ const settingsSearchSchema = z.object({
   tab: z.string().optional().catch("account"),
 });
 
-export const Route = createFileRoute("/_authenticated/settings")({
+export const Route = createFileRoute("/_authenticated/settings/")({
   validateSearch: settingsSearchSchema,
   component: SettingsPage,
 });

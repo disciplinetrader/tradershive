@@ -71,9 +71,14 @@ export function TournamentCard({
   const entryFee = (champ.prize_info?.entry_fee as number | undefined) ?? 0;
   const days = durationDays(champ.start_at, champ.end_at);
   const diff = difficulty(champ);
-  const canQuickJoin = onQuickJoin && (status === "live" || status === "registration");
-  const targetLabel = status === "live" ? "Ends" : status === "completed" ? "Ended" : "Starts";
-  const target = status === "live" ? champ.end_at : status === "completed" ? champ.end_at : champ.start_at;
+  // A championship can sit at status "live" past its end_at until the
+  // scheduler ticks; treat an elapsed end date as ended so joining is closed.
+  const ended =
+    status === "completed" || status === "cancelled" || status === "grading" ||
+    (!!champ.end_at && new Date(champ.end_at).getTime() <= Date.now());
+  const canQuickJoin = !!onQuickJoin && !ended && (status === "live" || status === "registration");
+  const targetLabel = status === "live" && !ended ? "Ends" : ended ? "Ended" : "Starts";
+  const target = status === "live" || ended ? champ.end_at : champ.start_at;
 
   return (
     <div
@@ -176,7 +181,7 @@ export function TournamentCard({
           ) : null}
           <Link to="/championship/$slug" params={{ slug: champ.slug }} className={cn(!canQuickJoin && "flex-1")}>
             <Button size="sm" variant={canQuickJoin ? "outline" : "default"} className={cn(!canQuickJoin && "w-full")}>
-              Details <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+              {ended ? "Results" : "Details"} <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
             </Button>
           </Link>
         </div>

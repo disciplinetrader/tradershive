@@ -116,7 +116,21 @@ export class AutosaveEngine {
 
   /** Write the latest snapshot now (pause, unload, manual save). */
   async flush(): Promise<boolean> {
-    if (this.saving) return false;
+    // A manual save issued while an autosave is mid-flight must still land,
+    // otherwise the header keeps showing "Unsaved changes" forever.
+    if (this.saving) {
+      await this.inflight;
+      if (!this.dirty) return true;
+      if (this.saving) return false;
+    }
+    const run = this.runFlush();
+    this.inflight = run.then(() => undefined, () => undefined);
+    return run;
+  }
+
+  private inflight: Promise<void> = Promise.resolve();
+
+  private async runFlush(): Promise<boolean> {
     this.saving = true;
     this.stateValue = "saving";
     this.emit();

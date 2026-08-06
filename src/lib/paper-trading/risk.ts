@@ -26,6 +26,7 @@ import {
   pnl as computePnl,
   marginRequired,
   notionalValue,
+  validateStops,
 } from "./calculations";
 
 export type OpenTradeInput = {
@@ -210,6 +211,7 @@ export type NewOrderInput = {
   entry_price: number;
   lot_size: number;
   stop_loss?: number | null;
+  take_profit?: number | null;
   risk_amount?: number | null;
 };
 
@@ -254,8 +256,31 @@ export function validateNewOrder(
       required_margin: 0, free_margin_after: 0, risk_pct: 0, liq_price: null, buying_power_after: 0,
     };
   }
+  // Numeric sanity — reject non-finite / negative / overflowing inputs before
+  // any risk maths runs, so the panel shows an inline error immediately.
+  const numeric: [string, number | null | undefined][] = [
+    ["Entry price", order.entry_price],
+    ["Lot size", order.lot_size],
+    ["Stop loss", order.stop_loss],
+    ["Take profit", order.take_profit],
+  ];
+  for (const [label, v] of numeric) {
+    if (v == null) continue;
+    if (!Number.isFinite(v)) errors.push(`${label} must be a finite number`);
+    else if (v <= 0) errors.push(`${label} must be a positive number`);
+    else if (v > 1e12) errors.push(`${label} is out of range`);
+  }
   if (!(order.entry_price > 0)) errors.push("Entry price must be positive");
   if (!(order.lot_size > 0)) errors.push("Lot size must be positive");
+  if (errors.length > 0) {
+    return {
+      ok: false, errors, warnings: [],
+      required_margin: 0, free_margin_after: 0, risk_pct: 0, liq_price: null, buying_power_after: 0,
+    };
+  }
+  // Directional sanity for protective levels.
+  const stopsMsg = validateStops(order.direction, order.entry_price, order.stop_loss ?? null, order.take_profit ?? null);
+  if (stopsMsg) errors.push(stopsMsg);
   if (order.lot_size < sym.minLot) errors.push(`Minimum lot for ${sym.symbol} is ${sym.minLot}`);
   if (order.lot_size > sym.maxLot) errors.push(`Maximum lot for ${sym.symbol} is ${sym.maxLot}`);
 

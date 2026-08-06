@@ -13,6 +13,7 @@ import { fmtCurrency, fmtNumber } from "@/lib/statistics/format";
 import { GlassCard } from "@/components/ui/glass-card";
 import { cn } from "@/lib/utils";
 import { Layers } from "lucide-react";
+import { ExportMenu } from "@/components/statistics/ExportMenu";
 
 export const Route = createFileRoute("/_authenticated/dashboard/analytics")({
   head: () => ({
@@ -29,7 +30,10 @@ function DashboardAnalyticsPage() {
     <AnalyticsProvider>
       <div className="mx-auto w-full max-w-[1400px] space-y-[var(--gutter-md)] pb-[var(--gutter-lg)] sm:space-y-[var(--gutter-lg)]">
         <DashboardHeader />
-        <FiltersBar />
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-start">
+          <div className="min-w-0 flex-1"><FiltersBar /></div>
+          <div className="shrink-0"><ExportMenu /></div>
+        </div>
         <AnalyticsContent />
       </div>
     </AnalyticsProvider>

@@ -14,6 +14,7 @@ import {
   useSyncExternalStore, type ReactNode,
 } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
 import { logHistoricalMarketReplayed } from "@/lib/activity.functions";
 import { useQuery } from "@tanstack/react-query";
 import { getReplayCandles, getReplaySession } from "@/lib/replay.functions";
@@ -491,8 +492,30 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
     skipCandles: (n) => { controller?.skipCandles(n); },
     setSpeed: (s) => { controller?.setSpeed(s); },
     seekForwardTo: (t) => { controller?.seekForwardTo(t); },
-    finish: () => { void controller?.complete(); },
-    saveNow: () => { void controller?.save(); },
+    finish: () => {
+      if (!controller) return;
+      void (async () => {
+        try {
+          const ok = await controller.complete();
+          if (ok) toast.success("Session finished — review and score it below.");
+          else toast.error("Session finished locally, but saving to the cloud failed. Retrying…");
+        } catch (e) {
+          toast.error((e as Error).message || "Could not finish this session.");
+        }
+      })();
+    },
+    saveNow: () => {
+      if (!controller) return;
+      void (async () => {
+        try {
+          const ok = await controller.save();
+          if (ok) toast.success("Progress saved");
+          else toast.error("Save failed — we'll keep retrying in the background.");
+        } catch (e) {
+          toast.error((e as Error).message || "Save failed.");
+        }
+      })();
+    },
     placeMarketOrder,
     closePositionNow,
     cancelOrder,

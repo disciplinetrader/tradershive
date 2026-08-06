@@ -115,6 +115,17 @@ export const registerChampionship = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ championship_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
+    // Server-authoritative: never register for an ended/cancelled tournament.
+    const { data: champ, error: cErr } = await supabase
+      .from("championships").select("status, end_at").eq("id", data.championship_id).single();
+    if (cErr || !champ) throw new Error("Championship not found");
+    const nowIso = new Date().toISOString();
+    if (
+      champ.status === "completed" || champ.status === "cancelled" || champ.status === "grading" ||
+      (champ.end_at && nowIso > champ.end_at)
+    ) {
+      throw new Error("This championship has already ended — registration is closed.");
+    }
     const { error } = await supabase.rpc("register_for_championship" as any, { _champ: data.championship_id });
     if (error) throw new Error(error.message);
     return { ok: true };
