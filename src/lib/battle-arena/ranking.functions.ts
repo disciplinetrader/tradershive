@@ -7,8 +7,6 @@ export const getRankingSession = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
     
-    // In a real app, this would be a calculated row or a dedicated table.
-    // For now we derive it from battle_results or a session-specific table if exists.
     const { data: profile } = await supabase
       .from("profiles")
       .select("elo, peak_elo")
@@ -17,21 +15,20 @@ export const getRankingSession = createServerFn({ method: "GET" })
 
     const { data: lastBattle } = await supabase
       .from("battle_results")
-      .select("pnl") // Changed from ranking_delta to pnl which definitely exists
+      .select("pnl")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
 
-
     return {
       currentRanking: profile?.elo || 1000,
       peakRanking: profile?.peak_elo || 1000,
-      lastDelta: lastBattle?.ranking_delta || 0,
-      sessionNet: 0, // Placeholder
-      sessionPeak: 0, // Placeholder
-      bestDay: 0, // Placeholder
-      worstDay: 0, // Placeholder
+      lastDelta: 0, // Placeholder until ranking_delta column exists
+      sessionNet: lastBattle?.pnl || 0,
+      sessionPeak: 0,
+      bestDay: 0,
+      worstDay: 0,
     };
   });
 
