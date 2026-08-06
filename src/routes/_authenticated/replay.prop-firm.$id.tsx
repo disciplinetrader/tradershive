@@ -2,7 +2,7 @@ import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, MoreHorizontal, PlayCircle, RefreshCw } from "lucide-react";
+import { ArrowLeft, BarChart3, MoreHorizontal, PlayCircle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useActivePropChallenge } from "@/lib/prop-challenges/active-session";
 import { PageHeader } from "@/components/ui/page-header";
@@ -114,9 +114,26 @@ function ChallengeDetail() {
                 }}
               >
                 <PlayCircle className="mr-2 h-4 w-4" />
-                {activeSession?.id === challenge.id ? "Resume Trading" : "Start Trading"}
+                {activeSession?.id === challenge.id ? "Continue Trading" : "Start Trading"}
               </Button>
             )}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setActive({ id: challenge.id, paper_account_id: challenge.paper_account_id });
+                if (typeof window !== "undefined" && challenge.paper_account_id) {
+                  window.localStorage.setItem(
+                    "th_session_context_v2",
+                    JSON.stringify({ type: "prop", id: challenge.id, label: challenge.name }),
+                  );
+                }
+                navigate({ to: "/dashboard/analytics" });
+              }}
+            >
+              <BarChart3 className="mr-2 h-4 w-4" /> View Analytics
+            </Button>
+
             <Button size="sm" variant="outline" onClick={() => tickM.mutate()} disabled={tickM.isPending}>
               <RefreshCw className={`mr-2 h-4 w-4 ${tickM.isPending ? "animate-spin" : ""}`} /> Recheck
             </Button>
