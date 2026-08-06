@@ -44,7 +44,7 @@ export function LobbyRightRail() {
                 </Avatar>
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-xs font-black tracking-tight">{profile.display_name || profile.username}</div>
-                  <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{profile.elo} RP</div>
+                  <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{profile.elo} HR</div>
                 </div>
                 <TrendingUp className="h-3 w-3 text-success opacity-50" />
               </div>

@@ -10,22 +10,35 @@ export function RankingCard() {
   const { data: session } = useRankingSession();
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // Derive tier
-  const elo = session.currentRanking;
+  // HIVE Rating (HR) tiers
+  const hr = session.currentRanking;
   const tiers = Object.entries(LEAGUE_META);
-  let currentTier = tiers[0][1];
-  let nextTier = tiers[1][1];
-  let progress = 0;
+  
+  // Define tier thresholds (Rank Points / HR)
+  const thresholds = {
+    bronze: 0,
+    silver: 800,
+    gold: 1500,
+    platinum: 2500,
+    diamond: 4000,
+    master: 6000,
+    grandmaster: 8500,
+    legend: 12000
+  };
 
-  // Simple tier logic for UI demo
-  if (elo >= 3000) { currentTier = LEAGUE_META.legend; nextTier = LEAGUE_META.legend; progress = 100; }
-  else if (elo >= 2500) { currentTier = LEAGUE_META.grandmaster; nextTier = LEAGUE_META.legend; progress = (elo - 2500) / 5; }
-  else if (elo >= 2000) { currentTier = LEAGUE_META.master; nextTier = LEAGUE_META.grandmaster; progress = (elo - 2000) / 5; }
-  else if (elo >= 1500) { currentTier = LEAGUE_META.diamond; nextTier = LEAGUE_META.master; progress = (elo - 1500) / 5; }
-  else if (elo >= 1200) { currentTier = LEAGUE_META.platinum; nextTier = LEAGUE_META.diamond; progress = (elo - 1200) / 3; }
-  else if (elo >= 1000) { currentTier = LEAGUE_META.gold; nextTier = LEAGUE_META.platinum; progress = (elo - 1000) / 2; }
-  else if (elo >= 800) { currentTier = LEAGUE_META.silver; nextTier = LEAGUE_META.gold; progress = (elo - 800) / 2; }
-  else { currentTier = LEAGUE_META.bronze; nextTier = LEAGUE_META.silver; progress = elo / 8; }
+  const getTier = (val: number) => {
+    if (val >= thresholds.legend) return { current: LEAGUE_META.legend, next: LEAGUE_META.legend, progress: 100 };
+    if (val >= thresholds.grandmaster) return { current: LEAGUE_META.grandmaster, next: LEAGUE_META.legend, progress: (val - thresholds.grandmaster) / (thresholds.legend - thresholds.grandmaster) * 100 };
+    if (val >= thresholds.master) return { current: LEAGUE_META.master, next: LEAGUE_META.grandmaster, progress: (val - thresholds.master) / (thresholds.grandmaster - thresholds.master) * 100 };
+    if (val >= thresholds.diamond) return { current: LEAGUE_META.diamond, next: LEAGUE_META.master, progress: (val - thresholds.diamond) / (thresholds.master - thresholds.diamond) * 100 };
+    if (val >= thresholds.platinum) return { current: LEAGUE_META.platinum, next: LEAGUE_META.diamond, progress: (val - thresholds.platinum) / (thresholds.diamond - thresholds.platinum) * 100 };
+    if (val >= thresholds.gold) return { current: LEAGUE_META.gold, next: LEAGUE_META.platinum, progress: (val - thresholds.gold) / (thresholds.platinum - thresholds.gold) * 100 };
+    if (val >= thresholds.silver) return { current: LEAGUE_META.silver, next: LEAGUE_META.gold, progress: (val - thresholds.silver) / (thresholds.gold - thresholds.silver) * 100 };
+    return { current: LEAGUE_META.bronze, next: LEAGUE_META.silver, progress: (val / thresholds.silver) * 100 };
+  };
+
+  const { current: currentTier, next: nextTier, progress } = getTier(hr);
+
 
   return (
     <div className="space-y-4">
@@ -39,9 +52,10 @@ export function RankingCard() {
               {currentTier.icon}
             </div>
             <div>
-              <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Current Ranking</h3>
+              <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">HIVE Rating (HR)</h3>
               <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-black tracking-tighter">{elo}</span>
+                <span className="text-4xl font-black tracking-tighter">{hr}</span>
+
                 <span className={cn(
                   "flex items-center text-xs font-bold",
                   session.lastDelta >= 0 ? "text-success" : "text-danger"
