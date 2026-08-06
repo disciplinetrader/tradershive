@@ -91,7 +91,8 @@ export function CreateBattleWizard({ onCancel, onCreated }: { onCancel: () => vo
       onCreated(battle.id);
     } catch (e: any) { 
       console.error("Create battle failed:", e);
-      toast.error(e?.message ?? "Failed to create battle"); 
+      const msg = e?.message || e?.error?.message || "Failed to create battle";
+      toast.error(msg); 
     }
     finally { setLoading(false); }
   };
