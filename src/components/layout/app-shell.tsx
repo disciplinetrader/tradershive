@@ -93,7 +93,10 @@ export function AppShell({ children }: { children: ReactNode }) {
     pathname === "/trading" ||
     pathname.startsWith("/trading/") ||
     pathname === "/replay/studio" ||
-    pathname.startsWith("/replay/prop-firm/");
+    pathname.startsWith("/replay/prop-firm/") ||
+    pathname === "/battle-arena" ||
+    pathname.startsWith("/battle-arena/");
+
 
 
 
