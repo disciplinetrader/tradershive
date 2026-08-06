@@ -143,14 +143,23 @@ export function LiveBattleHeader({
             "flex flex-col items-end p-4 rounded-2xl border transition-all duration-500",
             isLive ? "bg-success/5 border-success/20" : isCountdown ? "bg-primary/5 border-primary/20 animate-pulse" : "bg-background/40 border-border/60"
           )}>
-            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">{label}</div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">
+              {battle.status === 'upcoming' || battle.status === 'filling' || battle.status === 'open' 
+                ? (participantCount < battle.min_participants ? "Staging Status" : "Lobby Status")
+                : label}
+            </div>
             <div className={cn(
               "flex items-center gap-2 font-black tabular-nums tracking-tighter",
-              isLive ? "text-success text-3xl" : isCountdown ? "text-primary text-4xl" : "text-foreground text-2xl"
+              isLive ? "text-success text-3xl" : isCountdown ? "text-primary text-4xl" : "text-foreground text-xl"
             )}>
               {isLive || isCountdown ? <Timer className={cn("h-6 w-6", isCountdown && "animate-spin")} /> : null}
-              {fmtRemaining(remainingMs)}
+              {battle.status === 'upcoming' || battle.status === 'filling' || battle.status === 'open'
+                ? (participantCount < battle.min_participants 
+                  ? `Waiting for ${battle.min_participants - participantCount} more` 
+                  : "Arena Ready")
+                : fmtRemaining(remainingMs)}
             </div>
+
           </div>
 
           {leader && isLive && (
