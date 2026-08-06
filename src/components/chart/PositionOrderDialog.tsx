@@ -334,7 +334,9 @@ export function PositionOrderDialog({
           </Button>
         </div>
 
-      </DialogContent>
+          </DialogContent>
+        </div>
+      </DialogPortal>
     </Dialog>
   );
 }
