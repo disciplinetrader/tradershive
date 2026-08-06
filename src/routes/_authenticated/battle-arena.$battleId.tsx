@@ -178,9 +178,22 @@ function BattleDetail() {
   const canCancel = isHost && ["draft", "upcoming", "open", "filling", "ready", "countdown"].includes(battle?.status || "");
   const canFinalize = isHost && battle?.status === "live";
 
+  const me = participants.find((p: any) => p.user_id === user?.id);
+  const isReady = me?.is_ready ?? false;
+
   const doJoin = async () => { try { await fnJoin({ data: { battleId } }); toast.success("Joined!"); qc.invalidateQueries({ queryKey: ["battle", battleId] }); } catch (e: any) { toast.error(e?.message ?? "Failed"); } };
   const doLeave = async () => { try { await fnLeave({ data: { battleId } }); toast.success("Left"); qc.invalidateQueries({ queryKey: ["battle", battleId] }); } catch (e: any) { toast.error(e?.message ?? "Failed"); } };
+  const doReady = async () => {
+    try {
+      await fnReady({ data: { battleId, ready: !isReady } });
+      toast.success(isReady ? "Un-ready" : "Locked In!");
+      qc.invalidateQueries({ queryKey: ["battle", battleId] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed");
+    }
+  };
   const doCancel = async () => {
+
     setCancelling(true);
     try {
       await fnCancel({ data: { battleId } });
