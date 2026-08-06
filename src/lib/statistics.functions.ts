@@ -75,12 +75,6 @@ export const getAnalyticsDataset = createServerFn({ method: "GET" })
     const [tradesRes, journalRes, accountsRes] = await Promise.all([
       tradesQuery.limit(5000),
       context.supabase
-        .from("paper_trades")
-        .select("id, account_id, symbol, market, direction, entry_price, exit_price, stop_loss, take_profit, lot_size, rr_planned, rr_realized, pnl, commission, swap, opened_at, closed_at")
-        .is("deleted_at", null)
-        .order("opened_at", { ascending: false })
-        .limit(5000),
-      context.supabase
         .from("journal_entries")
         .select("trade_id, session, setup, strategy, grade, emotions, mistakes, risk_pct, rr, duration_seconds, status, id, symbol, market, direction, pnl, opened_at, closed_at, entry_price, exit_price, stop_loss, take_profit, lot_size, commission, swap")
         .order("closed_at", { ascending: false, nullsFirst: false })
@@ -90,6 +84,7 @@ export const getAnalyticsDataset = createServerFn({ method: "GET" })
         .select("id, name, currency, starting_balance, balance, equity, is_archived")
         .is("deleted_at", null),
     ]);
+
     if (tradesRes.error) throw tradesRes.error;
     if (journalRes.error) throw journalRes.error;
     if (accountsRes.error) throw accountsRes.error;
