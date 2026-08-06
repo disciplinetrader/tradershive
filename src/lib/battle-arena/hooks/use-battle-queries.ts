@@ -1,23 +1,28 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { listBattles, getBattle, listMyBattleStats } from "@/lib/battle-arena.functions";
 
 export function useBattles(scope: any = "all") {
-  return useSuspenseQuery({
+  const fn = useServerFn(listBattles);
+  return useQuery({
     queryKey: ["battles", scope],
-    queryFn: () => listBattles({ data: { scope } }),
+    queryFn: () => fn({ data: { scope } }),
   });
 }
 
 export function useBattleDetails(id: string) {
-  return useSuspenseQuery({
+  const fn = useServerFn(getBattle);
+  return useQuery({
     queryKey: ["battle", id],
-    queryFn: () => getBattle({ data: { id } }),
+    queryFn: () => fn({ data: { id } }),
+    enabled: !!id,
   });
 }
 
 export function useMyBattleStats() {
-  return useSuspenseQuery({
+  const fn = useServerFn(listMyBattleStats);
+  return useQuery({
     queryKey: ["battle-stats-me"],
-    queryFn: () => listMyBattleStats(),
+    queryFn: () => fn(),
   });
 }
