@@ -105,7 +105,7 @@ export function QuickLogInput({ compact = false }: { compact?: boolean }) {
         </Button>
       </div>
 
-      {null}
+      {/* Trade suggestions row removed per user request to declutter the Journal interface. */}
 
       {prefill && (
         <ManualEntryDialog

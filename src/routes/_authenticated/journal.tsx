@@ -48,6 +48,7 @@ function JournalLayout() {
           }
         />
         <QuickLogInput />
+
         <div className="flex flex-wrap items-center gap-3">
           <JournalSourcePicker />
           <JournalSubNav />

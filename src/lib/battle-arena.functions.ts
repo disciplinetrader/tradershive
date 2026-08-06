@@ -47,6 +47,7 @@ export const listBattles = createServerFn({ method: "GET" })
       q = q.or(`visibility.eq.public,host_id.eq.${userId}`);
     }
 
+
     q = q.limit(data.limit);
     switch (data.scope) {
       case "featured":
@@ -86,7 +87,25 @@ export const getBattle = createServerFn({ method: "GET" })
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    // Check if the battle is private and the user is NOT the host/participant
+    const { data: bPriv, error: ePriv } = await supabase
+      .from("battles")
+      .select("visibility, host_id")
+      .eq("id", data.id)
+      .maybeSingle();
+
+    if (bPriv && bPriv.visibility === "private" && bPriv.host_id !== userId) {
+      const { data: isP } = await supabase
+        .from("battle_participants")
+        .select("id")
+        .eq("battle_id", data.id)
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (!isP) throw new Error("This Arena match is private");
+    }
+
     const { data: res, error: rpcErr } = await supabase.rpc("get_battle_details" as any, { _battle_id: data.id });
+
     if (!rpcErr && res?.battle) return res;
 
     // Fallback if RPC fails or is missing

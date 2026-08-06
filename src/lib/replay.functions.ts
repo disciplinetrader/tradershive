@@ -266,7 +266,43 @@ export const getReplaySession = createServerFn({ method: "GET" })
     };
   });
 
+export const completeReplaySession = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    // Verify ownership and update status
+    const { data: session, error: sErr } = await context.supabase
+      .from("replay_sessions")
+      .select("status, user_id")
+      .eq("id", data.id)
+      .single();
+    if (sErr) throw sErr;
+    if (session.user_id !== context.userId) throw new Error("Unauthorized");
+    if (session.status === "completed") return { ok: true };
+
+    const { error: uErr } = await context.supabase
+      .from("replay_sessions")
+      .update({
+        status: "completed",
+        completion_pct: 100,
+        updated_at: new Date().toISOString() as any,
+      })
+      .eq("id", data.id);
+    if (uErr) throw uErr;
+
+    await context.supabase.from("replay_events").insert({
+      session_id: data.id,
+      user_id: context.userId,
+      event_type: "session_finished",
+      event_ts: new Date().toISOString(),
+      payload: { manual: true },
+    });
+
+    return { ok: true };
+  });
+
 export const updateReplaySession = createServerFn({ method: "POST" })
+
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
     z.object({

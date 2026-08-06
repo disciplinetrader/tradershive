@@ -81,6 +81,7 @@ function canCall(): { ok: true } | { ok: false; reason: "quota_exhausted" | "coo
   const now = Date.now();
   if (now < usage.cooldownUntil) return { ok: false, reason: "cooldown" };
   if (usage.daily >= DAILY_LIMIT) return { ok: false, reason: "quota_exhausted" };
+
   if (usage.minute >= MINUTE_LIMIT) return { ok: false, reason: "minute_limit" };
   return { ok: true };
 }
@@ -163,12 +164,16 @@ export const twelveDataUsage = createServerFn({ method: "GET" }).handler(async (
     lastErrorAt: usage.lastErrorAt,
     cooldownUntil: usage.cooldownUntil,
     cooldownRemainingMs: Math.max(0, usage.cooldownUntil - now),
+    cooldownRemainingSec: Math.ceil(Math.max(0, usage.cooldownUntil - now) / 1000),
+
     quoteCacheSize: quoteCache.size,
     // Thresholds the client uses to tune cadence.
     softThrottle: usage.daily >= DAILY_SOFT,
-    exhausted: usage.daily >= DAILY_LIMIT || now < usage.cooldownUntil,
+    exhausted: usage.daily >= DAILY_LIMIT,
+    cooldown: now < usage.cooldownUntil,
   };
 });
+
 
 /** Latest quote for one or more Twelve Data symbols. */
 export const twelveDataQuote = createServerFn({ method: "POST" })

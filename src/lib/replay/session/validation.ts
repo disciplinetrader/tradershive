@@ -14,7 +14,7 @@ import { SESSION_SNAPSHOT_VERSION } from "./model";
 const TRANSITIONS: Record<SessionLifecycle, SessionLifecycle[]> = {
   // A session must actually be opened (`ready`) before it can be finished.
   // An untouched `created` session may only be abandoned — never completed.
-  created: ["ready", "abandoned"],
+  created: ["ready", "running", "completed", "abandoned"],
   ready: ["running", "completed", "abandoned"],
   running: ["paused", "completed", "abandoned"],
   paused: ["running", "completed", "abandoned"],

@@ -103,7 +103,7 @@ export class TwelveDataProvider implements MarketDataProvider {
     const requested = [...this.cadenceRequests.values()];
     let base = requested.length ? Math.min(...requested) : CADENCE.idle;
     if (this.lastUsage?.softThrottle) base = Math.max(base, CADENCE.throttled);
-    if (this.lastUsage?.exhausted) return 0;
+    if (this.lastUsage?.exhausted || this.lastUsage?.cooldown) return 0;
     return Math.max(3_000, base);
   }
 
@@ -166,17 +166,25 @@ export class TwelveDataProvider implements MarketDataProvider {
   getUsageSnapshot() { return { usage: this.lastUsage, currentPollMs: this.currentPollMs, subs: this.subs.size, failures: this.failureCount }; }
 
   private async refreshUsage() {
-    // Cheap server call, throttle to once every 20s.
-    if (Date.now() - this.lastUsageAt < 20_000) return;
+    // Cheap server call, throttle to once every 15s.
+    if (Date.now() - this.lastUsageAt < 15_000) return;
+
     this.lastUsageAt = Date.now();
     try {
       const u = await twelveDataUsage();
       this.lastUsage = u;
+      
+      // If we were error-throttled or exhausted, and now we aren't, wake up.
+      if (this.currentPollMs === 0 && !(u as any)?.exhausted && !(u as any)?.cooldown) {
+        this.retunePoller();
+      }
+
       if ((u as any)?.softThrottle && Date.now() - this.lastQuotaWarn > 60_000) {
         this.lastQuotaWarn = Date.now();
         console.warn(`[twelvedata] approaching daily quota (${(u as any).daily}/${(u as any).dailyLimit}) — reducing cadence.`);
       }
     } catch { /* noop */ }
+
   }
 
   private async pollOnce() {
@@ -185,11 +193,15 @@ export class TwelveDataProvider implements MarketDataProvider {
     if (this.currentPollMs === 0) return; // paused (tab hidden / quota exhausted)
     if (Date.now() < this.nextAllowedPoll) { this.schedulePoll(this.nextAllowedPoll - Date.now()); return; }
 
-    // No visible consumers → don't poll AND don't burn a usage probe. Wake
-    // up again once a subscription is added (subscribe() calls ensurePoller).
-    if (this.subs.size === 0) { return; }
+    // No visible consumers → don't poll AND don't burn a usage probe.
+    if (this.subs.size === 0) {
+      // If we have a probe scheduled, clear it.
+      if (this.pollTimer) { clearTimeout(this.pollTimer); this.pollTimer = null; }
+      return;
+    }
 
     void this.refreshUsage();
+
 
     const engineSyms = [...this.subs.keys()];
     const tdSyms = engineSyms.map(toTd);
