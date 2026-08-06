@@ -102,10 +102,20 @@ export function PaperTradingProvider({
 
   useEffect(() => {
     if (!accounts?.length) return;
+    
+    if (initialAccountId) {
+      const match = accounts.find((a) => a.id === initialAccountId);
+      if (match) {
+        setAccountIdState(match.id);
+        return;
+      }
+    }
+
     const stored = typeof window !== "undefined" ? localStorage.getItem(STORAGE.account) : null;
     const match = accounts.find((a) => a.id === stored);
     setAccountIdState(match?.id ?? accounts[0].id);
-  }, [accounts]);
+  }, [accounts, initialAccountId]);
+
 
   const setAccountId = (id: string) => {
     setAccountIdState(id);
