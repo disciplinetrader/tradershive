@@ -34,6 +34,9 @@ import { TradingWorkspace } from "@/components/trading/TradingWorkspace";
 import { ArenaCommandRail } from "@/components/battle-arena/ArenaCommandRail";
 import { BattleStartIntro } from "@/components/battle-arena/lobby/BattleStartIntro";
 import { CountdownTimer } from "@/components/battle-arena/CountdownTimer";
+import { BattleScrubber } from "@/components/battle-arena/BattleScrubber";
+import { BattleOrderTicket } from "@/components/battle-arena/BattleOrderTicket";
+import { BattleStatusBar } from "@/components/battle-arena/BattleStatusBar";
 
 
 
