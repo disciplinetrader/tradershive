@@ -56,7 +56,7 @@ export function BattleChat({ battleId, canPost, isHost }: { battleId: string; ca
       const { error } = await supabase.from("battle_chat").insert({
         battle_id: battleId,
         user_id: user.id,
-        content: text,
+        message: text,
         kind: "user"
       });
       if (error) throw error;
