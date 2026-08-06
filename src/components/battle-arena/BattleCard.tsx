@@ -9,7 +9,7 @@ type BattleRow = {
   id: string; 
   name: string; 
   description: string | null; 
-  status: BattleStatus; 
+  status: any; 
   visibility: string;
   battle_type: string; 
   market: string; 

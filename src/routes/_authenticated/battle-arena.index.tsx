@@ -6,7 +6,7 @@ import { LobbyRightRail } from "@/components/battle-arena/lobby/LobbyRightRail";
 import { BattleList } from "@/components/battle-arena/lobby/BattleList";
 import { Swords, History, BookOpen, Sparkles } from "lucide-react";
 import { CardGridSkeleton } from "@/components/ui/skeletons";
-import { ClientOnly } from "@/components/layout/ClientOnly";
+
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
