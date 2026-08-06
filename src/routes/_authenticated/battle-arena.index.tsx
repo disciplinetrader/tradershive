@@ -1,17 +1,18 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RankingCard } from "@/components/battle-arena/lobby/RankingCard";
 import { LobbyRightRail } from "@/components/battle-arena/lobby/LobbyRightRail";
 import { BattleList } from "@/components/battle-arena/lobby/BattleList";
 import { Swords, History, BookOpen, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
 import { CardGridSkeleton } from "@/components/ui/skeletons";
-
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { joinRandom } from "@/lib/battle-arena.functions";
+import { toast } from "sonner";
+
 
 export const Route = createFileRoute("/_authenticated/battle-arena/")({
   head: () => ({
