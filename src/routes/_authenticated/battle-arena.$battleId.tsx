@@ -64,12 +64,13 @@ function BattleDetail() {
   const battleQ = useQuery({
     queryKey: ["battle", battleId],
     queryFn: () => fnGet({ data: { id: battleId } }),
-    refetchInterval: (data) => {
-      const status = data?.battle?.status;
-      if (status === 'countdown' || status === 'filling' || status === 'open') return 3000;
+    refetchInterval: (query) => {
+      const status = (query.state.data as any)?.battle?.status;
+      if (status === 'countdown' || status === 'filling' || status === 'open' || status === 'upcoming') return 3000;
       return 30000;
     },
   });
+
 
 
   const eventsQ = useQuery({
