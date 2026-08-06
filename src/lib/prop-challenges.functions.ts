@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { AppError } from "@/lib/server-errors";
 import { PROP_PRESETS, type PropPresetId } from "./prop-challenges/presets";
 import { evaluateChallenge, type PropChallengeRow, type PropChallengeDayRow } from "./prop-challenges/evaluator";
 
