@@ -35,8 +35,15 @@ const STORAGE = {
   timeframe: "th_paper_tf",
 };
 
-export function PaperTradingProvider({ children }: { children: ReactNode }) {
+export function PaperTradingProvider({ 
+  children,
+  initialAccountId 
+}: { 
+  children: ReactNode;
+  initialAccountId?: string;
+}) {
   const qc = useQueryClient();
+
   const fetchAccounts = useServerFn(listAccounts);
   const createAcct = useServerFn(createAccount);
   const { data: accounts, isLoading } = useQuery({
