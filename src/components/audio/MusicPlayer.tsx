@@ -184,8 +184,8 @@ export function MusicPlayer({ embedded = false }: { embedded?: boolean }) {
 
   return (
     <div className={cn(
-      embedded ? "w-full" : "fixed bottom-6 left-6 z-[100] transition-all duration-300",
-      !embedded && (isCollapsed ? "w-12 h-12" : "w-72 bg-background/95 border border-border/60 rounded-2xl shadow-2xl backdrop-blur-xl p-4")
+      embedded ? "w-full" : "relative z-[100] transition-all duration-300",
+      !embedded && (isCollapsed ? "w-full flex justify-center" : "w-full bg-background/95 border border-border/60 rounded-2xl shadow-2xl backdrop-blur-xl p-4")
     )}>
       <audio
         ref={audioRef}
