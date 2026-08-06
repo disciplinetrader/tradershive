@@ -12,8 +12,10 @@ import type { SessionLifecycle, SessionSnapshot } from "./model";
 import { SESSION_SNAPSHOT_VERSION } from "./model";
 
 const TRANSITIONS: Record<SessionLifecycle, SessionLifecycle[]> = {
-  created: ["ready", "abandoned"],
-  ready: ["running", "abandoned"],
+  // A trader may finish a session they opened but never played — the studio
+  // must not throw "Illegal transition" behind the Finish button.
+  created: ["ready", "completed", "abandoned"],
+  ready: ["running", "completed", "abandoned"],
   running: ["paused", "completed", "abandoned"],
   paused: ["running", "completed", "abandoned"],
   completed: [],
