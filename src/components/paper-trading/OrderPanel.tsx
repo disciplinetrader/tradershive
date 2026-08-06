@@ -109,7 +109,23 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
   // Broker-style pre-flight: reject the same orders the server will reject,
   // and warn on the same ones. Runs on every keystroke so the CTA reflects
   // reality instantly.
+  // Local field-level guards run first: malformed, zero, negative or
+  // non-finite inputs must block the CTA even before the broker pre-flight
+  // (which needs a usable entry/lot to run at all).
+  const localErrors = useMemo(() => {
+    const errs: string[] = [];
+    if (!Number.isFinite(entryNum) || entryNum <= 0) errs.push("Entry price must be a positive number");
+    else if (entryNum > 1e12) errs.push("Entry price is out of range");
+    if (!Number.isFinite(lotNum) || lotNum <= 0) errs.push("Lot size must be a positive number");
+    else if (symbolMeta && lotNum < symbolMeta.minLot) errs.push(`Minimum lot size is ${symbolMeta.minLot}`);
+    else if (symbolMeta && lotNum > symbolMeta.maxLot) errs.push(`Maximum lot size is ${symbolMeta.maxLot}`);
+    if (sl !== "" && (!Number.isFinite(slNum as number) || (slNum as number) <= 0)) errs.push("Stop loss must be a positive number");
+    if (tp !== "" && (!Number.isFinite(tpNum as number) || (tpNum as number) <= 0)) errs.push("Take profit must be a positive number");
+    return errs;
+  }, [entryNum, lotNum, symbolMeta, sl, tp, slNum, tpNum]);
+
   const validation = useMemo(() => {
+    if (localErrors.length) return { ok: false, errors: localErrors, warnings: [] as string[] };
     if (!account || !symbolMeta || !entryNum || !lotNum) return null;
     return validateNewOrder(
       account as any,
@@ -125,7 +141,8 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
       },
       (s) => liveQuotes[s]?.price ?? null,
     );
-  }, [account, symbolMeta, openTrades, symbol, side, entryNum, lotNum, slNum, tpNum, calc?.riskAmount, liveQuotes]);
+  }, [localErrors, account, symbolMeta, openTrades, symbol, side, entryNum, lotNum, slNum, tpNum, calc?.riskAmount, liveQuotes]);
+
 
   const liqPrice = useMemo(
     () => symbolMeta && entryNum && leverage > 1 ? liquidationPrice(entryNum, side, leverage) : null,
