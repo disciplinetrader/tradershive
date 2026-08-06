@@ -40,6 +40,11 @@ export const listBattles = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     let q = supabase.from("battles").select("*");
+    if (data.scope !== "mine") {
+      q = q.not("name", "ilike", "%QA%")
+           .not("name", "ilike", "%test%")
+           .not("name", "ilike", "%helloooo%");
+    }
     
     // Visibility filter: Public battles are always visible. 
     // Private battles only visible to host or if the user is already a participant.

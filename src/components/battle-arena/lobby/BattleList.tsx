@@ -31,13 +31,6 @@ export function BattleList({ scope }: { scope: string }) {
           <Button variant="outline" size="icon" className="h-11 w-11 rounded-2xl border-border/60 bg-card/40">
             <Filter className="h-4 w-4" />
           </Button>
-          <div className="flex-1" />
-          <Button size="sm" variant="outline" className="h-11 font-black px-4 rounded-2xl hidden md:flex">
-            Join Random
-          </Button>
-          <Button asChild className="h-11 font-black px-6 rounded-2xl shadow-lg shadow-primary/20">
-            <Link to="/battle-arena/create"><Plus className="mr-1.5 h-4 w-4" /> New Battle</Link>
-          </Button>
         </div>
       </div>
 

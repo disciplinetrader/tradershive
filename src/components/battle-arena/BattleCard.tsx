@@ -39,7 +39,7 @@ export function BattleCard({ battle }: { battle: BattleRow }) {
       )}
     >
       {battle.ranked && (
-        <div className="absolute -right-2 -top-2 z-10 flex items-center gap-1.5 rounded-full bg-primary px-3 py-1 text-[10px] font-black uppercase tracking-widest text-primary-foreground shadow-lg shadow-primary/20 ring-4 ring-background">
+        <div className="absolute right-3 top-3 z-10 flex items-center gap-1.5 rounded-full bg-primary px-3 py-1 text-[10px] font-black uppercase tracking-widest text-primary-foreground shadow-lg shadow-primary/20">
           <Star className="h-3 w-3 fill-current" />
           Competitive
         </div>
