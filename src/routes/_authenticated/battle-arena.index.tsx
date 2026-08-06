@@ -41,18 +41,37 @@ function BattleArenaLobby() {
   return (
     <div className="flex h-full w-full gap-8 animate-in fade-in duration-500">
       <div className="flex-1 space-y-8 min-w-0">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-              <Swords className="h-5 w-5" />
+        <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <Swords className="h-5 w-5" />
+              </div>
+              <h1 className="text-3xl font-black tracking-tight">Battle Arena</h1>
             </div>
-            <h1 className="text-3xl font-black tracking-tight">Battle Arena</h1>
+            <p className="text-sm text-muted-foreground font-medium max-w-2xl">
+              Real-time competitive trading. Prove your edge, climb from Initiate to Sovereign, 
+              and earn Ranking Points by outperforming the market and your peers.
+            </p>
           </div>
-          <p className="text-sm text-muted-foreground font-medium max-w-2xl">
-            Real-time competitive trading. Prove your edge, climb from Initiate to Sovereign, 
-            and earn Ranking Points by outperforming the market and your peers.
-          </p>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <Button 
+              variant="outline" 
+              className="rounded-2xl border-border/40 bg-card/20 font-black uppercase tracking-widest backdrop-blur-md hover:bg-card/40"
+              onClick={() => {/* Join Random logic */}}
+            >
+              <Zap className="mr-2 h-4 w-4 fill-primary text-primary" /> Join Random
+            </Button>
+            <Button 
+              className="rounded-2xl bg-primary font-black uppercase tracking-widest shadow-lg shadow-primary/25 transition-all hover:scale-[1.02] active:scale-95"
+              onClick={() => navigate({ to: '/battle-arena/create' })}
+            >
+              + New Battle
+            </Button>
+          </div>
         </div>
+
 
         <Suspense fallback={<div className="h-40 w-full animate-pulse rounded-3xl bg-muted/20" />}>
           <RankingCard />
