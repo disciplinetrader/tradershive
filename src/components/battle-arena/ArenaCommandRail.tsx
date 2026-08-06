@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, ChevronRight, Trophy, Users, MessageSquare, ShieldAlert,
-  Activity, Info, Target, Timer, Signal, SignalLow, User, AlertTriangle
+  Activity, Info, Target, Timer, Signal, SignalLow, User, AlertTriangle, Music
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +23,8 @@ import { CountdownTimer } from "./CountdownTimer";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { listBattleEvents, getBattleLiveStats } from "@/lib/battle-arena-live.functions";
-import { supabase } from "@/integrations/supabase/client";
+import { MusicPlayer } from "@/components/audio/MusicPlayer";
+import { useAuth } from "@/hooks/use-auth";
 
 interface ArenaCommandRailProps {
   className?: string;
@@ -122,6 +123,7 @@ function CollapsedRail({ battle, onExpand, isSpectator }: {
       <RailIcon icon={Trophy} label="Arena Status" onClick={onExpand} active />
       <RailIcon icon={Users} label="Standings" onClick={onExpand} />
       <RailIcon icon={MessageSquare} label="Chat" onClick={onExpand} />
+      <RailIcon icon={Music} label="Music" onClick={onExpand} />
       <Separator className="w-8 opacity-40" />
       <RailIcon icon={ShieldAlert} label="Rules" onClick={onExpand} />
       <RailIcon icon={Signal} label="Connection" onClick={onExpand} />
@@ -236,11 +238,12 @@ function ExpandedRail({ battle, stats, events, isSpectator, isHost, account, onC
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="standings" className="flex flex-1 flex-col overflow-hidden">
-        <TabsList className="mx-4 mt-4 grid grid-cols-4 bg-muted/40 p-1 h-10 rounded-xl">
+        <TabsList className="mx-4 mt-4 grid grid-cols-5 bg-muted/40 p-1 h-10 rounded-xl">
           <TabsTrigger value="standings" className="text-[10px] font-bold uppercase">Standings</TabsTrigger>
           <TabsTrigger value="chat" className="text-[10px] font-bold uppercase">Conversation</TabsTrigger>
           <TabsTrigger value="rules" className="text-[10px] font-bold uppercase">Rules</TabsTrigger>
           <TabsTrigger value="feed" className="text-[10px] font-bold uppercase">Feed</TabsTrigger>
+          <TabsTrigger value="music" className="text-[10px] font-bold uppercase">Music</TabsTrigger>
         </TabsList>
 
         <div className="flex-1 overflow-hidden p-4">
@@ -261,6 +264,9 @@ function ExpandedRail({ battle, stats, events, isSpectator, isHost, account, onC
           </TabsContent>
           <TabsContent value="feed" className="h-full mt-0 focus-visible:outline-none overflow-y-auto">
             <LiveActivityFeed events={events?.events ?? []} profiles={events?.profiles ?? []} />
+          </TabsContent>
+          <TabsContent value="music" className="h-full mt-0 focus-visible:outline-none">
+            <MusicPlayer embedded />
           </TabsContent>
         </div>
       </Tabs>

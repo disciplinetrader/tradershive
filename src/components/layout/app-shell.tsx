@@ -46,25 +46,20 @@ type NavItem = { to: string; label: string; icon: typeof Home; admin?: boolean }
 //   • /achievements   → accessible from Profile / Community
 //   • /education      → moved to Help / Docs surface
 //   • /marketplace    → hidden until production
-const PRIMARY: NavItem[] = [{ to: "/dashboard", label: "Dashboard", icon: Home }];
-
-const TRADING: NavItem[] = [
+const PRIMARY: NavItem[] = [
+  { to: "/dashboard", label: "Dashboard", icon: Home },
   { to: "/trading", label: "Trading Workspace", icon: LineChart },
   { to: "/replay", label: "Replay Studio", icon: Film },
   { to: "/journal", label: "Journal", icon: BookOpen },
-];
-
-const COMPETE: NavItem[] = [
   { to: "/battle-arena", label: "Battle Arena", icon: Swords },
 ];
 
-const COMMUNITY: NavItem[] = [
+const SECONDARY: NavItem[] = [
   { to: "/community", label: "Community", icon: MessageSquare },
+  { to: "/settings", label: "Account Settings", icon: Settings },
 ];
 
-const SYSTEM_ITEMS: NavItem[] = [
-  { to: "/settings", label: "Settings", icon: Settings },
-];
+const ADMIN_ITEMS: NavItem[] = [{ to: "/admin", label: "Admin", icon: Shield, admin: true }];
 
 
 const ADMIN_ITEMS: NavItem[] = [{ to: "/admin", label: "Admin", icon: Shield, admin: true }];
@@ -279,14 +274,12 @@ function SidebarInner({
 
         <nav className={cn("flex-1 overflow-y-auto", collapsed ? "px-2 py-3" : "p-3")}>
           <NavSection items={PRIMARY} collapsed={collapsed} currentPath={currentPath} />
-          <NavSection label="Trading" items={TRADING} collapsed={collapsed} currentPath={currentPath} className="mt-5" />
-          <NavSection label="Compete" items={COMPETE} collapsed={collapsed} currentPath={currentPath} className="mt-5" />
-          <NavSection label="Community" items={COMMUNITY} collapsed={collapsed} currentPath={currentPath} className="mt-5" />
+          <div className="flex-1" />
           <NavSection
-            items={showAdmin ? [...SYSTEM_ITEMS, ...ADMIN_ITEMS] : SYSTEM_ITEMS}
+            items={showAdmin ? [...SECONDARY, ...ADMIN_ITEMS] : SECONDARY}
             collapsed={collapsed}
             currentPath={currentPath}
-            className="mt-5"
+            className="mt-auto pt-5 border-t border-sidebar-border/40"
           />
         </nav>
 

@@ -154,9 +154,6 @@ function ReplayDashboard() {
         description="Create, execute, review and analyse backtests — your practice command center."
         actions={
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
-            <Button variant="ghost" size="sm" onClick={() => randomM.mutate()} disabled={randomM.isPending} className="w-full sm:w-auto">
-              <Dices className="mr-2 h-4 w-4" />{randomM.isPending ? "Rolling…" : "Surprise Me"}
-            </Button>
             <Button variant="outline" size="sm" onClick={() => setPicker("free")} className="w-full sm:w-auto">
               <Compass className="mr-2 h-4 w-4" />Scenario Picker
             </Button>

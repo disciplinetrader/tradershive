@@ -112,24 +112,7 @@ export function QuickLogInput({ compact = false }: { compact?: boolean }) {
         </Button>
       </div>
 
-      {!compact && (
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-xs text-muted-foreground">Try:</span>
-          {EXAMPLES.map((example) => (
-            <Badge
-              key={example}
-              variant="outline"
-              role="button"
-              tabIndex={0}
-              onClick={() => setText(example)}
-              onKeyDown={(e) => e.key === "Enter" && setText(example)}
-              className="cursor-pointer text-[11px] font-normal text-muted-foreground hover:text-foreground"
-            >
-              {example.length > 46 ? `${example.slice(0, 46)}…` : example}
-            </Badge>
-          ))}
-        </div>
-      )}
+      {null}
 
       {prefill && (
         <ManualEntryDialog
