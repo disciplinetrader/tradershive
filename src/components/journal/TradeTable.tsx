@@ -138,24 +138,12 @@ export function TradeTable({
       return;
     }
     const cols = COLUMNS.filter((c) => c.key !== "actions" && visible[c.key]);
-    const header = cols.map((c) => c.label).join(",");
-    const lines = sorted.map((e) =>
-      cols
-        .map((c) => csvCell(cellText(e, c.key)))
-        .join(","),
+    const headers = cols.map((c) => c.label);
+    const rows = sorted.map((e) =>
+      cols.map((c) => cellText(e, c.key))
     );
-    const csv = [header, ...lines].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.body.appendChild(document.createElement("a"));
-    a.href = url;
-    a.download = `journal-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.style.display = "none";
-    a.click();
-    setTimeout(() => {
-      a.remove();
-      URL.revokeObjectURL(url);
-    }, 100);
+    
+    exportToCsv(`journal-${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
   };
 
 
