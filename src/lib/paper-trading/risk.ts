@@ -26,6 +26,7 @@ import {
   pnl as computePnl,
   marginRequired,
   notionalValue,
+  validateStops,
 } from "./calculations";
 
 export type OpenTradeInput = {

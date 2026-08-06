@@ -120,11 +120,12 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
         entry_price: entryNum,
         lot_size: lotNum,
         stop_loss: slNum,
+        take_profit: tpNum,
         risk_amount: calc?.riskAmount ?? null,
       },
       (s) => liveQuotes[s]?.price ?? null,
     );
-  }, [account, symbolMeta, openTrades, symbol, side, entryNum, lotNum, slNum, calc?.riskAmount, liveQuotes]);
+  }, [account, symbolMeta, openTrades, symbol, side, entryNum, lotNum, slNum, tpNum, calc?.riskAmount, liveQuotes]);
 
   const liqPrice = useMemo(
     () => symbolMeta && entryNum && leverage > 1 ? liquidationPrice(entryNum, side, leverage) : null,
