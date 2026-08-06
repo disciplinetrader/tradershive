@@ -84,10 +84,13 @@ function BattleArenaLobby() {
             <Button 
               variant="outline" 
               className="rounded-2xl border-border/40 bg-card/20 font-black uppercase tracking-widest backdrop-blur-md hover:bg-card/40"
-              onClick={() => {/* Join Random logic */}}
+              onClick={handleJoinRandom}
+              disabled={isJoining}
             >
-              <Zap className="mr-2 h-4 w-4 fill-primary text-primary" /> Join Random
+              <Zap className={cn("mr-2 h-4 w-4 fill-primary text-primary", isJoining && "animate-pulse")} /> 
+              {isJoining ? "Searching..." : "Join Random"}
             </Button>
+
             <Button 
               className="rounded-2xl bg-primary font-black uppercase tracking-widest shadow-lg shadow-primary/25 transition-all hover:scale-[1.02] active:scale-95"
               onClick={() => navigate({ to: '/battle-arena/create' })}
