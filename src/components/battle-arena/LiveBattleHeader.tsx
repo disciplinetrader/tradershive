@@ -153,10 +153,11 @@ export function LiveBattleHeader({
               isLive ? "text-success text-3xl" : isCountdown ? "text-primary text-4xl" : "text-foreground text-xl"
             )}>
               {isLive || isCountdown ? <Timer className={cn("h-6 w-6", isCountdown && "animate-spin")} /> : null}
-              {battle.status === 'upcoming' || battle.status === 'filling' || battle.status === 'open'
+              {["upcoming", "filling", "open", "ready"].includes(battle.status)
                 ? (participantCount < battle.min_participants 
                   ? `Waiting for ${battle.min_participants - participantCount} more` 
                   : "Arena Ready")
+
                 : fmtRemaining(remainingMs)}
             </div>
 
