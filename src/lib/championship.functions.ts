@@ -119,16 +119,20 @@ export const registerChampionship = createServerFn({ method: "POST" })
     // Server-authoritative: never register for an ended/cancelled tournament.
     const { data: champ, error: cErr } = await supabase
       .from("championships").select("status, end_at").eq("id", data.championship_id).single();
-    if (cErr || !champ) throw new Error("Championship not found");
+    if (cErr || !champ) throw Errors.notFound("Tournament not found.");
     const nowIso = new Date().toISOString();
     if (
       champ.status === "completed" || champ.status === "cancelled" || champ.status === "grading" ||
       (champ.end_at && nowIso > champ.end_at)
     ) {
-      throw new Error("This championship has already ended — registration is closed.");
+      throw Errors.conflict(
+        champ.status === "cancelled"
+          ? "This tournament was cancelled — registration is closed."
+          : "This tournament has already ended — registration is closed.",
+      );
     }
     const { error } = await supabase.rpc("register_for_championship" as any, { _champ: data.championship_id });
-    if (error) throw new Error(error.message);
+    if (error) throw new AppError({ code: "conflict", message: error.message, status: 409 });
     return { ok: true };
   });
 
@@ -141,15 +145,20 @@ export const joinChampionshipLive = createServerFn({ method: "POST" })
     
     // Server-authoritative status check
     const { data: champ, error: cErr } = await supabase.from("championships").select("status, end_at").eq("id", data.championship_id).single();
-    if (cErr || !champ) throw new Error("Championship not found");
+    if (cErr || !champ) throw Errors.notFound("Tournament not found.");
     
     const now = new Date().toISOString();
     if (champ.status === "completed" || champ.status === "cancelled" || (champ.end_at && now > champ.end_at)) {
-      throw new Error("This championship has already ended.");
+      throw Errors.conflict(
+        champ.status === "cancelled"
+          ? "This tournament was cancelled — you can no longer join."
+          : "This tournament has already ended — you can no longer join.",
+      );
     }
 
     const { data: rows, error } = await supabase.rpc("join_championship_live" as any, { _champ: data.championship_id });
-    if (error) throw new Error(error.message);
+    if (error) throw new AppError({ code: "conflict", message: error.message, status: 409 });
+
     const row = Array.isArray(rows) ? rows[0] : rows;
     return {
       ok: true,
