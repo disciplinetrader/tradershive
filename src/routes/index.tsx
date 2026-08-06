@@ -118,10 +118,12 @@ function LandingPage() {
         <Hero />
         <TrustBar />
         <FeatureOverview />
+        <BattleArenaShowcase />
         <ReplayShowcase />
         <AICoachShowcase />
         <AnalyticsShowcase />
         <WorkspaceShowcase />
+
         <Comparison />
         <BetaSection />
         <Roadmap />
@@ -164,8 +166,10 @@ function AmbientBackground() {
 
 const NAV_LINKS: { label: string; href: string; badge?: string }[] = [
   { label: "Features", href: "#features" },
+  { label: "Battle Arena", href: "#battles" },
   { label: "Replay Studio", href: "#replay" },
   { label: "AI Coach", href: "#ai" },
+
   { label: "Pricing", href: "#pricing", badge: "Soon" },
   { label: "Roadmap", href: "#roadmap" },
   { label: "FAQ", href: "#faq" },
