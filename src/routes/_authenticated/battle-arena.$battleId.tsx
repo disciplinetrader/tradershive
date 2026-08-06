@@ -108,6 +108,13 @@ function BattleDetail() {
   const isParticipant = battleQ.data?.isParticipant ?? false;
   const isHost = battleQ.data?.isHost ?? false;
   const role = isHost ? "host" : isParticipant ? "competitor" : "spectator";
+
+  // Hooks must stay above every early return (React error #310).
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [openByUser, setOpenByUser] = useState<Record<string, number>>({});
+  const [lastTradeByUser, setLastTradeByUser] = useState<Record<string, string>>({});
+
   useEffect(() => {
     if (!battle) return;
     const beat = () => fnHeartbeat({ data: { battleId, status: isParticipant ? "trading" : "watching", role } }).catch(() => {});
@@ -122,9 +129,6 @@ function BattleDetail() {
     };
   }, [battle, battleId, isParticipant, role, fnHeartbeat, fnLeavePres]);
 
-  // Load open positions per user for leaderboard column.
-  const [openByUser, setOpenByUser] = useState<Record<string, number>>({});
-  const [lastTradeByUser, setLastTradeByUser] = useState<Record<string, string>>({});
   useEffect(() => {
     let cancelled = false;
     async function load() {
@@ -149,17 +153,11 @@ function BattleDetail() {
     return () => { cancelled = true; supabase.removeChannel(ch); };
   }, [battleId]);
 
-  // Hooks must stay above every early return (React error #310).
-  const [cancelOpen, setCancelOpen] = useState(false);
-  const [cancelling, setCancelling] = useState(false);
-
   if (battleQ.isLoading) return <div className="glass h-64 animate-pulse rounded-2xl" />;
-  if (!battleQ.data) return <div className="text-sm text-muted-foreground">Arena match not found.</div>;
+  if (!battleQ.data || !battle) return <div className="text-sm text-muted-foreground p-8 text-center">Arena match not found.</div>;
 
   const { participants = [], rankings = [], results = [], profiles = [] } = (battleQ.data as any) || {};
-  
-  // A battle detail crash (THIVE-008) often happens if 'battle' is undefined in a re-render.
-  if (!battle) return null;
+
 
   const canJoin = !isParticipant && battle?.visibility === "public" && ["draft", "upcoming", "open", "filling"].includes(battle?.status || "") && participants.length < (battle?.max_participants || 0);
   const canLeave = isParticipant && ["draft", "upcoming", "open", "filling", "ready"].includes(battle?.status || "");

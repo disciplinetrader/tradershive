@@ -21,7 +21,7 @@ import {
   type ReplayDataset,
 } from "./dataset";
 
-export type ClockStatus = "idle" | "playing" | "paused" | "ended";
+export type ClockStatus = "idle" | "playing" | "paused" | "ended" | "exhausted";
 
 export const MIN_SPEED = 0.25;
 export const MAX_SPEED = 100;
@@ -178,9 +178,10 @@ export class ReplayClock {
       this.cursor++;
     }
     if (this.atEnd) {
-      this.state = "ended";
+      this.state = "exhausted";
       this.carry = 0;
     }
+
     return out;
   }
 

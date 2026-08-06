@@ -58,14 +58,20 @@ function randomWeekday(): string {
 }
 
 export function ScenarioPicker({
-  open,
-  onOpenChange,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
   mode = "free",
+  trigger,
 }: {
-  open: boolean;
-  onOpenChange: (o: boolean) => void;
+  open?: boolean;
+  onOpenChange?: (o: boolean) => void;
   mode?: "free" | "day";
+  trigger?: React.ReactNode;
 }) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const onOpenChange = controlledOnOpenChange ?? setInternalOpen;
+
   const [scenario, setScenario] = useState<ScenarioId>("london_open");
   const [market, setMarket] = useState<ReplayMarket>("forex");
   const [symbol, setSymbol] = useState("EUR/USD");
@@ -124,11 +130,18 @@ export function ScenarioPicker({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
+      {trigger && (
+        <div onClick={() => onOpenChange(true)} className="contents">
+          {trigger}
+        </div>
+      )}
       <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>Smart Scenario Picker</DialogTitle>
           <DialogDescription>Pick a preset or configure your own setup.</DialogDescription>
         </DialogHeader>
+
+
 
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {SCENARIOS.map((s) => {

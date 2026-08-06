@@ -43,23 +43,25 @@ const TRACKS: Track[] = [
     id: "calm-1",
     title: "Midnight Market",
     artist: "TradersHIVE Original",
-    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
     mood: "Calm"
   },
   {
     id: "momentum-1",
     title: "Bull Run",
     artist: "TradersHIVE Original",
-    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3",
     mood: "Momentum"
   },
   {
     id: "deep-work-1",
     title: "The Zone",
     artist: "TradersHIVE Original",
-    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3",
     mood: "Deep Work"
   }
+
+
 ];
 
 const STORAGE_KEY = "th_music_settings";

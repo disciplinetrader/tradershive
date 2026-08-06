@@ -59,18 +59,32 @@ export function SnapshotDiscardedNotice() {
 }
 
 export function SessionCompleteNotice() {
-  const { view, trades, sessionId } = useReplayStudio();
-  if (view?.transport.lifecycle !== "completed") return null;
+  const { view, trades, sessionId, finish } = useReplayStudio();
+  if (view?.transport.lifecycle !== "completed" && !view?.transport.atEnd) return null;
+  const isAutoCompleted = view?.transport.atEnd && view?.transport.lifecycle !== "completed";
+
   return (
     <Alert className="rounded-none border-x-0 border-t-0">
       <CheckCircle2 className="h-4 w-4" />
-      <AlertTitle>Session complete</AlertTitle>
+      <AlertTitle>{isAutoCompleted ? "End of historical data" : "Session complete"}</AlertTitle>
       <AlertDescription>
-        {trades.length} closed trade{trades.length === 1 ? "" : "s"} recorded. State is saved and resumable on any device.
-        <Button asChild size="sm" variant="secondary" className="ml-3">
-          <Link to="/replay/review" search={{ id: sessionId }}>Open review</Link>
-        </Button>
+        {isAutoCompleted 
+          ? "You've reached the end of the loaded bars. Finish the session to save your final results."
+          : `${trades.length} closed trade${trades.length === 1 ? "" : "s"} recorded. State is saved and resumable on any device.`
+        }
+
+        {!isAutoCompleted && (
+          <Button asChild size="sm" variant="secondary" className="ml-3">
+            <Link to="/replay/review" search={{ id: sessionId }}>Open review</Link>
+          </Button>
+        )}
+        {isAutoCompleted && (
+          <Button size="sm" variant="default" className="ml-3" onClick={finish}>
+            Finish Session
+          </Button>
+        )}
       </AlertDescription>
     </Alert>
   );
 }
+

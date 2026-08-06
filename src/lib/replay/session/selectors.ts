@@ -10,13 +10,15 @@ import type { ReplayEvent } from "./events";
 import type { SessionLifecycle } from "./model";
 
 export interface TransportView {
-  status: "idle" | "playing" | "paused" | "ended";
+  status: "idle" | "playing" | "paused" | "ended" | "exhausted";
   lifecycle: SessionLifecycle;
   speed: number;
   canPlay: boolean;
   canPause: boolean;
   canStep: boolean;
   progress: number;
+  atEnd: boolean;
+
   cursor: number;
   total: number;
   candleIndex: number;
@@ -34,6 +36,8 @@ export function selectTransport(engine: ReplaySessionEngine): TransportView {
     canPause: clock.status === "playing",
     canStep: !clock.atEnd,
     progress: clock.progress,
+    atEnd: clock.atEnd,
+
     cursor: clock.index,
     total: clock.total,
     candleIndex: clock.candleIndex,

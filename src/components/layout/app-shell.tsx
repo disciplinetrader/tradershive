@@ -61,6 +61,7 @@ const SECONDARY: NavItem[] = [
 
 const ADMIN_ITEMS: NavItem[] = [{ to: "/admin", label: "Admin", icon: Shield, admin: true }];
 
+
 /** Sidebar links tagged so the product tour can spotlight them. */
 const TOUR_TARGETS: Record<string, string | undefined> = {
   "/replay": "nav-replay",
@@ -91,7 +92,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const immersive =
     pathname === "/trading" ||
     pathname.startsWith("/trading/") ||
-    pathname === "/replay/studio";
+    pathname === "/replay/studio" ||
+    pathname.startsWith("/replay/prop-firm/");
+
 
 
   // Close mobile drawer on route change
@@ -333,7 +336,7 @@ function NavSection({
 }) {
   return (
     <div className={cn(collapsed ? "" : "pt-1", className)}>
-      {label ? <SectionLabel collapsed={collapsed}>{label}</SectionLabel> : null}
+      {/* Section labels (TRADING, COMPETE, etc.) removed per user request for a cleaner look. */}
       <ul className="space-y-0.5">
         {items.map((item) => (
           <SidebarLink key={item.to} item={item} collapsed={collapsed} active={isActive(currentPath, item.to)} />

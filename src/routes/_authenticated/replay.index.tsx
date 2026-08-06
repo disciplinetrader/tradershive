@@ -51,7 +51,7 @@ export const Route = createFileRoute("/_authenticated/replay/")({
 
 function ReplayDashboard() {
   const [wiz, setWiz] = useState(false);
-  const [picker, setPicker] = useState<null | "free" | "day">(null);
+
   const navigate = useNavigate();
 
   const list = useServerFn(listReplaySessions);
@@ -154,11 +154,15 @@ function ReplayDashboard() {
         description="Create, execute, review and analyse backtests — your practice command center."
         actions={
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
-            <Button variant="outline" size="sm" onClick={() => setPicker("free")} className="w-full sm:w-auto">
-              <Compass className="mr-2 h-4 w-4" />Scenario Picker
-            </Button>
+            <ScenarioPicker trigger={
+              <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                <Compass className="mr-2 h-4 w-4" />Scenario Picker
+              </Button>
+            } />
           </div>
         }
+
+
       />
 
       {/* Primary CTA + Continue Last Session */}
@@ -418,7 +422,7 @@ function ReplayDashboard() {
       </div>
 
       <CreatorWizard open={wiz} onOpenChange={setWiz} />
-      {picker ? <ScenarioPicker open={!!picker} onOpenChange={(o) => !o && setPicker(null)} mode={picker} /> : null}
+
     </div>
   );
 }

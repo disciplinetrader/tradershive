@@ -17,7 +17,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { logHistoricalMarketReplayed } from "@/lib/activity.functions";
 import { useQuery } from "@tanstack/react-query";
-import { getReplayCandles, getReplaySession } from "@/lib/replay.functions";
+import { getReplayCandles, getReplaySession, completeReplaySession } from "@/lib/replay.functions";
 import { makeDrawing } from "@/lib/chart/drawings/store";
 import {
   placeOrEditOrder, closePosition, cancelPendingOrder, positionMetricsFor,
@@ -275,6 +275,17 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
     }
   }, [view?.transport.marketTime, session, id, logMarketReplayed]);
 
+  // Sync session "atEnd" state to server lifecycle
+  useEffect(() => {
+    if (!view || !controller) return;
+    if (view.transport.atEnd && view.transport.lifecycle !== "completed") {
+      // Reached end of data - could auto-complete or wait for user
+      // For now, we wait for user to click "Finish", but we ensure state is flushed.
+      void controller.save();
+    }
+  }, [view?.transport.atEnd, view?.transport.lifecycle, controller]);
+
+
   // Flush on tab hide and on unload — an interrupted session loses nothing.
   useEffect(() => {
     if (!controller) return;
@@ -496,14 +507,25 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
       if (!controller) return;
       void (async () => {
         try {
+          // Force one last save before transitioning lifecycle
+          await controller.save();
           const ok = await controller.complete();
-          if (ok) toast.success("Session finished — review and score it below.");
-          else toast.error("Session finished locally, but saving to the cloud failed. Retrying…");
+          // We also explicitly call the server function to ensure status is synced correctly
+          await completeReplaySession({ data: { id } });
+
+          if (ok) {
+            toast.success("Session finished — review and score it below.");
+            // Force a refresh of session state to show completion UI
+            await sessionQuery.refetch();
+          } else {
+            toast.error("Session finished locally, but saving to the cloud failed. Retrying…");
+          }
         } catch (e) {
           toast.error((e as Error).message || "Could not finish this session.");
         }
       })();
     },
+
     saveNow: () => {
       if (!controller) return;
       void (async () => {
