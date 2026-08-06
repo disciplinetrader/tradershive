@@ -251,6 +251,54 @@ export const leaveBattle = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const setParticipantReady = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ battleId: z.string().uuid(), ready: z.boolean() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    
+    // Update participant ready status
+    const { error: updateErr } = await supabase
+      .from("battle_participants")
+      .update({ is_ready: data.ready })
+      .eq("battle_id", data.battleId)
+      .eq("user_id", userId);
+    
+    if (updateErr) throw updateErr;
+
+    // Check if we should trigger countdown
+    const { data: battle } = await supabase
+      .from("battles")
+      .select("min_participants, status, host_id")
+      .eq("id", data.battleId)
+      .maybeSingle();
+
+    if (!battle) return { ok: true };
+
+    const { data: participants } = await supabase
+      .from("battle_participants")
+      .select("is_ready")
+      .eq("battle_id", data.battleId);
+
+    const readyCount = participants?.filter(p => p.is_ready).length ?? 0;
+    const allReady = (participants?.length ?? 0) >= battle.min_participants && (participants?.every(p => p.is_ready) ?? false);
+
+    if (["open", "filling", "upcoming", "ready"].includes(battle.status)) {
+      if (allReady) {
+        await supabase
+          .from("battles")
+          .update({ 
+            status: "countdown",
+            countdown_started_at: new Date().toISOString()
+          })
+          .eq("id", data.battleId);
+      }
+    }
+
+    return { ok: true };
+  });
+
+
 export const cancelBattle = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ battleId: z.string().uuid() }).parse(d))
