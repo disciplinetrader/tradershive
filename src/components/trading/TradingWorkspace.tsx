@@ -361,10 +361,16 @@ function TradingWorkspaceInner() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  // Watchlist targets the active slot
+  const handleWatchlistSymbol = useCallback((sym: string) => {
+    sendSymbolToActiveSlot(sym);
+  }, [sendSymbolToActiveSlot]);
+
   const last = quote?.last ?? meta?.refPrice ?? 0;
   const bid = quote?.bid ?? last;
   const ask = quote?.ask ?? last;
   const spread = quote?.spread ?? Math.max(0, ask - bid);
+
 
   // Drawings are scoped per symbol so switching instruments swaps the set.
   useEffect(() => { drawingStore.setScope(symbol); }, [drawingStore, symbol]);
