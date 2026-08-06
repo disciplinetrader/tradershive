@@ -91,7 +91,11 @@ export async function pickSurpriseSession(
           to,
           market: row.market,
         });
-        if (probe.coverage.ok && probe.coverage.actual > 0) {
+        
+        // Fix 7: Stricter density check to prevent 95% missing bars.
+        // coverage.ok checks against a default minRatio (usually 0.6).
+        // We want at least 85% coverage for a high-quality "surprise" experience.
+        if (probe.coverage.ok && probe.coverage.actual > 0 && probe.coverage.ratio >= 0.85) {
           return {
             pick: {
               symbol: row.symbol,

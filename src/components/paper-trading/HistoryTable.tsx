@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
 import { Download, Filter, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,16 +69,26 @@ export function HistoryTable({ preset }: { preset?: HistoryPreset } = {}) {
   const rowKey = useRowKeyNav();
 
   const exportCsv = () => {
+    if (rows.length === 0) {
+      toast.error("No trades to export");
+      return;
+    }
     const header = ["Opened","Closed","Symbol","Direction","Entry","Exit","RR","PnL"];
     const lines = rows.map((r) => [
       r.opened_at, r.closed_at ?? "", r.symbol, r.direction,
       r.entry_price, r.exit_price ?? "", r.rr_realized ?? "", r.pnl ?? "",
     ].join(","));
-    const blob = new Blob([[header.join(","), ...lines].join("\n")], { type: "text/csv" });
+    const content = [header.join(","), ...lines].join("\n");
+    const blob = new Blob([content], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = `trades-${Date.now()}.csv`; a.click();
+    a.href = url;
+    a.download = `tradershive-history-${accountId?.slice(0, 8)}-${Date.now()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
     URL.revokeObjectURL(url);
+    toast.success("History exported to CSV");
   };
 
   const emptyCopy = emptyStateFor(preset);

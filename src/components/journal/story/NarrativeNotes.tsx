@@ -55,8 +55,11 @@ export function NarrativeNotes({
 
       const saved = await updateEntry(entry.id, update);
       
-      // Force invalidation of the list to ensure consistency across views
-      qc.invalidateQueries({ queryKey: journalKeys.list() });
+      // Update the list cache as well for persistence across views
+      qc.setQueryData(journalKeys.list(), (prev: JournalEntry[] | undefined) => {
+        if (!prev) return prev;
+        return prev.map(e => e.id === entry.id ? { ...e, ...update } : e);
+      });
       
       onSaved?.();
       return saved;

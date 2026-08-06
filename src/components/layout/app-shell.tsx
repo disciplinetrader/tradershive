@@ -288,9 +288,7 @@ function SidebarInner({
 
         <div className="flex-1" />
         
-        <div className="px-3 py-2">
-          <MusicPlayer />
-        </div>
+        {/* MusicPlayer removed from global sidebar; it now lives in the Arena Command Rail */}
 
         {!collapsed ? (
           <div className="m-3 rounded-md border border-sidebar-border bg-sidebar-accent/50 p-4">

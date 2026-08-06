@@ -167,9 +167,6 @@ export const openTrade = createServerFn({ method: "POST" })
     const { tag_ids, ...trade } = data;
 
     // ---- Broker-style pre-flight validation (hard gate) ----
-    // Prevents the "$25k balance vs −$70M net P/L" impossible-state bug by
-    // rejecting any order that would exceed free margin, absolute risk cap,
-    // symbol lot limits, or the concurrent-position cap.
     const [{ data: acct, error: acctErr }, { data: opens }] = await Promise.all([
       context.supabase
         .from("paper_accounts")
@@ -184,6 +181,18 @@ export const openTrade = createServerFn({ method: "POST" })
     if (acctErr || !acct) throw new Error("Account not found");
     if (acct.is_archived || acct.deleted_at) throw new Error("Account is archived");
 
+    // Fetch a fresh quote for the validation if it's a market order
+    let livePrice: number | null = null;
+    if (data.order_type === "market") {
+      try {
+        const { twelveDataQuote } = await import("./market-data/twelvedata.functions");
+        const qRes = await twelveDataQuote({ data: { symbols: [data.symbol] } });
+        if (qRes.quotes?.[0]) livePrice = qRes.quotes[0].last;
+      } catch (e) {
+        console.warn("[openTrade] could not fetch live quote for validation:", e);
+      }
+    }
+
     const validation = validateNewOrder(
       acct as any,
       (opens ?? []) as OpenTradeInput[],
@@ -195,14 +204,22 @@ export const openTrade = createServerFn({ method: "POST" })
         stop_loss: data.stop_loss ?? null,
         risk_amount: data.risk_amount ?? null,
       },
+      () => livePrice
     );
+    
     if (!validation.ok) {
       throw new Error(validation.errors.join(" · "));
     }
 
     const { data: created, error } = await context.supabase
       .from("paper_trades")
-      .insert({ ...trade, user_id: context.userId, status: "open", opened_at: new Date().toISOString() })
+      .insert({ 
+        ...trade, 
+        user_id: context.userId, 
+        status: "open", 
+        opened_at: new Date().toISOString(),
+        entry_price: data.order_type === "market" && livePrice ? livePrice : data.entry_price
+      })
       .select()
       .single();
     if (error) throw error;
@@ -214,7 +231,7 @@ export const openTrade = createServerFn({ method: "POST" })
     await context.supabase.from("position_history").insert({
       user_id: context.userId, account_id: data.account_id, trade_id: created.id,
       event: "opened", payload: {
-        entry_price: data.entry_price, lot_size: data.lot_size,
+        entry_price: created.entry_price, lot_size: data.lot_size,
         required_margin: validation.required_margin, liq_price: validation.liq_price,
       },
     });
