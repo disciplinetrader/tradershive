@@ -12,6 +12,7 @@ import {
   Share2,
   Trash2,
 } from "lucide-react";
+import { exportToCsv } from "@/lib/utils/export-utils";
 import { Button } from "@/components/ui/button";
 import {
   Table,

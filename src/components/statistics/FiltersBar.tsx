@@ -64,7 +64,7 @@ function MultiSelect({
 }
 
 export function FiltersBar() {
-  const { filters, setFilters, resetFilters, raw, accounts } = useStatistics();
+  const { filters, setFilters, resetFilters, raw, filtered, accounts } = useStatistics();
   const [customOpen, setCustomOpen] = useState(false);
   const qc = useQueryClient();
   const saveFn = useServerFn(saveFilter);
