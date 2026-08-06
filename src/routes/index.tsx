@@ -24,10 +24,6 @@ import {
   Rocket,
   Shield,
   Sparkles,
-  Target,
-  TrendingUp,
-  Twitter,
-  Video,
   Star,
   Swords,
   Target,
@@ -38,6 +34,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
+
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
