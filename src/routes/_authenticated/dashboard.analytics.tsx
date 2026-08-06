@@ -30,9 +30,9 @@ function DashboardAnalyticsPage() {
     <AnalyticsProvider>
       <div className="mx-auto w-full max-w-[1400px] space-y-[var(--gutter-md)] pb-[var(--gutter-lg)] sm:space-y-[var(--gutter-lg)]">
         <DashboardHeader />
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <FiltersBar />
-          <ExportMenu />
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-start">
+          <div className="min-w-0 flex-1"><FiltersBar /></div>
+          <div className="shrink-0"><ExportMenu /></div>
         </div>
         <AnalyticsContent />
       </div>
