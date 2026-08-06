@@ -79,9 +79,47 @@ export const createPropChallenge = createServerFn({ method: "POST" })
     const startedAt = new Date();
     const endsAt = new Date(startedAt.getTime() + data.duration_days * 86_400_000);
 
+    // Duplicate guard — one active challenge per name.
+    const { data: dupe } = await context.supabase
+      .from("prop_challenges")
+      .select("id")
+      .eq("status", "active")
+      .eq("name", data.name)
+      .maybeSingle();
+    if (dupe) {
+      throw new AppError({
+        code: "conflict",
+        status: 409,
+        message: `You already have an active challenge named "${data.name}".`,
+      });
+    }
+
+    // Every challenge trades against exactly one linked paper account. If the
+    // user did not pick one, provision a dedicated account sized to the rules.
+    let paperAccountId = data.paper_account_id ?? null;
+    if (!paperAccountId) {
+      const { data: acct, error: aErr } = await context.supabase
+        .from("paper_accounts")
+        .insert({
+          user_id: context.userId,
+          name: `${data.name} — Prop account`,
+          currency: data.currency,
+          starting_balance: data.account_size,
+          balance: data.account_size,
+          equity: data.account_size,
+          leverage: data.leverage,
+          max_trade_risk_pct: Math.min(data.max_daily_loss_pct, 99),
+          max_daily_risk_pct: Math.min(data.max_daily_loss_pct, 99),
+        })
+        .select("id")
+        .single();
+      if (aErr) throw aErr;
+      paperAccountId = acct.id as string;
+    }
+
     const insert = {
       user_id: context.userId,
-      paper_account_id: data.paper_account_id ?? null,
+      paper_account_id: paperAccountId,
       name: data.name,
       preset: data.preset,
       account_size: data.account_size,
@@ -111,6 +149,7 @@ export const createPropChallenge = createServerFn({ method: "POST" })
     if (error) throw error;
     return row as PropChallengeRow;
   });
+
 
 export const abandonPropChallenge = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
