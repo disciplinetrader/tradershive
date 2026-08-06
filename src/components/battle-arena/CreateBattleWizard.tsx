@@ -312,6 +312,24 @@ export function CreateBattleWizard({ onCancel, onCreated }: { onCancel: () => vo
             Continue <ChevronRight className="ml-2 h-4 w-4" />
           </Button>
         ) : (
+          <Button disabled={loading} onClick={submit} className="font-black rounded-xl h-11 px-10 shadow-lg shadow-primary/30">
+            {loading ? "Creating..." : "Launch Arena"}
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Review({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="flex flex-col gap-0.5 rounded-xl border border-border/20 bg-background/40 p-3">
+      <div className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">{label}</div>
+      <div className="text-xs font-black tracking-tight truncate">{value}</div>
+    </div>
+  );
+}
+
           <Button disabled={loading} onClick={submit} className="font-bold rounded-xl h-11 px-10 shadow-lg shadow-primary/30">
             {loading ? "Preparing Battle..." : "Launch Battle Arena"}
           </Button>
