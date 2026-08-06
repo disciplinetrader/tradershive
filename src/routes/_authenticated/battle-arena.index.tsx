@@ -30,7 +30,27 @@ export const Route = createFileRoute("/_authenticated/battle-arena/")({
 function BattleArenaLobby() {
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const fnJoinRandom = useServerFn(joinRandom);
   const [activeTab, setActiveTab] = useState("all");
+  const [isJoining, setIsJoining] = useState(false);
+
+  const handleJoinRandom = async () => {
+    setIsJoining(true);
+    try {
+      const res = await fnJoinRandom({ data: { battleType: "ffa5", isRanked: true } });
+      if (res.battleId) {
+        toast.success("Found a match!");
+        navigate({ to: "/battle-arena/$battleId", params: { battleId: res.battleId } });
+      } else if (res.queued) {
+        toast.info("No open matches found. You are now in the matchmaking queue.");
+      }
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to join random match");
+    } finally {
+      setIsJoining(false);
+    }
+  };
+
 
 
   useEffect(() => {
