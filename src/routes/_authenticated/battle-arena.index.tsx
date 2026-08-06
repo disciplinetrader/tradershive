@@ -133,23 +133,71 @@ function BattleArenaLobby() {
           </TabsContent>
 
           <TabsContent value="guide" className="mt-0 focus-visible:outline-none">
-            <div className="flex flex-col items-center gap-6 rounded-[40px] border border-border/40 bg-card/20 px-6 py-16 text-center backdrop-blur-xl">
-              <div className="grid h-16 w-16 place-items-center rounded-[20px] bg-primary/10 text-primary">
-                <Sparkles className="h-8 w-8" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="flex flex-col gap-6 rounded-[40px] border border-border/40 bg-card/20 p-8 backdrop-blur-xl">
+                <div className="flex items-center gap-4">
+                  <div className="grid h-12 w-12 place-items-center rounded-2xl bg-primary/10 text-primary">
+                    <Sparkles className="h-6 w-6" />
+                  </div>
+                  <h3 className="text-xl font-black tracking-tight">Arena Masterclass</h3>
+                </div>
+                
+                <div className="space-y-4">
+                  <GuideItem 
+                    number="01" 
+                    title="Choose Your Match" 
+                    description="Select between Time Trials (race the clock) or Profit Targets (hit the goal first). Ranked matches affect your HIVE Rating." 
+                  />
+                  <GuideItem 
+                    number="02" 
+                    title="Lock In & Ready" 
+                    description="Join the lobby, configure your charts, and click 'Ready to Fight'. Once enough players are ready, the countdown begins." 
+                  />
+                  <GuideItem 
+                    number="03" 
+                    title="Trade Under Pressure" 
+                    description="Execute your plan within the rules. Watch the live leaderboard on the right rail to see where you stand in real-time." 
+                  />
+                  <GuideItem 
+                    number="04" 
+                    title="Climb the Ranks" 
+                    description="Win matches to earn Rank Points (RP) and move from Initiate up to the Sovereign tier for exclusive rewards." 
+                  />
+                </div>
               </div>
-              <div className="max-w-md space-y-2">
-                <h3 className="text-xl font-black tracking-tight">Arena Masterclass</h3>
-                <p className="text-sm text-muted-foreground font-medium">
-                  Learn how to master the arena, manage your risk, and climb the tiers efficiently.
-                </p>
-              </div>
-              <div className="aspect-video w-full max-w-2xl overflow-hidden rounded-[32px] border border-border/60 bg-muted/20 shadow-2xl">
-                <div className="flex h-full w-full items-center justify-center">
-                  <BookOpen className="h-12 w-12 text-muted-foreground/20" />
+
+              <div className="flex flex-col gap-6 rounded-[40px] border border-border/40 bg-card/20 p-8 backdrop-blur-xl">
+                <div className="aspect-video w-full overflow-hidden rounded-[32px] border border-border/60 bg-muted/20 shadow-2xl relative group">
+                  <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent flex items-end p-6">
+                    <div className="space-y-1">
+                      <div className="text-[10px] font-black uppercase tracking-widest text-primary">Video Guide</div>
+                      <div className="text-sm font-bold italic">Mastering the Arena Workspace</div>
+                    </div>
+                  </div>
+                  <div className="flex h-full w-full items-center justify-center group-hover:scale-110 transition-transform duration-500">
+                    <div className="h-16 w-16 rounded-full bg-primary/20 flex items-center justify-center border border-primary/40 text-primary">
+                      <Play className="h-6 w-6 fill-primary" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h4 className="text-sm font-black uppercase tracking-widest text-muted-foreground">Season 1 Rewards</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-4 rounded-2xl border border-border/40 bg-background/40">
+                      <div className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">Top 3</div>
+                      <div className="text-xs font-bold">Legendary Badge & 5k XP</div>
+                    </div>
+                    <div className="p-4 rounded-2xl border border-border/40 bg-background/40">
+                      <div className="text-[10px] font-black uppercase tracking-widest text-warning mb-1">Sovereign</div>
+                      <div className="text-xs font-bold">Founder's Skin & 10k XP</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </TabsContent>
+
         </Tabs>
       </div>
 
