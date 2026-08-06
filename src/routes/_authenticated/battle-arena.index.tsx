@@ -78,8 +78,9 @@ function BattleArenaLobby() {
             </div>
             <p className="text-sm text-muted-foreground font-medium max-w-2xl">
               Real-time competitive trading. Prove your edge, climb from Initiate to Sovereign, 
-              and earn Ranking Points by outperforming the market and your peers.
+              and earn Rank Points (RP) by outperforming the market and your peers.
             </p>
+
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
