@@ -40,18 +40,24 @@ export const listBattles = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     let q = supabase.from("battles").select("*");
-    if (data.scope !== "mine") {
-      q = q.not("name", "ilike", "%QA%")
-           .not("name", "ilike", "%test%")
-           .not("name", "ilike", "%helloooo%");
-    }
-    
-    // Visibility filter: Public battles are always visible. 
-    // Private battles only visible to host or if the user is already a participant.
-    if (data.scope !== "mine" && data.scope !== "history") {
-      q = q.or(`visibility.eq.public,host_id.eq.${userId}`);
-    }
 
+    // Visibility: public battles, battles you host, and battles you have
+    // joined. That last clause is what the comment here has always claimed and
+    // the code never did — a private battle you joined by invite code was
+    // absent from every lobby scope, reachable only by direct URL. Since an
+    // invite link is how a second player finds a match, the joiner had nowhere
+    // to return to once they navigated away.
+    if (data.scope !== "mine" && data.scope !== "history") {
+      const { data: parts } = await supabase
+        .from("battle_participants")
+        .select("battle_id")
+        .eq("user_id", userId);
+      const joined = (parts ?? []).map((p) => p.battle_id);
+
+      const clauses = [`visibility.eq.public`, `host_id.eq.${userId}`];
+      if (joined.length > 0) clauses.push(`id.in.(${joined.join(",")})`);
+      q = q.or(clauses.join(","));
+    }
 
     q = q.limit(data.limit);
     switch (data.scope) {
@@ -78,7 +84,17 @@ export const listBattles = createServerFn({ method: "GET" })
         break;
       }
       default:
-        q = q.order("start_at", { ascending: false });
+        // "all" is the lobby's default tab, so it means "every battle you could
+        // still act on" — not literally every row. Terminal states are excluded;
+        // `history` is the scope for completed ones.
+        //
+        // This replaces a hardcoded name blocklist (`%QA%`, `%test%`,
+        // `%helloooo%`) that had been standing in for it. That blocklist hid
+        // legitimate battles — `ilike '%test%'` matches "Weekly Contest",
+        // "Greatest Trader", "Latest Challenge" — and hid nothing that a status
+        // filter doesn't now hide properly.
+        q = q.not("status", "in", "(completed,cancelled,failed)")
+             .order("start_at", { ascending: false });
     }
     const { data: rows, error } = await q;
     if (error) throw error;
