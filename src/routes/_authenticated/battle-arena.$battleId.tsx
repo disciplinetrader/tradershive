@@ -98,8 +98,10 @@ function BattleDetail() {
 
   // Realtime subscriptions scoped to this battle only.
   useEffect(() => {
-    const ch = supabase.channel(`battle-detail-${battleId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "battle_rankings", filter: `battle_id=eq.${battleId}` }, () => {
+    const channelName = `battle-detail-${battleId}`;
+    const ch = supabase.channel(channelName);
+    
+    ch.on("postgres_changes", { event: "*", schema: "public", table: "battle_rankings", filter: `battle_id=eq.${battleId}` }, () => {
         qc.invalidateQueries({ queryKey: ["battle", battleId] });
         qc.invalidateQueries({ queryKey: ["battle-live-stats", battleId] });
       })
@@ -118,9 +120,13 @@ function BattleDetail() {
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "battle_presence", filter: `battle_id=eq.${battleId}` }, () => {
         qc.invalidateQueries({ queryKey: ["battle-presence", battleId] });
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
+      });
+
+    ch.subscribe();
+    
+    return () => { 
+      void supabase.removeChannel(ch); 
+    };
   }, [battleId, qc]);
 
   // Presence heartbeat.
@@ -178,10 +184,16 @@ function BattleDetail() {
       if (!cancelled) { setOpenByUser(opens); setLastTradeByUser(last); }
     }
     load();
-    const ch = supabase.channel(`battle-trades-${battleId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "paper_trades", filter: `battle_id=eq.${battleId}` }, load)
-      .subscribe();
-    return () => { cancelled = true; supabase.removeChannel(ch); };
+    const channelName = `battle-trades-${battleId}`;
+    const ch = supabase.channel(channelName)
+      .on("postgres_changes", { event: "*", schema: "public", table: "paper_trades", filter: `battle_id=eq.${battleId}` }, load);
+    
+    ch.subscribe();
+    
+    return () => { 
+      cancelled = true; 
+      void supabase.removeChannel(ch); 
+    };
   }, [battleId]);
 
   if (battleQ.isLoading) return <div className="grid place-items-center h-[calc(100dvh-64px)]"><div className="flex flex-col items-center gap-4"><div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" /><p className="text-sm font-black uppercase tracking-widest animate-pulse">Entering Arena Match...</p></div></div>;

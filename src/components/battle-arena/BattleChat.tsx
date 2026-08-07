@@ -34,12 +34,30 @@ export function BattleChat({ battleId, canPost, isHost }: { battleId: string; ca
   });
 
   useEffect(() => {
-    const ch = supabase.channel(`battle-chat-${battleId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "battle_chat", filter: `battle_id=eq.${battleId}` }, () => {
-        qc.invalidateQueries({ queryKey: ["battle-chat", battleId] });
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    // We use a single stable channel for the entire battle detail route
+    // This component should ideally just listen to state, but for now we'll ensure
+    // we don't double-subscribe by using a specific channel name.
+    const channelName = `battle-chat-${battleId}`;
+    const ch = supabase.channel(channelName);
+    
+    ch.on("postgres_changes", { 
+      event: "*", 
+      schema: "public", 
+      table: "battle_chat", 
+      filter: `battle_id=eq.${battleId}` 
+    }, () => {
+      qc.invalidateQueries({ queryKey: ["battle-chat", battleId] });
+    });
+
+    ch.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log(`Subscribed to ${channelName}`);
+      }
+    });
+
+    return () => { 
+      void supabase.removeChannel(ch); 
+    };
   }, [battleId, qc]);
 
   useEffect(() => {
