@@ -98,6 +98,8 @@ function BattleDetail() {
 
   // Realtime subscriptions scoped to this battle only.
   useEffect(() => {
+    if (!battleId) return;
+
     const channelName = `battle-detail-${battleId}`;
     const ch = supabase.channel(channelName);
     
