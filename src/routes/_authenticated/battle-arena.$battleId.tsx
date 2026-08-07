@@ -23,7 +23,7 @@ import { ParticipantsList } from "@/components/battle-arena/ParticipantsList";
 import { BattleResultsView } from "@/components/battle-arena/BattleResultsView";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { LineChart, LogIn, LogOut, Trash2, Copy, Play, Eye, ShieldCheck, Check } from "lucide-react";
+import { LineChart, LogIn, LogOut, Trash2, Copy, Play, Eye, ShieldCheck, Check, Maximize2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { routeBoundaries } from "@/lib/route-boundaries";
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
