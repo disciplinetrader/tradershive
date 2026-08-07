@@ -2,8 +2,15 @@ import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, ChevronRight, Trophy, Users, MessageSquare, ShieldAlert,
-  Activity, Info, Target, Timer, Signal, SignalLow, User, AlertTriangle, Music
+  Activity, Info, Target, Timer, Signal, SignalLow, User, AlertTriangle, Music,
+  LogOut
 } from "lucide-react";
+import { 
+  Accordion, 
+  AccordionContent, 
+  AccordionItem, 
+  AccordionTrigger 
+} from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
