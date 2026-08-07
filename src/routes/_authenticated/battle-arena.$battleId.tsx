@@ -276,7 +276,7 @@ function BattleDetail() {
                     </Link>
                     <div className="h-4 w-[1px] bg-border/40" />
                     <h1 className="font-bold tracking-tight text-sm uppercase truncate max-w-[200px]">{battle.name}</h1>
-                    <Badge variant="default" className="bg-success text-success-foreground font-black text-[10px] animate-pulse">LIVE</Badge>
+                    <Badge variant="default" data-testid="battle-live" className="bg-success text-success-foreground font-black text-[10px] animate-pulse">LIVE</Badge>
                   </div>
                   
                   <div className="flex-1 max-w-2xl px-4">
@@ -341,7 +341,7 @@ function BattleDetail() {
         </Badge>
         
         <div className="ml-auto flex items-center gap-2">
-          {canJoin && <Button size="sm" onClick={doJoin} className="font-bold rounded-xl shadow-lg shadow-primary/20"><LogIn className="mr-1.5 h-4 w-4" />Join Arena</Button>}
+          {canJoin && <Button size="sm" data-testid="battle-join" onClick={doJoin} className="font-bold rounded-xl shadow-lg shadow-primary/20"><LogIn className="mr-1.5 h-4 w-4" />Join Arena</Button>}
           {isParticipant && isLobby && (
             <Button 
               size="sm" 
