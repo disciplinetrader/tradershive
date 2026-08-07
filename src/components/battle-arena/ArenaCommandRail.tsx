@@ -253,7 +253,7 @@ function ExpandedRail({ battle, stats, events, isSpectator, isHost, account, onC
             <ParticipantsList 
               participants={battle.participants ?? []} 
               profiles={stats?.profiles ?? []} 
-              presence={[]} 
+              hostId={battle.created_by} 
             />
           </div>
 
