@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { LineChart, LogIn, LogOut, Trash2, Copy, Play, Eye, ShieldCheck, Check, Maximize2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { useBattleRealtime } from "@/hooks/use-battle-realtime";
 import { routeBoundaries } from "@/lib/route-boundaries";
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { cn } from "@/lib/utils";
@@ -95,41 +96,6 @@ function BattleDetail() {
     queryFn: () => fnPresence({ data: { battleId } }),
     refetchInterval: 20000,
   });
-
-  // Realtime subscriptions scoped to this battle only.
-  useEffect(() => {
-    if (!battleId) return;
-
-    const channelName = `battle-detail-${battleId}`;
-    const ch = supabase.channel(channelName);
-    
-    ch.on("postgres_changes", { event: "*", schema: "public", table: "battle_rankings", filter: `battle_id=eq.${battleId}` }, () => {
-        qc.invalidateQueries({ queryKey: ["battle", battleId] });
-        qc.invalidateQueries({ queryKey: ["battle-live-stats", battleId] });
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "battle_participants", filter: `battle_id=eq.${battleId}` }, () => {
-        qc.invalidateQueries({ queryKey: ["battle", battleId] });
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "battles", filter: `id=eq.${battleId}` }, () => {
-        qc.invalidateQueries({ queryKey: ["battle", battleId] });
-        qc.invalidateQueries({ queryKey: ["battle-live-stats", battleId] });
-      })
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "battle_events", filter: `battle_id=eq.${battleId}` }, () => {
-        qc.invalidateQueries({ queryKey: ["battle-events", battleId] });
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "battle_statistics_live", filter: `battle_id=eq.${battleId}` }, () => {
-        qc.invalidateQueries({ queryKey: ["battle-live-stats", battleId] });
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "battle_presence", filter: `battle_id=eq.${battleId}` }, () => {
-        qc.invalidateQueries({ queryKey: ["battle-presence", battleId] });
-      });
-
-    ch.subscribe();
-    
-    return () => { 
-      void supabase.removeChannel(ch); 
-    };
-  }, [battleId, qc]);
 
   // Presence heartbeat.
   const battle = battleQ.data?.battle;
@@ -205,35 +171,41 @@ function BattleDetail() {
     };
   }, [battle, battleId, isParticipant, role, fnHeartbeat, fnLeavePres]);
 
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      const { data: openRows } = await supabase.from("paper_trades")
-        .select("user_id").eq("battle_id", battleId).eq("status", "open");
-      const opens: Record<string, number> = {};
-      (openRows ?? []).forEach((r: any) => { opens[r.user_id] = (opens[r.user_id] ?? 0) + 1; });
-      const { data: recent } = await supabase.from("paper_trades")
-        .select("user_id, opened_at, closed_at").eq("battle_id", battleId)
-        .order("opened_at", { ascending: false }).limit(200);
-      const last: Record<string, string> = {};
-      (recent ?? []).forEach((r: any) => {
-        const t = r.closed_at ?? r.opened_at; if (!t) return;
-        if (!last[r.user_id] || new Date(t) > new Date(last[r.user_id])) last[r.user_id] = t;
-      });
-      if (!cancelled) { setOpenByUser(opens); setLastTradeByUser(last); }
-    }
-    load();
-    const channelName = `battle-trades-${battleId}`;
-    const ch = supabase.channel(channelName)
-      .on("postgres_changes", { event: "*", schema: "public", table: "paper_trades", filter: `battle_id=eq.${battleId}` }, load);
-    
-    ch.subscribe();
-    
-    return () => { 
-      cancelled = true; 
-      void supabase.removeChannel(ch); 
-    };
+  // Open-position counts and last-trade times for the live leaderboard.
+  // Loaded once per battle, then refreshed by the paper_trades registration on
+  // the battle channel below.
+  //
+  // Reads only the viewer's own rows despite the battle_id filter — paper_trades
+  // RLS is `own trades` (auth.uid() = user_id) and nothing exempts battle
+  // participants, so opponents' cells are blank. See BA-4 in docs/known-issues.md:
+  // the agreed fix replaces this function with a count-only server-side
+  // aggregate — opponents' entry/size/stop/target stay hidden during a battle.
+  const currentBattleId = useRef(battleId);
+  currentBattleId.current = battleId;
+
+  const loadTradeCounters = useCallback(async () => {
+    const { data: openRows } = await supabase.from("paper_trades")
+      .select("user_id").eq("battle_id", battleId).eq("status", "open");
+    const opens: Record<string, number> = {};
+    (openRows ?? []).forEach((r: any) => { opens[r.user_id] = (opens[r.user_id] ?? 0) + 1; });
+    const { data: recent } = await supabase.from("paper_trades")
+      .select("user_id, opened_at, closed_at").eq("battle_id", battleId)
+      .order("opened_at", { ascending: false }).limit(200);
+    const last: Record<string, string> = {};
+    (recent ?? []).forEach((r: any) => {
+      const t = r.closed_at ?? r.opened_at; if (!t) return;
+      if (!last[r.user_id] || new Date(t) > new Date(last[r.user_id])) last[r.user_id] = t;
+    });
+    // Two awaits in, the route may have moved to another battle.
+    if (currentBattleId.current !== battleId) return;
+    setOpenByUser(opens);
+    setLastTradeByUser(last);
   }, [battleId]);
+
+  useEffect(() => { void loadTradeCounters(); }, [loadTradeCounters]);
+
+  // One channel for the whole screen — see the hook for why.
+  useBattleRealtime(battleId, { onPaperTrades: loadTradeCounters });
 
   if (battleQ.isLoading) return <div className="grid place-items-center h-[calc(100dvh-64px)]"><div className="flex flex-col items-center gap-4"><div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" /><p className="text-sm font-black uppercase tracking-widest animate-pulse">Entering Arena Match...</p></div></div>;
   if (battleQ.isError) return <div className="flex flex-col items-center justify-center h-[calc(100dvh-64px)] p-8 text-center"><Badge variant="destructive" className="mb-4">Error</Badge><h3 className="text-xl font-black mb-2">Failed to load Arena</h3><p className="text-muted-foreground mb-6">{(battleQ.error as any)?.message || "The Arena match could not be found or you don't have access."}</p><Button onClick={() => navigate({ to: "/battle-arena" })}>Return to Lobby</Button></div>;

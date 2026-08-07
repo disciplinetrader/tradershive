@@ -106,6 +106,12 @@ for battle accounts. This touches the `WorkspaceTab` union and the persisted
 workspace prefs (`src/hooks/use-workspace-prefs.ts`), which is why it was kept
 out of the original fix rather than widening its scope mid-change.
 
+**Unblocked since 2026-08-07.** The rail owned a realtime channel keyed only on
+`battle_id`, so two mounted instances would have joined one topic and torn it
+out from under each other. It is now presentational —
+`src/hooks/use-battle-realtime.ts` owns the subscription — so mounting it in
+both the `xl` column and a tab is safe.
+
 ---
 
 ## BA-3 — Every scheduled cron job fails authentication
@@ -181,3 +187,70 @@ oldest-first and applies no staleness filter
 the entire outage backlog at 50/minute. Those are weeks-stale transactional
 emails; sending them is worse than not sending them, and the volume risks
 provider rate limits. The runbook has the triage queries.
+
+---
+
+## BA-4 — Live leaderboard's per-opponent trade columns can never populate
+
+**Area:** Battle Arena · **Found:** 2026-08-07 · **Status:** open, decided,
+not yet implemented — see "Decision" below
+
+`LiveLeaderboard` renders `openPositionsByUser` and `lastTradeByUser` for every
+competitor. Both maps are built client-side in `battle-arena.$battleId.tsx`
+(`loadTradeCounters`) by selecting from `paper_trades` filtered on `battle_id` —
+across all users.
+
+`paper_trades` has exactly one RLS policy, `own trades`
+(`20260717065801_*.sql:70`):
+
+```sql
+CREATE POLICY "own trades" ON public.paper_trades FOR ALL
+  USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+```
+
+Nothing else grants read access, and nothing exempts battle participants. So the
+select silently returns only the viewer's own rows — no error, just a shorter
+result — and **both columns have shown one populated cell (your own) and blanks
+for every opponent since they were written.**
+
+### Why the realtime fix doesn't change this
+
+BA's channel consolidation added `paper_trades` to the `supabase_realtime`
+publication, repairing a real defect: the subscription previously could not fire
+at all. But realtime evaluates the same RLS policy per subscriber, so the events
+that now arrive are still only the viewer's own. **Your own counters are live;
+opponents' are still blank.** Do not read that fix as having covered this.
+
+### Why it wasn't fixed inline
+
+The obvious repair — an RLS policy letting battle participants read each other's
+`paper_trades` rows — exposes opponents' full trade records mid-battle: entry
+price, size, stop, target, direction. In a competitive trading format that is a
+product decision about what competitors may see of each other and when, not a
+bug fix to slip into a realtime cleanup.
+
+### Decision (2026-08-07) — counts only
+
+**Opponents must not see each other's entry, size, stop or target while a battle
+is live. That turns the competition into copy-trading.** Position count and
+last-trade timestamp are enough for the leaderboard to feel live, and they are
+already all the UI renders.
+
+The rejected alternative was an RLS policy scoped to the battles the caller
+participates in, exposing opponents' full trade rows. **Do not implement that** —
+if a future feature seems to want it, it is re-opening this decision, not
+carrying it out.
+
+### Implementation, when picked up
+
+A `SECURITY DEFINER` function returning `(user_id, open_count, last_trade_at)`
+aggregated per battle — never individual trade rows — callable only by a
+participant or spectator of that battle. Surface it as a server fn the
+leaderboard queries.
+
+The client-side `loadTradeCounters` in `battle-arena.$battleId.tsx` then goes
+away entirely, along with its `paper_trades` registration in
+`use-battle-realtime.ts`; invalidate the new query off `battle_rankings`
+instead, which already fires on every trade via `trg_paper_trades_battle_ranking`.
+A direct client query against other users' `paper_trades` is what let this look
+like working code for so long — leaving it in place would preserve the trap.

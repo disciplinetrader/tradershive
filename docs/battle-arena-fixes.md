@@ -12,11 +12,12 @@ those are at the bottom, and the ones left unfixed are logged in
 | | Symptom | Root cause | Status |
 |---|---|---|---|
 | **A** | Create battle → "Failed to fetch" | Unresolved — narrowed to response delivery | **Open**, blocked on one observation |
-| **B** | Duplicate realtime channels | `ArenaCommandRail` mounted twice + 3 topics | **Diagnosed, not implemented** |
+| **B** | Duplicate realtime channels | `ArenaCommandRail` mounted twice + 3 topics | **Implemented, unverified end-to-end** |
 | **C** | Battles never start | State machine had no caller | **Implemented, not applied** |
 | **D** | Buy/Sell do nothing | `OrderPanel` never mounts in battle mode | **Implemented, unverified end-to-end** |
 
-Nothing has been applied to the database. No commits made.
+Nothing has been applied to the database. C and D shipped in `35e00a33`;
+B in the commit that added this line.
 
 ---
 
@@ -185,7 +186,7 @@ could not trade at all), but a real gap. Logged as **BA-2**.
 
 ## B — Duplicate realtime channels
 
-**Diagnosed, not implemented.**
+**Implemented.** Was: four channel objects across three topics.
 
 Four channel objects across three topics on the live battle screen:
 
@@ -206,32 +207,55 @@ The individual channels are already well-formed — all `.on()` before a single
 `.subscribe()`, `removeChannel` in cleanup, correct deps. The remaining work is
 consolidation, not restructuring.
 
-### Two further realtime defects
+### Two further realtime defects — both now fixed
 
-1. **`battle-trades-${id}` can never fire.** It subscribes to `paper_trades`,
+1. **`battle-trades-${id}` could never fire.** It subscribed to `paper_trades`,
    which is **not in the `supabase_realtime` publication** — the battle bulk-add
-   (`20260718082633_*.sql:434-445`) covers ten `battle_*` tables and omits it.
-   So `openByUser` and `lastTradeByUser` (open-position counts and last-trade
-   times on the live leaderboard) populate once on mount and then go stale.
-2. **All four subscriptions are status-blind.** Every one calls bare
+   (`20260718082633_*.sql:434-445`) covered ten `battle_*` tables and omitted
+   it. So `openByUser` and `lastTradeByUser` (open-position counts and
+   last-trade times on the live leaderboard) populated once on mount and then
+   went stale. A migration adds it — though see BA-4 for how far that gets.
+2. **All four subscriptions were status-blind.** Every one called bare
    `.subscribe()` with no callback, so `CHANNEL_ERROR` / `TIMED_OUT` / `CLOSED`
-   are discarded. The repo already has `subscribeAndTrack`
-   (`src/lib/observability/realtime-health.ts:48`) and none of the battle code
-   uses it.
+   were discarded. The repo already had `subscribeAndTrack`
+   (`src/lib/observability/realtime-health.ts:48`) and no battle code used it.
+   The one channel now subscribes through it.
 
-### Planned fix
+### Fix — `src/hooks/use-battle-realtime.ts`
 
-- New `useBattleRealtime(battleId)` hook: one `supabase.channel(\`battle:${id}\`)`,
-  all ten `.on()` registrations chained before one `.subscribe()`,
-  `removeChannel` in cleanup.
-- Delete the effects at `battle-arena.$battleId.tsx:96-131`, `:189-198`, and
-  `ArenaCommandRail.tsx:81-119`. `ArenaCommandRail` becomes presentational and
-  stops owning subscriptions, which makes it safe to mount more than once.
-- Subscribe via `subscribeAndTrack`.
-- Migration adding `paper_trades` to the realtime publication.
+One `supabase.channel(\`battle:${id}\`)` owning eight `.on()` registrations —
+the union of the three old topics, deduplicated (`battle_rankings` and
+`battle_events` had been registered on two channels each) — all chained before a
+single `subscribeAndTrack()`, with `removeChannel` in cleanup.
 
-**Do this after D** — D's deletion removes the duplicate, so B reduces to a
-clean consolidation.
+The three old effects are gone: `battle-arena.$battleId.tsx:99-132` and
+`:194-236`, and `ArenaCommandRail.tsx:81-120`. The rail now owns no
+subscription, which is what makes it safe to mount more than once — the
+precondition for BA-2's fix.
+
+Two things the consolidation picked up:
+
+- **Lobby chat had no realtime at all.** `BattleChat` deliberately owns no
+  channel (`BattleChat.tsx:36-37`) and relies on its parent to invalidate
+  `["battle-chat", id]`. Only `arena-rail-*` did that, and the rail renders in
+  the live branch only — so in the lobby, where chat is a first-class tab,
+  messages appeared solely on refetch. It has no `refetchInterval` either, so
+  the "poll as a fallback" the comment describes does not exist. `battle_chat`
+  is now on the one channel, which covers both screens.
+- **`paper_trades` is now in the realtime publication** —
+  `20260807164500_paper_trades_realtime.sql`. Deliberately *without*
+  `REPLICA IDENTITY FULL`, unlike the `battle_*` tables; the migration explains
+  the WAL trade-off and why DELETE filtering does not matter here.
+
+### The subscription this does not repair
+
+`paper_trades` RLS is a single policy, `own trades` — `auth.uid() = user_id`
+(`20260717065801_*.sql:70`), with nothing granting battle participants sight of
+each other. Realtime enforces RLS, so **the newly-live `paper_trades` events
+only ever concern the viewer's own trades**. The initial load has the same
+ceiling and always did. Logged as BA-4; the leaderboard columns it feeds have
+been blank for opponents since they were written, which is a product decision to
+make, not a bug to quietly fix.
 
 ---
 
@@ -368,6 +392,8 @@ That gap is part of why this went unnoticed for weeks.
 
 ## Files changed
 
+C and D (`35e00a33`):
+
 ```
  D src/components/battle-arena/BattleOrderTicket.tsx
  M src/components/paper-trading/OrderPanel.tsx
@@ -383,6 +409,15 @@ That gap is part of why this went unnoticed for weeks.
  ?? supabase/migrations/20260807102317_battle_arena_state_machine.sql
 ```
 
+B:
+
+```
+ M src/components/battle-arena/ArenaCommandRail.tsx
+ M src/routes/_authenticated/battle-arena.$battleId.tsx
+ ?? src/hooks/use-battle-realtime.ts
+ ?? supabase/migrations/20260807164500_paper_trades_realtime.sql
+```
+
 `src/lib/battle-arena/README.md` was rewritten — it documented a `battle_trades`
 table that does not exist, `battles` columns that do not exist (`symbol`,
 `timeframe`, `prize`), chat as a broadcast channel (it is table-based), and made
@@ -396,8 +431,9 @@ caller survived this long.
 Ordered. Steps 2 and 3 must both happen or `battle-tick` fails exactly the way
 `battle-settlement` has been failing.
 
-1. **Apply the migration** `20260807102317_battle_arena_state_machine.sql`.
-   It is schema-only; it schedules nothing.
+1. **Apply both migrations** — `20260807102317_battle_arena_state_machine.sql`
+   and `20260807164500_paper_trades_realtime.sql`. Both are schema-only; neither
+   schedules anything.
 2. **Set `CRON_SECRET`** in the server environment. Random value. **No `VITE_`
    prefix** — that would compile it into the client bundle and make every
    `/api/public/hooks/*` endpoint world-callable. Do not reuse the publishable
@@ -476,7 +512,10 @@ update public.email_queue
    accounts, and watch it walk `filling → ready → countdown → live`. This is the
    first time the real sequence will have run.
 9. **Then test D** — Buy/Sell in the live screen, and confirm positions appear.
-10. **Then implement B.**
+10. **Then verify B** with two browsers on one battle: a chat message from one
+    should appear in the other without a refetch (in the lobby as well as the
+    live screen), and each browser's own open-position count should move on its
+    own trade. Opponents' counts will not move — that is BA-4, not a regression.
 11. **Answer A's lobby-reload question** and fix accordingly.
 
 ### Cleanup already performed
@@ -489,6 +528,10 @@ XP/coins/ELO for battles nobody played. One `live` battle had corrupt dates
 ---
 
 ## Verification performed
+
+Static only. **No realtime behaviour has been observed** — B's consolidation is
+unverified end-to-end for the same reason D is: it needs a battle that reaches
+`live`, which needs the runbook applied.
 
 - `tsc --noEmit` — clean.
 - Full production build via `bun node_modules/vite/bin/vite.js build` — passes,

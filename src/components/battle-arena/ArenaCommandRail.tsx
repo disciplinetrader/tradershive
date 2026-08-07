@@ -27,12 +27,11 @@ import { ParticipantsList } from "./ParticipantsList";
 import { RulesPanel } from "./RulesPanel";
 import { LiveActivityFeed } from "./LiveActivityFeed";
 import { CountdownTimer } from "./CountdownTimer";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { listBattleEvents, getBattleLiveStats } from "@/lib/battle-arena-live.functions";
 import { MusicPlayer } from "@/components/audio/MusicPlayer";
 import { useAuth } from "@/hooks/use-auth";
-import { supabase } from "@/integrations/supabase/client";
 
 interface ArenaCommandRailProps {
   className?: string;
@@ -41,7 +40,6 @@ interface ArenaCommandRailProps {
 
 export function ArenaCommandRail({ className, onClose }: ArenaCommandRailProps) {
   const isMobile = useIsMobile();
-  const qc = useQueryClient();
   const { accountId, account } = usePaper();
   const { data: arenaData, isLoading } = useActiveArena(accountId);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -78,47 +76,11 @@ export function ArenaCommandRail({ className, onClose }: ArenaCommandRailProps) 
     refetchInterval: 30000, // Increased manual poll
   });
 
-  // Centralized Realtime logic for the rail
-  useEffect(() => {
-    if (!battleId) return;
-
-    const channelName = `arena-rail-${battleId}`;
-    const ch = supabase.channel(channelName);
-    
-    ch.on("postgres_changes", { 
-      event: "*", 
-      schema: "public", 
-      table: "battle_chat", 
-      filter: `battle_id=eq.${battleId}` 
-    }, () => {
-      qc.invalidateQueries({ queryKey: ["battle-chat", battleId] });
-    });
-
-    ch.on("postgres_changes", { 
-      event: "*", 
-      schema: "public", 
-      table: "battle_rankings", 
-      filter: `battle_id=eq.${battleId}` 
-    }, () => {
-      qc.invalidateQueries({ queryKey: ["battle-live-stats", battleId] });
-    });
-
-    ch.on("postgres_changes", { 
-      event: "INSERT", 
-      schema: "public", 
-      table: "battle_events", 
-      filter: `battle_id=eq.${battleId}` 
-    }, () => {
-      qc.invalidateQueries({ queryKey: ["battle-events", battleId] });
-    });
-
-    ch.subscribe();
-
-    return () => {
-      void supabase.removeChannel(ch);
-    };
-  }, [battleId, qc]);
-
+  // No realtime subscription here on purpose. The rail reads queries that
+  // `useBattleRealtime` (owned by the battle route) keeps fresh — chat,
+  // rankings, events. Owning a channel made the rail unsafe to mount twice:
+  // both instances joined the same `arena-rail-<id>` topic, and either one
+  // unmounting removed it out from under the other.
   if (isLoading || !battle) return null;
 
   const isSpectator = !arenaData.isParticipant;
