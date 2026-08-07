@@ -818,7 +818,7 @@ function TradingWorkspaceInner() {
 
           <div className="relative flex min-h-[320px] min-w-0 flex-1 flex-col border-r border-border/40">
             {/* Persistent BUY / SELL — sits directly above the indicator panel */}
-            {!focusMode && (
+            {!focusMode && !arenaData && (
               <div className="flex items-center gap-1.5 border-b border-border/40 bg-background/40 px-3 py-1.5">
                 <Button
                   size="sm"

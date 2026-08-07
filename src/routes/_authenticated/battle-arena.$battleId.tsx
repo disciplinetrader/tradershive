@@ -23,7 +23,7 @@ import { ParticipantsList } from "@/components/battle-arena/ParticipantsList";
 import { BattleResultsView } from "@/components/battle-arena/BattleResultsView";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { LineChart, LogIn, LogOut, Trash2, Copy, Play, Eye, ShieldCheck, Check } from "lucide-react";
+import { LineChart, LogIn, LogOut, Trash2, Copy, Play, Eye, ShieldCheck, Check, Maximize2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { routeBoundaries } from "@/lib/route-boundaries";
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
@@ -241,33 +241,40 @@ function BattleDetail() {
           <div className="flex h-full w-full overflow-hidden">
             <div className="flex-1 flex flex-col min-w-0 relative">
               {/* Header Area within live workspace */}
-              <div className="h-14 border-b border-border/40 bg-card/20 px-4 flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-3">
-                  <Link to="/battle-arena" className="text-muted-foreground hover:text-foreground">
-                    <Badge variant="outline" className="h-7 font-black bg-background/50">HIVE ARENA</Badge>
-                  </Link>
-                  <div className="h-4 w-[1px] bg-border/40" />
-                  <h1 className="font-bold tracking-tight text-sm uppercase truncate max-w-[200px]">{battle.name}</h1>
-                  <Badge variant="default" className="bg-success text-success-foreground font-black text-[10px] animate-pulse">LIVE</Badge>
-                </div>
-                
-                <div className="flex-1 max-w-2xl px-4">
-                  <BattleScrubber />
-                </div>
+                <div className="h-14 border-b border-border/40 bg-card/20 px-4 flex items-center justify-between shrink-0">
+                  <div className="flex items-center gap-3">
+                    <Link to="/battle-arena" className="text-muted-foreground hover:text-foreground">
+                      <Badge variant="outline" className="h-7 font-black bg-background/50">HIVE ARENA</Badge>
+                    </Link>
+                    <div className="h-4 w-[1px] bg-border/40" />
+                    <h1 className="font-bold tracking-tight text-sm uppercase truncate max-w-[200px]">{battle.name}</h1>
+                    <Badge variant="default" className="bg-success text-success-foreground font-black text-[10px] animate-pulse">LIVE</Badge>
+                  </div>
+                  
+                  <div className="flex-1 max-w-2xl px-4">
+                    <BattleScrubber />
+                  </div>
 
-                <div className="flex items-center gap-6">
-                  <div className="flex flex-col items-end">
-                    <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Remaining</span>
-                    <div className="font-mono text-sm font-bold text-success">
-                      <CountdownTimer to={battle.end_at} />
-                    </div>
+                  <div className="flex items-center gap-4">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 w-8 p-0 rounded-full"
+                      onClick={() => {
+                        if (document.fullscreenElement) {
+                          document.exitFullscreen();
+                        } else {
+                          document.documentElement.requestFullscreen();
+                        }
+                      }}
+                    >
+                      <Maximize2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
-              </div>
               
               <div className="flex-1 min-h-0 relative">
                 <TradingWorkspace accountId={battleAccountId} />
-                <BattleOrderTicket />
               </div>
 
               <BattleStatusBar />

@@ -2,8 +2,15 @@ import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, ChevronRight, Trophy, Users, MessageSquare, ShieldAlert,
-  Activity, Info, Target, Timer, Signal, SignalLow, User, AlertTriangle, Music
+  Activity, Info, Target, Timer, Signal, SignalLow, User, AlertTriangle, Music,
+  LogOut
 } from "lucide-react";
+import { 
+  Accordion, 
+  AccordionContent, 
+  AccordionItem, 
+  AccordionTrigger 
+} from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
@@ -168,110 +175,119 @@ function ExpandedRail({ battle, stats, events, isSpectator, isHost, account, onC
 }) {
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      {/* Header */}
-      <div className="flex flex-col gap-3 p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Trophy className="h-4 w-4 text-primary" />
-            <span className="text-xs font-bold uppercase tracking-wider">{battle.name}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="h-5 px-2 text-[10px] font-bold">
-              {battle.status.toUpperCase()}
-            </Badge>
-            {onClose && (
-              <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full" onClick={onClose}>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
+      {/* 1. Battle Name + Leave/Reset */}
+      <div className="flex items-center justify-between p-4 border-b border-border/40 bg-card/10">
+        <div className="flex items-center gap-2 overflow-hidden">
+          <Trophy className="h-4 w-4 text-primary shrink-0" />
+          <span className="text-xs font-bold uppercase tracking-wider truncate">{battle.name}</span>
         </div>
-
-        <div className="flex items-center justify-between rounded-xl bg-muted/40 p-3">
-          <div className="flex flex-col">
-            <span className="text-[10px] font-medium text-muted-foreground uppercase">Time Remaining</span>
-            <div className="flex items-center gap-2">
-              <Timer className="h-3.5 w-3.5 text-primary" />
-              <CountdownTimer to={battle.end_at} />
-            </div>
-          </div>
-          <div className="flex flex-col items-end">
-            <span className="text-[10px] font-medium text-muted-foreground uppercase">Connection</span>
-            <div className="flex items-center gap-1.5">
-              <Signal className="h-3 w-3 text-success" />
-              <span className="text-[10px] font-bold">STABLE</span>
-            </div>
-          </div>
+        <div className="flex items-center gap-1">
+          {onClose && (
+            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full text-muted-foreground hover:text-danger" onClick={onClose} title="Leave Arena">
+              <LogOut className="h-3.5 w-3.5" />
+            </Button>
+          )}
         </div>
       </div>
 
-      <Separator className="opacity-40" />
+      <ScrollArea className="flex-1">
+        <div className="flex flex-col">
+          {/* 2. Time Remaining */}
+          <div className="p-4 bg-muted/20">
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Time Remaining</span>
+                <Signal className="h-3 w-3 text-success" />
+              </div>
+              <div className="flex items-center gap-3 bg-background/50 rounded-xl border border-border/40 p-3">
+                <Timer className="h-4 w-4 text-primary" />
+                <div className="font-mono text-xl font-black text-success">
+                  <CountdownTimer to={battle.end_at} />
+                </div>
+              </div>
+            </div>
+          </div>
 
-      {/* Personal Performance (if not spectator) */}
-      {!isSpectator && account && (
-        <div className="p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">My Performance</span>
-            <Badge className="bg-primary/20 text-primary hover:bg-primary/30">RANK #{stats?.rankings?.find((r: any) => r.user_id === account.user_id)?.rank || "--"}</Badge>
+          {/* 3. Battle Rules (Collapsible) */}
+          <div className="border-y border-border/40">
+            <Accordion type="single" collapsible defaultValue="rules">
+              <AccordionItem value="rules" className="border-none">
+                <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/30 group">
+                  <div className="flex items-center gap-2">
+                    <ShieldAlert className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Arena Rules</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-4 pb-4">
+                  <RulesPanel battle={battle} />
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </div>
-          <div className="mb-2 text-[10px] text-muted-foreground italic">
-            Placement determined by Return % &gt; Drawdown &gt; Breaches &gt; Target Time
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <MetricCard 
-              label="Return" 
-              value={`${((account.balance / account.starting_balance - 1) * 100).toFixed(2)}%`} 
-              trend={(account.balance > account.starting_balance) ? "up" : (account.balance < account.starting_balance) ? "down" : "neutral"} 
+
+          {/* 4. Leaderboard (Top 3) */}
+          <div className="p-4 border-b border-border/40">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Leaderboard</span>
+              <Badge className="bg-primary/20 text-primary hover:bg-primary/30 text-[9px] px-1.5 py-0">TOP 3</Badge>
+            </div>
+            <LiveLeaderboard 
+              rankings={stats?.rankings?.slice(0, 3) ?? []} 
+              profiles={stats?.profiles ?? []}
+              presence={[]}
+              winCondition={battle.win_condition}
+              compact
             />
-            <MetricCard label="Equity" value={`$${account.equity.toLocaleString()}`} />
-            <MetricCard label="Drawdown" value={`${(stats?.rankings?.find((r: any) => r.user_id === account.user_id)?.max_drawdown || 0).toFixed(2)}%`} />
-            <MetricCard 
-              label="Breaches" 
-              value={`${stats?.rankings?.find((r: any) => r.user_id === account.user_id)?.rule_breaches_count || 0}`} 
-              trend={(stats?.rankings?.find((r: any) => r.user_id === account.user_id)?.rule_breaches_count > 0) ? "down" : "neutral"}
+            <Button variant="link" className="h-auto p-0 mt-3 text-[10px] font-bold uppercase tracking-widest text-primary/70 hover:text-primary" onClick={() => {}}>
+              View Full Standings <ChevronRight className="ml-1 h-3 w-3" />
+            </Button>
+          </div>
+
+          {/* 5. Participants */}
+          <div className="p-4 border-b border-border/40">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                Participants ({stats?.rankings?.length ?? 0}/{battle.max_participants})
+              </span>
+            </div>
+            <ParticipantsList 
+              participants={battle.participants ?? []} 
+              profiles={stats?.profiles ?? []} 
+              hostId={battle.created_by} 
             />
           </div>
-        </div>
-      )}
 
-      <Separator className="opacity-40" />
+          {/* 6. Chat (Collapsible/Unified) */}
+          <div className="border-b border-border/40">
+            <Accordion type="single" collapsible defaultValue="chat">
+              <AccordionItem value="chat" className="border-none">
+                <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/30 group">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Arena Chat</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="p-0">
+                  <div className="h-[400px]">
+                    <BattleChat battleId={battle.id} canPost={!isSpectator} isHost={isHost} />
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
 
-      {/* Main Content Tabs */}
-      <Tabs defaultValue="standings" className="flex flex-1 flex-col overflow-hidden">
-        <TabsList className="mx-4 mt-4 grid grid-cols-5 bg-muted/40 p-1 h-10 rounded-xl">
-          <TabsTrigger value="standings" className="text-[10px] font-bold uppercase">Standings</TabsTrigger>
-          <TabsTrigger value="chat" className="text-[10px] font-bold uppercase">Conversation</TabsTrigger>
-          <TabsTrigger value="rules" className="text-[10px] font-bold uppercase">Rules</TabsTrigger>
-          <TabsTrigger value="feed" className="text-[10px] font-bold uppercase">Feed</TabsTrigger>
-          <TabsTrigger value="music" className="text-[10px] font-bold uppercase">Music</TabsTrigger>
-        </TabsList>
-
-        <div className="flex-1 overflow-hidden p-4">
-          <TabsContent value="standings" className="h-full mt-0 focus-visible:outline-none overflow-y-auto">
-             <LiveLeaderboard 
-               rankings={stats?.rankings ?? []} 
-               profiles={stats?.profiles ?? []}
-               presence={[]}
-               winCondition={battle.win_condition}
-               compact
-             />
-          </TabsContent>
-          <TabsContent value="chat" className="h-full mt-0 focus-visible:outline-none">
-            <BattleChat battleId={battle.id} canPost={!isSpectator} isHost={isHost} />
-          </TabsContent>
-          <TabsContent value="rules" className="h-full mt-0 focus-visible:outline-none overflow-y-auto">
-            <RulesPanel battle={battle} />
-          </TabsContent>
-          <TabsContent value="feed" className="h-full mt-0 focus-visible:outline-none overflow-y-auto">
-            <LiveActivityFeed events={events?.events ?? []} profiles={events?.profiles ?? []} />
-          </TabsContent>
-          <TabsContent value="music" className="h-full mt-0 focus-visible:outline-none">
+          {/* Music Player at bottom of rail */}
+          <div className="p-4">
+            <div className="mb-2 flex items-center gap-2">
+              <Music className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Arena Ambience</span>
+            </div>
             <MusicPlayer embedded />
-          </TabsContent>
+          </div>
         </div>
-      </Tabs>
+      </ScrollArea>
 
-      {/* Rule Warning (Mocked for now) */}
+      {/* Rule Warning stays at bottom */}
       {!isSpectator && account && (
         <RuleWarning 
           account={account} 
