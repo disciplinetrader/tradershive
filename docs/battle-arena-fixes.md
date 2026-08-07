@@ -12,12 +12,16 @@ those are at the bottom, and the ones left unfixed are logged in
 | | Symptom | Root cause | Status |
 |---|---|---|---|
 | **A** | Create battle → "Failed to fetch" | Unresolved — narrowed to response delivery | **Open**, blocked on one observation |
-| **B** | Duplicate realtime channels | `ArenaCommandRail` mounted twice + 3 topics | **Implemented, unverified end-to-end** |
-| **C** | Battles never start | State machine had no caller | **Implemented, not applied** |
-| **D** | Buy/Sell do nothing | `OrderPanel` never mounts in battle mode | **Implemented, unverified end-to-end** |
+| **B** | Duplicate realtime channels | `ArenaCommandRail` mounted twice + 3 topics | **Fixed, verified 2026-08-07** |
+| **C** | Battles never start | State machine had no caller | **Fixed, verified 2026-08-07** |
+| **D** | Buy/Sell do nothing | `OrderPanel` never mounts in battle mode | **Fixed, verified 2026-08-07** |
 
-Nothing has been applied to the database. C and D shipped in `35e00a33`;
-B in the commit that added this line.
+C and D shipped in `35e00a33`, B in `13879432`. Migrations applied and
+deployed; **B, C and D were then observed working end-to-end on a real
+battle** — see [Verification](#verification-performed).
+
+Still outstanding: `CRON_SECRET` and the cron swap (steps 2, 4, 5 of the
+runbook), so battles nobody has open still neither start nor settle.
 
 ---
 
@@ -431,14 +435,17 @@ caller survived this long.
 Ordered. Steps 2 and 3 must both happen or `battle-tick` fails exactly the way
 `battle-settlement` has been failing.
 
-1. **Apply both migrations** — `20260807102317_battle_arena_state_machine.sql`
-   and `20260807164500_paper_trades_realtime.sql`. Both are schema-only; neither
+1. ~~**Apply both migrations**~~ — **done 2026-08-07.**
+   `20260807102317_battle_arena_state_machine.sql` and
+   `20260807164500_paper_trades_realtime.sql`. Both schema-only; neither
    schedules anything.
 2. **Set `CRON_SECRET`** in the server environment. Random value. **No `VITE_`
    prefix** — that would compile it into the client bundle and make every
    `/api/public/hooks/*` endpoint world-callable. Do not reuse the publishable
    key.
-3. **Deploy**, so `/api/public/hooks/battle-tick` exists.
+3. ~~**Deploy**~~ — **done 2026-08-07**, so `/api/public/hooks/battle-tick`
+   exists. Note it has never returned 200 to a caller: the endpoint is live but
+   no cron job authenticates against it yet. Step 5 is the first real test.
 4. **Swap the cron jobs:**
 
 ```sql
@@ -508,15 +515,11 @@ update public.email_queue
    replacing `apikey`. Same secret, same header shape as step 4. See BA-3 in
    `known-issues.md` for the job/schedule table.
 
-8. **Create a test battle** with `start_at` at or just after now, join with two
-   accounts, and watch it walk `filling → ready → countdown → live`. This is the
-   first time the real sequence will have run.
-9. **Then test D** — Buy/Sell in the live screen, and confirm positions appear.
-10. **Then verify B** with two browsers on one battle: a chat message from one
-    should appear in the other without a refetch (in the lobby as well as the
-    live screen), and each browser's own open-position count should move on its
-    own trade. Opponents' counts will not move — that is BA-4, not a regression.
-11. **Answer A's lobby-reload question** and fix accordingly.
+8. ~~**Create a test battle**~~ — **done 2026-08-07**, all three of B, C and D
+   confirmed by hand. See [Verification](#verification-performed).
+9. ~~**Test D**~~ — done, four trades with `battle_id` correctly derived.
+10. ~~**Verify B**~~ — done.
+11. **Answer A's lobby-reload question** and fix accordingly. Still open.
 
 ### Cleanup already performed
 
@@ -529,9 +532,40 @@ XP/coins/ELO for battles nobody played. One `live` battle had corrupt dates
 
 ## Verification performed
 
-Static only. **No realtime behaviour has been observed** — B's consolidation is
-unverified end-to-end for the same reason D is: it needs a battle that reaches
-`live`, which needs the runbook applied.
+### Observed on a real battle — 2026-08-07
+
+Two browser contexts, two accounts, one 1v1. **First time the real sequence has
+ever run.**
+
+- **C.** Walked `filling → ready → countdown → live`. `countdown_started_at`
+  14:14:41, `start_at` 14:15:00, ending at `status = live`. The 10-second
+  countdown gate held.
+- **B.** The second account loads the battle page. (The failure that looked like
+  a surviving channel collision was a stale published bundle — see below.)
+- **D.** Four battle trades written, BTC/USDT and XRP/USDT, `direction = long`,
+  `status = open`, **every one with `trade_battle_id = account_battle_id`, both
+  non-null**. A pre-fix trade from 2026-08-06 has both null, which is the
+  contrast that confirms the trigger path rather than just the insert.
+
+### The stale-bundle episode — worth reading before debugging this again
+
+Hours went into chasing a thrown error naming a channel topic
+`battle-chat-<id>`, on the reasonable assumption it was a channel the
+consolidation had missed. It was not: `BattleChat` owned that topic until
+`7b857bf7` deleted it, three commits *before* this work started. The browser was
+executing a bundle older than that commit.
+
+What made it convincing was a genuine asymmetry — **the server-side fix was
+live while the client bundle was stale.** `listBattles` is a server function, so
+its behaviour changed the instant the server deployed, which read as proof the
+whole deploy was current. It was not.
+
+**Check the chunk hash before trusting any client-side observation.** The stack
+named `TradingWorkspace-BO9PIZ5z.js`; a local build of the deployed commit
+produced `TradingWorkspace-Chj9WC3A.js`. Different hash, different code, and
+that comparison settles it in one step.
+
+### Static
 
 - `tsc --noEmit` — clean.
 - Full production build via `bun node_modules/vite/bin/vite.js build` — passes,
