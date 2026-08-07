@@ -37,3 +37,7 @@ test-results/
 playwright-report/
 blob-report/
 playwright/.cache/
+
+# Local secrets (.env itself is tracked - never put credentials there)
+.env.e2e.local
+.env*.local

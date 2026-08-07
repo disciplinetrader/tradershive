@@ -28,19 +28,37 @@ trades count toward their own stats.
 ## Setup
 
 ```bash
-npm install
-npx playwright install chromium
+bun install                      # never npm - it swaps rolldown-vite for stock vite
+bunx playwright install chromium # one-off, downloads the browser binary
 ```
 
-Environment — `.env` already supplies the first two:
+### Credentials
 
-| Variable | Purpose |
+> **`.env` is tracked by git.** Never put account passwords in it — they would
+> be committed and pushed. Put them in **`.env.e2e.local`**, which is
+> gitignored, or export them in your shell.
+
+`.env` already supplies the Supabase connection:
+
+| Variable | Where it lives |
 |---|---|
-| `VITE_SUPABASE_URL` | project URL |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | publishable key |
-| `E2E_HOST_EMAIL` / `E2E_HOST_PASSWORD` | account that creates the battle |
-| `E2E_JOINER_EMAIL` / `E2E_JOINER_PASSWORD` | account that joins it |
-| `E2E_BASE_URL` | optional; omit to run against a local `npm run dev` |
+| `VITE_SUPABASE_URL` | `.env` (tracked, already set) |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | `.env` (tracked, already set) |
+| `E2E_HOST_EMAIL` / `E2E_HOST_PASSWORD` | **`.env.e2e.local`** — creates the battle |
+| `E2E_JOINER_EMAIL` / `E2E_JOINER_PASSWORD` | **`.env.e2e.local`** — joins it |
+| `E2E_BASE_URL` | optional; omit to run against a local `bun run dev` |
+
+```bash
+cat > .env.e2e.local <<'EOF'
+E2E_HOST_EMAIL=host@example.com
+E2E_HOST_PASSWORD=...
+E2E_JOINER_EMAIL=joiner@example.com
+E2E_JOINER_PASSWORD=...
+EOF
+```
+
+The local dev server runs on **port 8080** (`@lovable.dev/vite-tanstack-config`
+forces it), which is what `baseURL` defaults to.
 
 The two accounts **must be different users**. `join_battle` is idempotent per
 user, so one account joining twice never reaches `min_participants` and the
@@ -50,10 +68,10 @@ same id.
 ## Running
 
 ```bash
-npx playwright test                     # local dev server
-E2E_BASE_URL=https://<preview> npx playwright test
-npx playwright test --headed            # watch it happen
-npx playwright show-report
+bun run test:e2e                              # starts bun run dev on :8080 for you
+bun run test:e2e:headed                       # watch it happen - recommended first run
+E2E_BASE_URL=https://<preview> bun run test:e2e
+bun run test:e2e:report                       # open the HTML report after a failure
 ```
 
 ## Why it is slow

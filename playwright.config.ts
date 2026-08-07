@@ -1,8 +1,12 @@
 import { defineConfig, devices } from "@playwright/test";
 import dotenv from "dotenv";
 
-// VITE_SUPABASE_* live in .env; the E2E_* credentials can go there too or come
-// from the shell. Existing shell values win.
+// VITE_SUPABASE_* come from .env, which is TRACKED BY GIT.
+//
+// The E2E_* account credentials must NOT go there — they would be committed and
+// pushed. They belong in .env.e2e.local, which is gitignored, or in the shell.
+// Shell values win over both.
+dotenv.config({ path: ".env.e2e.local" });
 dotenv.config();
 
 /**
@@ -17,7 +21,9 @@ dotenv.config();
  * will target whatever you set — including a deployed preview. Read e2e/README.md
  * before the first run; this talks to a real Supabase project.
  */
-const baseURL = process.env.E2E_BASE_URL ?? "http://localhost:3000";
+// 8080, not Vite's default: @lovable.dev/vite-tanstack-config forces the dev
+// server onto 8080 and warns if anything else is configured.
+const baseURL = process.env.E2E_BASE_URL ?? "http://localhost:8080";
 const useLocalServer = !process.env.E2E_BASE_URL;
 
 export default defineConfig({
@@ -50,7 +56,8 @@ export default defineConfig({
   ...(useLocalServer
     ? {
         webServer: {
-          command: "npm run dev",
+          // bun, never npm — see the note in e2e/README.md.
+          command: "bun run dev",
           url: baseURL,
           reuseExistingServer: true,
           timeout: 120 * 1000,
