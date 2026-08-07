@@ -35,10 +35,29 @@ const STORAGE = {
   timeframe: "th_paper_tf",
 };
 
-export function PaperTradingProvider({ 
+export function PaperTradingProvider({
   children,
-  initialAccountId 
-}: { 
+  initialAccountId,
+}: {
+  children: ReactNode;
+  initialAccountId?: string;
+}) {
+  // Idempotent: a nested mount shares the outer context instead of standing up
+  // a second, independent one. The battle route wraps the live workspace so
+  // BattleStatusBar — which renders outside TradingWorkspace — can read the
+  // account, and TradingWorkspace then wraps again with the same id. Two
+  // providers meant the status bar and OrderPanel held separate account and
+  // symbol state, so the balance on screen was not the balance being traded.
+  const existing = useContext(PaperCtx);
+  if (existing) return <>{children}</>;
+
+  return <PaperTradingRoot initialAccountId={initialAccountId}>{children}</PaperTradingRoot>;
+}
+
+function PaperTradingRoot({
+  children,
+  initialAccountId,
+}: {
   children: ReactNode;
   initialAccountId?: string;
 }) {

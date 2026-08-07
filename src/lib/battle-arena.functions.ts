@@ -230,34 +230,14 @@ export const joinBattle = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ battleId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
-    const { data: id, error } = await supabase.rpc("join_battle", { _battle_id: data.battleId });
+    // Status transitions belong to the state machine, not here. A 1v1
+    // auto-start used to flip straight to `live` once two players joined,
+    // skipping ready/countdown entirely — it was the only reason any battle
+    // ever reached `live`, and it masked the fact that nothing drove the real
+    // sequence. `join_battle` now promotes to `filling`/`ready`, and
+    // `tick_battle` carries it the rest of the way.
+    const { data: id, error } = await context.supabase.rpc("join_battle", { _battle_id: data.battleId });
     if (error) throw error;
-
-    // Auto-start 1v1 if 2 players joined
-    const { data: battle } = await supabase
-      .from("battles")
-      .select("battle_type, min_participants, status")
-      .eq("id", data.battleId)
-      .maybeSingle();
-
-    if (battle && battle.battle_type === "1v1" && ["open", "filling", "upcoming", "ready"].includes(battle.status)) {
-      const { count } = await supabase
-        .from("battle_participants")
-        .select("id", { count: "exact", head: true })
-        .eq("battle_id", data.battleId);
-
-      if ((count ?? 0) >= 2) {
-        await supabase
-          .from("battles")
-          .update({ 
-            status: "live",
-            start_at: new Date().toISOString()
-          })
-          .eq("id", data.battleId);
-      }
-    }
-
     return { battleId: id as string };
   });
 
@@ -424,11 +404,26 @@ export const getMatchmakingStatus = createServerFn({ method: "GET" })
 
 /* ================= Tick / Finalize ================= */
 
-export const tickBattles = createServerFn({ method: "POST" })
+/**
+ * Advance a single battle's state machine.
+ *
+ * Every transition inside `tick_battle` is gated on a timestamp and includes
+ * the expected status in its WHERE clause, so this is safe for any viewer to
+ * call as often as they like — calling early is a no-op. The `battle-tick`
+ * cron runs the same logic once a minute for battles nobody has open; this
+ * exists because a 1-minute cron cannot drive a 10-second countdown.
+ *
+ * Returns the status after ticking so the caller can skip a refetch when
+ * nothing moved.
+ */
+export const tickBattle = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { error } = await context.supabase.rpc("tick_battles");
-    return { ok: !error };
+  .inputValidator((d) => z.object({ battleId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: status, error } = await context.supabase
+      .rpc("tick_battle" as any, { _battle_id: data.battleId });
+    if (error) throw error;
+    return { status: (status as string | null) ?? null };
   });
 
 

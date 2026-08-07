@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
@@ -281,6 +281,18 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
     return () => window.removeEventListener("keydown", onKey);
   }, [openMut, armed]);
 
+  // Always points at the current render's attemptPlace, so a submit triggered
+  // from the intent bus reads the values the intent just set rather than the
+  // ones captured when the subscription was created.
+  const attemptPlaceRef = useRef(attemptPlace);
+  attemptPlaceRef.current = attemptPlace;
+
+  // Bumped by a "submit" intent. Firing the order from an effect keyed on this
+  // counter guarantees React has committed setSide/setOrderType/setLot from the
+  // same batch first — the previous `setTimeout(() => attemptPlace(), 0)` ran a
+  // stale closure and submitted the *previous* side and lot size.
+  const [submitRequest, setSubmitRequest] = useState(0);
+
   // Listen for chart-side intents (right-click menu, planner "Send", B/S shortcuts).
   useEffect(() => {
     const unsub = onTradeIntent((i) => {
@@ -292,10 +304,15 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
       if (i.sl != null) setSl(String(i.sl));
       if (i.tp != null) setTp(String(i.tp));
       if (i.lot != null) setLot(String(i.lot));
-      if (isSubmit) setTimeout(() => attemptPlace(), 0);
+      if (isSubmit) setSubmitRequest((n) => n + 1);
     });
     return () => { unsub(); };
-  }, [openMut]);
+  }, []);
+
+  useEffect(() => {
+    if (submitRequest === 0) return;
+    attemptPlaceRef.current();
+  }, [submitRequest]);
 
   const filteredTags = (tags ?? []).filter((t) => t.name.toLowerCase().includes(tagQuery.toLowerCase()));
   const canCreateTag = tagQuery && !(tags ?? []).some((t) => t.name.toLowerCase() === tagQuery.toLowerCase());

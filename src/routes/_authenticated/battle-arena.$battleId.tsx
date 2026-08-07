@@ -1,12 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { 
+import {
   getBattle, joinBattle, leaveBattle, cancelBattle, finalizeBattle,
-  setParticipantReady
+  setParticipantReady, tickBattle
 } from "@/lib/battle-arena.functions";
 import {
   listBattleEvents, getBattleLiveStats, heartbeatPresence, listBattlePresence, leavePresence,
@@ -35,7 +35,6 @@ import { ArenaCommandRail } from "@/components/battle-arena/ArenaCommandRail";
 import { BattleStartIntro } from "@/components/battle-arena/lobby/BattleStartIntro";
 import { CountdownTimer } from "@/components/battle-arena/CountdownTimer";
 import { BattleScrubber } from "@/components/battle-arena/BattleScrubber";
-import { BattleOrderTicket } from "@/components/battle-arena/BattleOrderTicket";
 import { BattleStatusBar } from "@/components/battle-arena/BattleStatusBar";
 
 
@@ -66,6 +65,7 @@ function BattleDetail() {
   const fnHeartbeat = useServerFn(heartbeatPresence);
   const fnPresence = useServerFn(listBattlePresence);
   const fnLeavePres = useServerFn(leavePresence);
+  const fnTick = useServerFn(tickBattle);
 
   const battleQ = useQuery({
     queryKey: ["battle", battleId],
@@ -135,7 +135,11 @@ function BattleDetail() {
   const battle = battleQ.data?.battle;
   const isParticipant = battleQ.data?.isParticipant ?? false;
   const isHost = battleQ.data?.isHost ?? false;
-  const role = isHost ? "host" : isParticipant ? "competitor" : "spectator";
+  // Must match the presence enum in battle-arena-live.functions.ts:139
+  // ("spectator" | "participant" | "host"). This previously sent "competitor",
+  // which failed zod validation on every heartbeat and was swallowed by the
+  // .catch(() => {}) below — so participants never registered presence at all.
+  const role = isHost ? "host" : isParticipant ? "participant" : "spectator";
 
   const [showIntro, setShowIntro] = useState(false);
   const [introSeen, setIntroSeen] = useState(false);
@@ -146,6 +150,39 @@ function BattleDetail() {
       setIntroSeen(true);
     }
   }, [battle?.status, introSeen]);
+
+  // Drive this battle's clock while it is pre-live.
+  //
+  // Every transition lives in the `tick_battle` RPC — time-gated and
+  // idempotent, so calling early is a no-op and concurrent viewers can't
+  // double-apply one. The `battle-tick` cron runs the same logic once a minute
+  // for battles nobody has open; this poll exists because countdown -> live is
+  // a 10-second edge that a 1-minute cron cannot resolve.
+  const tickRef = useRef(fnTick);
+  tickRef.current = fnTick;
+  const battleStatus = battle?.status;
+
+  useEffect(() => {
+    if (!battleId || !battleStatus) return;
+    if (!["upcoming", "open", "filling", "ready", "countdown", "live"].includes(battleStatus)) return;
+
+    let cancelled = false;
+    const run = async () => {
+      try {
+        const res = await tickRef.current({ data: { battleId } });
+        if (!cancelled && res?.status && res.status !== battleStatus) {
+          qc.invalidateQueries({ queryKey: ["battle", battleId] });
+        }
+      } catch {
+        // Transient — the cron is the backstop and the next interval retries.
+      }
+    };
+
+    run();
+    const everyMs = battleStatus === "countdown" ? 2000 : battleStatus === "ready" ? 5000 : 30000;
+    const timer = setInterval(run, everyMs);
+    return () => { cancelled = true; clearInterval(timer); };
+  }, [battleId, battleStatus, qc]);
 
 
   // Hooks must stay above every early return (React error #310).

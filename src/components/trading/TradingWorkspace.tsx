@@ -92,7 +92,6 @@ import { INDICATOR_TOGGLES, type IndicatorDef } from "@/lib/chart/indicator-regi
 import { ChartTemplateMenu } from "@/components/chart/ChartTemplateMenu";
 import { hasSettings } from "@/lib/chart/indicator-schema";
 import type { ChartTemplate } from "@/lib/chart/templates";
-import { ArenaCommandRail } from "@/components/battle-arena/ArenaCommandRail";
 import { useActiveArena } from "@/components/battle-arena/useActiveArena";
 
 const CHART_TIMEFRAMES: Timeframe[] = ["1m", "5m", "15m", "30m", "1H", "4H", "1D", "1W"];
@@ -1094,11 +1093,13 @@ function TradingWorkspaceInner() {
           />
 
 
-          {/* Right rail: tabbed, resizable, collapsible workspace panel */}
+          {/* Right rail: tabbed, resizable, collapsible workspace panel.
+              Battle accounts used to swap this whole panel for ArenaCommandRail.
+              That unmounted OrderPanel — the only subscriber to the trade-intent
+              bus — so Buy/Sell emitted into an empty listener set and silently
+              did nothing, and it took the Positions tab with it. The battle
+              route renders its own arena rail in a dedicated column. */}
           {rightOpen ? (
-            arenaData ? (
-              <ArenaCommandRail className={cn(isMobile && "absolute inset-x-0 bottom-0 top-auto z-40 h-[75dvh] w-full rounded-t-2xl border-l-0 border-t border-border/60 bg-background shadow-2xl")} onClose={() => setRightOpen(false)} />
-            ) : (
               <>
               {/* Resize handle (desktop only) */}
               <div
@@ -1367,8 +1368,7 @@ function TradingWorkspaceInner() {
 
               </aside>
             </>
-          )
-        ) : (
+          ) : (
             <button
               onClick={() => setRightOpen(true)}
               className="hidden md:flex w-11 shrink-0 flex-col items-center gap-2 border-l border-border/40 bg-card/20 py-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground transition hover:bg-card/40 hover:text-foreground"

@@ -186,6 +186,7 @@ import { Route as ApiPublicHooksEmailReengagementRouteImport } from './routes/ap
 import { Route as ApiPublicHooksEmailQueueRouteImport } from './routes/api/public/hooks/email-queue'
 import { Route as ApiPublicHooksEmailMonthlyReportRouteImport } from './routes/api/public/hooks/email-monthly-report'
 import { Route as ApiPublicHooksEconomicCalendarRouteImport } from './routes/api/public/hooks/economic-calendar'
+import { Route as ApiPublicHooksBattleTickRouteImport } from './routes/api/public/hooks/battle-tick'
 import { Route as ApiPublicHooksBattleSettlementRouteImport } from './routes/api/public/hooks/battle-settlement'
 import { Route as AuthenticatedStrategiesPlaybooksIdRouteImport } from './routes/_authenticated/strategies.playbooks.$id'
 import { Route as AuthenticatedReplayPropFirmNewRouteImport } from './routes/_authenticated/replay.prop-firm.new'
@@ -1228,6 +1229,12 @@ const ApiPublicHooksEconomicCalendarRoute =
     path: '/api/public/hooks/economic-calendar',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksBattleTickRoute =
+  ApiPublicHooksBattleTickRouteImport.update({
+    id: '/api/public/hooks/battle-tick',
+    path: '/api/public/hooks/battle-tick',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksBattleSettlementRoute =
   ApiPublicHooksBattleSettlementRouteImport.update({
     id: '/api/public/hooks/battle-settlement',
@@ -1542,6 +1549,7 @@ export interface FileRoutesByFullPath {
   '/replay/prop-firm/new': typeof AuthenticatedReplayPropFirmNewRoute
   '/strategies/playbooks/$id': typeof AuthenticatedStrategiesPlaybooksIdRoute
   '/api/public/hooks/battle-settlement': typeof ApiPublicHooksBattleSettlementRoute
+  '/api/public/hooks/battle-tick': typeof ApiPublicHooksBattleTickRoute
   '/api/public/hooks/economic-calendar': typeof ApiPublicHooksEconomicCalendarRoute
   '/api/public/hooks/email-monthly-report': typeof ApiPublicHooksEmailMonthlyReportRoute
   '/api/public/hooks/email-queue': typeof ApiPublicHooksEmailQueueRoute
@@ -1725,6 +1733,7 @@ export interface FileRoutesByTo {
   '/replay/prop-firm/new': typeof AuthenticatedReplayPropFirmNewRoute
   '/strategies/playbooks/$id': typeof AuthenticatedStrategiesPlaybooksIdRoute
   '/api/public/hooks/battle-settlement': typeof ApiPublicHooksBattleSettlementRoute
+  '/api/public/hooks/battle-tick': typeof ApiPublicHooksBattleTickRoute
   '/api/public/hooks/economic-calendar': typeof ApiPublicHooksEconomicCalendarRoute
   '/api/public/hooks/email-monthly-report': typeof ApiPublicHooksEmailMonthlyReportRoute
   '/api/public/hooks/email-queue': typeof ApiPublicHooksEmailQueueRoute
@@ -1926,6 +1935,7 @@ export interface FileRoutesById {
   '/_authenticated/replay/prop-firm/new': typeof AuthenticatedReplayPropFirmNewRoute
   '/_authenticated/strategies/playbooks/$id': typeof AuthenticatedStrategiesPlaybooksIdRoute
   '/api/public/hooks/battle-settlement': typeof ApiPublicHooksBattleSettlementRoute
+  '/api/public/hooks/battle-tick': typeof ApiPublicHooksBattleTickRoute
   '/api/public/hooks/economic-calendar': typeof ApiPublicHooksEconomicCalendarRoute
   '/api/public/hooks/email-monthly-report': typeof ApiPublicHooksEmailMonthlyReportRoute
   '/api/public/hooks/email-queue': typeof ApiPublicHooksEmailQueueRoute
@@ -2127,6 +2137,7 @@ export interface FileRouteTypes {
     | '/replay/prop-firm/new'
     | '/strategies/playbooks/$id'
     | '/api/public/hooks/battle-settlement'
+    | '/api/public/hooks/battle-tick'
     | '/api/public/hooks/economic-calendar'
     | '/api/public/hooks/email-monthly-report'
     | '/api/public/hooks/email-queue'
@@ -2310,6 +2321,7 @@ export interface FileRouteTypes {
     | '/replay/prop-firm/new'
     | '/strategies/playbooks/$id'
     | '/api/public/hooks/battle-settlement'
+    | '/api/public/hooks/battle-tick'
     | '/api/public/hooks/economic-calendar'
     | '/api/public/hooks/email-monthly-report'
     | '/api/public/hooks/email-queue'
@@ -2510,6 +2522,7 @@ export interface FileRouteTypes {
     | '/_authenticated/replay/prop-firm/new'
     | '/_authenticated/strategies/playbooks/$id'
     | '/api/public/hooks/battle-settlement'
+    | '/api/public/hooks/battle-tick'
     | '/api/public/hooks/economic-calendar'
     | '/api/public/hooks/email-monthly-report'
     | '/api/public/hooks/email-queue'
@@ -2538,6 +2551,7 @@ export interface RootRouteChildren {
   ApiAiChatRoute: typeof ApiAiChatRoute
   JournalShareTokenRoute: typeof JournalShareTokenRoute
   ApiPublicHooksBattleSettlementRoute: typeof ApiPublicHooksBattleSettlementRoute
+  ApiPublicHooksBattleTickRoute: typeof ApiPublicHooksBattleTickRoute
   ApiPublicHooksEconomicCalendarRoute: typeof ApiPublicHooksEconomicCalendarRoute
   ApiPublicHooksEmailMonthlyReportRoute: typeof ApiPublicHooksEmailMonthlyReportRoute
   ApiPublicHooksEmailQueueRoute: typeof ApiPublicHooksEmailQueueRoute
@@ -3787,6 +3801,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksEconomicCalendarRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/battle-tick': {
+      id: '/api/public/hooks/battle-tick'
+      path: '/api/public/hooks/battle-tick'
+      fullPath: '/api/public/hooks/battle-tick'
+      preLoaderRoute: typeof ApiPublicHooksBattleTickRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/battle-settlement': {
       id: '/api/public/hooks/battle-settlement'
       path: '/api/public/hooks/battle-settlement'
@@ -4583,6 +4604,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAiChatRoute: ApiAiChatRoute,
   JournalShareTokenRoute: JournalShareTokenRoute,
   ApiPublicHooksBattleSettlementRoute: ApiPublicHooksBattleSettlementRoute,
+  ApiPublicHooksBattleTickRoute: ApiPublicHooksBattleTickRoute,
   ApiPublicHooksEconomicCalendarRoute: ApiPublicHooksEconomicCalendarRoute,
   ApiPublicHooksEmailMonthlyReportRoute: ApiPublicHooksEmailMonthlyReportRoute,
   ApiPublicHooksEmailQueueRoute: ApiPublicHooksEmailQueueRoute,
@@ -4593,3 +4615,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
