@@ -128,6 +128,17 @@ function PaperTradingRoot({
         setAccountIdState(match.id);
         return;
       }
+      // Requested account isn't in the list yet — almost always a battle
+      // account that join_battle created moments ago, before this query
+      // (staleTime 30s) refetched.
+      //
+      // Deliberately do NOT fall through to the stored/first account. Silently
+      // selecting a personal account inside a battle points Buy/Sell at it, and
+      // because battle_id is derived by a BEFORE INSERT trigger from
+      // paper_accounts.battle_id, the trade is written as an ordinary trade
+      // with battle_id NULL: no rule enforcement, no leaderboard, no error.
+      // Waiting for the refetch is always better than trading the wrong book.
+      return;
     }
 
     const stored = typeof window !== "undefined" ? localStorage.getItem(STORAGE.account) : null;

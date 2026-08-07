@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +24,7 @@ function isoLocal(d: Date) {
 
 export function CreateBattleWizard({ onCancel, onCreated }: { onCancel: () => void; onCreated: (battleId: string) => void }) {
   const fn = useServerFn(createBattle);
+  const qc = useQueryClient();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const now = new Date();
@@ -88,6 +90,11 @@ export function CreateBattleWizard({ onCancel, onCreated }: { onCancel: () => vo
         },
       });
       toast.success("Battle created!");
+      // createBattle joins the host, which creates their battle paper_accounts
+      // row. Same staleness as the join paths — without this the host can land
+      // on a personal account too, just less often, since their accounts list
+      // is usually older than 30s by the time the battle goes live.
+      qc.invalidateQueries({ queryKey: ["paper", "accounts"] });
       onCreated(battle.id);
     } catch (e: any) { 
       console.error("Create battle failed:", e);

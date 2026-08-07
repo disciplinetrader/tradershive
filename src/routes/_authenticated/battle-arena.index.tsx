@@ -42,6 +42,10 @@ function BattleArenaLobby() {
       const res = await fnJoinRandom({ data: { battleType: "ffa5", isRanked: true } });
       if (res.battleId) {
         toast.success("Found a match!");
+        // Same reason as doJoin on the detail route: the join created a
+        // paper_accounts row the cached accounts list doesn't have yet, and the
+        // workspace resolves the battle account against that list.
+        qc.invalidateQueries({ queryKey: ["paper", "accounts"] });
         navigate({ to: "/battle-arena/$battleId", params: { battleId: res.battleId } });
       } else if (res.queued) {
         toast.info("No open matches found. You are now in the matchmaking queue.");
