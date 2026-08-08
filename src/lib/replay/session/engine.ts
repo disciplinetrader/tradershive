@@ -40,6 +40,15 @@ export interface EngineOptions {
   writer?: SnapshotWriter;
   autosavePolicy?: Partial<AutosavePolicy>;
   clock?: Partial<ClockSnapshot>;
+  /**
+   * Whether exhausting the dataset completes the session. Default true.
+   *
+   * A battle sets this false: its lifecycle is owned by `battles.end_at`, not
+   * by the tape. Auto-completing would end a competitor's session early and
+   * desynchronise them from everyone else. Running out of tape before `end_at`
+   * is prevented at creation instead (`validateBattleReplayRange`).
+   */
+  completeOnExhaustion?: boolean;
   viewport?: ViewportState;
   events?: ReplayEventLog;
   revision?: number;
@@ -58,6 +67,7 @@ export class ReplaySessionEngine {
   private viewportValue: ViewportState;
   private listeners = new Set<() => void>();
   private now: () => number;
+  private completeOnExhaustion: boolean;
 
   constructor(opts: EngineOptions) {
     this.metaValue = { ...opts.meta };
@@ -65,6 +75,7 @@ export class ReplaySessionEngine {
     this.stores = opts.stores;
     this.market = opts.market ?? null;
     this.now = opts.now ?? Date.now;
+    this.completeOnExhaustion = opts.completeOnExhaustion ?? true;
     this.clock = new ReplayClock(opts.dataset, opts.clock);
     this.log = opts.events ?? new ReplayEventLog();
     this.viewportValue = opts.viewport ?? { ...DEFAULT_VIEWPORT };
@@ -146,6 +157,8 @@ export class ReplaySessionEngine {
   stepCandle() { return this.consume(this.clock.stepCandle()); }
   skipCandles(n: number) { return this.consume(this.clock.skipCandles(n)); }
   seekForwardTo(timeMs: number) { return this.consume(this.clock.seekForwardTo(timeMs)); }
+  /** Advance to an absolute observation index — how a battle applies its cursor. */
+  seekForwardToIndex(index: number) { return this.consume(this.clock.seekForwardToIndex(index)); }
   tick(realDeltaMs: number) { return this.consume(this.clock.advance(realDeltaMs)); }
 
   /**
@@ -171,7 +184,9 @@ export class ReplaySessionEngine {
     const last = observations[observations.length - 1];
     this.record("observation_batch", { count: observations.length, to: last.index }, last);
     this.autosave.markObservations(observations.length);
-    if (this.clock.atEnd && this.metaValue.lifecycle !== "completed") this.complete("ended");
+    if (this.completeOnExhaustion && this.clock.atEnd && this.metaValue.lifecycle !== "completed") {
+      this.complete("ended");
+    }
     this.emit();
     return touched;
   }

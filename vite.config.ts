@@ -13,6 +13,12 @@ export default defineConfig({
     server: { entry: "server" },
   },
   vite: {
+    // Vitest reads this config too. `e2e/` holds Playwright specs, whose
+    // `test.describe` throws when collected by vitest ("Playwright Test did not
+    // expect test.describe() to be called here"), so keep the two runners apart.
+    test: {
+      exclude: ["**/node_modules/**", "**/dist/**", "**/.output/**", "e2e/**"],
+    },
     esbuild: {
       // Strip debug logging from production bundles; keep console.error/warn for diagnostics.
       pure:

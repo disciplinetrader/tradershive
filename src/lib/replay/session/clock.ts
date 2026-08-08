@@ -148,7 +148,25 @@ export class ReplayClock {
    * (rebuild from the event log) because trades cannot be un-executed.
    */
   seekForwardTo(timeMs: number): ReplayObservation[] {
-    const target = observationIndexForTime(this.dataset, timeMs);
+    return this.seekForwardToIndex(observationIndexForTime(this.dataset, timeMs));
+  }
+
+  /**
+   * Seek forward to an absolute observation index, replaying everything in
+   * between exactly as `seekForwardTo` does.
+   *
+   * This is how a battle advances. A battle's position is a cursor derived from
+   * wall-clock time (`replay/battle-cursor.ts`), not an accumulation of local
+   * frame deltas — so it must be applied as "be at index N", not "advance by
+   * N ms". Driving a battle through `advance()` would let two participants
+   * diverge by their own carry remainders and dropped frames.
+   *
+   * Backwards seeks return nothing, same as the timestamp form: trades cannot
+   * be un-executed.
+   */
+  seekForwardToIndex(index: number): ReplayObservation[] {
+    if (!Number.isFinite(index)) return [];
+    const target = Math.min(this.total, Math.max(0, Math.floor(index)));
     if (target <= this.cursor) return [];
     return this.take(target - this.cursor);
   }
