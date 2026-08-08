@@ -36,6 +36,7 @@ import { ArenaCommandRail } from "@/components/battle-arena/ArenaCommandRail";
 import { BattleStartIntro } from "@/components/battle-arena/lobby/BattleStartIntro";
 import { CountdownTimer } from "@/components/battle-arena/CountdownTimer";
 import { BattleScrubber } from "@/components/battle-arena/BattleScrubber";
+import { BattleReplayProvider } from "@/components/battle-arena/battle-replay-context";
 import { BattleStatusBar } from "@/components/battle-arena/BattleStatusBar";
 
 
@@ -264,6 +265,7 @@ function BattleDetail() {
     const battleAccountId = myParticipant?.paper_account_id;
 
     return (
+      <BattleReplayProvider battle={battle as any} userId={user?.id}>
       <PaperTradingProvider initialAccountId={battleAccountId}>
         <div className="flex h-[calc(100dvh-64px)] w-full flex-col overflow-hidden bg-background">
           <div className="flex h-full w-full overflow-hidden">
@@ -314,6 +316,7 @@ function BattleDetail() {
           </div>
         </div>
       </PaperTradingProvider>
+      </BattleReplayProvider>
     );
   }
 

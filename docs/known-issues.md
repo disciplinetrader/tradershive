@@ -378,3 +378,45 @@ piecemeal would mean writing that bridge twice. See BA-5 — the two systems als
 compute P&L differently, so bridging them forces a reconciliation.
 
 Until then, treat "trade in a battle" as meaning the order panel only.
+
+---
+
+## BA-7 — Replay clock reports `exhausted` where two tests expect `ended`
+
+**Area:** Replay engine · **Found:** 2026-08-08 · **Status:** open, deliberately
+deferred — decide outside an implementation
+
+Two tests fail on `main` and have done since before the replay-battle work:
+
+```
+src/lib/replay/session/__tests__/controller.test.ts
+  > completes at the end of the dataset and stops the loop
+src/lib/replay/session/__tests__/session.test.ts
+  > ends deterministically and stops emitting
+
+AssertionError: expected 'exhausted' to be 'ended'
+```
+
+Confirmed pre-existing by stashing the battle work and running against HEAD.
+
+`ClockStatus` carries both `"ended"` and `"exhausted"`. `ReplayClock.take()` sets
+`exhausted` when the cursor reaches the end (`clock.ts`), while `restore()` sets
+`ended` for a snapshot that was already at the end. The tests assert `ended`.
+
+So one of three things is true and nobody has decided which:
+
+1. The two statuses mean different things and the tests are asserting the wrong
+   one.
+2. They are the same thing and one should be deleted.
+3. `take()` is wrong and should set `ended`.
+
+### Why it was left
+
+Picking a side changes clock semantics, and the battle work builds directly on
+this module — a semantics change mid-implementation is how you get a subtle
+divergence between two participants' engines. Nothing in the battle path depends
+on the distinction: `advanceBattleSession` reads `clock.atEnd`, not `status`, and
+battle sessions set `completeOnExhaustion: false` so they never transition on
+exhaustion at all.
+
+Worth resolving before anything else starts reading `ClockStatus`.
