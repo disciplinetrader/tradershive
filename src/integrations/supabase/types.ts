@@ -7109,6 +7109,7 @@ export type Database = {
           take_profit: number | null
           updated_at: string
           user_id: string
+          observation_cursor: number | null
         }
         Insert: {
           account_id: string
@@ -7145,6 +7146,7 @@ export type Database = {
           take_profit?: number | null
           updated_at?: string
           user_id: string
+          observation_cursor?: number | null
         }
         Update: {
           account_id?: string
@@ -7181,6 +7183,7 @@ export type Database = {
           take_profit?: number | null
           updated_at?: string
           user_id?: string
+          observation_cursor?: number | null
         }
         Relationships: [
           {

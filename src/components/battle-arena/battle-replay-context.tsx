@@ -11,6 +11,8 @@ import {
 } from "react";
 
 import { getReplayCandles } from "@/lib/replay.functions";
+import { recordBattleReplayTrade } from "@/lib/battle-replay.functions";
+import { battleTradeRowFrom } from "@/lib/replay/battle-pnl";
 import {
   advanceBattleSession,
   battleProgress,
@@ -98,13 +100,17 @@ export function isReplayBattle(battle: Partial<BattleReplayRow> | null | undefin
 export function BattleReplayProvider({
   battle,
   userId,
+  accountId,
   children,
 }: {
   battle: BattleReplayRow | null | undefined;
   userId?: string;
+  /** The participant's battle paper account — where recorded fills land. */
+  accountId?: string;
   children: ReactNode;
 }) {
   const fnCandles = useServerFn(getReplayCandles);
+  const fnRecord = useServerFn(recordBattleReplayTrade);
   const enabled = isReplayBattle(battle);
 
   const config: BattleReplayConfig | null = useMemo(() => {
@@ -200,6 +206,76 @@ export function BattleReplayProvider({
     const timer = setInterval(pump, ADVANCE_INTERVAL_MS);
     return () => clearInterval(timer);
   }, [session]);
+
+  // ── recording fills into paper_trades ──────────────────────────────────
+  //
+  // The engine closes trades locally; battles read `paper_trades`. This is the
+  // only place the two meet. Engine-derived `pnl` and `realizedR` are written
+  // through rather than recomputed — recomputing through the paper formula
+  // would produce a second number that could disagree with the blotter the
+  // trader watched it happen on. The risk that creates is contained by only
+  // allowing symbols where the two formulas provably agree (see battle-pnl.ts).
+  const recorded = useRef(new Set<string>());
+  const recordRef = useRef(fnRecord);
+  recordRef.current = fnRecord;
+
+  useEffect(() => {
+    if (!session || !accountId || !userId) return;
+    const store = session.stores.trades;
+    if (!store) return;
+
+    const flush = () => {
+      for (const trade of store.list()) {
+        if (recorded.current.has(trade.id)) continue;
+        // Claim before awaiting: the store can emit again mid-flight, and a
+        // duplicate insert would double-count in the leaderboard.
+        recorded.current.add(trade.id);
+
+        const row = battleTradeRowFrom(trade, {
+          userId,
+          accountId,
+          battleId: session.config.battleId,
+          market: session.config.market ?? "crypto",
+          observationCursor: session.engine.clock.index,
+        });
+
+        void recordRef
+          .current({
+            data: {
+              battleId: row.battle_id,
+              accountId: row.account_id,
+              symbol: row.symbol,
+              market: row.market,
+              direction: row.direction,
+              orderType: row.order_type,
+              lotSize: row.lot_size,
+              entryPrice: row.entry_price,
+              exitPrice: row.exit_price,
+              stopLoss: row.stop_loss,
+              takeProfit: row.take_profit,
+              riskAmount: row.risk_amount,
+              pnl: row.pnl,
+              rrRealized: row.rr_realized,
+              commission: row.commission,
+              closeReason: row.close_reason,
+              openedAt: row.opened_at,
+              closedAt: row.closed_at,
+              observationCursor: row.observation_cursor ?? 0,
+            },
+          })
+          .catch((e: unknown) => {
+            // Un-claim so a transient failure retries on the next emission.
+            // A rules rejection (battle not live, symbol not allowed) will
+            // simply fail again, which is the correct outcome.
+            recorded.current.delete(trade.id);
+            console.error("[battle-replay] failed to record fill", e);
+          });
+      }
+    };
+
+    flush();
+    return store.subscribe(flush);
+  }, [session, accountId, userId]);
 
   // Candles the chart may draw. While paused the view is frozen at the bars
   // visible when the viewer stepped away — the engine behind it has moved on.

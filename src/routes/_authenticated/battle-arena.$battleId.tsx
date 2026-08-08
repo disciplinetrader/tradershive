@@ -36,7 +36,7 @@ import { ArenaCommandRail } from "@/components/battle-arena/ArenaCommandRail";
 import { BattleStartIntro } from "@/components/battle-arena/lobby/BattleStartIntro";
 import { CountdownTimer } from "@/components/battle-arena/CountdownTimer";
 import { BattleScrubber } from "@/components/battle-arena/BattleScrubber";
-import { BattleReplayProvider } from "@/components/battle-arena/battle-replay-context";
+import { BattleReplayProvider, useBattleReplay } from "@/components/battle-arena/battle-replay-context";
 import { BattleStatusBar } from "@/components/battle-arena/BattleStatusBar";
 
 
@@ -265,7 +265,7 @@ function BattleDetail() {
     const battleAccountId = myParticipant?.paper_account_id;
 
     return (
-      <BattleReplayProvider battle={battle as any} userId={user?.id}>
+      <BattleReplayProvider battle={battle as any} userId={user?.id} accountId={battleAccountId}>
       <PaperTradingProvider initialAccountId={battleAccountId}>
         <div className="flex h-[calc(100dvh-64px)] w-full flex-col overflow-hidden bg-background">
           <div className="flex h-full w-full overflow-hidden">
@@ -304,7 +304,7 @@ function BattleDetail() {
                 </div>
               
               <div className="flex-1 min-h-0 relative">
-                <TradingWorkspace accountId={battleAccountId} />
+                <BattleAwareWorkspace accountId={battleAccountId} />
               </div>
 
               <BattleStatusBar />
@@ -450,4 +450,18 @@ function BattleDetail() {
       />
     </div>
   );
+}
+
+/**
+ * Hands the replay session's isolated execution stores to the workspace.
+ *
+ * In a replay battle the chart's order book must be the engine's, not the
+ * process-wide singletons — otherwise the live market feed and the replay clock
+ * both drive `runObservation` against one book and a live tick could fill an
+ * order placed against historical candles. `stores` is null for live-price
+ * battles, which is exactly the "use the singletons" signal.
+ */
+function BattleAwareWorkspace({ accountId }: { accountId?: string }) {
+  const { stores } = useBattleReplay();
+  return <TradingWorkspace accountId={accountId} executionStores={stores} />;
 }

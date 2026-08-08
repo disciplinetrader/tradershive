@@ -420,3 +420,147 @@ battle sessions set `completeOnExhaustion: false` so they never transition on
 exhaustion at all.
 
 Worth resolving before anything else starts reading `ClockStatus`.
+
+---
+
+## BA-8 — Cross-pair pip values are stale; JPY P&L is wrong by a third to a half
+
+**Area:** Paper trading · **Found:** 2026-08-08 · **Status:** open, LIVE DEFECT
+affecting real balances
+
+`paper_trades.pnl` is computed as
+`((exit − entry) / pipSize) × sign × pipValuePerLot × lot`
+(`src/lib/paper-trading/calculations.ts:22`).
+
+`pipValuePerLot` is the USD value of one pip on a 1.00 lot, so for any pair
+where **USD is not the quote currency** it has an FX rate baked into it. Those
+constants are hardcoded in `src/lib/paper-trading/symbols.ts` and have never
+been updated. Reverse-engineering the rate each one implies, against that same
+row's own `refPrice`:
+
+| Pair | Stored `pipValuePerLot` | Implied rate | `refPrice` | Drift |
+|---|---|---|---|---|
+| GBP/JPY | 9.5 | 105.26 | 199.50 | **−47.2%** |
+| EUR/JPY | 9.5 | 105.26 | 170.00 | **−38.1%** |
+| USD/JPY | 9.5 | 105.26 | 156.92 | **−32.9%** |
+| USD/CHF | 11 | 0.909 | 0.88 | +3.3% |
+| USD/CAD | 7.5 | 1.333 | 1.3712 | −2.8% |
+| EUR/GBP | 12 | 0.833 | 0.8459 | −1.5% |
+
+All three JPY pairs share a single constant of `9.5`, implying roughly 105
+JPY/USD — a rate that has not been current for years. The correct figure is
+`(100_000 × pipSize) / rate`: at 156.92 that is **$6.37**, not $9.50.
+
+**Every closed JPY-pair trade in `paper_trades` is overstated by ~33–47%.** The
+error is proportional, so it scales with position size and compounds across a
+history. It also flows into `recompute_battle_ranking`, which sums `pnl` over
+closed trades — so any battle fought on a JPY pair has a distorted leaderboard.
+
+The other 29 of 35 symbols are unaffected: they are USD-quoted, where
+`pipValuePerLot / pipSize` equals `contractSize` exactly and no conversion is
+involved.
+
+### Why it is not fixed here
+
+Found during the replay-battle P&L reconciliation, and deliberately **not**
+absorbed into it. Fixing it properly needs a per-symbol audit, a decision about
+where the rate comes from (a stored constant will just go stale again), and a
+decision about historical rows — repair, annotate, or leave. That deserves its
+own scrutiny rather than shipping as a side-effect of a replay feature.
+
+Related: [BA-10](#ba-10) is the umbrella; this is the concrete live damage.
+
+---
+
+## BA-9 — `size` is validated as lots and consumed as units
+
+**Area:** Chart execution engine · **Found:** 2026-08-08 · **Status:** open,
+latent — a 100,000× ambiguity
+
+`PositionOrder.size` is validated with the message
+
+```
+"Lot size must be between 0 and 1,000,000,000."      (model.ts:236)
+```
+
+and consumed as a plain multiplier on price movement:
+
+```ts
+pnl: order.size && order.size > 0 ? move * order.size : move   (model.ts:378)
+```
+
+For `move × size` to be money, `size` must be in **units** of the instrument.
+For the validation message to be accurate, it is in **lots**. Those differ by
+`contractSize` — 100,000 for every forex pair.
+
+Elsewhere the codebase is explicit that the two are different:
+`order-management/ticket.ts:101` returns `units: qty * (meta.contractSize || 1)`,
+treating its own `qty` as lots.
+
+Nothing currently breaks, because the Position Tool is sized from a risk budget
+and its output is consumed by the same expression that produced it — the
+ambiguity cancels. It stops cancelling the moment anything **crosses systems**,
+which is exactly what the P&L bridge does.
+
+### Why it matters more than it looks
+
+A 100,000× error is not a rounding difference; it is the difference between a
+$4 trade and a $400,000 one. And because both readings are self-consistent
+within their own module, neither side has a test that would catch the mismatch.
+
+### Fix
+
+Rename the field to say what it holds — `units` if it is units, `lots` if it is
+lots — and make the conversion explicit at every boundary. This is worth doing
+regardless of which P&L formula wins BA-10.
+
+---
+
+## BA-10 — Two P&L formulas, silently divergent on cross pairs
+
+**Area:** Platform-wide · **Found:** 2026-08-08 · **Status:** open, umbrella
+issue — direction agreed, work not scoped
+
+Two independent P&L implementations exist and disagree:
+
+| | Engine (`chart/orders/closed-trade.ts:127`) | Paper (`paper-trading/calculations.ts:22`) |
+|---|---|---|
+| Formula | `(exit − fill) × sign × quantity` | `((exit − entry) / pipSize) × sign × pipValuePerLot × lot` |
+| Result currency | **quote currency** (`model.ts:124` says so) | **account currency (USD)** |
+| Needs symbol metadata | no | yes — `pipSize`, `pipValuePerLot` |
+| Feeds | live chart, replay → `chart_closed_trades` | order panel, battles → `paper_trades` |
+
+The paper form reduces to
+`(exit − entry) × sign × (pipValuePerLot / pipSize) × lot`, so the two are
+**identical exactly when `pipValuePerLot / pipSize === contractSize`**. That
+holds for 29 of 35 symbols and fails for the 6 non-USD-quoted pairs — see BA-8.
+
+So the split is not cosmetic. One converts currency and the other does not.
+
+### Direction agreed (2026-08-08)
+
+**The engine's `move × quantity` wins long-term, with an explicit conversion
+layer added.** Reasoning:
+
+- **No divisor.** `pipSize` is a denominator, so wrong metadata inflates by
+  orders of magnitude rather than degrading gracefully. `move × qty` fails
+  proportionally to real price and real size.
+- **Correctness becomes a data problem, not a constant problem.** A conversion
+  layer can read a real rate; a hardcoded constant is only right on the day it
+  is typed — BA-8 is what happens afterwards.
+- **Already canonical for two of three sources**, and it is what
+  `runObservation` produces.
+- **R stays consistent by construction** — risk and P&L derive from the same
+  primitives, unlike `pnl / risk_amount` where `risk_amount` is stored
+  separately.
+
+**Neither formula is shippable alone.** The engine form without a conversion
+layer would store yen in a USD column — ~157× inflation on a JPY pair, and the
+most likely mechanism behind [BA-5](#ba-5).
+
+### Interim position
+
+Replay battles use engine-derived P&L, **restricted to symbols where the two
+formulas provably agree**. Live paper trading is untouched. Two formulas remain,
+knowingly, until the structural work is scoped. See
+`docs/battle-replay.md` for the restriction and how it is enforced.

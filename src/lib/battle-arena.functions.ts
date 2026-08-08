@@ -6,6 +6,7 @@ import {
   BATTLE_MIN_SPEED,
   validateBattleReplayRange,
 } from "@/lib/replay/battle-cursor";
+import { enginePricingRefusal } from "@/lib/replay/battle-pnl";
 
 const battleTypeSchema = z.enum(["1v1", "2v2", "ffa5", "ffa10", "profit_target", "time_trial", "custom"]);
 const marketSchema = z.enum(["crypto", "forex", "indices", "metals", "mixed"]);
@@ -243,6 +244,14 @@ export const createBattle = createServerFn({ method: "POST" })
         speed: data.replay.speed,
       });
       if (!range.ok) throw new Error(range.reason ?? "Replay range cannot cover this battle");
+
+      // Replay fills are priced by the engine formula, which reports P&L in the
+      // instrument's quote currency, while paper_trades.pnl is account currency.
+      // Those coincide only for USD-quoted instruments. Derived from symbol
+      // metadata rather than a hardcoded list so it stays correct as symbols are
+      // added — see docs/battle-replay.md and BA-10.
+      const refusal = enginePricingRefusal(data.replay.symbol);
+      if (refusal) throw new Error(refusal);
 
       if (ranked) {
         // Mirrors `battles_replay_must_be_unranked`. Rejected here so the host
