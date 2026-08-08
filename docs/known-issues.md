@@ -254,3 +254,87 @@ away entirely, along with its `paper_trades` registration in
 instead, which already fires on every trade via `trg_paper_trades_battle_ranking`.
 A direct client query against other users' `paper_trades` is what let this look
 like working code for so long — leaving it in place would preserve the trap.
+
+---
+
+## BA-5 — Dashboard "Total Realized P&L" reads −$71,193,490.77
+
+**Area:** Dashboard / paper trading · **Found:** 2026-08-08 · **Status:** open,
+needs one query to classify
+
+Observed on a day with zero trades. Those two facts do not conflict on their own
+— `tradesToday` counts today's closed trades while `totalRealizedPnl` is
+all-time (`dashboard-home.functions.ts:294`) — but the magnitude is impossible
+for accounts that start at $10k.
+
+### The number is not new
+
+`paper-trading.functions.ts:289-291` names it directly:
+
+> keeps `paper_trades.pnl`, `account_statistics.net_pnl` and
+> `paper_accounts.balance` internally consistent — **the invariant that closed a
+> $70M drift on a $25k account.**
+
+So a ~$70M drift was diagnosed and fixed before. The fix is a
+negative-balance-protection clamp at close time: if `balance + pnl < 0` the loss
+is capped at `-balance` and the reason becomes `liquidation`.
+`negative_balance_protection` was added `NOT NULL DEFAULT true`
+(`20260720135816_*.sql:5`), so it is on for every account.
+
+**That clamp only bounds trades closed after it shipped.** Nothing repaired rows
+written before it, and the dashboard sums all of them.
+
+### Why the dashboard shows the whole history
+
+`totalRealizedPnl` reduces over every closed, non-deleted `paper_trades` row for
+the user, across **every account** — personal, battle and prop alike — with no
+date bound and no account scope in the default context
+(`dashboard-home.functions.ts:127-132, 244, 294`). One bad historical row stays
+permanently visible on the home dashboard.
+
+### Classify before fixing
+
+```sql
+-- Historical residue, or still accruing?
+select date_trunc('day', closed_at) as day, count(*), sum(pnl), min(pnl)
+  from public.paper_trades
+ where user_id = auth.uid() and status = 'closed' and deleted_at is null
+ group by 1 having sum(pnl) < -100000
+ order by 1 desc;
+```
+
+```sql
+-- The offenders, with the account they belong to.
+select t.id, t.symbol, t.direction, t.lot_size, t.entry_price, t.exit_price,
+       t.pnl, t.close_reason, t.closed_at, a.name, a.starting_balance
+  from public.paper_trades t
+  join public.paper_accounts a on a.id = t.account_id
+ where t.user_id = auth.uid() and t.status = 'closed' and t.deleted_at is null
+ order by t.pnl asc
+ limit 20;
+```
+
+- **All offenders closed before 2026-07-20** → historical residue. The clamp
+  works; repairing or soft-deleting those rows is the whole fix.
+- **Any offender after that date** → the clamp is being bypassed. Check
+  `close_reason`: `liquidation` means it fired and the loss really was the whole
+  balance; `manual` with a loss far exceeding `starting_balance` means the close
+  path never reached the clamp. `paper-trading.functions.ts` is not the only
+  place that computes P&L — `trading-engine/engine.ts` and
+  `order-management/ticket.ts` do too, and the clamp lives in only one of them.
+
+### Suspected magnitude source
+
+`pnl()` is `pipDist × pipValuePerLot × lot`
+(`paper-trading/calculations.ts:22`). For `BTC/USDT` both `pipSize` and
+`pipValuePerLot` are `1` (`paper-trading/symbols.ts:49`), so P&L is
+`price move × lots` — correct only if lots are whole coins. A forex-shaped lot
+size against a $67k instrument produces numbers of exactly this order. Confirm
+against `lot_size` on the offending rows before assuming the clamp is the only
+problem.
+
+### Related
+
+Whatever the cause, it also reaches `recompute_battle_ranking`, which sums `pnl`
+over closed `paper_trades` — so a bad row in a battle account distorts that
+battle's leaderboard, not just the dashboard.
