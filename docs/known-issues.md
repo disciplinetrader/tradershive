@@ -338,3 +338,43 @@ problem.
 Whatever the cause, it also reaches `recompute_battle_ranking`, which sums `pnl`
 over closed `paper_trades` — so a bad row in a battle account distorts that
 battle's leaderboard, not just the dashboard.
+
+---
+
+## BA-6 — Chart-placed orders do not count toward a battle
+
+**Area:** Battle Arena / trading · **Found:** 2026-08-08 · **Status:** open,
+pre-existing, independent of replay work
+
+There are **three** trade systems in this codebase, and only one of them is
+wired to battles:
+
+| System | Entry point | Executes via | Writes to | Counts in a battle? |
+|---|---|---|---|---|
+| Paper trading | `OrderPanel` → `openTrade` server fn | `computePnl`, server-side | `paper_trades` | **yes** |
+| Chart engine | `usePositionOrders` (drag-to-place on chart) | `runObservation`, client-side | `chart_closed_trades` | **no** |
+| Replay | `ReplaySessionEngine` | `runObservation`, client-side | `chart_closed_trades` + `replay_session_id` | **no** |
+
+Replay and live-chart trades deliberately share one table and one record shape
+(`chart/orders/replay-trade-sync.ts:5-8`) because one execution engine produces
+both. Paper trading is a separate lineage with its own P&L maths.
+
+`TradingWorkspace` mounts **both** `usePositionOrders` (`:395`, writing
+`chart_closed_trades`) and `OrderPanel` (writing `paper_trades`). So in a live
+battle today:
+
+- Buy/Sell in the order panel → counts toward the battle.
+- Drawing a Position Tool on the chart and confirming it → **does not**. No
+  `battle_id`, no ranking recompute, no leaderboard entry, and no error.
+
+Both controls are visible in the same workspace at the same time, so which one a
+competitor reaches for silently decides whether their trade counts.
+
+### Why it is not fixed here
+
+The fix is the same bridge that step 4 of the replay-battle work has to build:
+one execution engine feeding one persistence path for battles. Doing it
+piecemeal would mean writing that bridge twice. See BA-5 — the two systems also
+compute P&L differently, so bridging them forces a reconciliation.
+
+Until then, treat "trade in a battle" as meaning the order panel only.

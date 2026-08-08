@@ -16,8 +16,8 @@ import type { DrawingStore } from "@/lib/chart/drawings/store";
 import type { Drawing } from "@/lib/chart/drawings/types";
 import { isPositionKind } from "@/lib/chart/drawings/types";
 import { tickFromPrecision } from "@/lib/chart/drawings/types";
-import { positionOrderStore } from "@/lib/chart/orders/store";
-import { closedTradeStore } from "@/lib/chart/orders/trade-store";
+import { positionOrderStore, type PositionOrderStore } from "@/lib/chart/orders/store";
+import { closedTradeStore, type ClosedTradeStore } from "@/lib/chart/orders/trade-store";
 import { supabaseTradeRemote } from "@/lib/chart/orders/trade-sync";
 
 import { matchesFilter, type ClosedTrade, type TradeFilter } from "@/lib/chart/orders/closed-trade";
@@ -42,6 +42,22 @@ import { supabaseOrderRemote } from "@/lib/chart/orders/order-sync";
 
 interface Options {
   store: DrawingStore;
+  /**
+   * Order and closed-trade stores. Omit both for live chart trading and the
+   * process-wide singletons are used, with their Supabase remotes attached and
+   * scoped by symbol — the historical behaviour.
+   *
+   * Injecting them hands the hook an isolated pair, which is what a replay
+   * battle needs: the singletons are shared by every chart in the process, so a
+   * replay clock and the live feed both calling `runObservation` against them
+   * would interleave two markets into one order book.
+   *
+   * **An injecting caller owns remote attachment and scoping.** The hook does
+   * no `attachRemote`/`setScope` on injected stores — a replay session's trades
+   * belong to its own tape, not to the live symbol scope.
+   */
+  orders?: PositionOrderStore;
+  trades?: ClosedTradeStore;
   symbol: string;
   marketPrice?: number | null;
   pricePrecision?: number;
@@ -61,27 +77,35 @@ interface Options {
 }
 
 export function usePositionOrders({
-  store, symbol, marketPrice, pricePrecision = 4, riskBudget, market,
+  store, orders: injectedOrders, trades: injectedTrades,
+  symbol, marketPrice, pricePrecision = 4, riskBudget, market,
   trailingContext, onFill, onClose,
 }: Options) {
 
   const tick = tickFromPrecision(pricePrecision);
+
+  // Resolved once per pair. Callers pass either a stable instance or nothing,
+  // so these are referentially stable for the life of the mount.
+  const orderStore = injectedOrders ?? positionOrderStore;
+  const tradeStore = injectedTrades ?? closedTradeStore;
+  const isolated = injectedOrders !== undefined || injectedTrades !== undefined;
+
   const stores = useMemo(
-    () => ({ drawings: store, orders: positionOrderStore, trades: closedTradeStore }),
-    [store],
+    () => ({ drawings: store, orders: orderStore, trades: tradeStore }),
+    [store, orderStore, tradeStore],
   );
 
 
   const orders = useSyncExternalStore(
-    (cb) => positionOrderStore.subscribe(cb),
-    () => positionOrderStore.list(),
-    () => positionOrderStore.list(),
+    (cb) => orderStore.subscribe(cb),
+    () => orderStore.list(),
+    () => orderStore.list(),
   );
 
   const trades = useSyncExternalStore(
-    (cb) => closedTradeStore.subscribe(cb),
-    () => closedTradeStore.list(),
-    () => closedTradeStore.list(),
+    (cb) => tradeStore.subscribe(cb),
+    () => tradeStore.list(),
+    () => tradeStore.list(),
   );
 
   const drawings = useSyncExternalStore(
@@ -99,11 +123,15 @@ export function usePositionOrders({
   // Closed trades additionally mirror into the backend so the tape survives a
   // cleared cache or a new device (browser-only; RLS scopes rows to the user).
   useEffect(() => {
+    // Injected stores arrive pre-wired by their owner (a replay session scopes
+    // its tape to the session, not the symbol). Re-scoping them here would
+    // silently repoint a battle's order book at the live symbol scope.
+    if (isolated) return;
     positionOrderStore.attachRemote(supabaseOrderRemote);
     positionOrderStore.setScope(symbol);
     closedTradeStore.attachRemote(supabaseTradeRemote);
     closedTradeStore.setScope(symbol);
-  }, [symbol]);
+  }, [symbol, isolated]);
 
 
   // One-time reconciliation per scope: Phase 3 positions that closed before
@@ -112,9 +140,9 @@ export function usePositionOrders({
   const reconciled = useRef<string | null>(null);
   useEffect(() => {
     if (reconciled.current === symbol) return;
-    if (positionOrderStore.hydration() !== "hydrated") return;
-    if (closedTradeStore.hydration() !== "hydrated") return;
-    if (positionOrderStore.scopeValue() !== symbol) return;
+    if (orderStore.hydration() !== "hydrated") return;
+    if (tradeStore.hydration() !== "hydrated") return;
+    if (orderStore.scopeValue() !== symbol) return;
     reconciled.current = symbol;
     const res = reconcileClosedTrades(stores, { market });
     if (res.created || res.skipped.length) {
@@ -141,7 +169,7 @@ export function usePositionOrders({
     if (!d) return;
     const next = draftFromDrawing(d, { symbol, marketPrice, tick, riskBudget });
     if (!next) return;
-    const existing = positionOrderStore.byDrawing(id);
+    const existing = orderStore.byDrawing(id);
     setDraftMode(existing ? "edit" : "create");
     setDraft(existing
       ? { ...next, orderType: existing.orderType, entry: existing.entry, stop: existing.stop, target: existing.target }
@@ -157,7 +185,7 @@ export function usePositionOrders({
 
   /** Confirm — create the pending order, or update it in place when editing. */
   const confirmDraft = useCallback((d: OrderDraft): PositionOrder | null => {
-    const res = placeOrEditOrder({ drawings: store, orders: positionOrderStore }, d, { marketPrice, tick });
+    const res = placeOrEditOrder({ drawings: store, orders: orderStore }, d, { marketPrice, tick });
     if (!res.ok) return null;
     setDraft(null);
     return res.order;
@@ -168,22 +196,22 @@ export function usePositionOrders({
    * drawing is un-badged in one service call, so the two cannot diverge.
    */
   const cancelOrder = useCallback((orderId: string) => {
-    return cancelPendingOrder({ drawings: store, orders: positionOrderStore }, orderId);
+    return cancelPendingOrder({ drawings: store, orders: orderStore }, orderId);
   }, [store]);
 
   /** Open the edit ticket straight from an order id (no right-click needed). */
   const editOrder = useCallback((orderId: string) => {
-    const order = positionOrderStore.byId(orderId);
+    const order = orderStore.byId(orderId);
     if (!order) return;
     openDraftForId(order.drawingId);
   }, [openDraftForId]);
 
   /** Manual order-type change on a pending order. */
   const setOrderType = useCallback((orderId: string, orderType: OrderType) => {
-    const order = positionOrderStore.byId(orderId);
+    const order = orderStore.byId(orderId);
     if (!order) return;
     const next = withLevels(order, { orderType });
-    positionOrderStore.replace(next);
+    orderStore.replace(next);
     store.patch(order.drawingId, { orderBadge: badgeFor(next) });
     store.commit();
   }, [store]);
@@ -196,13 +224,13 @@ export function usePositionOrders({
     // list length — an empty list is a valid hydrated state.
     const ready =
       store.hydration() === "hydrated" &&
-      positionOrderStore.hydration() === "hydrated" &&
+      orderStore.hydration() === "hydrated" &&
       store.scopeValue() === symbol &&
-      positionOrderStore.scopeValue() === symbol;
+      orderStore.scopeValue() === symbol;
     if (!ready) {
       trace({
         op: "reconcile:gated", source: "usePositionOrders", scope: symbol,
-        reason: `drawings=${store.hydration()}/${store.scopeValue()} orders=${positionOrderStore.hydration()}/${positionOrderStore.scopeValue()}`,
+        reason: `drawings=${store.hydration()}/${store.scopeValue()} orders=${orderStore.hydration()}/${orderStore.scopeValue()}`,
       });
       return;
     }
@@ -213,22 +241,22 @@ export function usePositionOrders({
     const live = store.list();
     trace({ op: "reconcile:run", source: "usePositionOrders", scope: symbol, prev: drawings.length, next: live.length, reason: "live vs snapshot" });
     const ids = new Set(live.map((d) => d.id));
-    positionOrderStore.reconcile(ids, "usePositionOrders");
+    orderStore.reconcile(ids, "usePositionOrders");
 
-    for (const order of positionOrderStore.pending()) {
+    for (const order of orderStore.pending()) {
       const d = live.find((x) => x.id === order.drawingId);
       if (!d || d.points.length < 3) continue;
       const entry = d.points[0].price;
       const target = d.points[1].price;
       const stop = d.points[2].price;
       if (entry === order.entry && target === order.target && stop === order.stop) continue;
-      positionOrderStore.replace(withLevels(order, { entry, stop, target }));
+      orderStore.replace(withLevels(order, { entry, stop, target }));
     }
 
     // Live positions: dragging the Stop or Target handle modifies the
     // position. The Entry handle is inert once filled — the fill price is a
     // historical fact — so the drawing is snapped back to it.
-    for (const order of positionOrderStore.positions()) {
+    for (const order of orderStore.positions()) {
       const d = live.find((x) => x.id === order.drawingId);
       if (!d || d.points.length < 3) continue;
       const target = d.points[1].price;
@@ -254,8 +282,8 @@ export function usePositionOrders({
     if (!Number.isFinite(marketPrice ?? NaN)) return;
     const price = marketPrice as number;
     if (price <= 0) return;
-    if (positionOrderStore.hydration() !== "hydrated") return;
-    if (positionOrderStore.scopeValue() !== symbol) return;
+    if (orderStore.hydration() !== "hydrated") return;
+    if (orderStore.scopeValue() !== symbol) return;
     if (lastTick.current === price) return;
     lastTick.current = price;
 
@@ -319,7 +347,7 @@ export function usePositionOrders({
 
   /** Install a TP ladder; with no legs supplied a 25/25/50 default is used. */
   const applyTakeProfits = useCallback((orderId: string, legs?: TakeProfitLeg[]) => {
-    const order = positionOrderStore.byId(orderId);
+    const order = orderStore.byId(orderId);
     if (!order) return { ok: false as const, errors: ["Position not found."] };
     const next = legs?.length
       ? legs
@@ -356,13 +384,13 @@ export function usePositionOrders({
    * links and analytics inputs are retained.
    */
   const archiveTrade = useCallback(
-    (tradeId: string, archived = true) => closedTradeStore.setArchived(tradeId, archived),
+    (tradeId: string, archived = true) => tradeStore.setArchived(tradeId, archived),
     [],
   );
 
   /** Idempotent: a repeated call resolves to the existing journal entry. */
   const addToJournal = useCallback(
-    (tradeId: string, userId: string) => addTradeToJournal(closedTradeStore, tradeId, userId),
+    (tradeId: string, userId: string) => addTradeToJournal(tradeStore, tradeId, userId),
     [],
   );
 

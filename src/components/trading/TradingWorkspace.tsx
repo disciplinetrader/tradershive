@@ -18,6 +18,11 @@ import { TopToolbar } from "@/components/paper-trading/TopToolbar";
 import { AccountSummary } from "@/components/paper-trading/AccountSummary";
 import { OrderPanel } from "@/components/paper-trading/OrderPanel";
 import { PositionsTable } from "@/components/paper-trading/PositionsTable";
+import {
+  ExecutionStoresProvider,
+  useExecutionStores,
+  type ExecutionStores,
+} from "@/components/trading/execution-stores";
 import { OrdersTable } from "@/components/paper-trading/OrdersTable";
 import { HistoryTable } from "@/components/paper-trading/HistoryTable";
 import { WatchlistPanel } from "@/components/paper-trading/WatchlistPanel";
@@ -156,6 +161,7 @@ function RailButton({
 
 function TradingWorkspaceInner() {
   const qc = useQueryClient();
+  const executionStores = useExecutionStores();
   const { symbol, symbolMeta, market, timeframe, setTimeframe, accountId, setAccountId, account } = usePaper();
   const {
     layout,
@@ -394,6 +400,9 @@ function TradingWorkspaceInner() {
   // local Paper Trading objects and are never sent to an execution API here.
   const positionOrders = usePositionOrders({
     store: drawingStore,
+    // null in live trading → the hook falls back to the singletons.
+    orders: executionStores?.orders,
+    trades: executionStores?.trades,
     symbol,
     marketPrice: last,
     pricePrecision: decimals,
@@ -1656,13 +1665,29 @@ function BottomDock({
 
 
 import { useMarketCadence } from "@/lib/market-data/hooks";
-export function TradingWorkspace({ fullscreen: _fullscreen, accountId }: { fullscreen?: boolean; accountId?: string } = {}) {
+export function TradingWorkspace({
+  fullscreen: _fullscreen,
+  accountId,
+  executionStores = null,
+}: {
+  fullscreen?: boolean;
+  accountId?: string;
+  /**
+   * Isolated order/trade stores. Omit for live trading — the workspace then
+   * uses the process-wide singletons. A replay battle passes its session's
+   * instances so the replay clock cannot drive the live order book.
+   * See `execution-stores.tsx`.
+   */
+  executionStores?: ExecutionStores | null;
+} = {}) {
   return (
     <PaperTradingProvider initialAccountId={accountId}>
-      <WorkspaceChartLayout>
-        <TradingWorkspaceInner />
-      </WorkspaceChartLayout>
-      <WorkspaceCadence />
+      <ExecutionStoresProvider value={executionStores}>
+        <WorkspaceChartLayout>
+          <TradingWorkspaceInner />
+        </WorkspaceChartLayout>
+        <WorkspaceCadence />
+      </ExecutionStoresProvider>
     </PaperTradingProvider>
   );
 }
