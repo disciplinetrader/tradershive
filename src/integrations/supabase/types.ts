@@ -2130,6 +2130,13 @@ export type Database = {
           name: string
           profit_target_pct: number | null
           ranked: boolean | null
+          replay_dataset_id: string | null
+          replay_from: string | null
+          replay_speed: number
+          replay_start_cursor: number
+          replay_symbol: string | null
+          replay_timeframe: string | null
+          replay_to: string | null
           rules_config: Json | null
           scheduled_start_at: string | null
           start_at: string
@@ -2168,6 +2175,13 @@ export type Database = {
           name: string
           profit_target_pct?: number | null
           ranked?: boolean | null
+          replay_dataset_id?: string | null
+          replay_from?: string | null
+          replay_speed?: number
+          replay_start_cursor?: number
+          replay_symbol?: string | null
+          replay_timeframe?: string | null
+          replay_to?: string | null
           rules_config?: Json | null
           scheduled_start_at?: string | null
           start_at: string
@@ -2206,6 +2220,13 @@ export type Database = {
           name?: string
           profit_target_pct?: number | null
           ranked?: boolean | null
+          replay_dataset_id?: string | null
+          replay_from?: string | null
+          replay_speed?: number
+          replay_start_cursor?: number
+          replay_symbol?: string | null
+          replay_timeframe?: string | null
+          replay_to?: string | null
           rules_config?: Json | null
           scheduled_start_at?: string | null
           start_at?: string

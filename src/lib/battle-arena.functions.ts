@@ -1,6 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import {
+  BATTLE_MAX_SPEED,
+  BATTLE_MIN_SPEED,
+  validateBattleReplayRange,
+} from "@/lib/replay/battle-cursor";
 
 const battleTypeSchema = z.enum(["1v1", "2v2", "ffa5", "ffa10", "profit_target", "time_trial", "custom"]);
 const marketSchema = z.enum(["crypto", "forex", "indices", "metals", "mixed"]);
@@ -185,6 +190,31 @@ const createSchema = z.object({
   timezone: z.string().default("UTC"),
   allow_late_join: z.boolean().default(false),
   rules_config: z.record(z.any()).optional().nullable(),
+
+  /**
+   * Replay configuration. Omit for an ordinary live-price battle.
+   *
+   * Present means the battle runs on a fixed historical dataset with a
+   * server-derived cursor — see `src/lib/replay/battle-cursor.ts`. Such battles
+   * are unranked until step 5; the database enforces that independently
+   * (`battles_replay_must_be_unranked`).
+   */
+  replay: z
+    .object({
+      dataset_id: z.string().min(1),
+      symbol: z.string().min(1),
+      timeframe: z.string().min(1),
+      from: z.string(),
+      to: z.string(),
+      speed: z.number().min(BATTLE_MIN_SPEED).max(BATTLE_MAX_SPEED).default(1),
+      start_cursor: z.number().int().min(0).default(0),
+      /** Bars in the loaded range — used to prove the tape outlasts the battle. */
+      bar_count: z.number().int().positive(),
+      /** Bars consumed by `start_cursor`, i.e. visible history before the open. */
+      start_cursor_candles: z.number().int().min(0).default(0),
+    })
+    .optional()
+    .nullable(),
 });
 
 export const createBattle = createServerFn({ method: "POST" })
@@ -197,6 +227,34 @@ export const createBattle = createServerFn({ method: "POST" })
     if (end.getTime() - start.getTime() < 5 * 60 * 1000) throw new Error("Arena match must be at least 5 minutes long");
     if (data.allowed_symbols.length === 0) throw new Error("Pick at least one symbol");
 
+    // Replay battles: refuse anything that cannot be run fairly to completion.
+    //
+    // Both checks are creation-time on purpose. A battle that exhausts its tape
+    // mid-flight strands every participant at a frozen market holding open
+    // positions, and there is no good runtime answer to that — so it has to be
+    // impossible to create. Likewise a ranked replay battle would mint Hive
+    // Rating that cannot be revoked once awarded.
+    let ranked = data.ranked;
+    if (data.replay) {
+      const range = validateBattleReplayRange({
+        barCount: data.replay.bar_count,
+        startCursorCandles: data.replay.start_cursor_candles,
+        durationMs: end.getTime() - start.getTime(),
+        speed: data.replay.speed,
+      });
+      if (!range.ok) throw new Error(range.reason ?? "Replay range cannot cover this battle");
+
+      if (ranked) {
+        // Mirrors `battles_replay_must_be_unranked`. Rejected here so the host
+        // gets an explanation rather than a raw constraint violation.
+        throw new Error(
+          "Replay battles cannot be ranked yet. They award no Hive Rating until " +
+            "server-side fill validation ships.",
+        );
+      }
+      ranked = false;
+    }
+
     const invite = data.visibility === "private" ? randomCode(8) : null;
     const max = Math.min(data.max_participants, MAX_PARTICIPANTS[data.battle_type] ?? 10);
     const status = start.getTime() <= Date.now() ? "open" : "upcoming";
@@ -208,7 +266,7 @@ export const createBattle = createServerFn({ method: "POST" })
         name: data.name,
         description: data.description ?? null,
         visibility: data.visibility,
-        ranked: data.ranked,
+        ranked,
         invite_code: invite,
         battle_type: data.battle_type,
         market: data.market,
@@ -230,6 +288,13 @@ export const createBattle = createServerFn({ method: "POST" })
         status,
         allow_late_join: data.allow_late_join,
         rules_config: data.rules_config ?? {},
+        replay_dataset_id: data.replay?.dataset_id ?? null,
+        replay_symbol: data.replay?.symbol ?? null,
+        replay_timeframe: data.replay?.timeframe ?? null,
+        replay_from: data.replay ? new Date(data.replay.from).toISOString() : null,
+        replay_to: data.replay ? new Date(data.replay.to).toISOString() : null,
+        replay_speed: data.replay?.speed ?? 1,
+        replay_start_cursor: data.replay?.start_cursor ?? 0,
       })
       .select()
       .single();
