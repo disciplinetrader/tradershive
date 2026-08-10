@@ -116,6 +116,58 @@ the battle, `observation_cursor` for the exact bar.
 
 ---
 
+## Creating one — the dataset identity round-trip
+
+`replay_dataset_id` is `provider:SYMBOL:timeframe:start:end:checksum`, where the
+checksum is FNV-1a over every OHLC value in order. **It is computed at load time
+and cannot be written by hand**, which is why there is a seed script
+(`scripts/seed-replay-battle.ts`) rather than a SQL insert. A guessed id
+produces a battle that is created successfully and then refuses to start, which
+reads as a bug rather than as bad input.
+
+Anyone building the wizard step has to clear three traps.
+
+### 1 · The creating client must call `getReplayCandles` the way the battle will
+
+`BattleReplayProvider` passes `symbol`, `timeframe`, `from`, `to` and `market`
+and **no `warmupBars`**. Replay Studio passes `warmupBars` and offsets its start
+cursor to compensate. Requesting warm-up at creation prepends bars the battle
+client never sees, so the two sides checksum different tapes.
+
+`market` matters as much as the rest: it feeds session-aware coverage
+(`checkCoverage`), and the battle client passes `battles.market`. If creation
+used a different value, one side can decide the range is uncovered and fire an
+on-demand backfill — which writes new rows underneath the checksum.
+
+### 2 · The stored bounds are narrower than the window you requested
+
+This is the one that is easy to miss. `replay_from` and `replay_to` hold the
+**first and last candle times**, not the range that was asked for — and
+`BattleReplayProvider` requests those stored bounds back. Since `readStored`
+filters `ts >= from AND ts <= to`, the battle client therefore issues a
+*narrower* query than the creating client did.
+
+It is expected to return the same rows. Expected is not sufficient for a value
+whose only failure mode is a battle that dies at the opening bell, in front of
+competitors. So the seed script rebuilds the dataset a second time from the
+bounds it is about to store and refuses to insert unless both ids match. A
+match is proof; the argument above is not.
+
+### 3 · The tape may be truncated without saying so
+
+Historical reads are capped at 1000 rows and a truncated response can still pass
+coverage — see
+[BA-11](./known-issues.md#ba-11--candle-reads-are-capped-at-1000-rows-and-truncate-silently).
+The checksum is computed over whatever arrived, so truncation does **not**
+surface as a dataset mismatch: the battle starts normally on a tape that ends
+early. Treat a response that arrives at exactly the cap as a hard failure.
+
+That cap is also what bounds battle duration today — roughly 16 minutes at 1x.
+`validateBattleReplayRange` will not save you here, because it validates the
+truncated bar count it was handed.
+
+---
+
 ## Auditability
 
 `paper_trades` carries `observation_cursor` for replay-battle fills — the exact

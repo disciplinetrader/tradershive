@@ -3,6 +3,11 @@
 Open defects found during investigation but deliberately left unfixed, with
 enough detail to pick up cold. Remove an entry when it ships a fix.
 
+> **Read [BA-11](#ba-11--candle-reads-are-capped-at-1000-rows-and-truncate-silently)
+> before designing anything that replays market data.** Historical reads are
+> capped at 1000 bars and truncate without reporting it, which puts a hard
+> ~16-minute ceiling (at 1x) on any replay battle.
+
 ---
 
 ## BA-1 — Matchmaking creates battles with no participants
@@ -564,3 +569,107 @@ Replay battles use engine-derived P&L, **restricted to symbols where the two
 formulas provably agree**. Live paper trading is untouched. Two formulas remain,
 knowingly, until the structural work is scoped. See
 `docs/battle-replay.md` for the restriction and how it is enforced.
+
+---
+
+## BA-11 — Candle reads are capped at 1000 rows and truncate silently
+
+**Area:** Market data (Replay Studio + replay battles) · **Found:** 2026-08-10 ·
+**Status:** open, LIVE DEFECT — silently caps every historical read
+
+`readStored` asks for ten thousand rows
+(`src/lib/market-data/historical/service.server.ts:119`):
+
+```ts
+.order("ts", { ascending: true })
+.limit(10000);
+```
+
+**That limit is unreachable.** PostgREST caps this project's responses at 1000
+rows, so every historical candle read returns at most 1000 bars no matter what
+the query asks for. Measured against the live database:
+
+```
+GET historical_candles?symbol=BTC/USDT&timeframe=5m   (July 2026)
+  → rows=1000   content-range: 0-999/8644
+
+GET historical_candles?symbol=BTC/USDT&timeframe=5m   (Jul 1-4)
+  → rows=1000   content-range: 0-999/1087
+```
+
+8,644 bars exist for the month; 1,000 arrive. `content-range` reports the true
+count, and nothing in the stack reads it.
+
+### The quiet failure is the dangerous one
+
+A month-wide request fails loudly — coverage lands at 11% and
+`HistoricalDataUnavailableError` is raised. That case is fine.
+
+The four-day request is the problem. It returns 1000 of 1087 bars, so
+`checkCoverage` computes `ratio = 0.92` against a default `minRatio` of 0.6 and
+reports **ok**. A truncated tape then flows through as if complete.
+
+The danger zone is precise. A truncated response passes coverage whenever
+
+```
+1000 / expected >= 0.6      i.e.   expected <= ~1666 bars
+```
+
+so **any request spanning between 1,000 and ~1,666 bars silently loses its
+tail**, and anything above ~1,666 fails loudly. Narrow windows are safe because
+they are never truncated in the first place.
+
+For a replay battle this is worse than a load error: the checksum is computed
+over whatever arrived, so `replay_dataset_id` matches, `createBattleSession`
+accepts it, and the battle starts normally on a tape that ends early — with
+nothing anywhere saying so. `validateBattleReplayRange` cannot catch it either,
+since it validates the truncated `barCount` it was handed.
+
+### Product constraint: ~16 minutes at 1x
+
+`CANDLES_PER_SECOND_AT_1X` is 1 (`src/lib/replay/session/clock.ts:30`), so a
+battle consumes `speed` candles per real second and a 1000-bar ceiling means:
+
+| Speed | Longest tape-backed battle |
+|---|---|
+| 0.5x | ~33 min |
+| 1x | **~16 min** |
+| 2x | ~8 min |
+| 4x | ~4 min |
+| 8x | ~2 min |
+
+**Nobody should design a longer replay battle until this is lifted.** The
+timeframe does not help — the ceiling is in bars, not market time, so 1D candles
+buy more market history but exactly the same 16 minutes of battle.
+
+### Replay Studio is affected too
+
+Same `readStored`, same cap. A Studio session over a wide range gets 1000 bars
+and either fails coverage or replays a truncated series. Warm-up is capped
+independently: `getReplayCandles` validates `warmupBars` up to 2000
+(`replay.functions.ts:636`) and loads it with a second `resolveHistoricalRange`
+call, which is also capped — so **any `warmupBars` above 1000 is unsatisfiable
+by construction**, and the default of 600 in `createSessionSchema` happens to sit
+under the cap by luck rather than design.
+
+### Sketch of a fix
+
+Three options, roughly in order of preference:
+
+1. **Paginate inside `readStored`** — loop `.range(offset, offset + 999)` until
+   a short page arrives. Contained entirely within the one function every
+   feature already goes through, and fixes Studio, battles and warm-up at once.
+2. **Read `content-range` and fail loudly on truncation.** Not a fix, but it
+   converts the silent case into the loud one and is a few lines. Worth doing
+   even alongside option 1, as the assertion that keeps it fixed.
+3. **Raise PostgREST's `max-rows`.** Project-wide, affects every table and every
+   client, and leaves the same defect one larger query away. Least attractive.
+
+Whichever lands, `.limit(10000)` should stop implying a ceiling the database
+will not honour.
+
+### How it was found
+
+`scripts/seed-replay-battle.ts` refuses to create a battle when a response
+arrives at exactly the cap, which is what surfaced this. That check is a
+workaround in one script, not a fix — every other caller is still exposed.
