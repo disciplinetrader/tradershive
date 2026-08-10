@@ -474,8 +474,9 @@ Related: [BA-10](#ba-10) is the umbrella; this is the concrete live damage.
 
 ## BA-9 — `size` is validated as lots and consumed as units
 
-**Area:** Chart execution engine · **Found:** 2026-08-08 · **Status:** open,
-latent — a 100,000× ambiguity
+**Area:** Chart execution engine · **Found:** 2026-08-08 · **Status:** open —
+the replay-battle path is fixed (2026-08-10); the field naming that causes it
+is not
 
 `PositionOrder.size` is validated with the message
 
@@ -529,7 +530,7 @@ holds perfectly for EUR/USD — the guard admits the symbol as safe while this
 makes its P&L wrong by five orders of magnitude. The two are independent
 defects that happen to live on the same line of code.
 
-### The fix, for the battle path
+### Fixed in the battle path, 2026-08-10
 
 Paper reduces to `move × contractSize × lot`; the engine is `move × quantity`.
 They agree only when `quantity` is in **units**. So the conversion has to be
@@ -543,6 +544,24 @@ explicit at both boundaries:
 
 `contractSize` is 1 for crypto, so this is a no-op for every battle recorded to
 date and cannot retroactively change them.
+
+Both halves have shipped — `BattleChart` multiplies by `contractSize` when
+placing, `battleTradeRowFrom` divides on the way out. Verified across three
+contract sizes, with `lot_size` still reading lots in every case:
+
+| Symbol | contractSize | engine | paper | ratio |
+|---|---|---|---|---|
+| EUR/USD | 100,000 | $2,178.20 (was $0.0218) | $2,178.20 | 1.000000 |
+| XAU/USD | 100 | $4,864.20 | $4,864.20 | 1.000000 |
+| BTC/USDT | 1 | $1,351.00 (unchanged) | $1,351.00 | 1.000000 |
+
+**What is still open.** `PositionOrder.size` remains validated as lots and
+consumed as units, with a validation message that says lots. The battle path now
+converts explicitly at both boundaries, so it is correct — but any new caller
+that builds orders inherits the same trap, and the live chart's Position Tool
+still sits on the ambiguity (harmlessly, because it both produces and consumes
+the value). Renaming the field to `units` is the durable fix and has not been
+done.
 
 ### Why it matters more than it looks
 

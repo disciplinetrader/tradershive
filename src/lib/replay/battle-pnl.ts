@@ -35,6 +35,27 @@ import type { ClosedTrade } from "@/lib/chart/orders/closed-trade";
  * which holds precisely when no currency conversion is involved — i.e. when the
  * instrument is quoted in the account currency.
  *
+ * ── What this does NOT protect against ─────────────────────────────────────
+ *
+ * **Quantity units.** The identity above is about CURRENCY. It says nothing
+ * about whether `quantity` is expressed in lots or in units, and the two
+ * formulas only agree when it is in UNITS — `paper = move × contractSize × lot`
+ * versus `engine = move × quantity`.
+ *
+ * Passing lots where units are expected therefore understates P&L by exactly
+ * `contractSize` while this guard reports the symbol as perfectly safe. It was
+ * measured at 100,000× on EUR/USD: an engine fill of $0.0218 against a true
+ * $2,178.20, with `lot_size` reading an unremarkable `1`. See BA-9.
+ *
+ * Crypto hides it completely (`contractSize` is 1 for every USDT pair), so
+ * a passing crypto battle is not evidence that the conversion is right.
+ * `battleTradeRowFrom` below now converts back explicitly; if you add another
+ * caller that builds orders, it must convert lots → units on the way in.
+ *
+ * Two independent defects live on this one identity. Do not read a `true` here
+ * as meaning "this symbol's P&L is correct" — only "no currency conversion is
+ * required".
+ *
  * Deriving the rule from the symbol's own metadata rather than hardcoding a
  * list means it stays correct as symbols are added: a new USD-quoted instrument
  * is admitted automatically, a new cross pair refused automatically.
@@ -103,6 +124,12 @@ export interface BattleTradeRow {
  * meaningfully validate it, because a wrong answer here is a silently plausible
  * number rather than an error.
  *
+ * `quantity` is in UNITS — that is what makes the engine's `move × quantity`
+ * agree with the paper formula — while `paper_trades.lot_size` means LOTS.
+ * The conversion is done here rather than left implicit, because the two
+ * coincide for crypto (`contractSize` 1) and diverge by 100,000 for forex, so
+ * an implicit version tests clean and ships wrong. See BA-9.
+ *
  * `opened_at` / `closed_at` carry MARKET time, so the trade sits on the right
  * candle in any later review. Battle-window enforcement uses `created_at`
  * instead, which the database defaults to now() — see the
@@ -118,6 +145,7 @@ export function battleTradeRowFrom(
     observationCursor: number | null;
   },
 ): BattleTradeRow {
+  const contractSize = findSymbol(trade.symbol)?.contractSize || 1;
   return {
     user_id: ctx.userId,
     account_id: ctx.accountId,
@@ -128,7 +156,7 @@ export function battleTradeRowFrom(
     direction: trade.direction === "buy" ? "long" : "short",
     order_type: normalizeOrderType(trade.orderType),
     status: "closed",
-    lot_size: trade.quantity ?? 0,
+    lot_size: (trade.quantity ?? 0) / contractSize,
     entry_price: trade.fillPrice,
     exit_price: trade.exitPrice,
     stop_loss: trade.initialStop ?? null,

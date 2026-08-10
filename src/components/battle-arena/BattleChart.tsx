@@ -20,6 +20,7 @@ import type { ChartSettings, IndicatorConfig } from "@/lib/chart/types";
 import { closePosition, placeOrEditOrder } from "@/lib/chart/orders/service";
 import type { PositionOrder } from "@/lib/chart/orders/model";
 import { formatCurrency } from "@/lib/paper-trading/calculations";
+import { findSymbol } from "@/lib/paper-trading/symbols";
 import { TIMEFRAME_SECONDS } from "@/lib/replay/constants";
 import type { Candle, Timeframe } from "@/lib/replay/types";
 import { cn } from "@/lib/utils";
@@ -179,6 +180,13 @@ export function BattleChart() {
   const symbol = session?.config.symbol ?? "";
   const market = session?.config.market ?? null;
   const datasetTf = (session?.config.timeframe ?? "5m") as Timeframe;
+  /**
+   * Lots -> units. The engine prices `move x quantity`, which only agrees with
+   * the paper formula when quantity is in units; the trader types lots. 1 for
+   * crypto, 100,000 for forex -- so getting this wrong is invisible on a
+   * BTC/USDT battle and wrong by five orders of magnitude on EUR/USD. BA-9.
+   */
+  const contractSize = useMemo(() => findSymbol(symbol)?.contractSize || 1, [symbol]);
   const activeTf = displayTf ?? datasetTf;
 
   /**
@@ -366,7 +374,7 @@ export function BattleChart() {
         a.addPriceLine({
           price: entry,
           color: long ? up : down,
-          title: `${long ? "LONG" : "SHORT"} ${p.size ?? ""}`.trim(),
+          title: `${long ? "LONG" : "SHORT"} ${(p.size ?? 0) / contractSize}`.trim(),
           lineWidth: 2,
           axisLabelVisible: true,
         }),
@@ -374,7 +382,7 @@ export function BattleChart() {
         a.addPriceLine({ price: p.target, color: up, title: "TP", lineStyle: 2, lineWidth: 1 }),
       );
     }
-  }, [positions, adapterTick]);
+  }, [positions, adapterTick, contractSize]);
 
   // ── P&L, from the engine ─────────────────────────────────────────────────
   // Engine arithmetic — `(exit − fill) × sign × quantity` — so these agree with
@@ -438,7 +446,7 @@ export function BattleChart() {
           entry: price,
           stop,
           target,
-          size,
+          size: size * contractSize,
           drawingId: `battle-${session.config.battleId}-${Date.now()}`,
         },
         { marketPrice: price, market },
@@ -449,7 +457,7 @@ export function BattleChart() {
       // observation fills it.
       if (!res.ok) setOrderError(res.errors.join(" "));
     },
-    [session, truePrice, qty, symbol, market, notStarted, secondsToStart],
+    [session, truePrice, qty, symbol, market, notStarted, secondsToStart, contractSize],
   );
 
   /**
@@ -649,7 +657,7 @@ export function BattleChart() {
                         long ? "text-success" : "text-danger",
                       )}
                     >
-                      {long ? "Long" : "Short"} {p.size}
+                      {long ? "Long" : "Short"} {((p.size ?? 0) / contractSize).toLocaleString()}
                     </span>
                     <span
                       className={cn(
