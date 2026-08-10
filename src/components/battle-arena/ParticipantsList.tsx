@@ -22,11 +22,11 @@ export function ParticipantsList({
 
   return (
     <div className={cn(
-      "rounded-3xl border border-border/60 bg-card/20 overflow-hidden shadow-xl shadow-background/10",
-      isLobby && "flex flex-col h-full"
+      "rounded-2xl border border-border/40 bg-card/10 overflow-hidden shadow-sm",
+      isLobby && "rounded-3xl bg-card/20 shadow-xl shadow-background/10 flex flex-col h-full"
     )}>
-      <div className="border-b border-border/60 px-6 py-4 flex items-center justify-between bg-background/20">
-        <h3 className="text-sm font-black uppercase tracking-widest text-foreground">
+      <div className="border-b border-border/40 px-4 py-2 flex items-center justify-between bg-muted/10">
+        <h3 className="text-[11px] font-bold uppercase tracking-widest text-foreground">
           Competitors
         </h3>
         <span className="text-[10px] font-black bg-primary/10 text-primary px-2 py-0.5 rounded-lg border border-primary/20">

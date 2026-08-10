@@ -53,11 +53,11 @@ export function LiveLeaderboard({
   }, [rankings]);
 
   return (
-    <div className="rounded-2xl border border-border/60 bg-card/40">
-      <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
+    <div className="rounded-2xl border border-border/40 bg-card/20 overflow-hidden shadow-sm">
+      <div className="flex items-center justify-between border-b border-border/40 px-4 py-2 bg-muted/10">
         <div className="flex items-center gap-2">
-          <Trophy className="h-4 w-4 text-primary" />
-          <h3 className="font-semibold">HIVE Standings</h3>
+          <Trophy className="h-3.5 w-3.5 text-primary" />
+          <h3 className="font-bold text-[11px] uppercase tracking-widest">Standings</h3>
         </div>
         <span className="text-[11px] text-muted-foreground">Sorted by Return % (Primary)</span>
       </div>
