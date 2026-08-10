@@ -85,5 +85,5 @@ export const DEFAULT_CHART_SETTINGS = {
   autoScale: true,
   // "auto" = follow the browser's IANA timezone for axis + crosshair times.
   timezone: "auto",
-
+  theme: undefined as "light" | "dark" | undefined,
 };
