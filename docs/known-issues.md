@@ -564,3 +564,4 @@ Replay battles use engine-derived P&L, **restricted to symbols where the two
 formulas provably agree**. Live paper trading is untouched. Two formulas remain,
 knowingly, until the structural work is scoped. See
 `docs/battle-replay.md` for the restriction and how it is enforced.
+

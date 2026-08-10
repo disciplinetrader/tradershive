@@ -116,6 +116,68 @@ the battle, `observation_cursor` for the exact bar.
 
 ---
 
+## Creating one — the dataset identity round-trip
+
+`replay_dataset_id` is `provider:SYMBOL:timeframe:start:end:checksum`, where the
+checksum is FNV-1a over every OHLC value in order. **It is computed at load time
+and cannot be written by hand**, which is why there is a seed script
+(`scripts/seed-replay-battle.ts`) rather than a SQL insert. A guessed id
+produces a battle that is created successfully and then refuses to start, which
+reads as a bug rather than as bad input.
+
+Anyone building the wizard step has to clear three traps.
+
+### 1 · The creating client must call `getReplayCandles` the way the battle will
+
+`BattleReplayProvider` passes `symbol`, `timeframe`, `from`, `to` and `market`
+and **no `warmupBars`**. Replay Studio passes `warmupBars` and offsets its start
+cursor to compensate. Requesting warm-up at creation prepends bars the battle
+client never sees, so the two sides checksum different tapes.
+
+`market` matters as much as the rest: it feeds session-aware coverage
+(`checkCoverage`), and the battle client passes `battles.market`. If creation
+used a different value, one side can decide the range is uncovered and fire an
+on-demand backfill — which writes new rows underneath the checksum.
+
+### 2 · The stored bounds are narrower than the window you requested
+
+This is the one that is easy to miss. `replay_from` and `replay_to` hold the
+**first and last candle times**, not the range that was asked for — and
+`BattleReplayProvider` requests those stored bounds back. Since `readStored`
+filters `ts >= from AND ts <= to`, the battle client therefore issues a
+*narrower* query than the creating client did.
+
+It is expected to return the same rows. Expected is not sufficient for a value
+whose only failure mode is a battle that dies at the opening bell, in front of
+competitors. So the seed script rebuilds the dataset a second time from the
+bounds it is about to store and refuses to insert unless both ids match. A
+match is proof; the argument above is not.
+
+### 3 · The tape was once truncated without saying so — fixed, keep the assertion
+
+Worth knowing because it shaped the code you are reading. PostgREST caps
+responses at 1000 rows, and `readStored` asked for `.limit(10000)` — a limit the
+server would never honour. A month of 5m bars returned 1,000 of 8,644.
+
+The loud case was harmless. The quiet one was not: a range of 1,000–1,666 bars
+came back truncated yet still passed `checkCoverage`, since `1000/1666` clears
+the 0.6 minimum. And because the checksum is computed over *whatever arrived*,
+truncation did **not** surface as a dataset mismatch — every participant loaded
+the same short tape, agreed on it perfectly, and the battle ran on data that
+ended early. `validateBattleReplayRange` could not help either; it validates the
+bar count it is handed.
+
+`readStored` now pages until it has read every row the exact count promises, and
+raises if it ever comes up short. **Keep that final assertion.** Paging is meant
+to make truncation impossible, and the assertion is what will tell you when that
+stops being true — which is precisely what was missing the first time.
+
+The remaining ceiling is `MAX_CANDLES` (50,000), a deliberate refusal threshold
+rather than a silent cut. At 1x that is about 14 hours of battle, so duration is
+no longer the binding constraint it was.
+
+---
+
 ## Auditability
 
 `paper_trades` carries `observation_cursor` for replay-battle fills — the exact
