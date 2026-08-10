@@ -110,7 +110,7 @@ export function LiveLeaderboard({
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-2">
                         <div className="relative">
-                          <Avatar className="h-7 w-7"><AvatarImage src={p?.avatar_url ?? undefined} /><AvatarFallback>{(p?.display_name ?? p?.username ?? "?").slice(0, 1)}</AvatarFallback></Avatar>
+                          <Avatar className="h-6 w-6"><AvatarImage src={p?.avatar_url ?? undefined} /><AvatarFallback className="text-[10px]">{(p?.display_name ?? p?.username ?? "?").slice(0, 1)}</AvatarFallback></Avatar>
                           <span className="absolute -bottom-0.5 -right-0.5"><PresenceDot status={pres?.status ?? "disconnected"} /></span>
                         </div>
                         <div className="min-w-0">

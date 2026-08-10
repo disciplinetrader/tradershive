@@ -63,11 +63,11 @@ export function ParticipantsList({
                 <div className="flex items-center gap-3">
                   <div className="relative">
                     <Avatar className={cn(
-                      "h-10 w-10 border-2 transition-colors shadow-lg shadow-background/20",
+                      "h-8 w-8 border-2 transition-colors shadow-lg shadow-background/20",
                       p.is_ready ? "border-success" : "border-border/40 group-hover:border-primary/40"
                     )}>
                       <AvatarImage src={pr?.avatar_url ?? undefined} />
-                      <AvatarFallback className="font-black text-xs">{(pr?.display_name ?? pr?.username ?? "?").slice(0, 1)}</AvatarFallback>
+                      <AvatarFallback className="font-black text-[10px]">{(pr?.display_name ?? pr?.username ?? "?").slice(0, 1)}</AvatarFallback>
                     </Avatar>
                     {isHost && (
                       <div className="absolute -right-1 -top-1 rounded-full bg-primary p-0.5 text-white shadow-lg shadow-primary/40">

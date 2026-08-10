@@ -273,7 +273,7 @@ function ExpandedRail({ battle, stats, events, isSpectator, isHost, account, onC
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="p-0">
-                  <div className="h-[400px]">
+                  <div className="h-[280px]">
                     <BattleChat battleId={battle.id} canPost={!isSpectator} isHost={isHost} />
                   </div>
                 </AccordionContent>
