@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, Pause, Play, TrendingDown, TrendingUp } from "lucide-react";
+import { ChevronDown, Pause, Play, TrendingDown, TrendingUp, X } from "lucide-react";
 
 import { usePaper } from "@/components/paper-trading/context";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ import type { ChartAdapter, PriceLineHandle } from "@/lib/chart/adapter";
 import { DEFAULT_CHART_SETTINGS } from "@/lib/chart/constants";
 import { INDICATOR_TOGGLES } from "@/lib/chart/indicator-registry";
 import type { ChartSettings, IndicatorConfig } from "@/lib/chart/types";
-import { placeOrEditOrder } from "@/lib/chart/orders/service";
+import { closePosition, placeOrEditOrder } from "@/lib/chart/orders/service";
 import type { PositionOrder } from "@/lib/chart/orders/model";
 import { formatCurrency } from "@/lib/paper-trading/calculations";
 import { TIMEFRAME_SECONDS } from "@/lib/replay/constants";
@@ -379,6 +379,26 @@ export function BattleChart() {
     [session, truePrice, qty, symbol, market, notStarted, secondsToStart],
   );
 
+  /**
+   * Close a position at the market.
+   *
+   * Until this existed a position could only leave via its stop or target,
+   * which is not a tradable instrument — a trader has to be able to get out.
+   * Routed through the canonical `closePosition`, so the exit is written as a
+   * proper execution leg and produces exactly one ClosedTrade, which is what
+   * the fill recorder forwards to `paper_trades`.
+   *
+   * Priced at the engine's true price, not the frozen view: a manual close
+   * while the chart is frozen still executes where the market actually is.
+   */
+  const closeAt = useCallback(
+    (orderId: string) => {
+      if (!session || truePrice == null) return;
+      closePosition(session.stores, orderId, { price: truePrice, reason: "manual", market });
+    },
+    [session, truePrice, market],
+  );
+
   const nudgeQty = (delta: number) => {
     const next = Math.max(0.01, Math.round((Number(qty) + delta) * 100) / 100);
     setQty(next.toFixed(2));
@@ -527,6 +547,67 @@ export function BattleChart() {
                 bar is on screen. Orders are refused until then.
               </p>
             </div>
+          </div>
+        )}
+
+        {/* Open positions.
+            The chart's price scale autoscales to the SERIES only — the adapter
+            sets no autoscaleInfoProvider — so an SL or TP outside the visible
+            candle range simply is not painted. That made the levels look
+            missing. This panel is the authoritative association of entry, stop
+            and target with their position; the price lines are the in-range
+            convenience, not the source of truth. */}
+        {positions.length > 0 && (
+          <div className="absolute left-2 top-2 w-64 space-y-1">
+            {positions.map((p) => {
+              const long = p.direction === "buy";
+              const entry = p.fillPrice ?? p.entry;
+              const live =
+                truePrice != null ? (truePrice - entry) * (long ? 1 : -1) * (p.size ?? 0) : 0;
+              return (
+                <div
+                  key={p.id}
+                  className="rounded-lg border border-border/40 bg-card/85 px-2 py-1.5 backdrop-blur"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span
+                      className={cn(
+                        "text-[10px] font-black uppercase tracking-widest",
+                        long ? "text-success" : "text-danger",
+                      )}
+                    >
+                      {long ? "Long" : "Short"} {p.size}
+                    </span>
+                    <span
+                      className={cn(
+                        "font-mono text-xs font-bold tabular-nums",
+                        live >= 0 ? "text-success" : "text-danger",
+                      )}
+                    >
+                      {live > 0 ? "+" : ""}
+                      {formatCurrency(live)}
+                    </span>
+                    <button
+                      onClick={() => closeAt(p.id)}
+                      title="Close at market"
+                      aria-label="Close position"
+                      className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-danger/15 hover:text-danger"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between font-mono text-[10px] tabular-nums text-muted-foreground">
+                    <span title="Entry">@{entry.toFixed(2)}</span>
+                    <span className="text-danger" title="Stop loss">
+                      SL {p.stop.toFixed(2)}
+                    </span>
+                    <span className="text-success" title="Take profit">
+                      TP {p.target.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
