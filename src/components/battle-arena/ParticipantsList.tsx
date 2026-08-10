@@ -22,11 +22,11 @@ export function ParticipantsList({
 
   return (
     <div className={cn(
-      "rounded-3xl border border-border/60 bg-card/20 overflow-hidden shadow-xl shadow-background/10",
-      isLobby && "flex flex-col h-full"
+      "rounded-2xl border border-border/40 bg-card/10 overflow-hidden shadow-sm",
+      isLobby && "rounded-3xl bg-card/20 shadow-xl shadow-background/10 flex flex-col h-full"
     )}>
-      <div className="border-b border-border/60 px-6 py-4 flex items-center justify-between bg-background/20">
-        <h3 className="text-sm font-black uppercase tracking-widest text-foreground">
+      <div className="border-b border-border/40 px-4 py-2 flex items-center justify-between bg-muted/10">
+        <h3 className="text-[11px] font-bold uppercase tracking-widest text-foreground">
           Competitors
         </h3>
         <span className="text-[10px] font-black bg-primary/10 text-primary px-2 py-0.5 rounded-lg border border-primary/20">
@@ -63,11 +63,11 @@ export function ParticipantsList({
                 <div className="flex items-center gap-3">
                   <div className="relative">
                     <Avatar className={cn(
-                      "h-10 w-10 border-2 transition-colors shadow-lg shadow-background/20",
+                      "h-8 w-8 border-2 transition-colors shadow-lg shadow-background/20",
                       p.is_ready ? "border-success" : "border-border/40 group-hover:border-primary/40"
                     )}>
                       <AvatarImage src={pr?.avatar_url ?? undefined} />
-                      <AvatarFallback className="font-black text-xs">{(pr?.display_name ?? pr?.username ?? "?").slice(0, 1)}</AvatarFallback>
+                      <AvatarFallback className="font-black text-[10px]">{(pr?.display_name ?? pr?.username ?? "?").slice(0, 1)}</AvatarFallback>
                     </Avatar>
                     {isHost && (
                       <div className="absolute -right-1 -top-1 rounded-full bg-primary p-0.5 text-white shadow-lg shadow-primary/40">

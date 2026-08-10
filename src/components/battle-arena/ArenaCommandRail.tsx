@@ -196,7 +196,7 @@ function ExpandedRail({ battle, stats, events, isSpectator, isHost, account, onC
       </div>
 
       <ScrollArea className="flex-1">
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-0.5">
           {/* 2. Time Remaining */}
           <div className="p-4 bg-muted/20">
             <div className="flex flex-col gap-1.5">
@@ -273,7 +273,7 @@ function ExpandedRail({ battle, stats, events, isSpectator, isHost, account, onC
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="p-0">
-                  <div className="h-[400px]">
+                  <div className="h-[280px]">
                     <BattleChat battleId={battle.id} canPost={!isSpectator} isHost={isHost} />
                   </div>
                 </AccordionContent>

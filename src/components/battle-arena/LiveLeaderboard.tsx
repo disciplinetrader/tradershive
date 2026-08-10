@@ -53,11 +53,11 @@ export function LiveLeaderboard({
   }, [rankings]);
 
   return (
-    <div className="rounded-2xl border border-border/60 bg-card/40">
-      <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
+    <div className="rounded-2xl border border-border/40 bg-card/20 overflow-hidden shadow-sm">
+      <div className="flex items-center justify-between border-b border-border/40 px-4 py-2 bg-muted/10">
         <div className="flex items-center gap-2">
-          <Trophy className="h-4 w-4 text-primary" />
-          <h3 className="font-semibold">HIVE Standings</h3>
+          <Trophy className="h-3.5 w-3.5 text-primary" />
+          <h3 className="font-bold text-[11px] uppercase tracking-widest">Standings</h3>
         </div>
         <span className="text-[11px] text-muted-foreground">Sorted by Return % (Primary)</span>
       </div>
@@ -110,7 +110,7 @@ export function LiveLeaderboard({
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-2">
                         <div className="relative">
-                          <Avatar className="h-7 w-7"><AvatarImage src={p?.avatar_url ?? undefined} /><AvatarFallback>{(p?.display_name ?? p?.username ?? "?").slice(0, 1)}</AvatarFallback></Avatar>
+                          <Avatar className="h-6 w-6"><AvatarImage src={p?.avatar_url ?? undefined} /><AvatarFallback className="text-[10px]">{(p?.display_name ?? p?.username ?? "?").slice(0, 1)}</AvatarFallback></Avatar>
                           <span className="absolute -bottom-0.5 -right-0.5"><PresenceDot status={pres?.status ?? "disconnected"} /></span>
                         </div>
                         <div className="min-w-0">
