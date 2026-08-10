@@ -141,13 +141,33 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
   };
 
   const readThemeColors = () => {
+    // If the caller explicitly requested a theme, we respect that. Otherwise
+    // we follow the DOM's state.
+    const isDarkOverride = settings.theme === "dark";
+    const isLightOverride = settings.theme === "light";
+    
     const cs = typeof window !== "undefined" ? getComputedStyle(document.documentElement) : null;
     const cssVar = (name: string, fallback: string) => (cs?.getPropertyValue(name).trim() || fallback);
-    const textColor = resolveColor(cssVar("--muted-foreground", "#94a3b8"), "#94a3b8");
-    const fg = cssVar("--foreground", "#94a3b8");
+    
+    let textColor = resolveColor(cssVar("--muted-foreground", "#94a3b8"), "#94a3b8");
+    let fg = cssVar("--foreground", "#94a3b8");
+    let bgColor = resolveColor(cssVar("--card", "#0f172a"), "#0f172a");
+
+    // Static dark theme defaults for when we are in a dark UI region but the
+    // global document might be light (or not yet hydrated).
+    if (isDarkOverride) {
+      textColor = "#94a3b8"; // slate-400
+      fg = "#f8fafc";        // slate-50
+      bgColor = "#0f172a";   // slate-900 (matches --card in dark mode)
+    } else if (isLightOverride) {
+      textColor = "#64748b"; // slate-500
+      fg = "#0f172a";        // slate-900
+      bgColor = "#ffffff";   // white
+    }
+
     const gridColor = resolveColor(`color-mix(in oklab, ${fg} 8%, transparent)`, "rgba(148,163,184,0.08)");
     const borderColor = resolveColor(`color-mix(in oklab, ${fg} 15%, transparent)`, "rgba(148,163,184,0.15)");
-    const bgColor = resolveColor(cssVar("--card", "#0f172a"), "#0f172a");
+    
     return { textColor, gridColor, borderColor, bgColor };
   };
   let themeColors = readThemeColors();
