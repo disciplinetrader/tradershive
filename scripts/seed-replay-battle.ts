@@ -86,6 +86,13 @@ dotenv.config();
  * range rather than "the most recent N bars" because a battle seeded off a
  * moving window is a different battle every run, and the first thing anyone
  * does with a failure here is ask whether the data changed.
+ *
+ * 1m would be preferable and was the intended default: the battle chart
+ * aggregates the tape upward for display, so a 1m tape would serve every
+ * timeframe button while a 5m tape has to grey out 1m. It is not available —
+ * `historical_candles` holds 5m for BTC/USDT and nothing at any other
+ * timeframe, and on-demand backfill needs SUPABASE_SERVICE_ROLE_KEY, which is
+ * not set. Import a contiguous 1m range and this default should change.
  */
 const SYMBOL = process.env.SYMBOL ?? "BTC/USDT";
 const TIMEFRAME = (process.env.TIMEFRAME ?? "5m") as Timeframe;

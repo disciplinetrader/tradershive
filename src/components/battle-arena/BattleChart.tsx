@@ -111,6 +111,53 @@ function aggregate(candles: Candle[], fromTf: Timeframe, toTf: Timeframe): Candl
   return out;
 }
 
+/**
+ * Shape the forming bar at a fraction through its own intrabar path.
+ *
+ * The authoritative cursor is candle-granular — `battleCursorAt` returns an
+ * observation OFFSET, which is always a candle boundary — and it syncs every
+ * 250ms. So the tape arrives one whole bar at a time and the chart jumps a
+ * complete candle per second. This rebuilds the trailing bar as a partial one
+ * so it grows the way a live bar does.
+ *
+ * It reveals nothing early. By the time a candle is in `visibleCandles()` the
+ * engine has already consumed every one of its observations, so this animation
+ * LAGS execution rather than leading it — the trader watches a bar form that
+ * has, as far as fills are concerned, already happened. Anything that ran ahead
+ * of the cursor would be an unfair information edge, which is why this touches
+ * rendering only and the cursor is left exactly as it is.
+ *
+ * The path is the engine's own conservative order (open → low → high → close on
+ * a bullish bar), so the animation traces the same route the fills took.
+ */
+function formingCandle(full: Candle, fraction: number): Candle {
+  const f = Math.min(1, Math.max(0, fraction));
+  if (f >= 1) return full;
+  const bullish = full.close >= full.open;
+  const path = bullish
+    ? [full.open, full.low, full.high, full.close]
+    : [full.open, full.high, full.low, full.close];
+
+  const seg = f * (path.length - 1);
+  const i = Math.min(path.length - 2, Math.floor(seg));
+  const price = path[i] + (path[i + 1] - path[i]) * (seg - i);
+
+  let high = full.open;
+  let low = full.open;
+  for (let k = 0; k <= i; k++) {
+    high = Math.max(high, path[k]);
+    low = Math.min(low, path[k]);
+  }
+  return {
+    time: full.time,
+    open: full.open,
+    high: Math.max(high, price),
+    low: Math.min(low, price),
+    close: price,
+    volume: (full.volume ?? 0) * f,
+  };
+}
+
 export function BattleChart() {
   const replay = useBattleReplay();
   const { account } = usePaper();
@@ -254,6 +301,32 @@ export function BattleChart() {
     a.syncOverlayIndicators(indicators, view);
     a.syncSubPaneIndicators(indicators, view);
   }, [indicators, view, adapterTick]);
+
+  // ── smooth rendering ─────────────────────────────────────────────────────
+  // Decoupled from the 250ms cursor sync: the cursor stays exactly as it is and
+  // this only reshapes the trailing bar between syncs. requestAnimationFrame is
+  // right here precisely because it does NOT fire in a hidden tab — there is
+  // nothing to draw for a tab nobody is looking at, and the engine keeps
+  // advancing on its own interval regardless.
+  useEffect(() => {
+    const a = adapterRef.current;
+    if (!a || paused || notStarted || startMs == null || !view.length) return;
+    // Aggregated views build each bar from several tape candles, so a partial
+    // tape candle does not map onto a partial display bar. They also jump far
+    // less often, which is what made this visible in the first place.
+    if (activeTf !== datasetTf) return;
+
+    const speed = session?.config.speed ?? 1;
+    let raf = 0;
+    const frame = () => {
+      const elapsed = ((Date.now() - startMs) / 1000) * speed;
+      const last = view[view.length - 1];
+      if (last) a.updateLastCandle(formingCandle(last, elapsed - Math.floor(elapsed)));
+      raf = requestAnimationFrame(frame);
+    };
+    raf = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(raf);
+  }, [view, paused, notStarted, startMs, activeTf, datasetTf, session, adapterTick]);
 
   // ── follow the session's order store ─────────────────────────────────────
   useEffect(() => {
