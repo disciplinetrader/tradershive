@@ -7109,7 +7109,6 @@ export type Database = {
           take_profit: number | null
           updated_at: string
           user_id: string
-          observation_cursor: number | null
         }
         Insert: {
           account_id: string
@@ -7146,7 +7145,6 @@ export type Database = {
           take_profit?: number | null
           updated_at?: string
           user_id: string
-          observation_cursor?: number | null
         }
         Update: {
           account_id?: string
@@ -7183,7 +7181,6 @@ export type Database = {
           take_profit?: number | null
           updated_at?: string
           user_id?: string
-          observation_cursor?: number | null
         }
         Relationships: [
           {
@@ -12234,7 +12231,10 @@ export type Database = {
         Args: { _group_id: string; _user_id: string }
         Returns: boolean
       }
-      join_battle: { Args: { _battle_id: string }; Returns: string }
+      join_battle: {
+        Args: { _battle_id: string; _invite_ok?: boolean }
+        Returns: string
+      }
       join_battle_by_code: { Args: { _code: string }; Returns: string }
       join_championship_live: {
         Args: { _champ: string }
@@ -12262,6 +12262,7 @@ export type Database = {
       }
       register_for_championship: { Args: { _champ: string }; Returns: string }
       start_championship: { Args: { _champ: string }; Returns: undefined }
+      tick_battle: { Args: { _battle_id: string }; Returns: string }
       tick_battles: { Args: never; Returns: undefined }
       tick_championships: { Args: never; Returns: undefined }
     }
