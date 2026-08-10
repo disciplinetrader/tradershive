@@ -737,7 +737,7 @@ function TradingWorkspaceInner() {
           />
 
           {/* Multi-chart grid (1 / 2 / 3 / 4 charts) */}
-          <ChartLayoutMenu />
+          {!arenaData && <ChartLayoutMenu />}
 
 
 
@@ -1071,7 +1071,7 @@ function TradingWorkspaceInner() {
               </div>
 
               {/* Companion panes — context charts, never order-bearing. */}
-              {layoutPanes.map((pane, i) => (
+              {!arenaData && layoutPanes.map((pane, i) => (
                 <CompanionChartPane
                   key={pane.id}
                   pane={pane}
@@ -1108,7 +1108,7 @@ function TradingWorkspaceInner() {
               bus — so Buy/Sell emitted into an empty listener set and silently
               did nothing, and it took the Positions tab with it. The battle
               route renders its own arena rail in a dedicated column. */}
-          {rightOpen ? (
+          {rightOpen && !arenaData ? (
               <>
               {/* Resize handle (desktop only) */}
               <div
@@ -1377,7 +1377,7 @@ function TradingWorkspaceInner() {
 
               </aside>
             </>
-          ) : (
+          ) : !arenaData ? (
             <button
               onClick={() => setRightOpen(true)}
               className="hidden md:flex w-11 shrink-0 flex-col items-center gap-2 border-l border-border/40 bg-card/20 py-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground transition hover:bg-card/40 hover:text-foreground"
@@ -1385,9 +1385,9 @@ function TradingWorkspaceInner() {
               title="Expand panel"
             >
               <ChevronDown className="h-4 w-4 rotate-90" />
-              <span className="rotate-180 [writing-mode:vertical-rl]">{arenaData ? "Arena" : "Workspace"}</span>
+              <span className="rotate-180 [writing-mode:vertical-rl]">Workspace</span>
             </button>
-          )}
+          ) : null}
 
           {/* Mobile-only floating access to tools + workspace panel */}
           {isMobile && !rightOpen && !focusMode && (
@@ -1454,19 +1454,21 @@ function TradingWorkspaceInner() {
 
 
         {/* Bottom dock — Orders / Positions / History / Journal / Trade Notes */}
-        <BottomDock
-          symbol={symbol}
-          multiPanes={multiPanes}
-          setMultiPanes={setMultiPanes}
-          bottomTab={prefs.bottomTab}
-          setBottomTab={(t) => update("bottomTab", t)}
-          open={prefs.bottomOpen}
-          setOpen={(v) => update("bottomOpen", v)}
-          dockHeight={Math.min(560, Math.max(180, prefs.dockHeight))}
-          setDockHeight={(h) => update("dockHeight", h)}
-          blotterFilter={prefs.blotterFilter}
-          setBlotterFilter={(f) => update("blotterFilter", f)}
-        />
+        {!arenaData && (
+          <BottomDock
+            symbol={symbol}
+            multiPanes={multiPanes}
+            setMultiPanes={setMultiPanes}
+            bottomTab={prefs.bottomTab}
+            setBottomTab={(t) => update("bottomTab", t)}
+            open={prefs.bottomOpen}
+            setOpen={(v) => update("bottomOpen", v)}
+            dockHeight={Math.min(560, Math.max(180, prefs.dockHeight))}
+            setDockHeight={(h) => update("dockHeight", h)}
+            blotterFilter={prefs.blotterFilter}
+            setBlotterFilter={(f) => update("blotterFilter", f)}
+          />
+        )}
 
         <SymbolSearch open={symbolSearchOpen} onOpenChange={setSymbolSearchOpen} />
         <AlertsDialog open={alertsOpen} onOpenChange={setAlertsOpen} symbol={symbol} />
@@ -1592,7 +1594,7 @@ function BottomDock({
       {open ? (
         <>
           <div className="hidden md:block">
-            <MultiChartStrip panes={multiPanes} onChange={setMultiPanes} primarySymbol={symbol} />
+            <MultiChartStrip panes={multiPanes} onChange={setMultiPanes} primarySymbol={symbol} arenaMode={!!arenaData} />
           </div>
           <div
             role="separator"
