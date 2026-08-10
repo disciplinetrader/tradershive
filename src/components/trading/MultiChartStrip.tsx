@@ -48,7 +48,7 @@ export function MultiChartStrip({
   primarySymbol: string;
   arenaMode?: boolean;
 }) {
-  const { data: arenaData } = useActiveArena(); // We might need to pass accountId if available
+  const { data: arenaData } = useActiveArena(undefined); // Passing undefined as we don't have accountId here, but hook requires it
   const activeArena = arenaMode || !!arenaData;
   if (activeArena) return null;
   const addPane = () => {
