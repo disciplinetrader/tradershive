@@ -1464,10 +1464,11 @@ function TradingWorkspaceInner() {
             open={prefs.bottomOpen}
             setOpen={(v) => update("bottomOpen", v)}
             dockHeight={Math.min(560, Math.max(180, prefs.dockHeight))}
-            setDockHeight={(h) => update("dockHeight", h)}
-            blotterFilter={prefs.blotterFilter}
-            setBlotterFilter={(f) => update("blotterFilter", f)}
-          />
+          setDockHeight={(h) => update("dockHeight", h)}
+          blotterFilter={prefs.blotterFilter}
+          setBlotterFilter={(f) => update("blotterFilter", f)}
+          accountId={accountId}
+        />
         )}
 
         <SymbolSearch open={symbolSearchOpen} onOpenChange={setSymbolSearchOpen} />
@@ -1559,6 +1560,7 @@ function BottomDock({
   symbol, multiPanes, setMultiPanes,
   bottomTab, setBottomTab, open, setOpen,
   dockHeight, setDockHeight, blotterFilter, setBlotterFilter,
+  accountId,
 }: {
   symbol: string;
   multiPanes: MultiChartPane[];
@@ -1571,6 +1573,7 @@ function BottomDock({
   setDockHeight: (h: number) => void;
   blotterFilter: BlotterFilter;
   setBlotterFilter: (f: BlotterFilter) => void;
+  accountId: string | null;
 }) {
   const dragRef = useRef<{ startY: number; startH: number } | null>(null);
   const onResizeStart = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
@@ -1590,7 +1593,7 @@ function BottomDock({
   }, [dockHeight, setDockHeight]);
 
   // Check if we are in arena mode to hide multi-chart strip if needed
-  const { data: arenaData } = useActiveArena(accountId || null);
+  const { data: arenaData } = useActiveArena(accountId);
 
   return (
     <div className="border-t border-border/40 bg-card/30">
