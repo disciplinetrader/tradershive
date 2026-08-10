@@ -502,6 +502,48 @@ and its output is consumed by the same expression that produced it — the
 ambiguity cancels. It stops cancelling the moment anything **crosses systems**,
 which is exactly what the P&L bridge does.
 
+### Confirmed empirically, 2026-08-10
+
+Measured by running one trade through the exact replay-battle path
+(`placeOrEditOrder` → `runObservation` → `ClosedTrade` → `battleTradeRowFrom`)
+and comparing against the paper formula:
+
+| Symbol | contractSize | engine pnl | paper pnl | ratio |
+|---|---|---|---|---|
+| EUR/USD | 100,000 | **$0.0218** | $2,178.20 | **100,000** |
+| BTC/USDT | 1 | $1,351.00 | $1,351.00 | 1 |
+
+**It does not surface as an inflated `lot_size`.** `lot_size` is written from
+`trade.quantity`, which is whatever was typed, so the row looks ordinary — the
+damage is in `pnl`, understated by `contractSize`. A EUR/USD replay battle
+records two cents on a trade that made two thousand dollars, which reads as a
+rounding artifact rather than a defect.
+
+Crypto cannot expose this: `contractSize` is 1 for every `*/USDT` pair, so lots
+and units coincide and the two formulas agree exactly. Every replay battle run
+so far has been BTC/USDT, which is why the recorded P&L has been correct.
+
+**`isEnginePricedSymbol` does not protect against this.** Its identity
+(`pipValuePerLot / pipSize === contractSize`) is about currency conversion and
+holds perfectly for EUR/USD — the guard admits the symbol as safe while this
+makes its P&L wrong by five orders of magnitude. The two are independent
+defects that happen to live on the same line of code.
+
+### The fix, for the battle path
+
+Paper reduces to `move × contractSize × lot`; the engine is `move × quantity`.
+They agree only when `quantity` is in **units**. So the conversion has to be
+explicit at both boundaries:
+
+1. Place the order with `size: lots × contractSize`, so the engine prices it
+   correctly.
+2. Convert back in `battleTradeRowFrom` — `lot_size: quantity / contractSize` —
+   because `paper_trades.lot_size` means lots, and writing units into it would
+   trade one wrong number for another.
+
+`contractSize` is 1 for crypto, so this is a no-op for every battle recorded to
+date and cannot retroactively change them.
+
 ### Why it matters more than it looks
 
 A 100,000× error is not a rounding difference; it is the difference between a
