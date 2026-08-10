@@ -11,10 +11,32 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { BATTLE_TYPES, MARKETS, WIN_CONDITIONS, findMarket } from "@/lib/battle-arena/constants";
 import { createBattle } from "@/lib/battle-arena.functions";
+import { getReplayCandles } from "@/lib/replay.functions";
+import { buildDataset } from "@/lib/replay/session/dataset";
+import { BATTLE_MAX_SPEED, BATTLE_MIN_SPEED } from "@/lib/replay/battle-cursor";
+import type { Candle, Timeframe } from "@/lib/replay/types";
 import { ChevronLeft, ChevronRight, Check, Trophy, Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const STEPS = ["Basics", "Market", "Risk & Rules", "Schedule", "Review"] as const;
+
+/**
+ * The tape every battle created here runs on.
+ *
+ * A replay battle is pinned to `replay_dataset_id`, which is a checksum of the
+ * loaded candles — it cannot be written by hand, so the wizard has to load the
+ * candles and build the dataset before it can insert the battle. Without that
+ * a created battle has no dataset and the arena renders "No replay session".
+ *
+ * The window is fixed rather than offered as a choice because BTC/USDT 5m over
+ * July 2026 is the only contiguous tape stored (8,644 bars, no gaps). Picking a
+ * dataset is not a decision a host should have to make, and every other range
+ * currently resolves to nothing.
+ */
+const REPLAY_FROM = Date.UTC(2026, 6, 1, 0, 0, 0, 0);
+const REPLAY_TO = Date.UTC(2026, 6, 31, 23, 59, 59, 999);
+const REPLAY_TIMEFRAMES: Timeframe[] = ["1m", "5m", "15m", "30m", "1H", "4H", "1D"];
+const REPLAY_SPEEDS = [0.5, 1, 2, 4, 8];
 
 function isoLocal(d: Date) {
   const off = d.getTimezoneOffset();
@@ -24,6 +46,7 @@ function isoLocal(d: Date) {
 
 export function CreateBattleWizard({ onCancel, onCreated }: { onCancel: () => void; onCreated: (battleId: string) => void }) {
   const fn = useServerFn(createBattle);
+  const fnCandles = useServerFn(getReplayCandles);
   const qc = useQueryClient();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -54,6 +77,9 @@ export function CreateBattleWizard({ onCancel, onCreated }: { onCancel: () => vo
     end_at: isoLocal(in2h),
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
     allow_late_join: false,
+    replay_symbol: "BTC/USDT",
+    replay_timeframe: "5m" as Timeframe,
+    replay_speed: 1,
   });
 
   const marketSymbols = useMemo(() => findMarket(form.market).symbols, [form.market]);
@@ -63,6 +89,60 @@ export function CreateBattleWizard({ onCancel, onCreated }: { onCancel: () => vo
   const submit = async () => {
     setLoading(true);
     try {
+      // Load the tape and build the dataset the way `BattleReplayProvider`
+      // will, so the checksum it computes on the battle screen matches this one
+      // by construction. Two things this depends on:
+      //
+      //  · no `warmupBars` — Replay Studio passes them and offsets its cursor
+      //    to compensate; the battle provider does not, and warm-up bars the
+      //    battle client never sees would change the checksum.
+      //  · `market` is the battle's own market, because it feeds session-aware
+      //    coverage and both sides must agree about whether the range is
+      //    covered.
+      const payload = (await fnCandles({
+        data: {
+          symbol: form.replay_symbol,
+          timeframe: form.replay_timeframe as never,
+          from: REPLAY_FROM,
+          to: REPLAY_TO,
+          market: form.market,
+        },
+      })) as unknown as {
+        candles?: Candle[];
+        providerId?: string | null;
+        unavailable?: { message?: string } | null;
+      };
+
+      if (payload?.unavailable) {
+        throw new Error(
+          payload.unavailable.message ??
+            `No market data stored for ${form.replay_symbol} ${form.replay_timeframe}.`,
+        );
+      }
+      const candles = payload?.candles ?? [];
+      if (!candles.length) {
+        throw new Error(
+          `No candles for ${form.replay_symbol} ${form.replay_timeframe}. ` +
+            `BTC/USDT 5m is the only tape currently stored.`,
+        );
+      }
+
+      const dataset = buildDataset({
+        provider: payload.providerId ?? "unknown",
+        symbol: form.replay_symbol,
+        timeframe: form.replay_timeframe,
+        timezone: "UTC",
+        candles,
+      });
+
+      // The replayed symbol has to be tradable in its own battle:
+      // `enforce_battle_rules_on_trade` rejects any symbol outside
+      // `allowed_symbols`, so a host who deselected it would get a battle whose
+      // every trade is refused.
+      const allowed = form.allowed_symbols.includes(form.replay_symbol)
+        ? form.allowed_symbols
+        : [...form.allowed_symbols, form.replay_symbol];
+
       const battle = await fn({
         data: {
           name: form.name,
@@ -71,7 +151,7 @@ export function CreateBattleWizard({ onCancel, onCreated }: { onCancel: () => vo
           ranked: form.ranked,
           battle_type: form.battle_type,
           market: form.market,
-          allowed_symbols: form.allowed_symbols,
+          allowed_symbols: allowed,
           starting_balance: Number(form.starting_balance),
           min_participants: Number(form.min_participants),
           max_participants: Number(form.max_participants),
@@ -87,6 +167,22 @@ export function CreateBattleWizard({ onCancel, onCreated }: { onCancel: () => vo
           end_at: new Date(form.end_at).toISOString(),
           timezone: form.timezone,
           allow_late_join: form.allow_late_join,
+          // `replay_from`/`replay_to` are the dataset's OWN first and last
+          // candle times, not the window requested above. The battle client
+          // asks for exactly these bounds back, and `readStored` filters
+          // inclusively, so storing the requested window would have it load a
+          // different set of bars and refuse to start on a checksum mismatch.
+          replay: {
+            dataset_id: dataset.identity.datasetId,
+            symbol: form.replay_symbol,
+            timeframe: form.replay_timeframe,
+            from: new Date(dataset.identity.startTime).toISOString(),
+            to: new Date(dataset.identity.endTime).toISOString(),
+            speed: Number(form.replay_speed),
+            start_cursor: 0,
+            bar_count: dataset.identity.barCount,
+            start_cursor_candles: 0,
+          },
         },
       });
       toast.success("Battle created!");
@@ -153,9 +249,15 @@ export function CreateBattleWizard({ onCancel, onCreated }: { onCancel: () => vo
                     <Trophy className={`h-4 w-4 ${form.ranked ? "text-primary animate-pulse" : "text-muted-foreground"}`} />
                     <Label className="font-bold cursor-pointer">Competitive Match</Label>
                   </div>
-                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight">Affects HIVE Rating</p>
+                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight">
+                    Unavailable on replay battles
+                  </p>
                 </div>
-                <Switch checked={form.ranked} onCheckedChange={(v) => set("ranked", v)} />
+                {/* Enforced by `battles_replay_must_be_unranked` and refused by
+                    createBattle. Every battle this wizard makes runs on a
+                    replay tape, so the control is disabled rather than left to
+                    fail at submit. */}
+                <Switch checked={false} disabled onCheckedChange={() => {}} />
               </div>
             </div>
 
@@ -206,6 +308,53 @@ export function CreateBattleWizard({ onCancel, onCreated }: { onCancel: () => vo
                   );
                 })}
               </div>
+            </div>
+
+            {/* Replay tape — what the battle actually trades on. */}
+            <div className="space-y-3 rounded-xl border border-border/60 bg-background/30 p-4">
+              <div className="flex items-center gap-2">
+                <Label className="text-sm font-bold uppercase tracking-wide">Replay tape</Label>
+                <Badge variant="outline" className="text-[9px] font-black uppercase">Unranked</Badge>
+              </div>
+              <p className="text-[10px] font-medium uppercase tracking-tight text-muted-foreground">
+                Every competitor trades this recorded market, from the same bar, at the same speed
+              </p>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Symbol</Label>
+                  <Select value={form.replay_symbol} onValueChange={(v) => set("replay_symbol", v)}>
+                    <SelectTrigger className="h-10 rounded-xl bg-background/50"><SelectValue /></SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      {marketSymbols.map((sym) => <SelectItem key={sym} value={sym}>{sym}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Timeframe</Label>
+                  <Select value={form.replay_timeframe} onValueChange={(v) => set("replay_timeframe", v as Timeframe)}>
+                    <SelectTrigger className="h-10 rounded-xl bg-background/50"><SelectValue /></SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      {REPLAY_TIMEFRAMES.map((tf) => <SelectItem key={tf} value={tf}>{tf}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Speed</Label>
+                  <Select value={String(form.replay_speed)} onValueChange={(v) => set("replay_speed", Number(v))}>
+                    <SelectTrigger className="h-10 rounded-xl bg-background/50"><SelectValue /></SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      {REPLAY_SPEEDS.filter((x) => x >= BATTLE_MIN_SPEED && x <= BATTLE_MAX_SPEED)
+                        .map((x) => <SelectItem key={x} value={String(x)}>{x}x</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              {form.replay_symbol !== "BTC/USDT" || form.replay_timeframe !== "5m" ? (
+                <p className="text-[10px] font-medium text-warning">
+                  Only BTC/USDT 5m has a contiguous tape stored. Anything else will fail at launch
+                  with a message naming what is missing, rather than creating a battle that cannot play.
+                </p>
+              ) : null}
             </div>
 
             <div className="space-y-2">
