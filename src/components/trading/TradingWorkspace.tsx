@@ -1107,8 +1107,14 @@ function TradingWorkspaceInner() {
               That unmounted OrderPanel — the only subscriber to the trade-intent
               bus — so Buy/Sell emitted into an empty listener set and silently
               did nothing, and it took the Positions tab with it. The battle
-              route renders its own arena rail in a dedicated column. */}
-          {rightOpen && !arenaData ? (
+              route renders its own arena rail in a dedicated column.
+
+              This panel must render in battle mode. Gating it on `arenaData`
+              reintroduces exactly that bug: BattleStatusBar's Buy/Sell only
+              calls `emitTradeIntent`, and OrderPanel is the sole subscriber,
+              so an unmounted panel makes the buttons a silent no-op with no
+              error anywhere. Verified twice now — 2026-08-07 and 2026-08-10. */}
+          {rightOpen ? (
               <>
               {/* Resize handle (desktop only) */}
               <div
@@ -1377,7 +1383,7 @@ function TradingWorkspaceInner() {
 
               </aside>
             </>
-          ) : !arenaData ? (
+          ) : (
             <button
               onClick={() => setRightOpen(true)}
               className="hidden md:flex w-11 shrink-0 flex-col items-center gap-2 border-l border-border/40 bg-card/20 py-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground transition hover:bg-card/40 hover:text-foreground"
@@ -1385,9 +1391,9 @@ function TradingWorkspaceInner() {
               title="Expand panel"
             >
               <ChevronDown className="h-4 w-4 rotate-90" />
-              <span className="rotate-180 [writing-mode:vertical-rl]">Workspace</span>
+              <span className="rotate-180 [writing-mode:vertical-rl]">{arenaData ? "Arena" : "Workspace"}</span>
             </button>
-          ) : null}
+          )}
 
           {/* Mobile-only floating access to tools + workspace panel */}
           {isMobile && !rightOpen && !focusMode && (
