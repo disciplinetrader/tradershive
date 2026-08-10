@@ -31,13 +31,11 @@ import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { PaperTradingProvider } from "@/components/paper-trading/context";
-import { TradingWorkspace } from "@/components/trading/TradingWorkspace";
 import { ArenaCommandRail } from "@/components/battle-arena/ArenaCommandRail";
 import { BattleStartIntro } from "@/components/battle-arena/lobby/BattleStartIntro";
 import { CountdownTimer } from "@/components/battle-arena/CountdownTimer";
-import { BattleScrubber } from "@/components/battle-arena/BattleScrubber";
-import { BattleReplayProvider, useBattleReplay } from "@/components/battle-arena/battle-replay-context";
-import { BattleStatusBar } from "@/components/battle-arena/BattleStatusBar";
+import { BattleChart } from "@/components/battle-arena/BattleChart";
+import { BattleReplayProvider } from "@/components/battle-arena/battle-replay-context";
 
 
 
@@ -281,9 +279,7 @@ function BattleDetail() {
                     <Badge variant="default" data-testid="battle-live" className="bg-success text-success-foreground font-black text-[10px] animate-pulse">LIVE</Badge>
                   </div>
                   
-                  <div className="flex-1 max-w-2xl px-4">
-                    <BattleScrubber />
-                  </div>
+                  <div className="flex-1" />
 
                   <div className="flex items-center gap-4">
                     <Button 
@@ -303,11 +299,13 @@ function BattleDetail() {
                   </div>
                 </div>
               
+              {/* BattleChart owns the replay controls and the order bar, so the
+                  header scrubber and BattleStatusBar are not rendered here —
+                  two progress bars and two order bars would be two sources of
+                  truth for the same thing. */}
               <div className="flex-1 min-h-0 relative">
-                <BattleAwareWorkspace accountId={battleAccountId} />
+                <BattleChart />
               </div>
-
-              <BattleStatusBar />
             </div>
             
             <div className="w-80 border-l border-border/40 hidden xl:block overflow-hidden shrink-0">
@@ -452,16 +450,7 @@ function BattleDetail() {
   );
 }
 
-/**
- * Hands the replay session's isolated execution stores to the workspace.
- *
- * In a replay battle the chart's order book must be the engine's, not the
- * process-wide singletons — otherwise the live market feed and the replay clock
- * both drive `runObservation` against one book and a live tick could fill an
- * order placed against historical candles. `stores` is null for live-price
- * battles, which is exactly the "use the singletons" signal.
- */
-function BattleAwareWorkspace({ accountId }: { accountId?: string }) {
-  const { stores } = useBattleReplay();
-  return <TradingWorkspace accountId={accountId} executionStores={stores} />;
-}
+/* `BattleAwareWorkspace` lived here, handing the replay session's isolated
+   execution stores to TradingWorkspace. BattleChart reads those stores from the
+   replay context directly, so the indirection is gone. TradingWorkspace itself
+   is untouched and still serves ordinary trading. */
