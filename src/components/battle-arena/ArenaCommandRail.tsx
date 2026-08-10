@@ -30,6 +30,7 @@ import { CountdownTimer } from "./CountdownTimer";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { listBattleEvents, getBattleLiveStats } from "@/lib/battle-arena-live.functions";
+import { getBattle } from "@/lib/battle-arena.functions";
 import { MusicPlayer } from "@/components/audio/MusicPlayer";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -59,6 +60,7 @@ export function ArenaCommandRail({ className, onClose }: ArenaCommandRailProps) 
 
   const fnEvents = useServerFn(listBattleEvents);
   const fnStats = useServerFn(getBattleLiveStats);
+  const fnBattle = useServerFn(getBattle);
 
   const battle = arenaData?.battle;
   const battleId = battle?.id;
@@ -68,6 +70,29 @@ export function ArenaCommandRail({ className, onClose }: ArenaCommandRailProps) 
     queryFn: () => fnEvents({ data: { battleId: battleId!, limit: 50 } }),
     enabled: !!battleId,
   });
+
+  /**
+   * Participants, rankings and profiles.
+   *
+   * These used to be read off objects that never carried them —
+   * `battle.participants` (no such column on `battles`),
+   * `stats.rankings` and `stats.profiles` (neither is on
+   * `battle_statistics_live`, which is a single aggregate row). Every one
+   * defaulted through `?? []`, so the rail rendered "0/N" and an empty
+   * staging room on a full battle, silently, since it was written.
+   *
+   * `getBattle` already returns all three, RLS-correct. The query key matches
+   * the battle route's exactly, so react-query serves it from cache and this
+   * costs no extra request.
+   */
+  const battleQ = useQuery({
+    queryKey: ["battle", battleId],
+    queryFn: () => fnBattle({ data: { id: battleId! } }),
+    enabled: !!battleId,
+  });
+  const participants = battleQ.data?.participants ?? [];
+  const profiles = battleQ.data?.profiles ?? [];
+  const rankings = battleQ.data?.rankings ?? [];
 
   const statsQ = useQuery({
     queryKey: ["battle-live-stats", battleId],
@@ -114,6 +139,9 @@ export function ArenaCommandRail({ className, onClose }: ArenaCommandRailProps) 
             battle={battle}
             stats={statsQ.data as any}
             events={eventsQ.data as any}
+            participants={participants}
+            profiles={profiles}
+            rankings={rankings}
             isSpectator={isSpectator}
             isHost={arenaData.isHost}
             account={account}
@@ -169,10 +197,16 @@ function RailIcon({ icon: Icon, label, onClick, active }: {
   );
 }
 
-function ExpandedRail({ battle, stats, events, isSpectator, isHost, account, onClose }: {
+function ExpandedRail({
+  battle, stats, events, participants, profiles, rankings,
+  isSpectator, isHost, account, onClose,
+}: {
   battle: any;
   stats: any;
   events: any;
+  participants: any[];
+  profiles: any[];
+  rankings: any[];
   isSpectator: boolean;
   isHost: boolean;
   account: any;
@@ -237,8 +271,8 @@ function ExpandedRail({ battle, stats, events, isSpectator, isHost, account, onC
               <Badge className="bg-primary/20 text-primary hover:bg-primary/30 text-[9px] px-1.5 py-0">TOP 3</Badge>
             </div>
             <LiveLeaderboard 
-              rankings={stats?.rankings?.slice(0, 3) ?? []} 
-              profiles={stats?.profiles ?? []}
+              rankings={rankings.slice(0, 3)} 
+              profiles={profiles}
               presence={[]}
               winCondition={battle.win_condition}
               compact
@@ -252,13 +286,13 @@ function ExpandedRail({ battle, stats, events, isSpectator, isHost, account, onC
           <div className="p-4 border-b border-border/40">
             <div className="mb-3 flex items-center justify-between">
               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                Participants ({stats?.rankings?.length ?? 0}/{battle.max_participants})
+                Participants ({participants.length}/{battle.max_participants})
               </span>
             </div>
             <ParticipantsList 
-              participants={battle.participants ?? []} 
-              profiles={stats?.profiles ?? []} 
-              hostId={battle.created_by} 
+              participants={participants} 
+              profiles={profiles} 
+              hostId={battle.host_id} 
             />
           </div>
 
