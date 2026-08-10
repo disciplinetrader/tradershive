@@ -101,10 +101,10 @@ export const recordBattleReplayTrade = createServerFn({ method: "POST" })
         account_id: data.accountId,
         battle_id: data.battleId,
         symbol: data.symbol,
-        market: data.market as never,
-        direction: data.direction as never,
-        order_type: data.orderType as never,
-        status: "closed" as never,
+        market: data.market as any,
+        direction: data.direction as any,
+        order_type: data.orderType as any,
+        status: "closed" as any,
         lot_size: data.lotSize,
         entry_price: data.entryPrice,
         exit_price: data.exitPrice,
@@ -118,7 +118,7 @@ export const recordBattleReplayTrade = createServerFn({ method: "POST" })
         opened_at: data.openedAt,
         closed_at: data.closedAt,
         observation_cursor: data.observationCursor as any,
-      })
+      } as any)
       .select("id, pnl, battle_id, observation_cursor")
       .single();
     if (error) throw error;

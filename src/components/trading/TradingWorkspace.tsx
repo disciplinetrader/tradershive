@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useActiveArena } from "@/components/battle-arena/useActiveArena";
 import type { ChartHandle } from "@/components/chart/ChartEngine";
 import { ChartLayoutProvider, useChartLayout, layoutGridClass } from "@/lib/chart/multi-chart";
 import { CompanionChartPane } from "@/components/trading/CompanionChartPane";
@@ -1591,7 +1590,7 @@ function BottomDock({
   }, [dockHeight, setDockHeight]);
 
   // Check if we are in arena mode to hide multi-chart strip if needed
-  const { data: arenaData } = useActiveArena();
+  const { data: arenaData } = useActiveArena(accountId || null);
 
   return (
     <div className="border-t border-border/40 bg-card/30">
