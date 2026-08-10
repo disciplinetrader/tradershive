@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MessageSquare, Send, Trash2, Smile } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { supabase } from "@/integrations/supabase/client";
 import { listBattleChat, sendBattleChat, deleteBattleChat, reactBattleChat } from "@/lib/battle-arena-live.functions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -46,15 +45,17 @@ export function BattleChat({ battleId, canPost, isHost }: { battleId: string; ca
     if (!text || !user) return;
     setMsg("");
     try {
-      const { error } = await supabase.from("battle_chat").insert({
-        battle_id: battleId,
-        user_id: user.id,
-        message: text,
-        kind: "user"
-      });
-      if (error) throw error;
+      // Through the server fn, not a raw client insert. It validates length,
+      // takes user_id from the verified JWT rather than trusting the browser,
+      // and is the path `mentions` is wired through. `fnSend` was already
+      // imported here and simply never called.
+      await fnSend({ data: { battleId, message: text } });
+      // Realtime also invalidates this key, but not every surface mounts the
+      // channel — invalidating here means a sent message appears regardless.
+      qc.invalidateQueries({ queryKey: ["battle-chat", battleId] });
     } catch (e: any) {
-      toast.error(e?.message ?? "Could not complete the request");
+      setMsg(text); // put it back rather than losing what they typed
+      toast.error(e?.message ?? "Could not send the message");
     }
   };
 
