@@ -101,6 +101,34 @@ export class HistoricalDataUnavailableError extends Error {
 
 type Db = SupabaseClient<any, any, any>;
 
+/**
+ * Upper bound on a single resolved range. Not a page size — a refusal
+ * threshold. Exceeding it raises rather than truncating, because a short tape
+ * that nobody is told about is the failure mode this whole function guards
+ * against.
+ */
+const MAX_CANDLES = 50_000;
+
+/**
+ * Read every stored candle in a range, paging past the server's response cap.
+ *
+ * PostgREST caps responses server-side (1000 rows on this project), so a plain
+ * `.limit(10000)` silently returned the first 1000 bars and nothing reported
+ * it. Worse than the loud case: a range of 1,000–1,666 bars came back truncated
+ * yet still passed `checkCoverage`, because 1000/1666 clears the 0.6 minimum —
+ * so a replay session or battle would run on a tape ending early, with a
+ * checksum computed over the truncated bars that matched perfectly. Written up
+ * in docs/battle-replay.md, "Creating one", trap 3.
+ *
+ * The page size is MEASURED from the first response rather than assumed. The
+ * cap is deployment configuration, so hardcoding 1000 here would reintroduce
+ * the same bug anywhere it is set lower.
+ *
+ * Sorting is by `(ts, id)`, not `ts` alone: the live table is keyed
+ * `UNIQUE(symbol, timeframe, provider_code, ts)`, so one symbol carrying two
+ * providers has duplicate `ts` values, and offset paging over a non-total order
+ * duplicates and skips rows. `id` is the primary key, which makes it total.
+ */
 async function readStored(
   db: Db,
   symbol: string,
@@ -108,17 +136,52 @@ async function readStored(
   from: number,
   to: number,
 ): Promise<{ candles: ServiceCandle[]; providerCode: string | null }> {
-  const { data, error } = await db
-    .from("historical_candles")
-    .select("ts, open, high, low, close, volume, provider_code")
-    .eq("symbol", symbol)
-    .eq("timeframe", timeframe)
-    .gte("ts", new Date(from).toISOString())
-    .lte("ts", new Date(to).toISOString())
-    .order("ts", { ascending: true })
-    .limit(10000);
-  if (error) throw error;
-  const rows = data ?? [];
+  const page = (withCount: boolean) =>
+    db
+      .from("historical_candles")
+      .select(
+        "ts, open, high, low, close, volume, provider_code",
+        withCount ? { count: "exact" } : undefined,
+      )
+      .eq("symbol", symbol)
+      .eq("timeframe", timeframe)
+      .gte("ts", new Date(from).toISOString())
+      .lte("ts", new Date(to).toISOString())
+      .order("ts", { ascending: true })
+      .order("id", { ascending: true });
+
+  // The first response tells us both how many rows exist and how many the
+  // server is willing to hand over at once.
+  const first = await page(true).range(0, MAX_CANDLES - 1);
+  if (first.error) throw first.error;
+
+  const rows: any[] = [...(first.data ?? [])];
+  const total = first.count ?? rows.length;
+  const pageSize = rows.length;
+
+  if (total > MAX_CANDLES) {
+    throw new Error(
+      `Historical range for ${symbol} · ${timeframe} holds ${total} candles, ` +
+        `above the ${MAX_CANDLES} ceiling. Narrow the date range.`,
+    );
+  }
+
+  while (pageSize > 0 && rows.length < total) {
+    const next = await page(false).range(rows.length, rows.length + pageSize - 1);
+    if (next.error) throw next.error;
+    if (!next.data?.length) break; // no progress — stop rather than spin
+    rows.push(...next.data);
+  }
+
+  // Paging is meant to make truncation impossible; assert it rather than trust
+  // it, so any residual short read fails loudly instead of replaying short.
+  if (rows.length !== total) {
+    throw new Error(
+      `Historical read for ${symbol} · ${timeframe} returned ${rows.length} of ` +
+        `${total} rows. Refusing to continue on an incomplete series.`,
+    );
+  }
+
   return {
     candles: rows.map((r: any) => ({
       time: new Date(r.ts as string).getTime(),

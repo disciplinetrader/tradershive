@@ -48,29 +48,22 @@
  *   VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY   (from .env, tracked)
  *   E2E_HOST_EMAIL, E2E_HOST_PASSWORD                  (the battle host)
  *
- * ── Trap 3: 1000 rows is the ceiling, not 10,000 ───────────────────────────
+ * ── Trap 3: the tape used to be truncated silently (fixed) ─────────────────
  *
- * `readStored` asks for `.limit(10000)`, but PostgREST caps this project's
- * responses at 1000 rows, so that limit is unreachable. Measured directly:
+ * This script is what surfaced it: PostgREST caps responses at 1000 rows, so
+ * `readStored`'s `.limit(10000)` was unreachable and a month-wide request
+ * returned 1,000 of 8,644 bars. The dangerous case was never the loud one — a
+ * range of 1,000–1,666 bars came back truncated yet still passed coverage, and
+ * the checksum computed over the short tape matched perfectly.
  *
- *     GET historical_candles?symbol=BTC/USDT&timeframe=5m   (July 2026)
- *     → rows=1000, content-range: 0-999/8644
- *
- * 8,644 bars exist; 1,000 arrive. A month-wide request therefore fails coverage
- * at 11%, and — far worse — a 4-day request returns 1000 of 1087 and *passes*
- * coverage at 92% while being silently truncated.
- *
- * So the window is derived from the bars the battle actually needs and kept
- * under the cap, rather than being a fixed calendar range. A response that
- * comes back at exactly the cap is treated as a hard failure below: it means
- * the tape was cut, and a cut tape is the thing this whole script exists to
- * make impossible.
- *
- * This also bounds replay battles generally: at 1x nothing longer than ~16
- * minutes can be backed by a single-request tape.
+ * `readStored` now pages past the cap and asserts it read every row the count
+ * promised, so a full month loads. The workarounds this script carried (a
+ * derived sub-cap window, a hard failure at exactly 1000 rows) are gone with
+ * it. Kept as a note because "the tape is complete" is an assumption worth
+ * knowing was once false.
  *
  * Optional overrides:
- *   SYMBOL=BTC/USDT  TIMEFRAME=5m  FROM=2026-07-01  TO=<derived>
+ *   SYMBOL=BTC/USDT  TIMEFRAME=5m  FROM=2026-07-01  TO=2026-07-31
  *   DURATION_MIN=10  SPEED=1  START_IN_SEC=120  APP_URL=http://localhost:8080
  */
 
@@ -79,7 +72,7 @@ import dotenv from "dotenv";
 
 import { seedSession, clientFor } from "../e2e/supabase-session";
 import { buildDataset, type ReplayDataset } from "../src/lib/replay/session/dataset";
-import { candlesConsumedAt, validateBattleReplayRange } from "../src/lib/replay/battle-cursor";
+import { validateBattleReplayRange } from "../src/lib/replay/battle-cursor";
 import { enginePricingRefusal } from "../src/lib/replay/battle-pnl";
 import { TIMEFRAME_SECONDS } from "../src/lib/replay/constants";
 import { resolveHistoricalRange } from "../src/lib/market-data/historical/service.server";
@@ -89,15 +82,15 @@ dotenv.config({ path: ".env.e2e.local" });
 dotenv.config();
 
 /**
- * BTC/USDT 5m anchored at July 2026 — 8,644 bars stored across the month,
- * verified dense below. A fixed anchor rather than "the most recent N bars"
- * because a battle seeded off a moving window is a different battle every run,
- * and the first thing anyone does with a failure here is ask whether the data
- * changed. `TO` is derived from the anchor, not the calendar — see Trap 3.
+ * BTC/USDT 5m over July 2026 — 8,644 bars, contiguous, verified below. A fixed
+ * range rather than "the most recent N bars" because a battle seeded off a
+ * moving window is a different battle every run, and the first thing anyone
+ * does with a failure here is ask whether the data changed.
  */
 const SYMBOL = process.env.SYMBOL ?? "BTC/USDT";
 const TIMEFRAME = (process.env.TIMEFRAME ?? "5m") as Timeframe;
 const FROM = process.env.FROM ?? "2026-07-01";
+const TO = process.env.TO ?? "2026-07-31";
 const DURATION_MIN = Number(process.env.DURATION_MIN ?? 10);
 const SPEED = Number(process.env.SPEED ?? 1);
 /**
@@ -110,12 +103,6 @@ const APP_URL = process.env.APP_URL ?? "http://localhost:8080";
 
 /** `battles.market` is an enum; a symbol registered under anything else can't be used. */
 const BATTLE_MARKETS = new Set(["crypto", "forex", "indices", "metals", "mixed"]);
-
-/**
- * PostgREST's per-response row cap on this project. Measured, not configured
- * here — `readStored`'s `.limit(10000)` cannot be reached. See Trap 3.
- */
-const ROW_CAP = 1000;
 
 function die(message: string): never {
   console.error(`✗ ${message}`);
@@ -183,31 +170,13 @@ async function main() {
   const refusal = enginePricingRefusal(SYMBOL);
   if (refusal) die(refusal);
 
-  const stepSec = TIMEFRAME_SECONDS[TIMEFRAME];
-  if (!stepSec) die(`Unknown timeframe "${TIMEFRAME}".`);
+  if (!TIMEFRAME_SECONDS[TIMEFRAME]) die(`Unknown timeframe "${TIMEFRAME}".`);
 
-  // ── size the window to the battle, under the row cap ────────────────────
   const durationMs = DURATION_MIN * 60_000;
-  const required = candlesConsumedAt(durationMs, SPEED);
-  if (required <= 0) die("DURATION_MIN must be greater than zero.");
-  if (required >= ROW_CAP) {
-    die(
-      `This battle needs ${required} candles but one request can return at most ` +
-        `${ROW_CAP} (Trap 3 in the header). Shorten it to under ` +
-        `${Math.floor(ROW_CAP / (60 * SPEED))} minutes at ${SPEED}x, or lower SPEED.`,
-    );
-  }
-
-  // 1.3x headroom absorbs the gaps a real tape has, while staying clear of the
-  // cap — a response that arrives at exactly the cap has been truncated, and is
-  // rejected below rather than replayed short.
-  const targetBars = Math.min(ROW_CAP - 50, Math.ceil(required * 1.3));
   const from = new Date(`${FROM}T00:00:00.000Z`).getTime();
-  if (!Number.isFinite(from)) die(`FROM (${FROM}) is not a date.`);
-  const to = process.env.TO
-    ? new Date(`${process.env.TO}T23:59:59.999Z`).getTime()
-    : from + targetBars * stepSec * 1000 - 1;
-  if (!(from < to)) die(`FROM (${FROM}) must be before TO.`);
+  const to = new Date(`${TO}T23:59:59.999Z`).getTime();
+  if (!Number.isFinite(from) || !Number.isFinite(to)) die(`FROM/TO must be dates.`);
+  if (!(from < to)) die(`FROM (${FROM}) must be before TO (${TO}).`);
 
   // ── auth ────────────────────────────────────────────────────────────────
   // Same helper the E2E suite signs in with, so a credential problem here fails
@@ -257,18 +226,6 @@ async function main() {
     `· loaded ${dataset.identity.barCount} candles from "${res.source.providerCode}" ` +
       `(${res.source.kind})\n  ${describeDensity(dataset, res.coverage.expected)}`,
   );
-
-  // A response at exactly the cap was cut short by PostgREST, not by the data.
-  // Fatal rather than a warning: truncation is deterministic, so the checksum
-  // still matches and the battle still starts — on a tape that ends early, with
-  // nothing anywhere saying so. See Trap 3.
-  if (res.candles.length >= ROW_CAP) {
-    die(
-      `Got exactly ${ROW_CAP} candles — PostgREST's row cap, so the tape is ` +
-        `truncated rather than complete. Narrow the window (FROM/TO) or shorten ` +
-        `the battle.`,
-    );
-  }
 
   // ── prove the browser will rebuild the same id ──────────────────────────
   // The battle stores the dataset's own bounds, and that is what the browser

@@ -153,18 +153,28 @@ competitors. So the seed script rebuilds the dataset a second time from the
 bounds it is about to store and refuses to insert unless both ids match. A
 match is proof; the argument above is not.
 
-### 3 · The tape may be truncated without saying so
+### 3 · The tape was once truncated without saying so — fixed, keep the assertion
 
-Historical reads are capped at 1000 rows and a truncated response can still pass
-coverage — see
-[BA-11](./known-issues.md#ba-11--candle-reads-are-capped-at-1000-rows-and-truncate-silently).
-The checksum is computed over whatever arrived, so truncation does **not**
-surface as a dataset mismatch: the battle starts normally on a tape that ends
-early. Treat a response that arrives at exactly the cap as a hard failure.
+Worth knowing because it shaped the code you are reading. PostgREST caps
+responses at 1000 rows, and `readStored` asked for `.limit(10000)` — a limit the
+server would never honour. A month of 5m bars returned 1,000 of 8,644.
 
-That cap is also what bounds battle duration today — roughly 16 minutes at 1x.
-`validateBattleReplayRange` will not save you here, because it validates the
-truncated bar count it was handed.
+The loud case was harmless. The quiet one was not: a range of 1,000–1,666 bars
+came back truncated yet still passed `checkCoverage`, since `1000/1666` clears
+the 0.6 minimum. And because the checksum is computed over *whatever arrived*,
+truncation did **not** surface as a dataset mismatch — every participant loaded
+the same short tape, agreed on it perfectly, and the battle ran on data that
+ended early. `validateBattleReplayRange` could not help either; it validates the
+bar count it is handed.
+
+`readStored` now pages until it has read every row the exact count promises, and
+raises if it ever comes up short. **Keep that final assertion.** Paging is meant
+to make truncation impossible, and the assertion is what will tell you when that
+stops being true — which is precisely what was missing the first time.
+
+The remaining ceiling is `MAX_CANDLES` (50,000), a deliberate refusal threshold
+rather than a silent cut. At 1x that is about 14 hours of battle, so duration is
+no longer the binding constraint it was.
 
 ---
 
