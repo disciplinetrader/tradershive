@@ -62,7 +62,26 @@ export interface PositionOrder {
   reward: number;
   /** reward / risk. */
   rr: number;
-  /** Estimated units; null until account sizing is connected. */
+  /**
+   * Position size in **UNITS of the instrument**, not lots. Null until account
+   * sizing is connected.
+   *
+   * ⚠ Callers must convert. `size` is consumed as a plain multiplier on price
+   * movement (`pnl: move * order.size`, below), so it only yields money when it
+   * holds units — while `validateOrder` still reports it as "Lot size", and the
+   * Position Tool that feeds it thinks in lots. The two differ by
+   * `contractSize`: 1 for crypto, **100,000 for every forex pair**.
+   *
+   * Passing lots here does not fail. It silently understates P&L by
+   * `contractSize`, and it is invisible on crypto because contractSize is 1
+   * there. It was measured at 100,000x on EUR/USD — an engine fill of $0.0218
+   * against a true $2,178.20 — before `BattleChart` was corrected to multiply
+   * on the way in. See BA-9 in docs/known-issues.md.
+   *
+   * The durable fix is to rename this field to `units` and make the conversion
+   * explicit at every boundary. Until that happens, every new caller has to
+   * remember, which is exactly why this comment is here.
+   */
   size: number | null;
   status: OrderStatus;
   source: typeof ORDER_SOURCE;
@@ -178,6 +197,11 @@ export interface OrderDraft {
   entry: number;
   stop: number;
   target: number;
+  /**
+   * UNITS, not lots — see the warning on `PositionOrder.size`. Multiply lots by
+   * the symbol's `contractSize` before constructing a draft, or forex P&L comes
+   * out 100,000x too small without erroring. BA-9.
+   */
   size: number | null;
   drawingId: string;
 }
@@ -232,6 +256,10 @@ export function validateOrder(
     return { ok: false, errors: ["Entry, stop and target must all be positive prices."] };
   }
 
+  // The message says "lot size" and the field holds UNITS. That mismatch is
+  // half of BA-9 — it is what persuades a caller to pass lots. The wording is
+  // left alone here because it is user-facing copy and the real repair is
+  // renaming the field; do both together, not this one alone.
   if (size != null && (size <= 0 || size > 1_000_000_000)) {
     errors.push("Lot size must be between 0 and 1,000,000,000.");
   }
@@ -375,6 +403,7 @@ export function livePositionMetrics(
   const reward = Math.abs(order.target - fill);
   return {
     move,
+    // `move * size` is money only when `size` is units. See PositionOrder.size.
     pnl: order.size && order.size > 0 ? move * order.size : move,
     perUnit: !(order.size && order.size > 0),
     r: risk > 0 ? move / risk : 0,

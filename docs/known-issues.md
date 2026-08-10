@@ -3,6 +3,13 @@
 Open defects found during investigation but deliberately left unfixed, with
 enough detail to pick up cold. Remove an entry when it ships a fix.
 
+> **Building anything that places an order? Read
+> [BA-9](#ba-9--size-is-validated-as-lots-and-consumed-as-units) first.**
+> `PositionOrder.size` is validated as lots and consumed as units. Passing lots
+> does not error — it understates P&L by `contractSize`, which is 1 for crypto
+> and 100,000 for forex, so it tests clean and ships wrong. Two callers convert
+> explicitly today; a third would inherit the bug.
+
 ---
 
 ## BA-1 — Matchmaking creates battles with no participants
@@ -555,13 +562,35 @@ contract sizes, with `lot_size` still reading lots in every case:
 | XAU/USD | 100 | $4,864.20 | $4,864.20 | 1.000000 |
 | BTC/USDT | 1 | $1,351.00 (unchanged) | $1,351.00 | 1.000000 |
 
-**What is still open.** `PositionOrder.size` remains validated as lots and
-consumed as units, with a validation message that says lots. The battle path now
-converts explicitly at both boundaries, so it is correct — but any new caller
-that builds orders inherits the same trap, and the live chart's Position Tool
-still sits on the ambiguity (harmlessly, because it both produces and consumes
-the value). Renaming the field to `units` is the durable fix and has not been
-done.
+### Still open — the durable fix
+
+**Fixing the battle path did not fix the API.** `PositionOrder.size` is still
+declared as lots by its validation message (`"Lot size must be between…"`) and
+consumed as units (`pnl: move * order.size`). Exactly one thing changed: two
+call sites now convert explicitly. The trap itself is untouched.
+
+That matters because **the failure mode is silence**. Passing lots does not
+throw, does not warn, and produces a plausible number. On crypto it is not even
+wrong, because `contractSize` is 1 — so a new caller can build a feature, test
+it on BTC/USDT, watch the P&L come out correct, and ship a 100,000× error that
+only appears the first time someone trades forex.
+
+Current state:
+
+| Caller | Converts? |
+|---|---|
+| `BattleChart` → `placeOrEditOrder` | yes, multiplies by `contractSize` |
+| `battleTradeRowFrom` → `paper_trades.lot_size` | yes, divides back |
+| Position Tool (live chart) | no — harmless, it both produces and consumes the value |
+| **anything written next** | **no, and nothing will tell them** |
+
+**The fix is to rename the field to `units`** and make the conversion explicit
+at every boundary, retiring the "Lot size" message in the same change. Renaming
+is what makes the compiler carry the knowledge instead of a comment. Until then
+the warning lives at the definition in
+[`model.ts`](../src/lib/chart/orders/model.ts) — on `PositionOrder.size`,
+`OrderDraft.size`, the validation message and the `move * size` expression —
+because a caller reads the type, not this file.
 
 ### Why it matters more than it looks
 
