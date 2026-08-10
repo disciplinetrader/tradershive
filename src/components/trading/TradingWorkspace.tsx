@@ -286,8 +286,15 @@ function TradingWorkspaceInner() {
   const settingsDef = settingsFor ? INDICATOR_TOGGLES.find((i) => i.key === settingsFor) ?? null : null;
 
   const chartSettings: ChartSettings = useMemo(
-    () => ({ ...DEFAULT_CHART_SETTINGS, symbol, market, timeframe: activeTf, chartType }),
-    [symbol, market, activeTf, chartType],
+    () => ({ 
+      ...DEFAULT_CHART_SETTINGS, 
+      symbol, 
+      market, 
+      timeframe: activeTf, 
+      chartType,
+      theme: !!arenaData ? "dark" : DEFAULT_CHART_SETTINGS.theme 
+    }),
+    [symbol, market, activeTf, chartType, arenaData],
   );
 
   const indicators: IndicatorConfig[] = useMemo(() => {

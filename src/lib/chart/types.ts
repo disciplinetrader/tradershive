@@ -83,6 +83,7 @@ export interface ChartSettings {
   sessionShading: boolean;
   autoScale: boolean;
   timezone: string;
+  theme?: "light" | "dark";
 }
 
 export interface ChartLayoutRow {

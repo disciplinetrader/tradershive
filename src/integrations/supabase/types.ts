@@ -7092,6 +7092,7 @@ export type Database = {
           lot_size: number
           market: Database["public"]["Enums"]["paper_market"]
           notes: string | null
+          observation_cursor: number | null
           opened_at: string
           order_type: Database["public"]["Enums"]["paper_order_type"]
           pnl: number | null
@@ -7109,7 +7110,6 @@ export type Database = {
           take_profit: number | null
           updated_at: string
           user_id: string
-          observation_cursor: number | null
         }
         Insert: {
           account_id: string
@@ -7129,6 +7129,7 @@ export type Database = {
           lot_size: number
           market: Database["public"]["Enums"]["paper_market"]
           notes?: string | null
+          observation_cursor?: number | null
           opened_at?: string
           order_type?: Database["public"]["Enums"]["paper_order_type"]
           pnl?: number | null
@@ -7146,7 +7147,6 @@ export type Database = {
           take_profit?: number | null
           updated_at?: string
           user_id: string
-          observation_cursor?: number | null
         }
         Update: {
           account_id?: string
@@ -7166,6 +7166,7 @@ export type Database = {
           lot_size?: number
           market?: Database["public"]["Enums"]["paper_market"]
           notes?: string | null
+          observation_cursor?: number | null
           opened_at?: string
           order_type?: Database["public"]["Enums"]["paper_order_type"]
           pnl?: number | null
@@ -7183,7 +7184,6 @@ export type Database = {
           take_profit?: number | null
           updated_at?: string
           user_id?: string
-          observation_cursor?: number | null
         }
         Relationships: [
           {

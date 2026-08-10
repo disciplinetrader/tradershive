@@ -59,10 +59,10 @@ export function BattleChat({ battleId, canPost, isHost }: { battleId: string; ca
   };
 
   return (
-    <div className="flex h-[520px] flex-col rounded-2xl border border-border/60 bg-card/40">
-      <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
-        <div className="flex items-center gap-2 text-sm font-semibold">
-          <MessageSquare className="h-4 w-4 text-primary" />Arena conversation
+    <div className="flex h-[380px] flex-col rounded-2xl border border-border/40 bg-card/10 overflow-hidden shadow-sm">
+      <div className="flex items-center justify-between border-b border-border/40 px-4 py-2 bg-muted/10">
+        <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest">
+          <MessageSquare className="h-3.5 w-3.5 text-primary" />Conversation
         </div>
         <button
           onClick={() => setMuted((m) => !m)}
