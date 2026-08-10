@@ -117,8 +117,8 @@ export const recordBattleReplayTrade = createServerFn({ method: "POST" })
         close_reason: (data.closeReason ?? null) as any,
         opened_at: data.openedAt,
         closed_at: data.closedAt,
-        observation_cursor: data.observationCursor as any,
-      } as any)
+        observation_cursor: data.observationCursor,
+      })
       .select("id, pnl, battle_id, observation_cursor")
       .single();
     if (error) throw error;
