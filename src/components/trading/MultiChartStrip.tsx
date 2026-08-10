@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ChevronDown, X, Plus } from "lucide-react";
+import { useActiveArena } from "@/components/battle-arena/useActiveArena";
 import { ChartEngine } from "@/components/chart/ChartEngine";
 import { DEFAULT_CHART_SETTINGS } from "@/lib/chart/constants";
 import type { ChartSettings, ChartType } from "@/lib/chart/types";
@@ -40,11 +41,16 @@ export function MultiChartStrip({
   panes,
   onChange,
   primarySymbol,
+  arenaMode = false,
 }: {
   panes: MultiChartPane[];
   onChange: (next: MultiChartPane[]) => void;
   primarySymbol: string;
+  arenaMode?: boolean;
 }) {
+  const { data: arenaData } = useActiveArena(null); // Passing null as we don't have accountId here, but hook requires it
+  const activeArena = arenaMode || !!arenaData;
+  if (activeArena) return null;
   const addPane = () => {
     if (panes.length >= 4) return;
     onChange([
