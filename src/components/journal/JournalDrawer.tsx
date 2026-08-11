@@ -59,6 +59,7 @@ import {
   updateEntry,
   upsertTag,
   upsertTaxonomy,
+  setEntryTagValues,
   type ChecklistItem,
   type JournalAttachment,
   type JournalEntry,
@@ -288,6 +289,12 @@ export function JournalDrawer({
                   if (!user) return;
                   await upsertTaxonomy({ userId: user.id, kind, label });
                   qc.invalidateQueries({ queryKey: journalKeys.taxonomy() });
+                }}
+                onSetTags={(kind, values) => {
+                  if (!user) return;
+                  void setEntryTagValues({ entryId: entry.id, userId: user.id, kind, values }).then(
+                    () => qc.invalidateQueries({ queryKey: journalKeys.all }),
+                  );
                 }}
               />
             </TabsContent>
@@ -531,11 +538,14 @@ function PsychologySection({
   taxonomy,
   onChange,
   onCreateTaxonomy,
+  onSetTags,
 }: {
   entry: JournalEntry;
   taxonomy: JournalTaxonomy[];
   onChange: (patch: Partial<JournalEntry>) => void;
   onCreateTaxonomy: (kind: "setup" | "emotion" | "mistake", label: string) => Promise<void>;
+  /** emotions[]/mistakes[] are trigger-projected — tag edits go via the join. */
+  onSetTags: (kind: "setup" | "mistake" | "emotion", values: string[]) => void;
 }) {
   const [checklist, setChecklist] = useState<ChecklistItem[]>(() => normalizeChecklist(entry.checklist));
   useEffect(() => setChecklist(normalizeChecklist(entry.checklist)), [entry.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -637,7 +647,7 @@ function PsychologySection({
         <ChipMultiSelect
           options={emotionOpts}
           selected={entry.emotions ?? []}
-          onToggle={(v) => onChange({ emotions: toggleFromArr(entry.emotions ?? [], v) })}
+          onToggle={(v) => onSetTags("emotion", toggleFromArr(entry.emotions ?? [], v))}
           onAdd={(label) => onCreateTaxonomy("emotion", label)}
           addPlaceholder="Add custom emotion…"
         />
@@ -648,7 +658,7 @@ function PsychologySection({
         <ChipMultiSelect
           options={mistakeOpts}
           selected={entry.mistakes ?? []}
-          onToggle={(v) => onChange({ mistakes: toggleFromArr(entry.mistakes ?? [], v) })}
+          onToggle={(v) => onSetTags("mistake", toggleFromArr(entry.mistakes ?? [], v))}
           onAdd={(label) => onCreateTaxonomy("mistake", label)}
           addPlaceholder="Add custom mistake…"
         />

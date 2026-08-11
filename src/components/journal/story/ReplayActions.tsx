@@ -15,6 +15,24 @@ import { MissingData } from "@/components/journal/story/primitives";
 import { useNavigate } from "@tanstack/react-router";
 
 /** Kept for callers that still want a plain deep link into Replay Studio. */
+/**
+ * Open replay at this trade.
+ *
+ * Two mechanisms, and the fallback is not a degraded one:
+ *
+ *  · `observation_cursor` is the exact observation index the fill landed on
+ *    inside a frozen replay dataset. It exists only for replay- and
+ *    battle-originated trades, where the index is authoritative and can differ
+ *    from what a timestamp lookup would resolve to. When present, use it.
+ *
+ *  · A live paper trade has no cursor because there is no dataset to index
+ *    into. Its `opened_at`/`closed_at` are real market times, which map
+ *    deterministically onto candles once a timeframe is chosen — so
+ *    reconstruction there is the CORRECT method, not a lesser one.
+ *
+ * Both are always sent: the cursor is the precise anchor, the timestamps stay
+ * as the window to load around it.
+ */
 export function useReplayContext(entry: JournalEntry) {
   const navigate = useNavigate();
   const search = {
@@ -25,6 +43,8 @@ export function useReplayContext(entry: JournalEntry) {
     start: entry.opened_at ?? undefined,
     end: entry.closed_at ?? undefined,
     setup: entry.setup ?? undefined,
+    cursor: entry.observation_cursor ?? undefined,
+    anchor: entry.observation_cursor != null ? ("cursor" as const) : ("timestamp" as const),
   };
   return () => navigate({ to: "/replay", search: search as never });
 }

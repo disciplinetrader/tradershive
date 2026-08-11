@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { fetchEntries, journalKeys } from "@/lib/journal/api";
 import { formatCurrency } from "@/lib/journal/format";
-import { setupBreakdown } from "@/lib/journal/metrics";
+import { countsTowardAnalytics, setupBreakdown } from "@/lib/journal/metrics";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/journal/playbooks")({
@@ -25,7 +25,10 @@ export const Route = createFileRoute("/_authenticated/journal/playbooks")({
 
 function JournalPlaybooks() {
   const entriesQuery = useJournalEntries();
-  const entries = useMemo(() => (entriesQuery.data ?? []).filter((e) => e.status !== "draft"), [entriesQuery.data]);
+  const entries = useMemo(
+    () => (entriesQuery.data ?? []).filter(countsTowardAnalytics),
+    [entriesQuery.data],
+  );
   const rows = useMemo(() => setupBreakdown(entries), [entries]);
 
   if (!entriesQuery.isLoading && rows.length === 0) {

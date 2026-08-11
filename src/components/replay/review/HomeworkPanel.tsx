@@ -19,7 +19,9 @@ export interface HomeworkRowLite {
   timeframe: string;
   status: string;
   reason: string | null;
-  mistake_focus?: string | null;
+  /** The drill's focus mistake. Column is `target_mistake` on `replay_homework`
+   *  (`mistake_focus` is the equivalent on `replay_comparisons` — not this table). */
+  target_mistake?: string | null;
   target_r?: number | null;
   max_trades?: number | null;
 }
@@ -52,7 +54,7 @@ export function HomeworkPanel({
             <li key={h.id} className="flex items-center justify-between rounded border border-border/50 px-2 py-1.5 text-xs">
               <div>
                 <div className="font-medium">{h.symbol} · {h.timeframe}</div>
-                <div className="text-muted-foreground">{h.reason ?? h.mistake_focus ?? "Practice drill"}</div>
+                <div className="text-muted-foreground">{h.reason ?? h.target_mistake ?? "Practice drill"}</div>
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant="outline">{h.status}</Badge>

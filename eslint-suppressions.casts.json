@@ -1,0 +1,1909 @@
+{
+  "src/components/admin/AdminSearchPalette.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 6
+    }
+  },
+  "src/components/admin/NotificationBell.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/components/ai/CoachChat.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/components/ai/MentorDrawer.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/analytics/AnalyticsProvider.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/components/analytics/ChampionshipAnalyticsView.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/components/analytics/CompareView.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/analytics/portfolio/MonteCarloSection.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/analytics/portfolio/charts.tsx": {
+    "no-restricted-syntax": {
+      "count": 3
+    }
+  },
+  "src/components/audio/MusicPlayer.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/components/battle-arena/ArenaCommandRail.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 13
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/components/battle-arena/BattleCard.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/components/battle-arena/BattleChat.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 5
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/battle-arena/BattleResultsView.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "src/components/battle-arena/BattleTimeline.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/components/battle-arena/CreateBattleWizard.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 5
+    },
+    "no-restricted-syntax": {
+      "count": 5
+    }
+  },
+  "src/components/battle-arena/JoinByCodeDialog.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/components/battle-arena/LiveActivityFeed.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "src/components/battle-arena/LiveBattleHeader.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/battle-arena/RulesPanel.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/components/battle-arena/battle-replay-context.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/championship/ActivityFeed.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "src/components/championship/LeaderboardTable.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/championship/PersonalTimeline.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "src/components/championship/TournamentCard.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "src/components/chart/ChartTradingOverlay.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 10
+    }
+  },
+  "src/components/chart/ChartWorkspace.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/components/chart/LeftToolRail.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/components/chart/TradePanel.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/chart/Watchlist.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "src/components/chart/useChartDrawings.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 5
+    },
+    "no-restricted-syntax": {
+      "count": 5
+    }
+  },
+  "src/components/community/CommentThread.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 5
+    }
+  },
+  "src/components/community/CommunitySidebar.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 6
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/components/community/FeedList.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/community/PostCard.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/components/community/PostComposer.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/dashboard/Achievements.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/dashboard/LeaderboardPreview.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/components/dashboard/RecentTrades.tsx": {
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/components/dashboard/TodaysChallenge.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/dashboard/v2/ActivityTable.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "src/components/dashboard/v2/DashboardHeader.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    },
+    "no-restricted-syntax": {
+      "count": 3
+    }
+  },
+  "src/components/dashboard/v2/SessionManagement.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 5
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/feedback/FeedbackDialog.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    },
+    "no-restricted-syntax": {
+      "count": 4
+    }
+  },
+  "src/components/gamification/AchievementCard.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/components/gamification/DailyLoginPanel.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/components/journal/JournalDrawer.tsx": {
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/components/journal/editor/TradeEditorProvider.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/journal/editor/sections/mistakes.tsx": {
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/components/journal/editor/sections/playbook.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/journal/editor/sections/psychology.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/journal/replay/AttemptHistory.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/journal/replay/PracticeLauncher.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/journal/story/ReplayActions.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/onboarding/OnboardingChecklist.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/paper-trading/AccountSummary.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/paper-trading/MobileQuickTradeDock.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/components/paper-trading/OrderPanel.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/playbook/ChecklistRunner.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/playbook/MistakesEditor.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/components/playbook/PlaybookCard.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/playbook/PlaybookDetailHeader.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/playbook/PlaybookQuickAttach.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/components/replay/AiReviewPanel.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/replay/CreatorWizard.tsx": {
+    "no-restricted-syntax": {
+      "count": 3
+    }
+  },
+  "src/components/replay/LibraryCard.tsx": {
+    "no-restricted-syntax": {
+      "count": 8
+    }
+  },
+  "src/components/replay/ReplayFromTradeButton.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/replay/ScenarioPicker.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/components/replay/review/ComparisonPanel.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/replay/review/ReviewView.tsx": {
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/components/replay/studio/context.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/components/settings/DeleteAccountDialog.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/components/sharing/ShareToCommunityDialog.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 8
+    },
+    "no-restricted-syntax": {
+      "count": 7
+    }
+  },
+  "src/components/sharing/SharedContentCard.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 8
+    }
+  },
+  "src/components/social/ActivityTimeline.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/components/social/CompareDialog.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 13
+    }
+  },
+  "src/components/social/CustomizeProfileDialog.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 12
+    }
+  },
+  "src/components/social/FollowButton.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/components/social/LeaderboardHero.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/components/social/ProfileHero.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    }
+  },
+  "src/components/statistics/FiltersBar.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "src/components/statistics/GoalsPanel.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/statistics/RiskPanel.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/components/statistics/context.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/strategy/ChecklistEditor.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/strategy/CreatorWizard.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 11
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/components/strategy/ExamplesPanel.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 7
+    }
+  },
+  "src/components/strategy/FlowEditor.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/components/strategy/PlaybookCard.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/components/strategy/StatsCard.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/strategy/StrategyCard.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/strategy/StrategyFilters.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/strategy/VersionTimeline.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/components/trading/AiInsightsPanel.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/trading/QuickJournalPanel.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/components/trading/blotter-shared.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/features/replay/drawings/DrawingLayer.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    },
+    "no-restricted-syntax": {
+      "count": 3
+    }
+  },
+  "src/features/replay/drawings/DrawingToolbar.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/features/replay/drawings/persistence.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/hooks/use-auth.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/hooks/use-replay-workspace-prefs.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/lib/admin.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 18
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/lib/admin/console.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 29
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/lib/admin/permissions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/lib/admin/settings.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 6
+    },
+    "no-restricted-syntax": {
+      "count": 4
+    }
+  },
+  "src/lib/ai.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 32
+    },
+    "no-restricted-syntax": {
+      "count": 9
+    }
+  },
+  "src/lib/ai/rate-limit.server.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/lib/analytics.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    }
+  },
+  "src/lib/battle-arena-live.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "src/lib/battle-arena.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/lib/battle-arena/hooks/use-battle-queries.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/lib/battle-replay.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 5
+    },
+    "no-restricted-syntax": {
+      "count": 5
+    }
+  },
+  "src/lib/challenge.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 8
+    },
+    "no-restricted-syntax": {
+      "count": 6
+    }
+  },
+  "src/lib/championship.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 11
+    },
+    "no-restricted-syntax": {
+      "count": 7
+    }
+  },
+  "src/lib/chart/adapters/lightweight.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 33
+    },
+    "no-restricted-syntax": {
+      "count": 17
+    }
+  },
+  "src/lib/chart/orders/__tests__/closed-trade.test.ts": {
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/lib/chart/orders/__tests__/lifecycle.test.ts": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/lib/chart/orders/__tests__/position-manager.test.ts": {
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/lib/chart/orders/__tests__/qa_remediation.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 7
+    },
+    "no-restricted-syntax": {
+      "count": 7
+    }
+  },
+  "src/lib/chart/orders/order-sync.ts": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/lib/chart/orders/replay-trade-sync.ts": {
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/lib/chart/orders/trade-sync.ts": {
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/lib/chart/storage.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 8
+    },
+    "no-restricted-syntax": {
+      "count": 3
+    }
+  },
+  "src/lib/community-challenges.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 22
+    },
+    "no-restricted-syntax": {
+      "count": 3
+    }
+  },
+  "src/lib/community-groups.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 13
+    },
+    "no-restricted-syntax": {
+      "count": 5
+    }
+  },
+  "src/lib/community-home.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 12
+    },
+    "no-restricted-syntax": {
+      "count": 6
+    }
+  },
+  "src/lib/community-ideas.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/lib/community-live.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 7
+    },
+    "no-restricted-syntax": {
+      "count": 3
+    }
+  },
+  "src/lib/community-mentors.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 20
+    },
+    "no-restricted-syntax": {
+      "count": 8
+    }
+  },
+  "src/lib/community-reviews.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 7
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/lib/community.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 20
+    },
+    "no-restricted-syntax": {
+      "count": 7
+    }
+  },
+  "src/lib/dashboard-hero.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    },
+    "no-restricted-syntax": {
+      "count": 3
+    }
+  },
+  "src/lib/dashboard-home.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 28
+    }
+  },
+  "src/lib/dashboard.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 6
+    }
+  },
+  "src/lib/email.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/lib/email/service.server.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "src/lib/email/templates/index.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/lib/feedback.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 11
+    },
+    "no-restricted-syntax": {
+      "count": 5
+    }
+  },
+  "src/lib/gamification.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 12
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/lib/goals.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "src/lib/journal/__tests__/derive.test.ts": {
+    "no-restricted-syntax": {
+      "count": 3
+    }
+  },
+  "src/lib/journal/homework.ts": {
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/lib/journal/replay-attempts.ts": {
+    "no-restricted-syntax": {
+      "count": 7
+    }
+  },
+  "src/lib/market-data/admin.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/lib/market-data/engine.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/lib/market-data/historical.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 5
+    },
+    "no-restricted-syntax": {
+      "count": 4
+    }
+  },
+  "src/lib/market-data/historical/pipeline.server.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 15
+    },
+    "no-restricted-syntax": {
+      "count": 14
+    }
+  },
+  "src/lib/market-data/historical/providers.server.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    },
+    "no-restricted-syntax": {
+      "count": 3
+    }
+  },
+  "src/lib/market-data/historical/service.server.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 12
+    },
+    "no-restricted-syntax": {
+      "count": 7
+    }
+  },
+  "src/lib/market-data/hooks.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/lib/market-data/providers/binance.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    }
+  },
+  "src/lib/market-data/providers/finnhub.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/lib/market-data/providers/mock.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/lib/market-data/providers/twelvedata.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 10
+    },
+    "no-restricted-syntax": {
+      "count": 8
+    }
+  },
+  "src/lib/market-data/tv-datafeed.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 11
+    }
+  },
+  "src/lib/market-data/twelvedata.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 12
+    },
+    "no-restricted-syntax": {
+      "count": 4
+    }
+  },
+  "src/lib/mistakes.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 9
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/lib/paper-trading.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/lib/paper-trading/live-quotes.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/lib/paper-trading/risk.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/lib/playbook.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/lib/practice.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 7
+    },
+    "no-restricted-syntax": {
+      "count": 4
+    }
+  },
+  "src/lib/replay-coach.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 52
+    },
+    "no-restricted-syntax": {
+      "count": 23
+    }
+  },
+  "src/lib/replay-reflection.functions.ts": {
+    "no-restricted-syntax": {
+      "count": 3
+    }
+  },
+  "src/lib/replay-review.functions.ts": {
+    "no-restricted-syntax": {
+      "count": 9
+    }
+  },
+  "src/lib/replay-studio.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 18
+    },
+    "no-restricted-syntax": {
+      "count": 5
+    }
+  },
+  "src/lib/replay.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 5
+    },
+    "no-restricted-syntax": {
+      "count": 4
+    }
+  },
+  "src/lib/replay/__tests__/no-synthetic.test.ts": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/lib/replay/__tests__/reflection.test.ts": {
+    "no-restricted-syntax": {
+      "count": 3
+    }
+  },
+  "src/lib/replay/__tests__/review.test.ts": {
+    "no-restricted-syntax": {
+      "count": 6
+    }
+  },
+  "src/lib/replay/market-data.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/lib/replay/provenance.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/lib/replay/reflection/queries.ts": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/lib/replay/review/derive.server.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    }
+  },
+  "src/lib/replay/review/queries.ts": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/lib/replay/session/__tests__/session.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/lib/replay/statistics.server.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/lib/replay/surprise.server.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    }
+  },
+  "src/lib/sharing.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 11
+    },
+    "no-restricted-syntax": {
+      "count": 10
+    }
+  },
+  "src/lib/sharing/snapshot.server.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 12
+    }
+  },
+  "src/lib/social.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 20
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/lib/statistics.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 6
+    },
+    "no-restricted-syntax": {
+      "count": 3
+    }
+  },
+  "src/lib/strategy.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 8
+    },
+    "no-restricted-syntax": {
+      "count": 5
+    }
+  },
+  "src/lib/strategy/calculations.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    }
+  },
+  "src/lib/strategy/types.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/lib/trade-details.functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/lib/utils/export-utils.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/achievements.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "src/routes/_authenticated/admin.achievements.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/admin.analytics.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/admin.announcements.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 7
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/routes/_authenticated/admin.challenges.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "src/routes/_authenticated/admin.championships.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    }
+  },
+  "src/routes/_authenticated/admin.content.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 6
+    }
+  },
+  "src/routes/_authenticated/admin.dashboard.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/admin.database.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    }
+  },
+  "src/routes/_authenticated/admin.emails.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 6
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/admin.feature-flags.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    }
+  },
+  "src/routes/_authenticated/admin.feedback.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 13
+    },
+    "no-restricted-syntax": {
+      "count": 3
+    }
+  },
+  "src/routes/_authenticated/admin.health.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/admin.historical.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 19
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/admin.journal.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    }
+  },
+  "src/routes/_authenticated/admin.leaderboards.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    }
+  },
+  "src/routes/_authenticated/admin.logs.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/admin.market-data.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 9
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/admin.notifications.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/admin.reports.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/admin.revenue.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/admin.roles.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 5
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/admin.security.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/admin.settings.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 7
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/admin.storage.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    }
+  },
+  "src/routes/_authenticated/admin.subscriptions.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 5
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/admin.support.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/admin.trades.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    }
+  },
+  "src/routes/_authenticated/admin.users.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 6
+    }
+  },
+  "src/routes/_authenticated/ai.chat.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    }
+  },
+  "src/routes/_authenticated/ai.coach.evolution.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 7
+    },
+    "no-restricted-syntax": {
+      "count": 4
+    }
+  },
+  "src/routes/_authenticated/ai.coach.homework.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/ai.coach.index.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 11
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/routes/_authenticated/ai.coach.mistakes.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/ai.coach.profile.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 6
+    }
+  },
+  "src/routes/_authenticated/ai.coach.reports.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/ai.coach.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/ai.dashboard.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/routes/_authenticated/ai.history.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 5
+    }
+  },
+  "src/routes/_authenticated/ai.performance.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/ai.playbooks.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/ai.psychology.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 8
+    },
+    "no-restricted-syntax": {
+      "count": 5
+    }
+  },
+  "src/routes/_authenticated/ai.settings.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 7
+    }
+  },
+  "src/routes/_authenticated/ai.trade-review.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/analytics.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/routes/_authenticated/battle-arena.$battleId.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 22
+    },
+    "no-restricted-syntax": {
+      "count": 12
+    }
+  },
+  "src/routes/_authenticated/battle-arena.history.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "src/routes/_authenticated/battle-arena.index.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/battle-arena.leaderboard.index.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/battle-arena.tournaments.$slug.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 13
+    }
+  },
+  "src/routes/_authenticated/battle-arena.tournaments.hall-of-fame.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    }
+  },
+  "src/routes/_authenticated/battle-arena.tournaments.index.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 11
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/routes/_authenticated/challenges/history.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/challenges/rewards.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    }
+  },
+  "src/routes/_authenticated/championship.$slug.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/championship.hall-of-fame.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    }
+  },
+  "src/routes/_authenticated/championship.index.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 11
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/routes/_authenticated/community.bookmarks.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/community.challenges.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    }
+  },
+  "src/routes/_authenticated/community.groups.$slug.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 5
+    }
+  },
+  "src/routes/_authenticated/community.groups.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "src/routes/_authenticated/community.ideas.new.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "src/routes/_authenticated/community.ideas.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    }
+  },
+  "src/routes/_authenticated/community.index.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 8
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/community.live.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    }
+  },
+  "src/routes/_authenticated/community.mentors.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 6
+    }
+  },
+  "src/routes/_authenticated/community.post.$id.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/community.profile.$username.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    }
+  },
+  "src/routes/_authenticated/community.reviews.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/dashboard.index.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/dashboard.sessions.$type.$id.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 5
+    },
+    "no-restricted-syntax": {
+      "count": 5
+    }
+  },
+  "src/routes/_authenticated/feedback.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/routes/_authenticated/goals.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/journal.$entryId.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/leaderboard.index.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/market.alerts.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/market.index.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "src/routes/_authenticated/market.providers.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/market.settings.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 8
+    },
+    "no-restricted-syntax": {
+      "count": 7
+    }
+  },
+  "src/routes/_authenticated/market.symbols.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "src/routes/_authenticated/practice.challenges.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    }
+  },
+  "src/routes/_authenticated/practice.drills.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/practice.index.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 6
+    }
+  },
+  "src/routes/_authenticated/practice.skills.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/profile.$username.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/routes/_authenticated/replay.history.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/replay.index.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    },
+    "no-restricted-syntax": {
+      "count": 7
+    }
+  },
+  "src/routes/_authenticated/replay.performance.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/replay.prop-firm.index.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    }
+  },
+  "src/routes/_authenticated/replay.trades.tsx": {
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/routes/_authenticated/settings.email.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/settings.index.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 6
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/strategies.$id.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 13
+    },
+    "no-restricted-syntax": {
+      "count": 5
+    }
+  },
+  "src/routes/_authenticated/strategies.backtests.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/strategies.index.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 5
+    }
+  },
+  "src/routes/_authenticated/strategies.playbooks.$id.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 8
+    },
+    "no-restricted-syntax": {
+      "count": 3
+    }
+  },
+  "src/routes/_authenticated/strategies.settings.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/strategies.shared.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/strategies.templates.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/routes/_authenticated/trades.$tradeId.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 16
+    },
+    "no-restricted-syntax": {
+      "count": 10
+    }
+  },
+  "src/routes/_authenticated/users.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/routes/api/ai/chat.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 23
+    },
+    "no-restricted-syntax": {
+      "count": 16
+    }
+  },
+  "src/routes/api/public/hooks/email-monthly-report.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    }
+  },
+  "src/routes/api/public/hooks/email-reengagement.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/routes/api/public/hooks/email-weekly-report.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/routes/api/public/hooks/historical-sync.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/routes/auth.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 9
+    },
+    "no-restricted-syntax": {
+      "count": 9
+    }
+  },
+  "src/routes/onboarding.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  }
+}

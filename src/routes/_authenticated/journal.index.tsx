@@ -10,7 +10,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ManualEntryDialog } from "@/components/journal/ManualEntryDialog";
 import { fetchEntries, journalKeys } from "@/lib/journal/api";
 import { formatCurrency } from "@/lib/journal/format";
-import { detectInsights, hiveScore, scoreBand, summarize } from "@/lib/journal/metrics";
+import { countsTowardAnalytics, detectInsights, hiveScore, scoreBand, summarize } from "@/lib/journal/metrics";
 import { cn } from "@/lib/utils";
 import { useImprovement } from "@/lib/journal/use-improvement";
 import { IntelligencePanel } from "@/components/journal/improvement/IntelligencePanel";
@@ -34,7 +34,7 @@ function JournalOverview() {
   const improvement = useImprovement();
 
   const score = useMemo(() => hiveScore(entries), [entries]);
-  const stats = useMemo(() => summarize(entries.filter((e) => e.status !== "draft")), [entries]);
+  const stats = useMemo(() => summarize(entries.filter(countsTowardAnalytics)), [entries]);
   const insights = useMemo(() => detectInsights(entries), [entries]);
   const recent = useMemo(() => entries.slice(0, 5), [entries]);
 

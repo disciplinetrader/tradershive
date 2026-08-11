@@ -655,3 +655,102 @@ formulas provably agree**. Live paper trading is untouched. Two formulas remain,
 knowingly, until the structural work is scoped. See
 `docs/battle-replay.md` for the restriction and how it is enforced.
 
+
+---
+
+## JR-1 — `check:schema` cannot fully verify `profiles` or `provider_credentials`
+
+**Area:** Journal / tooling · **Found:** 2026-08-11 · **Status:** open, accepted
+
+`bun run check:schema` verifies that `src/integrations/supabase/types.ts`
+matches the live database. It exists because `types.ts` is currently
+**hand-patched** — Lovable owns the Supabase project, there is no access token,
+and `supabase gen types` cannot be run non-interactively. Without that check, a
+faithful-looking but wrong hand-patch would be invisible: `check:columns`
+validates code against `types.ts`, so a wrong `types.ts` makes the scanner
+confidently wrong too.
+
+It verifies **237 of 239 tables**. Two are skipped:
+
+```
+profiles:              permission denied for table profiles
+provider_credentials:  permission denied for table provider_credentials
+```
+
+The probe selects every column `types.ts` claims, in one request. For these two
+tables some columns (`profiles.email`, `profiles.admin_notes`, …) are not
+granted to `authenticated`, so the full-column select is denied outright and the
+table cannot be checked at all — not even partially.
+
+**Why it matters:** `profiles` is precisely where schema drift bit us before. A
+stale `types.ts` entry for `profiles.preferred_market` caused `check:columns` to
+flag three *valid* call sites as broken (2026-08-11). That is the cry-wolf
+failure mode the scanner is meant to avoid, and `profiles` is the one table it
+cannot protect. **Do not read "check:schema — ok" as full coverage.**
+
+### Fix when possible
+
+Any of these closes it:
+
+- Obtain a Supabase access token and regenerate `types.ts` properly, making the
+  hand-patch — and most of this risk — moot.
+- Run the probe as `service_role` (needs a secret key), which bypasses grants.
+- Have the check fall back to per-column probing when a whole-table select is
+  denied, so it verifies the subset the role *can* read instead of skipping the
+  table entirely. Cheapest option; still partial.
+
+---
+
+## BA-10 — Battle replay writes P&L that never reaches balance or statistics
+
+**Area:** Battle Arena / paper trading · **Found:** 2026-08-11 · **Status:**
+open, deliberately unfixed — battle-arena is parked and fixing this unparks it
+
+Sibling of [BA-5](#ba-5--dashboard-total-realized-pl-reads-71193490 77). BA-5 did
+not reproduce on the account inspected (dashboard and journal paths agree
+exactly at $180.10), but the invariant BA-5 is about **is** broken here, on a
+different path.
+
+### Observed
+
+```
+Battle: Replay test 10   trades=5  tradePnl=180.10  stats.net_pnl=(none)  balance-start=0.00
+```
+
+Five closed trades, $180.10 realised, and the account balance never moved. No
+`account_statistics` row exists for the account at all.
+
+### Mechanism
+
+`closeTrade` (`paper-trading.functions.ts:285+`) is what maintains the three-way
+invariant its own comment describes — *"keeps `paper_trades.pnl`,
+`account_statistics.net_pnl` and `paper_accounts.balance` internally consistent
+— the invariant that closed a $70M drift on a $25k account."* It reads the
+account, applies the negative-balance-protection clamp to `pnl`, writes the
+trade, then updates the balance and the statistics.
+
+`submitBattleReplayTrade` (`battle-replay.functions.ts`) does none of that. It
+**inserts a `paper_trades` row already `status: "closed"` carrying a `pnl`**,
+and reads `paper_accounts` only to validate ownership. It never updates
+`balance`, never writes `account_statistics`, and — the part that matters for
+BA-5 — **never applies the NBP clamp.**
+
+So battle-replay is an unclamped writer into the same table the dashboard,
+journal, calendar and every report read. A large enough replay loss writes a
+`pnl` with no balance floor, which is precisely the shape of the historical rows
+BA-5 describes. Not proven to be BA-5's source — the corrupt rows are not
+visible under this user's RLS — but it is a path that can produce them.
+
+### Why it matters outside battles
+
+`paper_trades` is the journal's source of truth: the auto-journal trigger copies
+`pnl` onto every `journal_entries` row. Anything the battle path writes wrong is
+inherited by the journal, the P&L calendar and the reports built on them. This
+is logged rather than fixed because battle-arena is parked, but it is a
+journal-side risk, not only a battle-side one.
+
+### Fix sketch
+
+Route battle-replay closes through the same clamp-and-update helper `closeTrade`
+uses, rather than inserting a finished row. Extracting that helper is the real
+work; the call site is one insert.

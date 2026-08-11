@@ -5809,6 +5809,33 @@ export type Database = {
           },
         ]
       }
+      journal_days: {
+        Row: {
+          created_at: string
+          day: string
+          plan_text: string | null
+          recap_text: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          day: string
+          plan_text?: string | null
+          recap_text?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          day?: string
+          plan_text?: string | null
+          recap_text?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       journal_entries: {
         Row: {
           account_id: string | null
@@ -5875,6 +5902,17 @@ export type Database = {
           updated_at: string
           user_id: string
           word_count: number
+          excursion_computed_at: string | null
+          excursion_path: Json | null
+          excursion_source: string | null
+          excursion_timeframe: string | null
+          mae_price: number | null
+          mae_r: number | null
+          mfe_price: number | null
+          mfe_r: number | null
+          observation_cursor: number | null
+          rating: number | null
+          rr_planned: number | null
         }
         Insert: {
           account_id?: string | null
@@ -5941,6 +5979,17 @@ export type Database = {
           updated_at?: string
           user_id: string
           word_count?: number
+          excursion_computed_at?: string | null
+          excursion_path?: Json | null
+          excursion_source?: string | null
+          excursion_timeframe?: string | null
+          mae_price?: number | null
+          mae_r?: number | null
+          mfe_price?: number | null
+          mfe_r?: number | null
+          observation_cursor?: number | null
+          rating?: number | null
+          rr_planned?: number | null
         }
         Update: {
           account_id?: string | null
@@ -6007,6 +6056,17 @@ export type Database = {
           updated_at?: string
           user_id?: string
           word_count?: number
+          excursion_computed_at?: string | null
+          excursion_path?: Json | null
+          excursion_source?: string | null
+          excursion_timeframe?: string | null
+          mae_price?: number | null
+          mae_r?: number | null
+          mfe_price?: number | null
+          mfe_r?: number | null
+          observation_cursor?: number | null
+          rating?: number | null
+          rr_planned?: number | null
         }
         Relationships: [
           {
@@ -6108,22 +6168,28 @@ export type Database = {
           color: string
           created_at: string
           id: string
+          kind: Database["public"]["Enums"]["journal_tag_kind"]
           name: string
           user_id: string
+          value: string
         }
         Insert: {
           color?: string
           created_at?: string
           id?: string
+          kind?: Database["public"]["Enums"]["journal_tag_kind"]
           name: string
           user_id: string
+          value: string
         }
         Update: {
           color?: string
           created_at?: string
           id?: string
+          kind?: Database["public"]["Enums"]["journal_tag_kind"]
           name?: string
           user_id?: string
+          value?: string
         }
         Relationships: []
       }
@@ -6927,6 +6993,8 @@ export type Database = {
           negative_balance_protection: boolean
           starting_balance: number
           stop_out_level: number
+          default_commission: number
+          default_swap: number
           updated_at: string
           user_id: string
         }
@@ -6949,6 +7017,8 @@ export type Database = {
           negative_balance_protection?: boolean
           starting_balance?: number
           stop_out_level?: number
+          default_commission?: number
+          default_swap?: number
           updated_at?: string
           user_id: string
         }
@@ -6971,6 +7041,8 @@ export type Database = {
           negative_balance_protection?: boolean
           starting_balance?: number
           stop_out_level?: number
+          default_commission?: number
+          default_swap?: number
           updated_at?: string
           user_id?: string
         }
@@ -7107,6 +7179,7 @@ export type Database = {
           strategy_id: string | null
           swap: number
           symbol: string
+          tag_ids: string[]
           take_profit: number | null
           updated_at: string
           user_id: string
@@ -7144,6 +7217,7 @@ export type Database = {
           strategy_id?: string | null
           swap?: number
           symbol: string
+          tag_ids?: string[]
           take_profit?: number | null
           updated_at?: string
           user_id: string
@@ -7181,6 +7255,7 @@ export type Database = {
           strategy_id?: string | null
           swap?: number
           symbol?: string
+          tag_ids?: string[]
           take_profit?: number | null
           updated_at?: string
           user_id?: string
@@ -8114,6 +8189,11 @@ export type Database = {
           pinned: boolean
           title: string
           updated_at: string
+          entry_id: string | null
+          folder: string | null
+          range_end: string | null
+          range_start: string | null
+          template: string | null
           user_id: string
         }
         Insert: {
@@ -8124,6 +8204,11 @@ export type Database = {
           pinned?: boolean
           title?: string
           updated_at?: string
+          entry_id?: string | null
+          folder?: string | null
+          range_end?: string | null
+          range_start?: string | null
+          template?: string | null
           user_id: string
         }
         Update: {
@@ -8134,6 +8219,11 @@ export type Database = {
           pinned?: boolean
           title?: string
           updated_at?: string
+          entry_id?: string | null
+          folder?: string | null
+          range_end?: string | null
+          range_start?: string | null
+          template?: string | null
           user_id?: string
         }
         Relationships: []
@@ -11827,6 +11917,7 @@ export type Database = {
           notify_push: boolean
           notify_rank_changes: boolean
           notify_weekly_report: boolean
+          breakeven_band: number
           updated_at: string
           user_id: string
         }
@@ -11839,6 +11930,7 @@ export type Database = {
           notify_push?: boolean
           notify_rank_changes?: boolean
           notify_weekly_report?: boolean
+          breakeven_band?: number
           updated_at?: string
           user_id: string
         }
@@ -11851,6 +11943,7 @@ export type Database = {
           notify_push?: boolean
           notify_rank_changes?: boolean
           notify_weekly_report?: boolean
+          breakeven_band?: number
           updated_at?: string
           user_id?: string
         }
@@ -12486,6 +12579,7 @@ export type Database = {
         | "london_ny_overlap"
         | "tokyo"
       journal_status: "draft" | "published" | "archived"
+      journal_tag_kind: "setup" | "mistake" | "emotion" | "custom"
       journal_taxonomy_kind: "setup" | "emotion" | "mistake"
       journal_trade_type: "intraday" | "swing" | "long_term" | "scalp"
       league:
@@ -12959,6 +13053,7 @@ export const Constants = {
         "tokyo",
       ],
       journal_status: ["draft", "published", "archived"],
+      journal_tag_kind: ["setup", "mistake", "emotion", "custom"],
       journal_taxonomy_kind: ["setup", "emotion", "mistake"],
       journal_trade_type: ["intraday", "swing", "long_term", "scalp"],
       league: [

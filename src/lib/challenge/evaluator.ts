@@ -6,6 +6,7 @@
  * out. Unknown is a first-class outcome and never counts as a pass.
  */
 
+import { dayKey } from "@/lib/analytics/periods";
 import {
   RULE_IDS,
   type ChallengeTemplate,
@@ -90,20 +91,6 @@ export interface ChallengeEvaluation {
     worstDrawdownPct: number | null;
   };
   evaluatedAt: number;
-}
-
-/** Calendar-day key in an explicit timezone — never the runtime's local zone. */
-export function dayKey(t: number, timezone: string): string {
-  try {
-    return new Intl.DateTimeFormat("en-CA", {
-      timeZone: timezone,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).format(new Date(t));
-  } catch {
-    return new Date(t).toISOString().slice(0, 10);
-  }
 }
 
 function unknown(

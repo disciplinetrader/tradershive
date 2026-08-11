@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { fetchEntries, journalKeys } from "@/lib/journal/api";
 import { formatCurrency } from "@/lib/journal/format";
-import { emotionBreakdown, mistakeBreakdown } from "@/lib/journal/metrics";
+import { countsTowardAnalytics, emotionBreakdown, mistakeBreakdown } from "@/lib/journal/metrics";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/journal/psychology")({
@@ -25,7 +25,10 @@ export const Route = createFileRoute("/_authenticated/journal/psychology")({
 
 function JournalPsychology() {
   const entriesQuery = useJournalEntries();
-  const entries = useMemo(() => (entriesQuery.data ?? []).filter((e) => e.status !== "draft"), [entriesQuery.data]);
+  const entries = useMemo(
+    () => (entriesQuery.data ?? []).filter(countsTowardAnalytics),
+    [entriesQuery.data],
+  );
   const emotions = useMemo(() => emotionBreakdown(entries), [entries]);
   const mistakes = useMemo(() => mistakeBreakdown(entries), [entries]);
 

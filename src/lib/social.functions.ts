@@ -19,7 +19,7 @@ async function loadUserAggregates(
   const [tradesRes, journalRes, achRes, chalRes] = await Promise.all([
     supabase
       .from("paper_trades")
-      .select("user_id, pnl, rr, closed_at")
+      .select("user_id, pnl, rr_realized, closed_at")
       .in("user_id", userIds)
       .eq("status", "closed"),
     supabase
@@ -303,18 +303,18 @@ export const getProfileActivity = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase } = context as SupabaseCtx;
     const [xps, ach, trades, chal] = await Promise.all([
-      supabase.from("xp_transactions").select("id, amount, reason, created_at").eq("user_id", data.userId).order("created_at", { ascending: false }).limit(data.limit),
-      supabase.from("user_achievements").select("id, unlocked_at, achievements(name, icon)").eq("user_id", data.userId).order("unlocked_at", { ascending: false }).limit(data.limit),
+      supabase.from("xp_transactions").select("id, delta, reason, created_at").eq("user_id", data.userId).order("created_at", { ascending: false }).limit(data.limit),
+      supabase.from("user_achievements").select("id, unlocked_at, achievements(title, icon)").eq("user_id", data.userId).order("unlocked_at", { ascending: false }).limit(data.limit),
       supabase.from("paper_trades").select("id, symbol, pnl, direction, closed_at").eq("user_id", data.userId).eq("status", "closed").order("closed_at", { ascending: false }).limit(data.limit),
-      supabase.from("user_challenges").select("id, completed_at, challenges(name)").eq("user_id", data.userId).eq("status", "completed").order("completed_at", { ascending: false }).limit(data.limit),
+      supabase.from("user_challenges").select("id, completed_at, challenges(title)").eq("user_id", data.userId).eq("status", "completed").order("completed_at", { ascending: false }).limit(data.limit),
     ]);
 
     type Item = { kind: string; at: string; title: string; sub?: string; icon?: string | null; value?: number | null };
     const items: Item[] = [];
-    for (const x of xps.data ?? []) items.push({ kind: "xp", at: x.created_at, title: `+${x.amount} XP`, sub: x.reason ?? "" });
-    for (const a of ach.data ?? []) if (a.unlocked_at) items.push({ kind: "achievement", at: a.unlocked_at, title: `Unlocked: ${a.achievements?.name ?? "Achievement"}`, icon: a.achievements?.icon ?? null });
+    for (const x of xps.data ?? []) items.push({ kind: "xp", at: x.created_at, title: `+${x.delta} XP`, sub: x.reason ?? "" });
+    for (const a of ach.data ?? []) if (a.unlocked_at) items.push({ kind: "achievement", at: a.unlocked_at, title: `Unlocked: ${a.achievements?.title ?? "Achievement"}`, icon: a.achievements?.icon ?? null });
     for (const t of trades.data ?? []) if (t.closed_at) items.push({ kind: "trade", at: t.closed_at, title: `${t.direction.toUpperCase()} ${t.symbol}`, value: t.pnl });
-    for (const c of chal.data ?? []) if (c.completed_at) items.push({ kind: "challenge", at: c.completed_at, title: `Completed: ${c.challenges?.name ?? "Challenge"}` });
+    for (const c of chal.data ?? []) if (c.completed_at) items.push({ kind: "challenge", at: c.completed_at, title: `Completed: ${c.challenges?.title ?? "Challenge"}` });
     items.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
     return items.slice(0, data.limit);
   });

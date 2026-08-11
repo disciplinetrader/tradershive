@@ -340,14 +340,14 @@ export const getSystemHealth = createServerFn({ method: "GET" })
     const oneHour = new Date(now.getTime() - 3600_000).toISOString();
 
     const [providers, syncs, cronCount, edgeErrors, dbSize] = await Promise.all([
-      s.from("market_providers").select("id, name, status, last_health_check_at, error_rate").limit(20),
-      s.from("historical_sync_logs").select("status").gte("created_at", oneHour).limit(200),
+      s.from("market_providers").select("id, name, is_enabled, last_health_ok, last_health_at, last_latency_ms").limit(20),
+      s.from("historical_sync_logs").select("level").gte("created_at", oneHour).limit(200),
       s.from("historical_import_jobs").select("id", { count: "exact", head: true }).eq("status", "running"),
       s.from("admin_security_events").select("id", { count: "exact", head: true }).eq("severity", "error").gte("created_at", oneHour),
       s.rpc("admin_table_sizes"),
     ]);
 
-    const syncFail = (syncs.data ?? []).filter((r: any) => r.status === "error").length;
+    const syncFail = (syncs.data ?? []).filter((r: any) => r.level === "error").length;
     const syncTotal = (syncs.data ?? []).length || 1;
     const errorRate = syncFail / syncTotal;
 

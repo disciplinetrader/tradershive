@@ -30,6 +30,7 @@ import {
   fetchEntry,
   fetchHistory,
   fetchTags,
+  groupTagsByKind,
   fetchTaxonomy,
   fetchAllEntryTagLinks,
   journalKeys,
@@ -63,6 +64,7 @@ import { PsychologyPanel } from "@/components/journal/story/PsychologyPanel";
 import { SimilarTrades } from "@/components/journal/story/SimilarTrades";
 import { ImprovementPlan } from "@/components/journal/story/ImprovementPlan";
 import { ReplayActions, useReplayContext } from "@/components/journal/story/ReplayActions";
+import { ExcursionPanel } from "@/components/journal/story/ExcursionPanel";
 import type { Candle } from "@/lib/market-data/types";
 import { routeBoundaries } from "@/lib/route-boundaries";
 import { openTradeEditor } from "@/components/journal/editor/store";
@@ -214,6 +216,11 @@ function TradeStoryPage() {
   }
 
   const entryTagIds = (linksQuery.data ?? []).filter((l) => l.entry_id === entry.id).map((l) => l.tag_id);
+  // Grouped, not flat: tag identity is (kind, value), so "Breakout" can be both
+  // a setup and a custom tag. Two identical chips side by side would be unreadable.
+  const entryTagGroups = groupTagsByKind(
+    (tagsQuery.data ?? []).filter((t) => entryTagIds.includes(t.id)),
+  );
 
   return (
     <div className="space-y-3 pb-10">
@@ -230,6 +237,39 @@ function TradeStoryPage() {
       />
 
       <TradeStoryChart entry={entry} onCandles={setCandles} focusTime={selectedEvent?.at ? new Date(selectedEvent.at).getTime() / 1000 : null} />
+
+      {entryTagGroups.length ? (
+        <StorySection id="tags" title="Tags" subtitle="How this trade is classified">
+          <div className="space-y-3">
+            {entryTagGroups.map((group) => (
+              <div key={group.kind}>
+                <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  {group.label}
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {group.tags.map((t) => (
+                    <span
+                      key={t.id}
+                      className="rounded-full border px-2.5 py-1 text-xs"
+                      style={{ borderColor: `${t.color}55`, color: t.color }}
+                    >
+                      {t.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </StorySection>
+      ) : null}
+
+      <StorySection
+        id="excursion"
+        title="How far it moved"
+        subtitle="What the trade looked like at its worst and its best, from real candles"
+      >
+        <ExcursionPanel entry={entry} />
+      </StorySection>
 
       <StorySection id="timeline" title="Execution timeline" subtitle="Click an event to focus the chart at that moment">
         <ExecutionTimeline

@@ -12,7 +12,13 @@
     "format": "prettier --write .",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
-    "test:e2e:report": "playwright show-report"
+    "test:e2e:report": "playwright show-report",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "check:columns": "bun run scripts/check-columns.ts",
+    "check:casts": "eslint --config eslint.casts.config.js --suppressions-location eslint-suppressions.casts.json \"src/**/*.{ts,tsx}\"",
+    "check": "bun run typecheck && bun run test && bun run build && bun run check:columns && bun run check:casts && bun run check:schema",
+    "check:schema": "bun run scripts/check-schema.ts"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "^3.0.11",

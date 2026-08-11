@@ -12,6 +12,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { unwrap } from "./server-errors";
 import { computeReplayScore } from "./replay/score";
 import { buildScoreInputs, SCORE_VERSION } from "./replay/review/score";
 import { buildHistory, buildSessionReview, loadReflectionCounts, loadSessionTrades } from "./replay/review/derive.server";
@@ -56,14 +57,16 @@ export const scoreReplaySessionCanonical = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const id = data.session_id;
 
-    const [{ data: session }, trades, counts, bookmarksRes] = await Promise.all([
+    const [sessionRes, trades, counts, bookmarksRes] = await Promise.all([
       context.supabase.from("replay_sessions").select("initial_balance").eq("id", id).maybeSingle(),
       loadSessionTrades(context.supabase, id),
       loadReflectionCounts(context.supabase, id),
       context.supabase.from("replay_bookmarks").select("category").eq("session_id", id),
     ]);
 
-    const bookmarks = (bookmarksRes.data ?? []) as { category: string }[];
+    // maybeSingle: a null session is "not found", handled below via `balance`.
+    const session = unwrap(sessionRes, "getReplayReview/replay_sessions");
+    const bookmarks = unwrap(bookmarksRes, "getReplayReview/replay_bookmarks") ?? [];
     const categories = new Set(bookmarks.map((b) => b.category));
     const balance = session?.initial_balance != null ? Number(session.initial_balance) : null;
 
@@ -267,9 +270,9 @@ export const createReplayHomework = createServerFn({ method: "POST" })
         target_r: data.target_r ?? 1,
         max_trades: data.max_trades ?? 3,
         reason: data.reason ?? null,
-        mistake_focus: data.focus ?? null,
+        target_mistake: data.focus ?? null,
         status: "suggested",
-      } as never)
+      })
       .select()
       .single();
     if (error) throw error;
@@ -293,7 +296,7 @@ export const getReplayImprovement = createServerFn({ method: "GET" })
         .order("created_at", { ascending: false }).limit(limit),
       context.supabase
         .from("replay_homework")
-        .select("id, symbol, timeframe, status, reason, mistake_focus, target_r, max_trades, created_at")
+        .select("id, symbol, timeframe, status, reason, target_mistake, target_r, max_trades, created_at")
         .order("created_at", { ascending: false }).limit(limit),
       context.supabase
         .from("replay_sessions")
@@ -303,9 +306,9 @@ export const getReplayImprovement = createServerFn({ method: "GET" })
     ]);
 
     return {
-      scores: scores.data ?? [],
-      comparisons: comparisons.data ?? [],
-      homework: homework.data ?? [],
-      sessions: sessions.data ?? [],
+      scores: unwrap(scores, "getReplayImprovement/replay_scores") ?? [],
+      comparisons: unwrap(comparisons, "getReplayImprovement/replay_comparisons") ?? [],
+      homework: unwrap(homework, "getReplayImprovement/replay_homework") ?? [],
+      sessions: unwrap(sessions, "getReplayImprovement/replay_sessions") ?? [],
     };
   });

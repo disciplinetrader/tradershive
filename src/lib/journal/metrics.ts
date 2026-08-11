@@ -1,5 +1,6 @@
 import type { JournalEntry } from "@/lib/journal/api";
 import { resultOf } from "@/lib/journal/derive";
+import { dayKey, zonedParts } from "@/lib/analytics/periods";
 
 export type JournalSummary = {
   trades: number;
@@ -29,7 +30,31 @@ const num = (v: unknown): number => (typeof v === "number" && Number.isFinite(v)
 const numOrNull = (v: unknown): number | null =>
   typeof v === "number" && Number.isFinite(v) ? v : null;
 
-export function summarize(entries: JournalEntry[]): JournalSummary {
+/**
+ * Does this entry describe a trade that actually happened?
+ *
+ * This — not `status` — is the gate for every analytics surface. `status`
+ * tracks the *authoring* lifecycle (draft → published → archived): whether the
+ * trader has finished writing their reflection. Whether money moved is a
+ * separate fact, and the two must not be conflated.
+ *
+ * They were. Entries auto-created from a closed trade land as `draft` (the
+ * reflection is unwritten, correctly), and every analytics view filtered on
+ * `status !== "draft"` — so a real, closed, ±$900 trade was excluded from P&L
+ * for the sole reason that nobody had typed a note about it yet. The result
+ * was an account full of trades rendering as "no data".
+ *
+ * Keying on execution facts instead means analytics is correct no matter what
+ * any current or future write path sets `status` to, and an unfinished manual
+ * entry still self-excludes: it has no `closed_at`/`pnl` until it is a real
+ * trade. Archived entries are the one status that does suppress a row, because
+ * archiving is an explicit "exclude this" by the trader.
+ */
+export function countsTowardAnalytics(e: JournalEntry): boolean {
+  return e.status !== "archived" && e.closed_at != null && e.pnl != null;
+}
+
+export function summarize(entries: JournalEntry[], breakevenBand = 0): JournalSummary {
   const trades = entries.length;
   let wins = 0;
   let losses = 0;
@@ -48,7 +73,7 @@ export function summarize(entries: JournalEntry[]): JournalSummary {
   for (const e of entries) {
     // Canonical result derivation — no page decides win/loss on its own.
     const pnl = numOrNull(e.pnl);
-    const result = resultOf(pnl);
+    const result = resultOf(pnl, breakevenBand);
     if (result == null) {
       unmeasured += 1;
     } else {
@@ -117,7 +142,7 @@ const clamp = (n: number) => Math.max(0, Math.min(100, Math.round(n)));
 
 /** Proprietary 0-100 behaviour score. Weighted blend of five drivers. */
 export function hiveScore(entries: JournalEntry[]): HiveScore {
-  const scored = entries.filter((e) => e.status !== "draft");
+  const scored = entries.filter(countsTowardAnalytics);
   const sample = scored.length;
   if (!sample) {
     return { total: 0, discipline: 0, consistency: 0, risk: 0, execution: 0, journaling: 0, sample: 0 };
@@ -221,11 +246,26 @@ export type DayBucket = {
   grade: string | null;
 };
 
-export function dayKey(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-export function bucketByDay(entries: JournalEntry[]): Map<string, DayBucket> {
+/**
+ * Bucket entries by calendar day **in `timezone`**.
+ *
+ * Day attribution is a timezone decision, not an implementation detail: two of
+ * these five trades closed 21:35 and 22:20 UTC, so whether they land on the 1st
+ * or the 2nd depends entirely on where the trader is. Storage is UTC; display
+ * is the trader's zone (`profiles.timezone`, browser fallback).
+ *
+ * This delegates to `analytics/periods.ts` rather than formatting dates itself.
+ * The journal previously had its own `dayKey(Date)` using local `getDate()`,
+ * which meant the calendar and the portfolio analytics could put the same trade
+ * on different days and both look right. One implementation, one answer.
+ *
+ * Note the split: day/weekday/hour are timezone-aware, but trading *sessions*
+ * are not — London is a market fact and stays UTC-anchored in `session-detect`.
+ */
+export function bucketByDay(
+  entries: JournalEntry[],
+  timezone: string,
+): Map<string, DayBucket> {
   const map = new Map<string, DayBucket & { disciplineSum: number; disciplineCount: number; gradeSum: number; gradeCount: number }>();
   const gradePoints: Record<string, number> = { A: 5, B: 4, C: 3, D: 2, F: 1 };
   const gradeLetters = ["F", "D", "C", "B", "A"];
@@ -233,13 +273,18 @@ export function bucketByDay(entries: JournalEntry[]): Map<string, DayBucket> {
   for (const e of entries) {
     const iso = e.closed_at ?? e.opened_at ?? e.created_at;
     if (!iso) continue;
-    const date = new Date(iso);
-    const key = dayKey(date);
+    const epoch = new Date(iso).getTime();
+    if (!Number.isFinite(epoch)) continue;
+    const key = dayKey(epoch, timezone);
+    // `date` is only a label for the bucket, so build it from the zoned parts
+    // rather than the raw instant — otherwise a trade that is the 2nd in the
+    // trader's zone would render a cell titled the 1st.
+    const zoned = zonedParts(epoch, timezone);
     const b =
       map.get(key) ??
       ({
         key,
-        date: new Date(date.getFullYear(), date.getMonth(), date.getDate()),
+        date: new Date(zoned.year, zoned.month - 1, zoned.day),
         ids: [],
         pnl: 0,
         wins: 0,
@@ -297,7 +342,7 @@ export type Insight = {
 
 /** Rule-based pattern detection used until an AI review is available. */
 export function detectInsights(entries: JournalEntry[]): Insight[] {
-  const scored = entries.filter((e) => e.status !== "draft");
+  const scored = entries.filter(countsTowardAnalytics);
   if (scored.length < 3) return [];
   const out: Insight[] = [];
   const fmt = (n: number) => `${n < 0 ? "-" : ""}$${Math.abs(Math.round(n)).toLocaleString()}`;

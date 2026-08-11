@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { fetchEntries, journalKeys } from "@/lib/journal/api";
 import { formatCurrency } from "@/lib/journal/format";
 import {
+  countsTowardAnalytics,
   detectInsights,
   sessionBreakdown,
   setupBreakdown,
@@ -34,7 +35,10 @@ export const Route = createFileRoute("/_authenticated/journal/analytics")({
 
 function JournalAnalytics() {
   const entriesQuery = useJournalEntries();
-  const entries = useMemo(() => (entriesQuery.data ?? []).filter((e) => e.status !== "draft"), [entriesQuery.data]);
+  const entries = useMemo(
+    () => (entriesQuery.data ?? []).filter(countsTowardAnalytics),
+    [entriesQuery.data],
+  );
 
   const stats = useMemo(() => summarize(entries), [entries]);
   const setups = useMemo(() => setupBreakdown(entries).slice(0, 8), [entries]);

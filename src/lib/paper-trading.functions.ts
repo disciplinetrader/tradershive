@@ -223,10 +223,18 @@ export const openTrade = createServerFn({ method: "POST" })
       .select()
       .single();
     if (error) throw error;
+    // Tags are chosen at entry — before the outcome is known, which is the
+    // honest moment to record intent — but `journal_entry_tags` needs an
+    // entry_id that only exists once the trade closes and
+    // `create_journal_draft_from_trade()` fires. `tag_ids` is the staging
+    // buffer that trigger drains; it is not a second tag system.
     if (tag_ids?.length) {
-      await context.supabase.from("trade_tag_relations").insert(
-        tag_ids.map((tid) => ({ trade_id: created.id, tag_id: tid, user_id: context.userId })),
-      );
+      const { error: tagErr } = await context.supabase
+        .from("paper_trades")
+        .update({ tag_ids })
+        .eq("id", created.id)
+        .eq("user_id", context.userId);
+      if (tagErr) throw tagErr;
     }
     await context.supabase.from("position_history").insert({
       user_id: context.userId, account_id: data.account_id, trade_id: created.id,
@@ -534,11 +542,16 @@ export const toggleWatchlistSymbolFavorite = createServerFn({ method: "POST" })
 
 /* ---------------- Tags ---------------- */
 
+/**
+ * The trade tag pickers read the one journal dictionary. `trade_tags` and
+ * `trade_tag_relations` are retired — a tag chosen at entry is the same tag
+ * the journal will slice analytics by, so there is nothing to keep separate.
+ */
 export const listTradeTags = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await context.supabase.from("trade_tags")
-      .select("*").order("name");
+    const { data, error } = await context.supabase.from("journal_tags")
+      .select("*").eq("user_id", context.userId).order("name");
     if (error) throw error;
     return data ?? [];
   });
@@ -547,23 +560,19 @@ export const createTradeTag = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({
     name: z.string().trim().min(1).max(40),
+    kind: z.enum(["setup", "mistake", "emotion", "custom"]).default("setup"),
     color: z.string().max(20).default("#22d3ee"),
   }).parse(d))
   .handler(async ({ data, context }) => {
-    const { data: created, error } = await context.supabase.from("trade_tags")
-      .upsert({ user_id: context.userId, ...data }, { onConflict: "user_id,name" })
+    const value = data.name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+    const { data: created, error } = await context.supabase.from("journal_tags")
+      .upsert(
+        { user_id: context.userId, kind: data.kind, value, name: data.name, color: data.color },
+        { onConflict: "user_id,kind,value" },
+      )
       .select().single();
     if (error) throw error;
     return created;
-  });
-
-export const listTradeTagRelations = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { data, error } = await context.supabase.from("trade_tag_relations")
-      .select("trade_id, tag_id").eq("user_id", context.userId);
-    if (error) throw error;
-    return data ?? [];
   });
 
 /* ---------------- Stats ---------------- */

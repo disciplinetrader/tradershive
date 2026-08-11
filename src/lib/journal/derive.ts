@@ -49,11 +49,26 @@ const num = (v: unknown): number | null => {
 };
 
 /** Canonical win/loss/breakeven from a net P/L value. */
-export function resultOf(netPnl: number | null | undefined): TradeResult | null {
+/**
+ * Canonical win/loss/breakeven classification.
+ *
+ * `breakevenBand` is the trader's own noise threshold (`user_settings.
+ * breakeven_band`): a result inside ±band is break-even, not a one-cent "win".
+ * Without it a scratch trade inflates win rate and pollutes every expectancy
+ * figure downstream, because win rate has no notion of magnitude.
+ *
+ * Defaulted to 0 so every existing call site keeps its exact behaviour; the
+ * paths that know the trader's setting pass it explicitly.
+ */
+export function resultOf(
+  netPnl: number | null | undefined,
+  breakevenBand = 0,
+): TradeResult | null {
   const n = num(netPnl);
   if (n == null) return null;
-  if (n > 0) return "win";
-  if (n < 0) return "loss";
+  const band = Math.abs(num(breakevenBand) ?? 0);
+  if (n > band) return "win";
+  if (n < -band) return "loss";
   return "breakeven";
 }
 

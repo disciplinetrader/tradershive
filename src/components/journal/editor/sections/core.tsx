@@ -318,6 +318,15 @@ export function ReviewSection() {
       </Grid>
 
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        {/* Overall trade rating — the trader's own 1-5 verdict on the whole
+            trade, distinct from the six process ratings beside it. Filterable
+            in reports, so it is a slice, not just a note to self. */}
+        <RatingField
+          label="Trade rating"
+          value={entry.rating}
+          onCommit={(v) => setField({ rating: v })}
+          hint="Your overall verdict on this trade, 1-5."
+        />
         <RatingField label="Discipline" value={entry.discipline} onCommit={(v) => setField({ discipline: v })} />
         <RatingField label="Execution" value={entry.execution} onCommit={(v) => setField({ execution: v })} />
         <RatingField label="Risk management" value={entry.risk_mgmt} onCommit={(v) => setField({ risk_mgmt: v })} />

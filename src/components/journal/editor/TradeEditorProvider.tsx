@@ -23,6 +23,7 @@ import { useAutosave, type AutosaveStatus } from "@/hooks/use-autosave";
 import {
   journalKeys,
   recordHistory,
+  setEntryTagValues,
   updateEntry,
   type EntryUpdate,
   type JournalEntry,
@@ -71,6 +72,15 @@ type Ctx = {
   setCorrectionsUnlocked: (v: boolean) => void;
   /** Write one or more journal_entries columns. */
   setField: (patch: EntryUpdate) => void;
+  /**
+   * Write the entry's tags of one kind.
+   *
+   * `emotions[]`, `mistakes[]` and `strategy_tags[]` are trigger-maintained
+   * projections of `journal_entry_tags` — writing them through `setField`
+   * would be overwritten by the trigger on the next tag change. Tag edits go
+   * through the join table and the arrays repaint themselves.
+   */
+  setTagValues: (kind: "setup" | "mistake" | "emotion", values: string[]) => Promise<void>;
   /** Write narrative jsonb sections (keeps legacy columns mirrored). */
   setNarrative: (patch: Narrative) => void;
   /** Write structured plan/review values stored inside narrative.x */
@@ -221,6 +231,18 @@ export function TradeEditorProvider({
 
   const setField = useCallback((patch: EntryUpdate) => queue(patch as Patch), [queue]);
 
+  const setTagValues = useCallback(
+    async (kind: "setup" | "mistake" | "emotion", values: string[]) => {
+      if (!user) return;
+      await setEntryTagValues({ entryId, userId: user.id, kind, values });
+      // The array column is repainted by the trigger, so re-read rather than
+      // patching it locally — the DB is authoritative for these three fields.
+      await qc.invalidateQueries({ queryKey: journalKeys.entry(entryId) });
+      await qc.invalidateQueries({ queryKey: journalKeys.list() });
+    },
+    [entryId, qc, user],
+  );
+
   const setNarrative = useCallback(
     (patch: Narrative) => {
       if (!local) return;
@@ -310,6 +332,7 @@ export function TradeEditorProvider({
       correctionsUnlocked,
       setCorrectionsUnlocked,
       setField,
+      setTagValues,
       setNarrative,
       setExtras,
       extras,
@@ -331,6 +354,7 @@ export function TradeEditorProvider({
     setSection,
     correctionsUnlocked,
     setField,
+    setTagValues,
     setNarrative,
     setExtras,
     extras,

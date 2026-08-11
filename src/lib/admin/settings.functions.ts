@@ -331,7 +331,7 @@ export const generateReport = createServerFn({ method: "POST" })
         rows = (await s.from("profiles").select("id, username, email, country, level, xp, coins, league, created_at").limit(10000)).data ?? [];
         break;
       case "trades":
-        rows = (await s.from("paper_trades").select("id, user_id, symbol, direction, pnl, rr, status, opened_at, closed_at").limit(10000)).data ?? [];
+        rows = (await s.from("paper_trades").select("id, user_id, symbol, direction, pnl, rr_realized, status, opened_at, closed_at").limit(10000)).data ?? [];
         break;
       case "journal":
         rows = (await s.from("journal_entries").select("id, user_id, symbol, pnl, rr, status, created_at").limit(10000)).data ?? [];

@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { fetchEntries, journalKeys } from "@/lib/journal/api";
 import { formatCurrency } from "@/lib/journal/format";
-import { bucketByDay, dayKey, summarize } from "@/lib/journal/metrics";
+import { bucketByDay, summarize } from "@/lib/journal/metrics";
+import { detectTimezone, zonedParts } from "@/lib/analytics/periods";
+import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/journal/calendar")({
@@ -27,19 +29,58 @@ function JournalCalendar() {
   const entriesQuery = useJournalEntries();
   const entries = entriesQuery.data ?? [];
   const today = new Date();
-  const [cursor, setCursor] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
+  const [cursorOverride, setCursor] = useState<Date | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
 
-  const buckets = useMemo(() => bucketByDay(entries), [entries]);
+  // Display timezone: the trader's setting, else the browser, else UTC.
+  // Storage stays UTC; only attribution to a calendar day is zoned.
+  const { profile } = useAuth();
+  const tz = profile?.timezone || detectTimezone();
+
+  const buckets = useMemo(() => bucketByDay(entries, tz), [entries, tz]);
+
+  /**
+   * Open on the most recent month that actually has entries, not on today's.
+   *
+   * Journal trades come from replay and battles, so `closed_at` is routinely
+   * historical — these five closed 2026-07-01/02 but were journalled on 08-10.
+   * Defaulting to the current month rendered an empty grid on an account that
+   * has data, which reads as "the calendar is broken".
+   *
+   * Derived rather than set in an effect so there is no frame where the wrong
+   * month is painted; the user's own navigation takes over once they click.
+   */
+  const latestMonth = useMemo(() => {
+    let newest = -Infinity;
+    for (const e of entries) {
+      const iso = e.closed_at ?? e.opened_at ?? e.created_at;
+      if (!iso) continue;
+      const ms = new Date(iso).getTime();
+      if (Number.isFinite(ms) && ms > newest) newest = ms;
+    }
+    if (newest === -Infinity) return null;
+    // Zoned, so the month we open on is the month the cells were bucketed into
+    // — a trade at 23:30 UTC on the 31st is next month in Asia/Kolkata.
+    const p = zonedParts(newest, tz);
+    return new Date(p.year, p.month - 1, 1);
+  }, [entries, tz]);
+
+  const cursor =
+    cursorOverride ?? latestMonth ?? new Date(today.getFullYear(), today.getMonth(), 1);
   const monthLabel = cursor.toLocaleDateString("en-US", { month: "long", year: "numeric" });
   const startPad = new Date(cursor.getFullYear(), cursor.getMonth(), 1).getDay();
   const daysInMonth = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate();
 
   const monthDays = useMemo(() => {
     const out: { key: string; date: Date }[] = [];
+    const y = cursor.getFullYear();
+    const m = cursor.getMonth();
     for (let d = 1; d <= daysInMonth; d += 1) {
-      const date = new Date(cursor.getFullYear(), cursor.getMonth(), d);
-      out.push({ key: dayKey(date), date });
+      // Built from the calendar numbers directly, not by formatting a Date
+      // through `tz` — the grid IS the displayed month, so round-tripping a
+      // local midnight through another zone could shift a cell by a day.
+      const key = `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      out.push({ key, date: new Date(y, m, d) });
     }
     return out;
   }, [cursor, daysInMonth]);
@@ -160,6 +201,13 @@ function JournalCalendar() {
               <Stat label="W / L" value={`${selectedBucket.wins} / ${selectedBucket.losses}`} />
               <Stat label="Discipline" value={selectedBucket.discipline != null ? selectedBucket.discipline.toFixed(1) : "—"} />
             </div>
+            {/* Jump-in: the calendar answers "which day", the daily journal
+                answers "what happened that day". */}
+            <Button asChild variant="outline" size="sm" className="w-full">
+              <Link to="/journal/daily" search={{ day: selectedBucket.key }}>
+                Open daily journal
+              </Link>
+            </Button>
             <ul className="divide-y divide-border/60">
               {selectedBucket.ids.map((id) => {
                 const e = entries.find((x) => x.id === id);

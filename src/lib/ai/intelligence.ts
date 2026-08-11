@@ -34,11 +34,51 @@ export interface RawJournal {
   id: string;
   trade_id: string | null;
   mistakes: string[] | null;
+  /** Derived from `psychology.before` — see `toRawJournal`. */
   emotions_pre: string[] | null;
+  /** Derived from `psychology.after`. */
   emotions_post: string[] | null;
-  rating: number | null;
   notes: string | null;
   created_at: string | null;
+}
+
+/**
+ * The journal columns the AI layer reads. One constant because four call sites
+ * hand-wrote this list and all four drifted to the same four non-existent
+ * columns (`notes`, `rating`, `emotions_pre`, `emotions_post`) — every AI
+ * journal query failed and silently analysed nothing.
+ *
+ * `emotions_pre`/`emotions_post` were never columns. The staged equivalent is
+ * the `psychology` jsonb, which the editor already populates with
+ * before/during/after; `toRawJournal` projects it back into the pre/post shape
+ * this module reasons about.
+ */
+export const AI_JOURNAL_SELECT =
+  "id, trade_id, mistakes, psychology, notes_text, created_at";
+
+type JournalRow = {
+  id: string;
+  trade_id?: string | null;
+  mistakes?: string[] | null;
+  psychology?: unknown;
+  notes_text?: string | null;
+  created_at?: string | null;
+};
+
+/** Project a `journal_entries` row into the shape this module reasons about. */
+export function toRawJournal(row: JournalRow): RawJournal {
+  const psych = (row.psychology ?? {}) as { before?: unknown; after?: unknown };
+  const stage = (v: unknown): string[] | null =>
+    Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : null;
+  return {
+    id: row.id,
+    trade_id: row.trade_id ?? null,
+    mistakes: row.mistakes ?? null,
+    emotions_pre: stage(psych.before),
+    emotions_post: stage(psych.after),
+    notes: row.notes_text ?? null,
+    created_at: row.created_at ?? null,
+  };
 }
 
 export interface StrategyRef { id: string; name: string | null }

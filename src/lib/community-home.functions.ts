@@ -70,7 +70,7 @@ export const getCommunityHome = createServerFn({ method: "GET" })
     // Achievements meta
     const achIds = Array.from(new Set((achRes.data ?? []).map((a: any) => a.achievement_id)));
     const { data: achMeta } = achIds.length
-      ? await supabase.from("achievements").select("id, name, description, icon, category, rarity").in("id", achIds)
+      ? await supabase.from("achievements").select("id, title, description, icon, category").in("id", achIds)
       : { data: [] };
     const amap = new Map((achMeta ?? []).map((a: any) => [a.id, a]));
 

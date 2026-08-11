@@ -16,6 +16,7 @@
 
 import type { JournalEntry } from "@/lib/journal/api";
 import type { Attempt } from "@/lib/journal/replay-attempts";
+import { countsTowardAnalytics } from "@/lib/journal/metrics";
 import {
   DIMENSIONS,
   type DeltaRow,
@@ -389,7 +390,7 @@ function aiSuggested(entries: JournalEntry[]): Map<string, number> {
 }
 
 export function mistakeRecurrence(facts: AttemptFacts[], entries: JournalEntry[]): MistakeRecurrenceRow[] {
-  const live = entries.filter((e) => e.status !== "draft");
+  const live = entries.filter(countsTowardAnalytics);
   const done = completedFacts(facts);
 
   // Process-cost baseline: mean of the original-side process score per entry.
@@ -656,7 +657,7 @@ export type SetupRow = GroupRow & {
 };
 
 export function setupImprovement(facts: AttemptFacts[], entries: JournalEntry[], transfer: TransferRow[]): SetupRow[] {
-  const live = entries.filter((e) => e.status !== "draft");
+  const live = entries.filter(countsTowardAnalytics);
   const base = groupImprovement(facts, (f) => f.setup, setupLabel);
   const done = completedFacts(facts);
   const drills = drillEffectiveness(facts);
@@ -737,7 +738,7 @@ const TRANSFER_WINDOW_DAYS = 60;
  */
 export function transferAnalysis(facts: AttemptFacts[], entries: JournalEntry[], windowDays = TRANSFER_WINDOW_DAYS): TransferRow[] {
   const live = entries
-    .filter((e) => e.status !== "draft")
+    .filter(countsTowardAnalytics)
     .map((e) => ({ e, at: +new Date(e.opened_at ?? e.created_at) }))
     .sort((a, b) => a.at - b.at);
   const done = completedFacts(facts);
@@ -951,7 +952,7 @@ export function nextBestDrills(input: {
   limit?: number;
 }): DrillRecommendation[] {
   const { facts, entries, mistakes, skills, drills } = input;
-  const live = entries.filter((e) => e.status !== "draft");
+  const live = entries.filter(countsTowardAnalytics);
   const out: DrillRecommendation[] = [];
 
   const skillFor = (mistakeValue: string): DimensionKey => {
@@ -1073,7 +1074,7 @@ export type RuleRow = {
  * per-rule expectancy model needs its own schema — see README for Phase 6.
  */
 export function ruleIntelligence(entries: JournalEntry[], facts: AttemptFacts[]): RuleRow[] {
-  const live = entries.filter((e) => e.status !== "draft");
+  const live = entries.filter(countsTowardAnalytics);
   const map = new Map<string, { broken: number; total: number; setups: Set<string> }>();
   for (const e of live) {
     const checklist = Array.isArray(e.checklist) ? (e.checklist as { label?: string; checked?: boolean }[]) : [];

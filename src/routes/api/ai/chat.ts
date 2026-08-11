@@ -14,9 +14,10 @@ import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "@/lib/ai/constants";
 import { Errors, guardRoute } from "@/lib/server-errors";
 import { enforceAiRateLimit } from "@/lib/ai/rate-limit.server";
 import {
+  AI_JOURNAL_SELECT,
   buildIntelligence,
   summarizeForPrompt,
-  type RawJournal,
+  toRawJournal,
   type RawTrade,
   type StrategyRef,
 } from "@/lib/ai/intelligence";
@@ -59,7 +60,7 @@ async function loadContext(supabase: ReturnType<typeof createClient<Database>>, 
       .limit(500),
     supabase
       .from("journal_entries")
-      .select("id, trade_id, notes, rating, mistakes, emotions_pre, emotions_post, created_at")
+      .select(AI_JOURNAL_SELECT)
       .eq("user_id", userId)
       .gte("created_at", since)
       .order("created_at", { ascending: false })
@@ -88,7 +89,7 @@ async function loadContext(supabase: ReturnType<typeof createClient<Database>>, 
 
   const intel = buildIntelligence(
     (tradesFull ?? []) as unknown as RawTrade[],
-    (journalsFull ?? []) as unknown as RawJournal[],
+    (journalsFull ?? []).map(toRawJournal),
     (strategies ?? []) as unknown as StrategyRef[],
     30,
   );

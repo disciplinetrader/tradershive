@@ -9,6 +9,8 @@ type Account = {
   starting_balance: number; leverage: number; max_daily_risk_pct: number;
   max_trade_risk_pct: number; is_archived: boolean;
   margin_call_level: number; stop_out_level: number; negative_balance_protection: boolean;
+  /** Cost structure of the simulated broker — pre-fills the order ticket. */
+  default_commission: number; default_swap: number;
 };
 
 type Ctx = {

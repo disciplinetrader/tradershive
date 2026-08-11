@@ -62,6 +62,30 @@ export const Errors = {
     new AppError({ code: "internal", message: msg, status: 500, expose: false }),
 };
 
+/**
+ * Unwrap a PostgREST result, throwing when the query failed.
+ *
+ * Destructuring `{ data }` and dropping `error` is how a broken query turns
+ * into a page that renders "no trades yet": PostgREST returns `data: null`,
+ * the caller's `?? []` swallows it, and the stats compute over nothing. A
+ * misspelled column then looks identical to an empty account. Route every
+ * read through here — especially inside `Promise.all`, where the destructure
+ * makes it easy to forget — so a failure is loud instead of empty.
+ *
+ * `what` names the query in the server log; it is never sent to the client
+ * (`errorGuardMiddleware` sanitizes the thrown PostgREST error on the way out).
+ */
+export function unwrap<T>(
+  result: { data: T; error: { message: string; code?: string } | null },
+  what: string,
+): T {
+  if (result.error) {
+    console.error(`[server-error] [${what}] supabase`, result.error);
+    throw result.error;
+  }
+  return result.data;
+}
+
 /** Map any thrown value to a safe { status, body } pair. Always logs the raw error. */
 export function toClientError(err: unknown, ctx?: string): {
   status: number;

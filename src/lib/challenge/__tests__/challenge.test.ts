@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   evaluateChallenge,
-  dayKey,
   CHALLENGE_EVALUATOR_VERSION,
   type ChallengeFacts,
   type EvaluatorTrade,
 } from "@/lib/challenge/evaluator";
+import { dayKey } from "@/lib/analytics/periods";
 import { checkChallengePolicy } from "@/lib/challenge/policy";
 import { BUILT_IN_TEMPLATES, makeTemplate, RULE_IDS } from "@/lib/challenge/model";
 

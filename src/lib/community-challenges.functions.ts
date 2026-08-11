@@ -154,11 +154,11 @@ async function computeChallengeScores(supabase: any, challenge: any) {
     } else if (challenge.kind === "replay_hours") {
       const { data: sessions } = await supabase
         .from("replay_sessions")
-        .select("total_time_seconds, updated_at")
+        .select("duration_seconds, updated_at")
         .eq("user_id", e.user_id)
         .gte("updated_at", start)
         .lte("updated_at", end);
-      const seconds = (sessions ?? []).reduce((a: number, s: any) => a + (s.total_time_seconds ?? 0), 0);
+      const seconds = (sessions ?? []).reduce((a: number, s: any) => a + (s.duration_seconds ?? 0), 0);
       score = seconds / 3600;
       breakdown = { hours: score };
     } else if (challenge.kind === "journal") {
@@ -191,8 +191,8 @@ async function computeChallengeScores(supabase: any, challenge: any) {
       breakdown = { session: target, trades: inSession.length, pnl: score };
     } else if (challenge.kind === "replay") {
       const { data: rs } = await supabase
-        .from("replay_scores").select("overall_score").eq("user_id", e.user_id);
-      const arr = (rs ?? []).map((r: any) => r.overall_score ?? 0);
+        .from("replay_scores").select("score").eq("user_id", e.user_id);
+      const arr = (rs ?? []).map((r: any) => r.score ?? 0);
       score = arr.length ? Math.max(...arr) : 0;
       breakdown = { best: score, sessions: arr.length };
     }

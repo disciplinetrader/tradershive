@@ -35,6 +35,7 @@ import {
   createEntry,
   deleteTaxonomy,
   fetchTaxonomy,
+  setEntryTagValues,
   journalKeys,
   upsertTaxonomy,
   type EntryInsert,
@@ -386,13 +387,19 @@ function ManualForm({
         session_auto_detected: true,
         trade_type: (tradeType || null) as EntryInsert["trade_type"],
         strategy: strategyTags[0] ?? null,
-        strategy_tags: strategyTags,
-        emotions,
+        // strategy_tags[] and emotions[] are trigger-projected from
+        // journal_entry_tags — written below, once the entry has an id.
         notes_text: notes || null,
         status: "draft",
       };
 
       const entry = await createEntry(insert);
+      if (strategyTags.length) {
+        await setEntryTagValues({ entryId: entry.id, userId: user.id, kind: "setup", values: strategyTags });
+      }
+      if (emotions.length) {
+        await setEntryTagValues({ entryId: entry.id, userId: user.id, kind: "emotion", values: emotions });
+      }
       if (screenshots.length) {
         const paths = await persistStagedScreenshots(user.id, entry.id, screenshots);
         if (paths.length) {

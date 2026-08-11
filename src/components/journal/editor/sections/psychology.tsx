@@ -36,7 +36,7 @@ const LEGACY_MAP: Record<string, string> = {
 };
 
 export function PsychologySection() {
-  const { entry, setField } = useTradeEditorContext();
+  const { entry, setField, setTagValues } = useTradeEditorContext();
   const psych = useMemo(() => readPsychology(entry), [entry]);
 
   const write = (next: PsychologyState) => {
@@ -44,10 +44,10 @@ export function PsychologySection() {
     const legacy = Array.from(
       new Set(all.map((v) => LEGACY_MAP[v]).filter((v): v is string => Boolean(v))),
     );
-    setField({
-      psychology: next as never,
-      emotions: legacy,
-    });
+    // emotions[] is projected from journal_entry_tags by trigger — the staged
+    // psychology blob is this editor's own column.
+    setField({ psychology: next as never });
+    void setTagValues("emotion", legacy);
   };
 
   const toggle = (stage: PsychStage, value: string) => {
@@ -142,7 +142,7 @@ export function PsychologySection() {
           {DEFAULT_EMOTIONS.map((e) => (
             <Chip key={e.value} active={(entry.emotions ?? []).includes(e.value)} onClick={() => {
               const cur = entry.emotions ?? [];
-              setField({ emotions: cur.includes(e.value) ? cur.filter((x) => x !== e.value) : [...cur, e.value] });
+              void setTagValues("emotion", cur.includes(e.value) ? cur.filter((x) => x !== e.value) : [...cur, e.value]);
             }}>
               {e.label}
             </Chip>

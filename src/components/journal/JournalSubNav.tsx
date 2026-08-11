@@ -1,9 +1,12 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   BarChart3,
+  FileBarChart,
   BookOpen,
+  FileText,
   Brain,
   CalendarDays,
+  CalendarRange,
   LayoutDashboard,
   ListChecks,
   Sparkles,
@@ -14,8 +17,11 @@ export const JOURNAL_NAV = [
   { to: "/journal", label: "Overview", icon: LayoutDashboard, exact: true },
   { to: "/journal/trades", label: "Trades", icon: ListChecks },
   { to: "/journal/calendar", label: "Calendar", icon: CalendarDays },
+  { to: "/journal/daily", label: "Daily", icon: CalendarRange },
   { to: "/journal/analytics", label: "Analytics", icon: BarChart3 },
+  { to: "/journal/reports", label: "Reports", icon: FileBarChart },
   { to: "/journal/playbooks", label: "Playbooks", icon: BookOpen },
+  { to: "/journal/notebook", label: "Notebook", icon: FileText },
   { to: "/journal/psychology", label: "Psychology", icon: Brain },
   { to: "/journal/coach", label: "AI Coach", icon: Sparkles },
 ] as const;

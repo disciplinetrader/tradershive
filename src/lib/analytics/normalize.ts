@@ -294,6 +294,82 @@ export function fromAnalyticsTrade(t: AnalyticsTrade): AnalyticsRecord {
   };
 }
 
+/**
+ * `journal_entries` row → analytics record.
+ *
+ * The journal is its own dataset, not a view of `paper_trades`: an entry can be
+ * logged by hand with no trade behind it, and the auto-journal trigger copies
+ * execution facts onto entries that do have one. Reading entries directly is
+ * what lets every journal report slice by tag, since tags live on the entry.
+ *
+ * Anything unmeasurable stays null rather than becoming zero — `riskAmount`
+ * without a stop, `realizedR` without a risk basis. Reports render those as
+ * "not measurable"; a 0 here would silently become a data point.
+ */
+export function fromJournalEntry(entry: JournalEntry, breakevenBand = 0): AnalyticsRecord {
+  const fees = (num(entry.commission) ?? 0) + (num(entry.swap) ?? 0);
+  const netPnl = num(entry.pnl) ?? 0;
+  const entryTime = entry.opened_at ? Date.parse(entry.opened_at) : NaN;
+  const exitTime = entry.closed_at ? Date.parse(entry.closed_at) : entryTime;
+  const fill = num(entry.entry_price);
+  const stop = num(entry.stop_loss);
+  const qty = num(entry.lot_size);
+
+  const riskAmount =
+    fill != null && stop != null && qty != null && qty > 0 ? Math.abs(fill - stop) * qty : null;
+  // Prefer the stored R — it is the canonical derivation — and only fall back
+  // to recomputing when the entry never carried one.
+  const realizedR =
+    num(entry.rr) ?? (riskAmount != null && riskAmount > 0 ? netPnl / riskAmount : null);
+
+  const safeEntry = Number.isFinite(entryTime) ? entryTime : 0;
+  const safeExit = Number.isFinite(exitTime) ? exitTime : safeEntry;
+
+  return {
+    tradeId: `journal:${entry.id}`,
+    positionId: null,
+    accountId: entry.account_id ?? null,
+    journalEntryId: entry.id,
+    source: "journal",
+
+    symbol: entry.symbol ?? "—",
+    market: entry.market ?? null,
+    assetClass: classifyAsset(entry.symbol ?? "", entry.market),
+    direction: entry.direction === "short" ? "short" : "long",
+    orderType: null,
+
+    entryTime: safeEntry,
+    exitTime: safeExit,
+    duration: entry.duration_seconds ?? Math.max(0, Math.round((safeExit - safeEntry) / 1000)),
+
+    fillPrice: fill,
+    exitPrice: num(entry.exit_price),
+    initialStop: stop,
+    initialTarget: num(entry.take_profit),
+    finalStop: stop,
+
+    grossPnl: netPnl + fees,
+    fees,
+    netPnl,
+    result: resultOf(netPnl, breakevenBand) ?? "breakeven",
+
+    riskAmount,
+    realizedR,
+    plannedR: num(entry.rr_planned) ?? plannedRFrom(fill, stop, num(entry.take_profit)),
+    returnPercent: num(entry.reward_pct),
+    quantity: qty,
+
+    closeReason: "unknown",
+    executionSource: "unknown",
+    slippage: null,
+
+    archived: entry.status === "archived",
+
+    journal: journalMetadataOf(entry),
+    tape: EMPTY_TAPE,
+  };
+}
+
 export function accountSnapshotOf(a: {
   id: string; name: string; currency: string;
   starting_balance: number; balance: number; equity: number; is_archived: boolean;

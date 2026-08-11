@@ -189,7 +189,7 @@ async function fetchScoreInputs(supabase: any, userId: string, windowDays = 30):
       .is("deleted_at", null),
     supabase
       .from("journal_entries")
-      .select("id, trade_id, notes, created_at, mistakes, emotions_pre, emotions_post, status")
+      .select("id, trade_id, notes_text, created_at, mistakes, psychology, status")
       .eq("user_id", userId)
       .gte("created_at", since),
     supabase
@@ -210,7 +210,7 @@ async function fetchScoreInputs(supabase: any, userId: string, windowDays = 30):
   const tradeIds = new Set(closedTrades.map((t: any) => t.id));
   const journaledTrades = (journals ?? []).filter((j: any) => j.trade_id && tradeIds.has(j.trade_id)).length;
   const totalJournalWords = (journals ?? []).reduce(
-    (s: number, j: any) => s + String(j.notes ?? "").split(/\s+/).filter(Boolean).length,
+    (s: number, j: any) => s + String(j.notes_text ?? "").split(/\s+/).filter(Boolean).length,
     0,
   );
   const tradingDays = new Set(closedTrades.map((t: any) => (t.opened_at ?? "").slice(0, 10))).size;
@@ -309,7 +309,7 @@ export const reviewTrade = createServerFn({ method: "POST" })
 
     const { data: journal } = await supabase
       .from("journal_entries")
-      .select("notes, mistakes, emotions_pre, emotions_post, rating")
+      .select("notes_text, mistakes, psychology")
       .eq("trade_id", trade.id)
       .maybeSingle();
 
@@ -482,7 +482,7 @@ export const runPsychologyAnalysis = createServerFn({ method: "POST" })
         .is("deleted_at", null),
       supabase
         .from("journal_entries")
-        .select("notes, mistakes, emotions_pre, emotions_post, rating, created_at")
+        .select("notes_text, mistakes, psychology, created_at")
         .eq("user_id", userId)
         .gte("created_at", since),
     ]);

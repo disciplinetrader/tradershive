@@ -7,8 +7,9 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import {
+  AI_JOURNAL_SELECT,
   buildIntelligence,
-  type RawJournal,
+  toRawJournal,
   type RawTrade,
   type StrategyRef,
 } from "@/lib/ai/intelligence";
@@ -35,7 +36,7 @@ export const getTraderIntelligence = createServerFn({ method: "GET" })
         .limit(1000),
       supabase
         .from("journal_entries")
-        .select("id, trade_id, mistakes, emotions_pre, emotions_post, rating, notes, created_at")
+        .select(AI_JOURNAL_SELECT)
         .eq("user_id", userId)
         .gte("created_at", since)
         .limit(1000),
@@ -43,7 +44,7 @@ export const getTraderIntelligence = createServerFn({ method: "GET" })
     ]);
 
     const trades = (tradesRes.data ?? []) as unknown as RawTrade[];
-    const journals = (journalsRes.data ?? []) as unknown as RawJournal[];
+    const journals = (journalsRes.data ?? []).map(toRawJournal);
     const strategies = (stratsRes.data ?? []) as unknown as StrategyRef[];
 
     return buildIntelligence(trades, journals, strategies, data.days);

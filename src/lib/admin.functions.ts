@@ -61,11 +61,11 @@ export const getAdminKpis = createServerFn({ method: "GET" })
       s.from("paper_trades").select("id", { count: "exact", head: true }).gte("created_at", iso),
       s.from("journal_entries").select("id", { count: "exact", head: true }).gte("created_at", iso),
       s.from("user_challenges").select("id", { count: "exact", head: true }).eq("status", "completed").gte("updated_at", iso),
-      s.from("xp_transactions").select("amount").gte("created_at", iso),
+      s.from("xp_transactions").select("delta").gte("created_at", iso),
       s.from("support_tickets").select("id", { count: "exact", head: true }).eq("status", "open"),
     ]);
 
-    const xpToday = (xp.data ?? []).reduce((sum: number, r: any) => sum + (r.amount ?? 0), 0);
+    const xpToday = (xp.data ?? []).reduce((sum: number, r: any) => sum + (r.delta ?? 0), 0);
 
     return {
       totalUsers: users.count ?? 0,

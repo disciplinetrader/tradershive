@@ -1,0 +1,22 @@
+{
+  "_comment": [
+    "Columns that genuinely do not exist. Each of these queries fails at runtime",
+    "and returns data: null — they are NOT false positives. They are listed",
+    "rather than fixed because the right replacement is a product decision.",
+    "",
+    "Fixing one? Remove it here in the same change — check:columns fails on a",
+    "stale entry, so this list cannot rot into a permanent exemption.",
+    "",
+    "Resolved 2026-08-11:",
+    "  journal_entries.notes         -> notes_text",
+    "  journal_entries.emotions_pre  -> psychology jsonb .before",
+    "  journal_entries.emotions_post -> psychology jsonb .after",
+    "  journal_entries.rating        -> dropped; no consumer ever read it",
+    "",
+    "Still open:",
+    "  journal_entries.followed_plan -> no such column. Nearest candidates are",
+    "    the checklist jsonb (completion ratio) or playbook_review jsonb.",
+    "    Consumer is social.functions.ts:26, a peer-comparison rollup."
+  ],
+  "known": ["journal_entries.followed_plan"]
+}

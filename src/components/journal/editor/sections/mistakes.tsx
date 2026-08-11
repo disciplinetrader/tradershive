@@ -25,7 +25,7 @@ const SEVERITIES: { value: MistakeSeverity; label: string; cls: string }[] = [
 ];
 
 export function MistakesSection() {
-  const { entry, setField } = useTradeEditorContext();
+  const { entry, setField, setTagValues } = useTradeEditorContext();
   const details = useMemo(() => readMistakeDetails(entry), [entry]);
   const selected = entry.mistakes ?? [];
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -37,7 +37,10 @@ export function MistakesSection() {
     const nextDetails = { ...details };
     if (!next.includes(value)) delete nextDetails[value];
     else nextDetails[value] = { severity: "medium", source: "user", confirmed: true, ...details[value] };
-    setField({ mistakes: next, mistake_flags: nextDetails as never });
+    // mistakes[] is projected from journal_entry_tags by trigger; only the
+    // per-mistake detail blob is a column this editor owns.
+    setField({ mistake_flags: nextDetails as never });
+    void setTagValues("mistake", next);
     setExpanded(next.includes(value) ? value : null);
   };
 

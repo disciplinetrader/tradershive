@@ -14,7 +14,7 @@ import {
   DEFAULT_EMOTIONS,
   JOURNAL_STORAGE_KEYS,
 } from "@/lib/journal/constants";
-import type { JournalTag, JournalTaxonomy } from "@/lib/journal/api";
+import { groupTagsByKind, type JournalTag, type JournalTaxonomy } from "@/lib/journal/api";
 import { cn } from "@/lib/utils";
 
 export type JournalFiltersState = {
@@ -86,6 +86,7 @@ export function JournalFilters({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [local]);
 
+  const tagGroups = useMemo(() => groupTagsByKind(tags), [tags]);
   const customSetups = useMemo(() => taxonomy.filter((t) => t.kind === "setup"), [taxonomy]);
   const customEmotions = useMemo(() => taxonomy.filter((t) => t.kind === "emotion"), [taxonomy]);
 
@@ -206,11 +207,15 @@ export function JournalFilters({
             />
           </div>
 
-          {tags.length > 0 ? (
-            <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Tags</p>
+          {/* Grouped by kind: the same label can exist under two kinds, so a
+              flat list would render two identical, indistinguishable chips. */}
+          {tagGroups.map((group) => (
+            <div key={group.kind}>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                {group.label}
+              </p>
               <div className="flex flex-wrap gap-1.5">
-                {tags.map((t) => {
+                {group.tags.map((t) => {
                   const active = local.tagIds.includes(t.id);
                   return (
                     <button
@@ -225,7 +230,7 @@ export function JournalFilters({
                       )}
                       style={active ? undefined : { borderColor: `${t.color}55`, color: t.color }}
                       aria-pressed={active}
-
+                      aria-label={`${group.label}: ${t.name}`}
                     >
                       {t.name}
                     </button>
@@ -233,7 +238,7 @@ export function JournalFilters({
                 })}
               </div>
             </div>
-          ) : null}
+          ))}
         </PopoverContent>
       </Popover>
 

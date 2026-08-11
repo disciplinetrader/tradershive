@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { unwrap } from "./server-errors";
 import { computeEvolution, computePlaybookStats } from "./playbook/stats";
 
 /* ============ Types kept internal to server module ============ */
@@ -44,7 +45,7 @@ export const listPlaybookLibrary = createServerFn({ method: "POST" })
     if (!ids.length) return [];
 
     // KPI rollup: journal + paper trades
-    const [{ data: journal }, { data: paper }] = await Promise.all([
+    const [journalRes, paperRes] = await Promise.all([
       context.supabase.from("journal_entries")
         .select("id,strategy_id,pnl,rr,opened_at,closed_at")
         .eq("user_id", context.userId).in("strategy_id", ids),
@@ -52,6 +53,8 @@ export const listPlaybookLibrary = createServerFn({ method: "POST" })
         .select("id,strategy_id,pnl,rr_realized,opened_at,closed_at,status")
         .eq("user_id", context.userId).in("strategy_id", ids).eq("status", "closed"),
     ]);
+    const journal = unwrap(journalRes, "listPlaybookLibrary/journal_entries") ?? [];
+    const paper = unwrap(paperRes, "listPlaybookLibrary/paper_trades") ?? [];
 
     const bucket = new Map<string, { trades: number; wins: number; rSum: number; rCount: number }>();
     const push = (sid: string | null, pnl: number | null, r: number | null) => {
@@ -62,8 +65,8 @@ export const listPlaybookLibrary = createServerFn({ method: "POST" })
       if (r != null) { b.rSum += r; b.rCount += 1; }
       bucket.set(sid, b);
     };
-    (journal ?? []).forEach((r) => push(r.strategy_id, r.pnl as any, r.rr as any));
-    (paper ?? []).forEach((r) => push(r.strategy_id, r.pnl as any, r.rr_realized as any));
+    journal.forEach((r) => push(r.strategy_id, r.pnl, r.rr));
+    paper.forEach((r) => push(r.strategy_id, r.pnl, r.rr_realized));
 
     let out = (strategies ?? []).map((s) => {
       const b = bucket.get(s.id);
@@ -92,7 +95,7 @@ export const getPlaybook = createServerFn({ method: "POST" })
     if (error) throw error;
     if (!strategy) throw new Error("Playbook not found");
 
-    const [{ data: checklists }, { data: items }, { data: attachments }, { data: lastRun }] = await Promise.all([
+    const [checklistsRes, itemsRes, attachmentsRes, lastRunRes] = await Promise.all([
       context.supabase.from("strategy_checklists").select("*")
         .eq("strategy_id", data.id).eq("user_id", context.userId).order("sort_order"),
       context.supabase.from("strategy_checklist_items").select("*")
@@ -103,18 +106,23 @@ export const getPlaybook = createServerFn({ method: "POST" })
         .eq("strategy_id", data.id).eq("user_id", context.userId)
         .order("created_at", { ascending: false }).limit(1).maybeSingle(),
     ]);
+    const checklists = unwrap(checklistsRes, "getPlaybook/strategy_checklists") ?? [];
+    const items = unwrap(itemsRes, "getPlaybook/strategy_checklist_items") ?? [];
+    const attachments = unwrap(attachmentsRes, "getPlaybook/strategy_attachments") ?? [];
+    // maybeSingle: a null row here is "no runs yet", not a failure.
+    const lastRun = unwrap(lastRunRes, "getPlaybook/strategy_checklist_runs");
 
-    const clIds = new Set((checklists ?? []).map((c) => c.id));
-    const grouped = (checklists ?? []).map((c) => ({
+    const clIds = new Set(checklists.map((c) => c.id));
+    const grouped = checklists.map((c) => ({
       ...c,
-      items: (items ?? []).filter((it) => it.checklist_id === c.id && clIds.has(it.checklist_id)),
+      items: items.filter((it) => it.checklist_id === c.id && clIds.has(it.checklist_id)),
     }));
 
     return {
       strategy,
       checklists: grouped,
-      attachments: attachments ?? [],
-      lastRun: lastRun ?? null,
+      attachments,
+      lastRun,
     };
   });
 
@@ -124,22 +132,24 @@ export const getPlaybookStats = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ id: z.string().uuid(), rangeDays: z.number().int().positive().max(3650).optional() }).parse(d))
   .handler(async ({ data, context }) => {
-    const [{ data: journal }, { data: paper }] = await Promise.all([
+    const [journalRes, paperRes] = await Promise.all([
       context.supabase.from("journal_entries")
-        .select("id,symbol,side,pnl,rr,opened_at,closed_at")
+        .select("id,symbol,direction,pnl,rr,opened_at,closed_at")
         .eq("user_id", context.userId).eq("strategy_id", data.id),
       context.supabase.from("paper_trades")
-        .select("id,symbol,side,pnl,rr_realized,opened_at,closed_at,status")
+        .select("id,symbol,direction,pnl,rr_realized,opened_at,closed_at,status")
         .eq("user_id", context.userId).eq("strategy_id", data.id).eq("status", "closed"),
     ]);
+    const journal = unwrap(journalRes, "getPlaybookStats/journal_entries") ?? [];
+    const paper = unwrap(paperRes, "getPlaybookStats/paper_trades") ?? [];
     const raws = [
-      ...(journal ?? []).map((r: any) => ({
-        id: r.id, source: "journal" as const, symbol: r.symbol, side: r.side,
+      ...journal.map((r) => ({
+        id: r.id, source: "journal" as const, symbol: r.symbol, side: r.direction,
         opened_at: r.opened_at, closed_at: r.closed_at, pnl: r.pnl == null ? null : Number(r.pnl),
         r: r.rr == null ? null : Number(r.rr),
       })),
-      ...(paper ?? []).map((r: any) => ({
-        id: r.id, source: "paper" as const, symbol: r.symbol, side: r.side,
+      ...paper.map((r) => ({
+        id: r.id, source: "paper" as const, symbol: r.symbol, side: r.direction,
         opened_at: r.opened_at, closed_at: r.closed_at, pnl: r.pnl == null ? null : Number(r.pnl),
         r: r.rr_realized == null ? null : Number(r.rr_realized),
       })),
@@ -154,33 +164,36 @@ export const getPlaybookEvolution = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ id: z.string().uuid(), rangeDays: z.number().int().positive().max(365).optional() }).parse(d))
   .handler(async ({ data, context }) => {
     const rangeDays = data.rangeDays ?? 30;
-    const [{ data: journal }, { data: paper }, { data: versions }] = await Promise.all([
+    const [journalRes, paperRes, versionsRes] = await Promise.all([
       context.supabase.from("journal_entries")
-        .select("id,symbol,side,pnl,rr,opened_at,closed_at")
+        .select("id,symbol,direction,pnl,rr,opened_at,closed_at")
         .eq("user_id", context.userId).eq("strategy_id", data.id),
       context.supabase.from("paper_trades")
-        .select("id,symbol,side,pnl,rr_realized,opened_at,closed_at,status")
+        .select("id,symbol,direction,pnl,rr_realized,opened_at,closed_at,status")
         .eq("user_id", context.userId).eq("strategy_id", data.id).eq("status", "closed"),
       context.supabase.from("strategy_versions")
         .select("version,created_at,change_notes")
         .eq("user_id", context.userId).eq("strategy_id", data.id)
         .order("version", { ascending: false }).limit(10),
     ]);
+    const journal = unwrap(journalRes, "getPlaybookEvolution/journal_entries") ?? [];
+    const paper = unwrap(paperRes, "getPlaybookEvolution/paper_trades") ?? [];
+    const versions = unwrap(versionsRes, "getPlaybookEvolution/strategy_versions") ?? [];
     const raws = [
-      ...(journal ?? []).map((r: any) => ({
-        id: r.id, source: "journal" as const, symbol: r.symbol, side: r.side,
+      ...journal.map((r) => ({
+        id: r.id, source: "journal" as const, symbol: r.symbol, side: r.direction,
         opened_at: r.opened_at, closed_at: r.closed_at,
         pnl: r.pnl == null ? null : Number(r.pnl),
         r: r.rr == null ? null : Number(r.rr),
       })),
-      ...(paper ?? []).map((r: any) => ({
-        id: r.id, source: "paper" as const, symbol: r.symbol, side: r.side,
+      ...paper.map((r) => ({
+        id: r.id, source: "paper" as const, symbol: r.symbol, side: r.direction,
         opened_at: r.opened_at, closed_at: r.closed_at,
         pnl: r.pnl == null ? null : Number(r.pnl),
         r: r.rr_realized == null ? null : Number(r.rr_realized),
       })),
     ];
-    return computeEvolution(raws, (versions ?? []) as any, rangeDays);
+    return computeEvolution(raws, versions, rangeDays);
   });
 
 /* ============ Mutations ============ */

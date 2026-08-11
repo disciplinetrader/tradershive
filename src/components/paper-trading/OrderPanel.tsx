@@ -71,8 +71,19 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
   const listTradesFn = useServerFn(listTrades);
   const { data: tags } = useQuery({
     queryKey: ["paper", "tags"],
-    queryFn: () => tagsFn() as unknown as Promise<Array<{ id: string; name: string; color: string }>>,
+    queryFn: () =>
+      tagsFn() as unknown as Promise<
+        Array<{ id: string; name: string; color: string; kind: string }>
+      >,
   });
+
+  /**
+   * The kind this picker creates. Tag names are unique per (user, kind), not
+   * per user — "Revenge" can be both an emotion and a mistake — so every
+   * name-based lookup below has to be scoped to a kind or it may bind to the
+   * wrong tag entirely.
+   */
+  const PICKER_KIND = "setup";
 
   // Currently open positions on this account — needed to compute free margin
   // for the pre-flight validation so the panel shows the same numbers the
@@ -91,6 +102,16 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
   useEffect(() => {
     if (!entry && livePrice != null) setEntry(String(livePrice));
   }, [symbol, livePrice, entry]);
+
+  // Cost structure is a property of the account, not of each ticket. Pre-fill
+  // from the account's defaults when the trader has not typed over them — a
+  // commission left at 0 makes every expectancy figure optimistic by exactly
+  // the fees that were never entered.
+  useEffect(() => {
+    if (!account) return;
+    setCommission((c) => (c === "0" || c === "" ? String(account.default_commission ?? 0) : c));
+    setSwap((s) => (s === "0" || s === "" ? String(account.default_swap ?? 0) : s));
+  }, [account?.id, account?.default_commission, account?.default_swap]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     setEntry(livePrice != null ? String(livePrice) : "");
@@ -315,7 +336,11 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
   }, [submitRequest]);
 
   const filteredTags = (tags ?? []).filter((t) => t.name.toLowerCase().includes(tagQuery.toLowerCase()));
-  const canCreateTag = tagQuery && !(tags ?? []).some((t) => t.name.toLowerCase() === tagQuery.toLowerCase());
+  const canCreateTag =
+    tagQuery &&
+    !(tags ?? []).some(
+      (t) => t.kind === PICKER_KIND && t.name.toLowerCase() === tagQuery.toLowerCase(),
+    );
 
   const riskWarn = calc && account?.max_trade_risk_pct != null && calc.riskPct > Number(account.max_trade_risk_pct);
   const waitingForPrice = orderType === "market" && !(Number(livePrice ?? entryNum) > 0);
@@ -533,7 +558,7 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
           <div className="mt-1 flex flex-wrap gap-1">
             {COMMON_TAGS.slice(0, 6).map((n) => (
               <button key={n} onClick={async () => {
-                const existing = tags?.find((t) => t.name === n);
+                const existing = tags?.find((t) => t.kind === PICKER_KIND && t.name === n);
                 if (existing) return setSelectedTagIds((s) => s.includes(existing.id) ? s : [...s, existing.id]);
                 try {
                   const created = await createTagFn({ data: { name: n } });
