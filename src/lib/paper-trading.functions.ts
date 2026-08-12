@@ -717,5 +717,102 @@ export const listTradeTimeline = createServerFn({ method: "GET" })
     return rows ?? [];
   });
 
+/* ---------------- Exit ladder (multiple TP/SL levels) ---------------- */
+
+/**
+ * Staged exits live in `paper_trade_exits`, never in `paper_trades`.
+ *
+ * `paper_trades.stop_loss` / `.take_profit` keep meaning "the primary level"
+ * and are deliberately left alone: `create_journal_draft_from_trade()` copies
+ * them straight into `journal_entries`, and the CSV importer and journal
+ * validation both read them as scalars. A trade with no ladder has no rows
+ * here and behaves exactly as it did before this table existed.
+ *
+ * `percent` is a share of the ORIGINAL lot size, so allocations stay stable as
+ * the position is scaled out — TP2 at 50% always means half the original size,
+ * never half of whatever survived TP1. Same rule as `chart/orders/take-profit.ts`.
+ */
+const exitLegSchema = z.object({
+  kind: z.enum(["take_profit", "stop_loss"]).default("take_profit"),
+  idx: z.number().int().min(1),
+  price: z.number().positive(),
+  percent: z.number().positive().max(100),
+  action: z.enum(["none", "break_even", "trail"]).default("none"),
+});
+
+const setTradeExitsSchema = z.object({
+  trade_id: z.string().uuid(),
+  legs: z.array(exitLegSchema).max(10),
+});
+
+/**
+ * Replace a trade's ladder wholesale.
+ *
+ * Delete-then-insert rather than a diff: the ladder is small, it is always
+ * edited as a unit, and a partial diff failure would leave a ladder whose
+ * allocations no longer sum to something meaningful. Only `pending` legs are
+ * cleared — a leg that already filled is execution history and rewriting it
+ * would falsify the trade.
+ */
+export const setTradeExits = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => setTradeExitsSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    // Ownership is enforced by RLS, but checking here turns a silent no-op
+    // into an error the ticket can actually show.
+    const { data: trade, error: tradeErr } = await context.supabase
+      .from("paper_trades")
+      .select("id, account_id, lot_size")
+      .eq("id", data.trade_id).eq("user_id", context.userId).single();
+    if (tradeErr || !trade) throw new Error("Trade not found");
+
+    const allocated = data.legs
+      .filter((l) => l.kind === "take_profit")
+      .reduce((sum, l) => sum + l.percent, 0);
+    if (allocated > 100.0001) {
+      throw new Error("Take-profit allocation exceeds 100% of the position");
+    }
+    const slots = new Set(data.legs.map((l) => `${l.kind}:${l.idx}`));
+    if (slots.size !== data.legs.length) {
+      throw new Error("Two exit levels share the same ladder slot");
+    }
+
+    const { error: delErr } = await context.supabase
+      .from("paper_trade_exits")
+      .delete()
+      .eq("trade_id", data.trade_id)
+      .eq("user_id", context.userId)
+      .eq("status", "pending");
+    if (delErr) throw delErr;
+
+    if (data.legs.length) {
+      const { error: insErr } = await context.supabase
+        .from("paper_trade_exits")
+        .insert(data.legs.map((l) => ({ ...l, trade_id: data.trade_id, user_id: context.userId })));
+      if (insErr) throw insErr;
+
+      await context.supabase.from("position_history").insert({
+        user_id: context.userId, account_id: trade.account_id, trade_id: data.trade_id,
+        event: "modified",
+        payload: { exits: data.legs.map((l) => ({ kind: l.kind, idx: l.idx, price: l.price, percent: l.percent, action: l.action })) },
+      });
+    }
+    return { ok: true, count: data.legs.length };
+  });
+
+export const listTradeExits = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ trade_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: rows, error } = await context.supabase
+      .from("paper_trade_exits")
+      .select("id, trade_id, kind, idx, price, percent, action, status, filled_at, filled_price")
+      .eq("user_id", context.userId)
+      .eq("trade_id", data.trade_id)
+      .order("idx", { ascending: true });
+    if (error) throw error;
+    return rows ?? [];
+  });
+
 // Helper re-export to keep client-side pip math available at call sites.
 export { pipsBetween };

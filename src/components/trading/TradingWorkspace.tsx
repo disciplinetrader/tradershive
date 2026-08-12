@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import { PaperTradingProvider, usePaper } from "@/components/paper-trading/context";
 import { TopToolbar } from "@/components/paper-trading/TopToolbar";
 import { AccountSummary } from "@/components/paper-trading/AccountSummary";
-import { OrderPanel } from "@/components/paper-trading/OrderPanel";
+import { OrderTicket } from "@/components/trading/OrderTicket";
 import { PositionsTable } from "@/components/paper-trading/PositionsTable";
 import {
   ExecutionStoresProvider,
@@ -483,7 +483,7 @@ function TradingWorkspaceInner() {
   }, [symbol]);
 
   useTradingShortcuts({
-    // The persistent "Armed" chip inside OrderPanel now provides feedback,
+    // The persistent "Armed" chip inside OrderTicket now provides feedback,
     // so we no longer stack a toast on every B/S press.
     onBuy: () => { emitTradeIntent({ kind: "focus_side", side: "long" }); setRightOpen(true); setActiveTab("order"); },
     onSell: () => { emitTradeIntent({ kind: "focus_side", side: "short" }); setRightOpen(true); setActiveTab("order"); },
@@ -1111,14 +1111,14 @@ function TradingWorkspaceInner() {
 
           {/* Right rail: tabbed, resizable, collapsible workspace panel.
               Battle accounts used to swap this whole panel for ArenaCommandRail.
-              That unmounted OrderPanel — the only subscriber to the trade-intent
+              That unmounted the order ticket — the only subscriber to the trade-intent
               bus — so Buy/Sell emitted into an empty listener set and silently
               did nothing, and it took the Positions tab with it. The battle
               route renders its own arena rail in a dedicated column.
 
               This panel must render in battle mode. Gating it on `arenaData`
               reintroduces exactly that bug: BattleStatusBar's Buy/Sell only
-              calls `emitTradeIntent`, and OrderPanel is the sole subscriber,
+              calls `emitTradeIntent`, and OrderTicket is the sole subscriber,
               so an unmounted panel makes the buttons a silent no-op with no
               error anywhere. Verified twice now — 2026-08-07 and 2026-08-10. */}
           {rightOpen ? (
@@ -1209,7 +1209,7 @@ function TradingWorkspaceInner() {
                       aria-labelledby="ws-tab-order"
                       className="space-y-3 animate-in fade-in duration-150"
                     >
-                      <OrderPanel compact />
+                      <OrderTicket compact />
                     </div>
                   )}
 

@@ -56,6 +56,24 @@ export async function fetchEntry(id: string): Promise<JournalEntry | null> {
   return (data ?? null) as JournalEntry | null;
 }
 
+/**
+ * The draft `create_journal_draft_from_trade()` created for a closed trade.
+ *
+ * Returns `null` rather than throwing when nothing is there yet: the trigger
+ * fires inside the close transaction, but a client that asks immediately after
+ * `closeTrade` resolves can still lose the race. Callers are expected to poll
+ * briefly rather than treat absence as failure.
+ */
+export async function fetchEntryByTradeId(tradeId: string): Promise<JournalEntry | null> {
+  const { data, error } = await supabase
+    .from("journal_entries")
+    .select("*")
+    .eq("trade_id", tradeId)
+    .maybeSingle();
+  if (error) throw error;
+  return (data ?? null) as JournalEntry | null;
+}
+
 export async function createEntry(patch: EntryInsert): Promise<JournalEntry> {
   const { data, error } = await supabase.from("journal_entries").insert(patch).select().single();
   if (error) throw error;

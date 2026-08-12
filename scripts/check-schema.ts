@@ -113,6 +113,23 @@ if (authErr) {
 type Problem = { table: string; detail: string };
 const problems: Problem[] = [];
 const extras: Problem[] = [];
+const missing: Problem[] = [];
+
+/**
+ * Tables whose migration is written and handed over but not yet applied.
+ *
+ * Same contract as `known-broken-columns.json`: an entry keeps the gate green
+ * while a decision (here, a hand-paste) is outstanding, and the check FAILS if
+ * a listed table turns out to exist — so the list clears itself instead of
+ * rotting into a permanent exemption.
+ */
+const pending: Record<string, string> = (() => {
+  try {
+    return JSON.parse(readFileSync("scripts/pending-tables.json", "utf8")) as Record<string, string>;
+  } catch {
+    return {};
+  }
+})();
 
 const entries = [...columns.entries()];
 const CONCURRENCY = 12;
@@ -136,7 +153,17 @@ async function worker() {
         // permission denied, a view without a grant — is not a types.ts defect
         // and lands in the quiet bucket, so a transient failure or a locked
         // table can never turn this into a red build on its own.
-        problems.push({ table, detail: error.message });
+        //
+        // With ONE exception. A table `types.ts` declares that PostgREST says
+        // does not exist at all is not an unreadable table, it is an unapplied
+        // migration — the exact signature of the silent SQL-editor failure that
+        // has bitten this project three times. Quietly bucketing it made this
+        // checker blind to the thing it was written to catch.
+        if (error.code === "PGRST205" || /Could not find the table/i.test(error.message)) {
+          missing.push({ table, detail: error.message });
+        } else {
+          problems.push({ table, detail: error.message });
+        }
         continue;
       }
 
@@ -179,10 +206,38 @@ if (other.length) {
   for (const p of other.slice(0, 8)) console.log(`  ${p.table}: ${p.detail.slice(0, 90)}`);
 }
 
-if (realDrift.length || extras.length) process.exit(1);
+const unexpectedlyMissing = missing.filter((m) => !pending[m.table]);
+const awaitingApply = missing.filter((m) => pending[m.table]);
+const stalePending = Object.keys(pending).filter((t) => !missing.some((m) => m.table === t));
+
+if (unexpectedlyMissing.length) {
+  console.error(`\ncheck:schema — ${TYPES} declares tables the database does not have:\n`);
+  for (const p of unexpectedlyMissing) console.error(`  ${p.table}`);
+  console.error(
+    "\nThis is what an unapplied — or silently truncated — migration looks like.\n" +
+      "Apply it, or add the table to scripts/pending-tables.json with the migration\n" +
+      "file that creates it if the hand-over is still outstanding.",
+  );
+}
+
+if (awaitingApply.length) {
+  console.log(`\nawaiting hand-application (${awaitingApply.length}):`);
+  for (const p of awaitingApply) console.log(`  ${p.table} — ${pending[p.table]}`);
+}
+
+if (stalePending.length) {
+  console.error(`\ncheck:schema — scripts/pending-tables.json lists tables that now exist:\n`);
+  for (const t of stalePending) console.error(`  ${t}`);
+  console.error("\nThe migration landed. Remove the entry so the list cannot rot into an exemption.");
+}
+
+if (realDrift.length || extras.length || unexpectedlyMissing.length || stalePending.length) {
+  process.exit(1);
+}
 
 console.log(
-  `check:schema — ok (${columns.size} tables verified against the live database` +
+  `check:schema — ok (${columns.size - missing.length} tables verified against the live database` +
     (other.length ? `, ${other.length} not readable` : "") +
+    (awaitingApply.length ? `, ${awaitingApply.length} awaiting migration` : "") +
     ")",
 );

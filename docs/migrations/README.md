@@ -15,6 +15,15 @@ survives the session that wrote them.
 | `journal-batch-2-5.sql` | ✅ applied 2026-08-12 (B-1 … B-6, statement by statement) |
 | `j3-statement.sql` | ✅ applied 2026-08-12 — J-3 alone, isolated after three truncated chat pastes |
 | `j3-verify.sql` | its two verifies |
+| `order-ticket-exits.sql` | ⏳ **not applied** — OT-1 … OT-6, creates `paper_trade_exits` |
+
+`order-ticket-exits.sql` is tracked in `scripts/pending-tables.json` until it is
+applied. `check:schema` now separates "this table does not exist" from "this
+table is unreadable" and **fails on the first** unless it is listed there — the
+two used to share one quiet bucket, which meant the checker written to catch
+silent migration failures could not see the most obvious one. Once the file is
+applied, remove the entry; `check:schema` fails if a listed table already
+exists, so the list cannot become a permanent exemption.
 
 `j3-statement.sql` contains **one statement and nothing else** — no comments, no
 verify, no trailing prose. Open it, select all, copy, paste. Chat mangled this

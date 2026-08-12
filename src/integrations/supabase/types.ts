@@ -7147,6 +7147,62 @@ export type Database = {
           },
         ]
       }
+      paper_trade_exits: {
+        Row: {
+          action: string
+          created_at: string
+          filled_at: string | null
+          filled_price: number | null
+          id: string
+          idx: number
+          kind: string
+          percent: number
+          price: number
+          status: string
+          trade_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          action?: string
+          created_at?: string
+          filled_at?: string | null
+          filled_price?: number | null
+          id?: string
+          idx: number
+          kind?: string
+          percent: number
+          price: number
+          status?: string
+          trade_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          filled_at?: string | null
+          filled_price?: number | null
+          id?: string
+          idx?: number
+          kind?: string
+          percent?: number
+          price?: number
+          status?: string
+          trade_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "paper_trade_exits_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: false
+            referencedRelation: "paper_trades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       paper_trades: {
         Row: {
           account_id: string
