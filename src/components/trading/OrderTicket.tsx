@@ -22,8 +22,9 @@ import {
   formatCurrency, pnl as computePnl, tradeCalculation, validateStops,
 } from "@/lib/paper-trading/calculations";
 import {
-  resolveQuantity, targetPriceForReward, QUANTITY_MODE_LABEL, TARGET_MODE_LABEL,
-  type QuantityMode, type TargetMode,
+  resolveQuantity, targetPriceForReward, stopPriceForRisk,
+  QUANTITY_MODE_LABEL, TARGET_MODE_LABEL, STOP_MODE_LABEL,
+  type QuantityMode, type TargetMode, type StopMode,
 } from "@/lib/paper-trading/order-ticket";
 import { useLivePrice } from "@/lib/paper-trading/live-quotes";
 import { validateNewOrder, liquidationPrice, type OpenTradeInput } from "@/lib/paper-trading/risk";
@@ -112,6 +113,7 @@ export function OrderTicket({ compact = false }: { compact?: boolean } = {}) {
   const [qtyValue, setQtyValue] = useState("0.10");
 
   const [sl, setSl] = useState("");
+  const [slMode, setSlMode] = useState<StopMode>("price");
   const [tpMode, setTpMode] = useState<TargetMode>("price");
   const [legs, setLegs] = useState<ExitLeg[]>([newLeg()]);
 
@@ -170,9 +172,23 @@ export function OrderTicket({ compact = false }: { compact?: boolean } = {}) {
 
   /* ---------------- derived numbers ---------------- */
   const entryNum = Number(entry) || 0;
-  const slNum = num(sl);
   const balance = Number(account?.balance ?? 0);
   const leverage = Number(account?.leverage ?? 100);
+
+  // A risk-expressed stop needs a lot size to become a price. That lot is only
+  // knowable without reference to the stop when quantity is in units — which is
+  // exactly the case where the risk stop modes are offered, so there is no
+  // cycle here. In the risk quantity modes `slMode` is forced back to "price".
+  const unitsLot = qtyMode === "units" ? Number(qtyValue) || 0 : 0;
+
+  const slNum = useMemo(() => {
+    const v = num(sl);
+    if (slMode === "price" || v == null) return v;
+    return stopPriceForRisk({
+      sym: symbolMeta, side, entry: entryNum, lot: unitsLot || null,
+      balance, mode: slMode, value: v,
+    });
+  }, [sl, slMode, symbolMeta, side, entryNum, unitsLot, balance]);
 
   const sizing = useMemo(
     () => resolveQuantity({
@@ -429,7 +445,10 @@ export function OrderTicket({ compact = false }: { compact?: boolean } = {}) {
       setOrderType(i.orderType);
       setTouched(true);
       if (i.price != null) setEntry(String(i.price));
-      if (i.sl != null) setSl(String(i.sl));
+      // Chart intents always carry price levels, so the field has to be in
+      // price mode to read one correctly — otherwise a dragged stop at 63156
+      // would be interpreted as $63,156 of risk.
+      if (i.sl != null) { setSlMode("price"); setSl(String(i.sl)); }
       if (i.tp != null) { setTpMode("price"); setLegs([newLeg(String(i.tp))]); }
       if (i.lot != null) { setQtyMode("units"); setQtyValue(String(i.lot)); }
       if (i.kind === "submit") setSubmitRequest((n) => n + 1);
@@ -568,6 +587,9 @@ export function OrderTicket({ compact = false }: { compact?: boolean } = {}) {
               onChange={(m) => {
                 setQtyMode(m);
                 setQtyValue(m === "units" ? "0.10" : m === "risk_percent" ? "1" : "100");
+                // Leaving a risk-expressed stop selected here would leave the
+                // ticket in the one combination that has no unique solution.
+                if (m !== "units" && slMode !== "price") { setSlMode("price"); setSl(""); }
                 setTouched(true);
               }}
             />
@@ -616,14 +638,37 @@ export function OrderTicket({ compact = false }: { compact?: boolean } = {}) {
             )}
           </div>
 
-          {/* stop loss */}
-          <Field label="Stop loss" htmlFor="ticket-sl"
-            hint={qtyMode !== "units" ? "Drives the position size" : undefined}>
+          {/* stop loss, mode-switched */}
+          <div className="space-y-1">
+            <ModeSwitch<StopMode>
+              label="Stop loss"
+              value={slMode}
+              options={["price", "risk_currency", "risk_percent"]}
+              labels={STOP_MODE_LABEL}
+              // Sizing from risk derives the lot FROM the stop. Expressing the
+              // stop as risk too has no unique solution, so the combination is
+              // locked out rather than silently resolved.
+              disabled={qtyMode !== "units" ? ["risk_currency", "risk_percent"] : []}
+              disabledTitle="Unavailable while quantity is sized from risk — the stop is the input there"
+              onChange={(m) => { setSlMode(m); setSl(""); setTouched(true); }}
+            />
             <Input
-              id="ticket-sl" inputMode="decimal" value={sl} placeholder="—" className="h-8 font-mono"
+              id="ticket-sl" inputMode="decimal" value={sl} placeholder="—"
+              className="h-8 font-mono"
+              aria-label={`Stop loss ${STOP_MODE_LABEL[slMode]}`}
               onChange={(e) => { setSl(e.target.value); setTouched(true); }}
             />
-          </Field>
+            {qtyMode !== "units" && (
+              <p className="text-[10px] text-muted-foreground">Drives the position size.</p>
+            )}
+            {slMode !== "price" && (
+              <p className="font-mono text-[10px] text-muted-foreground">
+                {slNum != null
+                  ? `→ ${slNum.toFixed(symbolMeta?.decimals ?? 2)}`
+                  : "Enter a lot size and amount to resolve a stop price"}
+              </p>
+            )}
+          </div>
 
           {/* take profit ladder */}
           <div className="space-y-1.5">
@@ -914,25 +959,35 @@ export function OrderTicket({ compact = false }: { compact?: boolean } = {}) {
 /* ================= sub-components ================= */
 
 function ModeSwitch<T extends string>({
-  label, value, options, labels, onChange,
+  label, value, options, labels, onChange, disabled = [], disabledTitle,
 }: {
   label: string; value: T; options: readonly T[];
   labels: Record<T, string>; onChange: (v: T) => void;
+  disabled?: readonly T[]; disabledTitle?: string;
 }) {
   return (
     <div className="flex items-center justify-between gap-2">
       <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</Label>
       <div role="radiogroup" aria-label={`${label} input mode`} className="flex gap-0.5 rounded-md bg-muted/40 p-0.5">
-        {options.map((o) => (
-          <button
-            key={o} type="button" role="radio" aria-checked={value === o}
-            onClick={() => onChange(o)}
-            className={cn(
-              "rounded px-1.5 py-0.5 text-[10px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
-              value === o ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground",
-            )}
-          >{labels[o]}</button>
-        ))}
+        {options.map((o) => {
+          const off = disabled.includes(o);
+          return (
+            <button
+              key={o} type="button" role="radio" aria-checked={value === o}
+              aria-disabled={off} disabled={off}
+              title={off ? disabledTitle : undefined}
+              onClick={() => { if (!off) onChange(o); }}
+              className={cn(
+                "rounded px-1.5 py-0.5 text-[10px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+                off
+                  ? "cursor-not-allowed text-muted-foreground/40"
+                  : value === o
+                    ? "bg-primary/15 text-primary"
+                    : "text-muted-foreground hover:text-foreground",
+              )}
+            >{labels[o]}</button>
+          );
+        })}
       </div>
     </div>
   );

@@ -22,8 +22,19 @@ import type { SymbolMeta } from "./symbols";
 /** How the trader is expressing position size. */
 export type QuantityMode = "units" | "risk_currency" | "risk_percent";
 
-/** How the trader is expressing a take-profit / stop-loss level. */
+/** How the trader is expressing a take-profit level. */
 export type TargetMode = "price" | "reward_currency" | "reward_percent";
+
+/**
+ * How the trader is expressing the stop.
+ *
+ * The risk forms are only usable when quantity is in units. Sizing from risk
+ * derives the lot FROM the stop distance, so expressing the stop as a risk
+ * amount too closes a loop with no solution — every (lot, stop) pair on one
+ * line satisfies it. The ticket disables these two options in that combination
+ * rather than silently picking a point on the line.
+ */
+export type StopMode = "price" | "risk_currency" | "risk_percent";
 
 export const QUANTITY_MODE_LABEL: Record<QuantityMode, string> = {
   units: "Units",
@@ -35,6 +46,12 @@ export const TARGET_MODE_LABEL: Record<TargetMode, string> = {
   price: "Price",
   reward_currency: "Reward $",
   reward_percent: "Reward %",
+};
+
+export const STOP_MODE_LABEL: Record<StopMode, string> = {
+  price: "Price",
+  risk_currency: "Risk $",
+  risk_percent: "Risk %",
 };
 
 export type SizingResult = {
@@ -164,6 +181,42 @@ export function targetPriceForReward(params: {
 
   const pips = reward / perPip;
   const price = entry + directionSign(side) * pips * sym.pipSize;
+  if (!Number.isFinite(price) || price <= 0) return null;
+
+  const p = Math.pow(10, sym.decimals);
+  return Math.round(price * p) / p;
+}
+
+/**
+ * Turn a stop expressed as a loss in currency or percent into a price level.
+ *
+ * Mirror of `targetPriceForReward`, on the other side of entry. Needs a lot
+ * size for the same reason: "lose at most $200" is only a price once the
+ * position size is known. Returns `null` rather than guessing when it is not.
+ */
+export function stopPriceForRisk(params: {
+  sym: SymbolMeta | null;
+  side: TradeSide;
+  entry: number;
+  lot: number | null;
+  balance: number;
+  mode: StopMode;
+  value: number;
+}): number | null {
+  const { sym, side, entry, lot, balance, mode, value } = params;
+  if (!sym || mode === "price") return null;
+  if (!lot || lot <= 0) return null;
+  if (!Number.isFinite(entry) || entry <= 0) return null;
+  if (!Number.isFinite(value) || value <= 0) return null;
+  if (mode === "risk_percent" && !(balance > 0)) return null;
+
+  const risk = mode === "risk_percent" ? balance * (value / 100) : value;
+  const perPip = sym.pipValuePerLot * lot;
+  if (perPip <= 0) return null;
+
+  const pips = risk / perPip;
+  // Opposite side of entry from the target: a long's stop sits below.
+  const price = entry - directionSign(side) * pips * sym.pipSize;
   if (!Number.isFinite(price) || price <= 0) return null;
 
   const p = Math.pow(10, sym.decimals);

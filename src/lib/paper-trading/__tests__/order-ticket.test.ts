@@ -3,6 +3,7 @@ import {
   resolveQuantity,
   targetPriceForReward,
   rewardForTargetPrice,
+  stopPriceForRisk,
   riskForLot,
 } from "@/lib/paper-trading/order-ticket";
 import { findSymbol } from "@/lib/paper-trading/symbols";
@@ -191,6 +192,71 @@ describe("targetPriceForReward", () => {
   it("signs the reward negative when the target is the wrong side of entry", () => {
     // A "target" below entry on a long is a loss, and must not read as a gain.
     expect(rewardForTargetPrice(eur, "long", 1.1, 1.09, 0.5)).toBeCloseTo(-500, 4);
+  });
+});
+
+describe("stopPriceForRisk", () => {
+  it("places a long's stop below entry", () => {
+    // 0.5 lots at $10/pip = $5/pip; $500 of risk is 100 pips → 1.09.
+    const px = stopPriceForRisk({
+      sym: eur, side: "long", entry: 1.1, lot: 0.5, balance: 10_000,
+      mode: "risk_currency", value: 500,
+    });
+    expect(px).toBeCloseTo(1.09, 6);
+  });
+
+  it("places a short's stop above entry", () => {
+    const px = stopPriceForRisk({
+      sym: eur, side: "short", entry: 1.1, lot: 0.5, balance: 10_000,
+      mode: "risk_currency", value: 500,
+    });
+    expect(px).toBeCloseTo(1.11, 6);
+  });
+
+  it("is the mirror of the target for the same amount", () => {
+    const args = { sym: eur, entry: 1.1, lot: 0.5, balance: 10_000, value: 500 } as const;
+    const stop = stopPriceForRisk({ ...args, side: "long", mode: "risk_currency" })!;
+    const target = targetPriceForReward({ ...args, side: "long", mode: "reward_currency" })!;
+    expect(1.1 - stop).toBeCloseTo(target - 1.1, 6);
+  });
+
+  it("reads a percent off the balance", () => {
+    const px = stopPriceForRisk({
+      sym: eur, side: "long", entry: 1.1, lot: 0.5, balance: 50_000,
+      mode: "risk_percent", value: 1,
+    });
+    expect(px).toBeCloseTo(1.09, 6);
+  });
+
+  it("round-trips through resolveQuantity", () => {
+    // A stop derived from $500 of risk must, fed back as a price, reproduce
+    // that same $500 — otherwise the two directions disagree.
+    const stop = stopPriceForRisk({
+      sym: eur, side: "long", entry: 1.1, lot: 0.5, balance: 10_000,
+      mode: "risk_currency", value: 500,
+    })!;
+    expect(riskForLot(eur, 1.1, stop, 0.5)).toBeCloseTo(500, 4);
+  });
+
+  it("returns null without a lot size", () => {
+    expect(stopPriceForRisk({
+      sym: eur, side: "long", entry: 1.1, lot: null, balance: 10_000,
+      mode: "risk_currency", value: 500,
+    })).toBeNull();
+  });
+
+  it("returns null in price mode, which owns its own field", () => {
+    expect(stopPriceForRisk({
+      sym: eur, side: "long", entry: 1.1, lot: 0.5, balance: 10_000,
+      mode: "price", value: 500,
+    })).toBeNull();
+  });
+
+  it("refuses a risk so large the stop would go non-positive", () => {
+    expect(stopPriceForRisk({
+      sym: btc, side: "long", entry: 67_500, lot: 0.001, balance: 10_000_000,
+      mode: "risk_currency", value: 500_000,
+    })).toBeNull();
   });
 });
 
