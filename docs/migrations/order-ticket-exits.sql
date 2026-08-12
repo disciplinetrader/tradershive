@@ -1,7 +1,16 @@
--- Order ticket rebuild — multiple exit levels (OT-1 … OT-5)
+-- Order ticket rebuild — multiple exit levels (OT-1 … OT-6)
 --
--- Apply ONE statement at a time in the Lovable SQL editor, then run that
--- statement's VERIFY alone. A block success means nothing (see README).
+-- DO NOT PASTE FROM THIS FILE. It is the annotated reference. The twelve bare
+-- files in `order-ticket-exits/` are the ones to open, select-all and copy —
+-- one statement each, no comments, no prose, same discipline as
+-- `j3-statement.sql`, which chat mangled three times before it was isolated.
+--
+--   order-ticket-exits/ot-1.sql  →  ot-1-verify.sql
+--   order-ticket-exits/ot-2.sql  →  ot-2-verify.sql
+--   … through ot-6.
+--
+-- Run the statement alone, then its verify alone. A block success means
+-- nothing (see README).
 --
 -- `paper_trades` is deliberately NOT altered. `stop_loss` / `take_profit` stay
 -- exactly as they are and keep meaning "the primary level", which is what
@@ -82,8 +91,13 @@ alter table public.paper_trade_exits enable row level security;
 ---------------------------------------------------------------------------
 -- OT-6  the policy
 ---------------------------------------------------------------------------
-create policy "own trade exits" on public.paper_trade_exits for all
-  using (auth.uid() = user_id) with check (auth.uid() = user_id);
+-- Wrapped so a re-run is a no-op: CREATE POLICY has no IF NOT EXISTS, and
+-- partial re-application is the normal case when statements are hand-pasted.
+do $$ begin
+  create policy "own trade exits" on public.paper_trade_exits for all
+    using (auth.uid() = user_id) with check (auth.uid() = user_id);
+exception when duplicate_object then null;
+end $$;
 
 -- VERIFY OT-6 (run alone) — expect 1 row
 -- select policyname, cmd from pg_policies

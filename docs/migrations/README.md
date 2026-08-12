@@ -15,7 +15,9 @@ survives the session that wrote them.
 | `journal-batch-2-5.sql` | ✅ applied 2026-08-12 (B-1 … B-6, statement by statement) |
 | `j3-statement.sql` | ✅ applied 2026-08-12 — J-3 alone, isolated after three truncated chat pastes |
 | `j3-verify.sql` | its two verifies |
-| `order-ticket-exits.sql` | ⏳ **not applied** — OT-1 … OT-6, creates `paper_trade_exits` |
+| `order-ticket-exits.sql` | annotated reference — **do not paste from it** |
+| `order-ticket-exits/ot-{1..6}.sql` | ⏳ **not applied** — one bare statement each |
+| `order-ticket-exits/ot-{1..6}-verify.sql` | their verifies, one per statement |
 
 `order-ticket-exits.sql` is tracked in `scripts/pending-tables.json` until it is
 applied. `check:schema` now separates "this table does not exist" from "this
