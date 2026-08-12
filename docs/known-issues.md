@@ -798,5 +798,22 @@ journal-side risk, not only a battle-side one.
 ### Fix sketch
 
 Route battle-replay closes through the same clamp-and-update helper `closeTrade`
-uses, rather than inserting a finished row. Extracting that helper is the real
-work; the call site is one insert.
+uses, rather than inserting a finished row.
+
+**The helper now exists** (2026-08-12). `paper-trading/settlement.ts` holds the
+pure math — `clampRealizedPnl`, `nextBalance`, `nextStatistics` — and
+`paper-trading.functions.ts` wraps it in `loadAccountMoney` +
+`commitSettlement`. `closeTrade` and `partialCloseTrade` both go through it.
+The invariant is unit-tested directly, including a case that reproduces this
+issue's −$180.10 drift.
+
+So the remaining battle-side work is genuinely small:
+
+1. `submitBattleReplayTrade` calls `loadAccountMoney(sb, account_id)`.
+2. It clamps its `pnl` with `clampRealizedPnl` **before** inserting the row, so
+   the inserted `paper_trades.pnl` is the bounded figure.
+3. After the insert it calls `commitSettlement(..., { countsAsTrade: true })`.
+
+Both helpers are module-private today; exporting them is part of the change.
+Do not reimplement the arithmetic at the call site — a second copy is how the
+two writers diverged in the first place.

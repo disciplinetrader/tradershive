@@ -1,9 +1,81 @@
 import { createServerFn } from "@tanstack/react-start";
+import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Database } from "@/integrations/supabase/types";
 import { findSymbol } from "./paper-trading/symbols";
 import { pnl as computePnl, pipsBetween } from "./paper-trading/calculations";
 import { validateNewOrder, type OpenTradeInput } from "./paper-trading/risk";
+import {
+  clampRealizedPnl, nextBalance, nextStatistics, type AccountMoneyState,
+} from "./paper-trading/settlement";
+
+type PaperSupabase = ReturnType<typeof createClient<Database>>;
+
+/* ---------------- Realized-P&L settlement ---------------- */
+
+/**
+ * Read the account figures the clamp needs.
+ *
+ * Called BEFORE the trade row is written. Applying the negative-balance cap at
+ * balance-update time instead leaves `paper_trades.pnl` holding the unclamped
+ * loss, and the trade row then disagrees with both the balance and the
+ * statistics by exactly the amount that was capped.
+ */
+async function loadAccountMoney(
+  sb: PaperSupabase, accountId: string,
+): Promise<AccountMoneyState | null> {
+  const { data } = await sb.from("paper_accounts")
+    .select("balance, negative_balance_protection").eq("id", accountId).single();
+  if (!data) return null;
+  return {
+    balance: Number(data.balance),
+    negative_balance_protection: !!data.negative_balance_protection,
+  };
+}
+
+/**
+ * Apply a realized P&L to the balance AND the statistics, together.
+ *
+ * The single place either is written. Any writer that realizes money on a
+ * paper account goes through here, so the three-way invariant
+ * (`paper_trades.pnl` / `paper_accounts.balance` /
+ * `account_statistics.net_pnl`) cannot be half-satisfied by one caller
+ * remembering the balance and forgetting the statistics — which is precisely
+ * what `partialCloseTrade` did, and what BA-11's battle writer does with both.
+ *
+ * `pnl` must already be clamped by `clampRealizedPnl`, using the same
+ * `account` snapshot passed here.
+ */
+async function commitSettlement(
+  sb: PaperSupabase,
+  opts: {
+    accountId: string;
+    userId: string;
+    account: AccountMoneyState;
+    pnl: number;
+    /** True for a completed trade, false for a partial realization. */
+    countsAsTrade: boolean;
+  },
+): Promise<{ balance: number }> {
+  const balance = nextBalance(
+    opts.account.balance, opts.pnl, opts.account.negative_balance_protection,
+  );
+  const { error: balErr } = await sb.from("paper_accounts")
+    .update({ balance, equity: balance })
+    .eq("id", opts.accountId).eq("user_id", opts.userId);
+  if (balErr) throw balErr;
+
+  const { data: prev } = await sb.from("account_statistics")
+    .select("*").eq("account_id", opts.accountId).maybeSingle();
+  const next = nextStatistics(prev, opts.pnl, opts.countsAsTrade);
+  const { error: statErr } = await sb.from("account_statistics").upsert({
+    account_id: opts.accountId, user_id: opts.userId, ...next,
+  });
+  if (statErr) throw statErr;
+
+  return { balance };
+}
 
 /* ---------------- Accounts ---------------- */
 
@@ -297,17 +369,15 @@ export const closeTrade = createServerFn({ method: "POST" })
     // just at balance-update time) keeps `paper_trades.pnl`,
     // `account_statistics.net_pnl` and `paper_accounts.balance` internally
     // consistent — the invariant that closed a $70M drift on a $25k account.
-    const { data: acct } = await context.supabase.from("paper_accounts")
-      .select("balance, negative_balance_protection").eq("id", trade.account_id).single();
+    const acct = await loadAccountMoney(context.supabase, trade.account_id);
 
     let closeReason = data.close_reason;
-    if (acct?.negative_balance_protection) {
-      const balance = Number(acct.balance);
-      if (balance + pnl < 0) {
-        // Cap the loss so post-close balance floors at $0 (broker NBP).
-        pnl = -balance;
-        if (closeReason === "manual") closeReason = "liquidation";
-      }
+    if (acct) {
+      const capped = clampRealizedPnl(pnl, acct);
+      pnl = capped.pnl;
+      // A close that only completes because the loss was capped is a
+      // liquidation, not a manual exit.
+      if (capped.clamped && closeReason === "manual") closeReason = "liquidation";
     }
 
     const rr_realized = trade.risk_amount && Number(trade.risk_amount) > 0
@@ -325,35 +395,16 @@ export const closeTrade = createServerFn({ method: "POST" })
     }).eq("id", data.id).eq("user_id", context.userId);
     if (upErr) throw upErr;
 
+    // Balance and statistics move together, or not at all.
     if (acct) {
-      const newBal = Number(acct.balance) + pnl;
-      // pnl is already NBP-bounded above; the max(0, …) is belt-and-braces
-      // for legacy accounts still carrying a stale balance value.
-      const safeBal = acct.negative_balance_protection ? Math.max(0, newBal) : newBal;
-      await context.supabase.from("paper_accounts").update({ balance: safeBal, equity: safeBal })
-        .eq("id", trade.account_id).eq("user_id", context.userId);
+      await commitSettlement(context.supabase, {
+        accountId: trade.account_id,
+        userId: context.userId,
+        account: acct,
+        pnl,
+        countsAsTrade: true,
+      });
     }
-
-    // Update cached stats (net_pnl now matches balance movement exactly).
-    const { data: stats } = await context.supabase.from("account_statistics")
-      .select("*").eq("account_id", trade.account_id).maybeSingle();
-    const isWin = pnl > 0, isLoss = pnl < 0;
-    const total = (stats?.total_trades ?? 0) + 1;
-    const wins = (stats?.wins ?? 0) + (isWin ? 1 : 0);
-    const losses = (stats?.losses ?? 0) + (isLoss ? 1 : 0);
-    const breakevens = (stats?.breakevens ?? 0) + (!isWin && !isLoss ? 1 : 0);
-    await context.supabase.from("account_statistics").upsert({
-      account_id: trade.account_id,
-      user_id: context.userId,
-      total_trades: total,
-      wins, losses, breakevens,
-      win_rate: total ? (wins / total) * 100 : 0,
-      gross_profit: Number(stats?.gross_profit ?? 0) + (isWin ? pnl : 0),
-      gross_loss: Number(stats?.gross_loss ?? 0) + (isLoss ? Math.abs(pnl) : 0),
-      net_pnl: Number(stats?.net_pnl ?? 0) + pnl,
-      best_trade: Math.max(Number(stats?.best_trade ?? 0), pnl),
-      worst_trade: Math.min(Number(stats?.worst_trade ?? 0), pnl),
-    });
 
     await context.supabase.from("position_history").insert({
       user_id: context.userId, account_id: trade.account_id, trade_id: data.id,
@@ -620,15 +671,11 @@ export const partialCloseTrade = createServerFn({ method: "POST" })
     const swapShare = Number(trade.swap ?? 0) * data.fraction;
     let pnl = gross - commissionShare - swapShare;
 
-    const { data: acct } = await context.supabase.from("paper_accounts")
-      .select("balance, negative_balance_protection").eq("id", trade.account_id).single();
+    const acct = await loadAccountMoney(context.supabase, trade.account_id);
 
     // Bound realized loss under NBP before writing anywhere — keeps stats
     // consistent with the actual balance movement.
-    if (acct?.negative_balance_protection) {
-      const balance = Number(acct.balance);
-      if (balance + pnl < 0) pnl = -balance;
-    }
+    if (acct) pnl = clampRealizedPnl(pnl, acct).pnl;
 
     const { error: upErr } = await context.supabase.from("paper_trades").update({
       lot_size: remainingLot,
@@ -637,12 +684,20 @@ export const partialCloseTrade = createServerFn({ method: "POST" })
     }).eq("id", data.id).eq("user_id", context.userId);
     if (upErr) throw upErr;
 
+    // Previously this moved the balance and never touched
+    // `account_statistics`, despite the comment above claiming otherwise — so
+    // every partial close drifted `net_pnl` from the balance by its own P&L.
+    // `countsAsTrade: false` records the money without counting a finished
+    // trade: the position is still open, and inflating `total_trades` would
+    // corrupt `win_rate`.
     if (acct) {
-      const raw = Number(acct.balance) + pnl;
-      const newBal = acct.negative_balance_protection ? Math.max(0, raw) : raw;
-      await context.supabase.from("paper_accounts")
-        .update({ balance: newBal, equity: newBal })
-        .eq("id", trade.account_id).eq("user_id", context.userId);
+      await commitSettlement(context.supabase, {
+        accountId: trade.account_id,
+        userId: context.userId,
+        account: acct,
+        pnl,
+        countsAsTrade: false,
+      });
     }
 
     await context.supabase.from("position_history").insert({
