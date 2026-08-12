@@ -219,7 +219,11 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
       const riskAmt = sl != null ? Math.abs(computePnl(sym, t.direction, t.entry_price, sl, t.lot_size)) : 0;
       const rewardAmt = tp != null ? Math.abs(computePnl(sym, t.direction, t.entry_price, tp, t.lot_size)) : 0;
       const pnl = livePrice != null ? floatingPnl(sym, t.direction, t.entry_price, livePrice, t.lot_size) : 0;
-      const rMult = riskAmt > 0 ? pnl / riskAmt : 0;
+      // `null`, not 0, when there is no stop. R is P&L measured in units of
+      // risk, so with no risk basis it is undefined — and a `: 0` fallback
+      // rendered "+0.00R" next to a non-zero P&L, which is arithmetically
+      // impossible and read as a real measurement.
+      const rMult = riskAmt > 0 ? pnl / riskAmt : null;
       const pts = livePrice != null ? pointsDelta(t.direction, t.entry_price, livePrice) : 0;
       // Legs beyond the first. Leg 1 is the same level as `take_profit` and is
       // already drawn as the draggable Target line, so drawing it again would
@@ -334,8 +338,14 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
                   <span className={cn("font-bold tabular-nums", winning ? "text-success" : "text-danger")}>
                     {fmtMoney(pnl)}
                   </span>
-                  <span className={cn("tabular-nums", winning ? "text-success" : "text-danger")}>
-                    {rMult >= 0 ? "+" : ""}{rMult.toFixed(2)}R
+                  <span
+                    className={cn(
+                      "tabular-nums",
+                      rMult == null ? "text-muted-foreground" : winning ? "text-success" : "text-danger",
+                    )}
+                    title={rMult == null ? "No stop loss set — R cannot be measured" : undefined}
+                  >
+                    {rMult == null ? "—R" : `${rMult >= 0 ? "+" : ""}${rMult.toFixed(2)}R`}
                   </span>
                   <span className="tabular-nums text-muted-foreground">
                     {pts >= 0 ? "+" : ""}{pts.toFixed(sym.decimals)}

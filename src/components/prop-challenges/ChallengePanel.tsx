@@ -53,6 +53,35 @@ export function ChallengePanel({ compact = false }: { compact?: boolean }) {
   }, [active?.id, qc, tickM]);
 
   if (!active?.id) return null;
+
+  // The active challenge id lives in localStorage and outlives the challenge
+  // it points at. When it no longer resolves — deleted, or belonging to
+  // another account — `getPropChallenge` throws on every one of the 15s
+  // retries. Gating only on `!q.data` meant the panel claimed to be loading
+  // forever, with no error shown and no way for the trader to clear it.
+  if (q.isError) {
+    return (
+      <GlassCard className="space-y-2 p-3 text-xs">
+        <p className="flex items-start gap-1.5 text-warning">
+          <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />
+          This challenge could not be loaded. It may have been deleted, or it
+          belongs to a different account.
+        </p>
+        <p className="font-mono text-[10px] text-muted-foreground break-all">{active.id}</p>
+        <div className="flex gap-1.5">
+          <Button size="sm" variant="outline" className="h-7 px-2 text-[11px]"
+            onClick={() => void q.refetch()} disabled={q.isFetching}>
+            {q.isFetching ? "Retrying…" : "Retry"}
+          </Button>
+          <Button size="sm" variant="outline" className="h-7 px-2 text-[11px]"
+            onClick={() => { clear(); qc.removeQueries({ queryKey: ["prop-challenge", active.id] }); }}>
+            Clear challenge
+          </Button>
+        </div>
+      </GlassCard>
+    );
+  }
+
   if (!q.data) {
     return (
       <GlassCard className="p-3 text-xs text-muted-foreground">Loading challenge…</GlassCard>

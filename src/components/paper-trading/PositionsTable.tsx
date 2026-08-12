@@ -112,7 +112,10 @@ export function PositionsTable() {
     const current = quotes[t.symbol]?.price ?? sym?.refPrice ?? Number(t.entry_price);
     const floating = sym ? computePnl(sym, t.direction, Number(t.entry_price), current, Number(t.lot_size)) : 0;
     const risk = sym && t.stop_loss ? Math.abs(computePnl(sym, t.direction, Number(t.entry_price), Number(t.stop_loss), Number(t.lot_size))) : 0;
-    const rr = risk > 0 ? floating / risk : 0;
+    // `null` means "no stop, so R is not measurable" — distinct from a real
+    // 0.00R at break-even. The cell used to test `rr` for truthiness, which
+    // collapsed those two into the same dash and hid a genuine zero.
+    const rr = risk > 0 ? floating / risk : null;
     return { t, sym, current, floating, rr };
   }), [data, quotes]);
 
@@ -189,8 +192,14 @@ export function PositionsTable() {
                     <TableCell className="py-1.5 text-right font-mono tabular-nums">{Number(t.lot_size).toFixed(2)}</TableCell>
                     <TableCell className="py-1.5 text-right font-mono tabular-nums text-muted-foreground">{t.stop_loss ? formatNumber(Number(t.stop_loss), sym?.decimals ?? 2) : "—"}</TableCell>
                     <TableCell className="py-1.5 text-right font-mono tabular-nums text-muted-foreground">{t.take_profit ? formatNumber(Number(t.take_profit), sym?.decimals ?? 2) : "—"}</TableCell>
-                    <TableCell className={cn("py-1.5 text-right font-mono tabular-nums", rr >= 0 ? "text-success" : "text-danger")}>
-                      {rr ? `${rr.toFixed(2)}R` : "—"}
+                    <TableCell
+                      className={cn(
+                        "py-1.5 text-right font-mono tabular-nums",
+                        rr == null ? "text-muted-foreground" : rr >= 0 ? "text-success" : "text-danger",
+                      )}
+                      title={rr == null ? "No stop loss set — R cannot be measured" : undefined}
+                    >
+                      {rr == null ? "—" : `${rr.toFixed(2)}R`}
                     </TableCell>
                     <FlashCell value={floating} up={up}>
                       {signed(floating)}{formatCurrency(Math.abs(floating), account?.currency)}
@@ -326,7 +335,7 @@ function formatDuration(start: Date): string {
   return `${d}d ${h % 24}h`;
 }
 
-type Enriched = { t: Trade; sym: ReturnType<typeof findSymbol>; current: number; floating: number; rr: number };
+type Enriched = { t: Trade; sym: ReturnType<typeof findSymbol>; current: number; floating: number; rr: number | null };
 
 function sortEnriched(rows: Enriched[], s: BlotterSort): Enriched[] {
   const mul = s.dir === "asc" ? 1 : -1;
