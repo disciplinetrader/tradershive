@@ -11,9 +11,9 @@ survives the session that wrote them.
 | File | Status |
 |---|---|
 | `tag-consolidation-chunks.sql` | ✅ applied 2026-08-11 (chunks 1, 1B, 2–12) |
-| `journal-observation-cursor.sql` | ✅ applied 2026-08-11 (J-1 … J-4) |
+| `journal-observation-cursor.sql` | ✅ applied — J-1/J-2 on 2026-08-12, J-3 via `j3-statement.sql` |
 | `journal-batch-2-5.sql` | ✅ applied 2026-08-12 (B-1 … B-6, statement by statement) |
-| `j3-statement.sql` | ⏳ pending — J-3 alone, isolated after three truncated chat pastes |
+| `j3-statement.sql` | ✅ applied 2026-08-12 — J-3 alone, isolated after three truncated chat pastes |
 | `j3-verify.sql` | its two verifies |
 
 `j3-statement.sql` contains **one statement and nothing else** — no comments, no

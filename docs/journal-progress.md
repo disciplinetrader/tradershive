@@ -1,6 +1,6 @@
 # Journal — progress and state
 
-Last updated: 2026-08-11 · Branch: `journal-foundation` (pushed)
+Last updated: 2026-08-12 · Branch: `journal-foundation` (pushed)
 
 The journal was rebuilt bottom-up over one session. This note is the handover:
 what is done, what is applied to the database, what is not, and what to look at
@@ -8,32 +8,25 @@ first.
 
 ---
 
-## READ FIRST — one thing is blocking
+## Status: all migrations applied, all gates green
 
-**`journal-batch-2-5.sql` (B-1 … B-6) has NOT been applied.** It was pasted once
-and reported success; it did not run. A `notify pgrst, 'reload schema'` changed
-nothing, which rules out a stale schema cache and confirms truncation.
+As of 2026-08-12 every migration is applied and `bun run check` passes end to
+end — `typecheck · test (365) · build · check:columns · check:casts ·
+check:schema`. `check:schema` verifies 240 tables against the live database,
+which confirms the hand-patched `types.ts` matches reality.
 
-Until it is applied:
+Getting there took three silent failures, none of which the SQL editor
+reported:
 
-- `bun run check:schema` is **red**, correctly — `types.ts` is hand-patched to
-  describe the post-migration schema, so it is ahead of the database.
-- The new columns are **unreachable at runtime** even though everything
-  compiles. `/journal/daily`, `/journal/notebook`, the excursions panel, the
-  trade rating, the break-even band and the account cost defaults will all fail
-  against the live DB until the columns exist.
+- `journal-batch-2-5.sql` pasted as a block, reported success, ran nothing.
+- `journal-observation-cursor.sql` J-1 likewise — while J-3 from the same file
+  also failed, which by luck meant the trigger never referenced the missing
+  column and trade closes were never broken.
+- J-3 then truncated on three further chat pastes before being moved to a bare
+  file (`j3-statement.sql`) and copied directly.
 
-The statements are in `scratchpad/journal-batch-2-5.sql`, already split one per
-paste with separate verifies. **Paste one statement, run it, run its verify
-separately.** Do not trust a block success — that is exactly how this was lost
-the first time. If an `add constraint` errors "already exists", that half landed
-previously: skip it and continue.
-
-When done, run `bun run check:schema`. Green confirms the hand-patched
-`types.ts` matches reality. If it is still red, the drift output names the exact
-columns.
-
----
+The rule that finally worked: **one statement per paste, verify separately,
+and for anything long, a file containing the statement and nothing else.**
 
 ## Why the checkers exist
 
@@ -79,9 +72,10 @@ bun run check    →  typecheck · test · build · check:columns · check:casts
 
 | Migration | Status |
 |---|---|
-| `tag-consolidation-chunks.sql` — chunks 1, 1B, 2–12 | ✅ applied |
-| `journal-observation-cursor.sql` — J-1 … J-4 | ✅ applied |
-| `journal-batch-2-5.sql` — B-1 … B-6 | ❌ **not applied** (see above) |
+| `tag-consolidation-chunks.sql` — chunks 1, 1B, 2–12 | ✅ applied 2026-08-11 |
+| `journal-observation-cursor.sql` — J-1, J-2, J-4 | ✅ applied 2026-08-12 |
+| `j3-statement.sql` — J-3, isolated into a bare file | ✅ applied 2026-08-12 |
+| `journal-batch-2-5.sql` — B-1 … B-6 | ✅ applied 2026-08-12 |
 
 Three tables are retired but **deliberately not dropped**: `journal_taxonomy`,
 `trade_tags`, `trade_tag_relations`. The `DROP`s sit commented at the bottom of
@@ -157,14 +151,20 @@ always-failing suite gets ignored wholesale. Un-skip when replay work resumes.
 
 ## Look at these first
 
-1. **Apply B-1 … B-6, one statement at a time**, then `bun run check:schema`.
-   Nothing else should happen until that is green — several shipped surfaces
-   depend on those columns.
-2. **`/journal/reports` will look sparse.** Setup performance and mistake cost
+1. **Tag a trade.** Nothing is tagged yet, so setup performance and mistake
+   cost are both empty and the tag pickers have only the seeded vocabulary.
+   Tagging one trade exercises the whole chain at once: the join table, the
+   trigger that projects the arrays, and the two reports that justify tagging
+   existing.
+2. **Press "Measure" on a trade's excursion panel.** MAE/MFE has never run
+   against real data. The candles exist (44,911 rows, BTC/USDT@5m, 181 in the
+   trade window), so it should work — but it has only been proven by unit test,
+   not end to end.
+3. **`/journal/reports` will look sparse.** Setup performance and mistake cost
    are both empty because nothing is tagged yet. That is correct behaviour and
    it is also the argument for the tagging work: those two panels are the
    payoff, and they light up the first time a trade is tagged.
-3. **Regenerate `types.ts` properly when a Supabase token is available.**
+4. **Regenerate `types.ts` properly when a Supabase token is available.**
    It is hand-patched — Lovable owns the project and `supabase gen types` cannot
    run non-interactively. `check:schema` covers the risk (237 of 239 tables);
    `profiles` and `provider_credentials` deny a full-column select, and
