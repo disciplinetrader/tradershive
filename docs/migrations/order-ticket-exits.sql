@@ -1,13 +1,13 @@
--- Order ticket rebuild — multiple exit levels (OT-1 … OT-6)
+-- Order ticket rebuild — multiple exit levels (OT-1 … OT-9)
 --
--- DO NOT PASTE FROM THIS FILE. It is the annotated reference. The twelve bare
+-- DO NOT PASTE FROM THIS FILE. It is the annotated reference. The bare
 -- files in `order-ticket-exits/` are the ones to open, select-all and copy —
 -- one statement each, no comments, no prose, same discipline as
 -- `j3-statement.sql`, which chat mangled three times before it was isolated.
 --
 --   order-ticket-exits/ot-1.sql  →  ot-1-verify.sql
 --   order-ticket-exits/ot-2.sql  →  ot-2-verify.sql
---   … through ot-6.
+--   … through ot-9.
 --
 -- Run the statement alone, then its verify alone. A block success means
 -- nothing (see README).
@@ -102,3 +102,52 @@ end $$;
 -- VERIFY OT-6 (run alone) — expect 1 row
 -- select policyname, cmd from pg_policies
 --  where schemaname = 'public' and tablename = 'paper_trade_exits';
+
+---------------------------------------------------------------------------
+-- OT-7  cap the ladder at five levels
+---------------------------------------------------------------------------
+-- The UI allowed 5, `setTradeExits` allowed 10 and the table allowed any
+-- number, so the real limit was whichever layer a caller happened to enter
+-- through. Five wins because it is the only one that had been through UX
+-- thought. Combined with `paper_trade_exits_slot_uidx` this bounds the ladder
+-- at five legs per (trade, kind), not merely five distinct index values.
+do $$ begin
+  alter table public.paper_trade_exits
+    add constraint paper_trade_exits_idx_max check (idx >= 1 and idx <= 5);
+exception when duplicate_object then null;
+end $$;
+
+---------------------------------------------------------------------------
+-- OT-8  allocation guard — a CHECK cannot see sibling rows, so this is a
+--       trigger function. Excludes `cancelled` legs; counts `filled` ones,
+--       because a filled leg has already consumed its share of the original
+--       quantity and re-allocating it would over-commit the position.
+---------------------------------------------------------------------------
+create or replace function public.paper_trade_exits_check_allocation()
+returns trigger language plpgsql set search_path = public as $$
+declare allocated numeric;
+begin
+  select coalesce(sum(percent), 0) into allocated
+    from public.paper_trade_exits
+   where trade_id = new.trade_id
+     and kind = new.kind
+     and status <> 'cancelled'
+     and id <> new.id;
+  if allocated + new.percent > 100.0001 then
+    raise exception
+      'exit allocation for trade % kind % would total %, which is over 100',
+      new.trade_id, new.kind, round(allocated + new.percent, 2);
+  end if;
+  return new;
+end $$;
+
+---------------------------------------------------------------------------
+-- OT-9  attach it
+---------------------------------------------------------------------------
+do $$ begin
+  create trigger paper_trade_exits_allocation
+    before insert or update of percent, kind, status
+    on public.paper_trade_exits
+    for each row execute function public.paper_trade_exits_check_allocation();
+exception when duplicate_object then null;
+end $$;

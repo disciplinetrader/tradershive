@@ -787,9 +787,18 @@ export const listTradeTimeline = createServerFn({ method: "GET" })
  * the position is scaled out — TP2 at 50% always means half the original size,
  * never half of whatever survived TP1. Same rule as `chart/orders/take-profit.ts`.
  */
+/**
+ * Five levels, enforced here AND by `paper_trade_exits_idx_max` in the
+ * database. The UI, this validator and the table had three different limits
+ * (5 / 10 / none), which meant the only real limit was whichever layer a
+ * caller happened to go through. The database is now the floor, so a raw
+ * write cannot exceed what the ticket allows.
+ */
+export const MAX_EXIT_LEGS = 5;
+
 const exitLegSchema = z.object({
   kind: z.enum(["take_profit", "stop_loss"]).default("take_profit"),
-  idx: z.number().int().min(1),
+  idx: z.number().int().min(1).max(MAX_EXIT_LEGS),
   price: z.number().positive(),
   percent: z.number().positive().max(100),
   action: z.enum(["none", "break_even", "trail"]).default("none"),
@@ -797,7 +806,7 @@ const exitLegSchema = z.object({
 
 const setTradeExitsSchema = z.object({
   trade_id: z.string().uuid(),
-  legs: z.array(exitLegSchema).max(10),
+  legs: z.array(exitLegSchema).max(MAX_EXIT_LEGS),
 });
 
 /**

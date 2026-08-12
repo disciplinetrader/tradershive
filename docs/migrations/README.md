@@ -17,7 +17,8 @@ survives the session that wrote them.
 | `j3-verify.sql` | its two verifies |
 | `order-ticket-exits.sql` | annotated reference — **do not paste from it** |
 | `order-ticket-exits/ot-{1..6}.sql` | ✅ applied 2026-08-12 — one bare statement each, verified individually |
-| `order-ticket-exits/ot-{1..6}-verify.sql` | their verifies, one per statement |
+| `order-ticket-exits/ot-{7..9}.sql` | ⏳ **not applied** — leg cap + allocation trigger |
+| `order-ticket-exits/ot-{1..9}-verify.sql` | their verifies, one per statement |
 
 **Tracking an unapplied migration.** A new table goes in
 `scripts/pending-tables.json` between writing the migration and applying it.

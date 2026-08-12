@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   openTrade, placeOrder, closeTrade, listTrades, listTradeTags, createTradeTag,
-  setTradeExits, listTradeExits,
+  setTradeExits, listTradeExits, MAX_EXIT_LEGS,
 } from "@/lib/paper-trading.functions";
 import { COMMON_TAGS } from "@/lib/paper-trading/symbols";
 import {
@@ -743,7 +743,7 @@ export function OrderTicket({ compact = false }: { compact?: boolean } = {}) {
             <div className="flex items-center justify-between gap-2">
               <Button
                 type="button" size="sm" variant="outline" className="h-7 px-2 text-[10px]"
-                disabled={legs.length >= 5 || orderType !== "market"}
+                disabled={legs.length >= MAX_EXIT_LEGS || orderType !== "market"}
                 title={orderType !== "market" ? "Staged exits attach once the order fills" : undefined}
                 onClick={() => setLegs((ls) => {
                   // Re-split evenly so a new leg never silently over-allocates.
