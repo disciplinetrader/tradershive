@@ -137,11 +137,14 @@ export function LineAction({
   label,
   children,
   danger,
+  /** Text actions ("+SL") need room; icon actions stay square. */
+  wide,
 }: {
   onClick: () => void;
   label: string;
   children: ReactNode;
   danger?: boolean;
+  wide?: boolean;
 }) {
   return (
     <button
@@ -152,7 +155,8 @@ export function LineAction({
       onPointerDown={(e) => e.stopPropagation()}
       onClick={onClick}
       className={cn(
-        "grid h-[15px] w-[15px] place-items-center rounded-[2px] bg-muted text-muted-foreground transition focus-visible:outline-none focus-visible:ring-2",
+        "grid h-[15px] place-items-center rounded-[2px] bg-muted text-muted-foreground transition focus-visible:outline-none focus-visible:ring-2",
+        wide ? "w-auto px-1 text-[9px] font-semibold leading-none" : "w-[15px]",
         danger
           ? "hover:bg-danger hover:text-white focus-visible:ring-danger/40"
           : "hover:bg-primary hover:text-primary-foreground focus-visible:ring-primary/40",

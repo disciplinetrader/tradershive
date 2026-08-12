@@ -58,6 +58,30 @@ type ExitLegRow = {
   price: number | string; percent: number | string; action: string; status: string;
 };
 
+/**
+ * Where a newly attached stop or target starts out.
+ *
+ * A position opened without protection has no line on the chart, so there is
+ * nothing to drag — the only way to attach one was the Positions table's edit
+ * dialog, which means leaving the chart. These buttons put the level on the
+ * chart at a sane starting distance; the trader then drags it exactly as they
+ * would an existing one.
+ *
+ * 0.5% of entry rather than a fixed pip count, so the default is sensible on
+ * both a 64,000 crypto price and a 1.10 FX rate. The precise number matters
+ * far less than being on the correct side of entry and immediately draggable.
+ */
+function defaultLevel(
+  sym: SymbolMeta, direction: "long" | "short", entry: number, kind: "sl" | "tp",
+): number {
+  const offset = Math.abs(entry) * 0.005;
+  // The stop sits against the trade, the target with it.
+  const against = direction === "long" ? -1 : 1;
+  const raw = kind === "sl" ? entry + against * offset : entry - against * offset;
+  const p = Math.pow(10, sym.decimals);
+  return Math.max(1 / p, Math.round(raw * p) / p);
+}
+
 /** Signed points delta between entry and current price, in symbol units. */
 function pointsDelta(direction: "long" | "short", entry: number, current: number): number {
   return direction === "long" ? current - entry : entry - current;
@@ -386,6 +410,33 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
                       ))}
                     </DropdownMenuContent>
                   </DropdownMenu>
+                  {/* Attach a missing level without leaving the chart. Only
+                      shown when the trade lacks one — an existing level is
+                      already on screen and draggable. */}
+                  {t.stop_loss == null && (
+                    <LineAction
+                      wide
+                      label="Add stop loss — drag the line to adjust"
+                      onClick={() => modify.mutate({
+                        id: t.id,
+                        stop_loss: defaultLevel(sym, t.direction, t.entry_price, "sl"),
+                      })}
+                    >
+                      +SL
+                    </LineAction>
+                  )}
+                  {t.take_profit == null && (
+                    <LineAction
+                      wide
+                      label="Add take profit — drag the line to adjust"
+                      onClick={() => modify.mutate({
+                        id: t.id,
+                        take_profit: defaultLevel(sym, t.direction, t.entry_price, "tp"),
+                      })}
+                    >
+                      +TP
+                    </LineAction>
+                  )}
                   <LineAction
                     label="Close position"
                     danger
