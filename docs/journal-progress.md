@@ -154,7 +154,9 @@ they see only leg 1. When a report wants per-level detail (which leg filled,
 how much was scaled out where), it reads `paper_trade_exits` by `trade_id`.
 Nothing in the journal does yet. The chart and the order ticket both read
 it as of 2026-08-12 (CH-1, shipped) — the journal is the last single-target
-reader.
+reader. **Parked pending a product decision — see JR-2 in `docs/known-issues.md`,
+which names the three options.** It changes what all six reports compute, so it
+is not an implementation task.
 
 **4. `ClockStatus` — two skipped tests**
 `src/lib/replay/session/__tests__/` — both assert `status === "ended"` while the

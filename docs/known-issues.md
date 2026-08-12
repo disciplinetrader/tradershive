@@ -817,3 +817,56 @@ So the remaining battle-side work is genuinely small:
 Both helpers are module-private today; exporting them is part of the change.
 Do not reimplement the arithmetic at the call site — a second copy is how the
 two writers diverged in the first place.
+
+---
+
+## JR-2 — Journal reports read only the primary take-profit; staged legs are invisible
+
+**Area:** Journal / reports · **Found:** 2026-08-12 · **Status:** open, parked
+pending a product decision — **do not pick this up as an implementation task**
+
+### What is true today
+
+`paper_trade_exits` (applied 2026-08-12) lets a trade carry a ladder of
+take-profit levels, each with its own price and its share of the original size.
+The order ticket writes it and the chart draws it (CH-1, shipped).
+
+`paper_trades.stop_loss` / `.take_profit` were deliberately left as scalars
+meaning "the primary level", so `create_journal_draft_from_trade()`, the CSV
+importer (`journal/import/csv.ts:109-110`) and `journal/editor/validation.ts`
+all keep working untouched. The consequence is that **every journal surface
+sees leg 1 and nothing else**: `journal_entries.take_profit` is a single number,
+and the six reports under `/journal/reports` compute against it.
+
+Nothing is wrong in the data. The ladder is stored correctly and
+`listTradeExits` / `listExitsForTrades` return it. No journal consumer calls
+either.
+
+### Why this is a decision, not a task
+
+A trade that scales out has no single R. Half the position closing at 1R and
+half at 3R is not "a 2R trade" for every purpose — it is 2R of realised R, but
+its win rate, its MAE/MFE window and its "did it reach target" answer all
+differ by which leg you mean. The six reports are built on **one dataset, filtered once**
+(`buildDataset()`), so whichever answer is chosen applies to all of them at
+once. That is the point of the rule and the reason not to decide it casually.
+
+### The three options
+
+1. **Per-leg rows.** A laddered trade contributes one row per filled leg.
+   Truthful about execution; inflates trade counts and makes win rate mean
+   "percent of *exits* that were profitable", which is not what the label says.
+2. **Blended R.** One row per trade, R computed as the size-weighted sum across
+   filled legs. Keeps trade counts honest and win rate meaning what it says;
+   loses the ability to ask "did TP2 ever fill?" without a second query.
+3. **Both, explicitly separated.** Trade-level rows stay the dataset for
+   counts and rates; a separate leg-level view answers exit-behaviour questions
+   (which legs fill, where scaling out helps or hurts). Most informative,
+   roughly double the reporting surface, and needs the two never to be mixed in
+   one panel — the exact failure `buildDataset()` exists to prevent.
+
+### Where it would land
+
+`src/lib/journal/` — `buildDataset()` is the single place scope is decided, so
+whichever option wins is implemented there and inherited by all six reports.
+`journal_entries` itself needs no schema change under options 1 or 2.
