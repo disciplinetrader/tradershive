@@ -12,7 +12,13 @@ survives the session that wrote them.
 |---|---|
 | `tag-consolidation-chunks.sql` | ✅ applied 2026-08-11 (chunks 1, 1B, 2–12) |
 | `journal-observation-cursor.sql` | ✅ applied 2026-08-11 (J-1 … J-4) |
-| `journal-batch-2-5.sql` | ❌ **not applied** — pasted once, reported success, did not run |
+| `journal-batch-2-5.sql` | ✅ applied 2026-08-12 (B-1 … B-6, statement by statement) |
+| `j3-statement.sql` | ⏳ pending — J-3 alone, isolated after three truncated chat pastes |
+| `j3-verify.sql` | its two verifies |
+
+`j3-statement.sql` contains **one statement and nothing else** — no comments, no
+verify, no trailing prose. Open it, select all, copy, paste. Chat mangled this
+one three times; a bare file removes the transport.
 
 Each file carries its own apply order and a VERIFY query per statement. Run the
 statement alone, then its verify alone. A block success means nothing.
