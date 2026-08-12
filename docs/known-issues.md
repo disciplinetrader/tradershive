@@ -10,6 +10,17 @@ enough detail to pick up cold. Remove an entry when it ships a fix.
 > and 100,000 for forex, so it tests clean and ships wrong. Two callers convert
 > explicitly today; a third would inherit the bug.
 
+> **Unparking Battle Arena? Read
+> [BA-11](#ba-11--battle-replay-writes-pl-that-never-reaches-balance-or-statistics)
+> before touching the replay writer, and fix it in the same pass.**
+> `submitBattleReplayTrade` inserts a finished `paper_trades` row and never
+> updates `paper_accounts.balance`, never writes `account_statistics`, and never
+> applies the negative-balance clamp. Measured on the demo account 2026-08-12:
+> five battle rows worth **+$180.10** reached neither, while three trades written
+> by `closeTrade` moved both to the cent. It is an unclamped writer into the
+> table the dashboard, journal and every report read — so the damage lands
+> outside battle-arena even though the defect is inside it.
+
 ---
 
 ## BA-1 — Matchmaking creates battles with no participants
@@ -789,54 +800,3 @@ journal-side risk, not only a battle-side one.
 Route battle-replay closes through the same clamp-and-update helper `closeTrade`
 uses, rather than inserting a finished row. Extracting that helper is the real
 work; the call site is one insert.
-
----
-
-## CH-1 — Chart draws only the primary take-profit; staged exit legs are invisible
-
-**Area:** Trading workspace / chart order layer · **Found:** 2026-08-12 ·
-**Status:** open, deliberately unfixed — the chart layer was out of scope for
-the order-ticket rebuild
-
-### Observed
-
-Placing a market order with a two-leg ladder (TP1 64179, TP2 64679) through the
-rebuilt order ticket. Both legs persist to `paper_trade_exits` and both render
-in the ticket's position state:
-
-```
-EXIT LADDER
-TP1  64179.00  50%   PENDING
-TP2  64679.00  50%   PENDING
-```
-
-The chart draws **only the 64179 line**. Nothing marks 64679, so a trader
-reading the chart sees a single target and a position that will apparently
-close in full there.
-
-### Mechanism
-
-The chart order layer renders levels from the `paper_trades` row —
-`stop_loss` and `take_profit`, both scalars. `paper_trade_exits` was added
-additively and deliberately left `paper_trades` untouched so the journal draft
-trigger, the CSV importer and `journal/editor/validation.ts` keep working
-unchanged (see `docs/migrations/order-ticket-exits.sql`). The cost of that
-choice is that anything reading only the scalar columns — the chart included —
-sees leg 1 and nothing else.
-
-Note this is a *display* gap, not a data one. The ladder is stored correctly and
-`listTradeExits` returns it; no consumer on the chart side calls it.
-
-### Why it matters
-
-The discrepancy is silent and points the wrong way: the chart is the surface a
-trader watches while managing a position, and it under-reports the plan. Someone
-scaling out in stages would see no evidence on the chart that stage two exists.
-
-### Fix sketch
-
-Have the chart's position-line builder read `paper_trade_exits` for the trade
-alongside the scalar columns, and draw one target line per pending leg labelled
-`TP1…TPn` with its allocation. The ticket already has the query
-(`listTradeExits`); this is a second consumer of it, not new data plumbing.
-Renderer lives under `src/components/trading/chart/`.

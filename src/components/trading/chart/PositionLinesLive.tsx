@@ -15,12 +15,15 @@
  * `partialCloseTrade`) — visualization only, no trading-logic changes.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import type { ChartAdapter } from "@/lib/chart/adapter";
 import type { SymbolMeta } from "@/lib/paper-trading/symbols";
-import { modifyTrade, closeTrade, moveToBreakEven, partialCloseTrade } from "@/lib/paper-trading.functions";
+import {
+  modifyTrade, closeTrade, moveToBreakEven, partialCloseTrade,
+  listExitsForTrades, updateExitLeg,
+} from "@/lib/paper-trading.functions";
 import { floatingPnl, fmtPrice } from "@/lib/trading/plan-math";
 import { pnl as computePnl } from "@/lib/paper-trading/calculations";
 import { cn } from "@/lib/utils";
@@ -48,6 +51,11 @@ interface Props {
 }
 
 type DragState = { tradeId: string; handle: "sl" | "tp"; price: number };
+
+type ExitLegRow = {
+  id: string; trade_id: string; kind: string; idx: number;
+  price: number | string; percent: number | string; action: string; status: string;
+};
 
 /** Signed points delta between entry and current price, in symbol units. */
 function pointsDelta(direction: "long" | "short", entry: number, current: number): number {
@@ -85,6 +93,42 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
       modifyFn({ data: v }) as unknown as Promise<{ ok: true }>,
     onSuccess: () => qc.invalidateQueries({ queryKey: ["paper", "trades"] }),
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to modify trade"),
+  });
+
+  // Staged exits for every position drawn here. `paper_trades.take_profit`
+  // holds only the primary level, so without this a laddered position shows
+  // one target line on the chart while the ticket lists several (CH-1).
+  const exitsFn = useServerFn(listExitsForTrades);
+  const legFn = useServerFn(updateExitLeg);
+  const tradeIds = useMemo(() => trades.map((t) => t.id).sort(), [trades]);
+  const { data: allExits } = useQuery({
+    queryKey: ["paper", "exits", "byTrades", tradeIds.join(",")],
+    queryFn: () => exitsFn({ data: { trade_ids: tradeIds } }) as unknown as Promise<ExitLegRow[]>,
+    enabled: tradeIds.length > 0,
+    refetchInterval: 10_000,
+  });
+
+  /** Pending take-profit legs per trade, in ladder order. */
+  const legsByTrade = useMemo(() => {
+    const m = new Map<string, ExitLegRow[]>();
+    for (const e of allExits ?? []) {
+      if (e.kind !== "take_profit" || e.status !== "pending") continue;
+      const list = m.get(e.trade_id) ?? [];
+      list.push(e);
+      m.set(e.trade_id, list);
+    }
+    for (const list of m.values()) list.sort((a, b) => a.idx - b.idx);
+    return m;
+  }, [allExits]);
+
+  const syncLeg = useMutation({
+    mutationFn: async (v: { id: string; price: number }) =>
+      legFn({ data: v }) as unknown as Promise<{ ok: true }>,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["paper", "exits"] }),
+    // Deliberately quiet: the drag itself already succeeded against
+    // `paper_trades`. A failed ladder sync is worth a console note, not a
+    // toast that implies the drag did not take.
+    onError: (e) => console.warn("[PositionLinesLive] leg 1 sync failed:", e),
   });
 
   const close = useMutation({
@@ -141,6 +185,15 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
           id: drag.tradeId,
           [drag.handle === "sl" ? "stop_loss" : "take_profit"]: px,
         } as { id: string; stop_loss?: number; take_profit?: number });
+
+        // The primary target line and ladder leg 1 are the same level shown
+        // once. Writing only the scalar column would leave the leg holding a
+        // price the chart no longer displays — invisible drift into the table
+        // reports will read.
+        if (drag.handle === "tp") {
+          const leg1 = legsByTrade.get(drag.tradeId)?.[0];
+          if (leg1) syncLeg.mutate({ id: leg1.id, price: px });
+        }
       }
       setDrag(null);
       // Clear override after a short window so server value takes over
@@ -154,7 +207,7 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
     };
-  }, [drag, adapter, overrides, modify]);
+  }, [drag, adapter, overrides, modify, legsByTrade, syncLeg]);
 
   const rendered = useMemo(() => {
     if (!adapter || !sym) return [];
@@ -168,9 +221,43 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
       const pnl = livePrice != null ? floatingPnl(sym, t.direction, t.entry_price, livePrice, t.lot_size) : 0;
       const rMult = riskAmt > 0 ? pnl / riskAmt : 0;
       const pts = livePrice != null ? pointsDelta(t.direction, t.entry_price, livePrice) : 0;
-      const rr = riskAmt > 0 && rewardAmt > 0 ? rewardAmt / riskAmt : 0;
+      // Legs beyond the first. Leg 1 is the same level as `take_profit` and is
+      // already drawn as the draggable Target line, so drawing it again would
+      // stack two lines on one price.
+      const ladder = legsByTrade.get(t.id) ?? [];
+      const extraLegs = ladder.slice(1).map((leg) => {
+        const price = Number(leg.price);
+        const share = Number(leg.percent) / 100;
+        return {
+          id: leg.id,
+          idx: leg.idx,
+          price,
+          percent: Number(leg.percent),
+          action: leg.action,
+          y: adapter.priceToY(price),
+          // Reward for this leg alone — it closes only its own share of the
+          // position, so the full-size figure would overstate it.
+          reward: Math.abs(computePnl(sym, t.direction, t.entry_price, price, t.lot_size * share)),
+        };
+      });
+
+      // With a ladder, the primary target closes only ITS share of the
+      // position, not all of it — so the full-size reward figure that is
+      // correct for a single target overstates leg 1. Without a ladder the
+      // share is 1 and every number below is unchanged.
+      const primaryShare = ladder.length > 1 ? Number(ladder[0].percent) / 100 : 1;
+      const rewardPrimary = rewardAmt * primaryShare;
+      // The plan's total reward is the whole ladder, which is what R:R should
+      // be read against — not leg 1 alone and not leg 1 at full size.
+      const rewardTotal = rewardPrimary + extraLegs.reduce((sum, l) => sum + l.reward, 0);
+      const rr = riskAmt > 0 && rewardTotal > 0 ? rewardTotal / riskAmt : 0;
+
       return {
         t,
+        ladderSize: ladder.length,
+        extraLegs,
+        rewardPrimary,
+        rewardTotal,
         entryY: adapter.priceToY(t.entry_price),
         slY: sl != null ? adapter.priceToY(sl) : null,
         tpY: tp != null ? adapter.priceToY(tp) : null,
@@ -182,7 +269,7 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
         pnl, rMult, pts, riskAmt, rewardAmt, rr,
       };
     });
-  }, [adapter, sym, trades, overrides, livePrice]);
+  }, [adapter, sym, trades, overrides, livePrice, legsByTrade]);
 
   if (!sym) return null;
 
@@ -191,7 +278,8 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
       {rendered.map((row) => {
         const {
           t, entryY, slY, tpY, slGhostY, tpGhostY, slPrice, tpPrice,
-          pnl, rMult, pts, riskAmt, rewardAmt, rr,
+          pnl, rMult, pts, riskAmt, rewardAmt, rr, ladderSize, extraLegs,
+          rewardPrimary, rewardTotal,
         } = row;
         if (entryY == null) return null;
         const slActive = drag?.tradeId === t.id && drag.handle === "sl";
@@ -351,8 +439,10 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
                   }}
                   label={
                     <>
-                      <span className="font-semibold text-foreground">Target</span>
-                      <span className="tabular-nums text-success">{fmtMoney(rewardAmt)}</span>
+                      <span className="font-semibold text-foreground">
+                        {ladderSize > 1 ? "TP1" : "Target"}
+                      </span>
+                      <span className="tabular-nums text-success">{fmtMoney(rewardPrimary)}</span>
                       <LineAction
                         label="Remove take profit"
                         danger
@@ -367,6 +457,34 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
               </>
             )}
 
+            {/* STAGED EXITS — TP2…TPn (CH-1) */}
+            {extraLegs.map((leg) => leg.y == null ? null : (
+              <div key={leg.id}>
+                <OrderLine y={leg.y} tone="profit" />
+                <OrderLabel
+                  y={leg.y}
+                  tone="profit"
+                  expanded={hover === `${t.id}:leg:${leg.id}`}
+                  title={`Take profit ${leg.idx} — ${leg.percent}% of the position. Edit in the order ticket.`}
+                  onMouseEnter={() => setHover(`${t.id}:leg:${leg.id}`)}
+                  onMouseLeave={() => setHover((h) => (h === `${t.id}:leg:${leg.id}` ? null : h))}
+                  label={
+                    <>
+                      <span className="font-semibold text-foreground">TP{leg.idx}</span>
+                      <span className="tabular-nums text-muted-foreground">{leg.percent}%</span>
+                      <span className="tabular-nums text-success">{fmtMoney(leg.reward)}</span>
+                      {leg.action !== "none" && (
+                        <span className="text-muted-foreground">
+                          {leg.action === "break_even" ? "→ BE" : "→ trail"}
+                        </span>
+                      )}
+                    </>
+                  }
+                  axis={<span className="tabular-nums">{fmtPrice(sym, leg.price)}</span>}
+                />
+              </div>
+            ))}
+
             {/* Drag tooltip — live impact math */}
             {(slActive || tpActive) && (
               <DragTooltip
@@ -376,7 +494,11 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
               >
                 <Row label="Price" value={fmtPrice(sym, (slActive ? slPrice : tpPrice) ?? 0)} />
                 <Row label="R:R" value={rr > 0 ? `1 : ${rr.toFixed(2)}` : "—"} />
-                <Row label="Potential profit" value={fmtMoney(rewardAmt)} tone="success" />
+                <Row
+                  label={ladderSize > 1 ? "Potential profit (all legs)" : "Potential profit"}
+                  value={fmtMoney(rewardTotal)}
+                  tone="success"
+                />
                 <Row label="Potential loss" value={fmtMoney(-riskAmt)} tone="danger" />
                 <Row label="Floating P/L" value={fmtMoney(pnl)} tone={winning ? "success" : "danger"} />
               </DragTooltip>

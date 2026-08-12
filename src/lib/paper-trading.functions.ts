@@ -800,6 +800,51 @@ export const setTradeExits = createServerFn({ method: "POST" })
     return { ok: true, count: data.legs.length };
   });
 
+/**
+ * Exits for several trades at once — what the chart overlay needs.
+ *
+ * One request for every open position on the symbol rather than one per
+ * position: the overlay re-renders on every tick, and N queries behind a
+ * 4s poll is a lot of traffic for a handful of rows.
+ */
+export const listExitsForTrades = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ trade_ids: z.array(z.string().uuid()).max(50) }).parse(d))
+  .handler(async ({ data, context }) => {
+    if (!data.trade_ids.length) return [];
+    const { data: rows, error } = await context.supabase
+      .from("paper_trade_exits")
+      .select("id, trade_id, kind, idx, price, percent, action, status, filled_at, filled_price")
+      .eq("user_id", context.userId)
+      .in("trade_id", data.trade_ids)
+      .order("idx", { ascending: true });
+    if (error) throw error;
+    return rows ?? [];
+  });
+
+/**
+ * Re-price a single pending leg.
+ *
+ * Exists so dragging the primary target on the chart can keep leg 1 in step
+ * with `paper_trades.take_profit`. Without it the two silently diverge: the
+ * drag writes the scalar column and the ladder row keeps the old price, which
+ * is invisible on screen and wrong in the table any future report reads.
+ * A filled leg is execution history and is not re-priceable.
+ */
+export const updateExitLeg = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid(), price: z.number().positive() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase
+      .from("paper_trade_exits")
+      .update({ price: data.price, updated_at: new Date().toISOString() })
+      .eq("id", data.id)
+      .eq("user_id", context.userId)
+      .eq("status", "pending");
+    if (error) throw error;
+    return { ok: true };
+  });
+
 export const listTradeExits = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ trade_id: z.string().uuid() }).parse(d))

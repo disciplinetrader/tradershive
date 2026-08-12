@@ -152,7 +152,9 @@ mean "the primary level", so `create_journal_draft_from_trade()`, the CSV
 importer and `journal/editor/validation.ts` all keep working unchanged — but
 they see only leg 1. When a report wants per-level detail (which leg filled,
 how much was scaled out where), it reads `paper_trade_exits` by `trade_id`.
-Nothing in the journal does yet.
+Nothing in the journal does yet. The chart and the order ticket both read
+it as of 2026-08-12 (CH-1, shipped) — the journal is the last single-target
+reader.
 
 **4. `ClockStatus` — two skipped tests**
 `src/lib/replay/session/__tests__/` — both assert `status === "ended"` while the

@@ -1055,7 +1055,14 @@ function PositionState({
           <Row label="Mark" value={livePrice != null ? livePrice.toFixed(2) : "—"} />
           <Row label="Stop" value={slv != null ? slv.toFixed(2) : "—"} accent={slv != null ? "rose" : undefined} />
           <Row label="Target" value={tpv != null ? tpv.toFixed(2) : "—"} accent={tpv != null ? "emerald" : undefined} />
-          <Row label="R:R from here" value={rrNow != null ? `${rrNow.toFixed(2)} : 1` : "—"} />
+          {/* Names the leg explicitly once a ladder exists. This is distance to
+              the PRIMARY target from the current mark; the chart's chip is the
+              whole ladder's reward against risk. Two different quantities that
+              read as contradictory if both are just called "R:R". */}
+          <Row
+            label={tpLegs.length > 1 ? "R:R to TP1 from here" : "R:R from here"}
+            value={rrNow != null ? `${rrNow.toFixed(2)} : 1` : "—"}
+          />
           <Row label="R now" value={risk && risk > 0 ? `${(pnl / risk).toFixed(2)}R` : "—"}
             accent={risk && risk > 0 ? (pnl >= 0 ? "emerald" : "rose") : undefined} />
         </div>
