@@ -701,10 +701,14 @@ Any of these closes it:
 
 ---
 
-## BA-10 — Battle replay writes P&L that never reaches balance or statistics
+## BA-11 — Battle replay writes P&L that never reaches balance or statistics
+
+> Renumbered from BA-10 on 2026-08-12: two different issues carried that ID.
+> The umbrella P&L-formula issue keeps BA-10; this one is BA-11.
 
 **Area:** Battle Arena / paper trading · **Found:** 2026-08-11 · **Status:**
-open, deliberately unfixed — battle-arena is parked and fixing this unparks it
+open, deliberately unfixed — battle-arena is parked and fixing this unparks it ·
+**re-confirmed 2026-08-12 with the arithmetic isolated (below)**
 
 Sibling of [BA-5](#ba-5--dashboard-total-realized-pl-reads-71193490 77). BA-5 did
 not reproduce on the account inspected (dashboard and journal paths agree
@@ -719,6 +723,37 @@ Battle: Replay test 10   trades=5  tradePnl=180.10  stats.net_pnl=(none)  balanc
 
 Five closed trades, $180.10 realised, and the account balance never moved. No
 `account_statistics` row exists for the account at all.
+
+### Re-confirmed 2026-08-12 — the two writers now separated on one account
+
+Driving the rebuilt order ticket put three ordinary (non-battle) trades through
+`closeTrade` on the same account that holds the five battle rows. That splits
+the two writers apart on shared data, and the arithmetic is exact:
+
+| | rows | Σ pnl | reached `balance`? | reached `account_statistics`? |
+|---|---|---|---|---|
+| battle replay (`battle_id` set) | 5 | **+180.10** | no | no |
+| order ticket (`closeTrade`) | 3 | −0.67 | yes | yes |
+
+```
+starting_balance 10000 + Σ all closed pnl 179.43 = 10179.43
+actual balance                                   =  9999.33
+drift                                            =  -180.10   ← exactly the battle rows
+account_statistics: total_trades=3, net_pnl=-0.67 ← exactly the ticket rows
+```
+
+Two things this pins down that the original observation could not:
+
+1. **`closeTrade` is not implicated.** Its three trades moved `balance` and
+   `account_statistics.net_pnl` in lockstep, to the cent. The invariant holds
+   wherever `closeTrade` is the writer.
+2. **The drift equals the battle rows' P&L exactly** — not approximately. So
+   the mechanism is a total absence of the balance/statistics write on that
+   path, not a rounding or ordering bug.
+
+Note the earlier claim "no `account_statistics` row exists" is now stale: one
+exists, created by the ticket's closes, and it counts only the three rows
+`closeTrade` wrote. The battle rows remain invisible to it.
 
 ### Mechanism
 
@@ -754,3 +789,54 @@ journal-side risk, not only a battle-side one.
 Route battle-replay closes through the same clamp-and-update helper `closeTrade`
 uses, rather than inserting a finished row. Extracting that helper is the real
 work; the call site is one insert.
+
+---
+
+## CH-1 — Chart draws only the primary take-profit; staged exit legs are invisible
+
+**Area:** Trading workspace / chart order layer · **Found:** 2026-08-12 ·
+**Status:** open, deliberately unfixed — the chart layer was out of scope for
+the order-ticket rebuild
+
+### Observed
+
+Placing a market order with a two-leg ladder (TP1 64179, TP2 64679) through the
+rebuilt order ticket. Both legs persist to `paper_trade_exits` and both render
+in the ticket's position state:
+
+```
+EXIT LADDER
+TP1  64179.00  50%   PENDING
+TP2  64679.00  50%   PENDING
+```
+
+The chart draws **only the 64179 line**. Nothing marks 64679, so a trader
+reading the chart sees a single target and a position that will apparently
+close in full there.
+
+### Mechanism
+
+The chart order layer renders levels from the `paper_trades` row —
+`stop_loss` and `take_profit`, both scalars. `paper_trade_exits` was added
+additively and deliberately left `paper_trades` untouched so the journal draft
+trigger, the CSV importer and `journal/editor/validation.ts` keep working
+unchanged (see `docs/migrations/order-ticket-exits.sql`). The cost of that
+choice is that anything reading only the scalar columns — the chart included —
+sees leg 1 and nothing else.
+
+Note this is a *display* gap, not a data one. The ladder is stored correctly and
+`listTradeExits` returns it; no consumer on the chart side calls it.
+
+### Why it matters
+
+The discrepancy is silent and points the wrong way: the chart is the surface a
+trader watches while managing a position, and it under-reports the plan. Someone
+scaling out in stages would see no evidence on the chart that stage two exists.
+
+### Fix sketch
+
+Have the chart's position-line builder read `paper_trade_exits` for the trade
+alongside the scalar columns, and draw one target line per pending leg labelled
+`TP1…TPn` with its allocation. The ticket already has the query
+(`listTradeExits`); this is a second consumer of it, not new data plumbing.
+Renderer lives under `src/components/trading/chart/`.

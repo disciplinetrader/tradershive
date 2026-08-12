@@ -11,8 +11,8 @@ first.
 ## Status: all migrations applied, all gates green
 
 As of 2026-08-12 every migration is applied and `bun run check` passes end to
-end — `typecheck · test (365) · build · check:columns · check:casts ·
-check:schema`. `check:schema` verifies 240 tables against the live database,
+end — `typecheck · test (386) · build · check:columns · check:casts ·
+check:schema`. `check:schema` verifies 241 tables against the live database,
 which confirms the hand-patched `types.ts` matches reality.
 
 Getting there took three silent failures, none of which the SQL editor
@@ -76,6 +76,7 @@ bun run check    →  typecheck · test · build · check:columns · check:casts
 | `journal-observation-cursor.sql` — J-1, J-2, J-4 | ✅ applied 2026-08-12 |
 | `j3-statement.sql` — J-3, isolated into a bare file | ✅ applied 2026-08-12 |
 | `journal-batch-2-5.sql` — B-1 … B-6 | ✅ applied 2026-08-12 |
+| `order-ticket-exits/ot-{1..6}.sql` — `paper_trade_exits` | ✅ applied 2026-08-12 |
 
 Three tables are retired but **deliberately not dropped**: `journal_taxonomy`,
 `trade_tags`, `trade_tag_relations`. The `DROP`s sit commented at the bottom of
@@ -131,18 +132,21 @@ reads a column that does not exist; the query fails and returns `data: null`.
 No equivalent exists. Nearest candidates: the `checklist` jsonb completion
 ratio, or `playbook_review`. Deliberately not guessed.
 
-**2. BA-10 — battle replay writes P&L that never reaches balance or statistics**
+**2. BA-11 — battle replay writes P&L that never reaches balance or statistics**
 `docs/known-issues.md`. `submitBattleReplayTrade` inserts a closed
 `paper_trades` row carrying a `pnl`, and never updates `paper_accounts.balance`,
 never writes `account_statistics`, and **never applies the negative-balance
 clamp**. It is an unclamped writer into the table the journal reads. Logged and
 not fixed because battle-arena is parked and fixing it unparks it — but it is a
 journal-side risk, not only a battle-side one, and it is a plausible source of
-the BA-5 rows.
+the BA-5 rows. Re-confirmed 2026-08-12: the drift on the demo account is
+exactly the battle rows' +$180.10, while three ticket-written trades moved
+balance and statistics correctly — see BA-11.
 
 **3. `paper_trade_exits` — the journal still reads a single target**
-Added 2026-08-12 by the order-ticket rebuild (`docs/migrations/order-ticket-exits.sql`,
-**not yet applied**). A trade can now carry a ladder of take-profit levels.
+Added and applied 2026-08-12 by the order-ticket rebuild
+(`docs/migrations/order-ticket-exits/`). A trade can now carry a ladder of
+take-profit levels, and the order ticket writes and reads them end to end.
 `paper_trades.stop_loss` / `.take_profit` were deliberately left alone and still
 mean "the primary level", so `create_journal_draft_from_trade()`, the CSV
 importer and `journal/editor/validation.ts` all keep working unchanged — but
