@@ -140,7 +140,17 @@ not fixed because battle-arena is parked and fixing it unparks it — but it is 
 journal-side risk, not only a battle-side one, and it is a plausible source of
 the BA-5 rows.
 
-**3. `ClockStatus` — two skipped tests**
+**3. `paper_trade_exits` — the journal still reads a single target**
+Added 2026-08-12 by the order-ticket rebuild (`docs/migrations/order-ticket-exits.sql`,
+**not yet applied**). A trade can now carry a ladder of take-profit levels.
+`paper_trades.stop_loss` / `.take_profit` were deliberately left alone and still
+mean "the primary level", so `create_journal_draft_from_trade()`, the CSV
+importer and `journal/editor/validation.ts` all keep working unchanged — but
+they see only leg 1. When a report wants per-level detail (which leg filled,
+how much was scaled out where), it reads `paper_trade_exits` by `trade_id`.
+Nothing in the journal does yet.
+
+**4. `ClockStatus` — two skipped tests**
 `src/lib/replay/session/__tests__/` — both assert `status === "ended"` while the
 clock reports `"exhausted"`. `ClockStatus` declares both as distinct states
 (`clock.ts:24`, set at `:109` and `:199`), so this is either a clock bug or a
