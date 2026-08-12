@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   openTrade, placeOrder, closeTrade, listTrades, listTradeTags, createTradeTag,
-  setTradeExits,
+  setTradeExits, listTradeExits,
 } from "@/lib/paper-trading.functions";
 import { COMMON_TAGS } from "@/lib/paper-trading/symbols";
 import {
@@ -72,6 +72,12 @@ type OpenTrade = {
   commission: number | string | null; swap: number | string | null;
 };
 
+type ExitRow = {
+  id: string; idx: number; kind: string; price: number | string;
+  percent: number | string; action: string; status: string;
+  filled_at: string | null; filled_price: number | string | null;
+};
+
 let legSeq = 0;
 const newLeg = (price = "", percent = "100", action: TpAction = "none"): ExitLeg => ({
   key: `leg_${++legSeq}`, price, percent, action,
@@ -91,7 +97,8 @@ export function OrderTicket({ compact = false }: { compact?: boolean } = {}) {
   const openFn = useServerFn(openTrade);
   const orderFn = useServerFn(placeOrder);
   const closeFn = useServerFn(closeTrade);
-  const exitsFn = useServerFn(setTradeExits);
+  const setExitsFn = useServerFn(setTradeExits);
+  const exitsFn = useServerFn(listTradeExits);
   const listTradesFn = useServerFn(listTrades);
   const tagsFn = useServerFn(listTradeTags);
   const createTagFn = useServerFn(createTradeTag);
@@ -139,6 +146,15 @@ export function OrderTicket({ compact = false }: { compact?: boolean } = {}) {
   // The panel's two states. A position on this symbol flips it to position
   // info; "New order" pins it back to entry without unmounting anything.
   const mode: "entry" | "position" = position && !showEntry ? "position" : "entry";
+
+  // The filled position's ladder. Without this the position state can only show
+  // `take_profit` — the primary leg — so a two-leg ladder that persisted
+  // correctly would still look like a single target the moment it filled.
+  const { data: positionExits } = useQuery({
+    queryKey: ["paper", "exits", position?.id],
+    queryFn: () => exitsFn({ data: { trade_id: position!.id } }) as unknown as Promise<ExitRow[]>,
+    enabled: !!position?.id,
+  });
 
   useEffect(() => {
     setEntry(livePrice != null ? String(livePrice) : "");
@@ -315,7 +331,7 @@ export function OrderTicket({ compact = false }: { compact?: boolean } = {}) {
       if (ladder.length > 1) {
         const tradeId = (created as unknown as { id: string }).id;
         try {
-          await exitsFn({ data: {
+          await setExitsFn({ data: {
             trade_id: tradeId,
             legs: ladder.map((x) => ({
               kind: "take_profit" as const, idx: x.idx, price: x.price,
@@ -479,6 +495,7 @@ export function OrderTicket({ compact = false }: { compact?: boolean } = {}) {
       {mode === "position" && position ? (
         <PositionState
           trade={position}
+          exits={positionExits ?? []}
           livePrice={livePrice}
           pnl={livePnl(position)}
           currency={currency}
@@ -823,7 +840,16 @@ export function OrderTicket({ compact = false }: { compact?: boolean } = {}) {
             <Button
               onClick={submit}
               disabled={openMut.isPending || !accountId || !symbolMeta || blocked || waitingForPrice}
-              aria-label={side === "long" ? "Buy" : "Sell"}
+              // Must not collapse to bare "Buy"/"Sell": the side toggle above
+              // already owns those names, and three controls sharing one
+              // accessible name is indistinguishable to a screen reader.
+              aria-label={
+                waitingForPrice
+                  ? "Waiting for live price"
+                  : orderType === "market"
+                    ? (side === "long" ? "Buy market order" : "Sell market order")
+                    : `Place ${orderType.replace("_", " ")} order`
+              }
               className={cn(
                 "flex-1 shadow-elegant transition-all active:scale-[0.98] focus-visible:ring-2",
                 side === "long"
@@ -917,10 +943,10 @@ function ModeSwitch<T extends string>({
  * actually doing rather than what an order would do.
  */
 function PositionState({
-  trade, livePrice, pnl, currency, closing, onClose, onNewOrder,
+  trade, exits, livePrice, pnl, currency, closing, onClose, onNewOrder,
 }: {
-  trade: OpenTrade; livePrice: number | null; pnl: number; currency?: string;
-  closing: boolean; onClose: () => void; onNewOrder: () => void;
+  trade: OpenTrade; exits: ExitRow[]; livePrice: number | null; pnl: number;
+  currency?: string; closing: boolean; onClose: () => void; onNewOrder: () => void;
 }) {
   const entry = Number(trade.entry_price);
   const slv = trade.stop_loss == null ? null : Number(trade.stop_loss);
@@ -930,6 +956,11 @@ function PositionState({
   // Live R:R is the *remaining* trade: how far to the target against how far
   // to the stop from here, not from entry. That is the number that changes as
   // price moves, and the reason to look at this panel at all.
+  const tpLegs = useMemo(
+    () => exits.filter((e) => e.kind === "take_profit").sort((a, b) => a.idx - b.idx),
+    [exits],
+  );
+
   const rrNow = useMemo(() => {
     if (livePrice == null || slv == null || tpv == null) return null;
     const toTarget = Math.abs(tpv - livePrice);
@@ -973,6 +1004,42 @@ function PositionState({
           <Row label="R now" value={risk && risk > 0 ? `${(pnl / risk).toFixed(2)}R` : "—"}
             accent={risk && risk > 0 ? (pnl >= 0 ? "emerald" : "rose") : undefined} />
         </div>
+
+        {/* Only worth its space when the ladder has more than the primary leg —
+            a single TP is already the "Target" row above. */}
+        {tpLegs.length > 1 && (
+          <div className="mt-2 border-t border-border/50 pt-2">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+              Exit ladder
+            </p>
+            <div className="mt-1 space-y-1">
+              {tpLegs.map((leg) => {
+                const px = Number(leg.price);
+                const filled = leg.status === "filled";
+                const reached = livePrice != null && !filled &&
+                  (trade.direction === "long" ? livePrice >= px : livePrice <= px);
+                return (
+                  <div key={leg.id} className="flex items-center gap-2 text-xs">
+                    <span className="w-8 shrink-0 font-semibold text-muted-foreground">TP{leg.idx}</span>
+                    <span className="font-mono tabular-nums">{px.toFixed(2)}</span>
+                    <span className="text-muted-foreground">{Number(leg.percent)}%</span>
+                    {leg.action !== "none" && (
+                      <span className="text-[10px] text-muted-foreground">
+                        · {leg.action === "break_even" ? "→ break-even" : "→ trail"}
+                      </span>
+                    )}
+                    <span className={cn(
+                      "ml-auto text-[10px] font-semibold uppercase",
+                      filled ? "text-success" : reached ? "text-warning" : "text-muted-foreground",
+                    )}>
+                      {filled ? "Filled" : reached ? "At level" : "Pending"}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       <Button onClick={onClose} disabled={closing || livePrice == null}
