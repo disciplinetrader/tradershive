@@ -870,3 +870,58 @@ once. That is the point of the rule and the reason not to decide it casually.
 `src/lib/journal/` — `buildDataset()` is the single place scope is decided, so
 whichever option wins is implemented there and inherited by all six reports.
 `journal_entries` itself needs no schema change under options 1 or 2.
+
+---
+
+## JR-3 — Nothing verifies that constraints and triggers were actually applied
+
+**Area:** Tooling / migrations · **Found:** 2026-08-12 · **Status:** open,
+follow-up — not urgent, but it is a real hole with a known shape
+
+### The gap
+
+`check:schema` compares `types.ts` against the live database **column by
+column**, and now fails when a declared table does not exist at all. It has no
+opinion about anything else. A CHECK constraint, a unique index, a trigger or
+an RLS policy that was written, committed, handed over and never pasted is
+completely invisible to it — the columns still match, so the run is green.
+
+That matters here specifically because migrations are applied by hand in the
+Lovable SQL editor, which truncates long pastes and reports success anyway.
+Three silent failures of exactly that kind happened on 2026-08-11/12. The
+pending-tables gate closed the case for tables. Constraints and triggers are
+the same failure with no gate.
+
+Live example from the same day: `paper_trade_exits_idx_max` (OT-7) and
+`paper_trade_exits_allocation` (OT-9) are load-bearing — they are what stops a
+caller bypassing `setTradeExits` from writing a six-leg ladder or a 130%
+allocation. If either had silently failed to apply, every checker would still
+be green and the only symptom would be corrupt data much later.
+
+### Why a behavioural test is not sufficient on its own
+
+It works, but it has a trap worth recording. The first cap test inserted five
+legs at 20% and then a sixth, saw a rejection, and looked like a pass. The
+rejection was `P0001` from the *allocation trigger* — the ladder was already at
+100%, so the idx CHECK was never exercised. Only re-running with allocation
+headroom, and asserting the error code was `23514` against
+`paper_trade_exits_idx_max`, actually tested it.
+
+**Standing rule from that:** a constraint test asserts on WHICH constraint
+fired, never merely that something was rejected. Overlapping constraints will
+cover for each other and hand you a green test for something you never touched.
+
+### Sketch of a fix
+
+A `scripts/check-constraints.ts` reading a committed manifest — table, object
+name, type (`check` / `unique` / `trigger` / `policy`) — and verifying each
+against `pg_constraint`, `pg_indexes`, `pg_trigger` and `pg_policies`. Same
+contract as the other checkers: skip gracefully without credentials, fail on a
+declared object that is absent, and fail on a manifest entry for an object that
+no longer exists so the list cannot rot.
+
+The obstacle is access: those catalogs are not exposed through PostgREST, and
+this project has no service-role key or DB password — only a publishable key
+and an e2e user login. So it needs either a `SECURITY DEFINER` RPC that returns
+the catalog rows, or credentials the project does not currently have. That
+choice is the first decision on this task, not an implementation detail.
