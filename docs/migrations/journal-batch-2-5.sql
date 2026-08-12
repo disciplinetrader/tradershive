@@ -106,10 +106,15 @@ alter table public.journal_entries
   check (excursion_source is null or excursion_source in ('stored','backfilled'));
 
 -- --- B-4 verify (expect 8 rows) -------------------------------------------
+-- Columns listed explicitly rather than matched with LIKE: the earlier version
+-- read `A and B and C or D or E`, which Postgres groups as
+-- `(A and B and C) or D or E` — so it scanned every table and returned an
+-- inflated count that looked like a pass.
 select column_name from information_schema.columns
  where table_schema='public' and table_name='journal_entries'
-   and column_name like 'ma%_price' or column_name like 'm%_r'
-    or column_name like 'excursion%'
+   and column_name in ('mae_price','mfe_price','mae_r','mfe_r',
+                       'excursion_path','excursion_timeframe',
+                       'excursion_source','excursion_computed_at')
  order by column_name;
 
 
