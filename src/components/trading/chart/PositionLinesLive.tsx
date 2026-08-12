@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Shield, Scissors, MoreHorizontal, X } from "lucide-react";
 import { OrderLine, OrderLabel, LineAction, DragTooltip, AXIS_INSET } from "./order-line-ui";
+import { useChartGeometry } from "./use-chart-geometry";
 
 export type OpenTradeLine = {
   id: string;
@@ -160,13 +161,13 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
-  useEffect(() => {
-    if (!hostRef.current) return;
-    const ro = new ResizeObserver(() => force((n) => n + 1));
-    ro.observe(hostRef.current);
-    return () => ro.disconnect();
-  }, []);
-  useEffect(() => { force((n) => n + 1); }, [tick, trades, livePrice]);
+  // Every pixel coordinate below is derived from `adapter.priceToY`, which is
+  // only valid for the axis as it stood when it ran. `geometry` changes on
+  // zoom, pan, price-scale drag, timeframe switch and resize, and MUST stay in
+  // the `rendered` dependency list — without it the memo serves stale
+  // coordinates and the lines detach from the prices they claim to mark.
+  const geometry = useChartGeometry(adapter, hostRef);
+  useEffect(() => { force((n) => n + 1); }, [tick, trades, livePrice, geometry]);
 
   useEffect(() => {
     if (!drag) return;
@@ -273,7 +274,9 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
         pnl, rMult, pts, riskAmt, rewardAmt, rr,
       };
     });
-  }, [adapter, sym, trades, overrides, livePrice, legsByTrade]);
+    // `geometry` is load-bearing: it is what re-projects every line when the
+    // axis moves. Removing it silently detaches the overlay from the chart.
+  }, [adapter, sym, trades, overrides, livePrice, legsByTrade, geometry]);
 
   if (!sym) return null;
 

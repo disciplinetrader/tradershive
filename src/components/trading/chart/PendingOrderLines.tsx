@@ -20,6 +20,7 @@ import type { SymbolMeta } from "@/lib/paper-trading/symbols";
 import { modifyOrder, cancelOrder } from "@/lib/paper-trading.functions";
 import { fmtPrice } from "@/lib/trading/plan-math";
 import { OrderLine, OrderLabel, LineAction, DragTooltip } from "./order-line-ui";
+import { useChartGeometry } from "./use-chart-geometry";
 
 export type PendingOrderLine = {
   id: string;
@@ -66,13 +67,11 @@ export function PendingOrderLines({ adapter, sym, orders, tick, onModify }: Prop
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to cancel order"),
   });
 
-  useEffect(() => {
-    if (!hostRef.current || typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver(() => force((n) => n + 1));
-    ro.observe(hostRef.current);
-    return () => ro.disconnect();
-  }, []);
-  useEffect(() => { force((n) => n + 1); }, [tick, orders]);
+  // Same contract as the position overlay: `y` below is a pixel coordinate
+  // derived from the current axis, so it has to be recomputed whenever the
+  // axis moves. `geometry` is what makes that happen.
+  const geometry = useChartGeometry(adapter, hostRef);
+  useEffect(() => { force((n) => n + 1); }, [tick, orders, geometry]);
 
   useEffect(() => {
     if (!drag) return;
@@ -112,7 +111,8 @@ export function PendingOrderLines({ adapter, sym, orders, tick, onModify }: Prop
         ghostY: overrides[o.id] != null ? adapter.priceToY(original) : null,
       };
     });
-  }, [adapter, sym, orders, overrides]);
+    // `geometry` re-projects the line when the chart is zoomed or panned.
+  }, [adapter, sym, orders, overrides, geometry]);
 
   if (!sym) return null;
 
