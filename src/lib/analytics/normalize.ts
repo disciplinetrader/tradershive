@@ -10,6 +10,7 @@
  */
 
 import { resultOf } from "@/lib/journal/derive";
+import { followedPlanOf } from "@/lib/journal/plan-adherence";
 import type { ClosedTrade } from "@/lib/chart/orders/closed-trade";
 import type { PositionExecution } from "@/lib/chart/orders/executions";
 import { aggregateExecutions, isEntryKind, isExitKind } from "@/lib/chart/orders/executions";
@@ -123,13 +124,18 @@ function readTags(entry: JournalEntry): string[] {
   return Array.isArray(raw) ? raw.filter((t): t is string => typeof t === "string") : [];
 }
 
+/**
+ * Was the plan followed?
+ *
+ * This used to read a `playbook_review.followed_plan` key. Nothing has ever
+ * written that key — the playbook editor writes `overrides` — so it returned
+ * `null` for every entry ever passed to it. It now derives the answer from the
+ * checklist and those overrides, the same definition the leaderboard and the
+ * editor's own adherence readout use.
+ */
 function readFollowedPlan(entry: JournalEntry): boolean | null {
-  const review = (entry as unknown as { playbook_review?: unknown }).playbook_review;
-  if (review && typeof review === "object") {
-    const v = (review as Record<string, unknown>).followed_plan ?? (review as Record<string, unknown>).followedPlan;
-    if (typeof v === "boolean") return v;
-  }
-  return null;
+  const e = entry as unknown as { checklist?: unknown; playbook_review?: unknown };
+  return followedPlanOf({ checklist: e.checklist, playbook_review: e.playbook_review });
 }
 
 export function journalMetadataOf(entry: JournalEntry | null | undefined): JournalMetadata {

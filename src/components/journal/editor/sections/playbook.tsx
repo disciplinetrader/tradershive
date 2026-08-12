@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { DEFAULT_CHECKLIST } from "@/lib/journal/constants";
 import { readPlaybookReview, type PlaybookReview, type RuleState } from "@/lib/journal/editor/model";
+import { planAdherence } from "@/lib/journal/plan-adherence";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -78,8 +79,21 @@ export function PlaybookSection() {
 
   const verdictOf = (id: string): RuleState => review.overrides?.[id] ?? systemVerdict(id);
 
-  const followed = rules.filter((r) => verdictOf(r.id) === "followed").length;
-  const adherence = rules.length ? Math.round((followed / rules.length) * 100) : null;
+  // The readout comes from the shared helper, not a local recomputation — this
+  // number and the leaderboard's discipline metric are the same claim, and two
+  // copies of the expression is how they would drift apart.
+  //
+  // Note it is measured against the entry's OWN checklist. `rules` above falls
+  // back to DEFAULT_CHECKLIST so the trader has something to fill in, but a
+  // default list nobody has touched is not evidence of a review, and scoring it
+  // 0% would report a review that never happened as a failed one.
+  const adherenceResult = useMemo(
+    () => planAdherence({ checklist: entry.checklist, playbookReview: entry.playbook_review }),
+    [entry.checklist, entry.playbook_review],
+  );
+  const adherence = adherenceResult.measurable
+    ? Math.round(adherenceResult.ratio * 100)
+    : null;
 
   return (
     <div className="space-y-3">
@@ -94,8 +108,19 @@ export function PlaybookSection() {
       <div className="flex items-center justify-between rounded border border-border/50 bg-muted/5 px-2.5 py-1.5">
         <SubHeading>Rule adherence</SubHeading>
         <span className="font-mono text-[12px] tabular-nums text-foreground">
-          {adherence == null ? "—" : `${adherence}%`}{" "}
-          <span className="text-muted-foreground">({followed}/{rules.length})</span>
+          {adherenceResult.measurable ? (
+            <>
+              {adherence}%{" "}
+              <span className="text-muted-foreground">
+                ({adherenceResult.followed}/{adherenceResult.rules})
+              </span>
+            </>
+          ) : (
+            // No checklist on this entry yet, so there is nothing to measure
+            // against. Deliberately not "0%" — that would report an unwritten
+            // review as a failed one.
+            <span className="text-muted-foreground">Not measurable yet</span>
+          )}
         </span>
       </div>
 

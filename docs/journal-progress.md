@@ -126,11 +126,28 @@ number that looks authoritative and is a lie:
 
 ## Open items
 
-**1. `journal_entries.followed_plan` — needs a mapping decision**
-Last entry in `scripts/known-broken-columns.json`. `social.functions.ts:26`
-reads a column that does not exist; the query fails and returns `data: null`.
-No equivalent exists. Nearest candidates: the `checklist` jsonb completion
-ratio, or `playbook_review`. Deliberately not guessed.
+**1. `journal_entries.followed_plan` — resolved 2026-08-12, derived not stored**
+No column was added. `lib/journal/plan-adherence.ts` derives the verdict from
+the entry's own `checklist` plus the trader's `playbook_review.overrides`,
+**at a 100% threshold** — "followed the plan" means every rule was followed, and
+a lower bar would quietly redefine the metric as mostly-followed while the
+leaderboard label still claims otherwise.
+
+It fixed more than one metric. Selecting the phantom column made PostgREST
+reject the *entire* select with 42703, so `grade` came back null too and both
+the `discipline` and `journal_score` leaderboard categories ranked every user at
+zero, silently. Two readers had also disagreed about where the answer lived — a
+column in `social.functions.ts`, a `playbook_review.followed_plan` key in
+`analytics/normalize.ts` that nothing ever wrote. Both now call one helper, as
+does the editor's own adherence readout.
+
+Rules come from the entry's checklist, never a default list: the close trigger
+leaves `checklist` empty, so an auto-created draft is **unmeasurable**, not 0%.
+Every entry reads unmeasurable today because no playbook review has been
+filled in yet — that is correct, and it is the last thing standing between this
+and a live discipline score.
+
+`scripts/known-broken-columns.json` is now **empty**.
 
 **2. BA-11 — battle replay writes P&L that never reaches balance or statistics**
 `docs/known-issues.md`. `submitBattleReplayTrade` inserts a closed

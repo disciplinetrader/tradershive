@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { aggregateTrades, statsFromAgg, categoryValue, type UserStats } from "@/lib/social/calculations";
 import { RANKING_CATEGORIES, type RankingCategory } from "@/lib/social/constants";
+import { followedPlanOf } from "@/lib/journal/plan-adherence";
 
 /* ------------------ helpers ------------------ */
 
@@ -22,9 +23,15 @@ async function loadUserAggregates(
       .select("user_id, pnl, rr_realized, closed_at")
       .in("user_id", userIds)
       .eq("status", "closed"),
+    // `followed_plan` is not a column and never was. Selecting it made
+    // PostgREST reject this ENTIRE select with 42703, so `grade` and `pnl`
+    // came back null too and both the discipline and journal_score
+    // leaderboard categories silently ranked every user at zero. The verdict
+    // is derived from the checklist and the trader's playbook overrides —
+    // see `journal/plan-adherence.ts`.
     supabase
       .from("journal_entries")
-      .select("user_id, grade, followed_plan, pnl")
+      .select("user_id, grade, checklist, playbook_review, pnl")
       .in("user_id", userIds),
     supabase.from("user_achievements").select("user_id").in("user_id", userIds),
     supabase
@@ -37,7 +44,11 @@ async function loadUserAggregates(
   const grouped = new Map<string, { trades: any[]; journal: any[]; ach: number; chal: any[] }>();
   for (const id of userIds) grouped.set(id, { trades: [], journal: [], ach: 0, chal: [] });
   for (const t of tradesRes.data ?? []) grouped.get(t.user_id)?.trades.push(t);
-  for (const j of journalRes.data ?? []) grouped.get(j.user_id)?.journal.push(j);
+  // Derive the plan verdict once, at the query boundary, so everything
+  // downstream keeps working against a plain `followed_plan: boolean | null`.
+  for (const j of journalRes.data ?? []) {
+    grouped.get(j.user_id)?.journal.push({ ...j, followed_plan: followedPlanOf(j) });
+  }
   for (const a of achRes.data ?? []) { const g = grouped.get(a.user_id); if (g) g.ach += 1; }
   for (const c of chalRes.data ?? []) grouped.get(c.user_id)?.chal.push(c);
 

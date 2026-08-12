@@ -13,10 +13,15 @@
     "  journal_entries.emotions_post -> psychology jsonb .after",
     "  journal_entries.rating        -> dropped; no consumer ever read it",
     "",
-    "Still open:",
-    "  journal_entries.followed_plan -> no such column. Nearest candidates are",
-    "    the checklist jsonb (completion ratio) or playbook_review jsonb.",
-    "    Consumer is social.functions.ts:26, a peer-comparison rollup."
+    "Resolved 2026-08-12:",
+    "  journal_entries.followed_plan -> derived, not stored. lib/journal/",
+    "    plan-adherence.ts computes it from the checklist plus the trader's",
+    "    playbook_review overrides, at a 100% threshold. Selecting the phantom",
+    "    column had been failing the WHOLE select with 42703, which also took",
+    "    out grade and left both the discipline and journal_score leaderboard",
+    "    categories reading zero for every user.",
+    "",
+    "The list is empty. That is the goal state — keep it that way."
   ],
-  "known": ["journal_entries.followed_plan"]
+  "known": []
 }
