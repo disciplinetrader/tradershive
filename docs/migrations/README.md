@@ -16,16 +16,18 @@ survives the session that wrote them.
 | `j3-statement.sql` | ✅ applied 2026-08-12 — J-3 alone, isolated after three truncated chat pastes |
 | `j3-verify.sql` | its two verifies |
 | `order-ticket-exits.sql` | annotated reference — **do not paste from it** |
-| `order-ticket-exits/ot-{1..6}.sql` | ⏳ **not applied** — one bare statement each |
+| `order-ticket-exits/ot-{1..6}.sql` | ✅ applied 2026-08-12 — one bare statement each, verified individually |
 | `order-ticket-exits/ot-{1..6}-verify.sql` | their verifies, one per statement |
 
-`order-ticket-exits.sql` is tracked in `scripts/pending-tables.json` until it is
-applied. `check:schema` now separates "this table does not exist" from "this
-table is unreadable" and **fails on the first** unless it is listed there — the
-two used to share one quiet bucket, which meant the checker written to catch
-silent migration failures could not see the most obvious one. Once the file is
-applied, remove the entry; `check:schema` fails if a listed table already
-exists, so the list cannot become a permanent exemption.
+**Tracking an unapplied migration.** A new table goes in
+`scripts/pending-tables.json` between writing the migration and applying it.
+`check:schema` separates "this table does not exist" from "this table is
+unreadable" and **fails on the first** unless it is listed there — the two used
+to share one quiet bucket, which meant the checker written to catch silent
+migration failures could not see the most obvious one. Remove the entry once
+applied; `check:schema` fails if a listed table already exists, so the list
+cannot become a permanent exemption. The file is currently empty, which is the
+correct steady state.
 
 `j3-statement.sql` contains **one statement and nothing else** — no comments, no
 verify, no trailing prose. Open it, select all, copy, paste. Chat mangled this
