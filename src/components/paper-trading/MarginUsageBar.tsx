@@ -49,7 +49,14 @@ export function MarginUsageBar({
   const orderW = Math.min(Math.max(0, 100 - usedW), orderPct);
 
   return (
-    <div className={cn("space-y-1", className)}>
+    <div
+      className={cn("space-y-1", className)}
+      data-testid="margin-usage-bar"
+      data-total-pct={totalPct.toFixed(2)}
+      data-used-pct={usedPct.toFixed(2)}
+      data-order-pct={orderPct.toFixed(2)}
+      data-tone={tone}
+    >
       <div className="flex items-center justify-between text-[10px]">
         <span className="text-muted-foreground">Margin usage</span>
         <span className={cn("font-mono tabular-nums font-medium", textColor)}>
@@ -65,9 +72,17 @@ export function MarginUsageBar({
         aria-label="Margin usage after this order"
       >
         {/* Already committed */}
-        <div className="h-full bg-muted-foreground/40" style={{ width: `${usedW}%` }} />
+        <div
+          data-testid="margin-usage-used"
+          className="h-full bg-muted-foreground/40"
+          style={{ width: `${usedW}%` }}
+        />
         {/* This order */}
-        <div className={cn("h-full transition-all", barColor)} style={{ width: `${orderW}%` }} />
+        <div
+          data-testid="margin-usage-order"
+          className={cn("h-full transition-all", barColor)}
+          style={{ width: `${orderW}%` }}
+        />
       </div>
       <div className="flex items-center justify-between text-[10px] text-muted-foreground">
         <span>

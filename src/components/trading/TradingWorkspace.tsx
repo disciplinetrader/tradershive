@@ -59,6 +59,7 @@ import type { Quote, Timeframe } from "@/lib/market-data/types";
 
 import { TradePlanner } from "@/components/trading/chart/TradePlanner";
 import { ChartContextMenu } from "@/components/trading/chart/ChartContextMenu";
+import { FloatingOrderWindow } from "@/components/trading/FloatingOrderWindow";
 import { PositionLinesLive, type OpenTradeLine } from "@/components/trading/chart/PositionLinesLive";
 import { PendingOrderLines, type PendingOrderLine } from "@/components/trading/chart/PendingOrderLines";
 import { TodayPnLWidget } from "@/components/trading/TodayPnLWidget";
@@ -200,6 +201,8 @@ function TradingWorkspaceInner() {
   const [tick, setTick] = useState(0);
   const [symbolSearchOpen, setSymbolSearchOpen] = useState(false);
   const [plannerActive, setPlannerActive] = useState(false);
+  /** Floating order ticket, anchored to the chart click that opened it. */
+  const [floatingOrder, setFloatingOrder] = useState<{ x: number; y: number } | null>(null);
   const [drawingsHidden, setDrawingsHidden] = useState(false);
   const [shortcutsHelp, setShortcutsHelp] = useState(false);
   const [multiPanes, setMultiPanes] = useState<MultiChartPane[]>([]);
@@ -985,7 +988,14 @@ function TradingWorkspaceInner() {
                     />
                     <ChartContextMenu
                       adapter={adapter} sym={meta ?? null} livePrice={last}
-                      onIntent={(intent) => {
+                      onIntent={(intent, origin) => {
+                        // Order intents open the floating ticket where the
+                        // trader clicked. The prefill still goes out on the
+                        // bus, so the right-hand panel stays in step whichever
+                        // surface they finish the order on.
+                        if (intent.kind !== "alert" && intent.kind !== "drawing") {
+                          setFloatingOrder({ x: origin.clientX, y: origin.clientY });
+                        }
                         switch (intent.kind) {
                           case "buy_market":
                             emitTradeIntent({ kind: "prefill", side: "long", orderType: "market", price: last }); break;
@@ -1009,6 +1019,13 @@ function TradingWorkspaceInner() {
                   </>
                 )}
               </ChartEngine>
+
+              <FloatingOrderWindow
+                open={!!floatingOrder}
+                originX={floatingOrder?.x ?? 0}
+                originY={floatingOrder?.y ?? 0}
+                onClose={() => setFloatingOrder(null)}
+              />
 
               <AnimatePresence>
                 {objectTreeOpen && (

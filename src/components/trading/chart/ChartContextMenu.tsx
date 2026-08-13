@@ -21,15 +21,19 @@ export type ChartOrderIntent =
   | { kind: "alert"; price: number }
   | { kind: "drawing"; price: number };
 
+/** Where the menu was opened, in viewport coordinates. */
+export type IntentOrigin = { clientX: number; clientY: number };
+
 interface Props {
   adapter: ChartAdapter | null;
   sym: SymbolMeta | null;
   livePrice?: number;
-  onIntent: (intent: ChartOrderIntent) => void;
+  /** `origin` is the click point, so callers can open UI where the user looked. */
+  onIntent: (intent: ChartOrderIntent, origin: IntentOrigin) => void;
 }
 
 export function ChartContextMenu({ adapter, sym, livePrice, onIntent }: Props) {
-  const [state, setState] = useState<{ x: number; y: number; price: number } | null>(null);
+  const [state, setState] = useState<{ x: number; y: number; price: number; clientX: number; clientY: number } | null>(null);
   const hostRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -44,7 +48,7 @@ export function ChartContextMenu({ adapter, sym, livePrice, onIntent }: Props) {
       // Position menu inside the host bounds
       const x = Math.min(e.clientX - rect.left, rect.width - 210);
       const y = Math.min(e.clientY - rect.top, rect.height - 300);
-      setState({ x, y, price });
+      setState({ x, y, price, clientX: e.clientX, clientY: e.clientY });
     }
     function onDown(e: MouseEvent) {
       if (!state) return;
@@ -60,7 +64,7 @@ export function ChartContextMenu({ adapter, sym, livePrice, onIntent }: Props) {
 
   const close = () => setState(null);
   const emit = (intent: ChartOrderIntent) => {
-    onIntent(intent);
+    if (state) onIntent(intent, { clientX: state.clientX, clientY: state.clientY });
     close();
   };
 
