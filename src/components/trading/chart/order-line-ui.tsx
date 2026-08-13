@@ -70,6 +70,7 @@ export function OrderLabel({
   onPointerDown,
   title,
   draggable = true,
+  ghost,
   onMouseEnter,
   onMouseLeave,
 }: {
@@ -82,6 +83,8 @@ export function OrderLabel({
   onPointerDown?: (e: React.PointerEvent) => void;
   title?: string;
   draggable?: boolean;
+  /** Dims the pill for a level that is offered but not yet set. */
+  ghost?: boolean;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
 }) {
@@ -121,7 +124,10 @@ export function OrderLabel({
         </div>
         {/* Always-visible axis chip */}
         <div
-          className="flex items-center px-1.5 py-[3px] font-mono font-semibold text-white"
+          className={cn(
+            "flex items-center px-1.5 py-[3px] font-mono font-semibold text-white transition-opacity",
+            ghost && "opacity-60 hover:opacity-100",
+          )}
           style={{ backgroundColor: color }}
         >
           {axis}

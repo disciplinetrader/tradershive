@@ -59,13 +59,13 @@ type ExitLegRow = {
 };
 
 /**
- * Where a newly attached stop or target starts out.
+ * Where an unset stop or target sits until the trader places it.
  *
- * A position opened without protection has no line on the chart, so there is
- * nothing to drag — the only way to attach one was the Positions table's edit
- * dialog, which means leaving the chart. These buttons put the level on the
- * chart at a sane starting distance; the trader then drags it exactly as they
- * would an existing one.
+ * A position without protection still gets a handle: a dimmed line at this
+ * level, draggable on sight. That is the TradingView interaction — the handle
+ * is always there, always in a sensible place, and one gesture puts it where
+ * you want it. Previously the level only existed after a click, so attaching a
+ * stop was a two-step "click, then find the line, then drag" affair.
  *
  * 0.5% of entry rather than a fixed pip count, so the default is sensible on
  * both a 64,000 crypto price and a 1.10 FX rate. The precise number matters
@@ -193,6 +193,22 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
   const geometry = useChartGeometry(adapter, hostRef);
   useEffect(() => { force((n) => n + 1); }, [tick, trades, livePrice, geometry]);
 
+  /**
+   * Start a drag on a level handle.
+   *
+   * `seed` writes the starting price into `overrides` up front, which is what
+   * makes a placeholder commit on a plain click: `onUp` persists whatever the
+   * override holds, so a click with no movement lands the level at its default
+   * instead of doing nothing. Real levels are not seeded — a stray click on an
+   * existing line should not re-issue a write for the price it already has.
+   */
+  const beginDrag = (tradeId: string, handle: "sl" | "tp", price: number, seed: boolean) => {
+    if (seed) {
+      setOverrides((o) => ({ ...o, [tradeId]: { ...o[tradeId], [handle]: price } }));
+    }
+    setDrag({ tradeId, handle, price });
+  };
+
   useEffect(() => {
     if (!drag) return;
     function onMove(e: PointerEvent) {
@@ -281,12 +297,21 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
       const rewardTotal = rewardPrimary + extraLegs.reduce((sum, l) => sum + l.reward, 0);
       const rr = riskAmt > 0 && rewardTotal > 0 ? rewardTotal / riskAmt : 0;
 
+      // Unset levels still get a handle, at the default distance, so every
+      // open position carries a stop and a target control at all times.
+      const slPlaceholder = sl == null ? defaultLevel(sym, t.direction, t.entry_price, "sl") : null;
+      const tpPlaceholder = tp == null ? defaultLevel(sym, t.direction, t.entry_price, "tp") : null;
+
       return {
         t,
         ladderSize: ladder.length,
         extraLegs,
         rewardPrimary,
         rewardTotal,
+        slPlaceholder,
+        tpPlaceholder,
+        slPlaceholderY: slPlaceholder != null ? adapter.priceToY(slPlaceholder) : null,
+        tpPlaceholderY: tpPlaceholder != null ? adapter.priceToY(tpPlaceholder) : null,
         entryY: adapter.priceToY(t.entry_price),
         slY: sl != null ? adapter.priceToY(sl) : null,
         tpY: tp != null ? adapter.priceToY(tp) : null,
@@ -311,6 +336,7 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
           t, entryY, slY, tpY, slGhostY, tpGhostY, slPrice, tpPrice,
           pnl, rMult, pts, riskAmt, rewardAmt, rr, ladderSize, extraLegs,
           rewardPrimary, rewardTotal,
+          slPlaceholder, tpPlaceholder, slPlaceholderY, tpPlaceholderY,
         } = row;
         if (entryY == null) return null;
         const slActive = drag?.tradeId === t.id && drag.handle === "sl";
@@ -410,9 +436,10 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
                       ))}
                     </DropdownMenuContent>
                   </DropdownMenu>
-                  {/* Attach a missing level without leaving the chart. Only
-                      shown when the trade lacks one — an existing level is
-                      already on screen and draggable. */}
+                  {/* Keyboard-reachable path to the same defaults the ghost
+                      handles offer. The handles are pointer-only, so these
+                      stay as the accessible equivalent rather than as the
+                      primary way in. */}
                   {t.stop_loss == null && (
                     <LineAction
                       wide
@@ -464,7 +491,7 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
                   onPointerDown={(e) => {
                     if ((e.target as HTMLElement).closest("[data-line-action]")) return;
                     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-                    setDrag({ tradeId: t.id, handle: "sl", price: slPrice });
+                    beginDrag(t.id, "sl", slPrice, false);
                   }}
                   label={
                     <>
@@ -499,7 +526,7 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
                   onPointerDown={(e) => {
                     if ((e.target as HTMLElement).closest("[data-line-action]")) return;
                     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-                    setDrag({ tradeId: t.id, handle: "tp", price: tpPrice });
+                    beginDrag(t.id, "tp", tpPrice, false);
                   }}
                   label={
                     <>
@@ -517,6 +544,62 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
                     </>
                   }
                   axis={<span className="tabular-nums">{fmtPrice(sym, tpPrice)}</span>}
+                />
+              </>
+            )}
+
+            {/* UNSET LEVEL HANDLES — always present, immediately draggable.
+                Rendered only while the real level is absent; the moment a drag
+                starts, the override above turns it into the live line. */}
+            {slY == null && slPlaceholderY != null && slPlaceholder != null && (
+              <>
+                <OrderLine y={slPlaceholderY} tone="stop" ghost />
+                <OrderLabel
+                  y={slPlaceholderY}
+                  tone="stop"
+                  expanded={hover === `${t.id}:sl-add`}
+                  ghost
+                  title="Drag to set a stop loss, or click to place it here"
+                  onMouseEnter={() => setHover(`${t.id}:sl-add`)}
+                  onMouseLeave={() => setHover((h) => (h === `${t.id}:sl-add` ? null : h))}
+                  onPointerDown={(e) => {
+                    if ((e.target as HTMLElement).closest("[data-line-action]")) return;
+                    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+                    beginDrag(t.id, "sl", slPlaceholder, true);
+                  }}
+                  label={
+                    <>
+                      <span className="font-semibold text-muted-foreground">Add stop</span>
+                      <span className="tabular-nums text-muted-foreground">drag to place</span>
+                    </>
+                  }
+                  axis={<span className="tabular-nums opacity-80">+ SL</span>}
+                />
+              </>
+            )}
+            {tpY == null && tpPlaceholderY != null && tpPlaceholder != null && (
+              <>
+                <OrderLine y={tpPlaceholderY} tone="profit" ghost />
+                <OrderLabel
+                  y={tpPlaceholderY}
+                  tone="profit"
+                  expanded={hover === `${t.id}:tp-add`}
+                  ghost
+                  title="Drag to set a take profit, or click to place it here"
+                  onMouseEnter={() => setHover(`${t.id}:tp-add`)}
+                  onMouseLeave={() => setHover((h) => (h === `${t.id}:tp-add` ? null : h))}
+                  onPointerDown={(e) => {
+                    if ((e.target as HTMLElement).closest("[data-line-action]")) return;
+                    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+                    beginDrag(t.id, "tp", tpPlaceholder, true);
+                  }}
+                  label={
+                    <>
+                      <span className="font-semibold text-muted-foreground">Add target</span>
+                      <span className="tabular-nums text-muted-foreground">drag to place</span>
+                    </>
+                  }
+                  axis={<span className="tabular-nums opacity-80">+ TP</span>}
                 />
               </>
             )}
