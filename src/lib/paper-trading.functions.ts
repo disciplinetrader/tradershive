@@ -276,7 +276,16 @@ export const openTrade = createServerFn({ method: "POST" })
         stop_loss: data.stop_loss ?? null,
         risk_amount: data.risk_amount ?? null,
       },
-      () => livePrice
+      // Scope the quote to the symbol it belongs to. This used to be
+      // `() => livePrice`, which handed the NEW order's price to every open
+      // position regardless of instrument: with gold open at 3400, placing a
+      // EUR/USD order valued that position at 1.15 and booked a six-figure
+      // phantom loss, collapsing equity and rejecting a 0.01-lot order on a
+      // funded account with "Insufficient margin". It could also mask a real
+      // rejection by inventing phantom profit. Positions on other symbols get
+      // no live price here, so `computeAccountRisk` falls back to their entry
+      // price — 0 unrealised P/L, the documented broker-style fallback.
+      (symbol) => (symbol === data.symbol ? livePrice : null)
     );
     
     if (!validation.ok) {

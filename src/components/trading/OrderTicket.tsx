@@ -26,7 +26,7 @@ import {
   QUANTITY_MODE_LABEL, TARGET_MODE_LABEL, STOP_MODE_LABEL,
   type QuantityMode, type TargetMode, type StopMode,
 } from "@/lib/paper-trading/order-ticket";
-import { useLivePrice } from "@/lib/paper-trading/live-quotes";
+import { useLivePrice, useLiveQuotes } from "@/lib/paper-trading/live-quotes";
 import { validateNewOrder, liquidationPrice, type OpenTradeInput } from "@/lib/paper-trading/risk";
 import { onTradeIntent } from "@/lib/trading/trade-intent";
 import { cn } from "@/lib/utils";
@@ -139,6 +139,10 @@ export function OrderTicket({ compact = false }: { compact?: boolean } = {}) {
     enabled: !!accountId,
     refetchInterval: 5000,
   });
+
+  // Margin pre-flight values every open position, not just this ticket's
+  // symbol, so it needs a per-symbol quote map rather than one price.
+  const liveQuotes = useLiveQuotes(openTrades?.map((t) => t.symbol));
 
   const position = useMemo(
     () => (openTrades ?? []).find((t) => t.symbol === symbol) ?? null,
@@ -274,9 +278,13 @@ export function OrderTicket({ compact = false }: { compact?: boolean } = {}) {
         symbol, direction: side, entry_price: entryNum, lot_size: lotNum,
         stop_loss: slNum, take_profit: primaryTp, risk_amount: calc?.riskAmount ?? null,
       },
-      () => livePrice,
+      // Per-symbol lookup. `() => livePrice` handed this ticket's price to
+      // every open position, so an open gold position priced at a EUR/USD
+      // quote booked a phantom six-figure loss and blocked small orders on a
+      // funded account with "Insufficient margin".
+      (s) => (s === symbol ? livePrice : null) ?? liveQuotes[s]?.price ?? null,
     );
-  }, [localErrors, account, symbolMeta, openTrades, symbol, side, entryNum, lotNum, slNum, primaryTp, calc?.riskAmount, livePrice]);
+  }, [localErrors, account, symbolMeta, openTrades, symbol, side, entryNum, lotNum, slNum, primaryTp, calc?.riskAmount, livePrice, liveQuotes]);
 
   const errorList = useMemo(
     () => (localErrors.length ? localErrors : preflight?.errors ?? []),
