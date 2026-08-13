@@ -31,6 +31,13 @@ const subs = new Map<string, { handle: SubscriptionHandle; refs: number }>();
 /** Snapshot poller per symbol, used until/while the streaming feed is silent. */
 const snapshots = new Map<string, ReturnType<typeof setInterval>>();
 
+/** How long the real feed must be silent before the fallback snapshot fires. */
+const SNAPSHOT_QUIET_MS = 60_000;
+/** Floor between two fallback pulls for the same symbol. */
+const SNAPSHOT_MIN_GAP_MS = 60_000;
+/** How often we re-check whether the feed has gone quiet. */
+const SNAPSHOT_TICK_MS = 20_000;
+
 function publish(meta: { symbol: string; refPrice: number }, price: number) {
   if (!Number.isFinite(price) || price <= 0) return;
   const base = meta.refPrice;
@@ -59,15 +66,26 @@ function acquire(symbol: string) {
     // forever. Seed immediately from the REST snapshot and keep polling while
     // no tick has arrived, so the ticket never sits on "Waiting for price".
     // These are real provider quotes — never synthesised.
+    //
+    // This is a LAST RESORT, not a second feed. Each pull is an un-batched
+    // one-symbol request; at the old 15s interval every open position spent 4
+    // Twelve Data credits a minute on top of the provider's own batched
+    // poller, which alone exceeded the free plan's 8 credits/min and left
+    // forex/metals rate-limited into silence. Only fire when the real feed has
+    // actually gone quiet.
+    let lastPullAt = 0;
     const pull = () => {
-      if (lastTickAt && Date.now() - lastTickAt < 30_000) return;
+      const now = Date.now();
+      if (lastTickAt && now - lastTickAt < SNAPSHOT_QUIET_MS) return;
+      if (lastPullAt && now - lastPullAt < SNAPSHOT_MIN_GAP_MS) return;
+      lastPullAt = now;
       void marketData
         .getQuote(engineSymbol(meta.symbol), meta.market)
         .then((q) => publish(meta, (q as any).last ?? (q as any).bid ?? 0))
         .catch(() => { /* stay on the last real price */ });
     };
     pull();
-    snapshots.set(symbol, setInterval(pull, 15_000));
+    snapshots.set(symbol, setInterval(pull, SNAPSHOT_TICK_MS));
   } catch { /* engine unavailable — UI falls back to last known / refPrice */ }
 }
 

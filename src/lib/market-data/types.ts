@@ -61,6 +61,12 @@ export interface Quote {
   stale?: boolean;
   /** Age of a stale quote in milliseconds. */
   ageMs?: number;
+  /**
+   * Upstream tick time as the provider reported it, unclamped. `ts` is
+   * normalised for chart bucketing and may be stamped to "now"; this is the
+   * field to judge whether a feed is actually delayed.
+   */
+  quoteAt?: number | null;
 }
 
 

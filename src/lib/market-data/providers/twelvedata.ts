@@ -27,6 +27,13 @@ const CADENCE: Record<string, number> = {
 };
 const DEFAULT_POLL_MS = CADENCE.idle;
 
+/** Credits/minute we allow the live poller to spend. The free plan ceiling is
+ *  8; the rest is headroom for candle loads and one-off `getQuote` calls.
+ *  Twelve Data bills one credit PER SYMBOL, so a 6-symbol watchlist polled
+ *  every 12s is 30 credits/min — four times over the ceiling, which is why
+ *  every poll came back 429 and forex quotes stopped arriving entirely. */
+const CREDITS_PER_MIN = 6;
+
 // Static catalog for the symbols we officially support out of the box.
 // The engine symbol on the left is what the rest of the app uses; the
 // Twelve Data symbol on the right is what we send over the wire.
@@ -80,6 +87,7 @@ export class TwelveDataProvider implements MarketDataProvider {
   private visibilityBound = false;
   private lastUsage: any = null;
   private lastUsageAt = 0;
+  private rotation = 0;
 
   status() { return this._status; }
   onStatus(h: StatusHandler) { this.handlers.add(h); return () => this.handlers.delete(h); }
@@ -104,6 +112,11 @@ export class TwelveDataProvider implements MarketDataProvider {
     let base = requested.length ? Math.min(...requested) : CADENCE.idle;
     if (this.lastUsage?.softThrottle) base = Math.max(base, CADENCE.throttled);
     if (this.lastUsage?.exhausted || this.lastUsage?.cooldown) return 0;
+    // Every poll spends one credit per subscribed symbol. Stretch the interval
+    // so the poller lives inside the credit budget rather than discovering the
+    // ceiling as a wall of 429s.
+    const symbols = Math.max(1, this.subs.size);
+    base = Math.max(base, Math.ceil((symbols / CREDITS_PER_MIN) * 60_000));
     return Math.max(3_000, base);
   }
 
@@ -203,7 +216,13 @@ export class TwelveDataProvider implements MarketDataProvider {
     void this.refreshUsage();
 
 
-    const engineSyms = [...this.subs.keys()];
+    // Rotate the symbol order each poll. The server trims a batch to the
+    // credits it can afford, so a fixed order would let the same tail symbols
+    // starve indefinitely while the head stays fresh.
+    const all = [...this.subs.keys()];
+    this.rotation = all.length ? this.rotation % all.length : 0;
+    const engineSyms = [...all.slice(this.rotation), ...all.slice(0, this.rotation)];
+    this.rotation = (this.rotation + 1) % Math.max(1, all.length);
     const tdSyms = engineSyms.map(toTd);
     try {
       const res = (await twelveDataQuote({ data: { symbols: tdSyms } })) as any;
@@ -227,6 +246,7 @@ export class TwelveDataProvider implements MarketDataProvider {
           const quote: Quote = {
             symbol: engineSym, providerCode: this.code, ts: q.ts,
             bid: q.bid, ask: q.ask, last: q.last, spread: q.spread,
+            quoteAt: q.quoteAt ?? null,
           };
           for (const h of this.subs.get(engineSym) ?? []) { try { h(quote); } catch { /* noop */ } }
         }
@@ -262,7 +282,7 @@ export class TwelveDataProvider implements MarketDataProvider {
     const res = (await twelveDataQuote({ data: { symbols: [toTd(symbol)] } })) as any;
     if (res?.error) throw new Error(res.error);
     const q = res.quotes?.[0]; if (!q) throw new Error(`twelvedata_no_quote:${symbol}`);
-    return { symbol, providerCode: this.code, ts: q.ts, bid: q.bid, ask: q.ask, last: q.last, spread: q.spread };
+    return { symbol, providerCode: this.code, ts: q.ts, bid: q.bid, ask: q.ask, last: q.last, spread: q.spread, quoteAt: q.quoteAt ?? null };
   }
 
   async getCandles(q: CandleQuery): Promise<Candle[]> {
@@ -282,6 +302,9 @@ export class TwelveDataProvider implements MarketDataProvider {
     if (!this.subs.has(symbol)) this.subs.set(symbol, new Set());
     this.subs.get(symbol)!.add(handler);
     this.ensurePoller();
+    // Cadence is a function of how many symbols we poll, so it has to be
+    // recomputed whenever that set changes.
+    this.retunePoller();
     const sub: SubscriptionHandle = {
       id: `twelvedata-${symbol}-${Math.random().toString(36).slice(2, 8)}`, symbol,
       unsubscribe: () => this.unsubscribe(sub),
@@ -294,7 +317,7 @@ export class TwelveDataProvider implements MarketDataProvider {
     const set = this.subs.get(handle.symbol);
     if (!set || !h) return;
     set.delete(h);
-    if (set.size === 0) this.subs.delete(handle.symbol);
+    if (set.size === 0) { this.subs.delete(handle.symbol); this.retunePoller(); }
   }
 
   async getMarketStatus(market: MarketKind): Promise<MarketStatusInfo> {

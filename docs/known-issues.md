@@ -925,3 +925,83 @@ this project has no service-role key or DB password — only a publishable key
 and an e2e user login. So it needs either a `SECURITY DEFINER` RPC that returns
 the catalog rows, or credentials the project does not currently have. That
 choice is the first decision on this task, not an implementation detail.
+
+---
+
+## MD-1 — The free Twelve Data plan cannot fund the poll rate the UI asks for
+
+**Area:** Market data · **Found:** 2026-08-13 · **Status:** open — code side
+fixed, plan side is a product decision
+
+Forex and metals ran 9–10 hours behind live while crypto was instant. Four
+defects stacked; three are fixed, the fourth is an entitlement question that
+code cannot answer.
+
+### What was wrong
+
+1. **Credits were counted as requests.** Twelve Data bills **one credit per
+   symbol**, so `/quote?symbol=EUR/USD,XAU/USD,GBP/USD` is three credits, not
+   one ([docs](https://support.twelvedata.com/en/articles/5203360-batch-api-requests)).
+   `recordCall()` added 1 per HTTP call, so the local gate read ~5/min while the
+   account really spent ~35/min. The gate never fired; upstream 429s did.
+   *Fixed* — `td()` takes a credit count, `canCall`/`affordableCredits` gate on
+   it, and an over-budget batch is trimmed rather than failed whole.
+2. **Cadence ignored symbol count.** The workspace asked for 12s regardless of
+   how many symbols were subscribed. *Fixed* — `computeCadence()` now stretches
+   the interval to fit `CREDITS_PER_MIN`, and the poll order rotates so trimmed
+   batches don't starve the same tail symbols every time.
+3. **A second, un-batched poller.** `live-quotes.ts` pulled every open
+   position's symbol individually every 15s whenever the feed had been quiet
+   for 30s — and the feed was permanently quiet, because of 1 and 2. *Fixed* —
+   it is now a genuine last resort (60s quiet, 60s floor between pulls).
+4. **The candle cache had no recency check.** `twelveDataCandles` returned
+   cache-only whenever it held ≥90% of the requested bar *count*, never asking
+   whether those bars reached the right edge. On 15m/500 bars the newest cached
+   candle could be **12.5 hours** old and still pass — which is the 9–10 hours
+   that was observed. Crypto was immune because Binance does not use this
+   cache-through path. *Fixed* — the shortcut now also requires the newest bar
+   to be within two bar intervals of `to`, and a stale tail triggers a
+   tail-only refetch, rate-limited to one attempt per bar interval so a closed
+   market doesn't burn a credit per render.
+
+### What is still open
+
+The free plan is **8 credits/min, 800/day**. One credit per symbol per poll
+means a 6-symbol watchlist plus a chart symbol cannot be polled faster than
+about once a minute without exceeding the ceiling — and a day of active use
+cannot exceed ~800 symbol-refreshes total. The code now lives inside that
+budget honestly instead of pretending, but the budget is small. Either the
+plan changes, or the number of concurrently-live non-crypto symbols does.
+
+Twelve Data's pricing page does list "real-time forex" on the free tier, so
+delayed *entitlement* was not the cause here — starvation was. Metals are not
+named either way on that page and should be confirmed directly.
+
+### Honesty in the UI
+
+`Quote.quoteAt` now carries the provider's real tick time alongside `ts`, which
+is deliberately clamped to now for chart bucketing. The chart's freshness chip
+reads `quoteAt` and shows **Delayed** rather than **Live** when the upstream
+tick is over two minutes old. Before this, a stale quote was stamped `Date.now()`
+and reported as Live — which is why the lag went unnoticed in-app and only
+showed up against TradingView.
+
+### The historical-sync cron is a red herring
+
+`HISTORICAL_SYNC_CRON_SECRET` suggests the forex feed depends on a periodic
+sync. It does not: `twelveDataCandles` backfills `historical_candles` itself on
+every chart load, so the cron only pre-warms. Worth knowing anyway:
+
+- No migration in this repo schedules it — the five jobs in
+  [BA-3](#ba-3--every-scheduled-cron-job-fails-authentication) do not include
+  `historical-sync`.
+- If it *is* scheduled from the Lovable dashboard, it fails auth for the same
+  reason every other job does (BA-3).
+
+To settle it against the live database:
+
+```sql
+select jobname, schedule, active from cron.job order by jobname;
+select id, status_code, error_msg, created
+  from net._http_response order by created desc limit 30;
+```

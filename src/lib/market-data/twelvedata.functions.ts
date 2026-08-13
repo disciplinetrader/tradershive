@@ -2,7 +2,7 @@
  * Twelve Data server proxy — the browser calls these server functions so the
  * Twelve Data API key stays on the server and CORS is a non-issue.
  *
- * Reliability layers (Free Twelve Data plan: ~8 req/min, ~800 req/day):
+ * Reliability layers (Free Twelve Data plan: 8 credits/min, 800 credits/day):
  *   1. In-memory quote cache: 12s TTL, keyed by symbol.
  *   2. In-flight request coalescing: concurrent callers for the same
  *      symbol share ONE upstream request instead of firing in parallel.
@@ -10,6 +10,13 @@
  *      the daily 80% threshold the client is told to slow down; once
  *      we're at 100% we hard-stop upstream calls until the next
  *      calendar day.
+ *
+ *      Counted in CREDITS, not HTTP requests. A batch call spends one
+ *      credit PER SYMBOL — `/quote?symbol=EUR/USD,XAU/USD,GBP/USD` is
+ *      three credits, not one. Counting requests made the tracker read
+ *      ~5/min while the account was really spending 35/min, so the local
+ *      gate never fired and every poll came back 429 instead.
+ *      https://support.twelvedata.com/en/articles/5203360-batch-api-requests
  *   4. Historical candle cache in `public.historical_candles`. We only
  *      fetch what's missing and always download a small buffer around
  *      the requested window so subsequent replay sessions hit cache.
@@ -19,7 +26,8 @@ import { createServerFn } from "@tanstack/react-start";
 const BASE = "https://api.twelvedata.com";
 const QUOTE_TTL_MS = 12_000;
 
-// Free-tier ceilings. Conservative — the real plan limits are slightly higher.
+// Free-tier ceilings, in API credits. Conservative — the real plan limits are
+// slightly higher.
 const DAILY_LIMIT = 800;
 const MINUTE_LIMIT = 8;
 const DAILY_SOFT = Math.floor(DAILY_LIMIT * 0.8); // 640 → begin cooldown
@@ -38,8 +46,16 @@ const TF_MINUTES: Record<string, number> = {
 type CachedQuote = {
   symbol: string; bid: number; ask: number; last: number; spread: number;
   ts: number; change: number; percent_change: number;
+  /** Upstream tick time, unclamped — null when the provider didn't send one.
+   *  `ts` is clamped for chart bucketing; this is what staleness is judged on. */
+  quoteAt: number | null;
 };
 const quoteCache = new Map<string, { value: CachedQuote; expires: number }>();
+
+/** Last time we tried to extend a cached candle series to the right edge,
+ *  keyed by `symbol:timeframe`. Stops a closed market from re-requesting a
+ *  tail that cannot exist yet, once per chart render. */
+const tailAttempts = new Map<string, number>();
 
 /* --------------- usage tracker --------------- */
 
@@ -76,17 +92,24 @@ function rollWindows() {
   }
 }
 
-function canCall(): { ok: true } | { ok: false; reason: "quota_exhausted" | "cooldown" | "minute_limit" } {
+function canCall(credits = 1): { ok: true } | { ok: false; reason: "quota_exhausted" | "cooldown" | "minute_limit" } {
   rollWindows();
   const now = Date.now();
   if (now < usage.cooldownUntil) return { ok: false, reason: "cooldown" };
-  if (usage.daily >= DAILY_LIMIT) return { ok: false, reason: "quota_exhausted" };
+  if (usage.daily + credits > DAILY_LIMIT) return { ok: false, reason: "quota_exhausted" };
 
-  if (usage.minute >= MINUTE_LIMIT) return { ok: false, reason: "minute_limit" };
+  if (usage.minute + credits > MINUTE_LIMIT) return { ok: false, reason: "minute_limit" };
   return { ok: true };
 }
 
-function recordCall() { rollWindows(); usage.daily += 1; usage.minute += 1; usage.lastRequestTs = Date.now(); }
+/** Credits we can still spend inside the current minute (and day). */
+function affordableCredits(): number {
+  rollWindows();
+  if (Date.now() < usage.cooldownUntil) return 0;
+  return Math.max(0, Math.min(MINUTE_LIMIT - usage.minute, DAILY_LIMIT - usage.daily));
+}
+
+function recordCall(credits = 1) { rollWindows(); usage.daily += credits; usage.minute += credits; usage.lastRequestTs = Date.now(); }
 function recordError(msg: string, backoffMs: number) {
   usage.lastErrorAt = Date.now();
   usage.lastError = msg.slice(0, 200);
@@ -112,15 +135,17 @@ function key(): string {
   return k;
 }
 
-async function td(path: string, params: Record<string, string>): Promise<any> {
-  const gate = canCall();
+/** `credits` is the number of symbols in the request — Twelve Data bills per
+ *  symbol, so a 3-symbol batch must be gated and recorded as 3. */
+async function td(path: string, params: Record<string, string>, credits = 1): Promise<any> {
+  const gate = canCall(credits);
   // If soft-throttled or exhausted, we might still want to allow a manual retry to "burst"
   // but for now we enforce the gate.
   if (!gate.ok) throw new Error(gate.reason);
-  
+
   const qs = new URLSearchParams({ ...params, apikey: key() }).toString();
-  recordCall();
-  
+  recordCall(credits);
+
   const res = await fetch(`${BASE}${path}?${qs}`, {
     // Ensure we don't get cached 429s or stale data from intermediate proxies
     cache: "no-store",
@@ -205,13 +230,26 @@ export const twelveDataQuote = createServerFn({ method: "POST" })
         else stale.push(s);
       }
 
+      let deferred = 0;
       if (stale.length) {
+        // One credit per symbol. Asking for more symbols than the per-minute
+        // ceiling allows would fail the gate outright and starve every symbol,
+        // so spend what we can afford now and let the rest ride the cache
+        // until the next minute window.
+        const budget = affordableCredits();
+        if (budget <= 0) {
+          if (fresh.length) return { quotes: fresh, degraded: true, error: "minute_limit" };
+          return { error: "minute_limit" };
+        }
+        const wanted = stale.slice(0, budget);
+        deferred = stale.length - wanted.length;
+
         // Coalesce concurrent identical requests. Sort so callers with the
         // same symbol set share one upstream call.
-        const coalesceKey = "q:" + stale.slice().sort().join(",");
+        const coalesceKey = "q:" + wanted.slice().sort().join(",");
         try {
-          const raw = await coalesce(coalesceKey, () => td("/quote", { symbol: stale.join(",") }));
-          const list: any[] = stale.length === 1
+          const raw = await coalesce(coalesceKey, () => td("/quote", { symbol: wanted.join(",") }, wanted.length));
+          const list: any[] = wanted.length === 1
             ? [raw]
             : Object.entries(raw).map(([sym, v]) => ({ symbol: sym, ...(v as any) }));
           for (const q of list) {
@@ -232,6 +270,13 @@ export const twelveDataQuote = createServerFn({ method: "POST" })
                 const raw = Number(q.last_quote_at ?? q.timestamp ?? 0) * 1000;
                 return raw && Date.now() - raw < 60_000 ? raw : Date.now();
               })(),
+              // The clamp above is a bucketing device, not a claim of
+              // freshness. Keep the real tick time so a genuinely delayed
+              // feed reads as delayed instead of being stamped "now".
+              quoteAt: (() => {
+                const raw = Number(q.last_quote_at ?? 0) * 1000;
+                return raw > 0 ? raw : null;
+              })(),
 
               change: Number(q.change ?? 0),
               percent_change: Number(q.percent_change ?? 0),
@@ -248,7 +293,10 @@ export const twelveDataQuote = createServerFn({ method: "POST" })
       }
 
       const byKey = new Map(fresh.map((q) => [q.symbol, q]));
-      return { quotes: symbols.map((s) => byKey.get(s)).filter(Boolean) };
+      return {
+        quotes: symbols.map((s) => byKey.get(s)).filter(Boolean),
+        ...(deferred > 0 ? { deferred } : {}),
+      };
     } catch (e) {
       return { error: (e as Error).message };
     }
@@ -295,15 +343,43 @@ export const twelveDataCandles = createServerFn({ method: "POST" })
         volume: Number(r.volume ?? 0),
       }));
 
-      const expected = Math.max(1, Math.floor((to - from) / (tfMin * 60_000)));
+      const barMs = tfMin * 60_000;
+      const expected = Math.max(1, Math.floor((to - from) / barMs));
       const coverage = cachedCandles.length / expected;
-      if (cachedCandles.length && coverage >= 0.9) {
+
+      // Coverage counts bars; it says nothing about WHERE they sit. A cache
+      // holding 90% of a 15m/500-bar window can be missing the newest 12.5
+      // hours and still pass, which is exactly how forex charts ended up
+      // rendering half a day behind live while crypto (Binance, no cache-
+      // through) stayed current. The cache is only authoritative when it also
+      // reaches the right edge of the requested window.
+      const newest = cachedCandles.length ? cachedCandles[cachedCandles.length - 1].time : 0;
+      const tailFresh = newest > 0 && to - newest <= barMs * 2;
+
+      if (cachedCandles.length && coverage >= 0.9 && tailFresh) {
         return { candles: cachedCandles, cached: true };
       }
 
+      // A stale tail on a closed market (weekend FX, index out-of-hours) will
+      // never fill in, so don't spend a credit per request re-asking. One
+      // attempt per bar interval is enough to catch the reopen.
+      const tailOnly = cachedCandles.length > 0 && coverage >= 0.9 && !tailFresh;
+      const tailKey = `${data.symbol}:${data.timeframe}`;
+      if (tailOnly) {
+        const lastTry = tailAttempts.get(tailKey) ?? 0;
+        if (Date.now() - lastTry < Math.max(60_000, barMs)) {
+          return { candles: cachedCandles, cached: true, staleTail: true };
+        }
+        tailAttempts.set(tailKey, Date.now());
+      }
+
       // ---------- 2. Coalesced fetch from Twelve Data with buffer window ----------
-      const bufferMs = wantBuffer ? (to - from) * 0.25 : 0;
-      const fetchFrom = Math.max(0, Math.floor(from - bufferMs));
+      // When only the tail is missing, ask for the tail — no point re-pulling
+      // (and re-upserting) a window we already hold in full.
+      const bufferMs = wantBuffer && !tailOnly ? (to - from) * 0.25 : 0;
+      const fetchFrom = tailOnly
+        ? Math.max(0, Math.floor(newest - barMs))
+        : Math.max(0, Math.floor(from - bufferMs));
       const fetchTo = Math.floor(to + bufferMs);
       const cacheKey = `c:${data.symbol}:${data.timeframe}:${fetchFrom}:${fetchTo}`;
 
@@ -311,9 +387,12 @@ export const twelveDataCandles = createServerFn({ method: "POST" })
       let upstreamError: string | null = null;
       try {
         values = await coalesce(cacheKey, async () => {
+          const wantBars = tailOnly
+            ? Math.max(2, Math.ceil((to - fetchFrom) / barMs) + 2)
+            : Math.max(data.count ?? 500, Math.floor(expected * 1.5));
           const params: Record<string, string> = {
             symbol: data.symbol, interval,
-            outputsize: String(Math.min(5000, Math.max(data.count ?? 500, Math.floor(expected * 1.5)))),
+            outputsize: String(Math.min(5000, wantBars)),
             order: "ASC", format: "JSON",
           };
           params.start_date = new Date(fetchFrom).toISOString().slice(0, 19);
