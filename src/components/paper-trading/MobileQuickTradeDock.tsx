@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { openTrade, listTrades } from "@/lib/paper-trading.functions";
-import { lotForRisk, formatCurrency } from "@/lib/paper-trading/calculations";
+import { formatCurrency } from "@/lib/paper-trading/calculations";
+import { resolveQuantity } from "@/lib/paper-trading/order-ticket";
 import { useLivePrice, useLiveQuotes } from "@/lib/paper-trading/live-quotes";
 import { validateNewOrder, type OpenTradeInput } from "@/lib/paper-trading/risk";
 import { usePaper } from "./context";
@@ -70,13 +71,28 @@ export function MobileQuickTradeDock() {
   // Auto-size from risk % when user changes it (no SL → uses a 1% price move as proxy)
   const autoSize = () => {
     if (!symbolMeta || !price) return toast.error("No live price yet");
-    const risk = balance * (Number(riskPct) / 100);
     // Assume a default 1% adverse move to size the ticket when no SL is set.
     const virtualSl = side === "long" ? price * 0.99 : price * 1.01;
-    const suggested = lotForRisk(symbolMeta, price, virtualSl, risk);
-    if (!suggested) return toast.error("Cannot size — check price");
-    setLot(String(suggested));
-    toast.success(`Sized to ${riskPct}% risk (${formatCurrency(risk, account?.currency)})`);
+    const sizing = resolveQuantity({
+      mode: "risk_percent", sym: symbolMeta, entry: price, sl: virtualSl,
+      balance, value: Number(riskPct),
+    });
+    if (sizing.error || sizing.lot == null || sizing.actualRisk == null) {
+      return toast.error(sizing.error ?? "Cannot size — check price");
+    }
+    setLot(String(sizing.lot));
+    const actualPct = balance > 0 ? (sizing.actualRisk / balance) * 100 : 0;
+    // At min lot the trade can risk far more than asked — say so rather than
+    // echoing the requested percent back. See OrderPanel for the full note.
+    if (sizing.clamped === "min") {
+      return toast.warning(
+        `${symbolMeta.symbol} cannot trade below ${symbolMeta.minLot} lot — that risks `
+        + `${formatCurrency(sizing.actualRisk, account?.currency)} (${actualPct.toFixed(1)}%), not ${riskPct}%.`,
+      );
+    }
+    toast.success(
+      `Sized to ${sizing.lot} — risks ${formatCurrency(sizing.actualRisk, account?.currency)} (${actualPct.toFixed(2)}%)`,
+    );
   };
 
   const submit = useMutation({

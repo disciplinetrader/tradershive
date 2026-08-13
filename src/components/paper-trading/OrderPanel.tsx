@@ -23,7 +23,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { openTrade, placeOrder, listTradeTags, createTradeTag, listTrades } from "@/lib/paper-trading.functions";
 import { COMMON_TAGS } from "@/lib/paper-trading/symbols";
-import { lotForRisk, tradeCalculation, validateStops, formatCurrency } from "@/lib/paper-trading/calculations";
+import { tradeCalculation, validateStops, formatCurrency } from "@/lib/paper-trading/calculations";
+import { resolveQuantity } from "@/lib/paper-trading/order-ticket";
 import { useLivePrice, useLiveQuotes } from "@/lib/paper-trading/live-quotes";
 import { validateNewOrder, liquidationPrice, type OpenTradeInput } from "@/lib/paper-trading/risk";
 import { onTradeIntent } from "@/lib/trading/trade-intent";
@@ -207,13 +208,51 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
     [symbolMeta, entryNum, side, leverage],
   );
 
+  /**
+   * Size from risk %, reporting the risk the lot ACTUALLY carries.
+   *
+   * `lotForRisk` clamps up to the symbol's `minLot`, so on an instrument whose
+   * smallest tradeable size is large relative to the request the returned lot
+   * can risk far more than asked — NQ at 0.5% of a $10k account resolves to 1
+   * lot risking $3,982.50, or 39.8%. This used to report the REQUESTED figure
+   * ("Sized to risk 0.5% ($50.01)") and then the order was rejected downstream
+   * by the 25% hard cap, which reads as an inexplicable margin error. Same
+   * clamp detection the workspace ticket already uses.
+   */
   const calculateSizeFromRisk = () => {
     if (!symbolMeta || !slNum || !entryNum) return toast.error("Set entry and stop loss first");
-    const riskAmount = balance * (Number(riskPct) / 100);
-    const suggested = lotForRisk(symbolMeta, entryNum, slNum, riskAmount);
-    if (!suggested) return toast.error("Cannot compute — check entry/stop distance");
-    setLot(String(suggested));
-    toast.success(`Sized to risk ${riskPct}% (${formatCurrency(riskAmount, account?.currency)})`);
+    const sizing = resolveQuantity({
+      mode: "risk_percent",
+      sym: symbolMeta,
+      entry: entryNum,
+      sl: slNum,
+      balance,
+      value: Number(riskPct),
+    });
+    if (sizing.error || sizing.lot == null || sizing.actualRisk == null) {
+      return toast.error(sizing.error ?? "Cannot compute — check entry/stop distance");
+    }
+    setLot(String(sizing.lot));
+    const actualPct = balance > 0 ? (sizing.actualRisk / balance) * 100 : 0;
+    if (sizing.clamped === "min") {
+      toast.warning(
+        `${symbolMeta.symbol} cannot trade below ${symbolMeta.minLot} lot. That size risks `
+        + `${formatCurrency(sizing.actualRisk, account?.currency)} (${actualPct.toFixed(1)}% of balance), `
+        + `not the ${riskPct}% you asked for.`,
+      );
+      return;
+    }
+    if (sizing.clamped === "max") {
+      toast.warning(
+        `${symbolMeta.symbol} caps at ${symbolMeta.maxLot} lots — risking `
+        + `${formatCurrency(sizing.actualRisk, account?.currency)} (${actualPct.toFixed(1)}%), under your target.`,
+      );
+      return;
+    }
+    toast.success(
+      `Sized to ${sizing.lot} lots — risks ${formatCurrency(sizing.actualRisk, account?.currency)} `
+      + `(${actualPct.toFixed(2)}%)`,
+    );
   };
 
   const reset = () => {
