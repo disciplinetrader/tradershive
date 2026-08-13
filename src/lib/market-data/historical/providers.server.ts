@@ -241,6 +241,12 @@ export class TwelveDataHistoricalProvider implements HistoricalDataProvider {
         outputsize: String(PAGE),
         start_date: new Date(cursor).toISOString().slice(0, 19),
         end_date: new Date(pageTo).toISOString().slice(0, 19),
+        // Same trap as the live candle path: without this Twelve Data replies
+        // in its own zone (UTC+10 for FX/metals when measured) while the parse
+        // below appends "Z", writing every bar ~10 hours off into the shared
+        // `historical_candles` cache. `start_date`/`end_date` are read in this
+        // zone too, so it also keeps paging aligned.
+        timezone: "UTC",
         apikey,
       });
       const res = await fetch(`${TD_BASE}/time_series?${qs.toString()}`);
@@ -302,7 +308,7 @@ export class TwelveDataHistoricalProvider implements HistoricalDataProvider {
     try {
       const qs = new URLSearchParams({
         symbol: nativeSymbol, interval: "1month", order: "ASC",
-        outputsize: "1", format: "JSON", apikey: this.key(),
+        outputsize: "1", format: "JSON", timezone: "UTC", apikey: this.key(),
       });
       const res = await fetch(`${TD_BASE}/time_series?${qs.toString()}`);
       if (!res.ok) return null;

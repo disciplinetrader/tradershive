@@ -394,6 +394,15 @@ export const twelveDataCandles = createServerFn({ method: "POST" })
             symbol: data.symbol, interval,
             outputsize: String(Math.min(5000, wantBars)),
             order: "ASC", format: "JSON",
+            // MUST be explicit. Without it Twelve Data answers in its own
+            // default zone — measured at UTC+10 for FX and metals on
+            // 2026-08-13 — while the parse below force-appends "Z". Every
+            // candle then landed ~10 hours in the future, the live tick's
+            // bucket was older than the newest bar so `updateLastCandle` threw
+            // it away, and the chart sat ~10 hours off real time. `start_date`
+            // and `end_date` are read in this same zone, so this also aligns
+            // the requested window with the UTC instants we compute below.
+            timezone: "UTC",
           };
           params.start_date = new Date(fetchFrom).toISOString().slice(0, 19);
           params.end_date   = new Date(fetchTo).toISOString().slice(0, 19);
