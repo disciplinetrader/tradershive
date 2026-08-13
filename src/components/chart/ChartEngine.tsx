@@ -7,6 +7,9 @@ import type { ChartAdapter, ChartAdapterFactory } from "@/lib/chart/adapter";
 import { createLightweightAdapter } from "@/lib/chart/adapters/lightweight";
 import { Button } from "@/components/ui/button";
 
+/** Upstream tick age past which the feed is reported as delayed, not live. */
+const DELAYED_QUOTE_MS = 120_000;
+
 interface Props {
   settings: ChartSettings;
   indicators: IndicatorConfig[];
@@ -44,13 +47,17 @@ export const ChartEngine = forwardRef<ChartHandle, Props>(function ChartEngine(
 ) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const adapterRef = useRef<ChartAdapter | null>(null);
+  // Which symbol the drawn series belongs to, and whether anything is drawn.
+  // Read inside async callbacks, where `candles` would be a stale closure.
+  const drawnSymbolRef = useRef<string | null>(null);
+  const hasCandlesRef = useRef(false);
   const [adapterInstance, setAdapterInstance] = useState<ChartAdapter | null>(null);
   const [candles, setCandles] = useState<Candle[]>([]);
   const [quote, setQuote] = useState<Quote | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadNonce, setLoadNonce] = useState(0);
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
-  const [freshness, setFreshness] = useState<"loading" | "live" | "cached" | "error">("loading");
+  const [freshness, setFreshness] = useState<"loading" | "live" | "delayed" | "cached" | "error">("loading");
 
   // Mount adapter once
   useEffect(() => {
@@ -78,6 +85,26 @@ export const ChartEngine = forwardRef<ChartHandle, Props>(function ChartEngine(
   useEffect(() => {
     marketData.init();
     let cancelled = false;
+
+    // A symbol switch must tear the old instrument off the canvas BEFORE the
+    // new one loads. Leaving it up meant the previous symbol's candles, last
+    // price and price scale kept rendering under the new symbol's label — a
+    // Bitcoin-magnitude axis sitting under "EUR/USD" until the fetch landed.
+    // A timeframe change is different: same instrument, so keeping the bars
+    // on screen while the new resolution loads is correct.
+    const symbolChanged = drawnSymbolRef.current !== settings.symbol;
+    if (symbolChanged) {
+      drawnSymbolRef.current = settings.symbol;
+      hasCandlesRef.current = false;
+      setCandles([]);
+      setQuote(null);
+      onQuote?.(null);
+      setLastUpdated(null);
+      setFreshness("loading");
+      adapterRef.current?.setCandles([]);
+      adapterRef.current?.resetPriceScale();
+    }
+
     const to = Date.now();
     const tfMs = TIMEFRAME_SECONDS[settings.timeframe] * 1000;
     // Cover at least the window the user was already looking at. Otherwise a
@@ -90,7 +117,7 @@ export const ChartEngine = forwardRef<ChartHandle, Props>(function ChartEngine(
 
     const from = to - tfMs * bars;
     setLoadError(null);
-    setFreshness((f) => (candles.length ? f : "loading"));
+    setFreshness((f) => (hasCandlesRef.current ? f : "loading"));
     marketData
       .getCandles({ symbol: settings.symbol, timeframe: settings.timeframe, from, to, limit: bars }, settings.market)
 
@@ -98,7 +125,7 @@ export const ChartEngine = forwardRef<ChartHandle, Props>(function ChartEngine(
         if (cancelled) return;
         if (!rows || rows.length === 0) {
           // Only block the chart when there is truly nothing to show.
-          if (!candles.length) {
+          if (!hasCandlesRef.current) {
             setLoadError("No historical data is available for this symbol yet.");
             setFreshness("error");
           } else {
@@ -106,8 +133,12 @@ export const ChartEngine = forwardRef<ChartHandle, Props>(function ChartEngine(
           }
           return;
         }
+        hasCandlesRef.current = true;
         setCandles(rows);
         adapterRef.current?.setCandles(rows);
+        // The viewport carried over from the previous instrument means nothing
+        // here — frame the new symbol's own history.
+        if (symbolChanged) adapterRef.current?.fitContent();
         setLastUpdated(Date.now());
         setFreshness("live");
       })
@@ -116,7 +147,7 @@ export const ChartEngine = forwardRef<ChartHandle, Props>(function ChartEngine(
         const msg = (e as Error)?.message ?? "Unknown error";
         // Graceful degradation: keep the last-known chart on screen and
         // surface a subtle "Cached" chip instead of a red error card.
-        if (candles.length) {
+        if (hasCandlesRef.current) {
           setFreshness("cached");
           return;
         }
@@ -132,7 +163,12 @@ export const ChartEngine = forwardRef<ChartHandle, Props>(function ChartEngine(
     const sub = marketData.subscribe(settings.symbol, (q) => {
       setQuote(q); onQuote?.(q);
       setLastUpdated(Date.now());
-      setFreshness("live");
+      // A tick arriving is not the same as a tick being current. `q.ts` is
+      // clamped to now so the chart buckets correctly; `q.quoteAt` is the
+      // provider's real tick time, so a delayed feed reads as delayed here
+      // instead of claiming "Live".
+      const age = q.quoteAt ? Date.now() - q.quoteAt : 0;
+      setFreshness(q.stale || age > DELAYED_QUOTE_MS ? "delayed" : "live");
       setCandles((prev) => {
         if (!prev.length) return prev;
         const stepMs = TIMEFRAME_SECONDS[settings.timeframe] * 1000;
@@ -190,10 +226,12 @@ export const ChartEngine = forwardRef<ChartHandle, Props>(function ChartEngine(
 
   const freshnessLabel =
     freshness === "live" ? "Live" :
+    freshness === "delayed" ? "Delayed" :
     freshness === "cached" ? "Cached" :
     freshness === "error" ? "Offline" : "Loading";
   const freshnessDot =
     freshness === "live" ? "bg-success animate-pulse" :
+    freshness === "delayed" ? "bg-warning" :
     freshness === "cached" ? "bg-warning" :
     freshness === "error" ? "bg-danger" : "bg-muted-foreground/60";
   const updatedAgo = lastUpdated
@@ -250,6 +288,7 @@ export const ChartEngine = forwardRef<ChartHandle, Props>(function ChartEngine(
           className="flex items-center gap-1.5 rounded-md border border-border/40 bg-background/70 px-2 py-1 text-[10px] font-medium text-muted-foreground backdrop-blur"
           title={
             freshness === "live" ? `Streaming — updated ${updatedAgo ?? 0}s ago`
+            : freshness === "delayed" ? "The provider's last tick is behind real time — prices are not current"
             : freshness === "cached" ? `Cached data — live provider is briefly unavailable`
             : freshness === "error" ? "No connection to market provider"
             : "Loading market data"
