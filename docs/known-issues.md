@@ -1071,3 +1071,53 @@ Any provider returning a *string* datetime needs its zone pinned explicitly at
 the request, and asserted at the parse. Epoch-based feeds (Binance) are immune
 by construction. A parse that appends a literal `"Z"` to a vendor string is the
 smell — it encodes an assumption the vendor never promised.
+
+---
+
+## MD-3 — Paper trading uses one flat leverage, not per-asset-class
+
+**Area:** Paper trading · **Found:** 2026-08-13 · **Status:** open, follow-up —
+deliberate, not urgent
+
+Margin for a paper order is `notional / paper_accounts.leverage` — a single
+number per account (configurable 1–500, default 100) applied to every symbol.
+That matches TradingView's basic model and is the intended behaviour for now.
+
+Real brokers vary the requirement by asset class: 20:1 on E-mini S&P futures is
+a 5% margin requirement, while FX majors might be 30:1 and crypto 2:1 on the
+same account. Under a flat 100:1, an index-futures order reserves a fraction of
+what a real broker would hold, so the margin figure is optimistic for anything
+that is not FX.
+
+### The machinery already exists
+
+`src/lib/trading-engine/leverage.ts` has the whole thing —
+`LEVERAGE_PROFILES` (retail / prop / crypto / institutional), per-market `max`
+and `mmr` tables, and `effectiveLeverage(accountLeverage, profileId, market)`
+which caps the account number by the profile's per-class ceiling. The prop-firm
+engine uses it today via `AccountConfig.leverage_profile`.
+
+### What blocks reuse
+
+`paper_accounts` has no `leverage_profile` column, so
+`validateNewOrder` / `computeAccountRisk` have nothing to pass. Adopting it
+means:
+
+1. a migration adding `leverage_profile` to `paper_accounts` (default
+   `'institutional'` or a new `'flat'` entry, so existing accounts keep the
+   behaviour they have now — anything else silently re-margins open positions);
+2. threading `market` into `marginRequired` call sites, which currently take a
+   scalar leverage;
+3. deciding what the account-settings UI offers, since the profile changes
+   margin on positions that are already open.
+
+Point 1 is the trap: switching an existing 100:1 account to the `retail`
+profile drops crypto to 2:1, multiplying used margin by 50 and potentially
+putting the account straight into margin call on positions the trader never
+touched.
+
+### Not to be confused with
+
+The **stop-out / margin-call** thresholds, which are already per-account
+(`margin_call_level`, `stop_out_level`) and work correctly. This entry is only
+about the leverage divisor used to compute required margin.
