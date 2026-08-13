@@ -957,12 +957,17 @@ code cannot answer.
 4. **The candle cache had no recency check.** `twelveDataCandles` returned
    cache-only whenever it held ≥90% of the requested bar *count*, never asking
    whether those bars reached the right edge. On 15m/500 bars the newest cached
-   candle could be **12.5 hours** old and still pass — which is the 9–10 hours
-   that was observed. Crypto was immune because Binance does not use this
-   cache-through path. *Fixed* — the shortcut now also requires the newest bar
-   to be within two bar intervals of `to`, and a stale tail triggers a
-   tail-only refetch, rate-limited to one attempt per bar interval so a closed
-   market doesn't burn a credit per render.
+   candle could be 12.5 hours old and still pass. *Fixed* — the shortcut now
+   also requires the newest bar to be within two bar intervals of `to`, and a
+   stale tail triggers a tail-only refetch, rate-limited to one attempt per bar
+   interval so a closed market doesn't burn a credit per render.
+
+   > **Correction (2026-08-13).** This entry originally claimed defect 4 *was*
+   > the observed 9–10 hour lag. That was wrong, and the lag survived the fix.
+   > Defect 4 is real but was never reachable for this symptom: the cache holds
+   > only 3 symbols and is 7–13 days stale, so a 500-bar window does not
+   > intersect it and the shortcut never fires. The actual cause was a
+   > timezone misparse — see [MD-2](#md-2--twelve-data-datetimes-were-parsed-as-utc-when-they-are-not).
 
 ### What is still open
 
@@ -1005,3 +1010,64 @@ select jobname, schedule, active from cron.job order by jobname;
 select id, status_code, error_msg, created
   from net._http_response order by created desc limit 30;
 ```
+
+---
+
+## MD-2 — Twelve Data datetimes were parsed as UTC when they are not
+
+**Area:** Market data · **Found:** 2026-08-13 · **Status:** code fixed; cache
+purge outstanding
+
+The actual cause of the 9–10 hour lag on forex, metals and indices, replacing
+the incorrect diagnosis recorded in [MD-1](#md-1--the-free-twelve-data-plan-cannot-fund-the-poll-rate-the-ui-asks-for).
+
+Measured against the live API at 09:34 UTC on 2026-08-13:
+
+```
+GET /time_series?symbol=EUR/USD&interval=15min      (no timezone param)
+  newest bar datetime = "2026-08-13 19:30:00"       -> +9.92h vs wall clock
+
+GET /time_series?symbol=EUR/USD&interval=15min&timezone=UTC
+  newest bar datetime = "2026-08-13 09:30:00"       -> -0.08h vs wall clock
+```
+
+Twelve Data answers in its own default zone — measured at **UTC+10** for FX and
+metals — and returns no `exchange_timezone` in `meta` for these symbols. Both
+parsers force-appended `"Z"`, so 09:30 UTC was read as 19:30 UTC.
+
+### Why it looked like the chart was *behind* when the bars were *ahead*
+
+Two effects compound. The candles sit ~10h to the right of real time, and the
+live tick buckets at `now` — which is older than the newest bar — so
+`ChartEngine`'s `bucket > last.time` test fails and the tick is **discarded**.
+The chart is both mis-placed on the axis and frozen against the market.
+
+Crypto never showed it: Binance returns epoch milliseconds, which cannot be
+misread as a local time.
+
+### Fix
+
+`timezone=UTC` on every `/time_series` call, in both
+`market-data/twelvedata.functions.ts` and
+`market-data/historical/providers.server.ts`. This also aligns `start_date` /
+`end_date`, which are read in that same zone.
+
+### Outstanding — purge the poisoned cache
+
+36,267 rows (`provider_code='twelvedata'`) in `historical_candles` were written
+with the shifted timestamps. They are wrong by ~10h and will merge into any
+chart window that reaches them. Apply by hand, per this project's convention:
+
+```sql
+delete from public.historical_candles where provider_code = 'twelvedata';
+```
+
+Binance rows (8,644) are correct and must be kept. The table is a cache — the
+chart backfills on demand, so deleting costs one refetch per window viewed.
+
+### Guard for next time
+
+Any provider returning a *string* datetime needs its zone pinned explicitly at
+the request, and asserted at the parse. Epoch-based feeds (Binance) are immune
+by construction. A parse that appends a literal `"Z"` to a vendor string is the
+smell — it encodes an assumption the vendor never promised.
