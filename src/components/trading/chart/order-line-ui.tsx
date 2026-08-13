@@ -71,6 +71,7 @@ export function OrderLabel({
   title,
   draggable = true,
   ghost,
+  testId,
   onMouseEnter,
   onMouseLeave,
 }: {
@@ -85,6 +86,8 @@ export function OrderLabel({
   draggable?: boolean;
   /** Dims the pill for a level that is offered but not yet set. */
   ghost?: boolean;
+  /** Stable hook for e2e — these pills have no text a test can rely on. */
+  testId?: string;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
 }) {
@@ -92,6 +95,7 @@ export function OrderLabel({
   return (
     <div
       data-dense
+      data-testid={testId}
       className="pointer-events-auto absolute flex items-center justify-end"
       style={{
         top: y - 10,

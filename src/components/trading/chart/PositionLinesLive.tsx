@@ -61,11 +61,10 @@ type ExitLegRow = {
 /**
  * Where an unset stop or target sits until the trader places it.
  *
- * A position without protection still gets a handle: a dimmed line at this
- * level, draggable on sight. That is the TradingView interaction — the handle
- * is always there, always in a sensible place, and one gesture puts it where
- * you want it. Previously the level only existed after a click, so attaching a
- * stop was a two-step "click, then find the line, then drag" affair.
+ * A position without protection still gets a handle, revealed the moment the
+ * pointer comes near the position and draggable on sight. That is the
+ * TradingView interaction: hover, grab, drop — one motion, no separate "add"
+ * step, and the handle you grab is the line you end up with.
  *
  * 0.5% of entry rather than a fixed pip count, so the default is sensible on
  * both a 64,000 crypto price and a 1.10 FX rate. The precise number matters
@@ -109,6 +108,8 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
   const [, force] = useState(0);
   const [drag, setDrag] = useState<DragState | null>(null);
   const [hover, setHover] = useState<string | null>(null);
+  /** Position the pointer is currently over — reveals its unset level handles. */
+  const [hoveredTrade, setHoveredTrade] = useState<string | null>(null);
 
   // Local overrides during drag so UI doesn't flicker between server updates
   const [overrides, setOverrides] = useState<Record<string, { sl?: number; tp?: number }>>({});
@@ -192,6 +193,64 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
   // coordinates and the lines detach from the prices they claim to mark.
   const geometry = useChartGeometry(adapter, hostRef);
   useEffect(() => { force((n) => n + 1); }, [tick, trades, livePrice, geometry]);
+
+  /**
+   * Reveal a position's level handles while the pointer is near it.
+   *
+   * Deliberately a pointer listener rather than an invisible hover band in the
+   * DOM: a band wide enough to be useful would sit on top of the plot and
+   * swallow crosshair movement, drawing-tool clicks and chart panning at that
+   * height. Measuring the pointer instead leaves the chart completely
+   * untouched. `HOVER_BAND_PX` is generous because the target is a 1px line.
+   */
+  useEffect(() => {
+    const el = hostRef.current;
+    if (!el || !adapter || !sym) return;
+    /** Padding beyond the outermost level, so the band is easy to stay inside. */
+    const HOVER_PAD_PX = 28;
+    const onMove = (e: PointerEvent) => {
+      if (drag) return;                    // keep handles up for the whole drag
+      const rect = el.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      if (x < 0 || y < 0 || x > rect.width || y > rect.height) {
+        setHoveredTrade((h) => (h === null ? h : null));
+        return;
+      }
+      let best: string | null = null;
+      let bestDist = Infinity;
+      for (const t of trades) {
+        // The band spans the whole position — entry AND both levels, including
+        // the default positions the unset handles occupy. Measuring from the
+        // entry line alone made the handles unreachable: they are drawn 0.5%
+        // away, which is well outside any sane band, so moving the pointer
+        // toward a handle to grab it made that handle disappear.
+        const ys: number[] = [];
+        const push = (p: number | null | undefined) => {
+          if (p == null || !Number.isFinite(p)) return;
+          const v = adapter.priceToY(p);
+          if (v != null && Number.isFinite(v)) ys.push(v);
+        };
+        const entry = Number(t.entry_price);
+        push(entry);
+        push(t.stop_loss ?? defaultLevel(sym, t.direction, entry, "sl"));
+        push(t.take_profit ?? defaultLevel(sym, t.direction, entry, "tp"));
+        if (!ys.length) continue;
+
+        const lo = Math.min(...ys) - HOVER_PAD_PX;
+        const hi = Math.max(...ys) + HOVER_PAD_PX;
+        if (y < lo || y > hi) continue;
+
+        // Overlapping positions: prefer whichever entry line is nearest.
+        const ey = adapter.priceToY(entry) ?? y;
+        const d = Math.abs(ey - y);
+        if (d < bestDist) { bestDist = d; best = t.id; }
+      }
+      setHoveredTrade((h) => (h === best ? h : best));
+    };
+    window.addEventListener("pointermove", onMove);
+    return () => window.removeEventListener("pointermove", onMove);
+  }, [adapter, sym, trades, drag, geometry]);
 
   /**
    * Start a drag on a level handle.
@@ -345,9 +404,12 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
         const winning = pnl >= 0;
         const entryTone = isLong ? "buy" : "sell";
         const entryExpanded = hover === `${t.id}:entry`;
+        // Unset-level handles are revealed by hovering the position, and stay
+        // up for the duration of a drag even once the pointer leaves the band.
+        const levelsVisible = hoveredTrade === t.id || drag?.tradeId === t.id;
 
         return (
-          <div key={t.id}>
+          <div key={t.id} data-position-line={t.id}>
             {/* Reward zone — entry ↔ TP */}
             {tpY != null && (
               <div
@@ -380,6 +442,7 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
               tone={entryTone}
               expanded={entryExpanded}
               draggable={false}
+              testId={`entry-line-${t.id}`}
               title={`${isLong ? "Long" : "Short"} ${t.lot_size}`}
               onMouseEnter={() => setHover(`${t.id}:entry`)}
               onMouseLeave={() => setHover((h) => (h === `${t.id}:entry` ? null : h))}
@@ -485,6 +548,7 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
                   y={slY}
                   tone="stop"
                   expanded={slActive || hover === `${t.id}:sl`}
+                  testId={`sl-line-${t.id}`}
                   title="Drag to move Stop Loss"
                   onMouseEnter={() => setHover(`${t.id}:sl`)}
                   onMouseLeave={() => setHover((h) => (h === `${t.id}:sl` ? null : h))}
@@ -520,6 +584,7 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
                   y={tpY}
                   tone="profit"
                   expanded={tpActive || hover === `${t.id}:tp`}
+                  testId={`tp-line-${t.id}`}
                   title="Drag to move Take Profit"
                   onMouseEnter={() => setHover(`${t.id}:tp`)}
                   onMouseLeave={() => setHover((h) => (h === `${t.id}:tp` ? null : h))}
@@ -548,10 +613,18 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
               </>
             )}
 
-            {/* UNSET LEVEL HANDLES — always present, immediately draggable.
-                Rendered only while the real level is absent; the moment a drag
-                starts, the override above turns it into the live line. */}
-            {slY == null && slPlaceholderY != null && slPlaceholder != null && (
+            {/* UNSET LEVEL HANDLES — revealed by hovering the position, then
+                immediately draggable. One motion: hover, grab, drop.
+
+                These were briefly always on screen. That was built to a
+                mis-stated spec and it cluttered the chart — TradingView keeps
+                them hidden until the position is hovered, which is what
+                `levelsVisible` reproduces. A level that IS set stays drawn at
+                all times above, because it is a live resting order.
+
+                No click reveals anything and no line spawns somewhere else:
+                the handle you grab is the line you get. */}
+            {levelsVisible && slY == null && slPlaceholderY != null && slPlaceholder != null && (
               <>
                 <OrderLine y={slPlaceholderY} tone="stop" ghost />
                 <OrderLabel
@@ -559,6 +632,7 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
                   tone="stop"
                   expanded={hover === `${t.id}:sl-add`}
                   ghost
+                  testId={`sl-add-${t.id}`}
                   title="Drag to set a stop loss, or click to place it here"
                   onMouseEnter={() => setHover(`${t.id}:sl-add`)}
                   onMouseLeave={() => setHover((h) => (h === `${t.id}:sl-add` ? null : h))}
@@ -577,7 +651,7 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
                 />
               </>
             )}
-            {tpY == null && tpPlaceholderY != null && tpPlaceholder != null && (
+            {levelsVisible && tpY == null && tpPlaceholderY != null && tpPlaceholder != null && (
               <>
                 <OrderLine y={tpPlaceholderY} tone="profit" ghost />
                 <OrderLabel
@@ -585,6 +659,7 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
                   tone="profit"
                   expanded={hover === `${t.id}:tp-add`}
                   ghost
+                  testId={`tp-add-${t.id}`}
                   title="Drag to set a take profit, or click to place it here"
                   onMouseEnter={() => setHover(`${t.id}:tp-add`)}
                   onMouseLeave={() => setHover((h) => (h === `${t.id}:tp-add` ? null : h))}
