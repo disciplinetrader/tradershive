@@ -43,14 +43,32 @@ describe("min-lot risk inflation", () => {
     expect(r.actualRisk! / r.requestedRisk!).toBeGreaterThan(70);
   });
 
-  it("the clamped size is what trips the hard risk cap", () => {
+  it("is accepted when margin covers it — risk share is reported, not enforced", () => {
     const { sym, entry, sl, r } = size("NQ", 0.5);
     const v = validateNewOrder(account, [], {
       symbol: sym.symbol, direction: "long", entry_price: entry,
       lot_size: r.lot!, stop_loss: sl,
     }, (s) => (s === sym.symbol ? entry : null));
+    // NQ 1 lot needs $3,982.50 margin against ~$10,002 available — it fits, so
+    // a normal paper account takes it. The 39.8% risk share is surfaced as a
+    // warning; only prop-firm accounts reject on that.
+    expect(v.required_margin).toBeCloseTo(3982.5, 2);
+    expect(v.ok).toBe(true);
+    expect(v.errors).toEqual([]);
+    expect(v.warnings.join(" ")).toMatch(/risks 39\.8% of equity/);
+  });
+
+  it("still rejects when the clamped size genuinely outruns available funds", () => {
+    const sym = findSymbol("NQ")!;
+    const entry = sym.refPrice;
+    const small = { ...account, balance: 2_000, equity: 2_000 };
+    const v = validateNewOrder(small, [], {
+      symbol: sym.symbol, direction: "long", entry_price: entry,
+      lot_size: 1, stop_loss: entry * 0.99,
+    }, (s) => (s === sym.symbol ? entry : null));
+    // $3,982.50 required vs $2,000 available — the one rule that does block.
     expect(v.ok).toBe(false);
-    expect(v.errors.join(" ")).toMatch(/exceeds absolute cap/);
+    expect(v.errors.join(" ")).toMatch(/Insufficient margin/);
   });
 
   it("catches the silent case too — accepted, but far above the request", () => {

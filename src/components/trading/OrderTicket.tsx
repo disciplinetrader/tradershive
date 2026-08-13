@@ -31,6 +31,7 @@ import { validateNewOrder, liquidationPrice, type OpenTradeInput } from "@/lib/p
 import { onTradeIntent } from "@/lib/trading/trade-intent";
 import { cn } from "@/lib/utils";
 import { usePaper } from "@/components/paper-trading/context";
+import { MarginUsageBar } from "@/components/paper-trading/MarginUsageBar";
 import { PostCloseCapture } from "./PostCloseCapture";
 
 /**
@@ -797,6 +798,15 @@ export function OrderTicket({ compact = false }: { compact?: boolean } = {}) {
                 )}
                 {liqPrice != null && (
                   <Row label="Est. liquidation" value={liqPrice.toFixed(symbolMeta?.decimals ?? 2)} accent="rose" />
+                )}
+                {preflight && (
+                  <MarginUsageBar
+                    className="col-span-2 pt-2"
+                    usedMargin={preflight.used_margin}
+                    requiredMargin={preflight.required_margin}
+                    equity={preflight.equity}
+                    currency={currency}
+                  />
                 )}
               </div>
             </div>

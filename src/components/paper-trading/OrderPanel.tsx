@@ -30,6 +30,7 @@ import { validateNewOrder, liquidationPrice, type OpenTradeInput } from "@/lib/p
 import { onTradeIntent } from "@/lib/trading/trade-intent";
 import { cn } from "@/lib/utils";
 import { usePaper } from "./context";
+import { MarginUsageBar } from "./MarginUsageBar";
 import { PlaybookQuickAttach } from "@/components/playbook/PlaybookQuickAttach";
 
 type Side = "long" | "short";
@@ -520,6 +521,15 @@ export function OrderPanel({ compact = false }: { compact?: boolean } = {}) {
                   value={formatCurrency(validation.buying_power_after, account?.currency)}
                 />
               </>
+            )}
+            {validation && (
+              <MarginUsageBar
+                className="pt-2"
+                usedMargin={validation.used_margin}
+                requiredMargin={validation.required_margin}
+                equity={validation.equity}
+                currency={account?.currency}
+              />
             )}
             <Row label="Leverage" value={`${leverage}×`} />
             {liqPrice != null && (

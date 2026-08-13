@@ -14,6 +14,13 @@
  * `negative_balance_protection`) so battles, championships and demo
  * accounts can each tune broker/prop-firm-style rules independently.
  *
+ * A normal paper account has exactly ONE acceptance rule, matching
+ * TradingView: does this order's required margin exceed available funds
+ * (equity − margin already committed)? There is no percentage-of-account cap
+ * and no risk-based rejection — risk figures are reported, never enforced.
+ * Prop-firm accounts are a separate product with separate rules, enforced in
+ * `trading-engine/`.
+ *
  * Accounting invariant enforced platform-wide:
  *   • openTrade rejects orders that require more margin than free_margin
  *   • closeTrade caps realized loss at the current balance when NBP is on,
@@ -70,7 +77,14 @@ export type RiskLimits = {
   negativeBalanceProtection: boolean;
 };
 
-/** Absolute per-trade risk cap the server will hard-reject regardless of user overrides. */
+/**
+ * Per-trade risk share that is worth remarking on.
+ *
+ * NOT a rejection for normal paper accounts — `validateNewOrder` only ever
+ * raises a warning at this level, because those accounts gate on margin alone.
+ * The prop-firm engine in `trading-engine/validation.ts` still enforces it as a
+ * hard cap, which is why the constant lives here and is exported.
+ */
 export const HARD_RISK_CAP_PCT = 25;
 /** Absolute cap on concurrent open positions per account. */
 export const MAX_OPEN_POSITIONS = 50;
@@ -224,6 +238,10 @@ export type OrderValidation = {
   risk_pct: number;
   liq_price: number | null;
   buying_power_after: number;
+  /** Margin already committed by open positions, before this order. */
+  used_margin: number;
+  /** Account equity the margin is measured against. */
+  equity: number;
 };
 
 /**
@@ -254,6 +272,7 @@ export function validateNewOrder(
     return {
       ok: false, errors: [`Unknown symbol ${order.symbol}`], warnings: [],
       required_margin: 0, free_margin_after: 0, risk_pct: 0, liq_price: null, buying_power_after: 0,
+      used_margin: 0, equity: 0,
     };
   }
   // Numeric sanity — reject non-finite / negative / overflowing inputs before
@@ -276,6 +295,7 @@ export function validateNewOrder(
     return {
       ok: false, errors, warnings: [],
       required_margin: 0, free_margin_after: 0, risk_pct: 0, liq_price: null, buying_power_after: 0,
+      used_margin: 0, equity: 0,
     };
   }
   // Directional sanity for protective levels.
@@ -310,8 +330,18 @@ export function validateNewOrder(
   const riskPct = (riskAmount / equityForRisk) * 100;
   const userCap = Number(account.max_trade_risk_pct ?? 0);
   if (riskAmount > 0) {
+    // Informational only — never a rejection.
+    //
+    // A normal paper account has exactly ONE gate: required margin vs available
+    // funds, checked above. That is TradingView's model, and it means a trader
+    // may deliberately risk a large share of the account as long as the margin
+    // is covered. Deciding that for them is not this function's job; the margin
+    // usage bar in the ticket is how they see the exposure building.
+    //
+    // Prop-firm accounts are a different product with different rules, and they
+    // are enforced separately in `trading-engine/` (which still hard-caps).
     if (riskPct > HARD_RISK_CAP_PCT) {
-      errors.push(`Risk ${riskPct.toFixed(1)}% exceeds absolute cap of ${HARD_RISK_CAP_PCT}%`);
+      warnings.push(`This order risks ${riskPct.toFixed(1)}% of equity if the stop is hit`);
     } else if (userCap > 0 && riskPct > userCap) {
       warnings.push(`Risk ${riskPct.toFixed(2)}% exceeds your per-trade limit of ${userCap}%`);
     }
@@ -329,6 +359,8 @@ export function validateNewOrder(
     warnings,
     required_margin: requiredMargin,
     free_margin_after: freeAfter,
+    used_margin: risk.usedMargin,
+    equity: risk.equity,
     risk_pct: riskPct,
     liq_price: liq,
     buying_power_after: buyingPowerAfter,
