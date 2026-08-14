@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
-import { Pencil, X, Split, Sliders, Shield, Loader2 } from "lucide-react";
+import { Pencil, X, Split, Sliders, Shield, Loader2, MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -25,7 +25,7 @@ import { PostTradeSummary, type ClosedTrade } from "./PostTradeSummary";
 import { SessionBadge } from "./SessionBadge";
 import { cn } from "@/lib/utils";
 import { useWorkspacePrefs, type BlotterSort } from "@/hooks/use-workspace-prefs";
-import { FlashCell, SidePill, SkeletonRows, SortHeader, signed, useRowKeyNav } from "@/components/trading/blotter-shared";
+import { ACTIONS_CELL, FlashCell, SidePill, SkeletonRows, SortHeader, signed, useRowKeyNav } from "@/components/trading/blotter-shared";
 
 
 type Trade = {
@@ -67,6 +67,15 @@ export function PositionsTable() {
     try {
       const result = await closeFn({ data: { id: t.id, exit_price: current, close_reason: "manual" } }) as { pnl: number; rr_realized: number | null };
       toast.success(`Closed ${t.symbol} @ ${current}`);
+      // Drop the row before the refetch lands. `invalidateQueries` alone left
+      // the closed position on screen until the next 2s poll, so it sat there
+      // behind the summary modal that was reporting its close. Writing the
+      // cache directly updates every table bound to this key at once — the
+      // right rail and the bottom blotter both render `PositionsTable`.
+      qc.setQueryData(
+        ["paper", "trades", accountId, "open"],
+        (prev: Trade[] | undefined) => prev?.filter((row) => row.id !== t.id),
+      );
       qc.invalidateQueries({ queryKey: ["paper"] });
       // Show post-trade summary immediately with server-authoritative P/L.
       setSummary({
@@ -146,7 +155,7 @@ export function PositionsTable() {
               <TableHead className="text-right">RR</TableHead>
               <SortHeader label="P/L" sortKey="pnl" state={prefs.blotterSortOpen} onChange={setSort} align="right" />
               <SortHeader label="Duration" sortKey="time" state={prefs.blotterSortOpen} onChange={setSort} />
-              <TableHead className="sticky right-0 z-10 bg-background/95 text-right shadow-[-8px_0_12px_-8px_rgba(0,0,0,0.4)]">Actions</TableHead>
+              <TableHead className={ACTIONS_CELL}>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -205,41 +214,28 @@ export function PositionsTable() {
                       {signed(floating)}{formatCurrency(Math.abs(floating), account?.currency)}
                     </FlashCell>
                     <TableCell className="py-1.5 text-xs text-muted-foreground">{duration}</TableCell>
-                    <TableCell className="sticky right-0 z-10 bg-background/95 text-right shadow-[-8px_0_12px_-8px_rgba(0,0,0,0.4)]">
-                      <div className="flex justify-end gap-1 opacity-70 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
+                    {/* Two primary actions and an overflow, matching TradingView's
+                        open-position row. Break-even, custom-price close and
+                        partial close were inline icons too — five controls in a
+                        column narrower than they needed, which is what pushed
+                        the red Close button past the panel's right edge. They
+                        are all still one click away, just not all competing for
+                        the same strip. Width is fixed and non-shrinking so the
+                        cell cannot be squeezed by the columns to its left. */}
+                    <TableCell className={ACTIONS_CELL}>
+                      <div className="flex items-center justify-end gap-1 whitespace-nowrap opacity-70 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
                         <Button
                           variant="ghost" size="icon"
-                          className="h-7 w-7 cursor-pointer transition-transform duration-150 hover:bg-accent active:scale-90 focus-visible:ring-2 focus-visible:ring-primary/50"
-                          onClick={() => breakEven(t)} disabled={beDisabled}
-                          aria-label="Move stop-loss to break-even"
-                          title={beDisabled ? "Already at break-even" : "Move SL to entry (break-even)"}
+                          className="h-7 w-7 shrink-0 cursor-pointer transition-transform duration-150 hover:bg-accent active:scale-90 focus-visible:ring-2 focus-visible:ring-primary/50"
+                          onClick={() => setModifying(t)}
+                          aria-label="Modify SL/TP" title="Modify SL/TP (E)"
                         >
-                          <Shield className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 cursor-pointer transition-transform duration-150 hover:bg-accent active:scale-90 focus-visible:ring-2 focus-visible:ring-primary/50" onClick={() => setModifying(t)} aria-label="Modify SL/TP" title="Modify SL/TP (E)">
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 cursor-pointer transition-transform duration-150 hover:bg-accent active:scale-90 focus-visible:ring-2 focus-visible:ring-primary/50" onClick={() => setClosing(t)} aria-label="Close with custom price" title="Close at custom price…">
-                          <Sliders className="h-3.5 w-3.5" />
-                        </Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 cursor-pointer transition-transform duration-150 hover:bg-accent active:scale-90 focus-visible:ring-2 focus-visible:ring-primary/50" aria-label="Partial close" title="Partial close">
-                              <Split className="h-3.5 w-3.5" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-40">
-                            <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Partial close</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="cursor-pointer" onSelect={() => partialClose(t, 0.25)}>Close 25%</DropdownMenuItem>
-                            <DropdownMenuItem className="cursor-pointer" onSelect={() => partialClose(t, 0.5)}>Close 50%</DropdownMenuItem>
-                            <DropdownMenuItem className="cursor-pointer" onSelect={() => partialClose(t, 0.75)}>Close 75%</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
                         <Button
                           variant="default"
                           size="sm"
-                          className="h-7 min-w-[72px] cursor-pointer justify-center gap-1 bg-danger/90 px-2 text-[11px] font-semibold text-white shadow-sm transition-all duration-150 hover:bg-danger active:scale-95 focus-visible:ring-2 focus-visible:ring-danger/60"
+                          className="h-7 min-w-[68px] shrink-0 cursor-pointer justify-center gap-1 bg-danger/90 px-2 text-[11px] font-semibold text-white shadow-sm transition-all duration-150 hover:bg-danger active:scale-95 focus-visible:ring-2 focus-visible:ring-danger/60"
                           onClick={() => instantClose(t)}
                           disabled={closingIds.has(t.id)}
                           aria-label="Close at market"
@@ -248,6 +244,39 @@ export function PositionsTable() {
                           {closingIds.has(t.id) ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
                           {closingIds.has(t.id) ? "Closing" : "Close"}
                         </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost" size="icon"
+                              className="h-7 w-7 shrink-0 cursor-pointer transition-transform duration-150 hover:bg-accent active:scale-90 focus-visible:ring-2 focus-visible:ring-primary/50"
+                              aria-label="More actions" title="More actions"
+                            >
+                              <MoreHorizontal className="h-3.5 w-3.5" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem
+                              className="cursor-pointer"
+                              disabled={beDisabled}
+                              onSelect={() => breakEven(t)}
+                            >
+                              <Shield className="mr-2 h-3.5 w-3.5" />
+                              {beDisabled ? "Already at break-even" : "Move SL to break-even"}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="cursor-pointer" onSelect={() => setClosing(t)}>
+                              <Sliders className="mr-2 h-3.5 w-3.5" />
+                              Close at custom price…
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                              <Split className="mr-1 inline h-3 w-3" />
+                              Partial close
+                            </DropdownMenuLabel>
+                            <DropdownMenuItem className="cursor-pointer" onSelect={() => partialClose(t, 0.25)}>Close 25%</DropdownMenuItem>
+                            <DropdownMenuItem className="cursor-pointer" onSelect={() => partialClose(t, 0.5)}>Close 50%</DropdownMenuItem>
+                            <DropdownMenuItem className="cursor-pointer" onSelect={() => partialClose(t, 0.75)}>Close 75%</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </TableCell>
                   </motion.tr>

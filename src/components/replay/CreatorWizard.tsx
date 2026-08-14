@@ -52,8 +52,8 @@ const SURPRISE_POOL: { symbol: string; market: JournalMarket }[] = [
   { symbol: "XAU/USD", market: "metals" },
   { symbol: "BTC/USDT", market: "crypto" },
   { symbol: "ETH/USDT", market: "crypto" },
-  { symbol: "NAS100", market: "indices" },
-  { symbol: "SPX500", market: "indices" },
+  { symbol: "QQQ", market: "indices" },
+  { symbol: "SPY", market: "indices" },
 ];
 
 type PresetRange = { id: "1h" | "4h" | "1d" | "3d" | "1w" | "custom"; label: string; days: number };

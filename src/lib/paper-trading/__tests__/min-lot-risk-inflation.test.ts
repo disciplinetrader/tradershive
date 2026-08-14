@@ -13,7 +13,7 @@ import { validateNewOrder } from "@/lib/paper-trading/risk";
  * Two failure modes came out of that, both user-visible:
  *   • the order is rejected by the 25% hard cap, reading as an inexplicable
  *     margin error when the trader typed 0.5%;
- *   • worse, on NAS100 it is ACCEPTED at 19.9% — 40x the intended risk, with
+ *   • worse, on GC it is ACCEPTED at ~24% — ~49x the intended risk, with
  *     the UI previously confirming "Sized to risk 0.5%".
  *
  * These pin the arithmetic and the honest-reporting contract.
@@ -71,8 +71,11 @@ describe("min-lot risk inflation", () => {
     expect(v.errors.join(" ")).toMatch(/Insufficient margin/);
   });
 
+  // Was NAS100 before indices moved to ETF proxies; GC is the same shape —
+  // a coarse `minLot` of 1 that clamps a 0.5% request up to ~24% of equity,
+  // which still sits under the margin gate and so is silently accepted.
   it("catches the silent case too — accepted, but far above the request", () => {
-    const { r } = size("NAS100", 0.5);
+    const { r } = size("GC", 0.5);
     expect(r.clamped).toBe("min");
     const actualPct = (r.actualRisk! / BALANCE) * 100;
     expect(actualPct).toBeGreaterThan(19);   // asked 0.5%

@@ -3,7 +3,7 @@
  * overlays. Wraps the existing paper-trading calculations so the chart
  * layer, order panel, and risk dashboard all agree on numbers.
  */
-import type { SymbolMeta } from "@/lib/paper-trading/symbols";
+import { priceDecimals, type SymbolMeta } from "@/lib/paper-trading/symbols";
 import {
   pipsBetween,
   pnl as computePnl,
@@ -89,8 +89,23 @@ export function floatingPnl(
   return computePnl(sym, side, entry, current, lot);
 }
 
-/** Format a price at symbol decimals. */
-export function fmtPrice(sym: SymbolMeta | null | undefined, price: number): string {
-  const d = sym?.decimals ?? 2;
-  return price.toFixed(d);
+/**
+ * Format a price at symbol precision, WITHOUT thousand separators.
+ *
+ * This is the chart-side formatter: axis labels, on-chart pills and order
+ * lines read better ungrouped and have to line up with the axis. Use
+ * `formatPrice` from `paper-trading/calculations` for tables and panels, where
+ * grouping helps.
+ *
+ * Accepts a bare symbol string as well as resolved metadata, so callers that
+ * only have the ticker are not pushed back onto a hardcoded decimal count —
+ * which is how the chart overlays ended up at a flat `toFixed(4)`, showing
+ * EUR/USD a digit short of the fractional pip.
+ */
+export function fmtPrice(
+  sym: SymbolMeta | string | null | undefined,
+  price: number,
+): string {
+  if (!Number.isFinite(price)) return "—";
+  return price.toFixed(priceDecimals(sym));
 }

@@ -37,7 +37,12 @@ describe("historical provider routing", () => {
     expect(nativeSymbolForProvider("binance", "BTC/USDT")).toBe("BTCUSDT");
     expect(nativeSymbolForProvider("twelvedata", "EURUSD")).toBe("EUR/USD");
     expect(nativeSymbolForProvider("twelvedata", "XAU/USD")).toBe("XAU/USD");
-    expect(nativeSymbolForProvider("twelvedata", "US30")).toBe("DJI");
+    // Index ETFs are their own Twelve Data ticker — nothing to translate.
+    expect(nativeSymbolForProvider("twelvedata", "QQQ")).toBe("QQQ");
+    // The licensed index names are deliberately unmapped: they are reserved
+    // for a future feed, and mapping them sent imports at symbols Twelve Data
+    // either refuses (SPX/DJI) or does not have (IXIC).
+    expect(nativeSymbolForProvider("twelvedata", "US30")).toBe("US30");
     // stooq-era native symbols are ignored when the provider differs
     expect(nativeSymbolForProvider("twelvedata", "EUR/USD", "eurusd", "stooq")).toBe("EUR/USD");
   });

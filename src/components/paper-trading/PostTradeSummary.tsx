@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TradeTimeline } from "./TradeTimeline";
 import { SessionBadge } from "./SessionBadge";
-import { formatCurrency, formatNumber } from "@/lib/paper-trading/calculations";
+import { formatCurrency, formatNumber, formatPrice } from "@/lib/paper-trading/calculations";
 import { cn } from "@/lib/utils";
 
 export type ClosedTrade = {
@@ -84,8 +84,8 @@ export function PostTradeSummary({
               {(trade.close_reason ?? "manual").replace(/_/g, " ")}
             </Badge>
           } />
-          <Stat label="Entry" value={formatNumber(Number(trade.entry_price))} />
-          <Stat label="Exit" value={trade.exit_price ? formatNumber(Number(trade.exit_price)) : "—"} />
+          <Stat label="Entry" value={formatPrice(trade.symbol, trade.entry_price)} />
+          <Stat label="Exit" value={trade.exit_price ? formatPrice(trade.symbol, trade.exit_price) : "—"} />
           <Stat label="Size" value={`${Number(trade.lot_size).toFixed(2)} lots`} />
           <Stat label="Fees" value={formatCurrency(Number(trade.commission ?? 0) + Number(trade.swap ?? 0), currency)} />
         </motion.div>

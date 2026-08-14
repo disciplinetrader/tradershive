@@ -44,11 +44,17 @@ type Assignment = { primary: string; fallback: string | null };
 
 /**
  * LIVE-quote provider preferences (historical routing is NOT affected).
- * Finnhub's plan only entitles US equities via `/quote`; forex, metals and
- * CFD indices return HTTP 403, so those stay on Twelve Data for live too.
+ *
+ * Finnhub's plan entitles US equities and ETFs via `/quote` at 60 req/min;
+ * forex, metals and licensed index values return 403, so those stay on Twelve
+ * Data for live too. `indices` is here because we serve indices as US-listed
+ * ETFs (SPY/QQQ/DIA/IWM), which Finnhub covers — routing them here keeps the
+ * chart's candle budget on Twelve Data from being spent on quotes, which is
+ * what was blanking stock and index charts.
  */
 const LIVE_PROVIDER_OVERRIDES: Partial<Record<MarketKind, string>> = {
   stocks: "finnhub",
+  indices: "finnhub",
 };
 
 
@@ -387,7 +393,12 @@ function inferMarketFromSymbol(symbol?: string): MarketKind | undefined {
   if (/^(XAU|XAG|XPT|XPD)/.test(s)) return "metals";
   // Forex majors — 6-letter FX code
   if (/^(EUR|GBP|USD|JPY|CHF|CAD|AUD|NZD|SEK|NOK|SGD|HKD|CNH|MXN|ZAR|TRY|PLN)/.test(s.slice(0, 3)) && s.length === 6) return "forex";
-  // Common index tickers
+  // Index ETFs — how this app serves indices. Matched exactly, not by prefix,
+  // so a real equity like SPYD or DIAL is not swept in.
+  if (/^(SPY|QQQ|DIA|IWM)$/.test(s)) return "indices";
+  // Licensed index tickers. Nothing serves these today, but inference should
+  // still name the market correctly so the caller gets an honest
+  // "provider unavailable for indices" rather than a random provider.
   if (/^(SPX|NAS|NDX|US30|GER|DAX|UK100|FTSE|JP225|NIKKEI|HK50)/.test(s)) return "indices";
   return undefined;
 }

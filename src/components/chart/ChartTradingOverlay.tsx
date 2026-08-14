@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { ChartAdapter, ExternalMarker } from "@/lib/chart/adapter";
 import { usePaper } from "@/components/paper-trading/context";
 import { findSymbol } from "@/lib/paper-trading/symbols";
+import { fmtPrice } from "@/lib/trading/plan-math";
 import { validateStops, pnl as computePnl } from "@/lib/paper-trading/calculations";
 import { chartPersist } from "@/lib/chart-trading/persist";
 import { computeChartMetrics } from "@/lib/chart-trading/math";
@@ -145,7 +146,7 @@ export function ChartTradingOverlay({ adapter, symbol, tick, livePrice }: Props)
         position: t.direction === "long" ? "belowBar" : "aboveBar",
         shape: t.direction === "long" ? "arrowUp" : "arrowDown",
         color: t.direction === "long" ? COLORS.tp : COLORS.sl,
-        text: `IN ${Number(t.entry_price).toFixed(4)}`,
+        text: `IN ${fmtPrice(sym ?? symbol, Number(t.entry_price))}`,
       });
       if (close && t.exit_price != null) {
         markers.push({
@@ -153,7 +154,7 @@ export function ChartTradingOverlay({ adapter, symbol, tick, livePrice }: Props)
           position: t.direction === "long" ? "aboveBar" : "belowBar",
           shape: t.direction === "long" ? "arrowDown" : "arrowUp",
           color: "#94a3b8",
-          text: `OUT ${Number(t.exit_price).toFixed(4)}`,
+          text: `OUT ${fmtPrice(sym ?? symbol, Number(t.exit_price))}`,
         });
       }
     }
@@ -244,7 +245,7 @@ export function ChartTradingOverlay({ adapter, symbol, tick, livePrice }: Props)
       if (err) { toast.error(err); void reload(); return; }
       try {
         await modifyTradeFn({ data: { id: tid, ...(kind === "sl" ? { stop_loss: price } : { take_profit: price }) } });
-        toast.success(`${kind.toUpperCase()} moved to ${price.toFixed(4)}`);
+        toast.success(`${kind.toUpperCase()} moved to ${fmtPrice(sym ?? symbol, price)}`);
         qc.invalidateQueries({ queryKey: ["paper"] });
       } catch (e: any) {
         toast.error(e?.message ?? "Update failed");
@@ -264,7 +265,7 @@ export function ChartTradingOverlay({ adapter, symbol, tick, livePrice }: Props)
         { take_profit: price };
       try {
         await modifyOrderFn({ data: { id: oid, ...patch } });
-        toast.success(`${kind.toUpperCase()} moved to ${price.toFixed(4)}`);
+        toast.success(`${kind.toUpperCase()} moved to ${fmtPrice(sym ?? symbol, price)}`);
       } catch (e: any) {
         toast.error(e?.message ?? "Order update failed");
         void reload();
@@ -379,7 +380,7 @@ export function ChartTradingOverlay({ adapter, symbol, tick, livePrice }: Props)
     if (err) return toast.error(err);
     try {
       await modifyTradeFn({ data: { id: t.id, stop_loss: newSL } });
-      toast.success(`Trailing SL tightened to ${newSL.toFixed(4)}`);
+      toast.success(`Trailing SL tightened to ${fmtPrice(sym ?? symbol, newSL)}`);
       void reload();
     } catch (e: any) { toast.error(e?.message ?? "Trailing failed"); }
   }, [livePrice, sym, modifyTradeFn, reload]);
@@ -485,7 +486,7 @@ export function ChartTradingOverlay({ adapter, symbol, tick, livePrice }: Props)
                 startDrag(l.id, l.price);
               }}
             >
-              {l.label} · {l.price.toFixed(4)}
+              {l.label} · {fmtPrice(sym ?? symbol, l.price)}
             </div>
           </div>
         );
@@ -521,6 +522,7 @@ export function ChartTradingOverlay({ adapter, symbol, tick, livePrice }: Props)
         return (
           <PendingOrderRibbon
             key={`p-ribbon-${o.id}`}
+            symbol={symbol}
             top={y}
             data={{ id: o.id, side: o.direction, orderType: o.order_type, trigger: Number(o.trigger_price), lot: Number(o.lot_size) }}
             onCancel={() => cancelPending(o.id)}
@@ -534,6 +536,7 @@ export function ChartTradingOverlay({ adapter, symbol, tick, livePrice }: Props)
         <DraftOrderPopover
           x={draftPopover.x}
           y={draftPopover.y}
+          symbol={symbol}
           price={draftPopover.price}
           livePrice={livePrice}
           defaultLot={sym?.minLot ?? 0.01}

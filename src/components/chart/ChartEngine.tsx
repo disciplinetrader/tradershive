@@ -6,6 +6,7 @@ import type { ChartSettings, IndicatorConfig } from "@/lib/chart/types";
 import type { ChartAdapter, ChartAdapterFactory } from "@/lib/chart/adapter";
 import { createLightweightAdapter } from "@/lib/chart/adapters/lightweight";
 import { Button } from "@/components/ui/button";
+import { fmtPrice } from "@/lib/trading/plan-math";
 
 /** Upstream tick age past which the feed is reported as delayed, not live. */
 const DELAYED_QUOTE_MS = 120_000;
@@ -151,10 +152,20 @@ export const ChartEngine = forwardRef<ChartHandle, Props>(function ChartEngine(
           setFreshness("cached");
           return;
         }
-        const friendly = /rate|429|cooldown|quota/i.test(msg)
-          ? "Live market data is briefly unavailable. Retrying automatically…"
+        // Each branch names the actual obstacle. A generic "couldn't reach the
+        // provider" sent people hunting for a network fault when the real
+        // answer was a spent per-minute budget or a symbol the plan does not
+        // include — and `minute_limit`, the most common one, matched none of
+        // the old patterns and fell through to exactly that generic string.
+        const friendly =
+          /minute_limit|rate|429|cooldown/i.test(msg)
+            ? "Market data requests are rate-limited right now. This chart will fill in within a minute."
+          : /quota_exhausted/i.test(msg)
+            ? "Today's market-data quota is used up. Charts resume after the daily reset."
+          : /Grow or Venture plan|available starting with|not_entitled|subscription required/i.test(msg)
+            ? `${settings.symbol} isn't included in the current market-data plan, so no price history is available for it.`
           : /not_configured/i.test(msg)
-          ? "This market provider isn't configured yet."
+            ? "This market provider isn't configured yet."
           : "We couldn't reach the market data provider.";
         setLoadError(friendly);
         setFreshness("error");
@@ -282,7 +293,7 @@ export const ChartEngine = forwardRef<ChartHandle, Props>(function ChartEngine(
       {/* Symbol + freshness chip (top-left). Data status is honest but calm. */}
       <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-2">
         <div className="rounded-md border border-border/40 bg-background/70 px-2 py-1 text-xs font-medium text-foreground backdrop-blur">
-          {settings.symbol} · {settings.timeframe} · {quote?.last?.toFixed(4) ?? "—"}
+          {settings.symbol} · {settings.timeframe} · {quote?.last != null ? fmtPrice(settings.symbol, quote.last) : "—"}
         </div>
         <div
           className="flex items-center gap-1.5 rounded-md border border-border/40 bg-background/70 px-2 py-1 text-[10px] font-medium text-muted-foreground backdrop-blur"

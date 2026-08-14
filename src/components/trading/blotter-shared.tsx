@@ -10,6 +10,23 @@ import { ArrowDown, ArrowUp, ArrowUpDown, CheckCircle2, Clock, Loader2, MinusCir
 import { TableCell, TableHead, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 
+/**
+ * The Actions column, shared by the Orders and Positions blotters.
+ *
+ * They had drifted: Positions pinned its actions in a sticky, shadowed column
+ * while Orders used a plain right-aligned cell, so the same control sat in a
+ * different place depending on which tab you were looking at. Defining the
+ * column once means a change to one tab cannot silently skip the other.
+ *
+ * `w-*` plus `whitespace-nowrap` at the call site is what stops the buttons
+ * being squeezed: a sticky cell is still a table cell, and without a width the
+ * columns to its left will happily compress it until its contents spill past
+ * the panel edge — which is how the red Close button ended up clipped.
+ */
+export const ACTIONS_CELL =
+  "sticky right-0 z-10 w-[136px] min-w-[136px] bg-background/95 px-2 text-right " +
+  "shadow-[-8px_0_12px_-8px_rgba(0,0,0,0.4)]";
+
 export type SortDir = "asc" | "desc";
 export type SortState<K extends string> = { key: K; dir: SortDir };
 

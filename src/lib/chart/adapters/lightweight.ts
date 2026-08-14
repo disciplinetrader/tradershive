@@ -17,6 +17,7 @@ import type { ChartAdapter, ChartAdapterFactory, DrawingsSource } from "../adapt
 import type { ChartCoords } from "../drawings/types";
 import type { ChartSettings, ChartType, IndicatorConfig } from "../types";
 import { ema, sma, bollinger, vwap, atr, donchian, heikinAshi, fibonacci, supportResistance, smc, rsi, macd } from "../indicators";
+import { priceDecimals } from "@/lib/paper-trading/symbols";
 
 const INDICATOR_COLORS = ["#22d3ee", "#a78bfa", "#f472b6", "#f59e0b", "#34d399", "#f87171", "#60a5fa"];
 
@@ -325,7 +326,23 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
     return barTimes[lo] + frac * span;
   };
 
-  let priceFormatter: (p: number) => string = (p) => p.toFixed(4);
+  /**
+   * Decimals for this instrument, driving BOTH the canvas price scale and the
+   * DOM overlays drawn on top of it. Held at adapter scope because
+   * `setChartType` rebuilds the series from scratch and would otherwise drop
+   * back to the library default mid-session.
+   */
+  let priceDigits = priceDecimals(settings.symbol);
+  let priceFormatter: (p: number) => string = (p) => p.toFixed(priceDigits);
+
+  const applyPriceFormat = () => {
+    try {
+      priceSeries.applyOptions({
+        priceFormat: { type: "price", precision: priceDigits, minMove: 10 ** -priceDigits },
+      });
+    } catch { /* series not ready yet — applySettings will run again */ }
+    priceFormatter = (p: number) => p.toFixed(priceDigits);
+  };
 
   const buildCoords = (): ChartCoords | null => {
     const size = containerSize(container);
@@ -637,6 +654,13 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
     },
     applySettings(next) {
       displayTz = resolveTimezone(next.timezone);
+      // Price axis, last-price label and crosshair all read the series'
+      // `priceFormat`. Left unset, lightweight-charts applies its own default
+      // precision, which is not the instrument's: EUR/USD lost the fractional
+      // pip and JPY pairs gained digits they do not have. Drive it from the
+      // symbol catalog so the axis agrees with every other surface.
+      priceDigits = priceDecimals(next.symbol);
+      applyPriceFormat();
       chart.applyOptions({
         grid: {
           vertLines: { visible: next.showGrid },
@@ -658,6 +682,10 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
       chart.removeSeries(priceSeries);
       priceSeries = buildPriceSeries(chart, type);
       currentType = type;
+      // The rebuilt series carries the library's default precision, not the
+      // instrument's — re-apply, or switching Candles→Line silently re-rounds
+      // the axis.
+      applyPriceFormat();
       // Marker plugins were bound to the old series — drop them so callers
       // re-attach on the next sync.
       smcMarkers = null;

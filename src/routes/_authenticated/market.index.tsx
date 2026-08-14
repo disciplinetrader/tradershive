@@ -20,7 +20,7 @@ const POPULAR: { symbol: string; market: MarketKind }[] = [
   { symbol: "EURUSD", market: "forex" }, { symbol: "GBPUSD", market: "forex" },
   { symbol: "USDJPY", market: "forex" }, { symbol: "XAUUSD", market: "metals" },
   { symbol: "BTCUSDT", market: "crypto" }, { symbol: "ETHUSDT", market: "crypto" },
-  { symbol: "SOLUSDT", market: "crypto" }, { symbol: "NAS100", market: "indices" },
+  { symbol: "SOLUSDT", market: "crypto" }, { symbol: "QQQ", market: "indices" },
 ];
 
 function MarketDashboard() {

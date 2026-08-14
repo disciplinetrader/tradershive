@@ -2,14 +2,23 @@
  * Finnhub provider — LIVE quotes for US equities / ETFs.
  *
  * Scope is dictated by what our Finnhub subscription actually serves
- * (verified by direct probes, see `finnhub.functions.ts`):
- *   • `/quote` → US stocks and ETFs  ✅
- *   • forex, metals and CFD indices  ❌ HTTP 403 / "subscription required"
- *   • any `/candle` endpoint         ❌ HTTP 403
+ * (re-measured 2026-08-14 against the current key — see the probe results
+ * in `finnhub.functions.ts`):
+ *   • `/quote` → US stocks and ETFs, incl. SPY/QQQ/DIA/IWM  ✅
+ *   • `/quote` → ^GSPC, ^NDX, ^DJI, OANDA:*                 ❌ "subscription required"
+ *   • any `/candle` endpoint, every symbol and resolution   ❌ HTTP 403
  *
- * So this provider advertises `markets: ["stocks"]` only, is live-quote
- * only, and never claims historical support. The engine falls back to
+ * So this provider is LIVE-QUOTE ONLY and never claims historical support:
+ * charts for its symbols are always drawn from Twelve Data. It advertises
+ * `stocks` and `indices`, where `indices` means the index ETFs — the
+ * licensed index values themselves are refused. The engine falls back to
  * Twelve Data automatically whenever a request here fails.
+ *
+ * Rate limit is 60 req/min (advertised in `x-ratelimit-limit` and confirmed
+ * by firing until 429 at call #59). `/quote` takes ONE symbol — a
+ * comma-separated list returns an empty quote, not a batch — so N symbols
+ * costs N requests. That is still ~7.5x the headroom of Twelve Data's 8
+ * credits/min, which is why live quotes prefer this provider.
  */
 import { DESCRIPTORS_BY_CODE } from "../descriptors";
 import { finnhubQuote, finnhubStatus } from "../finnhub.functions";
@@ -29,9 +38,14 @@ const CATALOG: Array<{ symbol: string; fh: string; displayName: string; market: 
   { symbol: "AMZN",  fh: "AMZN",  displayName: "Amazon.com Inc.",   market: "stocks", tickSize: 0.01, pricePrecision: 2 },
   { symbol: "GOOGL", fh: "GOOGL", displayName: "Alphabet Inc.",     market: "stocks", tickSize: 0.01, pricePrecision: 2 },
   { symbol: "META",  fh: "META",  displayName: "Meta Platforms",    market: "stocks", tickSize: 0.01, pricePrecision: 2 },
-  { symbol: "SPY",   fh: "SPY",   displayName: "S&P 500 ETF",       market: "stocks", tickSize: 0.01, pricePrecision: 2 },
-  { symbol: "QQQ",   fh: "QQQ",   displayName: "Nasdaq 100 ETF",    market: "stocks", tickSize: 0.01, pricePrecision: 2 },
-  { symbol: "DIA",   fh: "DIA",   displayName: "Dow 30 ETF",        market: "stocks", tickSize: 0.01, pricePrecision: 2 },
+  // The index ETFs sit under `indices`, because that is the market the app
+  // routes them as. Finnhub serves their live quotes on the free tier (60
+  // req/min, measured) while the official index tickers are refused outright,
+  // so this is the whole of our live index coverage.
+  { symbol: "SPY",   fh: "SPY",   displayName: "S&P 500 ETF",       market: "indices", tickSize: 0.01, pricePrecision: 2 },
+  { symbol: "QQQ",   fh: "QQQ",   displayName: "Nasdaq 100 ETF",    market: "indices", tickSize: 0.01, pricePrecision: 2 },
+  { symbol: "DIA",   fh: "DIA",   displayName: "Dow 30 ETF",        market: "indices", tickSize: 0.01, pricePrecision: 2 },
+  { symbol: "IWM",   fh: "IWM",   displayName: "Russell 2000 ETF",  market: "indices", tickSize: 0.01, pricePrecision: 2 },
 ];
 
 /** Live-quote poll cadence through the authenticated server proxy. */
@@ -48,7 +62,11 @@ export class FinnhubProvider implements MarketDataProvider {
   readonly descriptor = DESCRIPTORS_BY_CODE.get("finnhub")!;
   readonly name = "Finnhub";
   readonly capabilities: ProviderCapabilities = {
-    markets: ["stocks"],
+    // `indices` here means the US-listed index ETFs, not the licensed index
+    // values — those are refused on every plan we have. Historical stays
+    // false: /stock/candle is 403 for EVERY symbol and resolution on the free
+    // tier, so this provider can never serve a chart on its own.
+    markets: ["stocks", "indices"],
     supportsRest: true, supportsWs: false, supportsHistorical: false, supportsStreaming: true,
   };
 

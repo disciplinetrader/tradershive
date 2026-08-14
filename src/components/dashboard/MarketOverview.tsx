@@ -12,8 +12,8 @@ const MARKETS: { symbol: string; market: MarketKind }[] = [
   { symbol: "ETH/USDT", market: "crypto" },
   { symbol: "SOL/USDT", market: "crypto" },
   { symbol: "XAU/USD", market: "metals" },
-  { symbol: "NAS100", market: "indices" },
-  { symbol: "SPX500", market: "indices" },
+  { symbol: "QQQ", market: "indices" },
+  { symbol: "SPY", market: "indices" },
 ];
 
 function MarketTile({ symbol, market }: { symbol: string; market: MarketKind }) {

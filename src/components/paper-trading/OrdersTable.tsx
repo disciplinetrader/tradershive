@@ -13,7 +13,7 @@ import { findSymbol } from "@/lib/paper-trading/symbols";
 import { usePaper } from "./context";
 import { cn } from "@/lib/utils";
 import { useWorkspacePrefs, type BlotterSort } from "@/hooks/use-workspace-prefs";
-import { SidePill, SkeletonRows, SortHeader, StatusPill, useRowKeyNav } from "@/components/trading/blotter-shared";
+import { ACTIONS_CELL, SidePill, SkeletonRows, SortHeader, StatusPill, useRowKeyNav } from "@/components/trading/blotter-shared";
 
 type Order = {
   id: string; symbol: string; direction: "long"|"short"; order_type: string;
@@ -72,7 +72,7 @@ export function OrdersTable() {
             <TableHead className="text-right">Trigger</TableHead>
             <SortHeader label="Lot" sortKey="size" state={prefs.blotterSortOpen} onChange={setSort} align="right" />
             <TableHead>Status</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead className={ACTIONS_CELL}>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -110,7 +110,7 @@ export function OrdersTable() {
                   <TableCell className="py-1.5 text-right font-mono tabular-nums">{formatNumber(Number(r.trigger_price), sym?.decimals ?? 2)}</TableCell>
                   <TableCell className="py-1.5 text-right font-mono tabular-nums">{Number(r.lot_size).toFixed(2)}</TableCell>
                   <TableCell className="py-1.5"><StatusPill status={r.status} /></TableCell>
-                  <TableCell className="py-1.5 text-right">
+                  <TableCell className={ACTIONS_CELL}>
                     {r.status === "pending" && (
                       <Button
                         variant="ghost" size="icon"

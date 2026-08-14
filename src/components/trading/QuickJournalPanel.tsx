@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { fmtPrice } from "@/lib/trading/plan-math";
 import { BookOpen, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { listTrades } from "@/lib/paper-trading.functions";
@@ -52,8 +53,8 @@ export function QuickJournalPanel({ symbol }: { symbol?: string }) {
               <tr key={t.id} className="border-t border-border/40">
                 <td className="py-1.5 font-medium">{t.symbol}</td>
                 <td className={t.direction === "long" ? "text-success" : "text-danger"}>{t.direction}</td>
-                <td className="text-right tabular-nums">{Number(t.entry_price).toFixed(4)}</td>
-                <td className="text-right tabular-nums">{t.exit_price != null ? Number(t.exit_price).toFixed(4) : "—"}</td>
+                <td className="text-right tabular-nums">{fmtPrice(t.symbol, Number(t.entry_price))}</td>
+                <td className="text-right tabular-nums">{t.exit_price != null ? fmtPrice(t.symbol, Number(t.exit_price)) : "—"}</td>
                 <td className={`text-right tabular-nums ${Number(t.pnl) >= 0 ? "text-success" : "text-danger"}`}>
                   {t.pnl != null ? formatCurrency(Number(t.pnl)) : "—"}
                 </td>

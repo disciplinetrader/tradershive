@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
 import { Circle, Flag, PencilLine, Scissors, Shield, StickyNote, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { listTradeTimeline } from "@/lib/paper-trading.functions";
 import { formatCurrency } from "@/lib/paper-trading/calculations";
 import { cn } from "@/lib/utils";
@@ -39,12 +40,34 @@ const TITLES: Record<string, string> = {
 
 export function TradeTimeline({ tradeId, currency = "USD" }: { tradeId: string; currency?: string }) {
   const fetch = useServerFn(listTradeTimeline);
-  const { data, isLoading } = useQuery({
+  const { data, isPending, isError, error, refetch, isRefetching } = useQuery({
     queryKey: ["paper", "timeline", tradeId],
     queryFn: () => fetch({ data: { trade_id: tradeId } }) as unknown as Promise<Event[]>,
+    enabled: !!tradeId,
   });
 
-  if (isLoading) return <div className="text-xs text-muted-foreground">Loading timeline…</div>;
+  // Guarded explicitly, because a disabled query sits in `isPending` forever
+  // and would render the loading row for good — which is the exact failure
+  // this component is being fixed for.
+  if (!tradeId) return <div className="text-xs text-muted-foreground">No trade selected.</div>;
+
+  // A failed fetch used to fall through to "No events recorded yet." — the
+  // same shape as a trade that genuinely has no history, so a broken request
+  // was indistinguishable from an empty one and there was no way to retry.
+  if (isError) {
+    return (
+      <div className="flex items-center justify-between gap-2 text-xs text-warning">
+        <span>Couldn&apos;t load the timeline{(error as Error)?.message ? ` — ${(error as Error).message}` : ""}.</span>
+        <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]" onClick={() => refetch()} disabled={isRefetching}>
+          Retry
+        </Button>
+      </div>
+    );
+  }
+  // `isPending` rather than `isLoading`: with no `tradeId` the query never
+  // runs, and `isLoading` is false in that state, so the old code fell past
+  // this branch and claimed the trade had no events.
+  if (isPending) return <div className="text-xs text-muted-foreground">Loading timeline…</div>;
   const events = data ?? [];
   if (!events.length) return <div className="text-xs text-muted-foreground">No events recorded yet.</div>;
 

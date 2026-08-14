@@ -255,6 +255,28 @@ function TradingWorkspaceInner() {
     }
   }, [enabled, chartType, smcOn, indicatorParams, smcParts, templateId, timeframe, hydrated, update, patch]);
 
+  /**
+   * Open the floating ticket — the ONLY way any surface opens an order.
+   *
+   * Every entry path funnels through here so they cannot drift apart: the
+   * BUY/SELL header buttons, the B/S shortcuts, a chart click and the chart
+   * right-click all produce the same `OrderTicket`, differing only in where it
+   * appears. `origin` is the viewport point to anchor to; without one (keyboard
+   * shortcuts have no pointer) it opens against the chart's top-left, which is
+   * in view at every layout and never lands under the right-hand dock.
+   *
+   * The docked Order tab is untouched and still reachable — it just is not what
+   * BUY/SELL opens any more.
+   */
+  const openFloatingOrder = useCallback((origin?: { clientX: number; clientY: number }) => {
+    if (origin) { setFloatingOrder({ x: origin.clientX, y: origin.clientY }); return; }
+    const el = adapter?.chartElement?.();
+    const r = el?.getBoundingClientRect();
+    setFloatingOrder(
+      r ? { x: r.left + 24, y: r.top + 56 } : { x: 120, y: 140 },
+    );
+  }, [adapter]);
+
   const handleReady = useCallback((api: ChartHandle) => {
     chartApi.current = api;
     setAdapter((prev) => (prev === api.adapter ? prev : api.adapter));
@@ -488,8 +510,8 @@ function TradingWorkspaceInner() {
   useTradingShortcuts({
     // The persistent "Armed" chip inside OrderTicket now provides feedback,
     // so we no longer stack a toast on every B/S press.
-    onBuy: () => { emitTradeIntent({ kind: "focus_side", side: "long" }); setRightOpen(true); setActiveTab("order"); },
-    onSell: () => { emitTradeIntent({ kind: "focus_side", side: "short" }); setRightOpen(true); setActiveTab("order"); },
+    onBuy: () => { openFloatingOrder(); emitTradeIntent({ kind: "focus_side", side: "long" }); },
+    onSell: () => { openFloatingOrder(); emitTradeIntent({ kind: "focus_side", side: "short" }); },
     onClose: () => closeLast.mutate(),
     onScreenshot: screenshot,
     onPlanTrade: () => setPlannerActive((v) => !v),
@@ -841,7 +863,10 @@ function TradingWorkspaceInner() {
                 <Button
                   size="sm"
                   className="h-8 gap-1 bg-success px-3 text-[11px] font-bold text-white tabular-nums shadow-sm hover:bg-success/90"
-                  onClick={() => { emitTradeIntent({ kind: "focus_side", side: "long" }); setRightOpen(true); setActiveTab("order"); }}
+                  onClick={(e) => {
+                    openFloatingOrder({ clientX: e.clientX, clientY: e.clientY });
+                    emitTradeIntent({ kind: "focus_side", side: "long" });
+                  }}
                   aria-label={`Buy ${symbol} at ${ask.toFixed(decimals)}`}
                 >
                   BUY <span className="opacity-90">{ask.toFixed(decimals)}</span>
@@ -849,7 +874,10 @@ function TradingWorkspaceInner() {
                 <Button
                   size="sm"
                   className="h-8 gap-1 bg-danger px-3 text-[11px] font-bold text-white tabular-nums shadow-sm hover:bg-danger/90"
-                  onClick={() => { emitTradeIntent({ kind: "focus_side", side: "short" }); setRightOpen(true); setActiveTab("order"); }}
+                  onClick={(e) => {
+                    openFloatingOrder({ clientX: e.clientX, clientY: e.clientY });
+                    emitTradeIntent({ kind: "focus_side", side: "short" });
+                  }}
                   aria-label={`Sell ${symbol} at ${bid.toFixed(decimals)}`}
                 >
                   SELL <span className="opacity-90">{bid.toFixed(decimals)}</span>
@@ -990,11 +1018,12 @@ function TradingWorkspaceInner() {
                       adapter={adapter} sym={meta ?? null} livePrice={last}
                       onIntent={(intent, origin) => {
                         // Order intents open the floating ticket where the
-                        // trader clicked. The prefill still goes out on the
-                        // bus, so the right-hand panel stays in step whichever
-                        // surface they finish the order on.
+                        // trader clicked, through the same helper the BUY/SELL
+                        // buttons and B/S shortcuts use. The prefill still goes
+                        // out on the bus, so a docked Order tab left open stays
+                        // in step whichever surface they finish the order on.
                         if (intent.kind !== "alert" && intent.kind !== "drawing") {
-                          setFloatingOrder({ x: origin.clientX, y: origin.clientY });
+                          openFloatingOrder(origin);
                         }
                         switch (intent.kind) {
                           case "buy_market":
@@ -1564,11 +1593,19 @@ function AdaptiveSection({
           <span className="rounded-full bg-primary/15 px-1.5 text-[9px] font-semibold tabular-nums text-primary">{count}</span>
         )}
       </header>
-      {count === 0 ? (
-        <p className="px-2.5 py-1.5 text-[11px] text-muted-foreground/80">{emptyLabel}</p>
-      ) : (
-        <div className="p-2">{children}</div>
-      )}
+      {/* Children stay MOUNTED at count 0 and are hidden instead.
+          Swapping them for the empty label unmounted whatever was inside the
+          moment the count reached zero — and closing your last position is
+          exactly a transition to zero. `PositionsTable` owns the post-trade
+          summary dialog in local state, so the modal reporting the close was
+          torn down by the close it was reporting: it flashed up, began loading
+          its timeline, and vanished (or froze mid-load) a tick later. Radix
+          portals the dialog to `document.body`, so `hidden` here hides the
+          table without touching the modal. */}
+      <p className={cn("px-2.5 py-1.5 text-[11px] text-muted-foreground/80", count > 0 && "hidden")}>
+        {emptyLabel}
+      </p>
+      <div className={cn("p-2", count === 0 && "hidden")}>{children}</div>
     </section>
   );
 }

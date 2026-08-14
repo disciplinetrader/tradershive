@@ -91,14 +91,23 @@ export function resolveHistoricalProvider(
 
 /* ------------------------- native symbol mapping ------------------------- */
 
-/** Canonical symbol → Twelve Data ticker for non-pair instruments. */
+/**
+ * Canonical symbol → Twelve Data ticker for non-pair instruments.
+ *
+ * The index entries that used to live here (SPX500→SPX, NAS100→IXIC,
+ * US30→DJI, GER40→DAX, UK100→UKX, JP225→N225) are gone, and none of them
+ * ever worked. Measured 2026-08-14: SPX/NDX/DJI/UKX answer 404 "available
+ * starting with the Grow or Venture plan"; IXIC and N225 are not valid Twelve
+ * Data symbols at all; and DAX silently resolves to a ~$47 US-listed ETF
+ * rather than the ~18,000 index, which is worse than an error. That is why
+ * `historical_coverage` reports 0 candles for every index.
+ *
+ * Indices are now the ETFs themselves (SPY/QQQ/DIA/IWM), whose engine symbol
+ * already IS the Twelve Data ticker, so they need no mapping. The SPX500 /
+ * NAS100 / US30 names are intentionally left unmapped and unclaimed for a
+ * future licensed index feed.
+ */
 const TWELVEDATA_SYMBOL_MAP: Record<string, string> = {
-  SPX500: "SPX",
-  NAS100: "IXIC",
-  US30: "DJI",
-  GER40: "DAX",
-  UK100: "UKX",
-  JP225: "N225",
   "WTI/USD": "WTI/USD",
   "BRENT/USD": "BRENT/USD",
 };

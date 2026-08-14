@@ -37,13 +37,25 @@ export const SYMBOL_CATALOG: SymbolMeta[] = [
   { symbol: "XAU/USD", name: "Gold",   market: "metals", pipSize: 0.1,  pipValuePerLot: 10, contractSize: 100, decimals: 2, minLot: 0.01, maxLot: 50, lotStep: 0.01, refPrice: 2432.1, volatility: 0.8 },
   { symbol: "XAG/USD", name: "Silver", market: "metals", pipSize: 0.01, pipValuePerLot: 50, contractSize: 5000, decimals: 3, minLot: 0.01, maxLot: 50, lotStep: 0.01, refPrice: 28.42, volatility: 1.2 },
 
-  // Indices (CFD units)
-  { symbol: "SPX500", name: "S&P 500",     market: "indices", pipSize: 0.1, pipValuePerLot: 10, contractSize: 100, decimals: 2, minLot: 0.1, maxLot: 100, lotStep: 0.1, refPrice: 5628.1, volatility: 0.6 },
-  { symbol: "NAS100", name: "Nasdaq 100",  market: "indices", pipSize: 0.1, pipValuePerLot: 10, contractSize: 100, decimals: 2, minLot: 0.1, maxLot: 100, lotStep: 0.1, refPrice: 19910, volatility: 0.8 },
-  { symbol: "US30",   name: "Dow Jones",   market: "indices", pipSize: 1,   pipValuePerLot: 10, contractSize: 10,  decimals: 1, minLot: 0.1, maxLot: 100, lotStep: 0.1, refPrice: 40180, volatility: 0.5 },
-  { symbol: "GER40",  name: "DAX 40",      market: "indices", pipSize: 1,   pipValuePerLot: 10, contractSize: 10,  decimals: 1, minLot: 0.1, maxLot: 100, lotStep: 0.1, refPrice: 18420, volatility: 0.7 },
-  { symbol: "UK100",  name: "FTSE 100",    market: "indices", pipSize: 1,   pipValuePerLot: 10, contractSize: 10,  decimals: 1, minLot: 0.1, maxLot: 100, lotStep: 0.1, refPrice: 8210,  volatility: 0.5 },
-  { symbol: "JP225",  name: "Nikkei 225",  market: "indices", pipSize: 1,   pipValuePerLot: 10, contractSize: 10,  decimals: 1, minLot: 0.1, maxLot: 100, lotStep: 0.1, refPrice: 41240, volatility: 0.7 },
+  // Indices — traded as US-listed ETF proxies, priced in shares.
+  //
+  // The official index values (SPX, NDX, DJI) are separately licensed and are
+  // NOT on our Twelve Data plan: `/quote` and `/time_series` both answer
+  // 404 "available starting with the Grow or Venture plan". Finnhub's free
+  // tier refuses them too ("Market data subscription required for CFD
+  // indices") and serves no candles at all. Measured 2026-08-14.
+  //
+  // So these are the ETFs themselves, named as the ETFs they are: the price
+  // shown IS the price traded, with no proxy arithmetic in between. The
+  // `SPX500` / `NAS100` / `US30` tickers are deliberately left unclaimed so a
+  // real index feed can take them later without renaming anything.
+  //
+  // Consequence worth knowing: ETFs trade US regular hours only, so a
+  // position held overnight gaps at the open instead of ticking through.
+  { symbol: "SPY", name: "S&P 500 ETF",     market: "indices", pipSize: 0.01, pipValuePerLot: 0.01, contractSize: 1, decimals: 2, minLot: 1, maxLot: 10000, lotStep: 1, refPrice: 777.88, volatility: 0.9 },
+  { symbol: "QQQ", name: "Nasdaq 100 ETF",  market: "indices", pipSize: 0.01, pipValuePerLot: 0.01, contractSize: 1, decimals: 2, minLot: 1, maxLot: 10000, lotStep: 1, refPrice: 732.07, volatility: 1.2 },
+  { symbol: "DIA", name: "Dow 30 ETF",      market: "indices", pipSize: 0.01, pipValuePerLot: 0.01, contractSize: 1, decimals: 2, minLot: 1, maxLot: 10000, lotStep: 1, refPrice: 537.91, volatility: 0.8 },
+  { symbol: "IWM", name: "Russell 2000 ETF", market: "indices", pipSize: 0.01, pipValuePerLot: 0.01, contractSize: 1, decimals: 2, minLot: 1, maxLot: 10000, lotStep: 1, refPrice: 303.50, volatility: 1.3 },
 
   // Crypto
   { symbol: "BTC/USDT", name: "Bitcoin",  market: "crypto", pipSize: 1,     pipValuePerLot: 1,   contractSize: 1, decimals: 1, minLot: 0.001, maxLot: 100, lotStep: 0.001, refPrice: 67550, volatility: 2.5 },
@@ -73,8 +85,49 @@ export const SYMBOL_BY_KEY: Record<string, SymbolMeta> = Object.fromEntries(
   SYMBOL_CATALOG.map((s) => [s.symbol, s]),
 );
 
+/** `EUR/USD`, `EURUSD`, `eur-usd` and `EUR_USD` all name the same instrument. */
+function normaliseSymbol(s: string): string {
+  return s.toUpperCase().replace(/[/\-_:\s]/g, "");
+}
+
+const SYMBOL_BY_NORMALISED = new Map(
+  SYMBOL_CATALOG.map((s) => [normaliseSymbol(s.symbol), s]),
+);
+
+/**
+ * Exact key first, then separator/case-insensitive.
+ *
+ * This was an exact lookup into `SYMBOL_BY_KEY`, so a symbol that arrived
+ * without its slash — which is how the market-data providers, the chart engine
+ * and several stored rows spell it — found nothing. Callers almost all read
+ * `findSymbol(x)?.decimals ?? 2`, so a miss did not fail loudly: it quietly
+ * rendered EUR/USD at 2 decimals while the surface next to it, which happened
+ * to hold the slashed form, rendered 5. That is the inconsistency where the
+ * same price reads 1.15253 in one panel and 1.15 in another.
+ */
 export function findSymbol(symbol: string): SymbolMeta | undefined {
-  return SYMBOL_BY_KEY[symbol];
+  if (!symbol) return undefined;
+  return SYMBOL_BY_KEY[symbol] ?? SYMBOL_BY_NORMALISED.get(normaliseSymbol(symbol));
+}
+
+/**
+ * Decimal places for a price, per instrument.
+ *
+ * Forex majors are 5 (the 5th digit is the fractional pip), JPY pairs 3, and
+ * everything else follows its catalog entry. The fallback is deliberately NOT
+ * a flat 2: an unknown FX pair rendered at 2 decimals loses the pip entirely,
+ * which is worse than an approximate guess from the shape of the symbol.
+ */
+export function priceDecimals(symbol: string | SymbolMeta | null | undefined): number {
+  if (!symbol) return 2;
+  const meta = typeof symbol === "string" ? findSymbol(symbol) : symbol;
+  if (meta) return meta.decimals;
+
+  const s = normaliseSymbol(String(symbol));
+  if (/JPY$/.test(s)) return 3;                    // 147.523
+  if (/^[A-Z]{6}$/.test(s)) return 5;              // 1.15204
+  if (/^X(AU|AG|PT|PD)/.test(s)) return 2;         // metals
+  return 2;
 }
 
 export function symbolsByMarket(market: PaperMarket): SymbolMeta[] {

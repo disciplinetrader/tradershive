@@ -1,3 +1,4 @@
+import { priceDecimals } from "@/lib/paper-trading/symbols";
 import { resultOf } from "@/lib/journal/derive";
 
 export function formatCurrency(n: number | null | undefined, currency = "USD"): string {
@@ -15,6 +16,23 @@ export function formatNumber(n: number | null | undefined, digits = 2): string {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits,
   }).format(n);
+}
+
+/**
+ * A PRICE at its instrument's precision.
+ *
+ * The journal tables hardcoded 5 decimals for entry and exit, which is right
+ * for EUR/USD and wrong for everything else — JPY pairs gained two phantom
+ * digits and BTC read `62,978.61500`. Journal rows carry their symbol, so the
+ * catalog can answer this properly.
+ */
+export function formatPrice(
+  symbol: string | null | undefined,
+  price: number | string | null | undefined,
+): string {
+  const n = Number(price);
+  if (price == null || !Number.isFinite(n)) return "—";
+  return formatNumber(n, priceDecimals(symbol));
 }
 
 export function formatDuration(seconds: number | null | undefined): string {

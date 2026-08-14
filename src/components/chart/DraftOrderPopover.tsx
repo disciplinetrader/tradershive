@@ -3,7 +3,11 @@ import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { DraftOrderType } from "@/lib/chart-trading/types";
 
+import { fmtPrice } from "@/lib/trading/plan-math";
+
 interface Props {
+  /** Instrument, so the quoted price renders at its own precision. */
+  symbol: string;
   x: number;
   y: number;
   price: number;
@@ -28,7 +32,7 @@ const OPTIONS: Array<{ id: DraftOrderType; label: string; tone: "buy" | "sell" }
  * The popover auto-filters options based on whether the click was above /
  * below the live price so you can't create an invalid limit / stop.
  */
-export function DraftOrderPopover({ x, y, price, livePrice, defaultLot, onPlace, onCancel }: Props) {
+export function DraftOrderPopover({ x, y, symbol, price, livePrice, defaultLot, onPlace, onCancel }: Props) {
   const [lot, setLot] = useState(defaultLot);
 
   const filter = (id: DraftOrderType): boolean => {
@@ -49,7 +53,7 @@ export function DraftOrderPopover({ x, y, price, livePrice, defaultLot, onPlace,
     >
       <div className="mb-1 flex items-center justify-between">
         <span className="font-semibold">
-          @ <span className="font-mono">{price.toFixed(4)}</span>
+          @ <span className="font-mono">{fmtPrice(symbol, price)}</span>
         </span>
         <button
           className="grid h-5 w-5 place-items-center rounded hover:bg-muted"

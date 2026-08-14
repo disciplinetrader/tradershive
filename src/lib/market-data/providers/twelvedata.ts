@@ -50,9 +50,15 @@ const CATALOG: Row[] = [
   { symbol: "GBPJPY", td: "GBP/JPY", displayName: "GBP / JPY", market: "forex", baseAsset: "GBP", quoteAsset: "JPY", tickSize: 0.001,   pricePrecision: 3 },
   { symbol: "XAUUSD", td: "XAU/USD", displayName: "Gold / USD",   market: "metals",  baseAsset: "XAU", quoteAsset: "USD", tickSize: 0.01,  pricePrecision: 2 },
   { symbol: "XAGUSD", td: "XAG/USD", displayName: "Silver / USD", market: "metals",  baseAsset: "XAG", quoteAsset: "USD", tickSize: 0.001, pricePrecision: 3 },
-  { symbol: "US30",   td: "DJI",     displayName: "Dow Jones 30", market: "indices", baseAsset: "DJI", quoteAsset: "USD", tickSize: 0.1,   pricePrecision: 1 },
-  { symbol: "NAS100", td: "NDX",     displayName: "NASDAQ 100",   market: "indices", baseAsset: "NDX", quoteAsset: "USD", tickSize: 0.1,   pricePrecision: 1 },
-  { symbol: "SPX500", td: "SPX",     displayName: "S&P 500",      market: "indices", baseAsset: "SPX", quoteAsset: "USD", tickSize: 0.1,   pricePrecision: 1 },
+  // Indices are served as US-listed ETF proxies. The official index tickers
+  // (SPX / NDX / DJI) answer 404 "available starting with the Grow or Venture
+  // plan" on this key — measured 2026-08-14 — whereas the ETFs are entitled
+  // exactly like any other US equity. The engine symbol IS the ETF ticker, so
+  // nothing has to translate between a displayed price and a traded one.
+  { symbol: "SPY", td: "SPY", displayName: "S&P 500 ETF",      market: "indices", baseAsset: "SPY", quoteAsset: "USD", tickSize: 0.01, pricePrecision: 2 },
+  { symbol: "QQQ", td: "QQQ", displayName: "Nasdaq 100 ETF",   market: "indices", baseAsset: "QQQ", quoteAsset: "USD", tickSize: 0.01, pricePrecision: 2 },
+  { symbol: "DIA", td: "DIA", displayName: "Dow 30 ETF",       market: "indices", baseAsset: "DIA", quoteAsset: "USD", tickSize: 0.01, pricePrecision: 2 },
+  { symbol: "IWM", td: "IWM", displayName: "Russell 2000 ETF", market: "indices", baseAsset: "IWM", quoteAsset: "USD", tickSize: 0.01, pricePrecision: 2 },
 ];
 
 const BY_ENGINE = new Map(CATALOG.map((r) => [r.symbol, r]));

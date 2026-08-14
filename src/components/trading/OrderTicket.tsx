@@ -29,6 +29,7 @@ import {
 import { useLivePrice, useLiveQuotes } from "@/lib/paper-trading/live-quotes";
 import { validateNewOrder, liquidationPrice, type OpenTradeInput } from "@/lib/paper-trading/risk";
 import { onTradeIntent } from "@/lib/trading/trade-intent";
+import { fmtPrice } from "@/lib/trading/plan-math";
 import { cn } from "@/lib/utils";
 import { usePaper } from "@/components/paper-trading/context";
 import { MarginUsageBar } from "@/components/paper-trading/MarginUsageBar";
@@ -164,7 +165,7 @@ export function OrderTicket({ compact = false }: { compact?: boolean } = {}) {
   });
 
   useEffect(() => {
-    setEntry(livePrice != null ? String(livePrice) : "");
+    setEntry(seedPrice(livePrice));
     setSl("");
     setLegs([newLeg()]);
     setTouched(false);
@@ -172,8 +173,21 @@ export function OrderTicket({ compact = false }: { compact?: boolean } = {}) {
   }, [symbol]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (!entry && livePrice != null) setEntry(String(livePrice));
+    if (!entry && livePrice != null) setEntry(seedPrice(livePrice));
   }, [livePrice, entry]);
+
+  /**
+   * Seed a price field at the instrument's precision.
+   *
+   * `String(livePrice)` put the raw double in the box — `62978.005000000005`
+   * on BTC, and USD/JPY at five decimals when the yen only has three. The
+   * field is free-text while the trader edits it; this only governs the values
+   * WE put there.
+   */
+  const seedPrice = useCallback(
+    (p: number | null | undefined) => (p != null ? fmtPrice(symbolMeta ?? symbol, p) : ""),
+    [symbolMeta, symbol],
+  );
 
   /* ---------------- derived numbers ---------------- */
   const entryNum = Number(entry) || 0;
@@ -305,9 +319,9 @@ export function OrderTicket({ compact = false }: { compact?: boolean } = {}) {
     setLegs([newLeg()]);
     setNotes("");
     setSelectedTagIds([]);
-    setEntry(livePrice != null ? String(livePrice) : "");
+    setEntry(seedPrice(livePrice));
     setTouched(false);
-  }, [qtyMode, livePrice]);
+  }, [qtyMode, livePrice, seedPrice]);
 
   /* ---------------- submit ---------------- */
 
@@ -453,7 +467,7 @@ export function OrderTicket({ compact = false }: { compact?: boolean } = {}) {
       setSide(i.side);
       setOrderType(i.orderType);
       setTouched(true);
-      if (i.price != null) setEntry(String(i.price));
+      if (i.price != null) setEntry(seedPrice(i.price));
       // Chart intents always carry price levels, so the field has to be in
       // price mode to read one correctly — otherwise a dragged stop at 63156
       // would be interpreted as $63,156 of risk.
@@ -581,7 +595,7 @@ export function OrderTicket({ compact = false }: { compact?: boolean } = {}) {
               {livePrice != null && (
                 <Button type="button" size="sm" variant="outline" title="Use live price"
                   className="h-8 shrink-0 px-2 text-[10px] font-semibold uppercase"
-                  onClick={() => { setEntry(String(livePrice)); setTouched(true); }}>Live</Button>
+                  onClick={() => { setEntry(seedPrice(livePrice)); setTouched(true); }}>Live</Button>
               )}
             </div>
           </Field>

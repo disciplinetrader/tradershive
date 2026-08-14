@@ -45,6 +45,7 @@ import {
   formatDate,
   formatDuration,
   formatNumber,
+  formatPrice,
   pnlTone,
   shortId,
 } from "@/lib/journal/format";
@@ -308,8 +309,8 @@ export function TradeTable({
                           ) : "—"}
                         </TableCell>
                       ) : null}
-                      {visible.entry ? <TableCell className="font-mono text-xs tabular-nums">{e.entry_price != null ? formatNumber(Number(e.entry_price), 5) : "—"}</TableCell> : null}
-                      {visible.exit ? <TableCell className="font-mono text-xs tabular-nums">{e.exit_price != null ? formatNumber(Number(e.exit_price), 5) : "—"}</TableCell> : null}
+                      {visible.entry ? <TableCell className="font-mono text-xs tabular-nums">{e.entry_price != null ? formatPrice(e.symbol, e.entry_price) : "—"}</TableCell> : null}
+                      {visible.exit ? <TableCell className="font-mono text-xs tabular-nums">{e.exit_price != null ? formatPrice(e.symbol, e.exit_price) : "—"}</TableCell> : null}
                       {visible.rr ? <TableCell className="font-mono text-xs tabular-nums">{e.rr != null ? `${formatNumber(Number(e.rr), 2)}R` : "—"}</TableCell> : null}
                       {visible.pnl ? (
                         <TableCell

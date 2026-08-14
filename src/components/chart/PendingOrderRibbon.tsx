@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { formatNumber } from "@/lib/paper-trading/calculations";
+import { fmtPrice } from "@/lib/trading/plan-math";
 import { cn } from "@/lib/utils";
 import { MoreHorizontal } from "lucide-react";
 
@@ -13,12 +14,14 @@ export interface PendingRibbonData {
 
 interface Props {
   data: PendingRibbonData;
+  /** Instrument, so the trigger renders at its own precision. */
+  symbol: string;
   top: number;
   onCancel: () => void;
   onDuplicate: () => void;
 }
 
-export function PendingOrderRibbon({ data, top, onCancel, onDuplicate }: Props) {
+export function PendingOrderRibbon({ data, symbol, top, onCancel, onDuplicate }: Props) {
   const [open, setOpen] = useState(false);
   return (
     <div
@@ -36,7 +39,7 @@ export function PendingOrderRibbon({ data, top, onCancel, onDuplicate }: Props) 
         </span>
         <span>{formatNumber(data.lot, 2)} lot</span>
         <span>@</span>
-        <span>{data.trigger.toFixed(4)}</span>
+        <span>{fmtPrice(symbol, data.trigger)}</span>
       </div>
       <div className="relative">
         <button

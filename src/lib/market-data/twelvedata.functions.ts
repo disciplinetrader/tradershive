@@ -345,7 +345,30 @@ export const twelveDataCandles = createServerFn({ method: "POST" })
 
       const barMs = tfMin * 60_000;
       const expected = Math.max(1, Math.floor((to - from) / barMs));
-      const coverage = cachedCandles.length / expected;
+
+      // `expected` is wall-clock bars, which only equals real bars for a
+      // market that never closes. US equities and the index ETFs print ~6.5h
+      // of a 24h day, so a fully-cached 500-bar 1H window holds ~105 bars and
+      // scores 0.21 — permanently under the 0.9 gate below. The consequence
+      // was not a slow chart but a BLANK one: the cache was never authoritative,
+      // so every load spent a Twelve Data credit, and once the 8/min ceiling
+      // was reached the request threw `minute_limit` with nothing to fall back
+      // on. Forex (24/5) scraped over the line and survived; stocks and
+      // indices never did.
+      //
+      // Calibrate against the density the cached data itself demonstrates
+      // rather than a hardcoded session calendar: over the span the cache
+      // actually covers, what fraction of wall-clock bars exist? Crypto lands
+      // near 1.0, US cash sessions near 0.27, and a genuinely gappy cache
+      // still scores low because its span widens without its count rising.
+      const oldest = cachedCandles.length ? cachedCandles[0].time : 0;
+      const newestTs = cachedCandles.length ? cachedCandles[cachedCandles.length - 1].time : 0;
+      const spanBars = cachedCandles.length > 1
+        ? Math.max(1, Math.floor((newestTs - oldest) / barMs))
+        : 0;
+      const duty = spanBars > 0 ? Math.min(1, cachedCandles.length / spanBars) : 1;
+      const expectedReal = Math.max(1, Math.floor(expected * duty));
+      const coverage = cachedCandles.length / expectedReal;
 
       // Coverage counts bars; it says nothing about WHERE they sit. A cache
       // holding 90% of a 15m/500-bar window can be missing the newest 12.5
@@ -353,7 +376,7 @@ export const twelveDataCandles = createServerFn({ method: "POST" })
       // rendering half a day behind live while crypto (Binance, no cache-
       // through) stayed current. The cache is only authoritative when it also
       // reaches the right edge of the requested window.
-      const newest = cachedCandles.length ? cachedCandles[cachedCandles.length - 1].time : 0;
+      const newest = newestTs;
       const tailFresh = newest > 0 && to - newest <= barMs * 2;
 
       if (cachedCandles.length && coverage >= 0.9 && tailFresh) {

@@ -1,13 +1,20 @@
 /**
  * Floating, draggable order ticket.
  *
- * Opens where the trader right-clicked the chart and can be dragged anywhere on
- * screen. The body is the SAME `OrderTicket` the right-hand panel renders, so
- * fields, validation, pre-flight and submit are identical by construction —
- * this component owns position and chrome, nothing about trading.
+ * This is the DEFAULT order surface: the BUY/SELL header buttons, the B/S
+ * shortcuts, a chart click and the chart right-click all open it, each through
+ * `openFloatingOrder` in TradingWorkspace so no path can drift from another.
+ * It appears at the click point, or against the chart's top-left when the
+ * action had no pointer.
  *
- * The fixed right-panel tab stays exactly as it was; this is an alternative
- * surface, not a replacement.
+ * The body is the SAME `OrderTicket` the right-hand panel renders, so fields,
+ * validation, pre-flight and submit are identical by construction — this
+ * component owns position and chrome, nothing about trading.
+ *
+ * The docked Order tab still exists and still works; it is simply no longer
+ * what BUY/SELL opens. It also has to stay mounted for a separate reason: it
+ * is the trade-intent bus subscriber that BattleStatusBar's Buy/Sell depends
+ * on (see the note on the right rail in TradingWorkspace).
  */
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";

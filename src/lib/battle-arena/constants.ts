@@ -13,9 +13,9 @@ export type BattleType = (typeof BATTLE_TYPES)[number]["value"];
 export const MARKETS = [
   { value: "crypto", label: "Crypto", symbols: ["BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT", "XRP/USDT"] },
   { value: "forex", label: "Forex", symbols: ["EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD", "USD/CAD"] },
-  { value: "indices", label: "Indices", symbols: ["SPX500", "NAS100", "US30", "GER40", "UK100"] },
+  { value: "indices", label: "Indices", symbols: ["SPY", "QQQ", "DIA", "IWM"] },
   { value: "metals", label: "Gold / Metals", symbols: ["XAU/USD", "XAG/USD"] },
-  { value: "mixed", label: "Mixed", symbols: ["BTC/USDT", "ETH/USDT", "EUR/USD", "XAU/USD", "SPX500"] },
+  { value: "mixed", label: "Mixed", symbols: ["BTC/USDT", "ETH/USDT", "EUR/USD", "XAU/USD", "SPY"] },
 ] as const;
 
 export type BattleMarket = (typeof MARKETS)[number]["value"];

@@ -1,4 +1,4 @@
-import type { SymbolMeta } from "./symbols";
+import { priceDecimals, type SymbolMeta } from "./symbols";
 
 export type TradeSide = "long" | "short";
 
@@ -115,4 +115,28 @@ export function formatCurrency(n: number, currency = "USD"): string {
 
 export function formatNumber(n: number, digits = 2): string {
   return new Intl.NumberFormat("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(n);
+}
+
+/**
+ * Render a PRICE at its instrument's precision.
+ *
+ * Use this anywhere a price reaches the screen. `formatNumber`'s 2-decimal
+ * default and the various hardcoded `toFixed(4)` calls it replaces were both
+ * wrong for forex: at 4 decimals a pip is the smallest visible increment, so
+ * sub-pip movement, the real spread and any fractional-pip stop are invisible;
+ * at 2 the pip itself disappears.
+ *
+ * Takes the symbol rather than a digit count so call sites cannot pick their
+ * own number and drift apart from each other.
+ */
+export function formatPrice(
+  symbol: string | SymbolMeta | null | undefined,
+  price: number | string | null | undefined,
+): string {
+  // `null` and `""` both coerce to a perfectly finite 0, so a missing price
+  // would render as 0.00000 — a real level, and a misleading one.
+  if (price == null || price === "") return "—";
+  const n = Number(price);
+  if (!Number.isFinite(n)) return "—";
+  return formatNumber(n, priceDecimals(symbol));
 }

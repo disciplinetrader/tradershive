@@ -38,10 +38,10 @@ export const PROVIDER_DESCRIPTORS: ProviderDescriptor[] = [
   },
   {
     code: "finnhub", name: "Finnhub",
-    description: "Real-time LIVE quotes for US stocks and ETFs (/quote). Forex, metals and CFD indices require a paid market-data add-on.",
+    description: "LIVE quotes for US stocks and ETFs (/quote), 60 req/min. Covers the index ETFs (SPY/QQQ/DIA/IWM). Historical candles, forex, metals and licensed index values all require a paid add-on.",
     website: "https://finnhub.io",
-    markets: ["stocks"], publicByDefault: false,
-    capabilities: { markets: ["stocks"], supportsRest: true, supportsWs: false, supportsHistorical: false, supportsStreaming: true },
+    markets: ["stocks", "indices"], publicByDefault: false,
+    capabilities: { markets: ["stocks", "indices"], supportsRest: true, supportsWs: false, supportsHistorical: false, supportsStreaming: true },
     credentials: [{ key: "api_key", label: "API Key", type: "password", required: true }],
   },
   {

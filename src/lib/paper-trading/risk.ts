@@ -349,7 +349,28 @@ export function validateNewOrder(
     warnings.push("No stop loss set — undefined downside");
   }
 
-  if (leverage >= 100) warnings.push(`Very high leverage (${leverage}×) — small moves can liquidate`);
+  // Leverage alone is not a warnable condition.
+  //
+  // This used to be `leverage >= 100`, read straight off the account setting,
+  // whose default IS 100 — so it fired on every order ever placed, including a
+  // 0.10-lot ticket with no stop on a fully-funded account. A warning that is
+  // always on is not a warning; it is furniture, and it trains people to scroll
+  // past the row where the real ones appear.
+  //
+  // Leverage only bites through what it lets you commit, so warn on that
+  // instead: total margin after this order, against equity. The 80% threshold
+  // is deliberately the same number `MarginUsageBar` paints red, so the ticket
+  // cannot say "fine" in the bar and "dangerous" in the text. Below that the
+  // bar is already showing the exposure building, which is the honest place
+  // for a gradient.
+  const marginUtilPct = risk.equity > 0
+    ? ((risk.usedMargin + requiredMargin) / risk.equity) * 100
+    : 0;
+  if (marginUtilPct >= 80) {
+    warnings.push(
+      `Margin after this order is ${marginUtilPct.toFixed(0)}% of equity at ${leverage}× — little room before a margin call`,
+    );
+  }
 
   const liq = liquidationPrice(order.entry_price, order.direction, leverage);
 
