@@ -15,7 +15,19 @@ export type SymbolMeta = {
   minLot: number;
   maxLot: number;
   lotStep: number;
-  refPrice: number;        // seed price for simulator until a real feed is wired
+  /**
+   * Order-of-magnitude reference ONLY. Never display this, never trade on it.
+   *
+   * These are static values from when the catalog was authored — gold's 2432
+   * against a ~4355 market, EUR/USD's 1.0891 against ~1.155. They were once
+   * used as a "price not loaded yet" fallback, which put a 2024 gold price on
+   * the live BUY button and into `exit_price` on close. A price is either a
+   * real quote or absent; see `live-quotes.ts`.
+   *
+   * Legitimate remaining use: rejecting typos in manual journal entry, where
+   * only the magnitude matters (`journal/instruments.ts`).
+   */
+  refPrice: number;
   volatility: number;      // % daily-ish drift for the mock feed
 };
 
@@ -58,7 +70,9 @@ export const SYMBOL_CATALOG: SymbolMeta[] = [
   { symbol: "IWM", name: "Russell 2000 ETF", market: "indices", pipSize: 0.01, pipValuePerLot: 0.01, contractSize: 1, decimals: 2, minLot: 1, maxLot: 10000, lotStep: 1, refPrice: 303.50, volatility: 1.3 },
 
   // Crypto
-  { symbol: "BTC/USDT", name: "Bitcoin",  market: "crypto", pipSize: 1,     pipValuePerLot: 1,   contractSize: 1, decimals: 1, minLot: 0.001, maxLot: 100, lotStep: 0.001, refPrice: 67550, volatility: 2.5 },
+  // 2 decimals, not 1: Binance's BTCUSDT tick size is 0.01, so a 1-decimal
+  // display rounds away a real price increment and disagrees with the chart.
+  { symbol: "BTC/USDT", name: "Bitcoin",  market: "crypto", pipSize: 1,     pipValuePerLot: 1,   contractSize: 1, decimals: 2, minLot: 0.001, maxLot: 100, lotStep: 0.001, refPrice: 67550, volatility: 2.5 },
   { symbol: "ETH/USDT", name: "Ethereum", market: "crypto", pipSize: 0.1,   pipValuePerLot: 0.1, contractSize: 1, decimals: 2, minLot: 0.01,  maxLot: 500, lotStep: 0.01,  refPrice: 3418.5, volatility: 3 },
   { symbol: "SOL/USDT", name: "Solana",   market: "crypto", pipSize: 0.01,  pipValuePerLot: 0.01,contractSize: 1, decimals: 3, minLot: 0.1,   maxLot: 5000, lotStep: 0.1,  refPrice: 178.9, volatility: 4 },
   { symbol: "BNB/USDT", name: "Binance Coin", market: "crypto", pipSize: 0.1, pipValuePerLot: 0.1, contractSize: 1, decimals: 2, minLot: 0.01, maxLot: 500, lotStep: 0.01, refPrice: 612.4, volatility: 3 },
@@ -118,15 +132,37 @@ export function findSymbol(symbol: string): SymbolMeta | undefined {
  * a flat 2: an unknown FX pair rendered at 2 decimals loses the pip entirely,
  * which is worse than an approximate guess from the shape of the symbol.
  */
+const FIAT = new Set([
+  "USD", "EUR", "GBP", "JPY", "CHF", "CAD", "AUD", "NZD", "SEK", "NOK", "DKK",
+  "SGD", "HKD", "CNH", "CNY", "MXN", "ZAR", "TRY", "PLN", "HUF", "CZK", "INR",
+  "KRW", "THB", "ILS",
+]);
+
+/** Crypto bases that trade well above $1 — cent precision, like an equity. */
+const CRYPTO_MAJOR = /^(BTC|ETH|BNB|SOL|LTC|AVAX|LINK|DOT|ATOM|APT|NEAR|FIL|ICP|SUI|TON|ARB|OP|AAVE|MKR|XMR|BCH|ETC)/;
+/** Crypto bases that trade below ~$1 — sub-cent precision or they collapse to 0.00. */
+const CRYPTO_SMALL = /^(XRP|ADA|DOGE|SHIB|TRX|MATIC|XLM|VET|ALGO|HBAR|SAND|MANA|GALA|PEPE)/;
+
 export function priceDecimals(symbol: string | SymbolMeta | null | undefined): number {
   if (!symbol) return 2;
   const meta = typeof symbol === "string" ? findSymbol(symbol) : symbol;
   if (meta) return meta.decimals;
 
+  // Unlisted symbol — infer from its shape. Getting this wrong is not cosmetic:
+  // it is how `BTCUSD` came out at 5 decimals. The old rule was "six letters ⇒
+  // forex", which is true of EURUSD and equally true of BTCUSD and ETHUSD, so
+  // every slash-less crypto pair was quoted with a fractional pip it does not
+  // have. Require BOTH halves to be real currencies before calling it forex.
   const s = normaliseSymbol(String(symbol));
-  if (/JPY$/.test(s)) return 3;                    // 147.523
-  if (/^[A-Z]{6}$/.test(s)) return 5;              // 1.15204
-  if (/^X(AU|AG|PT|PD)/.test(s)) return 2;         // metals
+  const base = s.slice(0, 3);
+  const quote = s.slice(3, 6);
+
+  if (s.length === 6 && FIAT.has(base) && FIAT.has(quote)) {
+    return quote === "JPY" ? 3 : 5;               // 147.523 / 1.15204
+  }
+  if (/^X(AU|AG|PT|PD)/.test(s)) return quote === "JPY" ? 2 : 2;   // metals
+  if (CRYPTO_SMALL.test(s)) return 4;             // 0.5482
+  if (CRYPTO_MAJOR.test(s)) return 2;             // 62979.62
   return 2;
 }
 

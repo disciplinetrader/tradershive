@@ -25,7 +25,7 @@ import { PostTradeSummary, type ClosedTrade } from "./PostTradeSummary";
 import { SessionBadge } from "./SessionBadge";
 import { cn } from "@/lib/utils";
 import { useWorkspacePrefs, type BlotterSort } from "@/hooks/use-workspace-prefs";
-import { ACTIONS_CELL, FlashCell, SidePill, SkeletonRows, SortHeader, signed, useRowKeyNav } from "@/components/trading/blotter-shared";
+import { ACTIONS_CELL, ACTIONS_CELL_COMPACT, FlashCell, SidePill, SkeletonRows, SortHeader, signed, useRowKeyNav } from "@/components/trading/blotter-shared";
 
 
 type Trade = {
@@ -34,7 +34,18 @@ type Trade = {
   opened_at: string; commission: number; swap: number; account_id: string; notes: string|null;
 };
 
-export function PositionsTable() {
+/**
+ * `compact` drops the secondary columns.
+ *
+ * The full twelve-column layout is built for the full-width blotter. In the
+ * ~380px right rail it overflows horizontally, and because the overflow is a
+ * scroll rather than a wrap, the rightmost visible cell is simply severed
+ * mid-token — which is how `-0.90R` came to read `-0.90`, a different and
+ * entirely plausible number. Session, Entry, Current, SL, TP and Duration are
+ * dropped there; everything they hold is still on the row's edit dialog and in
+ * the blotter below.
+ */
+export function PositionsTable({ compact = false }: { compact?: boolean } = {}) {
   const { accountId, account } = usePaper();
   const fetch = useServerFn(listTrades);
   const closeFn = useServerFn(closeTrade);
@@ -60,9 +71,15 @@ export function PositionsTable() {
   const [summary, setSummary] = useState<ClosedTrade | null>(null);
 
   const instantClose = async (t: Trade) => {
-    const sym = findSymbol(t.symbol);
-    const current = quotes[t.symbol]?.price ?? sym?.refPrice ?? Number(t.entry_price);
-    if (!current || current <= 0) { toast.error("No live price available"); return; }
+    // The displayed price is what gets sent as `exit_price`, so the fallbacks
+    // here were filling closes at a price that is not the market: `refPrice` is
+    // a stale catalog seed (gold 2432 vs ~4355 live) and `entry_price` would
+    // book every close as exactly break-even. Refuse instead.
+    const current = quotes[t.symbol]?.price ?? null;
+    if (!current || current <= 0) {
+      toast.error(`No live price for ${t.symbol} — cannot close at an unknown price`);
+      return;
+    }
     setClosingIds((s) => new Set(s).add(t.id));
     try {
       const result = await closeFn({ data: { id: t.id, exit_price: current, close_reason: "manual" } }) as { pnl: number; rr_realized: number | null };
@@ -93,9 +110,11 @@ export function PositionsTable() {
   };
 
   const partialClose = async (t: Trade, fraction: number) => {
-    const sym = findSymbol(t.symbol);
-    const current = quotes[t.symbol]?.price ?? sym?.refPrice ?? Number(t.entry_price);
-    if (!current || current <= 0) { toast.error("No live price available"); return; }
+    const current = quotes[t.symbol]?.price ?? null;
+    if (!current || current <= 0) {
+      toast.error(`No live price for ${t.symbol} — cannot close at an unknown price`);
+      return;
+    }
     try {
       const r = await partialFn({ data: { id: t.id, fraction, exit_price: current } }) as { pnl: number; closed_lot: number };
       toast.success(`Closed ${Math.round(fraction * 100)}% (${r.closed_lot} lots) · P/L ${formatCurrency(r.pnl, account?.currency)}`);
@@ -118,13 +137,18 @@ export function PositionsTable() {
   // Compute enriched rows once, then sort — memoized to avoid re-work per hover.
   const enriched = useMemo(() => (data ?? []).map((t) => {
     const sym = findSymbol(t.symbol);
-    const current = quotes[t.symbol]?.price ?? sym?.refPrice ?? Number(t.entry_price);
-    const floating = sym ? computePnl(sym, t.direction, Number(t.entry_price), current, Number(t.lot_size)) : 0;
+    // No quote ⇒ no current price and no floating P/L. Substituting `refPrice`
+    // made P/L a fiction, and substituting `entry_price` silently reported
+    // every unquoted position as flat.
+    const current = quotes[t.symbol]?.price ?? null;
+    const floating = sym && current != null
+      ? computePnl(sym, t.direction, Number(t.entry_price), current, Number(t.lot_size))
+      : null;
     const risk = sym && t.stop_loss ? Math.abs(computePnl(sym, t.direction, Number(t.entry_price), Number(t.stop_loss), Number(t.lot_size))) : 0;
     // `null` means "no stop, so R is not measurable" — distinct from a real
     // 0.00R at break-even. The cell used to test `rr` for truthiness, which
     // collapsed those two into the same dash and hid a genuine zero.
-    const rr = risk > 0 ? floating / risk : null;
+    const rr = risk > 0 && floating != null ? floating / risk : null;
     return { t, sym, current, floating, rr };
   }), [data, quotes]);
 
@@ -145,25 +169,25 @@ export function PositionsTable() {
           <TableHeader>
             <TableRow>
               <SortHeader label="Pair" sortKey="symbol" state={prefs.blotterSortOpen} onChange={setSort} />
-              <SortHeader label="Side" sortKey="status" state={prefs.blotterSortOpen} onChange={setSort} />
-              <TableHead>Session</TableHead>
-              <TableHead className="text-right">Entry</TableHead>
-              <TableHead className="text-right">Current</TableHead>
-              <SortHeader label="Lot" sortKey="size" state={prefs.blotterSortOpen} onChange={setSort} align="right" />
-              <TableHead className="text-right">SL</TableHead>
-              <TableHead className="text-right">TP</TableHead>
-              <TableHead className="text-right">RR</TableHead>
+              {!compact && <SortHeader label="Side" sortKey="status" state={prefs.blotterSortOpen} onChange={setSort} />}
+              {!compact && <TableHead>Session</TableHead>}
+              {!compact && <TableHead className="text-right">Entry</TableHead>}
+              {!compact && <TableHead className="text-right">Current</TableHead>}
+              {!compact && <SortHeader label="Lot" sortKey="size" state={prefs.blotterSortOpen} onChange={setSort} align="right" />}
+              {!compact && <TableHead className="text-right">SL</TableHead>}
+              {!compact && <TableHead className="text-right">TP</TableHead>}
+              {!compact && <TableHead className="text-right">RR</TableHead>}
               <SortHeader label="P/L" sortKey="pnl" state={prefs.blotterSortOpen} onChange={setSort} align="right" />
-              <SortHeader label="Duration" sortKey="time" state={prefs.blotterSortOpen} onChange={setSort} />
-              <TableHead className={ACTIONS_CELL}>Actions</TableHead>
+              {!compact && <SortHeader label="Duration" sortKey="time" state={prefs.blotterSortOpen} onChange={setSort} />}
+              <TableHead className={compact ? ACTIONS_CELL_COMPACT : ACTIONS_CELL}>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <SkeletonRows rows={4} cols={12} />
+              <SkeletonRows rows={4} cols={compact ? 3 : 12} />
             ) : rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={12} className="p-0">
+                <TableCell colSpan={compact ? 3 : 12} className="p-0">
                   <EmptyState
                     className="py-8"
                     title="No open positions"
@@ -175,7 +199,7 @@ export function PositionsTable() {
             <AnimatePresence initial={false}>
               {rows.map(({ t, sym, current, floating, rr }) => {
                 const duration = formatDuration(new Date(t.opened_at));
-                const up = floating >= 0;
+                const up = (floating ?? 0) >= 0;
                 const beDisabled = Number(t.stop_loss ?? NaN) === Number(t.entry_price);
                 return (
                   <motion.tr
@@ -193,27 +217,49 @@ export function PositionsTable() {
                       closingIds.has(t.id) && "opacity-50",
                     )}
                   >
-                    <TableCell className="py-1.5 font-semibold">{t.symbol}</TableCell>
-                    <TableCell className="py-1.5"><SidePill side={t.direction} /></TableCell>
-                    <TableCell className="py-1.5"><SessionBadge at={t.opened_at} /></TableCell>
-                    <TableCell className="py-1.5 text-right font-mono tabular-nums">{formatNumber(Number(t.entry_price), sym?.decimals ?? 2)}</TableCell>
-                    <TableCell className="py-1.5 text-right font-mono tabular-nums">{formatNumber(current, sym?.decimals ?? 2)}</TableCell>
-                    <TableCell className="py-1.5 text-right font-mono tabular-nums">{Number(t.lot_size).toFixed(2)}</TableCell>
-                    <TableCell className="py-1.5 text-right font-mono tabular-nums text-muted-foreground">{t.stop_loss ? formatNumber(Number(t.stop_loss), sym?.decimals ?? 2) : "—"}</TableCell>
-                    <TableCell className="py-1.5 text-right font-mono tabular-nums text-muted-foreground">{t.take_profit ? formatNumber(Number(t.take_profit), sym?.decimals ?? 2) : "—"}</TableCell>
-                    <TableCell
-                      className={cn(
-                        "py-1.5 text-right font-mono tabular-nums",
-                        rr == null ? "text-muted-foreground" : rr >= 0 ? "text-success" : "text-danger",
-                      )}
-                      title={rr == null ? "No stop loss set — R cannot be measured" : undefined}
-                    >
-                      {rr == null ? "—" : `${rr.toFixed(2)}R`}
+                    <TableCell className="py-1.5 font-semibold">
+                      {compact ? (
+                        <span className="flex items-center gap-1">
+                          <span className={cn(
+                            "shrink-0 text-[10px]",
+                            t.direction === "long" ? "text-success" : "text-danger",
+                          )}>{t.direction === "long" ? "▲" : "▼"}</span>
+                          <span className="truncate">{t.symbol}</span>
+                        </span>
+                      ) : t.symbol}
                     </TableCell>
-                    <FlashCell value={floating} up={up}>
-                      {signed(floating)}{formatCurrency(Math.abs(floating), account?.currency)}
+                    {!compact && <TableCell className="py-1.5"><SidePill side={t.direction} /></TableCell>}
+                    {!compact && <TableCell className="py-1.5"><SessionBadge at={t.opened_at} /></TableCell>}
+                    {!compact && <TableCell className="py-1.5 text-right font-mono tabular-nums">{formatNumber(Number(t.entry_price), sym?.decimals ?? 2)}</TableCell>}
+                    {!compact && <TableCell className="py-1.5 text-right font-mono tabular-nums">{current != null ? formatNumber(current, sym?.decimals ?? 2) : "—"}</TableCell>}
+                    {!compact && <TableCell className="py-1.5 text-right font-mono tabular-nums">{Number(t.lot_size).toFixed(2)}</TableCell>}
+                    {!compact && <TableCell className="py-1.5 text-right font-mono tabular-nums text-muted-foreground">{t.stop_loss ? formatNumber(Number(t.stop_loss), sym?.decimals ?? 2) : "—"}</TableCell>}
+                    {!compact && <TableCell className="py-1.5 text-right font-mono tabular-nums text-muted-foreground">{t.take_profit ? formatNumber(Number(t.take_profit), sym?.decimals ?? 2) : "—"}</TableCell>}
+                    {!compact && (
+                      <TableCell
+                        className={cn(
+                          "py-1.5 text-right font-mono tabular-nums",
+                          rr == null ? "text-muted-foreground" : rr >= 0 ? "text-success" : "text-danger",
+                        )}
+                        title={rr == null ? "No stop loss set — R cannot be measured" : undefined}
+                      >
+                        {rr == null ? "—" : `${rr.toFixed(2)}R`}
+                      </TableCell>
+                    )}
+                    {/* A dash, not 0.00: an unquoted position has an unknown
+                        result, and 0.00 reads as a real break-even.
+                        FlashCell's 110px floor is sized for the full blotter;
+                        in the rail it is 40% of the usable width on its own. */}
+                    <FlashCell
+                      value={floating ?? 0}
+                      up={up}
+                      className={compact ? "min-w-[76px] p-1 text-[11px]" : undefined}
+                    >
+                      {floating == null
+                        ? <span className="text-muted-foreground">—</span>
+                        : <>{signed(floating)}{formatCurrency(Math.abs(floating), account?.currency)}</>}
                     </FlashCell>
-                    <TableCell className="py-1.5 text-xs text-muted-foreground">{duration}</TableCell>
+                    {!compact && <TableCell className="py-1.5 text-xs text-muted-foreground">{duration}</TableCell>}
                     {/* Two primary actions and an overflow, matching TradingView's
                         open-position row. Break-even, custom-price close and
                         partial close were inline icons too — five controls in a
@@ -222,7 +268,7 @@ export function PositionsTable() {
                         are all still one click away, just not all competing for
                         the same strip. Width is fixed and non-shrinking so the
                         cell cannot be squeezed by the columns to its left. */}
-                    <TableCell className={ACTIONS_CELL}>
+                    <TableCell className={compact ? ACTIONS_CELL_COMPACT : ACTIONS_CELL}>
                       <div className="flex items-center justify-end gap-1 whitespace-nowrap opacity-70 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
                         <Button
                           variant="ghost" size="icon"
@@ -235,14 +281,17 @@ export function PositionsTable() {
                         <Button
                           variant="default"
                           size="sm"
-                          className="h-7 min-w-[68px] shrink-0 cursor-pointer justify-center gap-1 bg-danger/90 px-2 text-[11px] font-semibold text-white shadow-sm transition-all duration-150 hover:bg-danger active:scale-95 focus-visible:ring-2 focus-visible:ring-danger/60"
+                          className={cn(
+                            "h-7 shrink-0 cursor-pointer justify-center gap-1 bg-danger/90 text-[11px] font-semibold text-white shadow-sm transition-all duration-150 hover:bg-danger active:scale-95 focus-visible:ring-2 focus-visible:ring-danger/60",
+                            compact ? "w-7 px-0" : "min-w-[68px] px-2",
+                          )}
                           onClick={() => instantClose(t)}
                           disabled={closingIds.has(t.id)}
                           aria-label="Close at market"
                           title="Close at market (instant)"
                         >
                           {closingIds.has(t.id) ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
-                          {closingIds.has(t.id) ? "Closing" : "Close"}
+                          {!compact && (closingIds.has(t.id) ? "Closing" : "Close")}
                         </Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -364,14 +413,16 @@ function formatDuration(start: Date): string {
   return `${d}d ${h % 24}h`;
 }
 
-type Enriched = { t: Trade; sym: ReturnType<typeof findSymbol>; current: number; floating: number; rr: number | null };
+/** `current` and `floating` are null when the symbol has no live quote. */
+type Enriched = { t: Trade; sym: ReturnType<typeof findSymbol>; current: number | null; floating: number | null; rr: number | null };
 
 function sortEnriched(rows: Enriched[], s: BlotterSort): Enriched[] {
   const mul = s.dir === "asc" ? 1 : -1;
   return [...rows].sort((a, b) => {
     switch (s.key) {
       case "symbol": return a.t.symbol.localeCompare(b.t.symbol) * mul;
-      case "pnl":    return (a.floating - b.floating) * mul;
+      // Unquoted rows sort last in either direction rather than as zero.
+      case "pnl":    return ((a.floating ?? 0) - (b.floating ?? 0)) * mul;
       case "size":   return (Number(a.t.lot_size) - Number(b.t.lot_size)) * mul;
       case "status": return a.t.direction.localeCompare(b.t.direction) * mul;
       case "time":

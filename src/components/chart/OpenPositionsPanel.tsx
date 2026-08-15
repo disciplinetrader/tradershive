@@ -21,6 +21,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/paper-trading/calculations";
+import { fmtPrice } from "@/lib/trading/plan-math";
 import type { PositionOrder } from "@/lib/chart/orders/model";
 import { advancedMetrics } from "@/lib/chart/orders/position-manager";
 import { EXECUTION_LABEL, orderedExecutions } from "@/lib/chart/orders/executions";
@@ -32,7 +34,6 @@ interface Props {
   positions: PositionOrder[];
   closed?: PositionOrder[];
   marketPrice?: number | null;
-  decimals?: number;
   onBreakEven: (orderId: string) => void;
   onClose: (orderId: string) => void;
   onArchive?: (orderId: string) => void;
@@ -51,12 +52,39 @@ interface Props {
   className?: string;
 }
 
-function fmt(v: number, decimals: number) {
-  return v.toFixed(decimals);
+/**
+ * Prices follow the ROW's instrument, not the workspace's.
+ *
+ * `decimals` arrives as one number for the charted symbol, and every row was
+ * rendered with it — so an XAU/USD position listed while the chart sat on
+ * EUR/USD was quoted to 5 decimals, and the panel's own default was 4, which
+ * belongs to no instrument at all. Each row carries `o.symbol`; use it.
+ */
+function fmt(v: number, symbol: string) {
+  return fmtPrice(symbol, v);
 }
 
-function signed(v: number, decimals: number) {
-  return `${v > 0 ? "+" : ""}${v.toFixed(decimals)}`;
+/**
+ * Money is money: 2 decimals and thousand separators, whatever the instrument.
+ *
+ * P&L, risk and locked profit were formatted at PRICE precision, which is why
+ * a BTC result read `+117.3` and a gold one would read `+117.30` — the same
+ * currency amount rendered two ways depending on what was charted.
+ */
+function money(v: number) {
+  return `${v > 0 ? "+" : ""}${formatCurrency(v)}`;
+}
+
+/**
+ * `+1.46R` as ONE token, with the unit inside the string.
+ *
+ * The R used to be a separate JSX sibling, so when the panel narrowed the
+ * number kept its space and the unit was pushed out of the box — `-0.90R`
+ * rendered as `-0.90`, which is not a shortened label but a different and
+ * plausible-looking number.
+ */
+function signedR(v: number) {
+  return `${v > 0 ? "+" : ""}${v.toFixed(2)}R`;
 }
 
 const PARTIALS = [25, 50, 75] as const;
@@ -64,7 +92,7 @@ const TRAIL_MODES: TrailingMode[] = ["fixed", "atr", "ema", "swing", "prev_candl
 const AUTO_BE_TRIGGERS = [1, 1.5, 2] as const;
 
 export function OpenPositionsPanel({
-  positions, closed = [], marketPrice, decimals = 4, onBreakEven, onClose, onArchive,
+  positions, closed = [], marketPrice, onBreakEven, onClose, onArchive,
   onPartialClose, onScaleOut, onScaleIn, onTakeProfits, onTrailing, onAutoBreakEven,
   className,
 }: Props) {
@@ -119,7 +147,7 @@ export function OpenPositionsPanel({
               </span>
               <span className="font-mono tabular-nums">{o.symbol}</span>
               <span className="font-mono tabular-nums text-muted-foreground" title={scaled ? "Weighted average entry" : "Fill price"}>
-                @ {fmt(entry, decimals)}{scaled ? <span className="ml-0.5 text-[9px]">avg</span> : null}
+                @ {fmt(entry, o.symbol)}{scaled ? <span className="ml-0.5 text-[9px]">avg</span> : null}
               </span>
               {m && m.closedPercent > 0 ? (
                 <span
@@ -134,24 +162,24 @@ export function OpenPositionsPanel({
                 data-testid="open-position-pnl"
                 className={cn("ml-auto font-mono tabular-nums font-semibold", up ? "text-success" : "text-danger")}
               >
-                {m ? signed(m.totalPnl, decimals) : "—"}
+                {m ? money(m.totalPnl) : "—"}
                 {m?.perUnit ? <span className="ml-0.5 text-[9px] font-normal text-muted-foreground">/unit</span> : null}
               </span>
             </div>
 
             <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-0.5 font-mono text-[10px] tabular-nums text-muted-foreground sm:grid-cols-4">
-              <span data-testid="open-position-r" title="Floating R">Float R {m ? signed(m.floatingR, 2) : "—"}</span>
+              <span data-testid="open-position-r" title="Floating R">Float R {m ? signedR(m.floatingR) : "—"}</span>
               <span data-testid="open-position-realized-r" title="Realized R from closed legs">
-                Real R {m ? signed(m.realizedR, 2) : "—"}
+                Real R {m ? signedR(m.realizedR) : "—"}
               </span>
-              <span title="Floating + realized R">Total R {m ? signed(m.totalR, 2) : "—"}</span>
-              <span title="Currency still at risk if the stop is hit">Risk {m ? fmt(m.remainingRisk, 2) : "—"}</span>
+              <span title="Floating + realized R">Total R {m ? signedR(m.totalR) : "—"}</span>
+              <span title="Currency still at risk if the stop is hit">Risk {m ? formatCurrency(m.remainingRisk) : "—"}</span>
               <span title="Guaranteed result if the stop is hit from here" data-testid="open-position-locked">
-                Locked {m ? signed(m.lockedProfit, 2) : "—"}
+                Locked {m ? money(m.lockedProfit) : "—"}
               </span>
               <span title="Reward to risk from the current price">RR {m ? m.currentRR.toFixed(2) : "—"}</span>
-              <span>→ SL {m ? fmt(m.distanceToStop, decimals) : "—"}</span>
-              <span>→ TP {m ? fmt(m.distanceToTarget, decimals) : "—"}</span>
+              <span>→ SL {m ? fmt(m.distanceToStop, o.symbol) : "—"}</span>
+              <span>→ TP {m ? fmt(m.distanceToTarget, o.symbol) : "—"}</span>
             </div>
 
             <div className="mt-1.5 flex flex-wrap items-center gap-1">
@@ -295,11 +323,11 @@ export function OpenPositionsPanel({
                     <span className="w-[86px] shrink-0 text-[9px] uppercase tracking-wide">
                       {EXECUTION_LABEL[e.kind]}
                     </span>
-                    <span>{fmt(e.price, decimals)}</span>
+                    <span>{fmt(e.price, o.symbol)}</span>
                     <span className="text-muted-foreground/70">×{e.quantity.toFixed(2)}</span>
                     {typeof e.realizedPnl === "number" ? (
                       <span className={cn(e.realizedPnl >= 0 ? "text-success" : "text-danger")}>
-                        {signed(e.realizedPnl, decimals)}
+                        {money(e.realizedPnl)}
                       </span>
                     ) : null}
                     <span className="ml-auto text-[9px] text-muted-foreground/60">
@@ -331,14 +359,14 @@ export function OpenPositionsPanel({
           </span>
           <span className="font-mono tabular-nums">{o.symbol}</span>
           <span className="font-mono tabular-nums">
-            {fmt(o.fillPrice ?? o.entry, decimals)} → {fmt(o.closePrice ?? 0, decimals)}
+            {fmt(o.fillPrice ?? o.entry, o.symbol)} → {fmt(o.closePrice ?? 0, o.symbol)}
           </span>
           <span className="text-[9px] uppercase tracking-wide">{(o.closeReason ?? "manual").replace("_", " ")}</span>
           <span
             className={cn("ml-auto font-mono tabular-nums font-semibold", (o.realizedPnl ?? 0) >= 0 ? "text-success" : "text-danger")}
             data-testid="closed-position-pnl"
           >
-            {signed(o.realizedPnl ?? 0, decimals)} · {signed(o.realizedR ?? 0, 2)}R
+            {money(o.realizedPnl ?? 0)} · {signedR(o.realizedR ?? 0)}
           </span>
           {onArchive ? (
             <Button

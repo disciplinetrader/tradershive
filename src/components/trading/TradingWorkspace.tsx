@@ -404,10 +404,26 @@ function TradingWorkspaceInner() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const last = quote?.last ?? meta?.refPrice ?? 0;
-  const bid = quote?.bid ?? last;
-  const ask = quote?.ask ?? last;
-  const spread = quote?.spread ?? Math.max(0, ask - bid);
+  /**
+   * The live price, or NULL. Never the catalog seed.
+   *
+   * This was `quote?.last ?? meta?.refPrice ?? 0`, and the fallback is a static
+   * value written into the catalog long ago — 2432 for gold against ~4355 live,
+   * 1.0891 for EUR/USD against ~1.155. Until the first tick arrived the header,
+   * the BUY and SELL buttons and everything derived from `last` displayed that
+   * seed as though it were the market. The buttons are the serious part: they
+   * quoted a price ~79% away from where the order would actually fill.
+   *
+   * Null propagates deliberately. Every consumer below either renders a
+   * placeholder or disables itself, which is the honest answer while a symbol
+   * has no quote yet.
+   */
+  const last: number | null = quote?.last ?? null;
+  const bid: number | null = quote?.bid ?? last;
+  const ask: number | null = quote?.ask ?? last;
+  const spread = quote?.spread ?? (ask != null && bid != null ? Math.max(0, ask - bid) : null);
+  /** Prices exist. Guard anything that needs a real number. */
+  const hasQuote = last != null && Number.isFinite(last) && last > 0;
 
 
 
@@ -481,8 +497,8 @@ function TradingWorkspaceInner() {
     mutationFn: async () => {
       const t = openHere[openHere.length - 1];
       if (!t) throw new Error("No open position on this symbol");
-      if (last <= 0) throw new Error("No live price yet");
-      return closeFn({ data: { id: t.id, exit_price: last, close_reason: "manual" } });
+      if (!hasQuote) throw new Error("No live price yet — cannot close at an unknown price");
+      return closeFn({ data: { id: t.id, exit_price: last!, close_reason: "manual" } });
     },
     onSuccess: () => {
       toast.success("Position closed");
@@ -600,12 +616,16 @@ function TradingWorkspaceInner() {
 
           <div className="flex items-baseline gap-2 tabular-nums">
             <motion.span
-              key={last} initial={{ opacity: 0.4 }} animate={{ opacity: 1 }}
-              className={cn("text-sm font-bold sm:text-base", quote?.last && quote.last >= bid ? "text-success" : "text-danger")}
-            >{last.toFixed(decimals)}</motion.span>
-            <span className="hidden text-[10px] text-muted-foreground xl:inline">B <span className="text-foreground">{bid.toFixed(decimals)}</span></span>
-            <span className="hidden text-[10px] text-muted-foreground xl:inline">A <span className="text-foreground">{ask.toFixed(decimals)}</span></span>
-            <Badge variant="outline" className="hidden h-4 px-1 text-[9px] xl:inline-flex">Sp {spread.toFixed(decimals)}</Badge>
+              key={last ?? "none"} initial={{ opacity: 0.4 }} animate={{ opacity: 1 }}
+              className={cn(
+                "text-sm font-bold sm:text-base",
+                !hasQuote ? "text-muted-foreground"
+                  : bid != null && last! >= bid ? "text-success" : "text-danger",
+              )}
+            >{hasQuote ? last!.toFixed(decimals) : "—"}</motion.span>
+            <span className="hidden text-[10px] text-muted-foreground xl:inline">B <span className="text-foreground">{bid != null ? bid.toFixed(decimals) : "—"}</span></span>
+            <span className="hidden text-[10px] text-muted-foreground xl:inline">A <span className="text-foreground">{ask != null ? ask.toFixed(decimals) : "—"}</span></span>
+            <Badge variant="outline" className="hidden h-4 px-1 text-[9px] xl:inline-flex">Sp {spread != null ? spread.toFixed(decimals) : "—"}</Badge>
           </div>
 
           <div className="mx-1 hidden h-5 w-px bg-border/60 md:block" />
@@ -867,9 +887,10 @@ function TradingWorkspaceInner() {
                     openFloatingOrder({ clientX: e.clientX, clientY: e.clientY });
                     emitTradeIntent({ kind: "focus_side", side: "long" });
                   }}
-                  aria-label={`Buy ${symbol} at ${ask.toFixed(decimals)}`}
+                  disabled={!hasQuote}
+                  aria-label={hasQuote ? `Buy ${symbol} at ${ask!.toFixed(decimals)}` : `Buy ${symbol} — waiting for a live price`}
                 >
-                  BUY <span className="opacity-90">{ask.toFixed(decimals)}</span>
+                  BUY <span className="opacity-90">{ask != null ? ask.toFixed(decimals) : "—"}</span>
                 </Button>
                 <Button
                   size="sm"
@@ -878,9 +899,10 @@ function TradingWorkspaceInner() {
                     openFloatingOrder({ clientX: e.clientX, clientY: e.clientY });
                     emitTradeIntent({ kind: "focus_side", side: "short" });
                   }}
-                  aria-label={`Sell ${symbol} at ${bid.toFixed(decimals)}`}
+                  disabled={!hasQuote}
+                  aria-label={hasQuote ? `Sell ${symbol} at ${bid!.toFixed(decimals)}` : `Sell ${symbol} — waiting for a live price`}
                 >
-                  SELL <span className="opacity-90">{bid.toFixed(decimals)}</span>
+                  SELL <span className="opacity-90">{bid != null ? bid.toFixed(decimals) : "—"}</span>
                 </Button>
               </div>
             )}
@@ -999,7 +1021,7 @@ function TradingWorkspaceInner() {
                       balance={Number(account?.balance ?? 10000)}
                       leverage={Number(account?.leverage ?? 100)}
                       defaultRiskPct={Number(account?.max_trade_risk_pct ?? 1)}
-                      livePrice={last}
+                      livePrice={last ?? undefined}
                       onSend={(p) => {
                         emitTradeIntent({
                           kind: "prefill",
@@ -1015,7 +1037,7 @@ function TradingWorkspaceInner() {
                       }}
                     />
                     <ChartContextMenu
-                      adapter={adapter} sym={meta ?? null} livePrice={last}
+                      adapter={adapter} sym={meta ?? null} livePrice={last ?? undefined}
                       onIntent={(intent, origin) => {
                         // Order intents open the floating ticket where the
                         // trader clicked, through the same helper the BUY/SELL
@@ -1027,9 +1049,9 @@ function TradingWorkspaceInner() {
                         }
                         switch (intent.kind) {
                           case "buy_market":
-                            emitTradeIntent({ kind: "prefill", side: "long", orderType: "market", price: last }); break;
+                            emitTradeIntent({ kind: "prefill", side: "long", orderType: "market", price: last ?? undefined }); break;
                           case "sell_market":
-                            emitTradeIntent({ kind: "prefill", side: "short", orderType: "market", price: last }); break;
+                            emitTradeIntent({ kind: "prefill", side: "short", orderType: "market", price: last ?? undefined }); break;
                           case "buy_limit":
                             emitTradeIntent({ kind: "prefill", side: "long", orderType: "limit", price: intent.price }); break;
                           case "sell_limit":
@@ -1267,18 +1289,19 @@ function TradingWorkspaceInner() {
                       className="space-y-3 animate-in fade-in duration-150"
                     >
                       <AdaptiveSection title="Positions" count={openCount} emptyLabel="No open positions">
-                        <PositionsTable />
+                        {/* Narrow rail: secondary columns off so P/L and R stay whole. */}
+                        <PositionsTable compact />
                       </AdaptiveSection>
                       <AdaptiveSection
                         title="Chart positions"
                         count={positionOrders.openPositions.length}
                         emptyLabel="No open chart positions."
+                        defaultOpen={false}
                       >
                         <OpenPositionsPanel
                           positions={positionOrders.openPositions}
                           closed={positionOrders.closedPositions}
                           marketPrice={last}
-                          decimals={decimals}
                           onBreakEven={(id: string) => {
                             const res = positionOrders.breakEven(id);
                             if (res.ok) toast.success("Stop moved to break-even");
@@ -1331,12 +1354,12 @@ function TradingWorkspaceInner() {
                         title="Closed trades"
                         count={positionOrders.visibleTrades.length}
                         emptyLabel="No closed chart trades yet."
+                        defaultOpen={false}
                       >
                         <ClosedTradesPanel
                           trades={positionOrders.visibleTrades}
                           filter={positionOrders.tradeFilter}
                           onFilterChange={positionOrders.setTradeFilter}
-                          decimals={decimals}
                           onViewOnChart={(t) => {
                             drawingStore.select(t.drawingId);
                             toast.info("Completed trade highlighted on the chart");
@@ -1582,17 +1605,41 @@ function TradingWorkspaceInner() {
  * and populated state doesn't shift layout. When count is zero, the body is
  * a single muted line; when > 0, the passed-in table is rendered.
  */
+/**
+ * A collapsible section of the Positions tab.
+ *
+ * Three sections stacked open at once — Positions, Chart positions, Closed
+ * trades — meant the panel opened as a long scroll with the thing you wanted
+ * usually below the fold. The header is now a toggle, `defaultOpen` decides
+ * what greets you, and the count stays visible while collapsed so a section
+ * with something in it still announces itself.
+ *
+ * Collapsing HIDES rather than unmounts, for the same reason the empty state
+ * does: `PositionsTable` owns the post-trade summary dialog in local state, and
+ * unmounting it mid-close destroys the modal reporting that close.
+ */
 function AdaptiveSection({
-  title, count, emptyLabel, children,
-}: { title: string; count: number; emptyLabel: string; children: React.ReactNode }) {
+  title, count, emptyLabel, children, defaultOpen = true,
+}: {
+  title: string; count: number; emptyLabel: string;
+  children: React.ReactNode; defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
   return (
     <section aria-label={title} className="rounded-md border border-border/40 bg-background/30">
-      <header className="flex items-center gap-2 border-b border-border/40 px-2.5 py-1">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-2 border-b border-border/40 px-2.5 py-1 text-left transition-colors hover:bg-muted/30"
+      >
+        <ChevronRight className={cn("h-3 w-3 shrink-0 text-muted-foreground transition-transform", open && "rotate-90")} />
         <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{title}</span>
         {count > 0 && (
           <span className="rounded-full bg-primary/15 px-1.5 text-[9px] font-semibold tabular-nums text-primary">{count}</span>
         )}
-      </header>
+      </button>
+      <div className={cn(!open && "hidden")}>
       {/* Children stay MOUNTED at count 0 and are hidden instead.
           Swapping them for the empty label unmounted whatever was inside the
           moment the count reached zero — and closing your last position is
@@ -1602,10 +1649,11 @@ function AdaptiveSection({
           its timeline, and vanished (or froze mid-load) a tick later. Radix
           portals the dialog to `document.body`, so `hidden` here hides the
           table without touching the modal. */}
-      <p className={cn("px-2.5 py-1.5 text-[11px] text-muted-foreground/80", count > 0 && "hidden")}>
-        {emptyLabel}
-      </p>
-      <div className={cn("p-2", count === 0 && "hidden")}>{children}</div>
+        <p className={cn("px-2.5 py-1.5 text-[11px] text-muted-foreground/80", count > 0 && "hidden")}>
+          {emptyLabel}
+        </p>
+        <div className={cn("p-2", count === 0 && "hidden")}>{children}</div>
+      </div>
     </section>
   );
 }

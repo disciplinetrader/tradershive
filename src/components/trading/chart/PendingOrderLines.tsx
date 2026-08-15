@@ -117,7 +117,7 @@ export function PendingOrderLines({ adapter, sym, orders, tick, onModify }: Prop
   if (!sym) return null;
 
   return (
-    <div ref={hostRef} className="pointer-events-none absolute inset-0 z-10 select-none">
+    <div ref={hostRef} className="pointer-events-none absolute inset-0 z-10 select-none overflow-hidden">
       {rendered.map(({ o, price, y, ghostY }) => {
         if (y == null) return null;
         const isLong = o.direction === "long";

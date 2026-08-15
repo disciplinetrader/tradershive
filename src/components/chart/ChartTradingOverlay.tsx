@@ -451,7 +451,7 @@ export function ChartTradingOverlay({ adapter, symbol, tick, livePrice }: Props)
   return (
     <div
       ref={hostRef}
-      className="pointer-events-none absolute inset-0 z-10"
+      className="pointer-events-none absolute inset-0 z-10 overflow-hidden"
       onPointerDown={onHostPointerDown}
       onContextMenu={(e) => e.preventDefault()}
       style={{ pointerEvents: draftPopover || draft ? "auto" : "none" }}

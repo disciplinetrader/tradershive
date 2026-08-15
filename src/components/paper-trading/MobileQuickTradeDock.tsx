@@ -39,7 +39,9 @@ export function MobileQuickTradeDock() {
   const balance = Number(account?.balance ?? 0);
   const leverage = Number(account?.leverage ?? 100);
   const lotNum = Number(lot) || 0;
-  const price = livePrice ?? symbolMeta?.refPrice ?? 0;
+  // No seed fallback: an unquoted symbol has no price, and the dock disables
+  // itself rather than quoting a catalog value it cannot fill at.
+  const price = livePrice ?? 0;
 
   const { data: openTrades } = useQuery({
     queryKey: ["paper", "trades", accountId, "open"],

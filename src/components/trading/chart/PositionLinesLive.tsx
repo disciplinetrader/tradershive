@@ -388,8 +388,18 @@ export function PositionLinesLive({ adapter, sym, trades, livePrice, tick }: Pro
 
   if (!sym) return null;
 
+  // `overflow-hidden` below is load-bearing, not cosmetic.
+  //
+  // Every child here is positioned by `adapter.priceToY`, and lightweight-charts
+  // EXTRAPOLATES that coordinate for prices outside the visible range — a level
+  // below the viewport returns a y greater than the chart's height, not null.
+  // Un-clipped, those badges paint wherever they land: after dragging the
+  // chart/blotter divider the SL and TP price pills rendered on top of the
+  // Positions table, far outside the chart. Clipping to the host makes that
+  // structurally impossible for every overlay child, current and future,
+  // rather than needing a bounds check at each of the eight label sites.
   return (
-    <div ref={hostRef} className="pointer-events-none absolute inset-0 z-10 select-none">
+    <div ref={hostRef} className="pointer-events-none absolute inset-0 z-10 select-none overflow-hidden">
       {rendered.map((row) => {
         const {
           t, entryY, slY, tpY, slGhostY, tpGhostY, slPrice, tpPrice,

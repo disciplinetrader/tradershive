@@ -1032,14 +1032,6 @@
       "count": 1
     }
   },
-  "src/lib/paper-trading/live-quotes.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 2
-    },
-    "no-restricted-syntax": {
-      "count": 2
-    }
-  },
   "src/lib/paper-trading/risk.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 1

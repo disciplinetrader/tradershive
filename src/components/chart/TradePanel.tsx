@@ -30,7 +30,9 @@ export function TradePanel({ symbol, market }: Props) {
   const [tp, setTp] = useState("");
 
   const meta = findSymbol(symbol);
-  const price = quote?.last ?? quote?.bid ?? meta?.refPrice ?? 0;
+  // No seed fallback — see live-quotes.ts. 0 means "no price yet", and the
+  // submit guard below already refuses to fire on it.
+  const price = quote?.last ?? quote?.bid ?? 0;
 
   const mutation = useMutation({
     mutationFn: async (side: "long" | "short") => {

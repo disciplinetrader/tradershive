@@ -24,7 +24,7 @@ describe("price precision", () => {
     expect(priceDecimals("XAG/USD")).toBe(3);   // silver
     expect(priceDecimals("AAPL")).toBe(2);      // equity
     expect(priceDecimals("QQQ")).toBe(2);       // index ETF
-    expect(priceDecimals("BTC/USDT")).toBe(1);
+    expect(priceDecimals("BTC/USDT")).toBe(2);   // Binance tick size is 0.01
     expect(priceDecimals("XRP/USDT")).toBe(4);
   });
 
@@ -44,6 +44,27 @@ describe("price precision", () => {
     expect(priceDecimals("CHFJPY")).toBe(3);   // unlisted JPY cross
   });
 
+  // "Six letters ⇒ forex" is true of EURUSD and equally true of BTCUSD, so
+  // every slash-less crypto pair was quoted with a fractional pip it does not
+  // have — this is the "too many decimals" seen on BTC. Both halves must be
+  // real currencies before the forex rule applies.
+  it("does not mistake a slash-less crypto pair for forex", () => {
+    expect(priceDecimals("BTCUSD")).toBe(2);
+    expect(priceDecimals("ETHUSD")).toBe(2);
+    expect(priceDecimals("SOLUSD")).toBe(2);
+    expect(priceDecimals("XRPUSD")).toBe(4);   // sub-dollar, 2dp would flatten it
+    expect(priceDecimals("ADAUSD")).toBe(4);
+  });
+
+  it("agrees with the chart for the same instrument however it is spelled", () => {
+    for (const spelling of ["BTC/USDT", "BTCUSDT", "BTCUSD"]) {
+      expect(priceDecimals(spelling), spelling).toBe(2);
+    }
+    for (const spelling of ["XAU/USD", "XAUUSD"]) {
+      expect(priceDecimals(spelling), spelling).toBe(2);
+    }
+  });
+
   it("formats at that precision, and agrees between chart and panel", () => {
     // Panel formatter groups thousands; the chart formatter does not. Both
     // must agree on the number of decimals.
@@ -53,7 +74,7 @@ describe("price precision", () => {
     expect(fmtPrice("EUR/USD", 1.1520371)).toBe("1.15204");
     expect(formatPrice("USD/JPY", 147.5234)).toBe("147.523");
     expect(fmtPrice("USD/JPY", 147.5234)).toBe("147.523");
-    expect(fmtPrice("BTC/USDT", 62979.615000000005)).toBe("62979.6");
+    expect(fmtPrice("BTC/USDT", 62979.615000000005)).toBe("62979.62");
   });
 
   it("returns a dash rather than NaN for missing prices", () => {

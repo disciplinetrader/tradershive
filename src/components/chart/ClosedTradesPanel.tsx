@@ -6,20 +6,34 @@
  * here shows live P/L — every number is realized.
  */
 
-import { useMemo, useState } from "react";
-import { Archive, BookOpen, Crosshair, FilePlus2, RotateCcw } from "lucide-react";
+import { useState } from "react";
+import { Archive, BookOpen, ChevronDown, Crosshair, FilePlus2, MoreHorizontal, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { formatCurrency } from "@/lib/paper-trading/calculations";
+import { fmtPrice } from "@/lib/trading/plan-math";
 import { cn } from "@/lib/utils";
 import {
   CLOSE_REASON_LABEL, formatDuration, tradeDuration, tradeResult,
   type ClosedTrade, type TradeFilter,
 } from "@/lib/chart/orders/closed-trade";
 
-const FILTERS: { id: TradeFilter; label: string }[] = [
+/**
+ * Outcome filters stay inline — they are the ones actually reached for.
+ * Everything else moved behind "More", because eight chips wrapped to two rows
+ * and pushed the trades themselves below the fold in a panel that is often
+ * only a few hundred pixels tall.
+ */
+const PRIMARY_FILTERS: { id: TradeFilter; label: string }[] = [
   { id: "all", label: "All" },
   { id: "profit", label: "Profit" },
   { id: "loss", label: "Loss" },
+];
+
+const MORE_FILTERS: { id: TradeFilter; label: string }[] = [
   { id: "breakeven", label: "Break-even" },
   { id: "manual", label: "Manual" },
   { id: "stop_loss", label: "Stop loss" },
@@ -27,11 +41,15 @@ const FILTERS: { id: TradeFilter; label: string }[] = [
   { id: "archived", label: "Archived" },
 ];
 
+/** `+1.46R` as one token — see the same note in OpenPositionsPanel. */
+function signedR(v: number) {
+  return `${v >= 0 ? "+" : ""}${v.toFixed(2)}R`;
+}
+
 interface Props {
   trades: ClosedTrade[];
   filter: TradeFilter;
   onFilterChange: (filter: TradeFilter) => void;
-  decimals?: number;
   onViewOnChart?: (trade: ClosedTrade) => void;
   onAddToJournal?: (trade: ClosedTrade) => void;
   onOpenJournal?: (trade: ClosedTrade) => void;
@@ -39,25 +57,23 @@ interface Props {
 }
 
 export function ClosedTradesPanel({
-  trades, filter, onFilterChange, decimals = 2,
+  trades, filter, onFilterChange,
   onViewOnChart, onAddToJournal, onOpenJournal, onArchive,
 }: Props) {
   const [busy, setBusy] = useState<string | null>(null);
-  const fmt = useMemo(
-    () => (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals }),
-    [decimals],
-  );
 
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap gap-1">
-        {FILTERS.map((f) => (
+      {/* One row, and it stays one row: the chips never wrap and "More" carries
+          the long tail, so narrowing the panel does not push the trades down. */}
+      <div className="flex items-center gap-1 overflow-hidden">
+        {PRIMARY_FILTERS.map((f) => (
           <button
             key={f.id}
             type="button"
             onClick={() => onFilterChange(f.id)}
             className={cn(
-              "rounded-full border px-2 py-0.5 text-[10px] font-semibold transition-colors",
+              "shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold transition-colors",
               filter === f.id
                 ? "border-primary/60 bg-primary/15 text-primary"
                 : "border-border/50 text-muted-foreground hover:text-foreground",
@@ -66,6 +82,29 @@ export function ClosedTradesPanel({
             {f.label}
           </button>
         ))}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className={cn(
+                "ml-auto flex shrink-0 items-center gap-0.5 rounded-full border px-2 py-0.5 text-[10px] font-semibold transition-colors",
+                MORE_FILTERS.some((f) => f.id === filter)
+                  ? "border-primary/60 bg-primary/15 text-primary"
+                  : "border-border/50 text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {MORE_FILTERS.find((f) => f.id === filter)?.label ?? "More"}
+              <ChevronDown className="h-3 w-3" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-40">
+            {MORE_FILTERS.map((f) => (
+              <DropdownMenuItem key={f.id} className="cursor-pointer text-xs" onSelect={() => onFilterChange(f.id)}>
+                {f.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {trades.length === 0 ? (
@@ -81,62 +120,73 @@ export function ClosedTradesPanel({
                 : outcome === "loss" ? "text-red-400"
                   : "text-muted-foreground";
             return (
-              <li key={t.id} className="rounded-md border border-border/40 bg-background/40 p-2">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-semibold">{t.symbol}</span>
-                    <Badge variant="outline" className="h-4 px-1 text-[9px] uppercase">
+              <li key={t.id} className="rounded-md border border-border/40 bg-background/40 px-2 py-1.5">
+                {/* Identity shrinks, the result never does. `min-w-0` on the left
+                    and `shrink-0` on the right is what stops a narrow panel
+                    clipping the R off the end of the number. */}
+                <div className="flex items-baseline gap-2">
+                  <div className="flex min-w-0 items-baseline gap-1.5">
+                    <span className="truncate text-xs font-semibold">{t.symbol}</span>
+                    <span className={cn(
+                      "shrink-0 text-[9px] font-semibold uppercase",
+                      t.direction === "buy" ? "text-success" : "text-danger",
+                    )}>
                       {t.direction === "buy" ? "Long" : "Short"}
-                    </Badge>
-                    <Badge variant="secondary" className="h-4 px-1 text-[9px]">
-                      {CLOSE_REASON_LABEL[t.closeReason]}
-                    </Badge>
+                    </span>
                     {t.archivedAt ? (
-                      <Badge variant="outline" className="h-4 px-1 text-[9px]">Archived</Badge>
+                      <Badge variant="outline" className="h-4 shrink-0 px-1 text-[9px]">Archived</Badge>
                     ) : null}
                   </div>
-                  <div className={cn("text-right text-xs font-semibold tabular-nums", tone)}>
-                    {t.netPnl > 0 ? "+" : ""}{fmt(t.netPnl)}
-                    <span className="ml-1.5 text-[10px] font-medium opacity-80">
-                      {t.realizedR >= 0 ? "+" : ""}{t.realizedR.toFixed(2)}R
-                    </span>
+                  <div className={cn("ml-auto shrink-0 whitespace-nowrap text-right text-xs font-semibold tabular-nums", tone)}>
+                    {t.netPnl > 0 ? "+" : ""}{formatCurrency(t.netPnl)}
+                    <span className="ml-1.5 text-[10px] font-medium opacity-80">{signedR(t.realizedR)}</span>
                   </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        size="icon" variant="ghost"
+                        className="h-5 w-5 shrink-0 text-muted-foreground hover:text-foreground"
+                        aria-label={`Actions for ${t.symbol}`}
+                      >
+                        <MoreHorizontal className="h-3.5 w-3.5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-44">
+                      <DropdownMenuItem className="cursor-pointer text-xs" onSelect={() => onViewOnChart?.(t)}>
+                        <Crosshair className="mr-2 h-3 w-3" /> View on chart
+                      </DropdownMenuItem>
+                      {t.journalStatus === "linked" ? (
+                        <DropdownMenuItem className="cursor-pointer text-xs" onSelect={() => onOpenJournal?.(t)}>
+                          <BookOpen className="mr-2 h-3 w-3" /> Open journal
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem
+                          className="cursor-pointer text-xs"
+                          disabled={busy === t.id}
+                          onSelect={async () => { setBusy(t.id); try { await onAddToJournal?.(t); } finally { setBusy(null); } }}
+                        >
+                          <FilePlus2 className="mr-2 h-3 w-3" /> Add to journal
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem className="cursor-pointer text-xs" onSelect={() => onArchive?.(t, !t.archivedAt)}>
+                        {t.archivedAt
+                          ? <><RotateCcw className="mr-2 h-3 w-3" /> Restore</>
+                          : <><Archive className="mr-2 h-3 w-3" /> Archive</>}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
 
-                <dl className="mt-1 grid grid-cols-4 gap-1 text-[10px] text-muted-foreground">
-                  <div><dt className="opacity-70">Entry</dt><dd className="tabular-nums text-foreground">{fmt(t.fillPrice)}</dd></div>
-                  <div><dt className="opacity-70">Exit</dt><dd className="tabular-nums text-foreground">{fmt(t.exitPrice)}</dd></div>
-                  <div><dt className="opacity-70">Duration</dt><dd className="text-foreground">{formatDuration(tradeDuration(t))}</dd></div>
-                  <div><dt className="opacity-70">Closed</dt><dd className="text-foreground">{new Date(t.closedAt).toLocaleTimeString()}</dd></div>
-                </dl>
-
-                <div className="mt-1.5 flex flex-wrap items-center gap-1">
-                  <Button size="sm" variant="ghost" className="h-6 gap-1 px-1.5 text-[10px]" onClick={() => onViewOnChart?.(t)}>
-                    <Crosshair className="h-3 w-3" /> View on chart
-                  </Button>
-                  {t.journalStatus === "linked" ? (
-                    <Button size="sm" variant="ghost" className="h-6 gap-1 px-1.5 text-[10px]" onClick={() => onOpenJournal?.(t)}>
-                      <BookOpen className="h-3 w-3" /> Open journal
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-6 gap-1 px-1.5 text-[10px]"
-                      disabled={busy === t.id}
-                      onClick={async () => { setBusy(t.id); try { await onAddToJournal?.(t); } finally { setBusy(null); } }}
-                    >
-                      <FilePlus2 className="h-3 w-3" /> Add to journal
-                    </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 gap-1 px-1.5 text-[10px]"
-                    onClick={() => onArchive?.(t, !t.archivedAt)}
-                  >
-                    {t.archivedAt ? <><RotateCcw className="h-3 w-3" /> Restore</> : <><Archive className="h-3 w-3" /> Archive</>}
-                  </Button>
+                {/* One line instead of a four-cell grid. Close reason moved here
+                    from a badge, and the wall-clock close time was dropped —
+                    duration answers "how long" better than a timestamp does. */}
+                <div className="mt-0.5 flex items-baseline gap-1.5 overflow-hidden text-[10px] text-muted-foreground">
+                  <span className="shrink-0 tabular-nums text-foreground/80">
+                    {fmtPrice(t.symbol, t.fillPrice)} → {fmtPrice(t.symbol, t.exitPrice)}
+                  </span>
+                  <span className="shrink-0 opacity-60">·</span>
+                  <span className="shrink-0">{formatDuration(tradeDuration(t))}</span>
+                  <span className="truncate opacity-70">· {CLOSE_REASON_LABEL[t.closeReason]}</span>
                 </div>
               </li>
             );

@@ -326,7 +326,29 @@ class MarketDataEngine {
       this.fanout.set(symbol, entry);
     }
     entry.handlers.add(handler);
-    const c = this.quoteCache.get(symbol); if (c) try { handler(c); } catch { /* noop */ }
+    const c = this.quoteCache.get(symbol);
+    if (c) {
+      try { handler(c); } catch { /* noop */ }
+    } else {
+      // Warm start. Providers deliver on their own poll cadence, and Twelve
+      // Data's is stretched to fit the credit budget — measured at ~30s for the
+      // first metals/forex tick. Until it lands there is no quote at all, which
+      // used to be papered over by the catalog seed: the header and BUY/SELL
+      // showed gold at 2432 while the market was 4355. With the seed gone the
+      // honest state is a dash and a disabled button, so the fix is to make the
+      // first quote arrive quickly rather than to invent one.
+      //
+      // One un-batched request per newly-subscribed symbol. The server proxy
+      // caches quotes for 12s, so a second consumer of the same symbol costs
+      // nothing, and `getQuote` populates `quoteCache` for everyone.
+      void this.getQuote(symbol, market)
+        .then((q) => {
+          const cur = this.fanout.get(symbol);
+          if (!cur) return;
+          for (const h of cur.handlers) { try { h(q); } catch { /* noop */ } }
+        })
+        .catch(() => { /* the poller is still coming; consumers show "no price" */ });
+    }
     const id = `fan-${symbol}-${Math.random().toString(36).slice(2, 8)}`;
     return {
       id, symbol,

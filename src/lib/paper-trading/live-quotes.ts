@@ -38,12 +38,40 @@ const SNAPSHOT_MIN_GAP_MS = 60_000;
 /** How often we re-check whether the feed has gone quiet. */
 const SNAPSHOT_TICK_MS = 20_000;
 
-function publish(meta: { symbol: string; refPrice: number }, price: number) {
+/**
+ * Publish a REAL quote. Never a seed value.
+ *
+ * `refPrice` is a static catalog seed from whenever the catalog was written —
+ * gold's is 2432, which was roughly its 2024 level against ~4355 live. It was
+ * used two ways here and both were wrong:
+ *
+ *  1. As a price fallback, so a tick without `last`/`bid` published the seed as
+ *     though it were the market. Everything downstream then treated it as real:
+ *     the header, the BUY/SELL buttons, and — worst — `PositionsTable`'s close,
+ *     which sends the displayed price as `exit_price`.
+ *  2. As the baseline for `change`, which made gold read roughly +79% forever.
+ *
+ * A price is either genuinely from the provider or it does not exist. Callers
+ * render a loading state rather than a number nobody can stand behind.
+ */
+function publish(
+  meta: { symbol: string },
+  price: number,
+  ref?: { changePct?: number; open?: number; close?: number },
+) {
   if (!Number.isFinite(price) || price <= 0) return;
-  const base = meta.refPrice;
+  // Prefer the provider's own change, then a real session open / previous
+  // close. With no honest baseline the answer is "unknown", i.e. 0 — not a
+  // number computed against a seed.
+  const change = Number.isFinite(ref?.changePct)
+    ? (ref!.changePct as number)
+    : (() => {
+        const base = ref?.open ?? ref?.close;
+        return base && base > 0 ? ((price - base) / base) * 100 : 0;
+      })();
   quotes = {
     ...quotes,
-    [meta.symbol]: { symbol: meta.symbol, price, change: base ? ((price - base) / base) * 100 : 0 },
+    [meta.symbol]: { symbol: meta.symbol, price, change },
   };
   listeners.forEach((l) => l(quotes));
 }
@@ -58,7 +86,10 @@ function acquire(symbol: string) {
     let lastTickAt = 0;
     const handle = marketData.subscribe(engineSymbol(meta.symbol), (q) => {
       lastTickAt = Date.now();
-      publish(meta, q.last ?? q.bid ?? meta.refPrice);
+      // No `last` and no `bid` means the provider sent nothing usable —
+      // publishing the catalog seed here is what put a 2024 gold price on
+      // the BUY button. Skip the tick instead.
+      publish(meta, q.last ?? q.bid ?? 0, q);
     }, meta.market);
     subs.set(symbol, { handle, refs: 1 });
 
@@ -81,12 +112,12 @@ function acquire(symbol: string) {
       lastPullAt = now;
       void marketData
         .getQuote(engineSymbol(meta.symbol), meta.market)
-        .then((q) => publish(meta, (q as any).last ?? (q as any).bid ?? 0))
+        .then((q) => publish(meta, q.last ?? q.bid ?? 0, q))
         .catch(() => { /* stay on the last real price */ });
     };
     pull();
     snapshots.set(symbol, setInterval(pull, SNAPSHOT_TICK_MS));
-  } catch { /* engine unavailable — UI falls back to last known / refPrice */ }
+  } catch { /* engine unavailable — consumers show "no price", never a seed */ }
 }
 
 function release(symbol: string) {
@@ -101,10 +132,15 @@ function release(symbol: string) {
   }
 }
 
-export function currentPrice(symbol: string): number {
-  // Read-only snapshot. Does not open a new subscription; a component that
-  // needs live updates should use useLivePrice / useLiveQuotes(symbols).
-  return quotes[symbol]?.price ?? SYMBOL_BY_KEY[symbol]?.refPrice ?? 0;
+/**
+ * Read-only snapshot, or `null` when no real quote has arrived.
+ *
+ * Returns null rather than the catalog seed: a caller that cannot get a price
+ * must say so, not substitute one. Does not open a subscription — components
+ * needing live updates use useLivePrice / useLiveQuotes.
+ */
+export function currentPrice(symbol: string): number | null {
+  return quotes[symbol]?.price ?? null;
 }
 
 /**

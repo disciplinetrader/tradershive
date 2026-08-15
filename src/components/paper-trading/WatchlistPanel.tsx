@@ -48,7 +48,6 @@ export function WatchlistPanel() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<"symbol" | "change" | "price">("symbol");
-  const [newSymbol, setNewSymbol] = useState("");
   const [newList, setNewList] = useState("");
 
   const lists = data?.lists ?? [];
@@ -69,10 +68,18 @@ export function WatchlistPanel() {
     const inList = active
       ? data.symbols.filter((s) => s.watchlist_id === active.id)
       : data.symbols.filter((s) => s.is_favorite);
-    const filtered = q
-      ? inList.filter((s) => s.symbol.toLowerCase().includes(q.toLowerCase()))
+    const needle = q.trim().toLowerCase();
+    const loose = needle.replace(/[/\-_:\s]/g, "");
+    const filtered = needle
+      ? inList.filter((s) =>
+          s.symbol.toLowerCase().replace(/[/\-_:\s]/g, "").includes(loose)
+          || (findSymbol(s.symbol)?.name.toLowerCase().includes(needle) ?? false))
       : inList;
     return [...filtered].sort((a, b) => {
+      // Favourites first, always. Marking a symbol a favourite previously did
+      // nothing to its position, so the star looked purely decorative.
+      // The chosen sort still orders WITHIN each group.
+      if (a.is_favorite !== b.is_favorite) return a.is_favorite ? -1 : 1;
       if (sort === "symbol") return a.symbol.localeCompare(b.symbol);
       const qa = quotes[a.symbol]; const qb = quotes[b.symbol];
       if (sort === "price") return (qb?.price ?? 0) - (qa?.price ?? 0);
@@ -80,12 +87,38 @@ export function WatchlistPanel() {
     });
   }, [data, active, q, sort, quotes]);
 
+  /**
+   * Catalog symbols matching the query that are NOT already in this list.
+   *
+   * The search box only ever filtered rows already present, so removing a
+   * symbol made it unfindable and there was no route back — the catalog and a
+   * watchlist are different things, and the box behaved as though they were the
+   * same one. Matching is on ticker or name, separator- and case-insensitive,
+   * so "BTC", "btcusdt" and "Bitcoin" all lead back to BTC/USDT.
+   */
+  const catalogMatches = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    if (!needle || !active) return [];
+    const present = new Set(
+      (data?.symbols ?? [])
+        .filter((s) => s.watchlist_id === active.id)
+        .map((s) => s.symbol.toUpperCase()),
+    );
+    const loose = needle.replace(/[/\-_:\s]/g, "");
+    return SYMBOL_CATALOG
+      .filter((s) => !present.has(s.symbol.toUpperCase()))
+      .filter((s) =>
+        s.symbol.toLowerCase().replace(/[/\-_:\s]/g, "").includes(loose)
+        || s.name.toLowerCase().includes(needle))
+      .slice(0, 6);
+  }, [q, active, data]);
+
   const invalidate = () => qc.invalidateQueries({ queryKey: ["paper", "watchlists"] });
 
   const addMut = useMutation({
     mutationFn: async (input: { watchlist_id: string; symbol: string; market: PaperMarket }) =>
       addSym({ data: input }),
-    onSuccess: () => { invalidate(); setNewSymbol(""); },
+    onSuccess: () => { invalidate(); setQ(""); },
     onError: (e) => toast.error((e as Error).message),
   });
   const removeMut = useMutation({
@@ -105,13 +138,6 @@ export function WatchlistPanel() {
     onSuccess: () => { toast.success("Watchlist removed"); setActiveId(null); invalidate(); },
     onError: (e) => toast.error((e as Error).message),
   });
-
-  const handleAdd = () => {
-    if (!newSymbol || !active) return;
-    const meta = findSymbol(newSymbol.toUpperCase()) ?? SYMBOL_CATALOG.find((s) => s.symbol.toUpperCase() === newSymbol.toUpperCase());
-    if (!meta) return toast.error("Unknown symbol");
-    addMut.mutate({ watchlist_id: active.id, symbol: meta.symbol, market: meta.market });
-  };
 
   return (
     <div className="flex h-full flex-col gap-3">
@@ -154,7 +180,12 @@ export function WatchlistPanel() {
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" className="h-8 pl-7" />
+          <Input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search or add a symbol"
+            className="h-8 pl-7"
+          />
         </div>
         <Select value={sort} onValueChange={(v: "symbol"|"change"|"price") => setSort(v)}>
           <SelectTrigger className="h-8 w-24"><SelectValue /></SelectTrigger>
@@ -166,11 +197,31 @@ export function WatchlistPanel() {
         </Select>
       </div>
 
-      {active && (
-        <div className="flex items-center gap-1.5">
-          <Input value={newSymbol} onChange={(e) => setNewSymbol(e.target.value)}
-            placeholder="Add e.g. EUR/USD" className="h-8" onKeyDown={(e) => e.key === "Enter" && handleAdd()} />
-          <Button size="sm" className="h-8 gradient-primary text-primary-foreground" onClick={handleAdd}>Add</Button>
+      {/* The separate "Add" input is gone: one box now searches the list and
+          the catalog together, which is the only way a removed symbol can be
+          found again without the user knowing its exact ticker. */}
+      {catalogMatches.length > 0 && (
+        <div className="rounded-md border border-border/50 bg-background/40 p-1">
+          <p className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Not in this list
+          </p>
+          <ul className="space-y-0.5">
+            {catalogMatches.map((m) => (
+              <li key={m.symbol}>
+                <button
+                  type="button"
+                  onClick={() => active && addMut.mutate({ watchlist_id: active.id, symbol: m.symbol, market: m.market })}
+                  disabled={addMut.isPending}
+                  className="flex w-full items-center gap-2 rounded px-1.5 py-1 text-left text-xs transition-colors hover:bg-accent/50"
+                >
+                  <Plus className="h-3 w-3 shrink-0 text-muted-foreground" />
+                  <span className="shrink-0 font-semibold">{m.symbol}</span>
+                  <span className="truncate text-[10px] text-muted-foreground">{m.name}</span>
+                  <span className="ml-auto shrink-0 text-[9px] uppercase text-muted-foreground/70">{m.market}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

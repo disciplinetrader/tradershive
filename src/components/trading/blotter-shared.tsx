@@ -27,6 +27,19 @@ export const ACTIONS_CELL =
   "sticky right-0 z-10 w-[136px] min-w-[136px] bg-background/95 px-2 text-right " +
   "shadow-[-8px_0_12px_-8px_rgba(0,0,0,0.4)]";
 
+/**
+ * Narrow variant for the right rail — deliberately NOT sticky.
+ *
+ * Sticky is the right answer only while the table is wider than its scrollport.
+ * Once the compact column set fits (four columns in ~320px), `right-0` has
+ * nothing to pin past, so the cell gets pulled left of its natural position and
+ * parks on top of its neighbour: measured at 1469–1569 over a P/L column at
+ * 1443–1553, hiding the one number the panel exists to show. With no overflow
+ * there is nothing to protect against, so it stays in normal flow.
+ */
+export const ACTIONS_CELL_COMPACT =
+  "w-[92px] min-w-[92px] bg-background/95 px-1 text-right";
+
 export type SortDir = "asc" | "desc";
 export type SortState<K extends string> = { key: K; dir: SortDir };
 

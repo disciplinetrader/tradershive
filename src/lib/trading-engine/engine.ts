@@ -149,11 +149,19 @@ export class TradingEngine {
     return o;
   }
 
+  /**
+   * The price an intent is validated and filled against.
+   *
+   * Returns 0 — which `validateIntent` rejects — when there is no live quote.
+   * It used to fall back to the symbol's catalog `refPrice`, a static seed
+   * written when the catalog was authored: gold's is 2432 against ~4355 live.
+   * That is not a stale price, it is a different price, and using it here
+   * meant an order could be validated and FILLED tens of percent away from the
+   * market. Refusing to price an order is always better than pricing it wrong.
+   */
   private priceFor(intent: OrderIntent): number {
     const live = this.quotes.get(intent.symbol);
-    if (live && live > 0) return live;
-    const meta = findSymbol(intent.symbol);
-    return meta?.refPrice ?? 0;
+    return live && live > 0 ? live : 0;
   }
 
   private processResting(symbol: string, price: number): void {
