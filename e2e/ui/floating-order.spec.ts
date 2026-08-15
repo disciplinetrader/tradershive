@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { db, demoAccount, seedWorkspace, TEST_SYMBOL } from "./fixtures";
+import { db, runAccount, seedWorkspace, TEST_SYMBOL } from "./fixtures";
 
 /**
  * #4 — the floating order window: opens near the chart click, drags anywhere,
@@ -11,7 +11,7 @@ test.describe("floating order window", () => {
 
   test.beforeAll(async () => {
     sb = db();
-    account = await demoAccount(sb);
+    account = await runAccount(sb);
   });
 
   async function openAtChartPoint(page: any) {

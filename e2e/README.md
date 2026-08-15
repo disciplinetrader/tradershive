@@ -74,6 +74,25 @@ E2E_BASE_URL=https://<preview> bun run test:e2e
 bun run test:e2e:report                       # open the HTML report after a failure
 ```
 
+## The UI suite runs on its own account
+
+`playwright.ui.config.ts` (`bun run test:e2e:ui`) drives the trading workspace
+against a paper account that `e2e/ui/global-setup.ts` creates for the run,
+named `E2E UI RUN <timestamp>`, and that `global-teardown.ts` deletes
+afterwards. A crashed run's account is swept by the next run's setup.
+
+This is not tidiness. `TradingWorkspace` mounts `useSlTpMonitor`, which
+evaluates **every** open trade on the selected account against the live feed
+and closes the ones whose stop or target is crossed. Pointed at an account with
+real positions on it, the suite closes them for real — that is how a run
+realized $151.82 of open trades that nobody asked to close.
+
+So: the suite never selects an account by name or by "first row that matched",
+never opens a position it does not delete, and `assertNoInheritedPositions`
+refuses to start if the account holds anything older than the run. If you need
+the suite to exercise a position, create one with `createTestPosition` and let
+its disposer remove it.
+
 ## Why it is slow
 
 A run takes roughly two minutes, most of it waiting. That is inherent:

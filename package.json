@@ -13,6 +13,8 @@
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:report": "playwright show-report",
+    "test:e2e:ui": "playwright test -c playwright.ui.config.ts",
+    "test:e2e:ui:headed": "playwright test -c playwright.ui.config.ts --headed",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "check:columns": "bun run scripts/check-columns.ts",

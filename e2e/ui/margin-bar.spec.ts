@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { db, demoAccount, seedWorkspace, TEST_SYMBOL } from "./fixtures";
+import { db, runAccount, seedWorkspace, TEST_SYMBOL } from "./fixtures";
 import { findSymbol } from "../../src/lib/paper-trading/symbols";
 
 /**
@@ -13,7 +13,7 @@ test.describe("margin usage bar", () => {
 
   test.beforeAll(async () => {
     sb = db();
-    account = await demoAccount(sb);
+    account = await runAccount(sb);
   });
 
   async function openTicket(page: any) {

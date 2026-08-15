@@ -15,14 +15,18 @@ dotenv.config();
  *   • it is fast and does not create battles;
  *   • it is meant to be run headed (`--headed`) so a human can watch the drags.
  *
- * Still points at a REAL Supabase project. It modifies stop/target levels on
- * the host account's open trades and restores them afterwards.
+ * Still points at a REAL Supabase project, so it runs on a paper account it
+ * creates for the run and deletes afterwards — never an account with trades on
+ * it. `TradingWorkspace` mounts `useSlTpMonitor`, which closes any open
+ * position whose levels the live feed crosses; on a real account that is the
+ * suite realizing trades nobody asked to close. See `global-setup.ts`.
  */
 const baseURL = process.env.E2E_BASE_URL ?? "http://localhost:8080";
 
 export default defineConfig({
   testDir: "./e2e/ui",
   globalSetup: "./e2e/ui/global-setup.ts",
+  globalTeardown: "./e2e/ui/global-teardown.ts",
 
   timeout: 90 * 1000,
   expect: { timeout: 15 * 1000 },

@@ -1,14 +1,19 @@
 import fs from "node:fs";
 import type { Page } from "@playwright/test";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { UI_IDS_FILE } from "./global-setup";
+import { RUN_ACCOUNT_PREFIX, UI_IDS_FILE } from "./global-setup";
 
-export const DEMO_ACCOUNT_NAME = "Demo $10,000";
-/** The charted symbol these specs drive. Chosen because the host account holds
- *  an open position on it, which is what the level handles attach to. */
+/** The charted symbol these specs drive. Crypto, so it quotes around the clock
+ *  and a run at any hour has a live price to open the test position at. */
 export const TEST_SYMBOL = "BTC/USDT";
 
-type Ids = { supabaseUrl: string; publishableKey: string; userId: string; accessToken: string };
+type Ids = {
+  supabaseUrl: string;
+  publishableKey: string;
+  userId: string;
+  accessToken: string;
+  accountId: string;
+};
 
 export function ids(): Ids {
   return JSON.parse(fs.readFileSync(UI_IDS_FILE, "utf8"));
@@ -23,13 +28,72 @@ export function db(): SupabaseClient {
   });
 }
 
-export async function demoAccount(sb: SupabaseClient) {
+/**
+ * The disposable account `global-setup` created for this run.
+ *
+ * Looked up by the id the setup wrote down — never by name-match-and-take-the-
+ * first-row. The suite drives the real app, and the real app closes positions
+ * on its own (`useSlTpMonitor`); an account picked by description rather than
+ * by identity is an account whose contents the suite does not know, and every
+ * one of those positions is inside the blast radius.
+ *
+ * The name prefix is re-checked here so a stale or hand-edited ids file cannot
+ * aim the suite at a real book.
+ */
+export async function runAccount(sb: SupabaseClient) {
+  const { accountId } = ids();
+  if (!accountId) {
+    throw new Error(
+      "no accountId in .auth/ui-ids.json — delete .auth/ and let global-setup run again",
+    );
+  }
+
   const { data, error } = await sb.from("paper_accounts")
-    .select("id, name, balance, equity, leverage, currency")
-    .eq("name", DEMO_ACCOUNT_NAME).is("deleted_at", null).limit(1);
-  if (error) throw new Error(`account lookup failed: ${error.message}`);
-  if (!data?.length) throw new Error(`no account named "${DEMO_ACCOUNT_NAME}" for the E2E host user`);
-  return data[0] as any;
+    .select("id, name, balance, equity, leverage, currency, created_at")
+    .eq("id", accountId).is("deleted_at", null).single();
+  if (error) throw new Error(`run account lookup failed: ${error.message}`);
+  if (!String(data.name).startsWith(RUN_ACCOUNT_PREFIX)) {
+    throw new Error(
+      `refusing to run: account ${accountId} is named "${data.name}", which is not a ` +
+        `"${RUN_ACCOUNT_PREFIX}" account. The suite only drives accounts it created.`,
+    );
+  }
+
+  await assertNoInheritedPositions(sb, data as any);
+  return data as any;
+}
+
+/**
+ * Fail loudly if the account holds a position that predates the run.
+ *
+ * The last line of defence, and the reason it is keyed on `opened_at` versus
+ * the account's `created_at` rather than on a list of ids: it must not trip on
+ * a trade an earlier spec in the same run left behind, but it must trip
+ * instantly if the ids file has been aimed at a long-lived account with
+ * history on it.
+ *
+ * Checked before the app is ever pointed at the account, because once the
+ * monitor has closed a stranger's position the money is booked — and
+ * re-opening it at a later price would put a second wrong trade in the journal
+ * rather than undo the first.
+ */
+export async function assertNoInheritedPositions(
+  sb: SupabaseClient, account: { id: string; created_at: string },
+) {
+  const { data, error } = await sb.from("paper_trades")
+    .select("id, symbol, opened_at")
+    .eq("account_id", account.id).eq("status", "open").is("deleted_at", null)
+    .lt("opened_at", account.created_at);
+  if (error) throw new Error(`could not check for inherited positions: ${error.message}`);
+
+  if (data?.length) {
+    throw new Error(
+      `refusing to run: account ${account.id} holds ${data.length} open position(s) that ` +
+        `predate this run (${data.map((t: any) => `${t.symbol} ${t.id}`).join(", ")}). ` +
+        `The app closes positions on its own via useSlTpMonitor, so driving it here ` +
+        `would realize trades nobody asked to close.`,
+    );
+  }
 }
 
 /**

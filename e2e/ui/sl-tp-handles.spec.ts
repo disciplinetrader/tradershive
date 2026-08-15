@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import {
-  db, ids, demoAccount, createTestPosition, seedWorkspace, waitForPositionLine,
+  db, ids, runAccount, createTestPosition, seedWorkspace, waitForPositionLine,
   centreOf, grabPointOf, chartBox, TEST_SYMBOL,
 } from "./fixtures";
 
@@ -20,7 +20,7 @@ test.describe("SL/TP hover-and-drag", () => {
 
   test.beforeAll(async () => {
     sb = db();
-    account = await demoAccount(sb);
+    account = await runAccount(sb);
     const made = await createTestPosition(sb, account.id, TEST_SYMBOL, ids().userId);
     trade = made.trade;
     dispose = made.dispose;
