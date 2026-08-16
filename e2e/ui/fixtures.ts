@@ -143,6 +143,43 @@ export async function createTestPosition(
 }
 
 /**
+ * A position at a price the test chooses, for assertions about *rendering*.
+ *
+ * Deliberately does not consult a feed. A forex row has to be on screen to
+ * check how its price is drawn, and forex does not quote at the weekend — a
+ * fixture that needed a live price would make the test pass or fail on the day
+ * of the week. Levels stay null so `use-sl-tp-monitor` has nothing to fire on.
+ */
+export async function createPositionAt(
+  sb: SupabaseClient,
+  accountId: string,
+  userId: string,
+  opts: { symbol: string; market: string; price: number; lot?: number },
+) {
+  const { data, error } = await sb.from("paper_trades").insert({
+    user_id: userId,
+    account_id: accountId,
+    symbol: opts.symbol,
+    market: opts.market,
+    direction: "long",
+    entry_price: opts.price,
+    lot_size: opts.lot ?? 0.01,
+    status: "open",
+    opened_at: new Date().toISOString(),
+    stop_loss: null,
+    take_profit: null,
+  }).select("id, symbol, entry_price").single();
+
+  if (error) throw new Error(`could not create ${opts.symbol} position: ${error.message}`);
+  return {
+    trade: data as any,
+    async dispose() {
+      await sb.from("paper_trades").delete().eq("id", (data as any).id);
+    },
+  };
+}
+
+/**
  * Point the workspace at a known account + symbol before the app boots.
  *
  * `PaperTradingProvider` reads these from localStorage on mount, so seeding
