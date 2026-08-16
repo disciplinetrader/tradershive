@@ -1121,3 +1121,138 @@ touched.
 The **stop-out / margin-call** thresholds, which are already per-account
 (`margin_call_level`, `stop_out_level`) and work correctly. This entry is only
 about the leverage divisor used to compute required margin.
+
+---
+
+## E2E-1 — The UI suite fails as a suite while its specs pass individually
+
+**Area:** Test infrastructure · **Found:** 2026-08-16 · **Status:** open, unassigned
+
+`bun run test:e2e:ui` is not currently trustworthy. Run one spec file at a time
+and it passes; run all thirteen and roughly half fail — always on timeouts,
+never on an assertion.
+
+### Measured
+
+Three full runs on 2026-08-16, the last on an idle machine with
+`node_modules/.vite` deleted first:
+
+| Run | Conditions | Result | Wall clock |
+| --- | --- | --- | --- |
+| 1 | alongside `bun run check` | 7 failed / 6 passed | 17.9 min |
+| 2 | alone, warm cache | 4 failed / 9 passed | 11.8 min |
+| 3 | alone, cache cleared | 7 failed / 6 passed | 16.3 min |
+
+Individually, in the same session: `positions-table.spec.ts` 3/3 in **1.0 min**,
+`cold-start.spec.ts` 4/4 in **55s**. Inside the suite those same tests take
+25s–1.7m each and blow their 90s timeout.
+
+Run 1's contention is explanatory — concurrent `vite build` also clobbers the
+dev server's optimised-deps cache, after which it serves broken modules. But
+runs 2 and 3 had nothing else running, so contention is not the whole story.
+
+### The symptom worth chasing first
+
+The page renders **nothing**. A probe that opened `/replay/studio` on a running
+dev server came back with `bodyHead: ""`, no `<canvas>`, and zero buttons — an
+empty DOM, not a slow one. Earlier runs logged
+`TypeError: Failed to fetch dynamically imported module: .../trading.index.tsx?tsr-split=component`
+alongside `[vite] Internal server error: Transform failed`.
+
+So the failures are almost certainly **the dev server degrading under repeated
+route loads**, not the specs and not the app. The suite loads the full trading
+workspace 13+ times in one server lifetime; one `node` process was measured at
+**1.2 GB** RSS mid-run.
+
+### Why it matters more than a flaky suite normally would
+
+Every in-app verification in this project goes through this server. While it is
+in this state, "I checked it in the browser" cannot be trusted — which is the
+one check that has repeatedly caught what the typecheck could not.
+
+### Where to start
+
+- Reproduce with `playwright test -c playwright.ui.config.ts --repeat-each=3`
+  on a single spec to see whether degradation tracks page loads.
+- Watch the dev server's RSS across the run; if it climbs monotonically, the
+  leak is the bug and `webServer.command` may need restarting between files.
+- Consider `fullyParallel: false` + one worker per spec file, or a fresh server
+  per file, as a mitigation rather than a fix.
+
+### Not to be confused with
+
+The four specs' own correctness. `positions-table`, `cold-start`,
+`floating-order` and `margin-bar` have each been observed green in isolation on
+this commit. `sl-tp-handles` has **not** been seen green since the suite entered
+this state, so it is the one spec that could still be hiding a real regression —
+most plausibly from the `overflow-hidden` clip added to the position overlay in
+`12bcce21`, which is exactly the kind of change that could clip the entry line
+the spec hovers.
+
+---
+
+## JR-4 — Manual journal entries carry a fabricated timestamp and a false provenance flag
+
+**Area:** Journal · **Found:** 2026-08-16 · **Status:** open, fix scheduled with
+the canonical session module
+
+`ManualEntryDialog` writes two fields it has no basis for. Both were found while
+auditing session labels; the session half is the smaller problem.
+
+### Defect 2 (the one that matters) — `opened_at` is invented
+
+```ts
+const openedISO = new Date(`${tradeDate}T12:00:00`).toISOString();
+...
+opened_at: openedISO,
+closed_at: openedISO,
+```
+
+`src/components/journal/ManualEntryDialog.tsx:370-383`. `tradeDate` is a date
+with no time. The string has no `Z`, so it parses as **local** time, and
+`.toISOString()` then converts the browser's noon to UTC.
+
+Consequences, all silent:
+
+- Every manual entry is stamped at noon in whatever timezone the browser was in.
+  The same trade logged from two devices in two countries gets two different
+  timestamps, and therefore two different sessions.
+- `opened_at == closed_at`, so `duration_seconds` is **zero** for every manual
+  entry.
+- Every manual entry lands on the same instant of day, so time-of-day analytics
+  over them measure the placeholder, not the trade.
+
+None of this is visible in the UI: noon is a plausible time and zero duration
+reads as a fast scalp.
+
+**Fix:** if a manual entry has no real timestamp, store `null`. A null is
+honest and every report already handles it; a plausible fake is not recoverable
+once written, because nothing distinguishes it from a real noon trade.
+
+### Defect 1 — `session_auto_detected` is hardcoded `true`
+
+```ts
+session: (session || null) as EntryInsert["session"],
+session_auto_detected: true,
+```
+
+Same file, `:386-387`. `session` holds whatever is in state — including a value
+the user picked from the dropdown, since the auto-detect effect bails with
+`if (session) return;` (`:262`). So a hand-picked session is stored flagged as
+machine-derived.
+
+That inverts the one signal a correction pass can use. Measured on the live
+journal 2026-08-16: **all 18** entries carrying a session had
+`session_auto_detected = true`, and all 18 had a stored value the detector could
+not have produced from their own `opened_at` — i.e. every flagged-automatic row
+was in fact user-picked.
+
+**Fix:** set the flag from whether the value came from the auto-detect effect or
+the dropdown, not unconditionally.
+
+### Related, same audit
+
+`create_journal_draft_from_trade()` never populated `session` at all — the
+trigger predates the column (trigger 2026-07-17, `session_auto_detected`
+2026-07-22) and was never revisited. 139 of 157 entries had no session. Backfill
+and trigger fix are tracked with the canonical session module work, not here.
