@@ -37,9 +37,15 @@ type Scenario = {
   timeframe?: Timeframe;
 };
 
+// Descriptions name the LOCAL open, not a UTC hour. The two entries below used
+// to read "07:00 UTC" and "13:30 UTC", which disagreed with
+// `replay/navigation.ts` (12:00 UTC) about when New York opens — 90 minutes
+// apart in one product. Both were right about different events: 08:00 ET is the
+// FX session open, 09:30 ET is the NYSE bell. Neither is a fixed UTC hour,
+// because both move with DST.
 const SCENARIOS: Scenario[] = [
-  { id: "london_open", label: "London Open", desc: "07:00 UTC session ignition", icon: Sun, tags: ["session:london"], market: "forex", symbol: "EUR/USD", timeframe: "5m" },
-  { id: "ny_open", label: "New York Open", desc: "13:30 UTC volatility burst", icon: Zap, tags: ["session:ny"], market: "forex", symbol: "GBP/USD", timeframe: "5m" },
+  { id: "london_open", label: "London Open", desc: "08:00 London — session ignition", icon: Sun, tags: ["session:london"], market: "forex", symbol: "EUR/USD", timeframe: "5m" },
+  { id: "ny_open", label: "New York Open", desc: "08:00 New York — volatility burst", icon: Zap, tags: ["session:ny"], market: "forex", symbol: "GBP/USD", timeframe: "5m" },
   { id: "asia", label: "Asia Session", desc: "Slow Tokyo/Sydney tape", icon: Moon, tags: ["session:asia"], market: "forex", symbol: "USD/JPY", timeframe: "15m" },
   { id: "trending", label: "Trending Market", desc: "Clean directional day", icon: TrendingUp, tags: ["regime:trending"], market: "crypto", symbol: "BTC/USDT", timeframe: "15m" },
   { id: "ranging", label: "Ranging Market", desc: "Chop & mean reversion", icon: Waves, tags: ["regime:ranging"], market: "forex", symbol: "EUR/USD", timeframe: "15m" },

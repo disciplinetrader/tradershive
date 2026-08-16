@@ -1,36 +1,30 @@
 /**
- * FX/global session detection. Identifies which major session(s) are
- * active at a given instant using primary UTC hour windows and detects
- * overlaps (London/NY is by far the most-traded overlap).
+ * Session state for the trading UI — which centres are open right now, and
+ * whether they overlap.
+ *
+ * A view of the canonical rule in `@/lib/market-sessions`. The windows used to
+ * be defined here in fixed UTC hours, which made the Session badge on every
+ * position and blotter row an hour wrong from October to March.
  */
+import {
+  sessionAt,
+  activeSessions as canonicalActiveSessions,
+  SESSION_HOURS,
+  SESSION_LABELS,
+  type SessionKey,
+} from "@/lib/market-sessions";
 
-export type SessionKey = "sydney" | "tokyo" | "london" | "new_york";
-
-const WINDOWS: Record<SessionKey, [number, number]> = {
-  sydney:   [21, 6],   // 21:00 → 06:00 UTC (wraps midnight)
-  tokyo:    [0,  9],
-  london:   [7,  16],
-  new_york: [12, 21],
-};
+export type { SessionKey };
 
 const LABELS: Record<SessionKey, string> = {
-  sydney: "Sydney",
-  tokyo: "Tokyo",
-  london: "London",
-  new_york: "New York",
+  sydney: SESSION_LABELS.sydney,
+  tokyo: SESSION_LABELS.tokyo,
+  london: SESSION_LABELS.london,
+  new_york: SESSION_LABELS.new_york,
 };
 
-function inWindow(h: number, [start, end]: [number, number]): boolean {
-  if (start <= end) return h >= start && h < end;
-  return h >= start || h < end; // wraps midnight
-}
-
 export function activeSessions(date: Date | string | number = new Date()): SessionKey[] {
-  const d = typeof date === "object" ? date : new Date(date);
-  const h = d.getUTCHours();
-  return (Object.entries(WINDOWS) as [SessionKey, [number, number]][])
-    .filter(([, w]) => inWindow(h, w))
-    .map(([k]) => k);
+  return canonicalActiveSessions(date);
 }
 
 export type SessionInfo = {
@@ -45,14 +39,25 @@ export function detectSession(date: Date | string | number = new Date()): Sessio
   if (active.length === 0) {
     return { primary: "off_hours", active, overlap: false, label: "Off-hours" };
   }
-  // Prefer New York, then London, then Tokyo, then Sydney as "primary".
-  const priority: SessionKey[] = ["new_york", "london", "tokyo", "sydney"];
-  const primary = priority.find((k) => active.includes(k)) ?? active[0];
+
+  // `sessionAt` already encodes the priority (overlap > NY > London > Tokyo >
+  // Sydney); deriving `primary` from it rather than re-listing the order here
+  // is what stops this module drifting from the rule again.
+  const label = sessionAt(date);
+  const primary: SessionKey =
+    label === "london_ny_overlap" ? "new_york"
+      : label === "off_hours" ? active[0]
+        : label;
+
   const overlap = active.length >= 2;
-  const label = overlap
-    ? `${active.map((k) => LABELS[k]).join(" × ")} overlap`
-    : LABELS[primary];
-  return { primary, active, overlap, label };
+  return {
+    primary,
+    active,
+    overlap,
+    label: overlap ? `${active.map((k) => LABELS[k]).join(" × ")} overlap` : LABELS[primary],
+  };
 }
 
 export const SESSION_LABEL = LABELS;
+/** Local trading hours per centre, for anything that needs to render them. */
+export const SESSION_WINDOWS = SESSION_HOURS;

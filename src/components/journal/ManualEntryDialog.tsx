@@ -193,6 +193,26 @@ function todayDateInput(): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
+/**
+ * A `<input type="date">` + `<input type="time">` pair as a real instant.
+ *
+ * `new Date("2026-08-15T14:30:00")` — no `Z` — parses as LOCAL time per spec,
+ * which is what the old code relied on without saying so. That is right only
+ * as long as nobody reads it as UTC, and the value it produced was then stored
+ * as the authoritative open. Being explicit here means the conversion is a
+ * decision rather than a default: the browser's zone is the trader's zone, and
+ * it is recorded alongside in `opened_tz`.
+ *
+ * Returns null on an incomplete or unparseable pair rather than a Date that
+ * happens to be `Invalid Date`, which stringifies to null and would silently
+ * blank the column.
+ */
+function localWallTimeToUtc(date: string, time: string): Date | null {
+  if (!date || !time) return null;
+  const d = new Date(`${date}T${time.length === 5 ? `${time}:00` : time}`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
 function inferResult(pnl?: number | null): TradeResult {
   if (pnl == null) return "win";
   if (pnl > 0) return "win";
@@ -252,18 +272,38 @@ function ManualForm({
   );
 
   // Optional
+  const [tradeTime, setTradeTime] = useState<string>("");
   const [session, setSession] = useState<string>(defaults.session ?? "");
+  /** True once the user picks a session themselves — see the effect below. */
+  const [sessionTouched, setSessionTouched] = useState<boolean>(!!defaults.session);
   const [tradeType, setTradeType] = useState<"" | "scalp" | "intraday" | "swing" | "long_term">("");
   const [emotions, setEmotions] = useState<string[]>([]);
   const [screenshots, setScreenshots] = useState<StagedScreenshot[]>([]);
 
-  // Auto-detect session from trade date (opens at 09:30 local as heuristic)
+  /**
+   * Auto-detect the session — but only from a time the user actually gave us.
+   *
+   * This used to detect from `${tradeDate}T12:00:00`, i.e. from local noon on
+   * the trade date, which is not a time anybody entered. Every manual entry got
+   * a confident session label derived from a placeholder, and because the
+   * insert also stamped `session_auto_detected: true` unconditionally, there
+   * was afterwards no way to tell a fabricated label from a deliberate one.
+   * Measured on the live journal 2026-08-16: all 18 entries carrying a session
+   * were flagged automatic, and none of them could have come from their own
+   * timestamp.
+   *
+   * `sessionTouched` tracks the dropdown so a user's explicit choice is never
+   * overwritten and is never reported as ours.
+   */
   useEffect(() => {
-    if (session) return;
-    const d = new Date(`${tradeDate}T12:00:00`);
-    const detected = detectSession(d);
-    if (detected) setSession(detected);
-  }, [tradeDate, session]);
+    if (sessionTouched) return;
+    if (!tradeTime) {
+      setSession("");
+      return;
+    }
+    const at = localWallTimeToUtc(tradeDate, tradeTime);
+    setSession(at ? (detectSession(at) ?? "") : "");
+  }, [tradeDate, tradeTime, sessionTouched]);
 
   /* --------------------------- Custom strategy tags ---------------------- */
   const taxonomyQuery = useQuery({ queryKey: journalKeys.taxonomy(), queryFn: fetchTaxonomy });
@@ -327,8 +367,8 @@ function ManualForm({
     direction: direction || "long",
     entryPrice: "", exitPrice: "", stopLoss: "", takeProfit: "",
     pnl: pnlInput, rr: rMultiple, lotSize: "",
-    openedAt: tradeDate, closedAt: tradeDate,
-    session, sessionAuto: true,
+    openedAt: tradeTime ? `${tradeDate} ${tradeTime}` : "", closedAt: tradeDate,
+    session, sessionAuto: !sessionTouched,
     confidence: 0,
     strategyTags, emotions, mistakes: [],
     entryReason: "", postTradeNotes: notes,
@@ -367,7 +407,16 @@ function ManualForm({
       const pnlValue =
         pnlTyped != null && Number.isFinite(pnlTyped) ? pnlTyped : (prefill?.pnl ?? rrSigned);
 
-      const openedISO = new Date(`${tradeDate}T12:00:00`).toISOString();
+      // `opened_at` is null unless the user gave a time. It drives session
+      // detection and duration, and a fabricated value makes both of those
+      // confidently wrong; null makes them honestly unknown.
+      //
+      // `closed_at` keeps the trade DATE, at 00:00 UTC, because the journal's
+      // analytics gate is `closed_at != null && pnl != null` — nulling it would
+      // remove every manual entry from every metric. Midnight rather than noon
+      // so it reads as an unset time rather than a plausible trading hour.
+      const openedISO = tradeTime ? localWallTimeToUtc(tradeDate, tradeTime)?.toISOString() ?? null : null;
+      const closedISO = openedISO ?? new Date(`${tradeDate}T00:00:00Z`).toISOString();
 
       const insert: EntryInsert = {
         user_id: user.id,
@@ -380,11 +429,14 @@ function ManualForm({
         rr: rrSigned,
         risk_pct: null,
         opened_at: openedISO,
-        closed_at: openedISO,
+        closed_at: closedISO,
         opened_tz: tz,
         closed_tz: tz,
         session: (session || null) as EntryInsert["session"],
-        session_auto_detected: true,
+        // Only true when WE derived it. A hand-picked session flagged as
+        // automatic is worse than no flag: it makes a correction pass overwrite
+        // exactly the values a user chose deliberately.
+        session_auto_detected: !sessionTouched && !!openedISO,
         trade_type: (tradeType || null) as EntryInsert["trade_type"],
         strategy: strategyTags[0] ?? null,
         // strategy_tags[] and emotions[] are trigger-projected from
@@ -674,17 +726,40 @@ function ManualForm({
 
 
         {/* Trade Date */}
-        <Field label="Trade Date" required error={attempted && missing.date ? "Required" : undefined}>
-          <div className="relative max-w-xs">
-            <Input
-              ref={dateRef}
-              type="date"
-              value={tradeDate}
-              onChange={(e) => setTradeDate(e.target.value)}
-              className={cn("h-11", attempted && missing.date && "border-danger")}
-            />
-          </div>
-        </Field>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Trade Date" required error={attempted && missing.date ? "Required" : undefined}>
+            <div className="relative max-w-xs">
+              <Input
+                ref={dateRef}
+                type="date"
+                value={tradeDate}
+                onChange={(e) => setTradeDate(e.target.value)}
+                className={cn("h-11", attempted && missing.date && "border-danger")}
+              />
+            </div>
+          </Field>
+
+          {/* Optional, and left empty by default on purpose. Without a time
+              this dialog used to invent local noon and store it as the real
+              open — which gave every manual entry a plausible-looking
+              timestamp, a fabricated session and a duration of zero. Empty now
+              means "unknown", and is stored as null. */}
+          <Field label="Time (optional)">
+            <div className="relative max-w-xs">
+              <Input
+                type="time"
+                value={tradeTime}
+                onChange={(e) => setTradeTime(e.target.value)}
+                className="h-11"
+              />
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                {tradeTime
+                  ? `Recorded in ${tz}`
+                  : "Leave blank if you don't know — session and duration stay unset rather than guessed"}
+              </p>
+            </div>
+          </Field>
+        </div>
 
         {/* Strategy */}
         <Field label="Strategy" required error={attempted && missing.strategy ? "Pick at least one" : undefined}>
@@ -720,7 +795,15 @@ function ManualForm({
           <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Trading session">
-                <Select value={session || "__auto"} onValueChange={(v) => setSession(v === "__auto" ? "" : v)}>
+                <Select
+                  value={session || "__auto"}
+                  onValueChange={(v) => {
+                    // "__auto" hands the field back to the detector, which is
+                    // why this clears `sessionTouched` rather than setting it.
+                    setSessionTouched(v !== "__auto");
+                    setSession(v === "__auto" ? "" : v);
+                  }}
+                >
                   <SelectTrigger className="h-11 hover:border-primary/50 hover:bg-accent/30">
                     <SelectValue placeholder="Auto Detect" />
                   </SelectTrigger>

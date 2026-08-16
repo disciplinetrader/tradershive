@@ -1,10 +1,20 @@
 /**
- * Journal V2 — Trading session detector.
+ * Journal V2 — session detection, mapped onto the `journal_session` DB enum.
  *
- * Given a UTC timestamp we determine which major FX session was active.
- * Sessions are defined in UTC and mapped to the enum values used by the
- * `journal_session` DB type.
+ * The rule itself lives in `@/lib/market-sessions` and is mirrored in SQL by
+ * `public.detect_session()` for the draft trigger; both are held together by
+ * `check:sessions`. This module is only the enum adapter.
+ *
+ * It used to carry its own fixed-UTC windows. Two consequences of that, both
+ * measured on the live journal 2026-08-16:
+ *
+ *  · The windows were the summer values, so every label written between the
+ *    October and March transitions was an hour out — latent in the data only
+ *    because every entry in it happened to be from northern summer.
+ *  · Nothing was returned at all for 21:00-22:00 UTC, an hour-shaped hole in
+ *    every session report. The canonical rule labels every hour.
  */
+import { sessionAt, type SessionLabel } from "@/lib/market-sessions";
 
 export type SessionValue =
   | "sydney"
@@ -15,40 +25,19 @@ export type SessionValue =
   | "new_york"
   | "custom";
 
-type Window = { value: SessionValue; startHourUtc: number; endHourUtc: number };
-
-// End is exclusive. Overnight ranges wrap.
-const WINDOWS: Window[] = [
-  { value: "sydney", startHourUtc: 22, endHourUtc: 7 },
-  { value: "tokyo", startHourUtc: 0, endHourUtc: 9 },
-  { value: "asia", startHourUtc: 0, endHourUtc: 8 },
-  { value: "london", startHourUtc: 7, endHourUtc: 16 },
-  { value: "london_ny_overlap", startHourUtc: 12, endHourUtc: 16 },
-  { value: "new_york", startHourUtc: 12, endHourUtc: 21 },
-];
-
-function inWindow(hour: number, w: Window): boolean {
-  if (w.startHourUtc < w.endHourUtc) return hour >= w.startHourUtc && hour < w.endHourUtc;
-  return hour >= w.startHourUtc || hour < w.endHourUtc;
-}
-
 /**
- * Pick the most specific session for a given open time. Overlap wins over
- * London/NY individually because it is the highest-liquidity window.
+ * `null` means no session was open, and is what the column stores for it.
+ *
+ * Deliberately not the `asia` enum value: `asia` is a legacy member no detector
+ * has ever produced (Tokyo always outranked it), and `custom` belongs to the
+ * user, not to us.
  */
-export function detectSession(openedAt: Date | string | null | undefined): SessionValue | null {
+export function detectSession(
+  openedAt: Date | string | null | undefined,
+): SessionValue | null {
   if (!openedAt) return null;
-  const date = typeof openedAt === "string" ? new Date(openedAt) : openedAt;
-  if (Number.isNaN(date.getTime())) return null;
-  const h = date.getUTCHours();
-
-  // Priority: overlap > NY > London > Tokyo > Asia > Sydney.
-  const priority: SessionValue[] = ["london_ny_overlap", "new_york", "london", "tokyo", "asia", "sydney"];
-  for (const value of priority) {
-    const w = WINDOWS.find((x) => x.value === value)!;
-    if (inWindow(h, w)) return value;
-  }
-  return null;
+  const label: SessionLabel = sessionAt(openedAt);
+  return label === "off_hours" ? null : label;
 }
 
 /** Guess the browser's IANA timezone; falls back to UTC when unavailable. */

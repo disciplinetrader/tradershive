@@ -5,8 +5,18 @@
  */
 import type { Candle, ReplayBookmark, ReplayCheckpoint, ReplayChecklistItem, ReplayTrade } from "./types";
 import { inferSession } from "@/lib/statistics/session";
+import {
+  isSessionOpen, nextSessionOpen, type SessionKey as MarketSessionKey,
+} from "@/lib/market-sessions";
 
 export type SessionKey = "asia" | "london" | "new_york" | "other";
+
+/** The statistics buckets above, mapped to the centres they actually name. */
+const CENTRE: Record<Exclude<SessionKey, "other">, MarketSessionKey> = {
+  asia: "tokyo",
+  london: "london",
+  new_york: "new_york",
+};
 
 function nearestIdxAt(candles: Candle[], targetTs: number, fromIdx = 0): number {
   for (let i = Math.max(0, fromIdx); i < candles.length; i++) {
@@ -15,27 +25,49 @@ function nearestIdxAt(candles: Candle[], targetTs: number, fromIdx = 0): number 
   return -1;
 }
 
-/** UTC session-open hour map. */
-const SESSION_OPEN_HOUR: Record<Exclude<SessionKey, "other">, number> = {
-  asia: 0,
-  london: 7,
-  new_york: 12,
-};
-const SESSION_CLOSE_HOUR = 21;
-
-export function jumpToSessionOpen(candles: Candle[], cursorIdx: number, key: Exclude<SessionKey, "other">, direction: "next" | "same" = "next"): number | null {
+/**
+ * First candle at or after the next open of `key`.
+ *
+ * This used to match on a hardcoded UTC hour — asia 0, london 7, new_york 12.
+ * Those are the summer values, so from late October a trader jumping to
+ * "London open" landed an hour early, twice a year, in a way that reads as
+ * random rather than as a bug. The open is now resolved through the centre's
+ * own timezone and the candle index found from the resulting instant, so it
+ * follows BST/GMT and EDT/EST without a table to maintain.
+ */
+export function jumpToSessionOpen(
+  candles: Candle[],
+  cursorIdx: number,
+  key: Exclude<SessionKey, "other">,
+  direction: "next" | "same" = "next",
+): number | null {
+  if (!candles.length) return null;
   const startIdx = direction === "next" ? cursorIdx + 1 : 0;
-  for (let i = startIdx; i < candles.length; i++) {
-    const d = new Date(candles[i].time);
-    if (d.getUTCHours() === SESSION_OPEN_HOUR[key] && d.getUTCMinutes() < 60) return i;
-  }
-  return null;
+  const from = candles[Math.min(Math.max(0, startIdx), candles.length - 1)]?.time;
+  if (from == null) return null;
+
+  const open = nextSessionOpen(CENTRE[key], new Date(from));
+  if (!open) return null;
+  const idx = nearestIdxAt(candles, open.getTime(), startIdx);
+  return idx === -1 ? null : idx;
 }
 
+/**
+ * First candle after the current session's centre has closed.
+ *
+ * Keyed on the session actually being over rather than on a fixed 21:00 UTC —
+ * which was New York's summer close, and so ran an hour early all winter and
+ * had nothing to say about a London-only session at all.
+ */
 export function jumpToSessionClose(candles: Candle[], cursorIdx: number): number | null {
+  const at = candles[cursorIdx]?.time;
+  if (at == null) return null;
+  const open = (["new_york", "london", "tokyo", "sydney"] as MarketSessionKey[])
+    .find((k) => isSessionOpen(k, new Date(at)));
+  if (!open) return null;
+
   for (let i = cursorIdx + 1; i < candles.length; i++) {
-    const h = new Date(candles[i].time).getUTCHours();
-    if (h >= SESSION_CLOSE_HOUR) return i;
+    if (!isSessionOpen(open, new Date(candles[i].time))) return i;
   }
   return null;
 }
