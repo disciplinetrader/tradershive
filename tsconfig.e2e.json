@@ -1,0 +1,16 @@
+{
+  // The main tsconfig includes only `src/**`, so nothing under `e2e/` was ever
+  // typechecked. That is not a cosmetic gap: a spec called a helper with a
+  // required argument missing, compiled clean, and the app under test quietly
+  // fell back to a different account — so the suite reported "no open
+  // positions" and the failure looked like a product bug for two runs.
+  //
+  // Kept as a second project rather than folded into the main one so the
+  // Playwright and Node types it needs stay out of the app's compilation.
+  "extends": "./tsconfig.json",
+  "include": ["e2e/**/*.ts", "playwright.config.ts", "playwright.ui.config.ts"],
+  "compilerOptions": {
+    "types": ["node"],
+    "noEmit": true
+  }
+}
