@@ -22,9 +22,14 @@ import { cn } from "@/lib/utils";
  * being squeezed: a sticky cell is still a table cell, and without a width the
  * columns to its left will happily compress it until its contents spill past
  * the panel edge — which is how the red Close button ended up clipped.
+ *
+ * Sized for three 28px icon buttons. It was 136px to fit a labelled "Close"
+ * button; dropping the label to match TradingView's two-icon row gave 28px
+ * back, which is also what stopped the floating assistant bubble sitting on
+ * top of the last control.
  */
 export const ACTIONS_CELL =
-  "sticky right-0 z-10 w-[136px] min-w-[136px] bg-background/95 px-2 text-right " +
+  "sticky right-0 z-10 w-[108px] min-w-[108px] bg-background/95 px-2 text-right " +
   "shadow-[-8px_0_12px_-8px_rgba(0,0,0,0.4)]";
 
 /**
@@ -182,6 +187,49 @@ export function useRowKeyNav() {
       next.focus();
     }
   }, []);
+}
+
+/**
+ * A price with its fractional pip as a superscript: `1.1556`⁶.
+ *
+ * Forex quotes to half a pip, so the last decimal is a tenth of the increment
+ * everything else on the row is denominated in. Rendered at full size it reads
+ * as another significant digit and the eye has to count places to find the pip;
+ * as a superscript the pip is the last full-size digit, which is how a trader
+ * actually reads the number — and no precision is dropped to get there.
+ *
+ * Only applied where a fractional pip exists: 5-decimal pairs and 3-decimal JPY
+ * crosses. Metals, crypto and equities quote in whole increments and render
+ * unchanged, because raising a digit that is not a fractional pip invents a
+ * distinction that is not in the instrument.
+ */
+export function FractionalPrice({
+  sym, price,
+}: {
+  sym: { decimals: number; market: string } | null | undefined;
+  price: number | null | undefined;
+}) {
+  if (price == null || !Number.isFinite(price)) return <span className="text-muted-foreground">—</span>;
+  const decimals = sym?.decimals ?? 2;
+  const text = price.toLocaleString("en-US", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+
+  const fractional = sym?.market === "forex" && (decimals === 5 || decimals === 3);
+  if (!fractional) return <>{text}</>;
+
+  return (
+    <>
+      {text.slice(0, -1)}
+      {/* `leading-none` and the negative offset keep the superscript inside the
+          row's line box — an unstyled <sup> grows the line and the rows stop
+          aligning with the ones above them. */}
+      <sup className="relative -top-[0.15em] text-[0.75em] leading-none opacity-80">
+        {text.slice(-1)}
+      </sup>
+    </>
+  );
 }
 
 /** Signed +/– prefix so sign is legible without relying on colour. */

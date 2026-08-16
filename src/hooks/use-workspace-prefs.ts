@@ -39,6 +39,15 @@ export type WorkspacePrefs = {
   dockHeight: number; // px, 180–560
   blotterSortOpen: BlotterSort;
   blotterSortClosed: BlotterSort;
+  /**
+   * Which open-positions columns are shown, by column id.
+   *
+   * Sparse on purpose: a column absent from this map is visible. New columns
+   * therefore appear for existing users instead of being silently hidden by a
+   * prefs blob written before they existed, and the stored object stays a
+   * record of what the user turned OFF.
+   */
+  positionsColumns: Record<string, boolean>;
 };
 
 const STORAGE_KEY = "thive.workspace.prefs.v2";
@@ -66,6 +75,7 @@ const DEFAULTS: WorkspacePrefs = {
   dockHeight: 220,
   blotterSortOpen: { key: "time", dir: "desc" },
   blotterSortClosed: { key: "time", dir: "desc" },
+  positionsColumns: {},
 };
 
 
@@ -80,6 +90,11 @@ function readStorage(): WorkspacePrefs {
     if (!VALID_BOTTOM.includes(merged.bottomTab)) merged.bottomTab = DEFAULTS.bottomTab;
     if (!VALID_FILTERS.includes(merged.blotterFilter)) merged.blotterFilter = "open";
     merged.dockHeight = Math.min(560, Math.max(180, Number(merged.dockHeight) || DEFAULTS.dockHeight));
+    // A non-object here (an older build, or a hand-edited blob) would make
+    // every `visibility[id]` lookup throw inside render rather than fall back.
+    if (!merged.positionsColumns || typeof merged.positionsColumns !== "object") {
+      merged.positionsColumns = {};
+    }
 
     return merged;
   } catch {

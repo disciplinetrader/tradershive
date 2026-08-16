@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
-import { Pencil, X, Split, Sliders, Shield, Loader2, MoreHorizontal } from "lucide-react";
+import { Pencil, X, Split, Sliders, Shield, Loader2, MoreHorizontal, Settings2, Download } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -11,39 +11,40 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator,
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
+  DropdownMenuSeparator, DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 import {
   closeTrade, listTrades, modifyTrade, partialCloseTrade, moveToBreakEven,
 } from "@/lib/paper-trading.functions";
 import { findSymbol } from "@/lib/paper-trading/symbols";
-import { pnl as computePnl, formatCurrency, formatNumber } from "@/lib/paper-trading/calculations";
+import { formatCurrency } from "@/lib/paper-trading/calculations";
+import { derivePositionRow } from "@/lib/paper-trading/position-row";
 import { useLiveQuotes } from "@/lib/paper-trading/live-quotes";
 import { usePaper } from "./context";
 import { ClosePositionDialog } from "./ClosePositionDialog";
 import { PostTradeSummary, type ClosedTrade } from "./PostTradeSummary";
-import { SessionBadge } from "./SessionBadge";
 import { cn } from "@/lib/utils";
 import { useWorkspacePrefs, type BlotterSort } from "@/hooks/use-workspace-prefs";
-import { ACTIONS_CELL, ACTIONS_CELL_COMPACT, FlashCell, SidePill, SkeletonRows, SortHeader, signed, useRowKeyNav } from "@/components/trading/blotter-shared";
-
-
-type Trade = {
-  id: string; symbol: string; direction: "long"|"short"; entry_price: number;
-  lot_size: number; stop_loss: number|null; take_profit: number|null;
-  opened_at: string; commission: number; swap: number; account_id: string; notes: string|null;
-};
+import { ACTIONS_CELL, ACTIONS_CELL_COMPACT, FlashCell, SkeletonRows, SortHeader, useRowKeyNav } from "@/components/trading/blotter-shared";
+import {
+  POSITION_COLUMNS, visibleColumns,
+  type ColumnCtx, type PositionColumn, type PositionRow, type Trade,
+} from "./positions-columns";
 
 /**
- * `compact` drops the secondary columns.
+ * `compact` restricts the table to the columns marked `compact` in the registry.
  *
- * The full twelve-column layout is built for the full-width blotter. In the
- * ~380px right rail it overflows horizontally, and because the overflow is a
- * scroll rather than a wrap, the rightmost visible cell is simply severed
- * mid-token — which is how `-0.90R` came to read `-0.90`, a different and
- * entirely plausible number. Session, Entry, Current, SL, TP and Duration are
- * dropped there; everything they hold is still on the row's edit dialog and in
+ * The full layout is built for the full-width blotter. In the ~380px right rail
+ * it overflows horizontally, and because the overflow is a scroll rather than a
+ * wrap, the rightmost visible cell is simply severed mid-token — which is how
+ * `-0.90R` came to read `-0.90`, a different and entirely plausible number.
+ * Everything the dropped columns hold is still on the row's edit dialog and in
  * the blotter below.
+ *
+ * The rail deliberately gets no column picker: with three columns there is
+ * nothing to trade off, and a settings icon there would cost more width than
+ * the choice is worth.
  */
 export function PositionsTable({ compact = false }: { compact?: boolean } = {}) {
   const { accountId, account } = usePaper();
@@ -135,26 +136,32 @@ export function PositionsTable({ compact = false }: { compact?: boolean } = {}) 
   };
 
   // Compute enriched rows once, then sort — memoized to avoid re-work per hover.
-  const enriched = useMemo(() => (data ?? []).map((t) => {
-    const sym = findSymbol(t.symbol);
-    // No quote ⇒ no current price and no floating P/L. Substituting `refPrice`
-    // made P/L a fiction, and substituting `entry_price` silently reported
-    // every unquoted position as flat.
-    const current = quotes[t.symbol]?.price ?? null;
-    const floating = sym && current != null
-      ? computePnl(sym, t.direction, Number(t.entry_price), current, Number(t.lot_size))
-      : null;
-    const risk = sym && t.stop_loss ? Math.abs(computePnl(sym, t.direction, Number(t.entry_price), Number(t.stop_loss), Number(t.lot_size))) : 0;
-    // `null` means "no stop, so R is not measurable" — distinct from a real
-    // 0.00R at break-even. The cell used to test `rr` for truthiness, which
-    // collapsed those two into the same dash and hid a genuine zero.
-    const rr = risk > 0 && floating != null ? floating / risk : null;
-    return { t, sym, current, floating, rr };
-  }), [data, quotes]);
+  // No quote ⇒ no current price and no derived figures. Substituting `refPrice`
+  // made P/L a fiction, and substituting `entry_price` silently reported every
+  // unquoted position as flat. Account leverage is what the margin was actually
+  // taken at, so it is what the row's margin has to be computed from.
+  const enriched = useMemo<PositionRow[]>(() => (data ?? []).map((t) =>
+    derivePositionRow(t, {
+      current: quotes[t.symbol]?.price ?? null,
+      accountLeverage: Number(account?.leverage) || 0,
+    }),
+  ), [data, quotes, account?.leverage]);
 
   const rows = useMemo(() => sortEnriched(enriched, prefs.blotterSortOpen), [enriched, prefs.blotterSortOpen]);
   const setSort = (s: BlotterSort) => update("blotterSortOpen", s);
   const rowKey = useRowKeyNav();
+
+  const cols = useMemo(
+    () => visibleColumns(prefs.positionsColumns, compact),
+    [prefs.positionsColumns, compact],
+  );
+  const ctx = useMemo(() => ({ currency: account?.currency, compact }), [account?.currency, compact]);
+  // +1 for the Actions column, which lives outside the registry: it is pinned,
+  // never hidden, and holds controls rather than data.
+  const colCount = cols.length + 1;
+
+  const toggleColumn = (id: string, on: boolean) =>
+    update("positionsColumns", { ...prefs.positionsColumns, [id]: on });
 
   return (
     <>
@@ -165,29 +172,90 @@ export function PositionsTable({ compact = false }: { compact?: boolean } = {}) 
             <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]" onClick={() => refetch()} disabled={isRefetching}>Retry</Button>
           </div>
         )}
-        <Table>
+        {/* Distinct ids per mode: the rail renders this same component, and a
+            test that cannot tell the two apart will happily assert the full
+            layout against the three-column one. */}
+        <Table data-testid={compact ? "positions-table-compact" : "positions-table"}>
           <TableHeader>
             <TableRow>
-              <SortHeader label="Pair" sortKey="symbol" state={prefs.blotterSortOpen} onChange={setSort} />
-              {!compact && <SortHeader label="Side" sortKey="status" state={prefs.blotterSortOpen} onChange={setSort} />}
-              {!compact && <TableHead>Session</TableHead>}
-              {!compact && <TableHead className="text-right">Entry</TableHead>}
-              {!compact && <TableHead className="text-right">Current</TableHead>}
-              {!compact && <SortHeader label="Lot" sortKey="size" state={prefs.blotterSortOpen} onChange={setSort} align="right" />}
-              {!compact && <TableHead className="text-right">SL</TableHead>}
-              {!compact && <TableHead className="text-right">TP</TableHead>}
-              {!compact && <TableHead className="text-right">RR</TableHead>}
-              <SortHeader label="P/L" sortKey="pnl" state={prefs.blotterSortOpen} onChange={setSort} align="right" />
-              {!compact && <SortHeader label="Duration" sortKey="time" state={prefs.blotterSortOpen} onChange={setSort} />}
-              <TableHead className={compact ? ACTIONS_CELL_COMPACT : ACTIONS_CELL}>Actions</TableHead>
+              {cols.map((c) =>
+                c.sortKey ? (
+                  <SortHeader
+                    key={c.id}
+                    label={c.label}
+                    sortKey={c.sortKey}
+                    state={prefs.blotterSortOpen}
+                    onChange={setSort}
+                    align={c.align}
+                  />
+                ) : (
+                  <TableHead key={c.id} className={c.align === "right" ? "text-right" : undefined}>
+                    {c.label}
+                  </TableHead>
+                ),
+              )}
+              {/* The picker and the export live in the Actions header rather
+                  than above the table: they belong to this table, and a toolbar
+                  row above it would cost vertical space in a dock the user
+                  already resizes to claw back chart height. */}
+              <TableHead className={compact ? ACTIONS_CELL_COMPACT : ACTIONS_CELL}>
+                {compact ? (
+                  "Actions"
+                ) : (
+                  <div className="flex items-center justify-end gap-0.5">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          className="rounded p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                          aria-label="Choose columns"
+                          title="Choose columns"
+                        >
+                          <Settings2 className="h-3.5 w-3.5" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-52">
+                        <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                          Columns
+                        </DropdownMenuLabel>
+                        {POSITION_COLUMNS.map((c) => (
+                          <DropdownMenuCheckboxItem
+                            key={c.id}
+                            className="cursor-pointer text-xs"
+                            checked={c.required || prefs.positionsColumns[c.id] !== false}
+                            // Required columns render checked and inert rather
+                            // than being left out of the list, so the menu is a
+                            // complete account of the table.
+                            disabled={c.required}
+                            onCheckedChange={(v) => toggleColumn(c.id, !!v)}
+                            onSelect={(e) => e.preventDefault()}
+                          >
+                            {c.label}
+                          </DropdownMenuCheckboxItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <button
+                      type="button"
+                      onClick={() => exportRows(rows, cols, ctx)}
+                      disabled={rows.length === 0}
+                      className="rounded p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:opacity-40"
+                      aria-label="Export positions to CSV"
+                      title="Export to CSV"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <SkeletonRows rows={4} cols={compact ? 3 : 12} />
+              <SkeletonRows rows={4} cols={colCount} />
             ) : rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={compact ? 3 : 12} className="p-0">
+                <TableCell colSpan={colCount} className="p-0">
                   <EmptyState
                     className="py-8"
                     title="No open positions"
@@ -197,9 +265,8 @@ export function PositionsTable({ compact = false }: { compact?: boolean } = {}) 
               </TableRow>
             ) : (
             <AnimatePresence initial={false}>
-              {rows.map(({ t, sym, current, floating, rr }) => {
-                const duration = formatDuration(new Date(t.opened_at));
-                const up = (floating ?? 0) >= 0;
+              {rows.map((row) => {
+                const t = row.t;
                 const beDisabled = Number(t.stop_loss ?? NaN) === Number(t.entry_price);
                 return (
                   <motion.tr
@@ -217,57 +284,38 @@ export function PositionsTable({ compact = false }: { compact?: boolean } = {}) 
                       closingIds.has(t.id) && "opacity-50",
                     )}
                   >
-                    <TableCell className="py-1.5 font-semibold">
-                      {compact ? (
-                        <span className="flex items-center gap-1">
-                          <span className={cn(
-                            "shrink-0 text-[10px]",
-                            t.direction === "long" ? "text-success" : "text-danger",
-                          )}>{t.direction === "long" ? "▲" : "▼"}</span>
-                          <span className="truncate">{t.symbol}</span>
-                        </span>
-                      ) : t.symbol}
-                    </TableCell>
-                    {!compact && <TableCell className="py-1.5"><SidePill side={t.direction} /></TableCell>}
-                    {!compact && <TableCell className="py-1.5"><SessionBadge at={t.opened_at} /></TableCell>}
-                    {!compact && <TableCell className="py-1.5 text-right font-mono tabular-nums">{formatNumber(Number(t.entry_price), sym?.decimals ?? 2)}</TableCell>}
-                    {!compact && <TableCell className="py-1.5 text-right font-mono tabular-nums">{current != null ? formatNumber(current, sym?.decimals ?? 2) : "—"}</TableCell>}
-                    {!compact && <TableCell className="py-1.5 text-right font-mono tabular-nums">{Number(t.lot_size).toFixed(2)}</TableCell>}
-                    {!compact && <TableCell className="py-1.5 text-right font-mono tabular-nums text-muted-foreground">{t.stop_loss ? formatNumber(Number(t.stop_loss), sym?.decimals ?? 2) : "—"}</TableCell>}
-                    {!compact && <TableCell className="py-1.5 text-right font-mono tabular-nums text-muted-foreground">{t.take_profit ? formatNumber(Number(t.take_profit), sym?.decimals ?? 2) : "—"}</TableCell>}
-                    {!compact && (
-                      <TableCell
-                        className={cn(
-                          "py-1.5 text-right font-mono tabular-nums",
-                          rr == null ? "text-muted-foreground" : rr >= 0 ? "text-success" : "text-danger",
-                        )}
-                        title={rr == null ? "No stop loss set — R cannot be measured" : undefined}
-                      >
-                        {rr == null ? "—" : `${rr.toFixed(2)}R`}
-                      </TableCell>
+                    {cols.map((c) =>
+                      c.flash ? (
+                        // FlashCell emits its own <td>, so it cannot be wrapped.
+                        // Its 110px floor is sized for the full blotter; in the
+                        // rail that is 40% of the usable width on its own.
+                        <FlashCell
+                          key={c.id}
+                          {...c.flash(row)}
+                          className={compact ? "min-w-[76px] p-1 text-[11px]" : undefined}
+                        >
+                          {c.cell(row, ctx)}
+                        </FlashCell>
+                      ) : (
+                        <TableCell key={c.id} className={c.className}>
+                          {c.cell(row, ctx)}
+                        </TableCell>
+                      ),
                     )}
-                    {/* A dash, not 0.00: an unquoted position has an unknown
-                        result, and 0.00 reads as a real break-even.
-                        FlashCell's 110px floor is sized for the full blotter;
-                        in the rail it is 40% of the usable width on its own. */}
-                    <FlashCell
-                      value={floating ?? 0}
-                      up={up}
-                      className={compact ? "min-w-[76px] p-1 text-[11px]" : undefined}
-                    >
-                      {floating == null
-                        ? <span className="text-muted-foreground">—</span>
-                        : <>{signed(floating)}{formatCurrency(Math.abs(floating), account?.currency)}</>}
-                    </FlashCell>
-                    {!compact && <TableCell className="py-1.5 text-xs text-muted-foreground">{duration}</TableCell>}
-                    {/* Two primary actions and an overflow, matching TradingView's
-                        open-position row. Break-even, custom-price close and
-                        partial close were inline icons too — five controls in a
-                        column narrower than they needed, which is what pushed
-                        the red Close button past the panel's right edge. They
-                        are all still one click away, just not all competing for
-                        the same strip. Width is fixed and non-shrinking so the
-                        cell cannot be squeezed by the columns to its left. */}
+                    {/* TradingView's two-icon row: edit and close, both
+                        monochrome ghost icons, no label and no colour. The red
+                        labelled Close button was 68px of the 136px column and
+                        sat under the floating assistant bubble, which made the
+                        control that closes a position partly unclickable.
+                        Colour is not carrying meaning here — the icon and its
+                        label already do — and the confirmation for a mis-click
+                        is that closing is one keystroke to undo in the summary.
+
+                        The overflow keeps break-even, custom-price close and
+                        partial close one click away; it reveals on hover so the
+                        row at rest is the two icons TradingView shows. Width is
+                        fixed and non-shrinking so the columns to the left cannot
+                        squeeze the cell. */}
                     <TableCell className={compact ? ACTIONS_CELL_COMPACT : ACTIONS_CELL}>
                       <div className="flex items-center justify-end gap-1 whitespace-nowrap opacity-70 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
                         <Button
@@ -279,25 +327,24 @@ export function PositionsTable({ compact = false }: { compact?: boolean } = {}) 
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
                         <Button
-                          variant="default"
-                          size="sm"
-                          className={cn(
-                            "h-7 shrink-0 cursor-pointer justify-center gap-1 bg-danger/90 text-[11px] font-semibold text-white shadow-sm transition-all duration-150 hover:bg-danger active:scale-95 focus-visible:ring-2 focus-visible:ring-danger/60",
-                            compact ? "w-7 px-0" : "min-w-[68px] px-2",
-                          )}
+                          variant="ghost" size="icon"
+                          className="h-7 w-7 shrink-0 cursor-pointer text-muted-foreground transition-transform duration-150 hover:bg-danger/10 hover:text-danger active:scale-90 focus-visible:ring-2 focus-visible:ring-danger/50"
                           onClick={() => instantClose(t)}
                           disabled={closingIds.has(t.id)}
                           aria-label="Close at market"
                           title="Close at market (instant)"
                         >
                           {closingIds.has(t.id) ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
-                          {!compact && (closingIds.has(t.id) ? "Closing" : "Close")}
                         </Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
                               variant="ghost" size="icon"
-                              className="h-7 w-7 shrink-0 cursor-pointer transition-transform duration-150 hover:bg-accent active:scale-90 focus-visible:ring-2 focus-visible:ring-primary/50"
+                              // Hidden until the row is hovered or focused, so
+                              // the resting row is the two icons and nothing
+                              // else. `focus-within` on the row keeps it
+                              // reachable by keyboard.
+                              className="h-7 w-7 shrink-0 cursor-pointer opacity-0 transition-all duration-150 hover:bg-accent active:scale-90 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-primary/50 group-hover:opacity-100 group-focus-within:opacity-100 data-[state=open]:opacity-100"
                               aria-label="More actions" title="More actions"
                             >
                               <MoreHorizontal className="h-3.5 w-3.5" />
@@ -401,22 +448,36 @@ function ModifyDialog({ trade, onClose }: { trade: Trade; onClose: () => void })
   );
 }
 
-function formatDuration(start: Date): string {
-  const s = Math.max(0, Math.floor((Date.now() - start.getTime()) / 1000));
-  if (s < 60) return `${s}s`;
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m`;
-  const h = Math.floor(m / 60);
-  const rm = m % 60;
-  if (h < 24) return `${h}h ${rm}m`;
-  const d = Math.floor(h / 24);
-  return `${d}d ${h % 24}h`;
+/**
+ * Download the table as CSV — exactly the columns on screen, in their order.
+ *
+ * Exporting the full registry regardless of the picker would quietly disagree
+ * with what the user is looking at; the point of the picker is that the visible
+ * set IS the user's chosen view of their book.
+ *
+ * Values come from each column's `csv`, which emits raw numbers rather than the
+ * formatted cell: `$1,234.56` is a string in every spreadsheet that opens it,
+ * and an export nobody can sum is not an export.
+ */
+function exportRows(rows: PositionRow[], cols: PositionColumn[], ctx: ColumnCtx) {
+  const usable = cols.filter((c) => c.csv);
+  const esc = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
+  const lines = [
+    usable.map((c) => esc(c.label)).join(","),
+    ...rows.map((r) => usable.map((c) => esc(c.csv!(r, ctx))).join(",")),
+  ];
+
+  const url = URL.createObjectURL(
+    new Blob([lines.join("\r\n")], { type: "text/csv;charset=utf-8;" }),
+  );
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `positions-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
-/** `current` and `floating` are null when the symbol has no live quote. */
-type Enriched = { t: Trade; sym: ReturnType<typeof findSymbol>; current: number | null; floating: number | null; rr: number | null };
-
-function sortEnriched(rows: Enriched[], s: BlotterSort): Enriched[] {
+function sortEnriched(rows: PositionRow[], s: BlotterSort): PositionRow[] {
   const mul = s.dir === "asc" ? 1 : -1;
   return [...rows].sort((a, b) => {
     switch (s.key) {

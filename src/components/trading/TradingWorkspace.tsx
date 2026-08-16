@@ -1769,7 +1769,19 @@ function BottomDock({
           </button>
         </div>
         {open && (
-          <div id={`dock-panel-${bottomTab}`} role="tabpanel" className="min-h-0 flex-1 overflow-hidden">
+          /* The right inset is for the floating assistant (`MentorDrawer`),
+             which is `fixed bottom-6 right-6` with a 56px button — so it
+             occupies the bottom-right ~80×80 of the viewport, which is exactly
+             where the dock's pinned Actions column lands.
+
+             Measured at 1600×1000: the close control sat at x 1510–1538,
+             y 907–935 and the bubble at x 1510–1566, y 920–976 — covering the
+             bottom half of a control that closes a real position. Narrowing the
+             Actions column did not fix it; the bubble's left edge simply met
+             the button's. There is no vertical room to move either (the row's
+             bottom is 65px from the viewport's), so the dock gives up a strip
+             of width instead. */
+          <div id={`dock-panel-${bottomTab}`} role="tabpanel" className="min-h-0 flex-1 overflow-hidden pr-16">
             {bottomTab === "orders" && <Blotter filter="pending" onFilterChange={setBlotterFilter} />}
             {bottomTab === "positions" && <Blotter filter="open" onFilterChange={setBlotterFilter} />}
             {bottomTab === "history" && <Blotter filter="closed" onFilterChange={setBlotterFilter} />}
