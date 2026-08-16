@@ -20,8 +20,9 @@
     "test": "vitest run",
     "check:columns": "bun run scripts/check-columns.ts",
     "check:casts": "eslint --config eslint.casts.config.js --suppressions-location eslint-suppressions.casts.json \"src/**/*.{ts,tsx}\"",
-    "check": "bun run typecheck && bun run typecheck:e2e && bun run test && bun run build && bun run check:columns && bun run check:casts && bun run check:schema",
-    "check:schema": "bun run scripts/check-schema.ts"
+    "check": "bun run typecheck && bun run typecheck:e2e && bun run test && bun run build && bun run check:columns && bun run check:casts && bun run check:schema && bun run check:sessions",
+    "check:schema": "bun run scripts/check-schema.ts",
+    "check:sessions": "bun run scripts/check-session-parity.ts"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "^3.0.11",
