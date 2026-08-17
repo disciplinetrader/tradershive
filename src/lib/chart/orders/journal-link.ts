@@ -108,7 +108,7 @@ export async function addTradeToJournal(
     if (existing) return { ok: true, entryId: existing.id, created: false };
   }
 
-  const entry: JournalEntry = await createEntry(journalInsertFromTrade(trade, userId));
+  const entry: JournalEntry = await createEntry({ ...journalInsertFromTrade(trade, userId), source: "trade" });
   store.linkJournal(trade.id, entry.id);
   return { ok: true, entryId: entry.id, created: true };
 }

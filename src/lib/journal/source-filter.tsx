@@ -60,7 +60,21 @@ export function useJournalSource() {
   return useContext(Ctx);
 }
 
+/**
+ * "Did the user write this, or did the system generate it?"
+ *
+ * Reads the recorded `source` rather than inferring from `!trade_id`. The
+ * inference was wrong in a way that could not be seen: `trade_id` is null for
+ * manual, imported AND replay entries, so it identified "not an executed
+ * trade" only by accident, and an entry that LOST its `trade_id` would have
+ * quietly started presenting as something the user typed.
+ *
+ * `trade_id` remains the fallback for rows written before the column existed;
+ * the migration backfills those, so it should only ever apply mid-deploy.
+ */
 export function isManualEntry(e: JournalEntry): boolean {
+  const source = (e as JournalEntry & { source?: string }).source;
+  if (source) return source !== "trade";
   return !e.trade_id;
 }
 

@@ -117,6 +117,6 @@ export async function createJournalDraftFromReplay(input: {
     is_public: false,
   };
 
-  const row = await createEntry(draft);
+  const row = await createEntry({ ...draft, source: "replay" });
   return { id: row.id };
 }

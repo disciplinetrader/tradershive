@@ -40,6 +40,7 @@ import {
   upsertTaxonomy,
   type EntryInsert,
   type JournalTaxonomy,
+  type SourcedEntryInsert,
 } from "@/lib/journal/api";
 import {
   DEFAULT_EMOTIONS,
@@ -418,7 +419,7 @@ function ManualForm({
       const openedISO = tradeTime ? localWallTimeToUtc(tradeDate, tradeTime)?.toISOString() ?? null : null;
       const closedISO = openedISO ?? new Date(`${tradeDate}T00:00:00Z`).toISOString();
 
-      const insert: EntryInsert = {
+      const insert: SourcedEntryInsert = {
         user_id: user.id,
         symbol: instrument.symbol,
         market: instrument.market,
@@ -443,6 +444,7 @@ function ManualForm({
         // journal_entry_tags — written below, once the entry has an id.
         notes_text: notes || null,
         status: "draft",
+        source: "manual",
       };
 
       const entry = await createEntry(insert);

@@ -1191,52 +1191,6 @@ the spec hovers.
 
 ---
 
-## JR-5 — A journal entry does not record where it came from
-
-**Area:** Journal · **Found:** 2026-08-17 · **Status:** open, unassigned
-
-`journal_entries` has four writers and no column saying which one wrote a row:
-
-| Writer | `trade_id` | `account_id` | `observation_cursor` |
-| --- | --- | --- | --- |
-| `create_journal_draft_from_trade()` | set | set | only for replay/battle trades |
-| `ManualEntryDialog` | never set | never set | never set |
-| `ImportTradesDialog` → `toEntryInsert(..., null)` | never set | explicit null | never set |
-| `api.ts` duplicate / `replay/journal-draft.ts` | null | varies | varies |
-
-Provenance is therefore *inferred*, and `isManualEntry()`
-(`src/lib/journal/source-filter.tsx:63`) infers it from `!e.trade_id` alone.
-
-### Why it matters
-
-`journal_entries.trade_id` and `.account_id` are `ON DELETE SET NULL`. Nothing
-in the app hard-deletes a trade or an account today — `deleteAccount` and
-`deleteTrade` both soft-delete — so no row has actually been detached. But if
-one ever were, it would silently be reclassified as **manual**: an entry the
-system generated would start presenting as something the user typed, in the
-Trades / Calendar / Analytics / Psychology / AI Coach split that all read this
-one predicate.
-
-There is no field that would catch it. `observation_cursor` is set only for
-replay and battle trades (`paper-trading.functions.ts` never sets it), so a
-detached *live* trade is indistinguishable from a hand-written entry.
-
-This is also why the 2026-08-16 session audit cost several rounds of queries: a
-column of `trade_id is null` was read as evidence of deletion when it is the
-normal state of three of the four writers. 35 rows across 14 users were briefly
-suspected of being orphans; `observation_cursor is not null` proved none of them
-were.
-
-### Sketch of a fix
-
-`alter table public.journal_entries add column source text not null default
-'manual'` with a check constraint over `('trade','manual','import','replay')`,
-set explicitly by each writer, backfilled as `trade` where `trade_id is not
-null`. Then `isManualEntry` reads a fact rather than inferring one, a detached
-entry stays classified as a trade, and the audit above becomes one `group by`.
-
----
-
 ## JR-6 — Manual entries written before 2026-08-17 carry a fabricated open time
 
 **Area:** Journal · **Found:** 2026-08-17 · **Status:** open, data only —

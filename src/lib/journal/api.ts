@@ -74,7 +74,29 @@ export async function fetchEntryByTradeId(tradeId: string): Promise<JournalEntry
   return (data ?? null) as JournalEntry | null;
 }
 
-export async function createEntry(patch: EntryInsert): Promise<JournalEntry> {
+/**
+ * Where a journal entry came from.
+ *
+ * `trade` is written by `create_journal_draft_from_trade()`; the rest are the
+ * client writers. The column exists because provenance used to be INFERRED
+ * from `trade_id is null`, which is the normal state of three of these four —
+ * so an entry that lost its `trade_id` would have silently started presenting
+ * as something the user typed, and nothing would have caught it.
+ */
+export type JournalSource = "trade" | "manual" | "import" | "replay";
+
+/** An insert that has stated where it came from. */
+export type SourcedEntryInsert = EntryInsert & { source: JournalSource };
+
+/**
+ * `source` is REQUIRED here on purpose.
+ *
+ * The database column has a default so a missed path cannot break at runtime,
+ * but a default is exactly how the old inference went wrong quietly. Requiring
+ * it in the type means a sixth writer cannot be added without deciding what it
+ * is — the compiler asks, rather than a future audit.
+ */
+export async function createEntry(patch: SourcedEntryInsert): Promise<JournalEntry> {
   const { data, error } = await supabase.from("journal_entries").insert(patch).select().single();
   if (error) throw error;
   return data as JournalEntry;
@@ -114,7 +136,11 @@ export async function duplicateEntry(userId: string, source: JournalEntry): Prom
     share_token: null,
     trade_id: null,
     is_favorite: false,
-  } as EntryInsert);
+    // A duplicate keeps the original's provenance. It deliberately drops
+    // `trade_id` (the copy is not that trade), which is exactly the case that
+    // used to make an entry look hand-written — the source says otherwise.
+    source: (source.source as JournalSource) ?? "manual",
+  } as SourcedEntryInsert);
   return inserted;
 }
 

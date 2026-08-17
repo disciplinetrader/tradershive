@@ -117,7 +117,7 @@ export function ImportTradesDialog({ trigger }: { trigger?: React.ReactNode }) {
       const failures: string[] = [];
       for (const row of importable) {
         try {
-          await createEntry(toEntryInsert(row, user.id, null));
+          await createEntry({ ...toEntryInsert(row, user.id, null), source: "import" });
           ok += 1;
         } catch (error) {
           failures.push(

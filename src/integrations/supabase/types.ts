@@ -5889,6 +5889,7 @@ export type Database = {
           session_auto_detected: boolean
           setup: string | null
           share_token: string | null
+          source: string
           status: Database["public"]["Enums"]["journal_status"]
           stop_loss: number | null
           strategy: string | null
@@ -5966,6 +5967,7 @@ export type Database = {
           session_auto_detected?: boolean
           setup?: string | null
           share_token?: string | null
+          source?: string
           status?: Database["public"]["Enums"]["journal_status"]
           stop_loss?: number | null
           strategy?: string | null
@@ -6043,6 +6045,7 @@ export type Database = {
           session_auto_detected?: boolean
           setup?: string | null
           share_token?: string | null
+          source?: string
           status?: Database["public"]["Enums"]["journal_status"]
           stop_loss?: number | null
           strategy?: string | null
