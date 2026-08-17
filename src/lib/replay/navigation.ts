@@ -6,10 +6,73 @@
 import type { Candle, ReplayBookmark, ReplayCheckpoint, ReplayChecklistItem, ReplayTrade } from "./types";
 import { inferSession } from "@/lib/statistics/session";
 import {
-  isSessionOpen, nextSessionOpen, type SessionKey as MarketSessionKey,
+  isSessionOpen, nextSessionOpen, nextEquitiesOpen, SESSION_LABELS,
+  type SessionKey as MarketSessionKey,
 } from "@/lib/market-sessions";
 
 export type SessionKey = "asia" | "london" | "new_york" | "other";
+
+/** A one-click "jump to the next X open" offer for the transport bar. */
+export type SessionJumpTarget = {
+  key: MarketSessionKey | "ny_equities";
+  label: string;
+  /** Epoch ms of the next open, or null when the rule yields none. */
+  at: number | null;
+  /** False when the target is outside the loaded range — never silently inert. */
+  reachable: boolean;
+  /** Why it cannot be taken. Present only when `reachable` is false. */
+  reason?: string;
+};
+
+/**
+ * The session-open jumps offered at a given point in a replay.
+ *
+ * Pure, so the offer can be tested without a chart. Ordered by the daily
+ * cycle (Sydney → Tokyo → London → New York) rather than by which is soonest:
+ * a fixed order is learnable, and each target renders its own time so "which
+ * is next" is still readable at a glance.
+ *
+ * Replay is forward-only, so a target at or before `fromMs` is not offered as
+ * reachable — `nextSessionOpen` already returns the NEXT open, but a target
+ * beyond the loaded data must be refused with a reason rather than becoming a
+ * button that does nothing when pressed.
+ */
+export function sessionJumpTargets(opts: {
+  fromMs: number;
+  endMs: number;
+  market?: string | null;
+}): SessionJumpTarget[] {
+  const { fromMs, endMs, market } = opts;
+  const cycle: MarketSessionKey[] = ["sydney", "tokyo", "london", "new_york"];
+
+  // `nextSessionOpen` is inclusive of `from`, which is right for "which open
+  // is at or after this instant" but wrong here: standing exactly ON the
+  // London open, "jump to London open" would seek to where the cursor already
+  // is and appear to do nothing. Asking from one millisecond later makes the
+  // offer strictly forward, so the answer is always tomorrow's open.
+  const after = fromMs + 1;
+
+  const targets: SessionJumpTarget[] = cycle.map((key) => {
+    const at = nextSessionOpen(key, after)?.getTime() ?? null;
+    return { key, label: SESSION_LABELS[key], ...verdict(at, endMs) };
+  });
+
+  // The NYSE bell is a different event from the New York FX open — 09:30 ET
+  // against 08:00 ET — and only means anything on an equity or index chart.
+  // Offering it on a crypto session would be noise dressed as a feature.
+  if (market === "stocks" || market === "indices") {
+    const at = nextEquitiesOpen(after)?.getTime() ?? null;
+    targets.push({ key: "ny_equities", label: "NYSE bell", ...verdict(at, endMs) });
+  }
+
+  return targets;
+}
+
+function verdict(at: number | null, endMs: number) {
+  if (at == null) return { at, reachable: false, reason: "no upcoming open" };
+  if (at > endMs) return { at, reachable: false, reason: "beyond this session's data" };
+  return { at, reachable: true };
+}
 
 /** The statistics buckets above, mapped to the centres they actually name. */
 const CENTRE: Record<Exclude<SessionKey, "other">, MarketSessionKey> = {

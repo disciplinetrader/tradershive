@@ -16,6 +16,7 @@ import { Slider } from "@/components/ui/slider";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { MAX_SPEED, MIN_SPEED } from "@/lib/replay/session/clock";
+import { sessionJumpTargets } from "@/lib/replay/navigation";
 import { useReplayStudio } from "./context";
 import { StudioHotkeys } from "./StudioHotkeys";
 
@@ -27,7 +28,7 @@ function toLocalInput(ms: number): string {
 }
 
 export function PlaybackControls() {
-  const { view, toggle, step, stepCandle, skipCandles, setSpeed, seekForwardTo } = useReplayStudio();
+  const { view, toggle, step, stepCandle, skipCandles, setSpeed, seekForwardTo, market } = useReplayStudio();
 
   const [jumpOpen, setJumpOpen] = useState(false);
   const [jumpValue, setJumpValue] = useState("");
@@ -63,6 +64,16 @@ export function PlaybackControls() {
     if (!Number.isFinite(ms)) return;
     if (ms > t.marketTime) seekForwardTo(ms);
   };
+
+  // One-click session opens, resolved through each centre's own timezone so
+  // they follow BST/GMT and EDT/EST. Unreachable targets stay visible with
+  // their reason rather than disappearing — "why is there no London button"
+  // is a worse question than "London is beyond this session's data".
+  const jumpTargets = sessionJumpTargets({
+    fromMs: t.marketTime,
+    endMs: d.endTime,
+    market,
+  });
 
   return (
     <div className="flex h-12 shrink-0 items-center gap-2 overflow-x-auto border-t border-border/60 bg-card/60 px-3">
@@ -172,7 +183,47 @@ export function PlaybackControls() {
           </Button>
         </PopoverTrigger>
         <PopoverContent side="top" align="end" className="w-64 space-y-2">
-          <div className="text-[11px] font-medium">Jump forward to (UTC)</div>
+          <div className="text-[11px] font-medium">Session opens</div>
+          <div className="grid grid-cols-2 gap-1">
+            {jumpTargets.map((target) => (
+              <Tooltip key={target.key}>
+                <TooltipTrigger asChild>
+                  {/* `span` wrapper: a disabled button emits no pointer events,
+                      so the tooltip explaining WHY it is disabled would never
+                      open — which is the one case the tooltip exists for. */}
+                  <span className="inline-flex">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 w-full justify-between px-2 text-[11px]"
+                      disabled={!target.reachable}
+                      onClick={() => {
+                        if (!target.reachable || target.at == null) return;
+                        setJumpOpen(false);
+                        seekForwardTo(target.at);
+                      }}
+                    >
+                      <span className="truncate">{target.label}</span>
+                      {target.at != null && (
+                        <span className="ml-1 shrink-0 font-mono text-[10px] text-muted-foreground">
+                          {new Date(target.at).toISOString().slice(11, 16)}
+                        </span>
+                      )}
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  {target.reachable
+                    ? `${new Date(target.at!).toISOString().replace("T", " ").slice(0, 16)} UTC`
+                    : target.reason}
+                </TooltipContent>
+              </Tooltip>
+            ))}
+          </div>
+
+          <div className="border-t border-border/60 pt-2 text-[11px] font-medium">
+            Jump forward to (UTC)
+          </div>
           <Input
             type="datetime-local"
             value={jumpValue}
