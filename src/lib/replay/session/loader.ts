@@ -51,10 +51,22 @@ export interface BootstrapInput {
   /** Only demo sessions may replay fabricated candles. */
   allowSynthetic?: boolean;
   /**
-   * Observation index a FRESH session starts on. Defaults to 0 — the very
-   * first candle of the selected range/day. Ignored when a snapshot resumes.
+   * CANDLE index a FRESH session starts on. Defaults to 0 — the very first
+   * candle of the loaded array. Ignored when a snapshot resumes.
+   *
+   * Candles, not observations, because every caller counts in candles: the
+   * studio passes `warmupCount`, which is a number of warm-up BARS. The clock
+   * runs on observations — each candle expands into several via the intrabar
+   * policy — so the conversion belongs here, where the dataset's offset table
+   * exists, rather than at each call site.
+   *
+   * Getting this wrong is not obvious from the outside. Passing 600 warm-up
+   * candles as 600 observations put the cursor on candle 163 at ~3.68
+   * observations per candle: a fresh session opened two days BEFORE its own
+   * range_start, replaying context history that was only meant to be visible
+   * behind the cursor.
    */
-  startCursor?: number;
+  startCursorCandles?: number;
   /** Injected in tests; defaults to the durable server + local writer. */
   writer?: (snapshot: SessionSnapshot) => Promise<void>;
 }
@@ -138,8 +150,15 @@ export function bootstrapSession(input: BootstrapInput): BootstrapResult {
     discardedSnapshot = { reason: resumed.reason, message: resumed.message };
   }
 
+  // Candles in, observations out. `observationOffsets[i]` is the observation
+  // index at which candle `i` begins, so this lands the cursor on the FIRST
+  // observation of the requested candle rather than somewhere inside it.
   const total = dataset.identity.observationCount;
-  const startCursor = Math.max(0, Math.min(total - 1, Math.floor(input.startCursor ?? 0)));
+  const candleStart = Math.max(
+    0,
+    Math.min(dataset.candles.length - 1, Math.floor(input.startCursorCandles ?? 0)),
+  );
+  const startCursor = Math.max(0, Math.min(total - 1, dataset.observationOffsets[candleStart] ?? 0));
   const engine = new ReplaySessionEngine({
     meta, dataset, stores, market, writer,
     ...(startCursor > 0 ? { clock: { cursor: startCursor } } : {}),

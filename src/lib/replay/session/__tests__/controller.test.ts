@@ -10,6 +10,7 @@
 
 import { describe, expect, it } from "vitest";
 import { bootstrapSession, createSessionStores } from "../loader";
+import { candleIndexForObservation } from "../dataset";
 import { ReplaySessionController } from "../controller";
 import type { Candle } from "../../types";
 
@@ -207,5 +208,40 @@ describe("resume", () => {
     if (!changed.ok) return;
     expect(changed.resumed).toBe(false);
     expect(changed.discardedSnapshot?.reason).toBe("dataset");
+  });
+});
+
+describe("startCursorCandles — units", () => {
+  it("starts on the requested CANDLE, not that many observations in", () => {
+    // The bug this pins: `startCursor` was an observation index while every
+    // caller counted candles. The studio passed 600 warm-up BARS, the clock
+    // read 600 observations, and at ~3.68 observations per candle a fresh
+    // session opened on candle 163 — two days before its own range_start,
+    // replaying history that was only meant to be visible behind the cursor.
+    const booted = boot({ startCursorCandles: 10 });
+    if (!booted.ok) throw new Error("boot failed");
+
+    const dataset = booted.dataset;
+    // More observations than candles, or the assertion below proves nothing.
+    expect(dataset.identity.observationCount).toBeGreaterThan(dataset.candles.length);
+
+    // The cursor sits on the first observation OF candle 10 ...
+    expect(booted.resumedAtCursor).toBe(dataset.observationOffsets[10]);
+    // ... which is emphatically not observation 10.
+    expect(booted.resumedAtCursor).not.toBe(10);
+    // ... and maps back to candle 10.
+    expect(candleIndexForObservation(dataset, booted.resumedAtCursor)).toBe(10);
+  });
+
+  it("clamps a candle index past the end instead of running off the array", () => {
+    const booted = boot({ startCursorCandles: 10_000 });
+    if (!booted.ok) throw new Error("boot failed");
+    expect(booted.resumedAtCursor).toBeLessThan(booted.dataset.identity.observationCount);
+  });
+
+  it("defaults to the first candle", () => {
+    const booted = boot();
+    if (!booted.ok) throw new Error("boot failed");
+    expect(booted.resumedAtCursor).toBe(0);
   });
 });

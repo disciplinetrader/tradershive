@@ -211,7 +211,11 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
         // Warm-up bars sit *before* the session window: they are visible
         // history, never replayable observations, so the cursor starts past
         // them and the requested range still drives start-mode maths.
-        startCursor:
+        //
+        // Counted in CANDLES. The loader converts to the clock's observation
+        // space — passing this as observations opened the session 437 bars
+        // before its own range_start.
+        startCursorCandles:
           warmupCount + startCursorFor(session, Math.max(1, candles.length - warmupCount)),
 
       });
