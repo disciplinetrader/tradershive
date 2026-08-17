@@ -217,6 +217,15 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
         // before its own range_start.
         startCursorCandles:
           warmupCount + startCursorFor(session, Math.max(1, candles.length - warmupCount)),
+        // Read from the SESSION ROW, never from the live settings store. The
+        // costs were snapshotted when the session was created, so replaying it
+        // tomorrow — or on another machine, or after changing the default —
+        // fills exactly the same way. Old rows default to 0, which is the
+        // honest reading: they ran with no simulated cost.
+        costs: {
+          spread: Number(session.spread ?? 0),
+          slippage: Number(session.slippage ?? 0),
+        },
 
       });
       if (cancelled) return;

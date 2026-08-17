@@ -30,6 +30,7 @@
 import type { PositionOrder } from "./model";
 import type { MarketTick } from "./engine";
 import { runEngineTick, runManagementTick, type OrderStores } from "./service";
+import type { ExecutionCosts } from "./engine";
 import type { TrailingContext } from "./trailing";
 
 export type IntrabarPolicy = "conservative" | "ohlc";
@@ -50,6 +51,12 @@ export interface MarketObservation extends MarketTick {
 export interface ObservationOptions {
   /** Asset class recorded on resulting closed trades. */
   market?: string | null;
+  /**
+   * Simulated broker friction. Defaults to none, so the live chart and every
+   * existing caller behave exactly as before — only a replay session that
+   * recorded costs at creation pays them.
+   */
+  costs?: ExecutionCosts;
 }
 
 /**
@@ -90,7 +97,7 @@ export function runObservation(
 ): PositionOrder[] {
   const { price, time, context } = observation;
   if (!Number.isFinite(price) || price <= 0) return [];
-  const touched = runEngineTick(stores, { price, time });
+  const touched = runEngineTick(stores, { price, time }, opts.costs);
   const managed = runManagementTick(stores, { price, time, context }, { market: opts.market });
   return [...touched, ...managed];
 }

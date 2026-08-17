@@ -21,6 +21,7 @@ import type { OrderStores } from "@/lib/chart/orders/service";
 import type { Candle, Timeframe } from "../types";
 import { buildDataset, type ReplayDataset } from "./dataset";
 import { ReplaySessionEngine } from "./engine";
+import type { ExecutionCosts } from "@/lib/chart/orders/engine";
 import { createSessionMeta, type SessionPurpose, type SessionSnapshot } from "./model";
 import { persistSnapshot } from "./persistence";
 import { resumeSession } from "./resume";
@@ -67,6 +68,12 @@ export interface BootstrapInput {
    * behind the cursor.
    */
   startCursorCandles?: number;
+  /**
+   * Simulated broker friction recorded on the session row. Applied to a fresh
+   * session AND to a resumed one: costs belong to the session, so resuming
+   * must not silently change what a fill costs.
+   */
+  costs?: ExecutionCosts;
   /** Injected in tests; defaults to the durable server + local writer. */
   writer?: (snapshot: SessionSnapshot) => Promise<void>;
 }
@@ -134,7 +141,7 @@ export function bootstrapSession(input: BootstrapInput): BootstrapResult {
   let discardedSnapshot: { reason: "version" | "dataset" | "corrupt"; message: string } | null = null;
 
   if (input.snapshot) {
-    const resumed = resumeSession({ snapshot: input.snapshot, dataset, stores, market, writer });
+    const resumed = resumeSession({ snapshot: input.snapshot, dataset, stores, market, writer, costs: input.costs });
     if (resumed.ok) {
       return {
         ok: true,
@@ -160,7 +167,7 @@ export function bootstrapSession(input: BootstrapInput): BootstrapResult {
   );
   const startCursor = Math.max(0, Math.min(total - 1, dataset.observationOffsets[candleStart] ?? 0));
   const engine = new ReplaySessionEngine({
-    meta, dataset, stores, market, writer,
+    meta, dataset, stores, market, writer, costs: input.costs,
     ...(startCursor > 0 ? { clock: { cursor: startCursor } } : {}),
   });
   return {

@@ -61,35 +61,116 @@ export interface ExitIntent {
 
 export type EngineIntent = FillIntent | ExitIntent;
 
-/** Does this tick reach the order's entry level? */
-export function triggersEntry(orderType: OrderType, entry: number, price: number): boolean {
+/**
+ * Simulated broker friction, in price units.
+ *
+ * Snapshotted onto a replay session at creation rather than read from a
+ * setting at runtime: a replay is reproducible by construction — the dataset
+ * is checksummed for exactly that reason — and costs that live in
+ * localStorage would mean two traders on the same session get different fills,
+ * and the same trader resuming later gets different fills again.
+ */
+export interface ExecutionCosts {
+  /** Full bid/ask spread. Half is applied either side of the observed price. */
+  spread: number;
+  /** Adverse slippage on market and stop fills. Never improves a fill. */
+  slippage: number;
+}
+
+/** Frictionless execution — the default everywhere, so existing behaviour is unchanged. */
+export const NO_COSTS: ExecutionCosts = { spread: 0, slippage: 0 };
+
+function halfSpread(costs: ExecutionCosts): number {
+  const s = Number(costs.spread);
+  return Number.isFinite(s) && s > 0 ? s / 2 : 0;
+}
+
+function adverseSlippage(costs: ExecutionCosts): number {
+  const s = Number(costs.slippage);
+  return Number.isFinite(s) && s > 0 ? s : 0;
+}
+
+/**
+ * The two sides of the observed price.
+ *
+ * Candle data gives one number per observation; a real book has two. Treating
+ * that number as the mid and deriving bid/ask from it is the least-wrong
+ * reading, and it is what makes the spread cost both halves of a round trip
+ * rather than half of one.
+ */
+export function quoteAt(price: number, costs: ExecutionCosts = NO_COSTS) {
+  const half = halfSpread(costs);
+  return { bid: price - half, ask: price + half, mid: price };
+}
+
+/**
+ * Does this tick reach the order's entry level?
+ *
+ * Compares the side the order would actually transact against: a buy fills on
+ * the ask, a sell on the bid. Checking the mid instead would trigger orders at
+ * prices that never existed — a buy limit filling while the ask is still above
+ * it — which is a worse error than mispricing the fill, because it invents a
+ * trade that could not have happened.
+ */
+export function triggersEntry(
+  orderType: OrderType, entry: number, price: number, costs: ExecutionCosts = NO_COSTS,
+): boolean {
+  const { bid, ask } = quoteAt(price, costs);
   switch (orderType) {
     case "market": return true;
-    case "buy_limit": return price <= entry;
-    case "sell_limit": return price >= entry;
-    case "buy_stop": return price >= entry;
-    case "sell_stop": return price <= entry;
+    case "buy_limit": return ask <= entry;
+    case "sell_limit": return bid >= entry;
+    case "buy_stop": return ask >= entry;
+    case "sell_stop": return bid <= entry;
     default: return false;
   }
 }
 
 /** Apply the documented fill model to a triggered order. */
-export function fillPriceFor(order: PositionOrder, price: number): { fillPrice: number; slippage: number } {
+export function fillPriceFor(
+  order: PositionOrder, price: number, costs: ExecutionCosts = NO_COSTS,
+): { fillPrice: number; slippage: number } {
   const sign = order.direction === "buy" ? 1 : -1;
   if (order.orderType === "buy_limit" || order.orderType === "sell_limit") {
-    // Limit: never better than the limit price.
+    // Limit: never better than the limit price, and never slipped — a limit
+    // either transacts at its level or does not transact. The spread is
+    // already paid in `triggersEntry`, which required the ask (or bid) to
+    // reach the level rather than the mid.
     return { fillPrice: order.entry, slippage: 0 };
   }
-  // Market and stop orders take the observed price, gap and all.
-  const slippage = (price - order.entry) * sign;
-  return { fillPrice: price, slippage: order.orderType === "market" ? 0 : slippage };
+
+  // Market and stop orders take the observed quote on their own side, gap and
+  // all, then slip against the trader.
+  const { bid, ask } = quoteAt(price, costs);
+  const quote = order.direction === "buy" ? ask : bid;
+  const slip = adverseSlippage(costs);
+  const fillPrice = quote + slip * sign;
+
+  // `slippage` on the intent is the distance from the order's own level, which
+  // is what the blotter reports. For a market order that distance is not
+  // slippage in the trader's sense, so it stays 0 as before.
+  const distance = (fillPrice - order.entry) * sign;
+  return { fillPrice, slippage: order.orderType === "market" ? 0 : distance };
 }
 
-/** Has an open position's stop or target been reached by this tick? */
-export function exitFor(order: PositionOrder, price: number): ExitIntent | null {
+/**
+ * Has an open position's stop or target been reached by this tick?
+ *
+ * Measured against the side the position must transact on to CLOSE: a long
+ * exits by selling, so its stop and target are judged on the bid; a short
+ * exits by buying, so on the ask. This is why the spread is paid twice on a
+ * round trip — once entering, once leaving — and charging it only on entry
+ * would halve the modelled cost of every trade.
+ */
+export function exitFor(
+  order: PositionOrder, price: number, costs: ExecutionCosts = NO_COSTS,
+): ExitIntent | null {
   const long = order.direction === "buy";
-  const stopHit = long ? price <= order.stop : price >= order.stop;
-  const targetHit = long ? price >= order.target : price <= order.target;
+  const { bid, ask } = quoteAt(price, costs);
+  // The quote this position would get if it closed right now.
+  const exitQuote = long ? bid : ask;
+  const stopHit = long ? exitQuote <= order.stop : exitQuote >= order.stop;
+  const targetHit = long ? exitQuote >= order.target : exitQuote <= order.target;
 
   // Stop takes priority: within a single discrete tick we cannot know the
   // path, so we assume the adverse level was touched first.
@@ -97,8 +178,9 @@ export function exitFor(order: PositionOrder, price: number): ExitIntent | null 
     return {
       kind: "exit",
       orderId: order.id,
-      // Gap through the stop → the trader eats the gap.
-      closePrice: long ? Math.min(price, order.stop) : Math.max(price, order.stop),
+      // Gap through the stop → the trader eats the gap, measured on the side
+      // the position actually closes at.
+      closePrice: long ? Math.min(exitQuote, order.stop) : Math.max(exitQuote, order.stop),
       reason: "stop_loss",
       executionSource: "stop_loss",
     };
@@ -121,7 +203,9 @@ export function exitFor(order: PositionOrder, price: number): ExitIntent | null 
  * position opened by this tick is also eligible to be stopped by it only on
  * the NEXT tick (never opened and closed by the same price observation).
  */
-export function evaluateTick(orders: readonly PositionOrder[], tick: MarketTick): EngineIntent[] {
+export function evaluateTick(
+  orders: readonly PositionOrder[], tick: MarketTick, costs: ExecutionCosts = NO_COSTS,
+): EngineIntent[] {
   const price = tick.price;
   if (!Number.isFinite(price) || price <= 0) return [];
 
@@ -130,8 +214,8 @@ export function evaluateTick(orders: readonly PositionOrder[], tick: MarketTick)
 
   for (const order of orders) {
     if (order.symbol && order.status === "pending") {
-      if (!triggersEntry(order.orderType, order.entry, price)) continue;
-      const { fillPrice, slippage } = fillPriceFor(order, price);
+      if (!triggersEntry(order.orderType, order.entry, price, costs)) continue;
+      const { fillPrice, slippage } = fillPriceFor(order, price, costs);
       fills.push({
         kind: "fill",
         orderId: order.id,
@@ -142,7 +226,7 @@ export function evaluateTick(orders: readonly PositionOrder[], tick: MarketTick)
       continue;
     }
     if (order.status === "open") {
-      const exit = exitFor(order, price);
+      const exit = exitFor(order, price, costs);
       if (exit) exits.push(exit);
     }
   }

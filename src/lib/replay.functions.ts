@@ -163,6 +163,11 @@ const createSessionSchema = z.object({
   tags: z.array(z.string()).default([]),
   initial_balance: z.number().finite().positive().max(100_000_000_000).optional(),
   warmup_bars: z.number().int().min(0).max(1000).default(600),
+  // Simulated broker friction, SNAPSHOTTED onto the row at creation. The
+  // client passes its current defaults; from here the session owns them, so
+  // changing the setting later cannot alter how an existing replay fills.
+  spread: z.number().finite().min(0).default(0),
+  slippage: z.number().finite().min(0).default(0),
 });
 
 export const createReplaySession = createServerFn({ method: "POST" })
@@ -188,6 +193,8 @@ export const createReplaySession = createServerFn({ method: "POST" })
         source_journal_id: data.source_journal_id ?? null,
         provider: data.provider,
         tags: data.tags,
+        spread: data.spread,
+        slippage: data.slippage,
         cursor_ts: cursor,
         last_opened_at: new Date().toISOString(),
         ...(data.initial_balance ? { initial_balance: data.initial_balance } : {}),

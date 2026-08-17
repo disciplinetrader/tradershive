@@ -15,6 +15,7 @@
  */
 
 import { runObservation } from "@/lib/chart/orders/observation";
+import { NO_COSTS, type ExecutionCosts } from "@/lib/chart/orders/engine";
 import type { OrderStores } from "@/lib/chart/orders/service";
 import type { PositionOrder } from "@/lib/chart/orders/model";
 import { ReplayClock, type ClockSnapshot, type ReplayObservation } from "./clock";
@@ -37,6 +38,15 @@ export interface EngineOptions {
   stores: OrderStores;
   /** Asset class recorded on closed trades. */
   market?: string | null;
+  /**
+   * Simulated broker friction for THIS session, snapshotted at creation.
+   *
+   * Part of the session, not a live setting: the dataset is checksummed so a
+   * replay is reproducible, and costs read from localStorage at tick time
+   * would mean the same session fills differently for two traders, and
+   * differently again for one trader who changed the setting mid-run.
+   */
+  costs?: ExecutionCosts;
   writer?: SnapshotWriter;
   autosavePolicy?: Partial<AutosavePolicy>;
   clock?: Partial<ClockSnapshot>;
@@ -64,6 +74,7 @@ export class ReplaySessionEngine {
   private metaValue: ReplaySessionMeta;
   private stores: OrderStores;
   private market: string | null;
+  private costs: ExecutionCosts;
   private viewportValue: ViewportState;
   private listeners = new Set<() => void>();
   private now: () => number;
@@ -74,6 +85,7 @@ export class ReplaySessionEngine {
     this.dataset = opts.dataset;
     this.stores = opts.stores;
     this.market = opts.market ?? null;
+    this.costs = opts.costs ?? NO_COSTS;
     this.now = opts.now ?? Date.now;
     this.completeOnExhaustion = opts.completeOnExhaustion ?? true;
     this.clock = new ReplayClock(opts.dataset, opts.clock);
@@ -169,7 +181,7 @@ export class ReplaySessionEngine {
     if (observations.length === 0) return [];
     const touched: PositionOrder[] = [];
     for (const obs of observations) {
-      const affected = runObservation(this.stores, obs, { market: this.market });
+      const affected = runObservation(this.stores, obs, { market: this.market, costs: this.costs });
       for (const order of affected) {
         touched.push(order);
         const type: ReplayEventType =

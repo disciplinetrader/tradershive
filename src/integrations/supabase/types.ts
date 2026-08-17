@@ -9385,7 +9385,9 @@ export type Database = {
           settings: Json
           source_journal_id: string | null
           source_provider: string | null
+          slippage: number
           source_trade_id: string | null
+          spread: number
           source_type: string | null
           status: string
           strategy_id: string | null
@@ -9434,7 +9436,9 @@ export type Database = {
           settings?: Json
           source_journal_id?: string | null
           source_provider?: string | null
+          slippage?: number
           source_trade_id?: string | null
+          spread?: number
           source_type?: string | null
           status?: string
           strategy_id?: string | null
@@ -9483,7 +9487,9 @@ export type Database = {
           settings?: Json
           source_journal_id?: string | null
           source_provider?: string | null
+          slippage?: number
           source_trade_id?: string | null
+          spread?: number
           source_type?: string | null
           status?: string
           strategy_id?: string | null

@@ -27,7 +27,7 @@ import {
 import { isLive, transition } from "./lifecycle";
 import { toExecutionMarks } from "./executions";
 
-import { evaluateTick, type EngineIntent, type FillIntent, type MarketTick } from "./engine";
+import { evaluateTick, type EngineIntent, type ExecutionCosts, type FillIntent, type MarketTick } from "./engine";
 import {
   advancedMetrics, applyBreakEven, applyTrailing, closureAggregate, evaluateAutoBreakEven,
   evaluateTakeProfits, openExecution, partialClose, recordLevelMove, remainingQuantityOf, scaleIn,
@@ -634,8 +634,10 @@ export function applyIntent(
  * Run one market tick through the engine and apply every resulting change.
  * Safe to call on every quote update and from multiple subscribers.
  */
-export function runEngineTick(stores: OrderStores, tick: MarketTick): PositionOrder[] {
-  const intents = evaluateTick(stores.orders.list(), tick);
+export function runEngineTick(
+  stores: OrderStores, tick: MarketTick, costs?: ExecutionCosts,
+): PositionOrder[] {
+  const intents = evaluateTick(stores.orders.list(), tick, costs);
   if (!intents.length) return [];
   const applied: PositionOrder[] = [];
   for (const intent of intents) {
