@@ -1223,3 +1223,53 @@ cutoff on `created_at`.
 Deliberately left for a decision rather than fixed quietly: the options are
 null them, leave them, or leave them and exclude manual entries from
 time-of-day analytics, and that is a product call.
+
+---
+
+## MS-1 — The session rule has no concept of weekends
+
+**Area:** Market sessions (journal, statistics, paper trading, replay) ·
+**Found:** 2026-08-17 · **Status:** open, low priority
+
+`src/lib/market-sessions` models each centre as a daily open/close in its own
+timezone. It has no weekday awareness, so it reports London as open at 08:00
+London on a **Saturday**, when there is no London session at all.
+
+Two things a correct model needs and this one lacks:
+
+1. **Weekday gating**, keyed on the centre's LOCAL weekday rather than UTC —
+   near midnight the two disagree, which is exactly where the bug would hide.
+2. **The week boundary.** The FX week opens with Sydney around 21:00 UTC on
+   Sunday and closes with New York around 21:00–22:00 UTC on Friday. Those are
+   not the same as "skip Saturday and Sunday": Sunday evening IS trading.
+
+### Where it surfaces
+
+- **Journal labels.** `journal_entries.session` is written by the draft trigger
+  from `public.detect_session()`, which mirrors the same rule. A crypto trade
+  closed at 07:00 UTC on a Saturday is labelled `london`. Forex cannot hit this
+  (no weekend trades exist to label), so in practice it mislabels **crypto**
+  trades with FX session names — and crypto is the one asset class for which
+  these sessions arguably mean nothing anyway.
+- **Statistics.** The same rows then group under London/New York in
+  `inferSession`, so "which session do I trade best in" counts weekend crypto
+  as weekday FX.
+- **Replay jumps.** `sessionJumpTargets` will offer "London open" on a Saturday.
+  It degrades rather than breaks — the forward-only seek lands on the next
+  available bar — but it offers an open that did not happen.
+
+### Why the gate did not catch it
+
+`market-sessions/cases.ts` is weighted toward DST transitions, and every case in
+it falls on a weekday: 2026-01-15 (Thu), 2026-07-15 (Wed), 2026-10-28 (Wed),
+2026-03-10 (Tue). Both implementations agree with each other and with the
+fixture; the fixture simply never asks the question. Any fix must add weekend
+cases there FIRST, or the same blind spot survives it.
+
+### Open product question
+
+What should a Saturday crypto trade be labelled? `off_hours` is the honest
+answer for an FX-session vocabulary, but it reads as "no session" on an asset
+that trades continuously. That is a naming decision, not an implementation one,
+and it should be settled before the rule changes — the answer determines whether
+weekend gating applies to all markets or only to FX.
