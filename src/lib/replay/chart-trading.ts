@@ -95,6 +95,33 @@ export function defaultStops(
     : { sl: entry + u, tp: entry - u * 2 };
 }
 
+/**
+ * Stop and target for an entry taken straight off the chart.
+ *
+ * The one place this arithmetic lives. Studio has two chart-native ways to
+ * open a trade — the armed "click to place" flow and the right-click menu —
+ * and they must derive identical levels from identical clicks, or the same
+ * gesture means two different trades depending on how it was started.
+ *
+ * Distinct from `defaultStops`, which sizes off a recent-range `unit` for the
+ * ticket's drag interaction. This sizes off a FRACTION of the entry price,
+ * which is what the armed flow's "0.2% risk" control expresses.
+ */
+export function bracketFor(
+  direction: "buy" | "sell",
+  entry: number,
+  opts: { stopFraction: number; rr: number },
+): { entry: number; stop: number; target: number } {
+  // A floor, not a nicety: a zero stop distance makes the risk basis zero,
+  // and every R-multiple derived from it becomes Infinity.
+  const dist = Math.max(Math.abs(entry) * opts.stopFraction, 1e-8);
+  return {
+    entry,
+    stop: direction === "buy" ? entry - dist : entry + dist,
+    target: direction === "buy" ? entry + dist * opts.rr : entry - dist * opts.rr,
+  };
+}
+
 /** Smallest sensible nudge for Shift+Arrow fine adjustment. */
 export function fineStep(price: number, unit: number): number {
   const byRange = unit > 0 ? unit / 20 : 0;

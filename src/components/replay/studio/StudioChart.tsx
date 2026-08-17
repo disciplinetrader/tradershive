@@ -10,7 +10,7 @@
  * On top of that projection it mounts the same feature layer as the live
  * terminal: drawings (with persistence + object tree) and indicators.
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, Eye, EyeOff, LineChart, Newspaper, Shapes } from "lucide-react";
 
 import { createLightweightAdapter } from "@/lib/chart/adapters/lightweight";
@@ -35,6 +35,9 @@ import { ObjectTree } from "@/components/chart/ObjectTree";
 import { useChartDrawings } from "@/components/chart/useChartDrawings";
 
 import { StudioTradeLayer, type ArmedOrder } from "./StudioTradeLayer";
+import { ChartContextMenu, type ChartOrderIntent } from "@/components/chart/ChartContextMenu";
+import { bracketFor } from "@/lib/replay/chart-trading";
+import { findSymbol } from "@/lib/paper-trading/symbols";
 import { useReplayStudio } from "./context";
 
 /** Decimals inferred from price magnitude — FX pairs need more than indices. */
@@ -50,11 +53,41 @@ function decimalsFor(price: number | null): number {
 export function StudioChart({ onAdapterReady }: { onAdapterReady?: (a: ChartAdapter | null) => void }) {
   const {
     view, sessionId, riskPercent, setRiskPercent, placeMarketOrder, sizeForRisk, price: livePrice,
-    seekForwardTo,
+    seekForwardTo, symbol: sessionSymbol, placeOrderAt,
   } = useReplayStudio();
   const [armed, setArmed] = useState<ArmedOrder | null>(null);
   const [newsOn, setNewsOn] = useState(true);
   const tradingLive = view?.transport.lifecycle !== "completed";
+  // The session row's symbol, not the dataset label parsed below: the label
+  // is a display string that happens to start with the ticker.
+  const symbolMeta = useMemo(
+    () => (sessionSymbol ? findSymbol(sessionSymbol) ?? null : null),
+    [sessionSymbol],
+  );
+
+  /**
+   * Turn a right-click intent into an order, through the SAME derivation the
+   * armed click-to-place flow uses (`bracketFor`) and the same submission path
+   * (`placeOrderAt` / `placeMarketOrder`).
+   *
+   * The menu decides WHAT the click means; this decides nothing about order
+   * semantics beyond routing. That split is what stops Replay growing a second
+   * set of order rules alongside the workspace's.
+   */
+  const onChartIntent = useCallback(
+    (intent: ChartOrderIntent) => {
+      if (intent.kind === "buy_market" || intent.kind === "sell_market") {
+        placeMarketOrder(intent.kind === "buy_market" ? "buy" : "sell");
+        return;
+      }
+      if (intent.kind === "alert" || intent.kind === "drawing") return;
+
+      const direction = intent.kind.startsWith("buy") ? "buy" : "sell";
+      const levels = bracketFor(direction, intent.price, { stopFraction: 0.002, rr: 2 });
+      placeOrderAt(direction, levels, { size: sizeForRisk(levels.entry, levels.stop) });
+    },
+    [placeMarketOrder, placeOrderAt, sizeForRisk],
+  );
 
 
   // Esc always disarms order placement, so the chart never gets stuck armed.
@@ -456,6 +489,19 @@ export function StudioChart({ onAdapterReady }: { onAdapterReady?: (a: ChartAdap
             armed={armed}
             onPlaced={() => setArmed(null)}
           />
+          {/* Right-click trading. The SAME menu the live workspace mounts —
+              one component, two mount points. Alerts are excluded because
+              Replay has none, and a row that cannot do anything is worse than
+              a missing one. */}
+          {tradingLive && (
+            <ChartContextMenu
+              adapter={adapter}
+              sym={symbolMeta}
+              livePrice={livePrice ?? undefined}
+              allow={["buy_market", "sell_market", "buy_limit", "sell_limit", "buy_stop", "sell_stop", "drawing"]}
+              onIntent={onChartIntent}
+            />
+          )}
           {armed ? (
             <div className="pointer-events-none absolute left-1/2 top-3 z-40 -translate-x-1/2 rounded-full border border-border/60 bg-background/95 px-3 py-1 text-[11px] shadow-lg backdrop-blur">
               Click the chart to place a {armed.direction === "buy" ? "buy" : "sell"} order · {riskPercent}% risk · Esc to cancel

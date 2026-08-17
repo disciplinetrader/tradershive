@@ -58,7 +58,7 @@ import {
 import type { Quote, Timeframe } from "@/lib/market-data/types";
 
 import { TradePlanner } from "@/components/trading/chart/TradePlanner";
-import { ChartContextMenu } from "@/components/trading/chart/ChartContextMenu";
+import { ChartContextMenu } from "@/components/chart/ChartContextMenu";
 import { FloatingOrderWindow } from "@/components/trading/FloatingOrderWindow";
 import { PositionLinesLive, type OpenTradeLine } from "@/components/trading/chart/PositionLinesLive";
 import { PendingOrderLines, type PendingOrderLine } from "@/components/trading/chart/PendingOrderLines";

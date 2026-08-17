@@ -16,6 +16,7 @@ import { Scissors, Shield, X } from "lucide-react";
 import type { ChartAdapter } from "@/lib/chart/adapter";
 import type { PositionOrder } from "@/lib/chart/orders/model";
 import { positionMetricsFor } from "@/lib/chart/orders/service";
+import { bracketFor } from "@/lib/replay/chart-trading";
 import {
   AXIS_INSET, DragTooltip, LineAction, OrderLabel, OrderLine,
 } from "@/components/trading/chart/order-line-ui";
@@ -157,12 +158,15 @@ export function StudioTradeLayer({ adapter, tick, decimals, armed, onPlaced }: P
   const onLayerClick = (e: React.MouseEvent) => {
     if (!armed || !adapter || !hostRef.current || !live) return;
     const rect = hostRef.current.getBoundingClientRect();
-    const entry = adapter.yToPrice(e.clientY - rect.top);
-    if (entry == null || !Number.isFinite(entry)) return;
-    const dist = Math.max(Math.abs(entry) * armed.stopFraction, 1e-8);
-    const stop = armed.direction === "buy" ? entry - dist : entry + dist;
-    const target = armed.direction === "buy" ? entry + dist * armed.rr : entry - dist * armed.rr;
-    placeOrderAt(armed.direction, { entry, stop, target }, { size: sizeForRisk(entry, stop) });
+    const clicked = adapter.yToPrice(e.clientY - rect.top);
+    if (clicked == null || !Number.isFinite(clicked)) return;
+    // Shared with the right-click menu — see `bracketFor`. Two chart gestures,
+    // one derivation, so the same click cannot mean two different trades.
+    const levels = bracketFor(armed.direction, clicked, {
+      stopFraction: armed.stopFraction,
+      rr: armed.rr,
+    });
+    placeOrderAt(armed.direction, levels, { size: sizeForRisk(levels.entry, levels.stop) });
     onPlaced?.();
   };
 

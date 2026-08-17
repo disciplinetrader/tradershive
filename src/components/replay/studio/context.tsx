@@ -50,6 +50,8 @@ export interface StudioValue {
    * noise on a crypto one.
    */
   market: string | null;
+  /** `replay_sessions.symbol` — for anything needing the instrument's metadata. */
+  symbol: string | null;
   /** Session starting balance, or null when unknown (never defaulted to 0). */
   startingBalance: number | null;
   phase: StudioPhase;
@@ -498,6 +500,7 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
   const value: StudioValue = {
     sessionId: id,
     market: session?.market ?? null,
+    symbol: session?.symbol ?? null,
     startingBalance:
       session?.initial_balance != null && Number.isFinite(Number(session.initial_balance))
         ? Number(session.initial_balance)
