@@ -258,6 +258,16 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
     useCallback(() => (controller ? controller.getSnapshot() : null), [controller]),
   );
 
+  /**
+   * Latest snapshot, readable without becoming a dependency.
+   *
+   * `view` changes on every observation, so a callback that closed over it
+   * would be rebuilt continuously during playback. The manual mutators only
+   * need the CURRENT market time at the moment they fire.
+   */
+  const viewRef = useRef<ControllerSnapshot | null>(null);
+  viewRef.current = view;
+
   // Execution stores are separate emitters — mirror them into a tick counter.
   useEffect(() => {
     if (!stores) return;
@@ -416,7 +426,7 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
 
   const modifyLevels = useCallback(
     (orderId: string, levels: { stop?: number; target?: number }) => {
-      if (stores) updatePositionLevels(stores, orderId, levels);
+      if (stores) updatePositionLevels(stores, orderId, levels, marketNow());
     },
     [stores],
   );
@@ -454,20 +464,39 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
         kind: "scale_out",
         percent: Math.max(1, Math.min(99, fraction * 100)),
         price,
-      });
+      }, marketNow());
     },
     [stores, price],
   );
 
   const breakEven = useCallback(
-    (orderId: string) => { if (stores) moveStopToBreakEven(stores, orderId, price); },
+    (orderId: string) => { if (stores) moveStopToBreakEven(stores, orderId, price, marketNow()); },
     [stores, price],
+  );
+
+  /**
+   * The clock a replay's manual actions are stamped with.
+   *
+   * Every `@/lib/chart/orders/service` mutator takes `now`, defaulting to
+   * `Date.now()` — right for the live workspace, wrong here. The engine path
+   * already stamps market time (`applyIntent(..., tick.time)`), so omitting it
+   * on manual closes put a session's trades in two different eras: a stop-out
+   * dated to the replayed July bar, a hand-closed trade dated to today.
+   *
+   * Measured 2026-08-17 on a July 2026 replay: the per-day P/L strip showed
+   * "2026-08-17" for hand-closed trades. It also made `duration` — exit minus
+   * entry — read as six weeks for a trade held five minutes, which feeds
+   * `averageHoldSeconds` and every hold-time comparison built on it.
+   */
+  const marketNow = useCallback(
+    () => viewRef.current?.transport.marketTime ?? Date.now(),
+    [],
   );
 
   const closePositionNow = useCallback(
     (orderId: string) => {
       if (!stores || price == null) return;
-      closePosition(stores, orderId, { price, reason: "manual" });
+      closePosition(stores, orderId, { price, reason: "manual" }, marketNow());
     },
     [stores, price],
   );

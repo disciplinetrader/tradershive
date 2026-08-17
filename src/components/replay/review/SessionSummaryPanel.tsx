@@ -125,6 +125,48 @@ export function SessionSummaryPanel({
       </Card>
       ) : null}
 
+      {summary.days.length ? (
+        <Card className="p-4">
+          <div className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">
+            P/L by day
+          </div>
+          {/* A strip of the session's OWN market days, not a month grid. A
+              replay spans days, not months, so a calendar month would be
+              mostly empty cells — and a cross-session month view is the
+              journal's job, not this panel's. */}
+          <div className="flex flex-wrap gap-2">
+            {summary.days.map((d) => (
+              <div
+                key={d.key}
+                className={`min-w-[92px] rounded-md border px-2 py-1.5 ${
+                  d.netPnl > 0
+                    ? "border-emerald-500/40 bg-emerald-500/10"
+                    : d.netPnl < 0
+                      ? "border-destructive/40 bg-destructive/10"
+                      : "border-border/60"
+                }`}
+                title={`${d.count} trade${d.count === 1 ? "" : "s"}`}
+              >
+                <div className="font-mono text-[10px] text-muted-foreground">{d.key}</div>
+                <div
+                  className={`font-mono text-sm ${
+                    d.netPnl > 0 ? "text-emerald-500" : d.netPnl < 0 ? "text-destructive" : ""
+                  }`}
+                >
+                  {fmt(d.netPnl)}
+                </div>
+                <div className="text-[10px] text-muted-foreground">
+                  {d.count} trade{d.count === 1 ? "" : "s"}
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="mt-2 text-[10px] text-muted-foreground">
+            Market days in UTC — when the bars printed, not when you replayed them.
+          </p>
+        </Card>
+      ) : null}
+
       <Card className="p-4">
         <div className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">Reflection captured</div>
         <div className="flex flex-wrap gap-2 text-xs">

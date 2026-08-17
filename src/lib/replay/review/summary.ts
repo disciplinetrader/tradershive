@@ -19,9 +19,12 @@ import { computePerformance, type PerformanceMetrics } from "@/lib/analytics/exp
 import { buildEquitySeries, type EquitySeries } from "@/lib/analytics/equity";
 import { computeDrawdown, type DrawdownMetrics } from "@/lib/analytics/drawdown";
 import { computeBehaviour, type BehaviourAnalytics } from "@/lib/analytics/behaviour";
+import { groupBy, type CohortRow } from "@/lib/analytics/cohorts";
+import { dayKey } from "@/lib/analytics/periods";
 
 /** Bump when the SHAPE of the summary changes, so cached rows stay readable. */
-export const SUMMARY_VERSION = 1;
+// 2: added `days` (per-market-day P/L) and `performance.reliability`.
+export const SUMMARY_VERSION = 2;
 
 export interface SummaryReflectionCounts {
   notes: number;
@@ -59,6 +62,19 @@ export interface ReplaySessionSummary {
   bestTradeId: string | null;
   worstTradeId: string | null;
 
+  /**
+   * Net P/L per MARKET day of the session, oldest first.
+   *
+   * Anchored in UTC, not the viewer's timezone: these are historical bars, and
+   * which calendar day the 2026-07-05 candle belongs to is a market fact, not
+   * a preference — the same reasoning the session rule uses for London.
+   *
+   * `CohortRow` from the shared engine rather than a bespoke shape, so each
+   * day carries the same `rankable` flag and nested `performance` as every
+   * other cohort in the product.
+   */
+  days: CohortRow[];
+
   reflection: SummaryReflectionCounts;
   journalCoveragePercent: number;
 
@@ -89,6 +105,12 @@ export function buildSessionSummary(input: SummaryInput): ReplaySessionSummary {
   const equity = buildEquitySeries(records, { resolution: "trade", startingBalance });
   const drawdown = computeDrawdown(equity);
   const behaviour = computeBehaviour(records);
+  // One call, no new maths: the same grouping every cohort in the product
+  // uses. `minSample: 1` because a day IS its trades — unlike a setup
+  // cohort, there is nothing to rank it against, so withholding it would
+  // hide the session's own history rather than protect a claim about it.
+  const days = groupBy(records, (r) => dayKey(r.exitTime, "UTC"), { minSample: 1 })
+    .sort((a, b) => a.key.localeCompare(b.key));
 
   const unknowns: string[] = [];
   if (startingBalance == null) unknowns.push("Starting balance unknown — balance and return % are not measurable.");
@@ -128,6 +150,7 @@ export function buildSessionSummary(input: SummaryInput): ReplaySessionSummary {
     drawdown,
     behaviour,
 
+    days,
     bestTradeId: best?.id ?? null,
     worstTradeId: worst?.id ?? null,
 
