@@ -2,8 +2,7 @@
 
 State as of 2026-08-17. Phase 0 came out of a competitor study against FX
 Replay: three of its "gaps" turned out to be code that already existed but was
-unreachable, inert, or absent from Studio specifically. Two are now done. One
-is not, and it is the next task.
+unreachable, inert, or absent from Studio specifically. All three are now done.
 
 | # | Item | State |
 | --- | --- | --- |
@@ -19,7 +18,7 @@ surface needs an existing chart component.
 
 ## Item 2 — right-click trading in Replay Studio (DONE)
 
-### What is actually missing
+### What was missing
 
 `ChartContextMenu.tsx` exists and is imported by exactly one file,
 `src/components/trading/TradingWorkspace.tsx`. No component under
@@ -54,7 +53,7 @@ should call this, not build its own order.
 percentage into units, and `riskPercent` / `setRiskPercent` are already wired
 to the toolbar's risk field.
 
-### What has to be built
+### What had to be built
 
 1. **Click → price.** The adapter exposes `priceToY`; the inverse is what a
    context menu needs. Check `src/lib/chart/adapters/lightweight.ts` for an
@@ -68,7 +67,7 @@ to the toolbar's risk field.
    semantics, which is the divergence pattern this codebase keeps paying for
    (five session modules, two P&L formulas — see BA-10).
 
-### How to verify it
+### How it was verified
 
 This is the one Phase 0 item that **cannot be verified from tests alone**; the
 other two were pure functions. Verification needs a browser, and the pattern
