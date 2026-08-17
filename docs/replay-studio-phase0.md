@@ -9,11 +9,15 @@ is not, and it is the next task.
 | --- | --- | --- |
 | 3 | Session-open jumps | **Done** — `1286f910`, confirmed in-app |
 | 1 | Spread / slippage | **Done** — `ed5b7b38`, confirmed in-app |
-| 2 | Right-click trading on the chart | **NOT STARTED — next task** |
+| 2 | Right-click trading on the chart | **Done** — `b9df7686`, confirmed in-app |
+
+**Phase 0 is complete.** What follows is kept as the record of how item 2 was
+resolved, because the coupling question it answers recurs whenever a second
+surface needs an existing chart component.
 
 ---
 
-## NEXT: item 2 — right-click trading in Replay Studio
+## Item 2 — right-click trading in Replay Studio (DONE)
 
 ### What is actually missing
 
@@ -131,3 +135,33 @@ Measured in the app on BTC at spread 10 / slippage 5: buy filled 63154.01, sell
   names.
 - Phase 1 and beyond from the competitor study: performance calendar, Monte
   Carlo projection, multi-chart replay, economic calendar overlay.
+
+---
+
+## How item 2 actually resolved (2026-08-17)
+
+**Reused directly, not extracted.** `ChartContextMenu` was already
+presentational — four props, no workspace context, no hooks, and it binds its
+listener to whatever parent it is rendered into. Everything workspace-specific
+lived in the caller's `onIntent`. Moved to `components/chart/` and mounted in
+`StudioChart`'s `chartWrapRef`, beside `StudioTradeLayer`.
+
+Three duplications were found DURING the work, all pre-existing:
+
+1. The menu inferred order type inline (`state.price < livePrice`) instead of
+   calling `inferOrderType`. Folded onto the canonical rule. Edge behaviour
+   changed deliberately: a click within one tick of the market now resolves to
+   `market` rather than offering a stop where the market already is, and a
+   missing live price declines to guess instead of defaulting to stop.
+2. Studio's armed click-to-place derived stop/target/size inline. Extracted to
+   `bracketFor` in `replay/chart-trading.ts`, now shared with the menu handler.
+3. A THIRD `inferOrderType` lives in `replay/chart-trading.ts`. Deliberately
+   untouched — it returns a side-agnostic `limit | stop` with a much wider
+   tolerance (5% of recent range, not one tick) for the ticket's drag
+   interaction. Different consumers and a different type, so not a duplicate to
+   collapse; recorded here so the next person does not "fix" it by accident.
+
+Verified in the browser against predictions stated in advance: market 63144.01,
+right-click above at 63271.07 → Buy Stop / Sell Limit, below at 61451.78 → Buy
+Limit / Sell Stop, and placing produced entry 61451.78 / stop 61328.88 /
+target 61697.59 — the 0.2% stop and 2R target exact to the cent.
