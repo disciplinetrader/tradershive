@@ -1191,68 +1191,81 @@ the spec hovers.
 
 ---
 
-## JR-4 — Manual journal entries carry a fabricated timestamp and a false provenance flag
+## JR-5 — A journal entry does not record where it came from
 
-**Area:** Journal · **Found:** 2026-08-16 · **Status:** open, fix scheduled with
-the canonical session module
+**Area:** Journal · **Found:** 2026-08-17 · **Status:** open, unassigned
 
-`ManualEntryDialog` writes two fields it has no basis for. Both were found while
-auditing session labels; the session half is the smaller problem.
+`journal_entries` has four writers and no column saying which one wrote a row:
 
-### Defect 2 (the one that matters) — `opened_at` is invented
+| Writer | `trade_id` | `account_id` | `observation_cursor` |
+| --- | --- | --- | --- |
+| `create_journal_draft_from_trade()` | set | set | only for replay/battle trades |
+| `ManualEntryDialog` | never set | never set | never set |
+| `ImportTradesDialog` → `toEntryInsert(..., null)` | never set | explicit null | never set |
+| `api.ts` duplicate / `replay/journal-draft.ts` | null | varies | varies |
 
-```ts
-const openedISO = new Date(`${tradeDate}T12:00:00`).toISOString();
-...
-opened_at: openedISO,
-closed_at: openedISO,
-```
+Provenance is therefore *inferred*, and `isManualEntry()`
+(`src/lib/journal/source-filter.tsx:63`) infers it from `!e.trade_id` alone.
 
-`src/components/journal/ManualEntryDialog.tsx:370-383`. `tradeDate` is a date
-with no time. The string has no `Z`, so it parses as **local** time, and
-`.toISOString()` then converts the browser's noon to UTC.
+### Why it matters
 
-Consequences, all silent:
+`journal_entries.trade_id` and `.account_id` are `ON DELETE SET NULL`. Nothing
+in the app hard-deletes a trade or an account today — `deleteAccount` and
+`deleteTrade` both soft-delete — so no row has actually been detached. But if
+one ever were, it would silently be reclassified as **manual**: an entry the
+system generated would start presenting as something the user typed, in the
+Trades / Calendar / Analytics / Psychology / AI Coach split that all read this
+one predicate.
 
-- Every manual entry is stamped at noon in whatever timezone the browser was in.
-  The same trade logged from two devices in two countries gets two different
-  timestamps, and therefore two different sessions.
-- `opened_at == closed_at`, so `duration_seconds` is **zero** for every manual
-  entry.
-- Every manual entry lands on the same instant of day, so time-of-day analytics
-  over them measure the placeholder, not the trade.
+There is no field that would catch it. `observation_cursor` is set only for
+replay and battle trades (`paper-trading.functions.ts` never sets it), so a
+detached *live* trade is indistinguishable from a hand-written entry.
 
-None of this is visible in the UI: noon is a plausible time and zero duration
-reads as a fast scalp.
+This is also why the 2026-08-16 session audit cost several rounds of queries: a
+column of `trade_id is null` was read as evidence of deletion when it is the
+normal state of three of the four writers. 35 rows across 14 users were briefly
+suspected of being orphans; `observation_cursor is not null` proved none of them
+were.
 
-**Fix:** if a manual entry has no real timestamp, store `null`. A null is
-honest and every report already handles it; a plausible fake is not recoverable
-once written, because nothing distinguishes it from a real noon trade.
+### Sketch of a fix
 
-### Defect 1 — `session_auto_detected` is hardcoded `true`
+`alter table public.journal_entries add column source text not null default
+'manual'` with a check constraint over `('trade','manual','import','replay')`,
+set explicitly by each writer, backfilled as `trade` where `trade_id is not
+null`. Then `isManualEntry` reads a fact rather than inferring one, a detached
+entry stays classified as a trade, and the audit above becomes one `group by`.
 
-```ts
-session: (session || null) as EntryInsert["session"],
-session_auto_detected: true,
-```
+---
 
-Same file, `:386-387`. `session` holds whatever is in state — including a value
-the user picked from the dropdown, since the auto-detect effect bails with
-`if (session) return;` (`:262`). So a hand-picked session is stored flagged as
-machine-derived.
+## JR-6 — Manual entries written before 2026-08-17 carry a fabricated open time
 
-That inverts the one signal a correction pass can use. Measured on the live
-journal 2026-08-16: **all 18** entries carrying a session had
-`session_auto_detected = true`, and all 18 had a stored value the detector could
-not have produced from their own `opened_at` — i.e. every flagged-automatic row
-was in fact user-picked.
+**Area:** Journal · **Found:** 2026-08-17 · **Status:** open, data only —
+the code defect is fixed
 
-**Fix:** set the flag from whether the value came from the auto-detect effect or
-the dropdown, not unconditionally.
+JR-4 (fixed in `0281df96`) had `ManualEntryDialog` stamping
+`new Date(\`${tradeDate}T12:00:00\`)` — the browser's local noon — into both
+`opened_at` and `closed_at`. The fix is forward-only. Rows written before it
+still hold that value, and nothing in them says so.
 
-### Related, same audit
+Consequences for those rows, all silent:
 
-`create_journal_draft_from_trade()` never populated `session` at all — the
-trigger predates the column (trigger 2026-07-17, `session_auto_detected`
-2026-07-22) and was never revisited. 139 of 157 entries had no session. Backfill
-and trigger fix are tracked with the canonical session module work, not here.
+- `opened_at` is noon in whatever timezone the author's browser was in, so the
+  same trade logged from two countries has two different open times.
+- `opened_at == closed_at`, so duration is zero.
+- Any time-of-day or hold-time analysis over them measures the placeholder.
+
+Measured 2026-08-16: 18 entries carried a hand-picked session, and all of them
+came from this dialog. The true count of affected rows is however many manual
+entries exist, which is larger.
+
+### Why it was not migrated with the session backfill
+
+There is nothing to migrate *to*. The real open time was never captured — it
+was never asked for — so the honest correction is `opened_at = null`, which
+throws away a value some users may have come to rely on reading, and cannot be
+distinguished from a genuine noon trade without JR-5's `source` column plus a
+cutoff on `created_at`.
+
+Deliberately left for a decision rather than fixed quietly: the options are
+null them, leave them, or leave them and exclude manual entries from
+time-of-day analytics, and that is a product call.
