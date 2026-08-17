@@ -25,8 +25,14 @@ import { computeDrawdown, type DrawdownMetrics } from "@/lib/analytics/drawdown"
 import { groupBy, timeAnalytics, type CohortRow, type TimeAnalytics } from "@/lib/analytics/cohorts";
 import type { AnalyticsRecord } from "@/lib/analytics/model";
 
-/** Below this, a cohort's rates are reported as not measurable. */
-export const MIN_SAMPLE = 5;
+/**
+ * Re-exported from the shared engine. The definition moved to
+ * `@/lib/analytics/measurable` so `computePerformance` — and therefore Replay
+ * Studio's session summary — is protected by the same gate, not just these six
+ * reports. Existing journal call sites are unaffected.
+ */
+import { MIN_SAMPLE } from "@/lib/analytics/measurable";
+export { MIN_SAMPLE, measurableRate, type Measurable } from "@/lib/analytics/measurable";
 
 export type JournalReportFilters = {
   /** Inclusive ISO dates, `yyyy-mm-dd`. Empty means unbounded. */
@@ -96,31 +102,6 @@ export function buildDataset(
     out.push(r);
   }
   return out;
-}
-
-/* ── measurability ───────────────────────────────────────────────────────── */
-
-export type Measurable<T> =
-  | { measurable: true; value: T; sample: number }
-  | { measurable: false; reason: string; sample: number };
-
-/**
- * A rate is measurable only with enough decided trades behind it.
- *
- * This is the guard against "100% win rate (1 trade)" — a number that reads as
- * a finding and is noise. The reason string is rendered verbatim, so it has to
- * say what is missing, not just that something is.
- */
-export function measurableRate(sample: number, value: number, min = MIN_SAMPLE): Measurable<number> {
-  if (sample <= 0) return { measurable: false, reason: "No trades in range", sample };
-  if (sample < min) {
-    return {
-      measurable: false,
-      reason: `Needs ${min} trades, has ${sample}`,
-      sample,
-    };
-  }
-  return { measurable: true, value, sample };
 }
 
 /* ── the six ─────────────────────────────────────────────────────────────── */

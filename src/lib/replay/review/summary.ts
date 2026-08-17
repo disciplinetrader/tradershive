@@ -94,6 +94,12 @@ export function buildSessionSummary(input: SummaryInput): ReplaySessionSummary {
   if (startingBalance == null) unknowns.push("Starting balance unknown — balance and return % are not measurable.");
   if (performance.rSampleSize === 0 && records.length > 0) unknowns.push("No trade carried a risk basis — R metrics unavailable.");
   if (records.length === 0) unknowns.push("No trades were closed in this session.");
+  // A practice session is usually a small sample, so this is the common case
+  // rather than an edge one: say the rates are unsupported instead of printing
+  // "100% win rate" off two trades.
+  if (!performance.reliability.measurable && records.length > 0) {
+    unknowns.push(`Win rate, expectancy and profit factor need more trades — ${performance.reliability.reason}.`);
+  }
 
   let best: { id: string; pnl: number } | null = null;
   let worst: { id: string; pnl: number } | null = null;

@@ -16,9 +16,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { SidePill, StatusPill } from "@/components/trading/blotter-shared";
 import { positionMetricsFor } from "@/lib/chart/orders/service";
 import { cn } from "@/lib/utils";
+import { SessionSummaryPanel } from "@/components/replay/review/SessionSummaryPanel";
+import { buildSessionSummary } from "@/lib/replay/review/summary";
 import { useReplayStudio } from "./context";
 
-type Tab = "positions" | "orders" | "history";
+type Tab = "positions" | "orders" | "history" | "summary";
 
 function num(v: number | null | undefined, digits = 2) {
   return v == null || !Number.isFinite(v) ? "—" : v.toFixed(digits);
@@ -50,10 +52,26 @@ function Empty({ text }: { text: string }) {
 
 export function StudioBlotter({ className }: { className?: string }) {
   const {
-    positions, pending, trades, price,
+    positions, pending, trades, price, sessionId, symbol, startingBalance,
     closePositionNow, cancelOrder, partialClose, breakEven,
   } = useReplayStudio();
   const [tab, setTab] = useState<Tab>("positions");
+
+  /**
+   * Built from the live closed-trade store, through the SAME derivation the
+   * review page uses. Not a second set of session maths — `buildSessionSummary`
+   * hands the canonical records to the shared analytics engine, so a
+   * mid-session reading and the post-session one cannot disagree.
+   */
+  const liveSummary = useMemo(
+    () => buildSessionSummary({
+      sessionId,
+      symbol,
+      startingBalance,
+      trades,
+    }),
+    [sessionId, symbol, startingBalance, trades],
+  );
   const [open, setOpen] = useState(true);
 
   const chips = useMemo(
@@ -61,6 +79,7 @@ export function StudioBlotter({ className }: { className?: string }) {
       { k: "positions" as Tab, label: "Positions", count: positions.length },
       { k: "orders" as Tab, label: "Orders", count: pending.length },
       { k: "history" as Tab, label: "History", count: trades.length },
+      { k: "summary" as Tab, label: "Summary", count: trades.length },
     ],
     [positions.length, pending.length, trades.length],
   );
@@ -102,7 +121,16 @@ export function StudioBlotter({ className }: { className?: string }) {
         </Button>
       </div>
 
-      {open ? (
+      {open && tab === "summary" ? (
+        <ScrollArea className="h-[168px]">
+          <div className="p-3">
+            {/* The SAME panel the review page renders, from live trades
+                rather than a stored row. Scoring is omitted: mid-session,
+                "score this session" is not yet a meaningful action. */}
+            <SessionSummaryPanel summary={liveSummary} />
+          </div>
+        </ScrollArea>
+      ) : open ? (
         <ScrollArea className="h-[168px]">
           <Table className="text-xs">
             <TableHeader>

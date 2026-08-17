@@ -49,20 +49,30 @@ export function SessionSummaryPanel({
   scoring,
 }: {
   summary: ReplaySessionSummary;
-  score: ScoreRecord | null;
-  onScore: () => void;
-  scoring: boolean;
+  /** Omit the scoring trio to render read-only — Studio's in-session tab does. */
+  score?: ScoreRecord | null;
+  onScore?: () => void;
+  scoring?: boolean;
 }) {
   const p = summary.performance;
+  /**
+   * Rate-style metrics render as an em dash until the sample supports them.
+   *
+   * The value is still computed and still correct; STATING it is what the
+   * sample cannot license. `summary.unknowns` carries the reason and is shown
+   * in the "Not measurable" card below, so the absence is explained rather
+   * than merely blank.
+   */
+  const rate = (formatted: string) => (p.reliability.measurable ? formatted : "—");
   return (
     <section className="space-y-4" aria-label="Session summary">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Kpi label="Net P/L" value={fmt(p.netPnl)} tone={p.netPnl >= 0 ? "up" : "down"} />
         <Kpi label="Trades" value={String(p.tradeCount)} />
-        <Kpi label="Win rate" value={pct(p.winRate)} />
-        <Kpi label="Expectancy" value={fmt(p.expectancy)} />
+        <Kpi label="Win rate" value={rate(pct(p.winRate))} />
+        <Kpi label="Expectancy" value={rate(fmt(p.expectancy))} />
         <Kpi label="Average R" value={fmt(p.averageR)} />
-        <Kpi label="Profit factor" value={fmt(p.profitFactor)} />
+        <Kpi label="Profit factor" value={rate(fmt(p.profitFactor))} />
         <Kpi label="Max drawdown" value={fmt(summary.drawdown.maxDrawdown)} />
         <Kpi
           label="Ending balance"
@@ -70,6 +80,10 @@ export function SessionSummaryPanel({
         />
       </div>
 
+      {/* Scoring belongs to the review surface. Studio mounts this panel
+          mid-session, where "score the session" is not yet a meaningful
+          action — so the card is omitted rather than shown disabled. */}
+      {onScore ? (
       <Card className="space-y-3 p-4">
         <div className="flex items-center justify-between">
           <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Session score</div>
@@ -109,6 +123,7 @@ export function SessionSummaryPanel({
           </p>
         )}
       </Card>
+      ) : null}
 
       <Card className="p-4">
         <div className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">Reflection captured</div>

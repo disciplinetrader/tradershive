@@ -11,6 +11,8 @@
 
 import type { AnalyticsRecord } from "./model";
 
+import { measurableRate, type Measurable } from "./measurable";
+
 export interface PerformanceMetrics {
   tradeCount: number;
   wins: number;
@@ -52,6 +54,24 @@ export interface PerformanceMetrics {
 
   /** netPnl / maxDrawdown — supplied by the engine which owns the curve. */
   recoveryFactor: number | null;
+
+  /**
+   * Whether the RATE-style metrics above — `winRate`, `lossRate`,
+   * `breakEvenRate`, `expectancy`, `profitFactor`, `payoffRatio` — carry enough
+   * decided trades to be read as findings.
+   *
+   * Not a replacement for their values, which stay exactly as computed. A win
+   * rate over two trades is arithmetically correct and evidentially worthless,
+   * so nulling it would erase a real number while printing it bare states a
+   * finding the sample cannot support. The UI is expected to render
+   * `reliability.reason` in place of the number when `measurable` is false —
+   * the same contract the journal's six reports already honour.
+   *
+   * Counted on DECIDED trades (wins + losses), not `tradeCount`: break-evens
+   * do not inform a win rate, so twenty scratches and one winner is still a
+   * one-trade sample for this purpose.
+   */
+  reliability: Measurable<number>;
 }
 
 export const EMPTY_PERFORMANCE: PerformanceMetrics = {
@@ -63,6 +83,7 @@ export const EMPTY_PERFORMANCE: PerformanceMetrics = {
   profitFactor: null, payoffRatio: null, expectancy: null, expectancyR: null,
   averageHoldSeconds: null, tradeFrequency: null,
   maxConsecutiveWins: 0, maxConsecutiveLosses: 0, recoveryFactor: null,
+  reliability: { measurable: false, reason: "No trades in range", sample: 0 },
 };
 
 /** Net P/L of one record honouring the fee-inclusion switch (§4). */
@@ -177,5 +198,8 @@ export function computePerformance(
     maxConsecutiveWins: maxWinStreak,
     maxConsecutiveLosses: maxLossStreak,
     recoveryFactor: null,
+    // Decided trades only — a break-even neither confirms nor denies a win
+    // rate, so it must not pad the sample that licenses one.
+    reliability: measurableRate(wins + losses, winRate),
   };
 }
