@@ -327,6 +327,27 @@ export const updateReplaySession = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { id, ...patch } = data;
+
+    /**
+     * `settings` is a shared bag, not one feature's property, and a plain
+     * UPDATE replaces the whole JSONB document.
+     *
+     * So writing the engine snapshot used to delete every other key under it.
+     * That was invisible while the snapshot was the only tenant — and it
+     * silently ate the prop-firm ruleset the moment a second one arrived: the
+     * challenge worked, autosaved once, and had no rules on the next load.
+     * Merge at the top level; callers own whole keys, never fragments of one.
+     */
+    if (patch.settings) {
+      const { data: current } = await context.supabase
+        .from("replay_sessions")
+        .select("settings")
+        .eq("id", id)
+        .maybeSingle();
+      const existing = (current?.settings ?? {}) as Record<string, unknown>;
+      patch.settings = { ...existing, ...patch.settings };
+    }
+
     const { data: row, error } = await context.supabase
       .from("replay_sessions")
       .update(patch)

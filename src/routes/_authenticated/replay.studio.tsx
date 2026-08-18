@@ -23,6 +23,9 @@ import { StudioBlotter } from "@/components/replay/studio/StudioBlotter";
 import {
   SessionCompleteNotice, SnapshotDiscardedNotice, StudioBlockedView, StudioLoading,
 } from "@/components/replay/studio/StudioStates";
+import { useChallengeMonitor } from "@/components/replay/studio/useChallengeMonitor";
+import { ChallengeEnvelopeBar } from "@/components/replay/studio/ChallengeEnvelopeBar";
+import { ChallengeBreachOverlay } from "@/components/replay/studio/ChallengeBreachOverlay";
 
 const searchSchema = z.object({ id: z.string().optional() });
 
@@ -65,14 +68,19 @@ function StudioPage() {
 }
 
 function Studio() {
-  const { phase } = useReplayStudio();
+  const { phase, sessionId } = useReplayStudio();
   const [panelOpen, setPanelOpen] = useState(false);
+  // One monitor for the whole surface: it carries the equity peak and the
+  // fires-once guard, so a second instance would keep its own of both.
+  const challenge = useChallengeMonitor();
+
   if (phase === "loading") return <StudioLoading />;
   if (phase !== "ready") return <StudioBlockedView />;
 
   return (
     <div className="flex h-[100dvh] min-w-0 flex-col overflow-hidden bg-background">
       <SessionHeader />
+      <ChallengeEnvelopeBar evaluation={challenge.evaluation} />
       <SnapshotDiscardedNotice />
       <SessionCompleteNotice />
       <div className="relative flex min-h-0 flex-1">
@@ -96,6 +104,13 @@ function Studio() {
         </SheetContent>
       </Sheet>
       <PlaybackControls />
+
+      <ChallengeBreachOverlay
+        breach={challenge.breach}
+        open={challenge.showBreach}
+        sessionId={sessionId}
+        onAcknowledge={challenge.acknowledge}
+      />
     </div>
   );
 }

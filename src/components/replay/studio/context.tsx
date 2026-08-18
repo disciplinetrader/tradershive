@@ -29,6 +29,7 @@ import type { PositionOrder } from "@/lib/chart/orders/model";
 import type { ClosedTrade } from "@/lib/chart/orders/closed-trade";
 import type { Candle, Timeframe } from "@/lib/replay/types";
 import { bootstrapSession, type BootstrapResult } from "@/lib/replay/session/loader";
+import { readRules, type ReplayPropRules } from "@/lib/replay/prop-challenge";
 import { loadSnapshot } from "@/lib/replay/session/persistence";
 import { createReplayTradeRemote, replayTradeScope } from "@/lib/chart/orders/replay-trade-sync";
 import type { ReplaySessionController, ControllerSnapshot } from "@/lib/replay/session/controller";
@@ -105,6 +106,17 @@ export interface StudioValue {
   partialClose: (orderId: string, fraction: number) => void;
   /** Move the stop to break-even, subject to the canonical guard. */
   breakEven: (orderId: string) => void;
+
+  // ── Phase 2 · item 3 · prop-firm challenge ─────────────────────────────
+  /**
+   * The prop ruleset this session was CREATED under, or null for a plain
+   * practice session. Snapshotted into `replay_sessions.settings`, never read
+   * from a live setting — same decision spread and slippage got, and for the
+   * same reason: two traders on one session must fail at the same point.
+   */
+  challengeRules: ReplayPropRules | null;
+  /** Unrealised P/L across open positions at the cursor. */
+  openPnl: number;
 }
 
 const Ctx = createContext<StudioValue | null>(null);
@@ -526,7 +538,13 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
         ? { title: "This dataset cannot be replayed", message: "Replay refuses data it cannot reproduce deterministically.", errors: boot.errors }
         : null;
 
+  // Parsed once per session load, not per tick: the ruleset is immutable for
+  // the life of the session.
+  const challengeRules = useMemo(() => readRules(session?.settings), [session?.settings]);
+
   const value: StudioValue = {
+    challengeRules,
+    openPnl,
     sessionId: id,
     market: session?.market ?? null,
     symbol: session?.symbol ?? null,
