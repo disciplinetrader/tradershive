@@ -8,10 +8,11 @@ post-session analytics surfaces FX Replay leads with. Both are now done.
 | --- | --- | --- |
 | — | Rate-metric reliability gate | **Done** — `4bbcb723`, in the shared engine |
 | 1 | Performance calendar (per-market-day P/L) | **Done** — `40f7ced3`, confirmed in-app |
-| 2 | Monte Carlo projection on `/replay/review` | **Done** — confirmed in a real browser |
+| 2 | Monte Carlo projection on `/replay/review` | **Done** — `47f1a28d`, confirmed in a real browser on a synthetic sample (MC-1) |
 
 **Phase 1 is complete.** Multi-chart replay and the economic calendar overlay
-were on the competitor study's list but are not Phase 1; they remain open.
+were on the competitor study's list but are not Phase 1; they remain open and
+unscoped, as do E2E-1 and MS-1.
 
 ---
 
@@ -125,6 +126,13 @@ It also pins the gate on the surface and not only in the engine: a nine-trade
 session — one short of `MIN_MONTE_CARLO_SAMPLE` — renders the reason and em
 dashes rather than a confident-looking envelope off nine trades.
 
+**This is a mechanism proof, not a closure.** The trades are synthetic because
+no real one qualifies: at the time of writing the database holds six closed
+trades in total and not one is attached to a replay session, so nothing reached
+the ten-trade floor. Synthetic data with clean teardown is the honest way to
+verify the mechanism given that — but it verifies the mechanism, not the
+feature in the hands of a trader. See MC-1 below.
+
 ---
 
 ## Item 1 — performance calendar (DONE)
@@ -152,7 +160,15 @@ the feature rather than the prediction.
 
 ## Still open
 
+- **MC-1 — Monte Carlo has never run on a real sample.** The natural next
+  confirmation point, and not urgent: the first genuine replay session with ten
+  or more closed trades is the actual test. What to check when one exists —
+  that the panel's sample size matches the session's own trade count, that the
+  median sits near the session net times the trade count, and that the odds
+  read plausibly against how the session actually went. Nothing is expected to
+  be wrong; the point is that until then the projection has only been seen on
+  data written by a spec.
 - **Multi-chart replay** and the **economic calendar overlay** — on the
-  competitor study's list, not scoped into Phase 1.
+  competitor study's list, not scoped into Phase 1 and not scoped since.
 - **E2E-1** — the UI suite fails as a suite while its specs pass individually.
 - **MS-1** — the session rule has no concept of weekends.
