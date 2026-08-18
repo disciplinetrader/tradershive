@@ -18,7 +18,7 @@ import { ReplayStudioProvider, useReplayStudio } from "@/components/replay/studi
 import { SessionHeader } from "@/components/replay/studio/SessionHeader";
 import { PlaybackControls } from "@/components/replay/studio/PlaybackControls";
 import { SessionSidebar } from "@/components/replay/studio/SessionSidebar";
-import { StudioChart } from "@/components/replay/studio/StudioChart";
+import { StudioPanes } from "@/components/replay/studio/StudioPanes";
 import { StudioBlotter } from "@/components/replay/studio/StudioBlotter";
 import {
   SessionCompleteNotice, SnapshotDiscardedNotice, StudioBlockedView, StudioLoading,
@@ -85,7 +85,7 @@ function Studio() {
       <SessionCompleteNotice />
       <div className="relative flex min-h-0 flex-1">
         <div className="relative min-w-0 flex-1">
-          <StudioChart />
+          <StudioPanes />
           <Button
             size="sm"
             className="absolute bottom-3 right-3 z-30 h-11 gap-1.5 rounded-full px-3 text-[11px] shadow-lg md:hidden"

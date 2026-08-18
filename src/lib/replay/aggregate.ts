@@ -22,6 +22,29 @@ export function aggregatableFrom(base: Timeframe): Timeframe[] {
   });
 }
 
+/** Pane counts the studio grid offers. */
+export const PANE_COUNTS = [1, 2, 4] as const;
+export type PaneCount = (typeof PANE_COUNTS)[number];
+
+/**
+ * Opening timeframe for each pane of a multi-pane layout.
+ *
+ * The base timeframe always takes pane 1 — it is the tape the clock actually
+ * advances on, and the one every fill is decided at. The rest climb the
+ * available ladder, which is why this is derived from `aggregatableFrom`
+ * rather than a fixed list: a 1H session cannot show a 15m pane, because those
+ * bars were never loaded and folding cannot invent them.
+ *
+ * When the ladder runs out (a 1D session has only 1D and 1W above it) the last
+ * available timeframe repeats. A pane must show something, and repeating the
+ * highest is more honest than silently dropping to a fold we do not have.
+ */
+export function defaultPaneLadder(base: Timeframe, count: number): Timeframe[] {
+  const options = aggregatableFrom(base);
+  const ladder = options.length ? options : [base];
+  return Array.from({ length: Math.max(1, count) }, (_, i) => ladder[Math.min(i, ladder.length - 1)]);
+}
+
 /**
  * Fold base-timeframe candles into `target`. Bucketing is by absolute epoch
  * time, so the same input always yields the same output — a hard requirement

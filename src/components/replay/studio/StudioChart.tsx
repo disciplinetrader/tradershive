@@ -50,7 +50,26 @@ function decimalsFor(price: number | null): number {
   return 6;
 }
 
-export function StudioChart({ onAdapterReady }: { onAdapterReady?: (a: ChartAdapter | null) => void }) {
+export interface StudioChartProps {
+  onAdapterReady?: (a: ChartAdapter | null) => void;
+  /**
+   * Shared annotation store. Panes MUST be given one: a `DrawingStore`
+   * persists to `localStorage` under its scope, so two stores on one session
+   * scope are two writers of one key — the last to persist silently erases
+   * whatever the other drew. Sharing one instance also happens to be the
+   * behaviour a trader wants, since drawings are anchored in absolute time and
+   * price and therefore mean the same thing on every fold.
+   */
+  drawingStore?: DrawingStore;
+  /** Opening fold. Defaults to the dataset's own base timeframe. */
+  initialTimeframe?: Timeframe;
+  /** Hide the focused-chart controls: drawing rail, indicators, trading. */
+  compact?: boolean;
+}
+
+export function StudioChart({
+  onAdapterReady, drawingStore: sharedStore, initialTimeframe, compact = false,
+}: StudioChartProps) {
   const {
     view, sessionId, riskPercent, setRiskPercent, placeMarketOrder, sizeForRisk, price: livePrice,
     seekForwardTo, symbol: sessionSymbol, placeOrderAt,
@@ -107,8 +126,9 @@ export function StudioChart({ onAdapterReady }: { onAdapterReady?: (a: ChartAdap
   const baseTf = (view?.dataset.timeframe ?? "5m") as Timeframe;
 
   // ---- display timeframe (folded from the base, never re-fetched) ---------
-  const [displayTf, setDisplayTf] = useState<Timeframe>(baseTf);
-  useEffect(() => { setDisplayTf(baseTf); }, [baseTf]);
+  const [displayTf, setDisplayTf] = useState<Timeframe>(initialTimeframe ?? baseTf);
+  // Follow the dataset's base only while the pane has no opinion of its own.
+  useEffect(() => { setDisplayTf(initialTimeframe ?? baseTf); }, [initialTimeframe, baseTf]);
   const timeframeOptions = useMemo(() => aggregatableFrom(baseTf), [baseTf]);
 
   // ---- indicators ---------------------------------------------------------
@@ -126,7 +146,7 @@ export function StudioChart({ onAdapterReady }: { onAdapterReady?: (a: ChartAdap
   // ---- drawings -----------------------------------------------------------
   const storeRef = useRef<DrawingStore | null>(null);
   if (!storeRef.current) storeRef.current = new DrawingStore();
-  const drawingStore = storeRef.current;
+  const drawingStore = sharedStore ?? storeRef.current;
 
   const [activeTool, setActiveTool] = useState<ToolId>("cursor");
   const [magnet, setMagnet] = useState(false);
@@ -296,6 +316,12 @@ export function StudioChart({ onAdapterReady }: { onAdapterReady?: (a: ChartAdap
           </Button>
         ))}
 
+        {/* Everything past the timeframe row belongs to the FOCUSED chart.
+            In a grid these controls are per-account, not per-pane — four
+            risk fields and four Buy buttons over one position would be four
+            ways to ask the same question. */}
+        {compact ? null : (
+        <>
         <div className="mx-1 h-4 w-px shrink-0 bg-border/60" />
 
         <Popover>
@@ -460,12 +486,17 @@ export function StudioChart({ onAdapterReady }: { onAdapterReady?: (a: ChartAdap
             Sell
           </Button>
         </div>
+        </>
+        )}
       </div>
 
 
       <div className="flex min-h-0 flex-1">
         {/* Drawing rail — identical toolset to the live terminal. */}
-        <div className="hidden w-[44px] shrink-0 flex-col items-center gap-0.5 overflow-y-auto border-r border-border/60 bg-card/30 py-1 md:flex">
+        <div className={cn(
+          "w-[44px] shrink-0 flex-col items-center gap-0.5 overflow-y-auto border-r border-border/60 bg-card/30 py-1",
+          compact ? "hidden" : "hidden md:flex",
+        )}>
           <DrawingToolRail
             store={drawingStore}
             activeTool={activeTool}
@@ -481,7 +512,16 @@ export function StudioChart({ onAdapterReady }: { onAdapterReady?: (a: ChartAdap
         </div>
 
         <div ref={chartWrapRef} className="relative min-w-0 flex-1">
-          <div ref={hostRef} className="absolute inset-0" data-testid="studio-chart" data-studio-chart="" />
+          <div
+            ref={hostRef}
+            className="absolute inset-0"
+            data-testid="studio-chart"
+            data-studio-chart=""
+            /* The fold this pane is actually rendering, so a multi-pane
+               layout can be checked for what it SHOWS rather than for
+               what it was handed. */
+            data-timeframe={displayTf}
+          />
           <StudioTradeLayer
             adapter={adapter}
             tick={`${view?.transport.cursor ?? 0}:${displayTf}:${chartBounds.width}x${chartBounds.height}`}
