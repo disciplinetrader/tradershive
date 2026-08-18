@@ -46,8 +46,24 @@ export type PropChallengeDayRow = {
 
 export type ChallengeProgress = {
   profit: { pct: number; hit: boolean; targetPct: number; amount: number; targetAmount: number };
-  dailyLoss: { usedPct: number; remainingPct: number; remainingAmount: number; safe: boolean };
-  drawdown: { usedPct: number; remainingPct: number; remainingAmount: number; safe: boolean };
+  /**
+   * `usedPct` is clamped to 100 for the progress bars, so it cannot express a
+   * breach's size. `usedAmount` / `limitAmount` are the unclamped figures the
+   * rule was actually decided on — a breach moment has to be able to say which
+   * field went and by how much, not just that one did.
+   *
+   * (The implementation deleted in favour of this one carried `observed` and
+   * `limit` on its breaches. That was the one thing it did better, so it is
+   * kept here rather than lost with it.)
+   */
+  dailyLoss: {
+    usedPct: number; remainingPct: number; remainingAmount: number; safe: boolean;
+    usedAmount: number; limitAmount: number;
+  };
+  drawdown: {
+    usedPct: number; remainingPct: number; remainingAmount: number; safe: boolean;
+    usedAmount: number; limitAmount: number;
+  };
   tradingDays: { used: number; required: number; met: boolean };
   duration: { daysElapsed: number; daysRemaining: number; totalDays: number };
   todayPnl: number;
@@ -58,11 +74,22 @@ export type ChallengeProgress = {
 /**
  * Evaluate a challenge against its latest daily snapshots. `todayEquity`
  * comes from the live paper account equity so the HUD reacts in real time.
+ *
+ * `now` defaults to wall-clock because a live paper challenge runs on it —
+ * but it is a parameter, not an assumption, because a REPLAY challenge does
+ * not. A replayed July session must measure its elapsed days against the
+ * market time under the cursor; reading `Date.now()` there would report a
+ * July session as 45 days old the moment it was opened in August.
+ *
+ * Same shape as every mutator in `chart/orders/service`, and for the same
+ * reason: Studio omitting `now` at four call sites is what stamped replayed
+ * trades with today's date and quietly corrupted every hold-time metric.
  */
 export function evaluateChallenge(
   c: PropChallengeRow,
   days: PropChallengeDayRow[],
   todayEquity: number = c.current_equity,
+  now: number = Date.now(),
 ): ChallengeProgress {
   const start = c.starting_equity;
   const profitAmt = todayEquity - start;
@@ -88,7 +115,6 @@ export function evaluateChallenge(
 
   const tradingDaysUsed = Math.max(c.trading_days_used, days.filter((d) => d.trades_count > 0).length);
   const startedAt = new Date(c.started_at).getTime();
-  const now = Date.now();
   const daysElapsed = Math.max(0, Math.floor((now - startedAt) / 86_400_000));
   const daysRemaining = Math.max(0, c.duration_days - daysElapsed);
 
@@ -117,10 +143,12 @@ export function evaluateChallenge(
     dailyLoss: {
       usedPct: Math.min(100, dailyUsedPct), remainingPct: Math.max(0, 100 - dailyUsedPct),
       remainingAmount: dailyRemaining, safe: dailyUsedPct < 60,
+      usedAmount: dailyLossUsed, limitAmount: dailyLossLimit,
     },
     drawdown: {
       usedPct: Math.min(100, ddUsedPct), remainingPct: Math.max(0, 100 - ddUsedPct),
       remainingAmount: ddRemaining, safe: ddUsedPct < 60,
+      usedAmount: ddUsed, limitAmount: ddLimit,
     },
     tradingDays: { used: tradingDaysUsed, required: c.min_trading_days, met: tradingDaysUsed >= c.min_trading_days },
     duration: { daysElapsed, daysRemaining, totalDays: c.duration_days },
