@@ -2,12 +2,19 @@
  * Phase 3 validation scenarios — Simulation Profiles & multi-account
  * consistency. Every scenario is deterministic and independent from
  * market-data providers; prices are pushed manually via `onPrice`.
+ *
+ * Prop-firm RULE coverage is not here. Two scenarios used to exercise a second
+ * rules implementation that lived beside this harness; both the implementation
+ * and the scenarios are gone, and their assertions now run against the
+ * canonical evaluator in `src/lib/prop-challenges/__tests__/evaluator.test.ts`.
+ * That matters because nothing calls `runPhase3Scenarios` — coverage parked
+ * here does not execute. `scenarioPropFirmChallenge` below stays: it exercises
+ * the TradingEngine under a prop profile, not the rule evaluator.
  */
 
 import { TradingEngine } from "./engine";
 import { accountConfigFromProfile, SIMULATION_PROFILES } from "./simulation-profiles";
 import { SimulationAccountRegistry } from "./simulation-accounts";
-import { evaluatePropFirmRules } from "./prop-firm-rules";
 import type { ScenarioResult } from "./scenarios-phase2";
 
 function ok(name: string, details: string): ScenarioResult {
@@ -77,43 +84,6 @@ function scenarioMultiAccount(): ScenarioResult {
   return ok("multi_account_isolation", "3 accounts, isolated state, price fan-out works");
 }
 
-function scenarioPropFirmRules(): ScenarioResult {
-  const daily = [
-    { date: "2025-01-02", realized_pnl:  1500, end_equity: 101_500, peak_equity: 101_800, trades: 4 },
-    { date: "2025-01-03", realized_pnl:  -800, end_equity: 100_700, peak_equity: 101_600, trades: 3 },
-    { date: "2025-01-06", realized_pnl:  2000, end_equity: 102_700, peak_equity: 103_000, trades: 5 },
-    { date: "2025-01-07", realized_pnl:  1300, end_equity: 104_000, peak_equity: 104_400, trades: 2 },
-    { date: "2025-01-08", realized_pnl:  4200, end_equity: 108_200, peak_equity: 108_500, trades: 6 },
-  ];
-  const engine = new TradingEngine(accountConfigFromProfile("prop_firm_challenge"));
-  const snap = engine.snapshot();
-  snap.equity = 108_200; snap.balance = 108_200;
-  const result = evaluatePropFirmRules(
-    { startingBalance: 100_000, profitTargetPct: 8, maxDailyDrawdownPct: 5, maxTotalDrawdownPct: 10, minTradingDays: 5 },
-    snap, daily,
-  );
-  if (!result.passed) return fail("prop_rules_pass", result.breaches.map((b) => b.message).join("; "));
-  if (!result.progress.profitTargetHit) return fail("prop_rules_target", "8% target not hit");
-  if (!result.progress.tradingDaysMet) return fail("prop_rules_days", "min days not met");
-  return ok("prop_rules_pass", `profit=${result.progress.profitPct.toFixed(2)}% days=${result.progress.tradingDays}`);
-}
-
-function scenarioPropFirmBreach(): ScenarioResult {
-  const daily = [
-    { date: "2025-01-02", realized_pnl: -6000, end_equity: 94_000, peak_equity: 100_000, trades: 3 },
-  ];
-  const engine = new TradingEngine(accountConfigFromProfile("prop_firm_challenge"));
-  const snap = engine.snapshot();
-  snap.equity = 94_000; snap.balance = 94_000;
-  const result = evaluatePropFirmRules(
-    { startingBalance: 100_000, maxDailyDrawdownPct: 5, maxTotalDrawdownPct: 10 },
-    snap, daily,
-  );
-  if (result.passed) return fail("prop_rules_breach", "expected daily drawdown breach");
-  if (result.breaches[0].code !== "daily_drawdown") return fail("prop_rules_breach", "wrong breach code");
-  return ok("prop_rules_breach", `caught ${result.breaches[0].message}`);
-}
-
 function scenarioProfileCount(): ScenarioResult {
   const count = Object.keys(SIMULATION_PROFILES).length;
   if (count < 8) return fail("profile_registry", `only ${count} profiles registered`);
@@ -126,8 +96,6 @@ export const PHASE3_SCENARIOS = [
   scenarioCryptoFuturesNoNBP,
   scenarioOverrides,
   scenarioMultiAccount,
-  scenarioPropFirmRules,
-  scenarioPropFirmBreach,
   scenarioProfileCount,
 ];
 

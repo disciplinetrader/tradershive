@@ -61,6 +61,10 @@ export {
 export type {
   SimulationAccount, SimulationAccountId, SimulationAccountMeta, CreateAccountInput,
 } from "./simulation-accounts";
-export { evaluatePropFirmRules, isPropFirmCleared } from "./prop-firm-rules";
-export type { PropFirmRules, RuleBreach, RuleEvaluation, DailyStat } from "./prop-firm-rules";
+// Prop-firm rules deliberately do NOT live here. The canonical evaluator is
+// `@/lib/prop-challenges/evaluator` — the one wired to the routes, components
+// and tables. A second copy used to sit in this module, reachable only from a
+// self-test harness nobody ran, and it disagreed with the canonical one about
+// whether max drawdown is measured from the peak or from the starting balance
+// (see PF-1 in docs/replay-studio-phase2.md). One rule, one implementation.
 export { runPhase3Scenarios, summarizePhase3, PHASE3_SCENARIOS } from "./scenarios-phase3";
