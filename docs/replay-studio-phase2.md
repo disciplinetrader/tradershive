@@ -9,11 +9,14 @@ one was already built against the wrong clock.
 | --- | --- | --- |
 | 3 | Prop-firm challenge mode | **Done** — `3d7bdbbb`, `68e15c5f`, `47a134c0`, `af39cbcf`, confirmed in a real browser |
 | 1A | Multi-pane replay (one symbol, N timeframes) | **Done** — `cfd472dd`, confirmed in a real browser |
-| 2 | Economic calendar overlay | **Partial by decision** — code done, feeds to be fixed; see EC-1 |
+| 2 | Economic calendar overlay | **Done as scoped** — overlay was already built, feed fixed; history accrues from first run. Full backfill is EC-1 |
 | 1B | Multi-symbol replay | **Parked** — see MSYM-1 |
 
-Approved order: **3 → 1A → 2 (partial)**, 1B parked. Items 3 and 1A are done;
-item 2's feed fix is the remaining Phase 2 task.
+Approved order: **3 → 1A → 2 (partial)**, 1B parked. **All three are done.**
+
+**Phase 2 is complete** as scoped. What remains is not code: 1B is parked on
+data (MSYM-1), EC-1 is a provider decision, and the calendar cron needs
+scheduling on the deployment.
 
 ---
 
@@ -137,7 +140,7 @@ real future work, not redundant with 1A.
 
 ---
 
-## Item 2 — built, mounted, and starved (PARTIAL by decision — EC-1)
+## Item 2 — built, mounted, and starved (DONE as scoped — EC-1 remains)
 
 `src/lib/economic-calendar/` already exists (types, client API + hook, server
 ingest), the cron route exists at `/api/public/hooks/economic-calendar`, and it
@@ -165,6 +168,51 @@ retro-covers a July replay.
 stop. Full historical backfill is **EC-1** — blocked on a data-provider
 decision that is the product owner's to make, not a Phase 2 code task. It is
 logged as its own item and is explicitly NOT folded into "done".
+
+### The fix (done)
+
+The two dead URLs were **removed, not replaced** — there is nothing to replace
+them with. Probed 2026-08-18 across every plausible variant: `lastweek`,
+`nextweek`, `thismonth`, `nextmonth`, `lastmonth`, `today`, `tomorrow`,
+`yesterday` all 404 on `nfs.faireconomy.media`, in `.json` and in `.xml`;
+`cdn-nfs.faireconomy.media` does not resolve; and forexfactory.com answers 403
+to a direct fetch. Exactly one window is published: `ff_calendar_thisweek`.
+
+That also fixes a signal problem. Every run was recording two errors and
+returning `ok: false`, so the job reported failure permanently — and a job that
+always fails is one nobody reads the status of.
+
+**A finding that contradicted the plan, caught before it shipped.** The first
+version of this fix documented "run daily so the `actual` values published
+during the week get captured". That is false. Measured against the live
+payload: the feed carries only `title, country, date, impact, forecast,
+previous` — **there is no `actual` field at all**, and 0 of 96 items had one,
+including the 30 whose release time had already passed. The overlay can show
+what was scheduled and what was expected, never what came out. The comment was
+corrected rather than shipped, and the limitation is now part of EC-1.
+
+Daily cadence is still right, for the reasons that survive: a window missed is
+a window lost for ever, a failed run then costs a day rather than a week, and
+`forecast` / `previous` are revised during the week. Not more often than daily
+— the host rate-limits, measured: a short burst earned an HTTP 429 with an HTML
+body. Both failure modes were already handled (non-OK throws, HTML fails
+`res.json()`), so a rate-limited day is a no-op rather than a corruption.
+
+`syncEconomicCalendar` now also returns `windowFrom` / `windowTo` /
+`withActual`, because "412 upserted" cannot tell an operator whether the job is
+accumulating history or rewriting one week. `withActual` is a canary: expected
+to stay 0 with this provider, and non-zero the day one supplies outcomes.
+
+Verified by running the production parser over the real captured payload: 96
+raw → 96 parsed, 0 dropped, window 2026-08-16T22:30Z → 2026-08-21T14:00Z,
+impacts 75 low / 13 medium / 8 high, 21 of which the overlay would draw, and 96
+unique `(event_time, currency, title)` upsert keys — no collisions. Eleven unit
+tests cover the parser, which had none; the timezone case is asserted to the
+minute because the overlay gates on `timeMs <= marketTime`, so an offset error
+would not draw a wrong marker but leak one the clock has not reached.
+
+**What remains operational, not code:** the cron must be scheduled (daily) with
+`CRON_SECRET` set on the deployment. Nothing accrues until it runs.
 
 ---
 
@@ -337,8 +385,16 @@ its own specs. The wizard test drives the real entry point.
 
 ## Still open
 
-- **EC-1** — historical economic calendar data. The overlay works; the source
-  cannot supply history. Blocked on a provider decision.
+- **EC-1** — economic calendar data, blocked on a provider decision (the
+  product owner's, not a code task). The overlay works and the feed is fixed;
+  the SOURCE has two limits that no amount of code removes:
+  1. **No history.** One week is published, forward only. Sessions replaying
+     dates before the cron's first run will correctly show nothing.
+  2. **No results.** The feed has no `actual` field — measured 0 of 96,
+     including 30 already-released events. A trader sees what was scheduled and
+     forecast, never the outcome.
+
+  A provider with history and actuals fixes both; nothing else does.
 - **MSYM-1** — multi-symbol replay (item 1B). Parked on data, not cost. The
   approach and the user story are recorded above so neither needs re-deriving.
 - **PF-1** — trailing versus static max drawdown; every preset is trailing today.

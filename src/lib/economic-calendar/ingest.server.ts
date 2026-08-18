@@ -1,17 +1,55 @@
 /**
  * Economic calendar ingestion (server only).
  *
- * Source: ForexFactory's free weekly JSON feeds mirrored by faireconomy.
- * They publish last / this / next week, so a scheduled run accumulates a
- * rolling history in our own table — which is what replay needs.
+ * Source: ForexFactory's free calendar feed, mirrored by faireconomy.
+ *
+ * ── What this can and cannot do ────────────────────────────────────────────
+ *
+ * This module used to request last / this / next week. Measured 2026-08-18,
+ * **only `thisweek` still exists** — `ff_calendar_lastweek.json` and
+ * `ff_calendar_nextweek.json` both return 404, in JSON and in XML, and
+ * forexfactory.com itself answers 403 to a direct fetch. Every run was
+ * therefore reporting two errors and `ok: false`, which is worse than useless:
+ * a job that always fails is a job nobody reads the status of.
+ *
+ * The consequence is not cosmetic. The publisher serves ONE WEEK, forward
+ * only, so this job cannot backfill. It accumulates history from the first run
+ * onward and no earlier. A replay of a date before that first run will
+ * correctly show no events, because we have none — see EC-1 in
+ * docs/replay-studio-phase2.md, which is a data-provider decision and not a
+ * code task.
+ *
+ * ── This source never publishes results ────────────────────────────────────
+ *
+ * Measured on the live payload, 2026-08-18: the feed carries exactly
+ * `title, country, date, impact, forecast, previous`. There is **no `actual`
+ * field at all** — 0 of 96 items had one, including the 30 whose release time
+ * had already passed. `parseFeed` still reads `actual` defensively and the
+ * column still exists, but with this provider it will stay null for ever.
+ *
+ * So the overlay can show a trader what was SCHEDULED and what was expected,
+ * never what came out. That is a limitation of the source, not of the code,
+ * and it is part of the EC-1 provider decision.
+ *
+ * ── Cadence ────────────────────────────────────────────────────────────────
+ *
+ * At least weekly, because a window missed is a window lost for ever. DAILY is
+ * better, for two reasons that survive the finding above: a single failed run
+ * (see the rate limit below) then costs a day rather than a week, and
+ * `forecast` / `previous` are revised during the week the feed covers.
+ *
+ * The upsert key is (event_time, currency, title) — verified unique across all
+ * 96 rows of a real payload — so repeated runs inside one week are free.
+ *
+ * Do not run it much more often than that: the host rate-limits. Measured
+ * 2026-08-18, a short burst of requests earned an HTTP 429 with an HTML body.
+ * Both failure modes are already handled — a non-OK status throws, and an HTML
+ * body fails `res.json()` — and either way the run records an error and
+ * changes nothing, so a rate-limited day is a no-op rather than a corruption.
  */
 import type { NewsImpact } from "./types";
 
-const FEEDS = [
-  "https://nfs.faireconomy.media/ff_calendar_lastweek.json",
-  "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
-  "https://nfs.faireconomy.media/ff_calendar_nextweek.json",
-] as const;
+const FEEDS = ["https://nfs.faireconomy.media/ff_calendar_thisweek.json"] as const;
 
 interface FeedItem {
   title?: string;
@@ -62,8 +100,23 @@ export function parseFeed(items: unknown): CalendarRow[] {
   return out;
 }
 
-/** Fetch every feed and upsert into `economic_events`. Returns counts. */
-export async function syncEconomicCalendar(): Promise<{ fetched: number; upserted: number; errors: string[] }> {
+export interface CalendarSyncResult {
+  fetched: number;
+  upserted: number;
+  errors: string[];
+  /** Window the run actually covered, so an operator can see what landed. */
+  windowFrom: string | null;
+  windowTo: string | null;
+  /**
+   * Events carrying a published result. Expected to be 0 with the current
+   * provider, which serves no `actual` field — kept as a canary, so a source
+   * that ever starts supplying outcomes shows up without anyone looking.
+   */
+  withActual: number;
+}
+
+/** Fetch the feed and upsert into `economic_events`. */
+export async function syncEconomicCalendar(): Promise<CalendarSyncResult> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const errors: string[] = [];
   const rows: CalendarRow[] = [];
@@ -93,5 +146,16 @@ export async function syncEconomicCalendar(): Promise<{ fetched: number; upserte
     else upserted += chunk.length;
   }
 
-  return { fetched: rows.length, upserted, errors };
+  // Report the window rather than only a count: "412 upserted" cannot tell an
+  // operator whether the job is accumulating history or re-writing one week.
+  const times = payload.map((r) => r.event_time).sort();
+
+  return {
+    fetched: rows.length,
+    upserted,
+    errors,
+    windowFrom: times[0] ?? null,
+    windowTo: times[times.length - 1] ?? null,
+    withActual: payload.filter((r) => r.actual != null).length,
+  };
 }
