@@ -169,6 +169,11 @@ the feature rather than the prediction.
   be wrong; the point is that until then the projection has only been seen on
   data written by a spec.
 - **Multi-chart replay** and the **economic calendar overlay** — on the
-  competitor study's list, not scoped into Phase 1 and not scoped since.
+  competitor study's list, not scoped into Phase 1.
+  **Since resolved:** both shipped in Phase 2 — see `replay-studio-phase2.md`.
+  Multi-chart turned out to be two features: panes of one symbol (done) and
+  independent symbols on one clock (parked as MSYM-1, on data rather than
+  cost). The calendar overlay was already built and mounted; only its feed
+  needed fixing, and its remaining limits are EC-1.
 - **E2E-1** — the UI suite fails as a suite while its specs pass individually.
 - **MS-1** — the session rule has no concept of weekends.

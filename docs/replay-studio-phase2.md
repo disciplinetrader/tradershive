@@ -9,14 +9,14 @@ one was already built against the wrong clock.
 | --- | --- | --- |
 | 3 | Prop-firm challenge mode | **Done** — `3d7bdbbb`, `68e15c5f`, `47a134c0`, `af39cbcf`, confirmed in a real browser |
 | 1A | Multi-pane replay (one symbol, N timeframes) | **Done** — `cfd472dd`, confirmed in a real browser |
-| 2 | Economic calendar overlay | **Done as scoped** — overlay was already built, feed fixed; history accrues from first run. Full backfill is EC-1 |
+| 2 | Economic calendar overlay | **Done as scoped** — `3d910110`; overlay was already built, feed fixed. Full backfill is EC-1 |
 | 1B | Multi-symbol replay | **Parked** — see MSYM-1 |
 
-Approved order: **3 → 1A → 2 (partial)**, 1B parked. **All three are done.**
+Approved order was **3 → 1A → 2 (partial)**, 1B parked.
 
-**Phase 2 is complete** as scoped. What remains is not code: 1B is parked on
-data (MSYM-1), EC-1 is a provider decision, and the calendar cron needs
-scheduling on the deployment.
+**Phase 2 is complete** as scoped. Everything left is a decision or an
+operation, not code: EC-1 (provider), MSYM-1 (parked on data), and scheduling
+the calendar cron — nothing accrues until that runs.
 
 ---
 
@@ -395,6 +395,11 @@ its own specs. The wizard test drives the real entry point.
      forecast, never the outcome.
 
   A provider with history and actuals fixes both; nothing else does.
+- **EC-2 — the calendar cron is not scheduled.** Operational, not code. The
+  endpoint is `/api/public/hooks/economic-calendar`, it needs `CRON_SECRET` on
+  the deployment, and it should run DAILY (see the item 2 section for why not
+  weekly and why not hourly). Until it runs, `economic_events` stays empty and
+  the overlay correctly draws nothing.
 - **MSYM-1** — multi-symbol replay (item 1B). Parked on data, not cost. The
   approach and the user story are recorded above so neither needs re-deriving.
 - **PF-1** — trailing versus static max drawdown; every preset is trailing today.
