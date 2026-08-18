@@ -7,12 +7,12 @@ one was already built against the wrong clock.
 
 | # | Item | State |
 | --- | --- | --- |
-| 3 | Prop-firm challenge mode | **In progress** — rules exist, bound to the wrong clock |
+| 3 | Prop-firm challenge mode | **Done** — `3d7bdbbb`, `68e15c5f`, `47a134c0`, `af39cbcf`, confirmed in a real browser |
 | 1A | Multi-pane replay (one symbol, N timeframes) | **Approved, not started** |
 | 2 | Economic calendar overlay | **Partial by decision** — code done, feeds to be fixed; see EC-1 |
 | 1B | Multi-symbol replay | **Parked** — see MSYM-1 |
 
-Approved order: **3 → 1A → 2 (partial)**, 1B parked.
+Approved order: **3 → 1A → 2 (partial)**, 1B parked. Item 3 is done; 1A is next.
 
 ---
 
@@ -126,7 +126,7 @@ logged as its own item and is explicitly NOT folded into "done".
 
 ---
 
-## Item 3 — the rules exist, bound to the wrong clock (IN PROGRESS)
+## Item 3 — the rules exist, bound to the wrong clock (DONE)
 
 Far more complete than the study suggested: `src/lib/prop-challenges/`
 (evaluator, presets, active-session), `prop-challenges.functions.ts`, five
@@ -185,7 +185,8 @@ evaluator, so coverage that lived in a harness nobody runs now executes on every
 commit.
 
 Safe to do now because `prop_challenges` and `prop_challenge_days` both hold
-**0 rows** — no user's evaluation changes semantics under them.
+**0 rows** — no user's evaluation changes semantics under them. Checked, not
+assumed.
 
 Two differences surfaced by the collapse, logged rather than silently resolved:
 
@@ -201,6 +202,94 @@ Two differences surfaced by the collapse, logged rather than silently resolved:
   reads either. The deleted implementation did enforce weekend-hold, but only
   from dead code, so no behaviour is lost by removing it — the gap is
   pre-existing, not introduced here.
+
+One thing was carried FORWARD from the deleted file rather than lost with it:
+its breaches reported `observed` and `limit`. `ChallengeProgress` clamps
+`usedPct` to 100 for its progress bars, so it cannot express a breach's size —
+and a breach moment has to say by how much. Both envelopes now also return
+`usedAmount` / `limitAmount`, unclamped.
+
+### How it was built (steps 2–4)
+
+**The clock.** `evaluateReplayChallenge` folds the session's canonical
+`ClosedTrade` tape into the day rows `evaluateChallenge` already consumes and
+hands them over. No rule is restated. `evaluateChallenge` gained a `now`
+parameter defaulting to `Date.now()` — the same shape as every mutator in
+`chart/orders/service`, and for the same reason. A test pins it: first trade
+2026-07-05, cursor 2026-07-07 10:00, `daysElapsed` must be 2. Wall-clock reads
+~44 there because the suite runs in August, so the guard fails loudly.
+
+Three decisions worth keeping:
+
+- The current market day always gets a row, even with no trade on it. The daily
+  rule measures against the last row's opening equity, so without it a fresh
+  day is judged against yesterday's open and the daily allowance can be spent
+  twice over.
+- `duration_days` is 0. A replay is bounded by its tape, not a calendar, so
+  `daysRemaining` must not imply a deadline that does not exist.
+- Peak equity is carried by the caller, not recomputed. Floating equity is not
+  in the trade tape, so a peak touched while a position was open and then given
+  back is unrecoverable; a resumed session restarts from its realised peak.
+  That only ever makes a resumed trailing drawdown more forgiving.
+
+**The moment.** `ChallengeBreachOverlay` carries the weight of
+`BattleStartIntro`'s countdown — full viewport, backdrop blur, one thing to
+read — and differs in refusing to dismiss itself: a prelude may be skipped, a
+failed evaluation must be acknowledged. `ChallengeEnvelopeBar` is the half that
+changes behaviour, showing room left in amounts rather than percentages while
+there is still room. Both read one `useChallengeMonitor`, which owns the equity
+peak and the fires-once guard.
+
+**The entry point.** The wizard takes a preset and moves the balance to match
+it; `createReplaySession` resolves the numbers server-side. A preset ID crosses
+the wire, never a set of limits — a client that could post its own
+`max_daily_loss_pct` could post an easier challenge.
+
+### The bug this feature exposed
+
+`persistSnapshot` wrote `settings` as a whole new object:
+
+```ts
+settings: { [SNAPSHOT_SETTINGS_KEY]: snapshot }
+```
+
+A plain UPDATE replaces the entire JSONB document, so **every autosave deleted
+every other key under it**. Invisible while the engine snapshot was the only
+tenant, and fatal the moment a second arrived: the challenge worked, autosaved
+once, and had no rules on the next load. `updateReplaySession` now merges at the
+top level — callers own whole keys, never fragments of one.
+
+Found by predicting the reopen and being wrong. The prediction was suspected
+first and survived: a ruleset SHOULD outlive a save. The feature did not.
+
+Second behaviour from the same investigation: reopening a failed challenge no
+longer throws the modal over the chart again. The breach is history by then and
+the trader is there to read the tape, so the envelope renders its final state
+and the moment stays suppressed.
+
+### Verified in a real browser, against numbers stated first
+
+100k account, 5% daily on a day opening at 100,000, seeded trades of −6,000:
+
+| | Predicted | Rendered |
+| --- | --- | --- |
+| Which rule | Daily loss limit | Daily loss limit |
+| Limit | $5,000 | $5,000 |
+| Reached | $6,000 | $6,000 |
+| Over by | $1,000 | $1,000 |
+| Daily left | $0 | $0 |
+| Drawdown left | $4,000 | $4,000 |
+
+Naming the rule is load-bearing, not a label nit: the total-drawdown envelope
+still had $4,000 in it, so the daily rule had to fire and the other had not.
+A control at −4,000 must NOT fire, and does not: $1,000 left, no overlay. The
+session's status is polled to `completed` rather than trusting that a modal
+appeared over it — "ends the session" has to mean the session ended.
+
+Seeded rows are deleted in `afterAll` and the database was verified back as
+found. Because the trades are seeded, what this proves is the WATCHER: tape →
+market-time evaluation → session ended → moment on screen. Order placement has
+its own specs. The wizard test drives the real entry point.
 
 ---
 
