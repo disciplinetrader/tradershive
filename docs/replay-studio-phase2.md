@@ -395,11 +395,9 @@ its own specs. The wizard test drives the real entry point.
      forecast, never the outcome.
 
   A provider with history and actuals fixes both; nothing else does.
-- **EC-2 — the calendar cron is not scheduled.** Operational, not code. The
-  endpoint is `/api/public/hooks/economic-calendar`, it needs `CRON_SECRET` on
-  the deployment, and it should run DAILY (see the item 2 section for why not
-  weekly and why not hourly). Until it runs, `economic_events` stays empty and
-  the overlay correctly draws nothing.
+- **EC-2 — the calendar cron is not scheduled.** Operational, not code. Until
+  it runs, `economic_events` stays empty and the overlay correctly draws
+  nothing. Runbook below.
 - **MSYM-1** — multi-symbol replay (item 1B). Parked on data, not cost. The
   approach and the user story are recorded above so neither needs re-deriving.
 - **PF-1** — trailing versus static max drawdown; every preset is trailing today.
@@ -408,3 +406,82 @@ its own specs. The wizard test drives the real entry point.
 - **MC-1** (Phase 1) — Monte Carlo has only ever run on synthetic data.
 - **E2E-1** — the UI suite fails as a suite while its specs pass individually.
 - **MS-1** — the session rule has no concept of weekends.
+
+---
+
+## EC-2 apply runbook — schedule the calendar cron
+
+Same mechanism as BA-3's `battle-tick`: pg_cron calls the public hook over
+`net.http_post` and the endpoint authenticates on a shared secret. Nothing here
+is new infrastructure; only the job is.
+
+### 1 · Auth it needs
+
+`checkCronAuth` (`src/lib/cron-guard.ts`) reads **`CRON_SECRET`** from the
+server environment, falling back to `HISTORICAL_SYNC_CRON_SECRET`. It accepts
+the value as either an `x-cron-secret` header or `Authorization: Bearer …`.
+
+It **fails closed**: 503 when the variable is unset, 401 when the value is
+wrong. So this is the same secret `battle-tick` already authenticates with — if
+that job is returning 200, nothing new needs setting. **No `VITE_` prefix**, or
+the secret compiles into the client bundle and every `/api/public/hooks/*`
+endpoint becomes world-callable.
+
+### 2 · Schedule it
+
+Daily at 05:17 UTC. Daily because a window missed is lost for ever and a failed
+run then costs a day rather than a week; not more often because the host
+rate-limits. 05:17 rather than the top of an hour keeps it clear of the jobs
+that cluster there, and it lands after the previous US session and before the
+European releases, so each run picks up a full day of `forecast` / `previous`
+revisions.
+
+`unschedule` first so the statement is safe to re-run. It errors if the job
+does not exist yet — ignore that on the first application.
+
+```sql
+select cron.unschedule('economic-calendar-daily');
+
+select cron.schedule(
+  'economic-calendar-daily',
+  '17 5 * * *',
+  $$
+  select net.http_post(
+    url     := 'https://project--237f7325-035a-4d38-a67f-36c64e02b573.lovable.app/api/public/hooks/economic-calendar',
+    headers := '{"Content-Type":"application/json","x-cron-secret":"<CRON_SECRET>"}'::jsonb,
+    body    := '{}'::jsonb
+  );
+  $$
+);
+```
+
+The host is the one BA-3 proved against; if the deployment has since moved to
+`tradershive.lovable.app`, use that instead — it must be the origin actually
+serving `/api/public/hooks/*`.
+
+### 3 · Verify
+
+```sql
+select id, status_code, error_msg, created
+  from net._http_response order by created desc limit 5;
+```
+
+Expect `200`. A `503` means `CRON_SECRET` is unset on the server; a `401` means
+the header value does not match it.
+
+Then confirm rows actually landed — a 200 with an empty table would mean the
+upstream feed failed inside a successful request:
+
+```sql
+select count(*), min(event_time), max(event_time) from public.economic_events;
+```
+
+Expect roughly 90–100 rows spanning the current week. The response body also
+carries `windowFrom` / `windowTo` / `withActual`; `withActual` is expected to be
+**0** with this provider and is a canary, not a fault (EC-1).
+
+### 4 · What it will and will not show
+
+History accrues from this first run forward. Every existing replay session
+predates it, so their charts will keep showing no events — correctly. Only
+sessions replaying dates from now on get an overlay, until EC-1 is decided.
