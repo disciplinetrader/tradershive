@@ -398,6 +398,13 @@ its own specs. The wizard test drives the real entry point.
 - **EC-2 — the calendar cron is not scheduled.** Operational, not code. Until
   it runs, `economic_events` stays empty and the overlay correctly draws
   nothing. Runbook below.
+- **EC-3 — `battle-tick` is scheduled against the preview alias.** Found while
+  settling EC-2's host question. Its cron points at
+  `project--<uuid>.lovable.app`, which serves `403` + `noindex` on normal pages
+  and carries no `x-deployment-id`; the hook answers there only because
+  `/api/public/*` is exempt from site auth. It works today and would break if
+  the alias ever changed. One-line fix (repoint at `tradershive.lovable.app`),
+  deliberately not bundled into EC-2.
 - **MSYM-1** — multi-symbol replay (item 1B). Parked on data, not cost. The
   approach and the user story are recorded above so neither needs re-deriving.
 - **PF-1** — trailing versus static max drawdown; every preset is trailing today.
@@ -422,10 +429,11 @@ server environment, falling back to `HISTORICAL_SYNC_CRON_SECRET`. It accepts
 the value as either an `x-cron-secret` header or `Authorization: Bearer …`.
 
 It **fails closed**: 503 when the variable is unset, 401 when the value is
-wrong. So this is the same secret `battle-tick` already authenticates with — if
-that job is returning 200, nothing new needs setting. **No `VITE_` prefix**, or
-the secret compiles into the client bundle and every `/api/public/hooks/*`
-endpoint becomes world-callable.
+wrong — which makes the distinction measurable from outside. An unauthenticated
+POST to the endpoint returned **401 on 2026-08-18**, so `CRON_SECRET` is
+already set on the server and nothing new needs configuring; only the job is
+missing. **No `VITE_` prefix**, or the secret compiles into the client bundle
+and every `/api/public/hooks/*` endpoint becomes world-callable.
 
 ### 2 · Schedule it
 
@@ -436,49 +444,34 @@ that cluster there, and it lands after the previous US session and before the
 European releases, so each run picks up a full day of `forecast` / `previous`
 revisions.
 
-`unschedule` first so the statement is safe to re-run. It errors if the job
-does not exist yet — ignore that on the first application.
+The statements live in **`docs/migrations/economic-calendar-cron.sql`** rather
+than inline here, because pastes out of chat have been silently truncated in
+this project before. Run its two statements separately, in order; the
+`unschedule` errors on first application because the job does not exist yet.
 
-```sql
-select cron.unschedule('economic-calendar-daily');
+**Which host — settled, not left as a caveat.** `tradershive.lovable.app` is
+the PUBLISHED deployment: it answers `200` with an `x-deployment-id` header.
+`project--<uuid>.lovable.app` is the gated preview alias — `403` and
+`noindex, nofollow` on normal pages, no deployment id. The hook answers `401`
+on both, because `/api/public/*` is exempt from site auth, so reachability
+alone does not distinguish them. Schedule against the published host.
 
-select cron.schedule(
-  'economic-calendar-daily',
-  '17 5 * * *',
-  $$
-  select net.http_post(
-    url     := 'https://project--237f7325-035a-4d38-a67f-36c64e02b573.lovable.app/api/public/hooks/economic-calendar',
-    headers := '{"Content-Type":"application/json","x-cron-secret":"<CRON_SECRET>"}'::jsonb,
-    body    := '{}'::jsonb
-  );
-  $$
-);
-```
-
-The host is the one BA-3 proved against; if the deployment has since moved to
-`tradershive.lovable.app`, use that instead — it must be the origin actually
-serving `/api/public/hooks/*`.
+Worth noting separately: BA-3's `battle-tick` job points at the preview alias.
+It works today for that same exemption, but it is aimed at the wrong origin and
+would break if the alias changed. Not touched here — logged as EC-3.
 
 ### 3 · Verify
 
-```sql
-select id, status_code, error_msg, created
-  from net._http_response order by created desc limit 5;
-```
+**`docs/migrations/economic-calendar-cron-verify.sql`**, run after the first
+fire at 05:17 UTC. It checks three things: that the call authenticated (expect
+`200`; `401` means the header value is wrong, `503` means the secret is unset),
+that rows actually landed (a `200` over an empty table means the upstream feed
+failed inside an otherwise successful request — expect roughly 90–100 rows
+spanning the current week), and that the job registered with the intended
+schedule.
 
-Expect `200`. A `503` means `CRON_SECRET` is unset on the server; a `401` means
-the header value does not match it.
-
-Then confirm rows actually landed — a 200 with an empty table would mean the
-upstream feed failed inside a successful request:
-
-```sql
-select count(*), min(event_time), max(event_time) from public.economic_events;
-```
-
-Expect roughly 90–100 rows spanning the current week. The response body also
-carries `windowFrom` / `windowTo` / `withActual`; `withActual` is expected to be
-**0** with this provider and is a canary, not a fault (EC-1).
+`with_actual` is expected to be **0** with this provider and is a canary, not a
+fault (EC-1).
 
 ### 4 · What it will and will not show
 
