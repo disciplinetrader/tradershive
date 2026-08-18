@@ -93,12 +93,12 @@ export function Panel({
 }
 
 export function StatRow({
-  label, value, hint,
-}: { label: string; value: ReactNode; hint?: string }) {
+  label, value, hint, testId,
+}: { label: string; value: ReactNode; hint?: string; testId?: string }) {
   return (
     <div className="flex items-baseline justify-between gap-3 border-b border-border/40 py-1.5 last:border-0">
       <span className="text-xs text-muted-foreground" title={hint}>{label}</span>
-      <span className="text-xs font-medium tabular-nums">{value}</span>
+      <span className="text-xs font-medium tabular-nums" data-testid={testId}>{value}</span>
     </div>
   );
 }

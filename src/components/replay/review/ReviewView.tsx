@@ -5,12 +5,14 @@
  * replay, screenshots, coach review and homework. Nothing here can mutate
  * execution facts — the session is finished and its trades are immutable.
  */
+import { useMemo } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { AiReviewPanel } from "@/components/replay/AiReviewPanel";
+import { MonteCarloPanel } from "@/components/analytics/MonteCarloPanel";
 import { useReplayReview, useScoreSession } from "@/lib/replay/review/queries";
 import { SessionSummaryPanel, SessionTradesTable } from "./SessionSummaryPanel";
 import { ComparisonPanel } from "./ComparisonPanel";
@@ -77,6 +79,7 @@ export function ReviewView({ sessionId }: { sessionId: string }) {
           <TabsTrigger value="summary">Summary</TabsTrigger>
           <TabsTrigger value="trades">Trades</TabsTrigger>
           <TabsTrigger value="compare">Compare</TabsTrigger>
+          <TabsTrigger value="risk">Risk</TabsTrigger>
           <TabsTrigger value="shots">Screenshots</TabsTrigger>
           <TabsTrigger value="coach">Coach</TabsTrigger>
         </TabsList>
@@ -112,6 +115,13 @@ export function ReviewView({ sessionId }: { sessionId: string }) {
           />
         </TabsContent>
 
+        <TabsContent value="risk" className="mt-4">
+          <SessionMonteCarlo
+            trades={review.trades}
+            startingBalance={review.summary.startingBalance}
+          />
+        </TabsContent>
+
         <TabsContent value="shots" className="mt-4">
           <ScreenshotGallery rows={review.screenshots} />
         </TabsContent>
@@ -121,5 +131,38 @@ export function ReviewView({ sessionId }: { sessionId: string }) {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+/**
+ * Monte Carlo over this session's closed trades.
+ *
+ * The panel is the one Portfolio Analytics mounts — same engine, same seed, so
+ * a session read here and the same trades read through the account filter
+ * project identically. Only the sample differs, and it is a small one: the
+ * engine withholds the projection below 10 closed trades rather than drawing a
+ * confident-looking envelope off four.
+ *
+ * `pnls` is memoised on the query's trade array so panning the controls does
+ * not re-bootstrap thousands of paths on every parent render.
+ */
+function SessionMonteCarlo({
+  trades,
+  startingBalance,
+}: {
+  trades: readonly { netPnl: number }[];
+  startingBalance: number | null;
+}) {
+  const pnls = useMemo(() => trades.map((t) => t.netPnl), [trades]);
+  return (
+    <MonteCarloPanel
+      pnls={pnls}
+      startingBalance={startingBalance}
+      footnote={
+        "Resampled with replacement from this session's own closed trades — the projection inherits the win " +
+        "rate and tail sizes you actually produced here. One session is a small sample: it answers “what if I " +
+        "kept trading exactly like this”, not what the account will do."
+      }
+    />
   );
 }

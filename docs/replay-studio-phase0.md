@@ -134,6 +134,9 @@ Measured in the app on BTC at spread 10 / slippage 5: buy filled 63154.01, sell
   names.
 - Phase 1 and beyond from the competitor study: performance calendar, Monte
   Carlo projection, multi-chart replay, economic calendar overlay.
+  **Since resolved:** the calendar and Monte Carlo shipped as Phase 1 — see
+  `replay-studio-phase1.md`. Multi-chart and the economic calendar are still
+  open.
 
 ---
 
