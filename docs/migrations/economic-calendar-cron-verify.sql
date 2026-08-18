@@ -29,3 +29,22 @@ select count(*) as events,
 select jobid, jobname, schedule, active
   from cron.job
  where jobname = 'economic-calendar-daily';
+
+-- 4 · Attributing pre-existing rows in net._http_response
+--
+-- That table records only requests pg_net made FROM THE DATABASE. An external
+-- curl against the endpoint never appears there. So any 401s already present
+-- came from other scheduled jobs, not from testing.
+--
+-- The response table does not retain the request URL, so attribute by job run
+-- instead. If battle-tick is failing here, that is EC-3 territory and a live
+-- issue in its own right — not something this change caused.
+
+select j.jobname,
+       d.status,
+       d.return_message,
+       d.start_time
+  from cron.job_run_details d
+  join cron.job j on j.jobid = d.jobid
+ order by d.start_time desc
+ limit 20;
