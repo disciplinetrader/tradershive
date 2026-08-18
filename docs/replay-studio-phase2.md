@@ -398,14 +398,31 @@ its own specs. The wizard test drives the real entry point.
 - **EC-2 — the calendar cron is not scheduled.** Operational, not code. Until
   it runs, `economic_events` stays empty and the overlay correctly draws
   nothing. Runbook below.
-- **EC-4 — five scheduled jobs are failing authentication right now.** Found
-  while diagnosing EC-2: `net._http_response` is filling with 401s, minute by
-  minute, from `battle-settlement` and the four email jobs. A 401 means the job
-  reaches the server and is rejected — the secret in their `cron.schedule`
-  bodies does not match `CRON_SECRET`. BA-3's runbook expected 200 from these.
-  Nothing has been dispatching: no battle settlement, no email queue. This is
-  the largest open item on the list and is unrelated to the calendar work
-  except that the calendar work found it.
+- **EC-4 — every scheduled cron job has always failed authentication.**
+  Root cause found 2026-08-18: all five jobs send
+  `'{"Content-Type":"application/json","apikey":"sb_publishable_..."}'`. That is
+  the **publishable key**, in a header `checkCronAuth` never reads — the guard
+  wants `x-cron-secret` (or `Authorization: Bearer`). So this is not a stale
+  secret, which is how it was first logged and was wrong: these jobs were never
+  given the correct header at all. BA-3 diagnosed the mechanism and set
+  `CRON_SECRET`, but the five job bodies were never updated to send it.
+
+  It survived because pg_cron reports whether the SQL *statement* succeeded,
+  and `net.http_post` merely queues — so it succeeds instantly no matter what
+  the server later returns. Every one of these jobs shows "succeeded" in
+  `cron.job_run_details` while having never once been authorised.
+
+  Silently not running for an unknown period: battle settlement, the email
+  queue, weekly and monthly reports, and re-engagement. Blast radius is
+  measured by `docs/migrations/cron-auth-blast-radius.sql`; the fix is
+  `docs/migrations/cron-auth-fix.sql`.
+
+  Two consequences beyond the obvious. `processQueueBatch` selects oldest-first
+  with no staleness filter, so the first successful run flushes the entire
+  backlog at 50/minute — triage before fixing. And `historical-sync` uses the
+  same guard, which makes it a candidate cause for only 2 of 33 symbols having
+  candles — the sole reason MSYM-1 is parked. If so, MSYM-1 is blocked on a
+  header, not on a data provider.
 - **EC-3 — `battle-tick` is scheduled against the preview alias.** Found while
   settling EC-2's host question. Its cron points at
   `project--<uuid>.lovable.app`, which serves `403` + `noindex` on normal pages
