@@ -398,6 +398,14 @@ its own specs. The wizard test drives the real entry point.
 - **EC-2 — the calendar cron is not scheduled.** Operational, not code. Until
   it runs, `economic_events` stays empty and the overlay correctly draws
   nothing. Runbook below.
+- **EC-4 — five scheduled jobs are failing authentication right now.** Found
+  while diagnosing EC-2: `net._http_response` is filling with 401s, minute by
+  minute, from `battle-settlement` and the four email jobs. A 401 means the job
+  reaches the server and is rejected — the secret in their `cron.schedule`
+  bodies does not match `CRON_SECRET`. BA-3's runbook expected 200 from these.
+  Nothing has been dispatching: no battle settlement, no email queue. This is
+  the largest open item on the list and is unrelated to the calendar work
+  except that the calendar work found it.
 - **EC-3 — `battle-tick` is scheduled against the preview alias.** Found while
   settling EC-2's host question. Its cron points at
   `project--<uuid>.lovable.app`, which serves `403` + `noindex` on normal pages
