@@ -399,6 +399,12 @@ its own specs. The wizard test drives the real entry point.
   it runs, `economic_events` stays empty and the overlay correctly draws
   nothing. Runbook below.
 - **EC-4 — every scheduled cron job has always failed authentication.**
+  **Already logged as BA-3 in `docs/known-issues.md`**, with the same root
+  cause, the same affected-job table and the same fix, since 2026-08-07 —
+  status "open, partially". This session re-derived it from scratch because
+  that file was never read. The re-derivation did confirm BA-3 is still
+  unfixed and that the jobs still send `apikey` today, but the investigation
+  should have started there.
   Root cause found 2026-08-18: all five jobs send
   `'{"Content-Type":"application/json","apikey":"sb_publishable_..."}'`. That is
   the **publishable key**, in a header `checkCronAuth` never reads — the guard
@@ -423,28 +429,38 @@ its own specs. The wizard test drives the real entry point.
   same guard, which makes it a candidate cause for only 2 of 33 symbols having
   candles — the sole reason MSYM-1 is parked. If so, MSYM-1 is blocked on a
   header, not on a data provider.
-- **EC-5 — `historical-sync` has never been scheduled, and would rate-limit if
-  it were.** Confirmed 2026-08-18: zero rows in `cron.job` match the endpoint,
-  so unlike EC-4 this is a create rather than a repair. It is very likely the
-  real cause of "only 2 of 33 symbols have candles" — the constraint MSYM-1 was
-  parked on, and the reason indices route to ETF proxies.
+- **EC-5 — `historical-sync` has never been scheduled.** Confirmed 2026-08-18:
+  zero rows in `cron.job` match the endpoint, so unlike EC-4 this is a create
+  rather than a repair.
 
-  But the endpoint cannot simply be scheduled as-is. It loops **every** enabled
-  symbol serially in ONE request, and the two providers behave differently:
-  Binance pages at 1000 bars with a 120 ms throttle between pages
-  (self-limiting, safe), while Twelve Data pages at 5000 with **no delay
-  between pages and none between symbols**. Against a measured budget of 8
-  credits/min, ~20 Twelve Data symbols at 1–9 pages each will hit the limit
-  within seconds of every run. On 429 it throws, the loop catches per symbol,
-  and moves to the next with no backoff — so one rate-limit poisons the rest of
-  that run.
+  **It is NOT the cause of the empty-symbol gap.** That claim was made here and
+  was wrong; `docs/known-issues.md` already called this cron a red herring, and
+  the code agrees: `twelveDataCandles` is a cache-through against
+  `historical_candles` — it reads the window, and on under 90% coverage fetches
+  from Twelve Data and backfills. Candles are therefore populated **on demand
+  by chart loads**, and this cron only pre-warms. The 31 empty symbols are
+  empty because nobody has requested them, not because a job never ran.
 
-  Two follow-ons, both real: the endpoint returns `ok: true` even when every
-  symbol failed (per-symbol errors go into `results` and never affect the
-  status), and a 33-symbol serial run in a single request is likely to exceed
-  the platform's own execution limit regardless of what pg_net's timeout says.
-  A `limit`/`offset` or per-source slice parameter would let each run do a few
-  symbols and cycle — that is the fix before the nightly schedule is trusted.
+  Which makes MSYM-1 far cheaper to unblock than either the parking note or the
+  EC-5 first draft assumed: request a second symbol's candles and they backfill
+  themselves. Twelve Data plan entitlements remain a separate, measured limit —
+  the provider returns "symbol not included in the current plan" for locked
+  ones — so the test is to try one, not to assume all 20 will fill.
+
+  Scheduling it is still worth doing, as a pre-warm, but it cannot be scheduled
+  naively. It loops **every** enabled symbol serially in ONE request, and the
+  providers differ: Binance pages at 1000 bars with a 120 ms throttle between
+  pages (self-limiting), while Twelve Data pages at 5000 with **no delay
+  between pages and none between symbols**. Against a measured 8 credits/min,
+  ~20 Twelve Data symbols at 1–9 pages each hit the limit within seconds. On
+  429 the provider throws, the loop catches per symbol and continues with no
+  backoff, so one rate-limit poisons the rest of the run. A slice parameter
+  (`limit`/`offset`, or per-source) is the prerequisite for a nightly schedule.
+
+  Two follow-ons: the endpoint returns `ok: true` even when every symbol failed
+  — per-symbol errors go into `results` and never affect the status — and a
+  33-symbol serial pass in one request is likely to exceed the platform's
+  execution limit regardless of pg_net's timeout.
 - **EC-3 — `battle-tick` is scheduled against the preview alias.** Found while
   settling EC-2's host question. Its cron points at
   `project--<uuid>.lovable.app`, which serves `403` + `noindex` on normal pages
