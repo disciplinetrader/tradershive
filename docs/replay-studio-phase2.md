@@ -8,11 +8,12 @@ one was already built against the wrong clock.
 | # | Item | State |
 | --- | --- | --- |
 | 3 | Prop-firm challenge mode | **Done** — `3d7bdbbb`, `68e15c5f`, `47a134c0`, `af39cbcf`, confirmed in a real browser |
-| 1A | Multi-pane replay (one symbol, N timeframes) | **Approved, not started** |
+| 1A | Multi-pane replay (one symbol, N timeframes) | **Done** — `cfd472dd`, confirmed in a real browser |
 | 2 | Economic calendar overlay | **Partial by decision** — code done, feeds to be fixed; see EC-1 |
 | 1B | Multi-symbol replay | **Parked** — see MSYM-1 |
 
-Approved order: **3 → 1A → 2 (partial)**, 1B parked. Item 3 is done; 1A is next.
+Approved order: **3 → 1A → 2 (partial)**, 1B parked. Items 3 and 1A are done;
+item 2's feed fix is the remaining Phase 2 task.
 
 ---
 
@@ -21,16 +22,57 @@ Approved order: **3 → 1A → 2 (partial)**, 1B parked. Item 3 is done; 1A is n
 The study's "16 charts / 5 assets" is two features sharing a name, an order of
 magnitude apart in cost. They were separated before scoping, not after.
 
-### 1A — panes of one symbol at N timeframes (approved)
+### 1A — panes of one symbol at N timeframes (DONE)
 
 Mostly already built. `src/lib/replay/aggregate.ts` folds the base dataset into
 any higher timeframe deterministically — "never re-fetched, so the chart can
 never show a bar the clock has not yet reached" — and `StudioChart` already
-drives it through `displayTf` with a working switcher.
+drove it through `displayTf` with a working switcher.
 
-One dataset, one checksum, one cursor, one order book. What is missing is
+One dataset, one checksum, one cursor, one order book. What was missing was
 **layout only**: N chart instances reading the same `view.candles` at different
-folds. No engine change, no dataset change, no cursor change.
+folds. No engine change, no dataset change, no cursor change — which is exactly
+why this was the cheap half of item 1.
+
+**Two things are deliberately not per-pane**, and the first is a correctness
+requirement rather than a preference:
+
+- **The drawing store.** A `DrawingStore` persists to `localStorage` under its
+  scope, and `StudioChart` created one per instance while scoping it to the
+  session. Four panes would have been four writers of one key, with the last to
+  persist silently erasing what another drew. `StudioPanes` passes one store to
+  every pane. `setScope` already no-ops on an unchanged scope, so each pane
+  calling it is safe. Sharing is also what a trader wants: drawings anchor in
+  absolute time and price, so they mean the same thing on every fold.
+- **The focused-chart controls.** Indicators, drawing rail, risk and Buy/Sell
+  stay on pane 1. One account and one position sit behind all four panes; four
+  Buy buttons are four ways to ask one question.
+
+`defaultPaneLadder` derives the opening folds from `aggregatableFrom` rather
+than a fixed list, because a 1H session cannot show a 15m pane — those bars
+were never loaded and folding cannot invent them. When the ladder runs out (1D
+has only 1D and 1W above it) the highest repeats: a pane must show something,
+and repeating is more honest than dropping to a fold we do not have.
+
+**Verified in a real browser** against predictions derived from
+`aggregatableFrom` rather than from the app, all correct on the first run:
+
+| Layout | Predicted folds | Rendered |
+| --- | --- | --- |
+| 1 pane | `["5m"]` | `["5m"]` |
+| 2 panes | `["5m","15m"]` | `["5m","15m"]` |
+| 4 panes | `["5m","15m","30m","1H"]` | `["5m","15m","30m","1H"]` |
+
+Plus: four canvases all drawing; exactly one Indicators / Buy / Sell across four
+panes; a hand-set 4H surviving a change of layout, because widening the grid
+must not reset a fold the trader chose; and the layout persisting across a
+reload. The stored layout is read after mount rather than during render — the
+server has no `localStorage`, and a layout that differs between the SSR pass
+and the client is a hydration mismatch, not a restored preference.
+
+Eleven unit tests pin the ladder and the fold arithmetic: thirty 5m bars make
+ten 15m bars, the forming bar stays partial rather than waiting to complete,
+and bucketing is absolute so starting mid-hour does not shift the buckets.
 
 ### 1B — independent symbols on one clock (PARKED — MSYM-1)
 
