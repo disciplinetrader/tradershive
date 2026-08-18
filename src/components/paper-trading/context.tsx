@@ -112,10 +112,21 @@ function PaperTradingRoot({
     try {
       const s = localStorage.getItem(STORAGE.symbol);
       const meta = s ? findSymbol(s) : null;
-      if (s) setSymbolState(s);
-      const m = localStorage.getItem(STORAGE.market) as PaperMarket | null;
-      if (meta) setMarketState(meta.market);
-      else if (m) setMarketState(m);
+      // Same rule as `setSymbol`, for the same reason: a stored symbol the
+      // catalog cannot resolve is not restored at all. Restoring it and
+      // falling back to the stored market is precisely the half-applied state
+      // that made this invisible — and it would survive every reload, because
+      // the bad pair keeps rewriting itself.
+      if (s && !meta) {
+        console.error(
+          `[paper] ignoring stored symbol "${s}": not in the trading catalog. ` +
+            `Falling back to the default rather than pairing it with a stale market.`,
+        );
+      }
+      if (meta) {
+        setSymbolState(s as string);
+        setMarketState(meta.market);
+      }
       const t = localStorage.getItem(STORAGE.timeframe);
       if (t) setTimeframeState(t);
     } catch { /* ignore */ }
@@ -153,13 +164,44 @@ function PaperTradingRoot({
     setAccountIdState(id);
     try { localStorage.setItem(STORAGE.account, id); } catch { /* ignore */ }
   };
+  /**
+   * Change the traded instrument, or refuse — never half of it.
+   *
+   * This used to write the symbol UNCONDITIONALLY and the market only
+   * `if (meta)`. An unresolvable symbol therefore landed with the PREVIOUS
+   * symbol's market still attached, and `market` is the provider routing hint:
+   * `ChartEngine` passes it to `marketData.getCandles(..., settings.market)`.
+   * So a symbol the catalog does not know got its candles fetched from
+   * whatever venue the last symbol used — an index asked of Binance, which
+   * returns nothing, under a header naming the index.
+   *
+   * The damage was not the wrong market. It was that the state was half
+   * applied and silent: the symbol changed, so the UI looked switched, and the
+   * failure surfaced later as "this instrument doesn't load" rather than as
+   * "that switch failed". Refuse instead. A loud failure someone can report
+   * beats a quiet one that reappears three weeks later wearing another face.
+   *
+   * Every symbol the picker offers comes from `SYMBOL_CATALOG`, which is what
+   * `findSymbol` resolves against, so this branch is unreachable from the UI.
+   * It exists for the paths that are not the picker: a stale or hand-edited
+   * `localStorage` value, a deep link, or a future caller passing a symbol
+   * that only exists in `historical_symbols`.
+   */
   const setSymbol = (s: string) => {
-    setSymbolState(s);
     const meta = findSymbol(s);
-    if (meta) setMarketState(meta.market);
+    if (!meta) {
+      console.error(
+        `[paper] refusing to switch to "${s}": not in the trading catalog. ` +
+          `Symbol and market must change together — applying one without the ` +
+          `other routes market data to the previous instrument's provider.`,
+      );
+      return;
+    }
+    setSymbolState(s);
+    setMarketState(meta.market);
     try {
       localStorage.setItem(STORAGE.symbol, s);
-      if (meta) localStorage.setItem(STORAGE.market, meta.market);
+      localStorage.setItem(STORAGE.market, meta.market);
     } catch { /* ignore */ }
   };
   const setMarket = (m: PaperMarket) => {
