@@ -4,6 +4,8 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 import { TIMEFRAME_SECONDS, DEFAULT_TEMPLATES, CHECKPOINT_KINDS } from "./replay/constants";
 import { coverageStatusFor, serializeGaps } from "./replay/provenance";
+import { PROP_PRESET_IDS } from "./prop-challenges/presets";
+import { REPLAY_CHALLENGE_SETTINGS_KEY, rulesFromPreset } from "./replay/prop-challenge";
 import type { Timeframe } from "./replay/types";
 
 /* ============ Checkpoints ============ */
@@ -168,6 +170,13 @@ const createSessionSchema = z.object({
   // changing the setting later cannot alter how an existing replay fills.
   spread: z.number().finite().min(0).default(0),
   slippage: z.number().finite().min(0).default(0),
+  /**
+   * Optional prop-firm evaluation. A PRESET ID, never a set of limits: the
+   * numbers are derived server-side so a client cannot invent an easier
+   * challenge, and the resolved ruleset is snapshotted onto the row exactly
+   * as spread and slippage are — the session owns it from here.
+   */
+  challenge_preset: z.enum(PROP_PRESET_IDS).optional(),
 });
 
 export const createReplaySession = createServerFn({ method: "POST" })
@@ -198,6 +207,9 @@ export const createReplaySession = createServerFn({ method: "POST" })
         cursor_ts: cursor,
         last_opened_at: new Date().toISOString(),
         ...(data.initial_balance ? { initial_balance: data.initial_balance } : {}),
+        ...(data.challenge_preset
+          ? { settings: { [REPLAY_CHALLENGE_SETTINGS_KEY]: rulesFromPreset(data.challenge_preset) } }
+          : {}),
       })
       .select()
       .single();

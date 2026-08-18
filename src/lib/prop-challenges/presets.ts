@@ -4,14 +4,18 @@
  * `custom` lets users override everything.
  */
 
-export type PropPresetId =
-  | "ftmo"
-  | "apex"
-  | "topstep"
-  | "fivepercenters"
-  | "fundednext"
-  | "myfundedfx"
-  | "custom";
+/** Tuple, not a bare union, so a zod enum can be built straight from it. */
+export const PROP_PRESET_IDS = [
+  "ftmo",
+  "apex",
+  "topstep",
+  "fivepercenters",
+  "fundednext",
+  "myfundedfx",
+  "custom",
+] as const;
+
+export type PropPresetId = (typeof PROP_PRESET_IDS)[number];
 
 export type PropPreset = {
   id: PropPresetId;

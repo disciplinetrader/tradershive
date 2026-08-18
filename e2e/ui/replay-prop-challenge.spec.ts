@@ -184,6 +184,52 @@ test.describe("prop-firm challenge in Replay Studio", () => {
     await expect(page.getByTestId("challenge-breach")).toHaveCount(0);
   });
 
+  test("the wizard can start one, and the rules land on the session", async ({ page }) => {
+    // Drives the real entry point rather than the server function behind it:
+    // a challenge nobody can create is not a feature.
+    await page.addInitScript(() => localStorage.setItem("thv:tour:completed:v1", "1"));
+    await page.goto("/replay/library");
+    await page.getByRole("button", { name: "Create Backtest" }).first().click();
+
+    const title = `${TITLE} wizard ${tag}`;
+    await page.locator("#bt-name").fill(title);
+    await page.locator("#bt-challenge").selectOption("ftmo");
+
+    // The limits are percentages of the account, so the balance must follow
+    // the preset — otherwise the trader is evaluated against a rule they did
+    // not pick. FTMO is a $100k account.
+    await expect(page.locator("#bt-balance")).toHaveValue("100000");
+
+    // EUR/USD 15m on 2026-07-07 (96 stored bars). The wizard preloads candles
+    // before creating, so a range with no data would stall on the fetch rather
+    // than test anything about challenges.
+    await page.getByRole("button", { name: "15m", exact: true }).click();
+    await page.locator("#bt-from").fill("2026-07-07");
+    await page.locator("#bt-to").fill("2026-07-07");
+
+    await page.getByRole("button", { name: /Start Backtest/i }).click();
+
+    const row = await expect
+      .poll(
+        async () =>
+          (await sb.from("replay_sessions").select("id,settings,initial_balance").eq("title", title).maybeSingle()).data,
+        { message: "the wizard never created the session", timeout: 30_000 },
+      )
+      .not.toBeNull()
+      .then(async () =>
+        (await sb.from("replay_sessions").select("id,settings,initial_balance").eq("title", title).single()).data,
+      );
+
+    const settings = (row?.settings ?? {}) as Record<string, unknown>;
+    expect(settings.prop_challenge_v1).toEqual({
+      presetId: "ftmo", accountSize: 100_000, profitTargetPct: 10,
+      maxDailyLossPct: 5, maxTotalDrawdownPct: 10, minTradingDays: 4,
+    });
+    expect(Number(row?.initial_balance)).toBe(100_000);
+
+    await sb.from("replay_sessions").delete().eq("id", String(row?.id));
+  });
+
   test("leaves a session inside its envelope running", async ({ page }) => {
     await openStudio(page, safeId);
 

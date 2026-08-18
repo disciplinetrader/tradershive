@@ -43,7 +43,13 @@ export const REPLAY_CHALLENGE_SETTINGS_KEY = "prop_challenge_v1";
  * construction, and a rule read at tick time would mean two traders on one
  * session fail at different points.
  */
-export interface ReplayPropRules {
+/**
+ * A type alias rather than an interface, deliberately: this shape is written
+ * straight into a JSONB column, and Supabase's generated `Json` type is
+ * satisfied by aliases but not by interfaces — an interface stays open to
+ * declaration merging, so TypeScript cannot prove it has no non-JSON members.
+ */
+export type ReplayPropRules = {
   /** Provenance — which preset these numbers came from. */
   presetId: PropPresetId;
   accountSize: number;
@@ -51,7 +57,7 @@ export interface ReplayPropRules {
   maxDailyLossPct: number;
   maxTotalDrawdownPct: number;
   minTradingDays: number;
-}
+};
 
 export function rulesFromPreset(id: PropPresetId): ReplayPropRules {
   const p = PROP_PRESETS[id] ?? PROP_PRESETS.custom;

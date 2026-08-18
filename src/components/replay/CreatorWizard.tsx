@@ -23,6 +23,7 @@ import { findInstrument, type InstrumentRecord, type JournalMarket } from "@/lib
 import type { Timeframe } from "@/lib/replay/types";
 import { TIMEFRAMES } from "@/lib/replay/constants";
 import { createReplaySession } from "@/lib/replay.functions";
+import { PROP_PRESETS, listPropPresets, type PropPresetId } from "@/lib/prop-challenges/presets";
 import { ensureHistoricalRange } from "@/lib/market-data/historical.functions";
 import { cn } from "@/lib/utils";
 
@@ -94,6 +95,8 @@ export function CreatorWizard({ open, onOpenChange }: { open: boolean; onOpenCha
   const [tf, setTf] = useState<Timeframe>(initial.timeframe ?? "5m");
   const [startPos, setStartPos] = useState<StartPosition>(initial.startPos ?? "beginning");
   const [customRange, setCustomRange] = useState(false);
+  // "" means a plain practice session — the default, and the common case.
+  const [challenge, setChallenge] = useState<PropPresetId | "">("");
 
   const [recents, setRecents] = useState<RecentEntry[]>(() => readRecents());
   const [preload, setPreload] = useState<{ progress: number; status: "idle" | "loading" | "cached" | "downloaded" | "error"; message?: string }>({ progress: 0, status: "idle" });
@@ -233,6 +236,7 @@ export function CreatorWizard({ open, onOpenChange }: { open: boolean; onOpenCha
         provider: sourceCode,
         tags: startPos !== "beginning" ? [`start:${startPos}`] : [],
         initial_balance: balanceNum,
+        ...(challenge ? { challenge_preset: challenge } : {}),
       } as never,
     });
   };
@@ -272,6 +276,34 @@ export function CreatorWizard({ open, onOpenChange }: { open: boolean; onOpenCha
               value={balance}
               onChange={(e) => setBalance(e.target.value)}
             />
+          </div>
+
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label htmlFor="bt-challenge">Prop Firm Evaluation <span className="font-normal text-muted-foreground">(optional)</span></Label>
+            <select
+              id="bt-challenge"
+              value={challenge}
+              onChange={(e) => {
+                const id = e.target.value as PropPresetId | "";
+                setChallenge(id);
+                // The limits are percentages of the account, so a preset whose
+                // balance disagrees with the session's would read as a rule the
+                // trader never chose. Move the balance with it.
+                if (id) setBalance(String(PROP_PRESETS[id].account_size));
+              }}
+              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+            >
+              <option value="">None — free practice</option>
+              {listPropPresets().map((p) => (
+                <option key={p.id} value={p.id}>{p.label} — {p.blurb}</option>
+              ))}
+            </select>
+            {challenge ? (
+              <p className="text-[11px] text-muted-foreground">
+                The session ends the moment a rule breaks. Limits are fixed at creation, so the
+                same session always fails at the same bar.
+              </p>
+            ) : null}
           </div>
 
           <div className="space-y-1.5">
