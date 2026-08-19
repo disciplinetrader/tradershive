@@ -8,6 +8,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { guardRoute } from "@/lib/server-errors";
 import { checkCronAuth } from "@/lib/cron-guard";
+import { jobResponse } from "@/lib/cron-response";
 
 interface UserRow {
   id: string;
@@ -47,7 +48,7 @@ export const Route = createFileRoute("/api/public/hooks/email-weekly-report")({
           .eq("weekly_report", true);
         const eligibleIds = (prefs ?? []).map((r: { user_id: string }) => r.user_id);
         if (eligibleIds.length === 0) {
-          return new Response(JSON.stringify({ ok: true, enqueued: 0 }), { headers: { "Content-Type": "application/json" } });
+          return jobResponse({ enqueued: 0, failed: 0, total: 0 });
         }
 
         const { data: users } = await supabaseAdmin
@@ -94,9 +95,7 @@ export const Route = createFileRoute("/api/public/hooks/email-weekly-report")({
           enqueued++;
         }
 
-        return new Response(JSON.stringify({ ok: true, enqueued, eligible: eligibleIds.length }), {
-          headers: { "Content-Type": "application/json" },
-        });
+        return jobResponse({ enqueued, eligible: eligibleIds.length, failed: 0, total: eligibleIds.length });
       }),
     },
   },

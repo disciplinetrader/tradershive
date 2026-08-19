@@ -5,6 +5,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { guardRoute } from "@/lib/server-errors";
 import { checkCronAuth } from "@/lib/cron-guard";
+import { jobResponse } from "@/lib/cron-response";
 
 function fmtMoney(n: number): string {
   const sign = n >= 0 ? "+" : "-";
@@ -31,7 +32,7 @@ export const Route = createFileRoute("/api/public/hooks/email-monthly-report")({
           .eq("monthly_report", true);
         const eligibleIds = (prefs ?? []).map((r: { user_id: string }) => r.user_id);
         if (eligibleIds.length === 0) {
-          return new Response(JSON.stringify({ ok: true, enqueued: 0 }), { headers: { "Content-Type": "application/json" } });
+          return jobResponse({ enqueued: 0, failed: 0, total: 0 });
         }
 
         const { data: users } = await supabaseAdmin
@@ -77,7 +78,7 @@ export const Route = createFileRoute("/api/public/hooks/email-monthly-report")({
           enqueued++;
         }
 
-        return new Response(JSON.stringify({ ok: true, enqueued }), { headers: { "Content-Type": "application/json" } });
+        return jobResponse({ enqueued, failed: 0, total: enqueued });
       }),
     },
   },

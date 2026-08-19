@@ -15,6 +15,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { guardRoute } from "@/lib/server-errors";
 import { checkCronAuth } from "@/lib/cron-guard";
+import { jobResponse } from "@/lib/cron-response";
 
 const BATCH_LIMIT = 50;
 
@@ -40,7 +41,7 @@ export const Route = createFileRoute("/api/public/hooks/battle-settlement")({
 
         if (error) {
           console.error("[battle-settlement] fetch failed:", error);
-          return json({ ok: false, stage: "fetch", error: error.message }, 500);
+          return jobResponse({ stage: "fetch", error: error.message, failed: 1, total: 1 });
         }
 
         const results: Outcome[] = [];
@@ -62,11 +63,14 @@ export const Route = createFileRoute("/api/public/hooks/battle-settlement")({
 
         const okCount = results.filter((r) => r.ok).length;
         const failCount = results.length - okCount;
-        return json({
-          ok: true,
+        // `failed` drives the status: 0 -> 200, some -> 207, all -> 500.
+        // This used to hardcode `ok: true` on the line after computing
+        // failCount, which is the defect in its purest form.
+        return jobResponse({
           processed: results.length,
           settled: okCount,
           failed: failCount,
+          total: results.length,
           results,
           checked_at: nowISO,
         });
@@ -75,9 +79,3 @@ export const Route = createFileRoute("/api/public/hooks/battle-settlement")({
   },
 });
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-}

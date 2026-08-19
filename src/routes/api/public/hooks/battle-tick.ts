@@ -28,6 +28,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { guardRoute } from "@/lib/server-errors";
 import { checkCronAuth } from "@/lib/cron-guard";
+import { jobResponse } from "@/lib/cron-response";
 
 const IN_FLIGHT = ["upcoming", "open", "filling", "ready", "countdown", "live"] as const;
 
@@ -44,7 +45,7 @@ export const Route = createFileRoute("/api/public/hooks/battle-tick")({
         const { error } = await supabaseAdmin.rpc("tick_battles");
         if (error) {
           console.error("[battle-tick] tick_battles failed:", error);
-          return json({ ok: false, stage: "tick_battles", error: error.message }, 500);
+          return jobResponse({ stage: "tick_battles", error: error.message, failed: 1, total: 1 });
         }
 
         const { data: rows, error: readErr } = await supabaseAdmin
@@ -54,7 +55,8 @@ export const Route = createFileRoute("/api/public/hooks/battle-tick")({
 
         if (readErr) {
           console.error("[battle-tick] post-tick read failed:", readErr);
-          return json({ ok: true, ticked: true, in_flight: null, error: readErr.message });
+          // The tick succeeded and the read did not: partial, not success.
+          return jobResponse({ ticked: true, in_flight: null, error: readErr.message, failed: 1, total: 2 });
         }
 
         const inFlight: Record<string, number> = {};
@@ -67,8 +69,7 @@ export const Route = createFileRoute("/api/public/hooks/battle-tick")({
           JSON.stringify(inFlight),
         );
 
-        return json({
-          ok: true,
+        return jobResponse({
           ticked: true,
           in_flight: inFlight,
           duration_ms: Date.now() - started,
@@ -79,9 +80,3 @@ export const Route = createFileRoute("/api/public/hooks/battle-tick")({
   },
 });
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-}

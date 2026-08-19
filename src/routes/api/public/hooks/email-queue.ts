@@ -5,6 +5,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { guardRoute } from "@/lib/server-errors";
 import { checkCronAuth } from "@/lib/cron-guard";
+import { jobResponse } from "@/lib/cron-response";
 
 export const Route = createFileRoute("/api/public/hooks/email-queue")({
   server: {
@@ -15,9 +16,9 @@ export const Route = createFileRoute("/api/public/hooks/email-queue")({
 
         const { processQueueBatch } = await import("@/lib/email/service.server");
         const outcome = await processQueueBatch(50);
-        return new Response(JSON.stringify({ ok: true, ...outcome }), {
-          headers: { "Content-Type": "application/json" },
-        });
+        // `outcome` already carries `failed`; it used to sit next to a
+        // literal `ok: true`. `claimed` is the denominator.
+        return jobResponse({ ...outcome, total: outcome.claimed });
       }),
     },
   },

@@ -9,6 +9,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { guardRoute } from "@/lib/server-errors";
 import { checkCronAuth } from "@/lib/cron-guard";
+import { jobResponse } from "@/lib/cron-response";
 
 const BUCKETS: Array<{ days: 3 | 7 | 14 | 30; lo: number; hi: number }> = [
   { days: 3, lo: 3, hi: 4 },
@@ -45,9 +46,7 @@ export const Route = createFileRoute("/api/public/hooks/email-reengagement")({
             if (result.ok) enqueued++;
           }
         }
-        return new Response(JSON.stringify({ ok: true, enqueued }), {
-          headers: { "Content-Type": "application/json" },
-        });
+        return jobResponse({ enqueued, failed: 0, total: enqueued });
       }),
     },
   },

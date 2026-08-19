@@ -14,6 +14,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { guardRoute } from "@/lib/server-errors";
 import { checkCronAuth } from "@/lib/cron-guard";
+import { jobResponse } from "@/lib/cron-response";
 
 export const Route = createFileRoute("/api/public/hooks/economic-calendar")({
   server: {
@@ -25,9 +26,9 @@ export const Route = createFileRoute("/api/public/hooks/economic-calendar")({
         const { syncEconomicCalendar } = await import("@/lib/economic-calendar/ingest.server");
         const result = await syncEconomicCalendar();
 
-        return new Response(JSON.stringify({ ok: result.errors.length === 0, ...result }), {
-          headers: { "Content-Type": "application/json" },
-        });
+        // One feed, so `total: 1` means any failure is a total failure and
+        // earns a 500 — there is no partial state for a single-source job.
+        return jobResponse({ ...result, failed: result.errors.length, total: 1 });
       }),
     },
   },
