@@ -189,7 +189,6 @@ import { Route as ApiPublicHooksEmailReengagementRouteImport } from './routes/ap
 import { Route as ApiPublicHooksEmailQueueRouteImport } from './routes/api/public/hooks/email-queue'
 import { Route as ApiPublicHooksEmailMonthlyReportRouteImport } from './routes/api/public/hooks/email-monthly-report'
 import { Route as ApiPublicHooksEconomicCalendarRouteImport } from './routes/api/public/hooks/economic-calendar'
-import { Route as ApiPublicHooksCronAuthDebugRouteImport } from './routes/api/public/hooks/cron-auth-debug'
 import { Route as ApiPublicHooksBattleTickRouteImport } from './routes/api/public/hooks/battle-tick'
 import { Route as ApiPublicHooksBattleSettlementRouteImport } from './routes/api/public/hooks/battle-settlement'
 import { Route as AuthenticatedStrategiesPlaybooksIdRouteImport } from './routes/_authenticated/strategies.playbooks.$id'
@@ -1251,12 +1250,6 @@ const ApiPublicHooksEconomicCalendarRoute =
     path: '/api/public/hooks/economic-calendar',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ApiPublicHooksCronAuthDebugRoute =
-  ApiPublicHooksCronAuthDebugRouteImport.update({
-    id: '/api/public/hooks/cron-auth-debug',
-    path: '/api/public/hooks/cron-auth-debug',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const ApiPublicHooksBattleTickRoute =
   ApiPublicHooksBattleTickRouteImport.update({
     id: '/api/public/hooks/battle-tick',
@@ -1581,7 +1574,6 @@ export interface FileRoutesByFullPath {
   '/strategies/playbooks/$id': typeof AuthenticatedStrategiesPlaybooksIdRoute
   '/api/public/hooks/battle-settlement': typeof ApiPublicHooksBattleSettlementRoute
   '/api/public/hooks/battle-tick': typeof ApiPublicHooksBattleTickRoute
-  '/api/public/hooks/cron-auth-debug': typeof ApiPublicHooksCronAuthDebugRoute
   '/api/public/hooks/economic-calendar': typeof ApiPublicHooksEconomicCalendarRoute
   '/api/public/hooks/email-monthly-report': typeof ApiPublicHooksEmailMonthlyReportRoute
   '/api/public/hooks/email-queue': typeof ApiPublicHooksEmailQueueRoute
@@ -1769,7 +1761,6 @@ export interface FileRoutesByTo {
   '/strategies/playbooks/$id': typeof AuthenticatedStrategiesPlaybooksIdRoute
   '/api/public/hooks/battle-settlement': typeof ApiPublicHooksBattleSettlementRoute
   '/api/public/hooks/battle-tick': typeof ApiPublicHooksBattleTickRoute
-  '/api/public/hooks/cron-auth-debug': typeof ApiPublicHooksCronAuthDebugRoute
   '/api/public/hooks/economic-calendar': typeof ApiPublicHooksEconomicCalendarRoute
   '/api/public/hooks/email-monthly-report': typeof ApiPublicHooksEmailMonthlyReportRoute
   '/api/public/hooks/email-queue': typeof ApiPublicHooksEmailQueueRoute
@@ -1975,7 +1966,6 @@ export interface FileRoutesById {
   '/_authenticated/strategies/playbooks/$id': typeof AuthenticatedStrategiesPlaybooksIdRoute
   '/api/public/hooks/battle-settlement': typeof ApiPublicHooksBattleSettlementRoute
   '/api/public/hooks/battle-tick': typeof ApiPublicHooksBattleTickRoute
-  '/api/public/hooks/cron-auth-debug': typeof ApiPublicHooksCronAuthDebugRoute
   '/api/public/hooks/economic-calendar': typeof ApiPublicHooksEconomicCalendarRoute
   '/api/public/hooks/email-monthly-report': typeof ApiPublicHooksEmailMonthlyReportRoute
   '/api/public/hooks/email-queue': typeof ApiPublicHooksEmailQueueRoute
@@ -2181,7 +2171,6 @@ export interface FileRouteTypes {
     | '/strategies/playbooks/$id'
     | '/api/public/hooks/battle-settlement'
     | '/api/public/hooks/battle-tick'
-    | '/api/public/hooks/cron-auth-debug'
     | '/api/public/hooks/economic-calendar'
     | '/api/public/hooks/email-monthly-report'
     | '/api/public/hooks/email-queue'
@@ -2369,7 +2358,6 @@ export interface FileRouteTypes {
     | '/strategies/playbooks/$id'
     | '/api/public/hooks/battle-settlement'
     | '/api/public/hooks/battle-tick'
-    | '/api/public/hooks/cron-auth-debug'
     | '/api/public/hooks/economic-calendar'
     | '/api/public/hooks/email-monthly-report'
     | '/api/public/hooks/email-queue'
@@ -2574,7 +2562,6 @@ export interface FileRouteTypes {
     | '/_authenticated/strategies/playbooks/$id'
     | '/api/public/hooks/battle-settlement'
     | '/api/public/hooks/battle-tick'
-    | '/api/public/hooks/cron-auth-debug'
     | '/api/public/hooks/economic-calendar'
     | '/api/public/hooks/email-monthly-report'
     | '/api/public/hooks/email-queue'
@@ -2604,7 +2591,6 @@ export interface RootRouteChildren {
   JournalShareTokenRoute: typeof JournalShareTokenRoute
   ApiPublicHooksBattleSettlementRoute: typeof ApiPublicHooksBattleSettlementRoute
   ApiPublicHooksBattleTickRoute: typeof ApiPublicHooksBattleTickRoute
-  ApiPublicHooksCronAuthDebugRoute: typeof ApiPublicHooksCronAuthDebugRoute
   ApiPublicHooksEconomicCalendarRoute: typeof ApiPublicHooksEconomicCalendarRoute
   ApiPublicHooksEmailMonthlyReportRoute: typeof ApiPublicHooksEmailMonthlyReportRoute
   ApiPublicHooksEmailQueueRoute: typeof ApiPublicHooksEmailQueueRoute
@@ -3875,13 +3861,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksEconomicCalendarRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/hooks/cron-auth-debug': {
-      id: '/api/public/hooks/cron-auth-debug'
-      path: '/api/public/hooks/cron-auth-debug'
-      fullPath: '/api/public/hooks/cron-auth-debug'
-      preLoaderRoute: typeof ApiPublicHooksCronAuthDebugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/public/hooks/battle-tick': {
       id: '/api/public/hooks/battle-tick'
       path: '/api/public/hooks/battle-tick'
@@ -4692,7 +4671,6 @@ const rootRouteChildren: RootRouteChildren = {
   JournalShareTokenRoute: JournalShareTokenRoute,
   ApiPublicHooksBattleSettlementRoute: ApiPublicHooksBattleSettlementRoute,
   ApiPublicHooksBattleTickRoute: ApiPublicHooksBattleTickRoute,
-  ApiPublicHooksCronAuthDebugRoute: ApiPublicHooksCronAuthDebugRoute,
   ApiPublicHooksEconomicCalendarRoute: ApiPublicHooksEconomicCalendarRoute,
   ApiPublicHooksEmailMonthlyReportRoute: ApiPublicHooksEmailMonthlyReportRoute,
   ApiPublicHooksEmailQueueRoute: ApiPublicHooksEmailQueueRoute,
