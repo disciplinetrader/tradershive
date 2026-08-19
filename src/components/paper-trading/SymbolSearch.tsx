@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { MARKET_TABS, SYMBOL_CATALOG, type PaperMarket } from "@/lib/paper-trading/symbols";
@@ -18,9 +18,24 @@ function pushRecent(sym: string) {
   } catch { /* ignore */ }
 }
 
-export function SymbolSearch({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
-  const { setSymbol, market, setMarket } = usePaper();
+export function SymbolSearch({
+  open,
+  onOpenChange,
+  /** Market to open the filter on. Defaults to the current instrument's. */
+  initialMarket,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  initialMarket?: PaperMarket;
+}) {
+  const { setSymbol, market } = usePaper();
+  // Local filter only. Browsing markets must not change what is being
+  // traded — the instrument changes when a symbol is CHOSEN, via setSymbol,
+  // which moves symbol and market together or refuses.
   const [tab, setTab] = useState<PaperMarket>(market);
+  // Re-anchor on the current instrument each time the dialog opens, so it
+  // never reopens filtered to a market the trader has since left.
+  useEffect(() => { if (open) setTab(initialMarket ?? market); }, [open, initialMarket, market]);
   const [q, setQ] = useState("");
 
   const symbols = useMemo(
@@ -41,7 +56,7 @@ export function SymbolSearch({ open, onOpenChange }: { open: boolean; onOpenChan
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl p-0">
         <div className="border-b border-border/60 p-3">
-          <Tabs value={tab} onValueChange={(v) => { setTab(v as PaperMarket); setMarket(v as PaperMarket); }}>
+          <Tabs value={tab} onValueChange={(v) => setTab(v as PaperMarket)}>
             <TabsList className="w-full justify-start gap-1 bg-transparent p-0">
               {MARKET_TABS.map((m) => (
                 <TabsTrigger key={m.value} value={m.value} className="data-[state=active]:bg-primary/10">

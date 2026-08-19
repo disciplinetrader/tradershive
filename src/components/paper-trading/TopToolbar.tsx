@@ -10,8 +10,15 @@ import { usePaper } from "./context";
 
 export function TopToolbar() {
   const qc = useQueryClient();
-  const { symbol, market, setMarket } = usePaper();
+  const { symbol, market } = usePaper();
   const [open, setOpen] = useState(false);
+  // Which market the picker should open filtered to. Clicking a market tab
+  // used to call `setMarket` directly, which changed the data VENUE while
+  // leaving the symbol alone — BTC/USDT routed to forex, fetching nothing,
+  // with the old candles still drawn because the symbol had not changed.
+  // The tabs are now navigation: they open the picker, and the instrument
+  // changes only when a symbol is chosen.
+  const [pickerMarket, setPickerMarket] = useState<PaperMarket | undefined>(undefined);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -34,7 +41,10 @@ export function TopToolbar() {
           {symbol}
           <span className="ml-2 hidden text-[10px] text-muted-foreground group-hover:text-foreground md:inline">⌘F</span>
         </button>
-        <Tabs value={market} onValueChange={(v) => setMarket(v as PaperMarket)}>
+        <Tabs
+          value={market}
+          onValueChange={(v) => { setPickerMarket(v as PaperMarket); setOpen(true); }}
+        >
           <TabsList className="hidden md:flex">
             {MARKET_TABS.map((m) => (
               <TabsTrigger key={m.value} value={m.value} className="text-xs">
@@ -58,7 +68,11 @@ export function TopToolbar() {
         </Button>
       </div>
 
-      <SymbolSearch open={open} onOpenChange={setOpen} />
+      <SymbolSearch
+        open={open}
+        onOpenChange={(v) => { setOpen(v); if (!v) setPickerMarket(undefined); }}
+        initialMarket={pickerMarket}
+      />
     </div>
   );
 }

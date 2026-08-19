@@ -22,7 +22,6 @@ type Ctx = {
   setSymbol: (s: string) => void;
   symbolMeta: SymbolMeta | null;
   market: PaperMarket;
-  setMarket: (m: PaperMarket) => void;
   timeframe: string;
   setTimeframe: (tf: string) => void;
   loading: boolean;
@@ -204,10 +203,21 @@ function PaperTradingRoot({
       localStorage.setItem(STORAGE.market, meta.market);
     } catch { /* ignore */ }
   };
-  const setMarket = (m: PaperMarket) => {
-    setMarketState(m);
-    try { localStorage.setItem(STORAGE.market, m); } catch { /* ignore */ }
-  };
+  /**
+   * There is deliberately NO `setMarket`.
+   *
+   * `market` is the provider routing hint and it is a FUNCTION of the symbol —
+   * `findSymbol(s).market`. Exposing a way to set it independently is what
+   * allowed BTC/USDT to sit paired with `forex`: two market-tab controls
+   * (`SymbolSearch` and `TopToolbar`) called it directly, so browsing markets
+   * silently re-routed the current instrument's data to a venue that does not
+   * carry it. `ChartEngine` then refetched the OLD symbol from the NEW venue,
+   * got nothing, and — because the symbol had not changed — skipped its
+   * teardown and left the previous instrument's candles on the canvas.
+   *
+   * Removing the setter makes that state unreachable rather than merely
+   * discouraged. Market changes only as a consequence of `setSymbol`.
+   */
   const setTimeframe = (tf: string) => {
     setTimeframeState(tf);
     try { localStorage.setItem(STORAGE.timeframe, tf); } catch { /* ignore */ }
@@ -225,7 +235,6 @@ function PaperTradingRoot({
     setSymbol,
     symbolMeta,
     market,
-    setMarket,
     timeframe,
     setTimeframe,
     loading: isLoading,

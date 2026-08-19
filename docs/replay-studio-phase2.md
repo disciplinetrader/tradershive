@@ -468,18 +468,21 @@ its own specs. The wizard test drives the real entry point.
   `/api/public/*` is exempt from site auth. It works today and would break if
   the alias ever changed. One-line fix (repoint at `tradershive.lovable.app`),
   deliberately not bundled into EC-2.
-- **SYM-2 — a market tab click changes the venue without the symbol.**
-  `SymbolSearch` scopes its list to the active tab, and the tab handler calls
-  `setMarket(v)` on its own: `onValueChange={(v) => { setTab(v); setMarket(v); }}`.
-  So between clicking "Forex" and picking a pair, the app holds symbol
-  BTC/USDT with market `forex` — a half-applied pair, the same class as the
-  `setSymbol` bug just fixed, in the opposite direction. `settings.market` is
-  in `ChartEngine`'s effect deps, so it refetches the OLD symbol from the NEW
-  venue; `symbolChanged` is false, so no teardown runs and the previous
-  instrument's candles stay on the canvas while that fetch fails. That is the
-  most likely mechanism behind the original BTC-under-GBP/USD screenshot.
-  Dismissing the dialog without choosing leaves the pair mismatched until a
-  reload heals it (hydration re-derives market from the symbol).
+- **SYM-2 — FIXED.** A market tab click used to call `setMarket` directly, in
+  BOTH `SymbolSearch` and `TopToolbar`, changing the data VENUE while leaving
+  the symbol alone. `settings.market` is in `ChartEngine`'s effect deps, so it
+  refetched the OLD symbol from the NEW venue; `symbolChanged` was false, so no
+  teardown ran and the previous instrument's candles stayed on the canvas while
+  that fetch failed. Almost certainly the origin of the BTC-under-GBP/USD
+  screenshot, and `TopToolbar`'s copy was persistent rather than dialog-scoped.
+
+  Fixed structurally rather than by correcting the two call sites: **`setMarket`
+  is removed from the context API entirely.** `market` is a function of the
+  symbol, so it can now only change as a consequence of `setSymbol`, which
+  moves both together or refuses. The type system enforces it — any future
+  caller fails the build. `SymbolSearch`'s tab is local filter state; the
+  `TopToolbar` tabs open the picker pre-filtered instead of mutating anything.
+
 - **SYM-1 — BRENT/USD and WTI/USD are data-only, and it is not clear they
   should be.** Both are registered in `historical_symbols` but absent from the
   paper-trading catalog. For the four index symbols that absence is deliberate
@@ -489,8 +492,29 @@ its own specs. The wizard test drives the real entry point.
   without first checking what quote and candle entitlement actually exists for
   commodities**; a catalog row alone would put an instrument in the picker that
   may not be quotable. Logged, deliberately not built.
-- **MSYM-1** — multi-symbol replay (item 1B). Parked on data, not cost. The
-  approach and the user story are recorded above so neither needs re-deriving.
+- **MSYM-1** — multi-symbol replay (item 1B). **The "no data" premise is
+  resolved; the parking reason has changed.** Verified through the UI on
+  2026-08-19: switching BTC/USDT → GBP/USD in the picker produces a real
+  GBP/USD quote (1.35416) and a real chart. Candles are fetched on demand by
+  `twelveDataCandles`, which is a cache-through — so a symbol having zero rows
+  means nobody has requested it, not that data is unavailable.
+
+  **Fetch and persistence are separate, and only fetch is provable locally.**
+  The cache WRITE goes through `supabaseAdmin`, which needs
+  `SUPABASE_SERVICE_ROLE_KEY`. That key is unset in local development, so the
+  fetch succeeds, the chart renders, and the write fails silently — the server
+  log says `[twelvedata] candle cache backfill failed: Missing Supabase
+  environment variable(s)`. Locally, GBP/USD therefore still reads zero rows
+  after a successful switch. This is an environment limitation, not a defect,
+  and `e2e/ui/symbol-switch.spec.ts` gates the persistence assertion on the key
+  rather than failing for a reason unrelated to the code.
+
+  **In production the key IS set** — EUR/USD holds 4,735 real rows, which only
+  `supabaseAdmin` could have written — so the end-to-end path should already
+  work there. Nobody should re-litigate this: the open question is not "can we
+  get data for a second symbol" (yes) but the engine work in 1B above, which
+  remains as described.
+
 - **PF-1** — trailing versus static max drawdown; every preset is trailing today.
 - **PF-2** — `weekend_hold_allowed` / `news_trading_allowed` declared on presets
   and enforced nowhere.
