@@ -395,9 +395,25 @@ its own specs. The wizard test drives the real entry point.
      forecast, never the outcome.
 
   A provider with history and actuals fixes both; nothing else does.
-- **EC-2 — the calendar cron is not scheduled.** Operational, not code. Until
-  it runs, `economic_events` stays empty and the overlay correctly draws
-  nothing. Runbook below.
+- **EC-2 — SCHEDULED 2026-08-19.** `economic-calendar-daily`, 05:17 UTC, 30 s
+  timeout, against `tradershive.lovable.app`, authenticating with the new
+  `CRON_SECRET`. Registration verified including a 64-character comparison of
+  the stored secret, not merely that a header is present.
+
+  The first manual fire returned HTTP 200 with `"ok":false` and
+  `429 Too Many Requests` from the upstream feed — throttled by the day's
+  testing, `fetched: 0, upserted: 0`, nothing written. Benign and
+  self-recovering: the 05:17 run is ~18 hours out and the feed serves the
+  current week regardless. Confirmation is `economic_events` going from 0 to
+  ~96 rows.
+
+  **Two things this exposed.** A 429 on the daily attempt costs a whole day,
+  because the job fires once with no retry — harmless for a weekly-window feed
+  but the explanation if consecutive days come back empty. And HTTP 200 masks
+  `"ok":false`, so `net._http_response.status_code` reads 200 for a run that
+  ingested nothing; monitoring status codes alone would report this job healthy
+  for ever. Same family as EC-5's `ok:true`-regardless defect, and an argument
+  for fixing both together.
 - **EC-4 — every scheduled cron job has always failed authentication.**
   **Already logged as BA-3 in `docs/known-issues.md`**, with the same root
   cause, the same affected-job table and the same fix, since 2026-08-07 —
