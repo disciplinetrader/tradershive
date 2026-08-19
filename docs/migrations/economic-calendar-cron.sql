@@ -26,12 +26,10 @@
 -- timed out at exactly 5000 ms. An explicit 30 s is set below. Do NOT drop it
 -- back to the default.
 --
--- HOST WARNING (2026-08-18): whether this should point at
--- tradershive.lovable.app or project--<uuid>.lovable.app is UNRESOLVED. The
--- published host was chosen on an external curl, which tests a different
--- network path than pg_net uses. Run economic-calendar-cron-diagnose.sql
--- FIRST and let it decide the host; correct the url below if it says the
--- alias. Scheduling before that just books a daily timeout.
+-- Host: RESOLVED 2026-08-19. tradershive.lovable.app is correct — it is the
+-- published deployment (200 + x-deployment-id; the project--<uuid> alias is
+-- the gated preview), and the five repaired jobs now authenticate against it
+-- successfully, which proves reachability from pg_net rather than inferring it.
 --
 -- Statement 1 errors on first application because the job does not exist yet.
 -- That is expected; it is here so the pair is safe to re-run.
