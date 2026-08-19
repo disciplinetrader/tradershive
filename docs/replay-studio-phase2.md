@@ -418,6 +418,22 @@ its own specs. The wizard test drives the real entry point.
   the server later returns. Every one of these jobs shows "succeeded" in
   `cron.job_run_details` while having never once been authorised.
 
+  **Measured 2026-08-19:** 7 battles sit past their `end_at` without being
+  finalised, the oldest ending **2026-08-07T14:55Z** — the same date BA-3 was
+  written up, so settlement has been dead at least twelve days. Four of them
+  are still status `live`: competitions that never end. The email backlog could
+  not be measured with a user token (RLS); it needs the SQL editor, and a zero
+  there means "not visible", not "empty".
+
+  **The secret already exists.** `checkCronAuth` reads
+  `CRON_SECRET ?? HISTORICAL_SYNC_CRON_SECRET`. Confirmed 2026-08-19:
+  `CRON_SECRET` is absent from the Secrets panel but
+  `HISTORICAL_SYNC_CRON_SECRET` has been set since Jul 21 — which is why the
+  endpoints answer 401 rather than 503. So the jobs can be repaired today using
+  that existing value in an `x-cron-secret` header, with no new secret and no
+  publish. Adding a `CRON_SECRET` later must copy the SAME value, or it changes
+  what `expected` resolves to and breaks the jobs just repaired.
+
   Silently not running for an unknown period: battle settlement, the email
   queue, weekly and monthly reports, and re-engagement. Blast radius is
   measured by `docs/migrations/cron-auth-blast-radius.sql`; the fix is
