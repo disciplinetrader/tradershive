@@ -134,8 +134,12 @@ both the `xl` column and a tab is safe.
 
 ## BA-3 — Every scheduled cron job fails authentication
 
-**Area:** Platform-wide · **Found:** 2026-08-07 · **Status:** open, partially
-addressed (battle jobs only)
+**Area:** Platform-wide · **Found:** 2026-08-07 · **Status:** **FIXED
+2026-08-19** — see "Resolution" at the end of this entry.
+
+> The diagnosis below was correct and sat unactioned for twelve days. It was
+> re-derived from scratch on 2026-08-19 because this file was not read first.
+> Read it first.
 
 All five pg_cron jobs post to `/api/public/hooks/<name>` with a header block of
 `Content-Type` + `apikey` (the Supabase publishable key). `checkCronAuth` reads
@@ -207,6 +211,36 @@ emails; sending them is worse than not sending them, and the volume risks
 provider rate limits. The runbook has the triage queries.
 
 ---
+
+### Resolution (2026-08-19)
+
+`CRON_SECRET` did not exist in the Secrets panel at all — it had never been
+set, which is why the value was unfindable. `checkCronAuth` reads
+`CRON_SECRET ?? HISTORICAL_SYNC_CRON_SECRET`, and the latter HAD been set since
+Jul 21, which is why every endpoint answered 401 rather than 503.
+
+A fresh `CRON_SECRET` was generated, added and published, then all six jobs
+were rewritten in place — reading each job's own name, schedule and command
+from `cron.job` and regexp-replacing only the `apikey` header pair, so
+schedules were preserved and the rewrite was idempotent.
+
+Three attempts were needed, and the reason is worth keeping: the first wrote
+the literal placeholder text `<NEW_CRON_SECRET>` into all five commands, and
+verifying "the header name changed" reported success. Checking the header NAME
+is not checking the VALUE. `docs/migrations/check-stored-secret.sql` reads the
+stored value back; a 64-character equality comparison in SQL is the check that
+actually catches this.
+
+**Confirmed by the work getting done, not by status codes:** four battles had
+sat `live` past their `end_at` since 2026-08-07. Within minutes of the repair
+they moved to `completed` (live 4 -> 0, completed 10 -> 14). The email queue
+turned out to hold 13 rows, all already `sent` — no backlog, so no flush risk.
+
+**Why it survived twelve days:** pg_cron records whether the SQL STATEMENT
+succeeded, and `net.http_post` only queues a request, so it succeeds instantly
+regardless of the eventual HTTP status. Every one of these jobs read
+"succeeded" in `cron.job_run_details` the entire time. That blind spot is
+addressed separately — see EC-5 in `replay-studio-phase2.md`.
 
 ## BA-4 — Live leaderboard's per-opponent trade columns can never populate
 

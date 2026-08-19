@@ -20,6 +20,43 @@ the calendar cron — nothing accrues until that runs.
 
 ---
 
+## 2026-08-19 — the cron thread
+
+Began as "schedule one small cron job" (EC-2) and ended somewhere else. Full
+arc, in the order it unfolded:
+
+| | Outcome |
+| --- | --- |
+| **BA-3 / EC-4** | **Fixed.** All six jobs authenticate; four battles stuck `live` since 2026-08-07 settled within minutes. Marked resolved in `known-issues.md`. |
+| **EC-2** | **Done.** `economic-calendar-daily` scheduled, 05:17 UTC. Endpoint proven; the scheduled firing itself is confirmed on its first run. |
+| **SYM-2** | **Fixed.** `setMarket` removed from the paper context — market is derived from symbol, enforced by the type system. |
+| **EC-5** | **Done, and already proven.** One `jobResponse` helper across all eight hooks: 200 / 207 / 500. |
+| **MSYM-1** | **Reframed.** Forex is the path; crypto is blocked by CX-1, permanently. |
+| **CX-1** | **New, external.** Binance unreachable from the deployment. |
+| **HD-1, EC-1, EC-3, SYM-1** | Open, logged with enough detail to pick up cold. |
+
+Three things worth carrying forward.
+
+**Inspection is not observation.** Every wrong turn today came from checking a
+proxy rather than the thing: the header NAME instead of its value, `fixed=true`
+instead of a 64-character comparison, a status code instead of whether battles
+actually settled, a job being `active` instead of ever having fired. The five
+dead jobs were `active: true` and reported "succeeded" for twelve days.
+
+**A stray placeholder cost three repair cycles.** `<NEW_CRON_SECRET>` was
+written literally into five job commands and verified as a success. Every SQL
+file carrying a live value is now generated to a scratchpad path outside the
+repo and machine-verified — placeholder count zero, secret length 64, exact
+match — before being handed over.
+
+**EC-5 validated itself immediately.** The first run of the repaired
+`historical-sync` surfaced CX-1: 403s that had been happening all along,
+collected into `results` and discarded behind a hardcoded `ok: true` and a
+blanket 200. A twelve-day-old external constraint became visible within minutes
+of shipping the fix. That is better evidence than any test written for it.
+
+---
+
 ## Item 1 — the shape, and why it is two features
 
 The study's "16 charts / 5 assets" is two features sharing a name, an order of
@@ -561,7 +598,18 @@ its own specs. The wizard test drives the real entry point.
   without first checking what quote and candle entitlement actually exists for
   commodities**; a catalog row alone would put an instrument in the picker that
   may not be quotable. Logged, deliberately not built.
-- **MSYM-1** — multi-symbol replay (item 1B). **The "no data" premise is
+- **MSYM-1** — multi-symbol replay (item 1B). **The path is FOREX. Do not
+  re-attempt crypto backfill.** Crypto is not blocked by missing data — it is
+  blocked by a permanent egress restriction (CX-1): Binance answers 403 with an
+  HTML body to the deployment while serving 200 with real klines from a normal
+  connection. No amount of scheduling, backfilling or retrying changes that;
+  it needs a different provider or an infrastructure change. Anyone starting
+  from "crypto needs no API key, so it must be the easy case" will rediscover
+  this the slow way, as we did. Correlated FX pairs — GBP/USD alongside
+  EUR/USD, which was the original user story — are the viable route, and forex
+  fetches and renders correctly today.
+
+  The **"no data" premise is
   resolved; the parking reason has changed.** Verified through the UI on
   2026-08-19: switching BTC/USDT → GBP/USD in the picker produces a real
   GBP/USD quote (1.35416) and a real chart. Candles are fetched on demand by
