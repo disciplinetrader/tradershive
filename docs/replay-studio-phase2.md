@@ -468,6 +468,27 @@ its own specs. The wizard test drives the real entry point.
   `/api/public/*` is exempt from site auth. It works today and would break if
   the alias ever changed. One-line fix (repoint at `tradershive.lovable.app`),
   deliberately not bundled into EC-2.
+- **SYM-2 — a market tab click changes the venue without the symbol.**
+  `SymbolSearch` scopes its list to the active tab, and the tab handler calls
+  `setMarket(v)` on its own: `onValueChange={(v) => { setTab(v); setMarket(v); }}`.
+  So between clicking "Forex" and picking a pair, the app holds symbol
+  BTC/USDT with market `forex` — a half-applied pair, the same class as the
+  `setSymbol` bug just fixed, in the opposite direction. `settings.market` is
+  in `ChartEngine`'s effect deps, so it refetches the OLD symbol from the NEW
+  venue; `symbolChanged` is false, so no teardown runs and the previous
+  instrument's candles stay on the canvas while that fetch fails. That is the
+  most likely mechanism behind the original BTC-under-GBP/USD screenshot.
+  Dismissing the dialog without choosing leaves the pair mismatched until a
+  reload heals it (hydration re-derives market from the symbol).
+- **SYM-1 — BRENT/USD and WTI/USD are data-only, and it is not clear they
+  should be.** Both are registered in `historical_symbols` but absent from the
+  paper-trading catalog. For the four index symbols that absence is deliberate
+  — indices are traded through ETF proxies (SPY/QQQ/DIA/IWM), a measured
+  entitlement decision. These two are commodities, so that rationale does not
+  obviously apply, and no proxy exists for them either. **Do not add them
+  without first checking what quote and candle entitlement actually exists for
+  commodities**; a catalog row alone would put an instrument in the picker that
+  may not be quotable. Logged, deliberately not built.
 - **MSYM-1** — multi-symbol replay (item 1B). Parked on data, not cost. The
   approach and the user story are recorded above so neither needs re-deriving.
 - **PF-1** — trailing versus static max drawdown; every preset is trailing today.
