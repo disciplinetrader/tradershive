@@ -404,8 +404,19 @@ its own specs. The wizard test drives the real entry point.
   `429 Too Many Requests` from the upstream feed — throttled by the day's
   testing, `fetched: 0, upserted: 0`, nothing written. Benign and
   self-recovering: the 05:17 run is ~18 hours out and the feed serves the
-  current week regardless. Confirmation is `economic_events` going from 0 to
-  ~96 rows.
+  current week regardless.
+
+  **`economic_events` already holds 98 rows** (2026-08-16 → 2026-08-21). They
+  came from one of the earlier fires that TIMED OUT at pg_net's 5000 ms
+  default — a pg_net timeout does not cancel the server-side run, it only
+  stops us hearing the answer. The endpoint completed and wrote while we were
+  reading a timeout row. So the endpoint is proven; the SCHEDULED JOB is not.
+  Those are different mechanisms, and the five jobs that sat `active: true`
+  reporting "succeeded" for twelve days without ever authenticating are why
+  inspection is not observation. Confirm by reading the response body shortly
+  after 05:17 UTC for `"ok":true` with `fetched`/`upserted` ~98 — the row count
+  is now a weak signal, because the upsert key rewrites the same week's rows
+  and the total barely moves.
 
   **Two things this exposed.** A 429 on the daily attempt costs a whole day,
   because the job fires once with no retry — harmless for a weekly-window feed
