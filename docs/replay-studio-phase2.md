@@ -526,6 +526,32 @@ its own specs. The wizard test drives the real entry point.
   caller fails the build. `SymbolSearch`'s tab is local filter state; the
   `TopToolbar` tabs open the picker pre-filtered instead of mutating anything.
 
+- **CX-1 — Binance is unreachable from the deployment, and it looks permanent.**
+  Measured 2026-08-19 through the repaired `historical-sync`: ETH/USDT and
+  SOL/USDT both returned **403 with an HTML body**, not a JSON API error. The
+  same endpoints answer **200 with real klines from a normal connection**, so
+  Binance is up and serving — the block is specific to the deployment's
+  egress, which is the signature of Binance's geo / datacenter-IP restriction
+  rather than an outage or a bug in our code.
+
+  This is not fixable in code. Every Binance-routed symbol — the eight crypto
+  pairs, which is all of them — fails this way permanently. Options are a
+  different crypto provider (Twelve Data carries crypto on paid tiers), a proxy,
+  or accepting crypto history stays at what is already stored.
+
+  **It reframes MSYM-1 for the third time.** Crypto was the "easy unblocked
+  case" precisely because Binance needs no API key. It is in fact the blocked
+  case, and forex is the one that works — GBP/USD fetches and renders fine.
+  Multi-symbol replay on correlated FX pairs is therefore the viable path, and
+  BTC/USDT's 8,644 stored bars are historical, not something we can extend.
+
+- **HD-1 — history only grows forward.** The first-sync seed window is now 2
+  days (was 30, which was 43,200 bars at a 1m base and could never complete in
+  one request). Subsequent runs walk forward from `latest_imported`, so nothing
+  ever extends history BACKWARDS. Replay wants depth, so a backward-walking
+  pass is still needed — bounded per run the same way, using
+  `earliest_available` as the floor.
+
 - **SYM-1 — BRENT/USD and WTI/USD are data-only, and it is not clear they
   should be.** Both are registered in `historical_symbols` but absent from the
   paper-trading catalog. For the four index symbols that absence is deliberate

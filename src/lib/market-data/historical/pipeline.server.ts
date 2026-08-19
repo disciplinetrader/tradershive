@@ -427,7 +427,26 @@ export async function runIncrementalUpdate(symbolRow: {
     .eq("symbol", symbolRow.symbol).eq("timeframe", tf)
     .order("ts", { ascending: false }).limit(1).maybeSingle();
   const stepMs = HISTORICAL_TF_SECONDS[tf] * 1000;
-  const from = last?.ts ? new Date(last.ts).getTime() + stepMs : Date.now() - 30 * 86400_000;
+  /**
+   * Seed window for a symbol with NO stored bars.
+   *
+   * This was 30 days, and every symbol's `base_timeframe` is `1m`, so a first
+   * sync asked for 30 x 24 x 60 = 43,200 bars — 44 sequential Binance pages,
+   * or nine Twelve Data pages against an 8 credit/min budget, then 43,200 rows
+   * to upsert. In one HTTP request. That exceeds the platform's execution
+   * limit long before it exceeds any timeout we set, so first sync could never
+   * complete and the symbol stayed empty for ever.
+   *
+   * Two days is 2,880 bars at 1m: three Binance pages, one Twelve Data page.
+   * A first sync is now the same size as an ordinary incremental one.
+   *
+   * NOTE this bounds how far back a FIRST sync reaches, and subsequent runs
+   * only ever walk forward from `latest_imported`. So history accumulates from
+   * the seed onward and never extends backwards — deeper history needs its own
+   * backward-walking pass. See HD-1.
+   */
+  const SEED_DAYS = 2;
+  const from = last?.ts ? new Date(last.ts).getTime() + stepMs : Date.now() - SEED_DAYS * 86400_000;
   const to = Date.now();
   if (to - from < stepMs) return { skipped: true };
   return runImport({
