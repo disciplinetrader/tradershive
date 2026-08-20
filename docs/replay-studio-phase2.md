@@ -14,9 +14,10 @@ one was already built against the wrong clock.
 
 Approved order was **3 → 1A → 2 (partial)**, 1B parked.
 
-**Phase 2 is complete** as scoped. Everything left is a decision or an
-operation, not code: EC-1 (provider), MSYM-1 (parked on data), and scheduling
-the calendar cron — nothing accrues until that runs.
+**Phase 2 is complete** as scoped. The calendar cron was scheduled 2026-08-19
+and confirmed firing unattended 2026-08-20 (EC-2), so the feed now accrues on
+its own. Everything left is a decision, not code: EC-1 (provider) and MSYM-1
+(parked on data).
 
 ---
 
@@ -28,12 +29,13 @@ arc, in the order it unfolded:
 | | Outcome |
 | --- | --- |
 | **BA-3 / EC-4** | **Fixed.** All six jobs authenticate; four battles stuck `live` since 2026-08-07 settled within minutes. Marked resolved in `known-issues.md`. |
-| **EC-2** | **Done.** `economic-calendar-daily` scheduled, 05:17 UTC. Endpoint proven; the scheduled firing itself is confirmed on its first run. |
+| **EC-2** | **Closed 2026-08-20.** `economic-calendar-daily` fired unattended at 05:17:00.503 UTC — `ok:true`, 98 fetched, 98 upserted. Scheduled job proven, not just the endpoint. |
 | **SYM-2** | **Fixed.** `setMarket` removed from the paper context — market is derived from symbol, enforced by the type system. |
 | **EC-5** | **Done, and already proven.** One `jobResponse` helper across all eight hooks: 200 / 207 / 500. |
 | **MSYM-1** | **Reframed.** Forex is the path; crypto is blocked by CX-1, permanently. |
 | **CX-1** | **New, external.** Binance unreachable from the deployment. |
 | **HD-1, EC-1, EC-3, SYM-1** | Open, logged with enough detail to pick up cold. |
+| **EC-6** | **New 2026-08-20.** EC-2's fire fell inside the existing week, so the feed's weekly advance is still unobserved. Check back Mon 2026-08-24. |
 
 Three things worth carrying forward.
 
@@ -432,7 +434,8 @@ its own specs. The wizard test drives the real entry point.
      forecast, never the outcome.
 
   A provider with history and actuals fixes both; nothing else does.
-- **EC-2 — SCHEDULED 2026-08-19.** `economic-calendar-daily`, 05:17 UTC, 30 s
+- **EC-2 — CLOSED 2026-08-20**, confirmed by an unattended fire (see the end
+  of this entry). Scheduled 2026-08-19: `economic-calendar-daily`, 05:17 UTC, 30 s
   timeout, against `tradershive.lovable.app`, authenticating with the new
   `CRON_SECRET`. Registration verified including a 64-character comparison of
   the stored secret, not merely that a header is present.
@@ -462,6 +465,66 @@ its own specs. The wizard test drives the real entry point.
   ingested nothing; monitoring status codes alone would report this job healthy
   for ever. Same family as EC-5's `ok:true`-regardless defect, and an argument
   for fixing both together.
+
+  **Confirmed unattended 2026-08-20 05:17:00.503 UTC** — `net._http_response`
+  row 73453, half a second after the scheduled minute:
+
+  ```json
+  {"fetched":98,"upserted":98,"errors":[],"failed":0,"total":1,"ok":true,
+   "windowFrom":"2026-08-16T22:30:00.000Z","windowTo":"2026-08-21T14:00:00.000Z",
+   "withActual":0}
+  ```
+
+  Every link is now observed rather than inferred: `CRON_SECRET` accepted, the
+  `x-cron-secret` header, the stored schedule, pg_cron firing with no human
+  present, the upstream fetch, and the upsert. This is the first time the
+  SCHEDULED JOB — as opposed to the endpoint — has been seen to work.
+
+  **The body also proves EC-5's fix is deployed**, not merely committed. Top
+  level `failed` and `total` alongside `ok` is the `jobResponse` shape from
+  `src/lib/cron-response.ts`; the pre-fix endpoint emitted neither. So the
+  200 here is an earned 200.
+
+  **One link this run does NOT prove: weekly rollover.** Logged separately as
+  **EC-6** below — the window and count are identical to what the table already
+  held on 2026-08-19, so a live feed and a static one are indistinguishable
+  from this fire alone. It does not reopen EC-2; the job is proven.
+- **EC-6 — the calendar feed's weekly window advance is unobserved.**
+  **Found:** 2026-08-20 · **Status:** open, low urgency, needs one observation.
+
+  EC-2's first unattended fire returned `windowFrom 2026-08-16T22:30Z` /
+  `windowTo 2026-08-21T14:00Z` with 98 rows — byte-identical to the window and
+  count `economic_events` already held on 2026-08-19. That is the correct
+  result: it is the same trading week, and the upsert key rewrites the same
+  rows in place. But it means **this run cannot distinguish a feed that rolls
+  forward each week from one that is static.** Both produce exactly what was
+  observed.
+
+  It matters because EC-1 records the source as publishing "one week, forward
+  only". If the window never advances, that premise is wrong, the overlay
+  silently stops accruing after 2026-08-21, and every replay session past that
+  date draws nothing while the job keeps reporting `ok:true, upserted:98`. That
+  is the EC-5 failure shape again — a healthy status over work that accomplishes
+  nothing — one layer further out, where no status code can reach it.
+
+  **Check back Monday 2026-08-24, after 05:17 UTC** (10:47 IST). That is the
+  first fire that unambiguously falls in a new trading week; the current one
+  ends Friday 2026-08-21 and the next should open ~2026-08-23T22:30Z. Read the
+  response body, not the row count:
+
+  ```sql
+  select id, status_code, content, created
+    from net._http_response
+   order by created desc
+   limit 5;
+  ```
+
+  - `windowFrom` ≈ `2026-08-23T22:30Z` → the feed rolls. Close EC-6.
+  - `windowFrom` still `2026-08-16` → the feed is static. EC-1 becomes urgent
+    rather than a product decision, because the overlay is then finite.
+
+  A peek on Saturday 2026-08-22 is free but inconclusive — the week has ended
+  and the next has not opened, so an unchanged window proves nothing there.
 - **EC-4 — every scheduled cron job has always failed authentication.**
   **Already logged as BA-3 in `docs/known-issues.md`**, with the same root
   cause, the same affected-job table and the same fix, since 2026-08-07 —
