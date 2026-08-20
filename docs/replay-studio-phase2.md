@@ -424,6 +424,20 @@ its own specs. The wizard test drives the real entry point.
 
 ## Still open
 
+**Approved working order (2026-08-20):** EC-3 → MSYM-1 → EC-1 → HD-1 → SYM-1.
+
+Two of those carry gates rather than positions. **EC-1 is the product owner's
+call, raised whenever they choose** — not work to be scheduled, though EC-6
+may force its urgency. **HD-1 waits until `historical-sync`'s own cadence has
+been observed**, because a backward-walking pass has to share a credit budget
+with the forward one, and that budget is unknown until the forward job has been
+seen running on a schedule (EC-5).
+
+This orders the replay-studio items only. `docs/known-issues.md` carries live
+P&L defects — BA-8 in particular is marked LIVE DEFECT affecting real balances
+— which are not ranked here and are not below these by implication.
+
+
 - **EC-1** — economic calendar data, blocked on a provider decision (the
   product owner's, not a code task). The overlay works and the feed is fixed;
   the SOURCE has two limits that no amount of code removes:
@@ -507,10 +521,11 @@ its own specs. The wizard test drives the real entry point.
   is the EC-5 failure shape again — a healthy status over work that accomplishes
   nothing — one layer further out, where no status code can reach it.
 
-  **Check back Monday 2026-08-24, after 05:17 UTC** (10:47 IST). That is the
-  first fire that unambiguously falls in a new trading week; the current one
-  ends Friday 2026-08-21 and the next should open ~2026-08-23T22:30Z. Read the
-  response body, not the row count:
+  **The trigger is a signal, not a date: the first fire whose `windowTo`
+  exceeds 2026-08-21T14:00Z.** A fixed date would be wrong for the same reason
+  the 04:44 check on EC-2 was wrong — it asserts when something should have
+  happened instead of watching for it. Read the response body, not the row
+  count:
 
   ```sql
   select id, status_code, content, created
@@ -519,12 +534,17 @@ its own specs. The wizard test drives the real entry point.
    limit 5;
   ```
 
-  - `windowFrom` ≈ `2026-08-23T22:30Z` → the feed rolls. Close EC-6.
-  - `windowFrom` still `2026-08-16` → the feed is static. EC-1 becomes urgent
-    rather than a product decision, because the overlay is then finite.
+  - `windowTo` moves past 2026-08-21T14:00Z → the feed rolls. Close EC-6.
+  - `windowTo` still reads 2026-08-21T14:00Z → the feed is static. EC-1 stops
+    being a product decision and becomes urgent, because the overlay is then
+    finite and stops accruing.
 
-  A peek on Saturday 2026-08-22 is free but inconclusive — the week has ended
-  and the next has not opened, so an unchanged window proves nothing there.
+  **When absence becomes the answer.** The earliest the signal CAN appear is
+  the 2026-08-22 fire, so nothing before that is evidence either way. If it has
+  not appeared by the **2026-08-25** fire — a full trading day into the new
+  week — the static reading is confirmed and EC-6 closes as a defect rather
+  than as a false alarm. Stating that bound now is what stops "still waiting"
+  running indefinitely.
 - **EC-4 — every scheduled cron job has always failed authentication.**
   **Already logged as BA-3 in `docs/known-issues.md`**, with the same root
   cause, the same affected-job table and the same fix, since 2026-08-07 —
