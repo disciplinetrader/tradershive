@@ -810,7 +810,25 @@ P&L defects — BA-8 in particular is marked LIVE DEFECT affecting real balances
   without first checking what quote and candle entitlement actually exists for
   commodities**; a catalog row alone would put an instrument in the picker that
   may not be quotable. Logged, deliberately not built.
-- **MSYM-1 — BUILT 2026-08-20, NOT VERIFIED IN THE APP.** Do not close it.
+- **MSYM-1 — CLOSED 2026-08-20. Observed, not inferred.**
+
+  `e2e/ui/replay-two-instruments.spec.ts` — **5/5 passing** against real data
+  on both instruments: EUR/USD 15m primary (4,735 stored bars), GBP/USD 15m
+  secondary (4,320), session date 2026-07-15, inside both ranges. The picker
+  offers the other instrument; the two panes report different symbols with
+  non-empty tapes; the secondary never runs ahead of the clock; both advance
+  rather than one freezing; a trade on the primary leaves the secondary in
+  step while the secondary has no trading menu at all; and every one of those
+  survives a genuine reload.
+
+  The reload test is the load-bearing one — within a session React state can
+  hold two panes in agreement that a fresh mount would not.
+
+  Getting here took four dead theories about the data (see MD-2, MD-5), none
+  of which were about this feature. The code shipped in `a0ab1715` was correct
+  throughout; what was missing was trustworthy data to observe it against.
+
+  Earlier status, retained: BUILT 2026-08-20, NOT VERIFIED IN THE APP.
   Secondary-symbol panes ship in `a0ab1715`: a pane can render a different
   instrument than the session's, projected onto the session's clock, display
   only. Typecheck, 633 unit tests, build and four UI specs all pass.
