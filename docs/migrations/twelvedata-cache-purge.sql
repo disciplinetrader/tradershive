@@ -82,22 +82,44 @@ select min(created_at) as first_written,
 -- the fix, and use that as <BOUNDARY> in STEP 2. Rows at or after it are
 -- correct and must be kept.
 
--- ── STEP 1 · CONFIRM the poisoning independently ──────────────────────────
--- Do not trust `created_at` alone to mean "wrong". Forex closes Friday 22:00
--- UTC and reopens Sunday 22:00 UTC, so legitimate 15m data has essentially NO
--- Saturday bars. A ~10h forward shift pushes Friday afternoon into Saturday
--- morning, which is directly visible:
+-- ── STEP 1 · CONFIRM the poisoning — REWRITTEN 2026-08-20 ─────────────────
+--
+-- THE ORIGINAL VERSION OF THIS STEP WAS WRONG. It counted Saturday bars and
+-- called them proof of a ~10h shift, reasoning that forex closes Friday 22:00
+-- UTC so legitimate data has none. The premise is false: **Twelve Data serves
+-- continuous 24/7 forex.** Measured 2026-08-20 against the live API, same
+-- params the pipeline sends — GBP/USD 15m, 2026-07-10 to 07-13, timezone=UTC
+-- — returned 96 bars on Friday, 96 on SATURDAY, 96 on Sunday, with genuine
+-- OHLC movement (1.33954-1.34039), not flat carries. See MD-5.
+--
+-- So Saturday bars prove nothing, EUR/USD's 672 of them prove nothing, and
+-- whether its rows are shifted at all is OPEN again.
+--
+-- The valid discriminator is a VALUE comparison. Fetch a window fresh and ask
+-- whether the stored bar at time T carries the OHLC that fresh data shows at
+-- T, or the OHLC it shows at T-10h.
+--
+-- Reference values, fetched 2026-08-20 with timezone=UTC (EUR/USD 15m):
+--
+--   2026-07-15 00:00:00Z   open 1.14241  close 1.14270
+--   2026-07-15 10:00:00Z   open 1.14180  close 1.14157
+--   2026-07-15 13:45:00Z   open 1.14270  close 1.14341
 
-select count(*) filter (where extract(dow from ts) = 6)                       as saturday_bars,
-       count(*) filter (where extract(dow from ts) = 0 and ts::time < '22:00') as sunday_daytime_bars,
-       count(*)                                                                as total
+select ts, open, high, low, close
   from public.historical_candles
- where symbol = 'EUR/USD' and timeframe = '15m';
+ where symbol = 'EUR/USD' and timeframe = '15m'
+   and ts in (timestamptz '2026-07-15 00:00:00+00',
+              timestamptz '2026-07-15 10:00:00+00',
+              timestamptz '2026-07-15 13:45:00+00')
+ order by ts;
 
--- A meaningful saturday_bars count is the shift, observed rather than
--- inferred from a provider label. If it comes back ~0, STOP: the rows may be
--- fine and this delete would destroy good data to fix a problem that is not
--- there. Report it rather than proceeding.
+-- READ IT:
+--   stored 00:00 open = 1.14241  → matches fresh 00:00. NOT shifted. The rows
+--                                  are fine and STEP 2 MUST NOT RUN.
+--   stored 10:00 open = 1.14241  → the 00:00 values sit at 10:00. Shifted by
+--                                  exactly +10h. Proceed to STEP 2.
+--   neither                      → a third state. Stop and report it; do not
+--                                  delete on an unexplained result.
 
 -- ── STEP 2 · DELETE, scoped ───────────────────────────────────────────────
 -- IRREVERSIBLE. There is no undo and no backup of this table.

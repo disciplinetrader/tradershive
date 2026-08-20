@@ -179,6 +179,54 @@ select indexname, indexdef from pg_indexes
 
 ---
 
+## MD-5 — Twelve Data serves continuous 24/7 forex, weekends included
+
+**Area:** Market data · **Found:** 2026-08-20 · **Status:** documented, not a
+bug in our code — design around it
+
+Measured against the live API on 2026-08-20, using exactly the parameters
+`providers.server.ts` sends (`GBP/USD`, `interval=15min`, `order=ASC`,
+`timezone=UTC`, 2026-07-10 → 07-13):
+
+| Day | Bars returned |
+|---|---|
+| Fri 2026-07-10 | 96 |
+| **Sat 2026-07-11** | **96** |
+| Sun 2026-07-12 | 96 |
+
+Spot FX closes Friday 22:00 UTC and reopens Sunday 22:00 UTC. A correct feed
+returns ~96 bars for that whole window; this returns 289.
+
+**The weekend candles are not flat.** Sampled Saturday bars move genuinely —
+`1.33954`–`1.34039` across the 10:00–11:00 hour — so this is not
+carried-forward padding that could be filtered on `open = high = low = close`.
+`flat_bars` measured **0** on every day of the week including both weekend
+days.
+
+Our pipeline is not implicated. `upsertCandles` writes what the provider
+returns; `detectGaps` only records gaps into the job row. There is no
+fill, interpolation or carry-forward anywhere in
+`historical/pipeline.server.ts` or `historical/providers.server.ts`.
+
+### What it invalidates
+
+**A Saturday-bar count is not evidence of a timezone shift.** MD-2's purge
+runbook originally used exactly that test, and it was wrong. EUR/USD's 672
+Saturday bars are this, not a shift — so whether those rows are poisoned at
+all is an open question again, and the delete stays held until a VALUE
+comparison settles it (rewritten as STEP 1 of
+`docs/migrations/twelvedata-cache-purge.sql`).
+
+### What to design around
+
+Replay sessions, session-hours logic and any weekend-aware analysis will see
+bars on days the market did not trade. Options, none taken yet: filter
+out-of-session bars at ingest, gate on market hours at read, or accept them
+and make every consumer session-aware. Note [MS-1](#) already records that the
+session rule has no concept of weekends — these interact.
+
+---
+
 ## MIG-1 — A migration's GRANT is in the repo and not in the database
 
 **Area:** Tooling / migrations · **Found:** 2026-08-20 · **Status:** open,
