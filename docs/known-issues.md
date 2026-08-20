@@ -227,6 +227,48 @@ session rule has no concept of weekends — these interact.
 
 ---
 
+## MD-6 — Out-of-session bars are stored, and nothing decides what to do with them
+
+**Area:** Market data / session logic · **Found:** 2026-08-20 · **Status:**
+open, not urgent — a design decision, not a defect
+
+A direct consequence of
+[MD-5](#md-5--twelve-data-serves-continuous-247-forex-weekends-included):
+`historical_candles` now demonstrably holds forex bars for Saturdays and
+Sundays, with real OHLC movement, because that is what the provider sends.
+Measured on GBP/USD 15m — 96 bars on Saturday 2026-07-11, `flat_bars` zero on
+every day of the week.
+
+Nothing in the pipeline filters them and nothing downstream knows they are
+different from weekday bars.
+
+### Who sees them
+
+- **Replay.** A session spanning a weekend replays straight through it. The
+  clock advances one bar at a time and has no concept of a market being shut,
+  so a trader practising a Friday close runs into Saturday tape.
+- **Session-hours logic.** [MS-1](#) already records that the session rule has
+  no concept of weekends. These two interact: MS-1 is the rule not knowing,
+  MD-6 is the data being there for it to not know about.
+- **Statistics and journal analytics.** Any per-session or per-day aggregate
+  now includes days the market did not trade.
+
+### Three options, none taken
+
+1. **Filter at ingest** — drop out-of-session bars in `upsertCandles`. Cleanest
+   downstream, but it bakes a market-hours calendar into the importer and is
+   irreversible for anything already stored.
+2. **Gate at read** — keep the rows, exclude them in the read path. Reversible,
+   and lets a future consumer opt in, but every reader has to remember.
+3. **Accept them and make consumers session-aware** — the largest change, and
+   the only one that also fixes MS-1.
+
+This is deliberately not decided here. It needs the same product judgement
+EC-1 does, and it is not urgent: nothing is currently wrong, and the bars are
+real data rather than fabrications.
+
+---
+
 ## MIG-1 — A migration's GRANT is in the repo and not in the database
 
 **Area:** Tooling / migrations · **Found:** 2026-08-20 · **Status:** open,
