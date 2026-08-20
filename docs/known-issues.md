@@ -104,6 +104,81 @@ partially working.
 
 ---
 
+## MD-4 — Two writers fill `historical_candles`, and only one is visible
+
+**Area:** Market data · **Found:** 2026-08-20 · **Status:** open · **Blocks
+MD-2's purge until the probe below is run**
+
+`historical_candles` has two independent writers:
+
+| | Path | Records a job? | Chunking | On conflict |
+|---|---|---|---|---|
+| Importer | `historical/pipeline.server.ts:159` | yes, `historical_import_jobs` | paged, 250 ms between pages | `symbol,timeframe,provider_code,ts` |
+| Chart load | `twelvedata.functions.ts:446-464` | **no** | 500-row slices, no delay | `symbol,timeframe,ts` |
+
+The second is a cache-through backfill inside `twelveDataCandles`: loading a
+chart for an uncached window fetches from Twelve Data and writes the result.
+It creates **no** `historical_import_jobs` row and its failures are swallowed
+into `console.warn` (`:462`).
+
+### Why this matters for MD-2
+
+EUR/USD's 4,735 poisoned rows were almost certainly written by the CHART path,
+not the importer. The evidence, measured 2026-08-20:
+
+- All 4,735 rows landed in a **13-second window** (13:41:08 → 13:41:21). The
+  importer sleeps 250 ms between pages; 500-row slices with no delay match
+  `:457` exactly.
+- **No `historical_import_jobs` row exists for EUR/USD.** The only jobs found
+  were two cron-triggered GBP/USD attempts. The chart path records nothing, so
+  its writes leave no trace anywhere except the rows themselves.
+- It stamps `provider_code: "twelvedata"` (`:454`), which is the value seen.
+
+So "re-import EUR/USD" and "someone opened a EUR/USD chart" are the same
+event, and MD-2's purge cannot be reasoned about as though only the importer
+fills this table.
+
+### The unresolved part — do not purge before answering it
+
+Every row was written **2026-08-14 13:41 UTC**, which is *after* the timezone
+fix `08f52e13` was committed (2026-08-13 09:45 UTC) — and the rows are still
+shifted, with 672 Saturday bars in a market that closes Friday 22:00 UTC.
+
+Both writers in the CURRENT tree pin `timezone: "UTC"`
+(`providers.server.ts:249` and `:311`, `twelvedata.functions.ts:428`), so the
+code as it stands is correct. That leaves the deployed build lagging the repo
+as the leading explanation — this project publishes by hand — but **it has not
+been established**, and a third writer has not been ruled out by anything
+stronger than a grep.
+
+**Probe before purging.** GBP/USD holds zero rows, so it is a clean subject:
+load a GBP/USD 15m chart on the deployment over a window spanning a weekend,
+then count its Saturday bars. Clean means the fix is live and the purge is
+safe; shifted means the bug is still running and purging EUR/USD would destroy
+the only forex data we have while being unable to replace it correctly.
+
+### Also worth checking while in there
+
+`twelvedata.functions.ts:459` upserts with `onConflict: "symbol,timeframe,ts"`,
+while the table's declared constraint is
+`UNIQUE(symbol, timeframe, provider_code, ts)`. A mismatched conflict target
+normally raises *"no unique or exclusion constraint matching the ON CONFLICT
+specification"* — which this path would swallow into `console.warn`. It
+evidently does not raise, since the rows exist, so the live table has a
+constraint the migration files do not describe. Given
+[MIG-1](#mig-1--a-migrations-grant-is-in-the-repo-and-not-in-the-database) and
+the two conflicting `CREATE TABLE IF NOT EXISTS` definitions of this same
+table, that is worth reading rather than assuming:
+
+```sql
+select conname, pg_get_constraintdef(oid)
+  from pg_constraint where conrelid = 'public.historical_candles'::regclass;
+select indexname, indexdef from pg_indexes
+ where schemaname = 'public' and tablename = 'historical_candles';
+```
+
+---
+
 ## MIG-1 — A migration's GRANT is in the repo and not in the database
 
 **Area:** Tooling / migrations · **Found:** 2026-08-20 · **Status:** open,
