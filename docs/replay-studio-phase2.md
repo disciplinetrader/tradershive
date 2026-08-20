@@ -424,9 +424,13 @@ its own specs. The wizard test drives the real entry point.
 
 ## Still open
 
-**Approved working order (2026-08-20):** EC-3 (reopened) → **EC-7** →
-MSYM-1 → EC-1 → HD-1 → SYM-1. EC-8 gates all of them — nothing applied
-through the SQL editor can be trusted until its workaround is used.
+**Approved working order (2026-08-20):** ~~EC-3~~ (closed) → ~~EC-7~~
+(applied) → **MSYM-1** → EC-1 → HD-1 → SYM-1.
+
+**EC-8 gates every one of them.** Nothing applied through the SQL editor can
+be trusted unless it is written as a plain statement and read back from a
+fresh connection. Two changes were reported done on 2026-08-20 that had
+changed nothing.
 
 EC-7 replaced EC-3's second half rather than being added to it: EC-3 turned out
 to be a host repoint affecting five jobs, and the `battle-tick` it was logged
@@ -630,8 +634,13 @@ P&L defects — BA-8 in particular is marked LIVE DEFECT affecting real balances
   — per-symbol errors go into `results` and never affect the status — and a
   33-symbol serial pass in one request is likely to exceed the platform's
   execution limit regardless of pg_net's timeout.
-- **EC-3 — STILL OPEN.** Marked FIXED on 2026-08-20 and it was not; see
-  **EC-8**. Scheduled jobs point at the gated preview alias
+- **EC-3 — CLOSED 2026-08-20, on the second attempt.** All six jobs read back
+  on `tradershive.lovable.app` with `secret_matches` true, from a fresh
+  connection after a reload — not from a fire, and not from the session that
+  made the change. The repoint returned four rows with jobids 2/3/4/5, the
+  jobs' existing ids, confirming upserts rather than replacements.
+
+  It was marked FIXED once already that day and was not; see **EC-8**. Scheduled jobs point at the gated preview alias
   `project--<uuid>.lovable.app`, which serves `403` + `noindex` on normal pages
   and carries no `x-deployment-id`; the hook answers there only because
   `/api/public/*` is exempt from site auth. The repoint was run and reported
@@ -695,8 +704,27 @@ P&L defects — BA-8 in particular is marked LIVE DEFECT affecting real balances
   `NOTICE` is emitted during execution, never at commit. That is the whole
   defect, and it is the same shape as pg_cron reporting "succeeded" for a
   statement that only queued an HTTP request.
-- **EC-7 — nothing starts a battle that nobody is watching.**
-  **Found:** 2026-08-20 · **Status:** open, runbook written, not yet applied.
+- **EC-7 — APPLIED AND OBSERVED 2026-08-20**, with one residual named below.
+  **Found:** 2026-08-20 · **Status:** fixed; the timing gates are not yet
+  exercised at a real boundary.
+
+  `battle-tick-every-minute` is scheduled (jobid 18, `* * * * *`, published
+  host) and `battle-settlement-every-minute` is unscheduled. **The observation:
+  `asdf` — a battle sitting at `ready` since 2026-08-10 — reached `completed`
+  on its own, with no browser tab open anywhere.** Ten days stuck, then moved
+  within two minutes of the cron going live. That is the server-side state
+  machine running unattended for the first time in this project's history.
+
+  **Residual — what `asdf` did NOT prove.** Its `start_at` and `end_at` were
+  both long past, so every gate it passed was trivially satisfied. The
+  `ready -> countdown` boundary (`start_at <= now() + 30s`) and the
+  `countdown -> live` delay (`countdown_started_at <= now() - 10s`) were never
+  exercised against a real clock. `docs/battle-tick-unattended-test.md` is the
+  test that does that — a battle with a FUTURE start, every tab closed — and it
+  remains worth running before anyone relies on start-time precision.
+
+  Also unconfirmed: the two under-filled battles at `filling` (1/2 participants)
+  were predicted to stay put as a control. Nobody read them back.
 
   Found by asking why `battle-tick` had no job. It has none because step 4 of
   `docs/battle-arena-fixes.md` — written 2026-08-07 — was never applied. Steps

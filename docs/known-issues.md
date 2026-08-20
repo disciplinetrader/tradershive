@@ -25,7 +25,23 @@ enough detail to pick up cold. Remove an entry when it ships a fix.
 
 ## BA-1 — Matchmaking creates battles with no participants
 
-**Area:** Battle Arena · **Found:** 2026-08-07 · **Status:** open, unassigned
+**Area:** Battle Arena · **Found:** 2026-08-07 · **Status:** open — **ARMED
+2026-08-20, urgency raised**
+
+> **This code has begun executing.** Until 2026-08-20 the matchmaking block had
+> never run once: it lives in `tick_battles()` (plural), and the only caller
+> was a browser polling `tick_battle(uuid)` (singular), which does not contain
+> it. Scheduling `battle-tick-every-minute` that day (EC-7) means
+> `tick_battles()` now runs **every minute**, matchmaking block included.
+>
+> `matchmaking_queue` was measured at **0** immediately before the swap, so
+> nothing fired and nothing is broken yet. But the defect is no longer
+> dormant — the next user to enter the queue triggers it, and a second user
+> entering completes the pair. Two players then get "Match Found!" for a battle
+> neither is joined to, and both are removed from the queue.
+>
+> This was a known and accepted condition of the swap, not a surprise. It does
+> change the calculus: BA-1 was unassigned because it could not fire.
 
 `tick_battles()` ends with a matchmaking block that pairs two queued players,
 inserts a `battles` row, deletes both from `matchmaking_queue`, and sends both a
