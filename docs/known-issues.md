@@ -104,6 +104,62 @@ partially working.
 
 ---
 
+## MIG-1 — A migration's GRANT is in the repo and not in the database
+
+**Area:** Tooling / migrations · **Found:** 2026-08-20 · **Status:** open,
+unassigned · **Severity:** low on its own, high as a class
+
+`20260720091538_dbcd8b49-...sql:90` reads:
+
+```sql
+GRANT SELECT ON public.historical_candles TO authenticated, anon;
+```
+
+The live database disagrees. Measured 2026-08-20 with the publishable key:
+
+```
+{"code":"42501","message":"permission denied for table historical_candles",
+ "hint":"Grant the required privileges to the current role with:
+         GRANT SELECT ON public.historical_candles TO anon;"}
+```
+
+The `authenticated` grant IS present — the same read succeeds with a user
+token, which is why nothing in the app has ever noticed. Only `anon` is
+missing.
+
+### Why it is worth an entry
+
+**Nothing in the app is broken by it.** Every reader of this table is
+authenticated. It was found only because a diagnostic script tried to count
+rows with the publishable key.
+
+What matters is the class, not the instance. This project applies migrations
+**by hand** through the SQL editor, so the files in `supabase/migrations/` are
+a record of what was *intended*, not proof of what was *applied*. One statement
+inside an applied file silently did not take. That is the same shape as
+[EC-8](#ec-8) — a change reported as done that did not land — and it means the
+migration directory cannot be trusted as a description of the live schema
+without checking.
+
+### Fix
+
+```sql
+GRANT SELECT ON public.historical_candles TO anon;
+```
+
+Harmless: the table's RLS policy `hc_read` is already `FOR SELECT USING (true)`
+with no role restriction, so the grant only makes the intended access work
+rather than widening anything the policy did not already allow.
+
+### The larger question this raises, deliberately not answered here
+
+How many other statements in `supabase/migrations/` were never applied? Nobody
+has checked. A diff of the intended grants and policies against
+`information_schema` would answer it, and is worth doing before anything reads
+the migration directory as authoritative.
+
+---
+
 ## BA-2 — Live battle screen has no arena rail below `xl`
 
 **Area:** Battle Arena · **Found:** 2026-08-07 · **Status:** open, follow-up
