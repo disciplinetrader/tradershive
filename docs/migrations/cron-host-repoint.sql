@@ -24,9 +24,13 @@ select jobname,
   from cron.job
  order by (command like '%project--%') desc, jobname;
 
--- Expect: battle-tick on project--<uuid>.lovable.app, everything else on
--- tradershive.lovable.app. If a second job appears on the alias, it is in
--- scope for step 2 as written — no edit needed.
+-- MEASURED 2026-08-20: FIVE jobs were on the alias, not one —
+-- battle-settlement-every-minute and all four email jobs. Only
+-- economic-calendar-daily was on the published host. `battle-tick`, which
+-- this issue was originally logged against, is not in cron.job at all and
+-- never has been (see EC-7). Step 2 is driven off the same predicate, so it
+-- covered all five without an edit — which is the argument for surveying
+-- rather than repointing the one job you already knew about.
 
 -- ── STEP 2 · repoint every job on the alias ───────────────────────────────
 

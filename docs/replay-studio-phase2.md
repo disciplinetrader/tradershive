@@ -424,7 +424,12 @@ its own specs. The wizard test drives the real entry point.
 
 ## Still open
 
-**Approved working order (2026-08-20):** EC-3 → MSYM-1 → EC-1 → HD-1 → SYM-1.
+**Approved working order (2026-08-20):** ~~EC-3~~ (fixed) → **EC-7** →
+MSYM-1 → EC-1 → HD-1 → SYM-1.
+
+EC-7 replaced EC-3's second half rather than being added to it: EC-3 turned out
+to be a host repoint affecting five jobs, and the `battle-tick` it was logged
+against turned out never to have been scheduled at all.
 
 Two of those carry gates rather than positions. **EC-1 is the product owner's
 call, raised whenever they choose** — not work to be scheduled, though EC-6
@@ -624,13 +629,69 @@ P&L defects — BA-8 in particular is marked LIVE DEFECT affecting real balances
   — per-symbol errors go into `results` and never affect the status — and a
   33-symbol serial pass in one request is likely to exceed the platform's
   execution limit regardless of pg_net's timeout.
-- **EC-3 — `battle-tick` is scheduled against the preview alias.** Found while
-  settling EC-2's host question. Its cron points at
-  `project--<uuid>.lovable.app`, which serves `403` + `noindex` on normal pages
-  and carries no `x-deployment-id`; the hook answers there only because
-  `/api/public/*` is exempt from site auth. It works today and would break if
-  the alias ever changed. One-line fix (repoint at `tradershive.lovable.app`),
-  deliberately not bundled into EC-2.
+- **EC-3 — FIXED 2026-08-20.** Scheduled jobs pointed at the gated preview
+  alias `project--<uuid>.lovable.app`, which serves `403` + `noindex` on normal
+  pages and carries no `x-deployment-id`; the hook answers there only because
+  `/api/public/*` is exempt from site auth. Repointed at
+  `tradershive.lovable.app` via `docs/migrations/cron-host-repoint.sql`,
+  verified by a real fire rather than by inspection.
+
+  **This entry was wrong in both particulars, and the correction is the
+  useful part.** It named `battle-tick` and described the scope as one job.
+  Measuring first — step 1 of the runbook surveys rather than assumes — found:
+
+  - **`battle-tick` has no cron job and never has.** It is absent from
+    `cron.job` entirely, and no applied migration schedules it. The state
+    machine migration mentions it only in a comment header
+    (`20260807102317_*.sql:25`) listing what the migration does; the
+    `cron.schedule` call is not in the file body.
+  - **All five surviving jobs were on the alias**, not one — the same five
+    repaired yesterday. Only `economic-calendar-daily`, scheduled today
+    against the published host, was correct.
+
+  The alias is not an accident either: it is written into
+  `battle-arena-fixes.md` step 4 and into the migration's own convention note
+  (`https://<project>.lovable.app/api/public/hooks/<name>`). Anyone following
+  the runbook re-creates EC-3. Both now say otherwise.
+
+  Auth was never affected — all five were answering `200` on the alias
+  throughout, confirmed before the repoint rather than assumed.
+- **EC-7 — nothing starts a battle that nobody is watching.**
+  **Found:** 2026-08-20 · **Status:** open, runbook written, not yet applied.
+
+  Found by asking why `battle-tick` had no job. It has none because step 4 of
+  `docs/battle-arena-fixes.md` — written 2026-08-07 — was never applied. Steps
+  2, 3 and 5 of that runbook were completed 2026-08-19; step 4 is the cron
+  swap, and it was missed. So the job that runs is the one `battle-tick.ts`
+  says it **supersedes**.
+
+  `battle-settlement` filters `status = 'live' AND end_at <= now()`. It settles
+  and cannot promote. The only other caller of the state machine is a browser
+  tab polling `tick_battle(uuid)` from the battle detail route. Therefore
+  **nothing advances `upcoming -> open -> ready -> countdown -> live`
+  server-side**, and a battle nobody opens never starts — the scenario every
+  real user hits, and the one no test has ever covered, because every battle
+  verified by hand since 2026-08-07 was verified with the page open.
+
+  It also explains why yesterday's repair looked complete: four battles moved
+  `live -> completed`, which is exactly and only what the superseded job does.
+  The other half of the loop was never exercised.
+
+  **Scheduling it is gated on BA-1.** The matchmaking block lives in
+  `tick_battles()` (plural); the client only ever calls `tick_battle(uuid)`
+  (singular), which has none. So BA-1's broken matchmaking — pairs two queued
+  players, creates a battle, deletes both from the queue, notifies both, never
+  joins either — **has never executed once.** This job runs it every minute.
+  `select count(*) from public.matchmaking_queue;` decides: 0 means dormant and
+  safe, anything else means BA-1 first.
+
+  Apply with `docs/migrations/battle-tick-schedule.sql`, which unschedules
+  `battle-settlement-every-minute` in the same block — `tick_battles()`
+  finalizes every live battle past `end_at`, so leaving both running points a
+  second finalizer at the same rows. Then run
+  `docs/battle-tick-unattended-test.md`, which is the only thing that actually
+  observes this: a battle created, a second participant seeded, every tab
+  closed, and the status read back afterwards.
 - **SYM-2 — FIXED.** A market tab click used to call `setMarket` directly, in
   BOTH `SymbolSearch` and `TopToolbar`, changing the data VENUE while leaving
   the symbol alone. `settings.market` is in `ChartEngine`'s effect deps, so it
