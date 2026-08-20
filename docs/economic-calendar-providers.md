@@ -1,5 +1,30 @@
 # EC-1 — economic calendar provider options
 
+> ## STATUS 2026-08-20 · WAITING ON FMP'S ANSWER · EODHD IS THE FALLBACK
+>
+> **Decision deferred, deliberately. Nothing is urgent** — EODHD backfills to
+> 2020, so a subscription bought later recovers the same data as one bought
+> today. The only cost of waiting is that the overlay stays forecast-only, and
+> the product owner has accepted that trade-off.
+>
+> **Open action:** a pre-sales email to `info@financialmodelingprep.com` asking
+> (1) whether `/stable/economic-calendar` is included in Starter ($29/mo) or
+> requires Premium, and (2) whether past events on that plan return populated
+> `actual` values. Question 2 is the deciding one — the current free feed also
+> returns events and is useless precisely because past ones carry no outcome.
+>
+> **If confirmed:** buy FMP Starter ($348/yr) and verify immediately with the
+> 2024 curl recorded below, before relying on it.
+>
+> **If ambiguous or no reply within a few days:** take **EODHD Fundamentals at
+> $599.90/yr**. It is fully verified — actuals, history from 2020, 30+
+> countries — and needs no further investigation.
+>
+> Do NOT buy FMP Starter as a test. No refunds under any circumstances, no
+> self-serve cancellation, and reported charges continuing after cancellation
+> requests: the downside is not bounded at $29, and the prize is ~$252/yr.
+
+
 Research report, 2026-08-20. **No code was written and nothing was changed.**
 Same format as the earlier Twelve Data vs Finnhub evaluation: measured where
 measurement was possible, sourced where it was not, and marked clearly which
