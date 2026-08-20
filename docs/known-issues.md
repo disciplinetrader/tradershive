@@ -1281,9 +1281,36 @@ misread as a local time.
 `market-data/historical/providers.server.ts`. This also aligns `start_date` /
 `end_date`, which are read in that same zone.
 
-### Outstanding — purge the poisoned cache
+### CLOSED 2026-08-20 — FALSE ALARM. The cache was never poisoned.
 
-**PRIORITISED 2026-08-20. Runbook: `docs/migrations/twelvedata-cache-purge.sql`.**
+**Do not delete anything.** EUR/USD's 4,735 rows are correct, verified by
+comparing stored values against a live fetch at three timestamps:
+
+| 2026-07-15 UTC | stored `open` | fresh `open` |
+|---|---|---|
+| 00:00:00 | 1.14241 | 1.14241 |
+| 10:00:00 | 1.14180 | 1.14180 |
+| 13:45:00 | 1.14270 | 1.14270 |
+
+Exact matches. Not shifted by ten hours or by anything else.
+
+**Why it was diagnosed as poisoned.** The evidence was a Saturday-bar count,
+on the reasoning that spot FX closes Friday 22:00 UTC so legitimate data has
+none. [MD-5](#md-5--twelve-data-serves-continuous-247-forex-weekends-included)
+shows that premise is false — Twelve Data serves continuous 7-day forex — so
+the Saturday bars were never evidence of anything. The 36,267-row purge in the
+original note would have destroyed correct data.
+
+The live-tick misalignment that prompted the original investigation was real
+and its `timezone=UTC` fix stands; what did not follow was that the STORED
+rows carried the fault. That step was inferred from a calendar argument and
+never checked against a value until 2026-08-20.
+
+The runbook `docs/migrations/twelvedata-cache-purge.sql` is kept for its
+STEP 1 only — the value-comparison method that settled this. Its delete must
+not be run.
+
+### Original note, retained for the record
 
 36,267 rows (`provider_code='twelvedata'`) in `historical_candles` were written
 with the shifted timestamps. They are wrong by ~10h and will merge into any
