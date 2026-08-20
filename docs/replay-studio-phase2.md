@@ -425,7 +425,8 @@ its own specs. The wizard test drives the real entry point.
 ## Still open
 
 **Approved working order (2026-08-20):** ~~EC-3~~ (closed) → ~~EC-7~~
-(applied) → **MSYM-1** → EC-1 → HD-1 → SYM-1.
+(applied) → **MSYM-1 (built, NOT verified in the app — do not close)** →
+EC-1 → HD-1 → SYM-1.
 
 **EC-8 gates every one of them.** Nothing applied through the SQL editor can
 be trusted unless it is written as a plain statement and read back from a
@@ -809,7 +810,65 @@ P&L defects — BA-8 in particular is marked LIVE DEFECT affecting real balances
   without first checking what quote and candle entitlement actually exists for
   commodities**; a catalog row alone would put an instrument in the picker that
   may not be quotable. Logged, deliberately not built.
-- **MSYM-1** — multi-symbol replay (item 1B). **The path is FOREX. Do not
+- **MSYM-1 — BUILT 2026-08-20, NOT VERIFIED IN THE APP.** Do not close it.
+  Secondary-symbol panes ship in `a0ab1715`: a pane can render a different
+  instrument than the session's, projected onto the session's clock, display
+  only. Typecheck, 633 unit tests, build and four UI specs all pass.
+
+  **What has NOT been observed is the feature itself.** Every spec points the
+  secondary pane at the SESSION'S OWN symbol, because only two of 33 registered
+  symbols have stored bars and they sit in different markets on different base
+  timeframes. So the fetch/project/fold/render path, the never-runs-ahead
+  inequality, the survival of a fresh reload and the trading guard are all
+  observed — and two genuinely different instruments on one clock are not.
+  This is inspection, not observation, and it is labelled as such for the same
+  reason EC-3 spent a day marked FIXED while being broken.
+
+  ### What it would take to actually observe it
+
+  The blocker is precise: `resolveHistoricalRange` backfills a missing symbol
+  through `runImport`, which resolves `supabaseAdmin`
+  (`historical/pipeline.server.ts:18`), and `createSupabaseAdminClient` THROWS
+  without `SUPABASE_SERVICE_ROLE_KEY` (`client.server.ts:36`). The throw is
+  caught and warned (`service.server.ts:288`), so the request degrades to
+  "Run a historical import for …" rather than failing loudly. Reads need no
+  admin — the app already reads the two stored symbols locally in the UI suite
+  — so **only the WRITE is blocked.**
+
+  **The key is not missing and does not need minting.** Every Supabase project
+  has a `service_role` key (Project Settings → API). It is already set on the
+  deployment: `historical-sync` ran there on 2026-08-19 and reached Binance,
+  which it could not have done without constructing `supabaseAdmin` — that is
+  how CX-1's 403 was measured.
+
+  So there are two routes, and the cheap one needs no local secret at all:
+
+  **Route A — import in production, observe locally.** Create a GBP/USD 15m
+  replay session on `tradershive.lovable.app` covering EUR/USD's stored window
+  (2026-06-26 → 08-14) and open it. Coverage is insufficient, so the on-demand
+  import fires with the deployment's admin credentials and backfills
+  `historical_candles`. Local reads then work with no key. This is also the
+  EUR/USD + GBP/USD pair the original user story asked for. Prefer a session
+  over `historical-sync`, which loops all 33 symbols serially with no throttle
+  and rate-limits itself (EC-5).
+
+  **Route B — copy the key locally.** Into `.env.local`, never `.env`:
+  `.gitignore:41` says `.env` is TRACKED and warns against credentials in it,
+  while `.env*.local` is ignored. Never a `VITE_` prefix — that compiles a
+  full-RLS-bypass key into the client bundle.
+
+  ### The observation itself, once data exists
+
+  Two panes, EUR/USD primary and GBP/USD secondary, in a real browser: place a
+  trade on the PRIMARY (the secondary cannot trade, by design — that is the
+  feature, not a limitation to work around), confirm both panes advance
+  together on one clock, then RELOAD and confirm they are still in step. The
+  reload is the whole point: within one session React state can hold two panes
+  in agreement that a fresh mount would not.
+
+  MSYM-1 closes on that observation and not before.
+
+- **MSYM-1 (original entry)** — multi-symbol replay (item 1B). **The path is FOREX. Do not
   re-attempt crypto backfill.** Crypto is not blocked by missing data — it is
   blocked by a permanent egress restriction (CX-1): Binance answers 403 with an
   HTML body to the deployment while serving 200 with real klines from a normal
