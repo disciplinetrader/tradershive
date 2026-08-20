@@ -124,18 +124,70 @@ session, so these figures come from third-party plan listings dated June 2026,
 not from Trading Economics directly. Treat as indicative and confirm before
 purchase.
 
-### FMP — cheapest candidate, least verified
+### FMP — field shape fits, one decisive question left unanswered
 
-Has a documented economic calendar endpoint. I could not verify field shape or
-pricing: the docs and pricing pages both returned HTTP 403, and the `demo` key
-is rejected. Reported free tier is 250 requests/day; paid tiers are described
-in third-party reviews in the **$29–$79/mo** range with 300 / 750 / 3,000
-calls-per-minute for Starter / Premium / Ultimate.
+**Updated 2026-08-20 after a second pass.** Everything below the first line is
+from documentation and third-party plan listings, NOT from a live call — the
+docs and pricing pages both return HTTP 403 to any client I have, and the
+`demo` key is rejected outright:
 
-**Everything in this paragraph is unverified.** If cost is the deciding factor,
-FMP is worth ten minutes with a free API key to check whether its calendar
-carries `actual` and how far back it goes — that is a measurement, and it would
-either make FMP the answer or eliminate it.
+```
+{"Error Message":"Invalid API KEY. Feel free to create a Free API Key..."}
+```
+
+**Documented response shape** — a direct match for `economic_events`:
+
+```json
+{"date":"2025-01-15 14:30:00","country":"US",
+ "event":"Consumer Price Index (CPI) YoY","currency":"USD",
+ "previous":2.6,"estimate":2.7,"actual":null,
+ "change":null,"impact":"High","changePercentage":null}
+```
+
+`actual`, `estimate`, `previous`, `impact` and `currency` all present. Column
+for column this maps onto our table more cleanly than any other option, and
+the calendar is documented as refreshing every 15 minutes.
+
+**Pricing** (third-party listing, not FMP's own page):
+
+| Plan | Price | Limit | Stated historical range |
+|---|---|---|---|
+| Basic (free) | $0 | 250 calls/**day** | 5 years |
+| Starter | $29/mo | 300 calls/min | 5 years |
+| Premium | $69/mo | 750 calls/min | 30+ years |
+| Ultimate | $139/mo | 3,000 calls/min | 30+ years |
+
+**The question that decides it, and it is NOT answered.** Those "5 years" and
+"30+ years" figures describe the plans generally; nothing found states whether
+the *economic calendar* is served on the free or Starter tier, or whether its
+history is one of the ranges gated behind Premium. FMP's own material says
+"premium dataset endpoints offer more historical data and some endpoints are
+only accessible via paid subscriptions" without naming which.
+
+So FMP is either:
+
+- **the answer** — $29/yr-equivalent $348, or even $0, for a schema-shaped feed
+  with actuals and five years of history, less than half EODHD; or
+- **Premium-gated at $69/mo ($828/yr)**, which is more than EODHD's $599.90
+  and settles the question the other way.
+
+**This cannot be closed without an API key**, and creating an account is not
+something I should do on your behalf. It is a 30-second signup at
+`site.financialmodelingprep.com` → free key, then one command:
+
+```bash
+curl -s "https://financialmodelingprep.com/stable/economic-calendar?from=2024-03-01&to=2024-03-08&apikey=YOUR_KEY" | head -c 600
+```
+
+**A 2024 date range is deliberate** — it tests history and actuals in one call,
+which is the whole question. Read it as:
+
+- **Events returned WITH non-null `actual`** → free tier serves historical
+  outcomes. FMP wins on price and the decision is basically made.
+- **Events returned, `actual` all null** → schedule-only for past dates, which
+  is the current feed's exact failing. Eliminated for replay.
+- **An error or empty array** → the endpoint is gated above free. Re-test on
+  Starter if $29 is worth a month's trial, otherwise EODHD.
 
 ### Alpha Vantage — probably not applicable
 
@@ -209,10 +261,12 @@ call.
 Not a recommendation to buy — a recommendation to measure one more thing, for
 free:
 
-1. **Ten minutes on an FMP free key.** Confirm whether its economic calendar
-   carries `actual` and how far back it goes. It is the cheapest candidate by a
-   wide margin and the only one whose suitability is unknown. This either makes
-   it the answer or removes it from the table.
+1. **One command on an FMP free key** — the exact curl is in the FMP section
+   above, against a 2024 window so it tests history and actuals together.
+   Documentation says the field shape is right; what is unverified is whether
+   the calendar's history is free, Starter, or Premium-gated. That single
+   answer separates "$0-348/yr and better-shaped than EODHD" from
+   "$828/yr and worse".
 2. **Trading Economics' free trial** (100 requests) if a comparison against
    EODHD's field quality is wanted before committing to a year.
 
