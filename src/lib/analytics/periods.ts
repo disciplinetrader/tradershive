@@ -110,22 +110,65 @@ export function weekdayLabel(epochMs: number, timezone: string): string {
   return WEEKDAY_LABELS[zonedParts(epochMs, timezone).weekday];
 }
 
-// ── Sessions ────────────────────────────────────────────────────────────────
+// ── Time bands ──────────────────────────────────────────────────────────────
+//
+// NOT market sessions. Renamed from `SessionWindow` / `DEFAULT_SESSIONS` /
+// `classifySession` on 2026-08-20 (MS-2).
+//
+// ── What these are, and why they stay UTC-anchored ─────────────────────────
+//
+// A time band is a fixed slice of the UTC day. The set below partitions the
+// day completely: every instant lands in exactly one band, there is no null,
+// no overlap and no "closed". That is the point — a band is an analytical
+// bucket for comparing like with like over time, and a boundary that moved
+// twice a year would make year-over-year comparison meaningless.
+//
+// A market SESSION is a different thing: it is when a trading centre is
+// actually open, which moves against UTC with that centre's own DST and does
+// not exist at all on weekends. That lives in `@/lib/market-sessions` and is
+// the only thing allowed to answer "which session was this trade in".
+//
+// ── Why the rename, specifically ───────────────────────────────────────────
+//
+// These two were both called "session", shared the shape `{ id, label }`, and
+// two of their four ids happened to collide (`london`, `sydney`) while two did
+// not (`asia` vs `tokyo`, `newyork` vs `new_york`). Analytics fell back from
+// one to the other inside a single `groupBy` and a single `includes`, so the
+// same session appeared twice in a cohort table and in the filter dropdown —
+// and picking one option silently excluded the trades spelled the other way.
+//
+// The ids below are now deliberately unmistakable. `utc_13_21` cannot be
+// confused with `new_york` by a reader or by a string comparison, which is the
+// property that makes the old bug impossible rather than merely absent.
+//
+// **Nothing consumes time bands today.** They were only ever reached as the
+// session fallback, and that fallback is gone. Kept deliberately: the model is
+// sound for its own purpose, and deleting it would re-open a settled question
+// the next time someone wants time-of-day cohorts.
 
-export interface SessionWindow {
-  id: string;
+export type TimeBandId = "utc_0_8" | "utc_8_13" | "utc_13_21" | "utc_21_24";
+
+export interface TimeBand {
+  id: TimeBandId;
   label: string;
   /** Inclusive start hour, exclusive end hour, expressed in UTC. */
   startUtcHour: number;
   endUtcHour: number;
 }
 
-/** Default FX session map, expressed in UTC so DST in the user tz cannot skew it. */
-export const DEFAULT_SESSIONS: SessionWindow[] = [
-  { id: "asia", label: "Asia", startUtcHour: 0, endUtcHour: 8 },
-  { id: "london", label: "London", startUtcHour: 8, endUtcHour: 13 },
-  { id: "newyork", label: "New York", startUtcHour: 13, endUtcHour: 21 },
-  { id: "sydney", label: "Sydney", startUtcHour: 21, endUtcHour: 24 },
+/**
+ * The default UTC day partition.
+ *
+ * Labels name the region whose activity dominates each band. They are
+ * descriptive, NOT session hours — `utc_8_13` is "the band London dominates",
+ * not "London's session", which on any given date starts at 07:00 or 08:00 UTC
+ * depending on British Summer Time.
+ */
+export const DEFAULT_TIME_BANDS: TimeBand[] = [
+  { id: "utc_0_8", label: "Asia hours (00–08 UTC)", startUtcHour: 0, endUtcHour: 8 },
+  { id: "utc_8_13", label: "London hours (08–13 UTC)", startUtcHour: 8, endUtcHour: 13 },
+  { id: "utc_13_21", label: "New York hours (13–21 UTC)", startUtcHour: 13, endUtcHour: 21 },
+  { id: "utc_21_24", label: "Sydney hours (21–24 UTC)", startUtcHour: 21, endUtcHour: 24 },
 ];
 
 function utcHour(epochMs: number): number {
@@ -133,13 +176,16 @@ function utcHour(epochMs: number): number {
 }
 
 /**
- * Classify an instant into a session window. Windows are UTC-anchored; a
- * wrapping window (start > end) is handled explicitly.
+ * Classify an instant into a time band. Bands are UTC-anchored; a wrapping
+ * band (start > end) is handled explicitly.
+ *
+ * This does NOT answer "which market session was open" — ask
+ * `sessionAt` from `@/lib/market-sessions` for that.
  */
-export function classifySession(
+export function classifyTimeBand(
   epochMs: number,
-  windows: SessionWindow[] = DEFAULT_SESSIONS,
-): SessionWindow | null {
+  windows: TimeBand[] = DEFAULT_TIME_BANDS,
+): TimeBand | null {
   const h = utcHour(epochMs);
   for (const w of windows) {
     if (w.startUtcHour <= w.endUtcHour) {

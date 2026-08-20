@@ -22,7 +22,29 @@ import {
   type AccountSnapshot, type AnalyticsCloseReason, type AnalyticsRecord,
   type AssetClass, type ExecutionSourceKind, type ExecutionTapeSummary,
   type JournalMetadata,
+  type AnalyticsSession,
 } from "./model";
+
+/**
+ * Narrow a stored session value to what analytics accepts.
+ *
+ * `asia` is a legacy enum member no detector has ever produced — Tokyo always
+ * outranked it (`journal/session-detect.ts:31`). It is mapped rather than
+ * dropped so a stray historical row still groups with the session it meant.
+ * Anything unrecognised becomes `null`: an unknown string entering a session
+ * `groupBy` is precisely the MS-2 defect, and grouping under "no session" is
+ * honest where guessing is not.
+ */
+const ANALYTICS_SESSIONS = new Set<string>([
+  "sydney", "tokyo", "london", "new_york", "london_ny_overlap", "off_hours", "custom",
+]);
+
+function toAnalyticsSession(v: unknown): AnalyticsSession | null {
+  if (typeof v !== "string") return null;
+  if (v === "asia") return "tokyo";
+  return ANALYTICS_SESSIONS.has(v) ? (v as AnalyticsSession) : null;
+}
+
 
 const num = (v: unknown): number | null => {
   const n = typeof v === "string" ? Number(v) : (v as number);
@@ -145,7 +167,7 @@ export function journalMetadataOf(entry: JournalEntry | null | undefined): Journ
     setup: entry.setup ?? null,
     playbook: entry.strategy ?? entry.setup ?? null,
     strategy: entry.strategy ?? null,
-    session: entry.session ?? null,
+    session: toAnalyticsSession(entry.session),
     tags: readTags(entry),
     emotions: Array.isArray(entry.emotions) ? entry.emotions : [],
     mistakes: Array.isArray(entry.mistakes) ? entry.mistakes : [],
@@ -290,7 +312,7 @@ export function fromAnalyticsTrade(t: AnalyticsTrade): AnalyticsRecord {
       setup: t.setup,
       playbook: t.strategy ?? t.setup,
       strategy: t.strategy,
-      session: t.session,
+      session: toAnalyticsSession(t.session),
       emotions: t.emotions ?? [],
       mistakes: t.mistakes ?? [],
       grade: t.grade,

@@ -10,7 +10,9 @@ import { computeDrawdown } from "../drawdown";
 import { computePerformance } from "../expectancy";
 import { computeBehaviour } from "../behaviour";
 import { accountComparison, groupBy, playbookAnalytics, rank, timeAnalytics } from "../cohorts";
-import { classifySession, dayKey, weekdayLabel } from "../periods";
+import { classifyTimeBand, dayKey, weekdayLabel } from "../periods";
+import type { AnalyticsSession } from "../model";
+import { selectFilterOptions } from "../selectors";
 import { dedupeRecords, fromClosedTrade, summarizeTape } from "../normalize";
 import { EMPTY_JOURNAL_METADATA, EMPTY_TAPE, type AnalyticsDataset, type AnalyticsRecord } from "../model";
 import type { ClosedTrade } from "@/lib/chart/orders/closed-trade";
@@ -239,13 +241,72 @@ describe("scoping and filters", () => {
   });
 });
 
+// ── MS-2 · one session vocabulary ───────────────────────────────────────────
+//
+// Written 2026-08-20 BEFORE the fix, the same way MS-1's weekend cases went
+// into the fixture before the weekday gate existed.
+//
+// `journal.session` carries the CANONICAL label (`@/lib/market-sessions`,
+// written by `public.detect_session`). Rows without one fell back to
+// `classifySession`, a UTC-hour partition with its own ids. Two vocabularies
+// reached one `groupBy` and one string `includes`, so the same session could
+// appear twice under different spellings.
+//
+//   Wed 16:30Z   canonical `new_york`   ·  partition `newyork`   → SPLITS
+//   Wed 09:00Z   canonical `london`     ·  partition `london`    → collides
+//   Sat 14:00Z   canonical `off_hours`  ·  partition `newyork`   → weekend
+//
+// The 09:00Z control is why this was easy to miss: two of four ids happen to
+// match, so the bug is intermittent by time of day.
+
+describe("MS-2 — session vocabularies must not split a cohort", () => {
+  const WED_NY = Date.UTC(2026, 6, 15, 16, 30);
+  const WED_LON = Date.UTC(2026, 6, 15, 9, 0);
+  const SAT = Date.UTC(2026, 6, 11, 14, 0);
+
+  const labelled = (at: number, session: AnalyticsSession) =>
+    rec({ entryTime: at, exitTime: at + 3_600_000, journal: { ...EMPTY_JOURNAL_METADATA, session } });
+  const unlabelled = (at: number) =>
+    rec({ entryTime: at, exitTime: at + 3_600_000, journal: { ...EMPTY_JOURNAL_METADATA, session: null } });
+
+  it("offers ONE filter option when a labelled and an unlabelled trade share a session", () => {
+    const opts = selectFilterOptions(dataset([labelled(WED_NY, "new_york"), unlabelled(WED_NY)]));
+    // Before the fix this is ["new_york", "newyork"] — the same session twice.
+    expect(opts.sessions).toEqual(["new_york"]);
+  });
+
+  it("still offers one option where the two vocabularies happened to agree", () => {
+    const opts = selectFilterOptions(dataset([labelled(WED_LON, "london"), unlabelled(WED_LON)]));
+    expect(opts.sessions).toEqual(["london"]);
+  });
+
+  it("labels an unlabelled weekend trade off_hours, not a session that was shut", () => {
+    const opts = selectFilterOptions(dataset([unlabelled(SAT)]));
+    // Before the fix: ["newyork"] — New York, on a Saturday.
+    expect(opts.sessions).toEqual(["off_hours"]);
+  });
+
+  it("does not drop the unlabelled trade when filtering by the labelled one's session", () => {
+    // selectors builds the dropdown, filters matches against it. If they
+    // disagree, picking an option silently excludes trades that belong in it.
+    const res = run(
+      [labelled(WED_NY, "new_york"), unlabelled(WED_NY)],
+      { ...EMPTY_ANALYTICS_FILTERS, sessions: ["new_york"] },
+    );
+    expect(res.records.length).toBe(2);
+  });
+});
+
 // ── 21–22 Timezone classification ───────────────────────────────────────────
 
 describe("timezone-aware classification", () => {
-  it("21. classifies sessions from UTC windows, not browser-local time", () => {
-    expect(classifySession(Date.UTC(2026, 0, 5, 2))?.id).toBe("asia");
-    expect(classifySession(Date.UTC(2026, 0, 5, 9))?.id).toBe("london");
-    expect(classifySession(Date.UTC(2026, 0, 5, 15))?.id).toBe("newyork");
+  it("21. classifies TIME BANDS from UTC windows, not browser-local time", () => {
+    // Renamed from sessions 2026-08-20 (MS-2). These are fixed UTC bands, not
+    // market sessions — the ids no longer resemble session labels, which is
+    // what stops the two being compared as if they were one vocabulary.
+    expect(classifyTimeBand(Date.UTC(2026, 0, 5, 2))?.id).toBe("utc_0_8");
+    expect(classifyTimeBand(Date.UTC(2026, 0, 5, 9))?.id).toBe("utc_8_13");
+    expect(classifyTimeBand(Date.UTC(2026, 0, 5, 15))?.id).toBe("utc_13_21");
   });
 
   it("22. classifies day of week in the configured timezone", () => {

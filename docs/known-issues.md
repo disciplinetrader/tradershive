@@ -323,8 +323,9 @@ fabricated label chosen over an honest one.
 
 ## MS-2 — Cohort sessions mix two vocabularies in one groupBy
 
-**Area:** Analytics / cohorts · **Found:** 2026-08-20 · **Status:** open ·
-**NOT the same defect as MS-1 — investigated 2026-08-20 and it is not a DST bug**
+**Area:** Analytics / cohorts · **Found:** 2026-08-20 · **Status:** **FIXED
+2026-08-20** — renamed, not merged. See "Resolution" at the end.
+**NOT the same defect as MS-1 — it was never a DST bug**
 
 `src/lib/analytics/periods.ts` carries a third session model, and the obvious
 reading — that it is MS-1 again — is wrong on investigation.
@@ -384,6 +385,55 @@ Not "is fixed UTC wrong" — it is defensible for its stated purpose. It is
 
 Option 2 is the smallest change that removes the split-row bug; option 3 is the
 honest one. Not decided.
+
+### Resolution 2026-08-20 — option 3, renamed rather than deleted
+
+The two vocabularies stay separate. What changed is that they can no longer be
+confused, at the type level rather than by convention.
+
+**`periods.ts` renamed.** `SessionWindow` -> `TimeBand`, `DEFAULT_SESSIONS` ->
+`DEFAULT_TIME_BANDS`, `classifySession` -> `classifyTimeBand`, and the ids from
+`asia`/`london`/`newyork`/`sydney` to `utc_0_8`/`utc_8_13`/`utc_13_21`/
+`utc_21_24`. Two of the old four collided with session labels by accident;
+none of the new ones can. Kept rather than deleted: the model is sound for its
+own purpose, and deleting it would re-open a settled question the next time
+someone wants time-of-day cohorts. **It has no consumer today** — that is
+recorded in the file itself so its deadness is deliberate rather than
+mysterious.
+
+**All four collision sites now use the canonical rule** — `cohorts.ts:118`,
+`cohorts.ts:203`, `filters.ts:87` and `selectors.ts:147` call `sessionAt`. The
+`sessionWindows` option on the analytics engine is removed; it configured a
+fallback that no longer exists.
+
+**The boundary is structural.** `AnalyticsSession = SessionLabel | "custom"` in
+`model.ts`, and a deliberate violation was compiled to prove it:
+
+```
+error TS2322: Type '"utc_13_21"' is not assignable to type 'AnalyticsSession'.
+```
+
+`custom` is included because it belongs to the USER, not to us — the boundary
+excludes time bands, not user data.
+
+**The type boundary immediately found a vocabulary the grep had missed.** The
+DB column admits `asia` and `custom`, neither of them in `SessionLabel`.
+`asia` is a legacy enum member no detector has ever produced (Tokyo always
+outranked it), so `normalize.ts` maps it to `tokyo` rather than dropping it,
+and anything unrecognised becomes `null` — an unknown string entering a
+session `groupBy` is this exact defect.
+
+**Checked while here, and it is safe:** MS-1 made `off_hours` common, and
+`off_hours` is not a member of the journal's `session` enum. The draft trigger
+already writes `nullif(sess, 'off_hours')`, so weekend trades store NULL rather
+than a value the column would reject.
+
+**Fixture first, as with MS-1.** Four cases went in before the fix. Three
+failed immediately — the filter option list returned `['new_york', 'newyork']`
+for one session, an unlabelled Saturday trade reported `newyork`, and filtering
+by `new_york` dropped the unlabelled trade that belonged in it. The fourth, a
+09:00Z case where the two vocabularies happened to agree, passed throughout:
+that is the control, and it is why the bug was intermittent by time of day.
 
 ---
 

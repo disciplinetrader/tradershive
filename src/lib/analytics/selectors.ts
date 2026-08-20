@@ -10,7 +10,7 @@ import type { AnalyticsResult } from "./engine";
 import type { AnalyticsDataset, AnalyticsRecord, Measured } from "./model";
 import { measured } from "./model";
 import type { AnalyticsFilters } from "./filters";
-import { classifySession, DEFAULT_SESSIONS } from "./periods";
+import { sessionAt } from "@/lib/market-sessions";
 
 export type MetricFormat = "currency" | "percent" | "r" | "number" | "duration";
 
@@ -144,8 +144,8 @@ export function selectFilterOptions(dataset: AnalyticsDataset): FilterOptions {
     sessions: [
       ...new Set(
         dataset.records
-          .map((r) => r.journal.session ?? classifySession(r.entryTime, DEFAULT_SESSIONS)?.id ?? null)
-          .filter((v): v is string => !!v),
+          .map((r) => r.journal.session ?? sessionAt(r.entryTime))
+          .filter((v): v is NonNullable<typeof v> => !!v),
       ),
     ].sort(),
     orderTypes: set((r) => r.orderType),

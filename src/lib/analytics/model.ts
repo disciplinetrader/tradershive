@@ -16,6 +16,18 @@
  *    very differently (see §17 unavailable states).
  */
 
+import type { SessionLabel } from "@/lib/market-sessions";
+
+/**
+ * What `journal_entries.session` may hold, from analytics' point of view: a
+ * canonical market-session label, or `custom`, which belongs to the user and
+ * is not ours to reinterpret.
+ *
+ * Deliberately NOT `string`. A time-band id from `periods.ts` (`utc_13_21`)
+ * must not be assignable here — both were plain strings, and that is exactly
+ * what let two vocabularies collide inside one `groupBy` (MS-2).
+ */
+export type AnalyticsSession = SessionLabel | "custom";
 import type { TradeResult } from "@/lib/journal/derive";
 
 export type Direction = "long" | "short";
@@ -39,7 +51,13 @@ export interface JournalMetadata {
   setup: string | null;
   playbook: string | null;
   strategy: string | null;
-  session: string | null;
+  /**
+   * Canonical market-session label, or null when the trade has no journal
+   * entry. Typed rather than `string` so a time-band id (`periods.ts`) cannot
+   * be assigned here — the two were both plain strings, and that is what let
+   * them collide in a groupBy (MS-2).
+   */
+  session: AnalyticsSession | null;
   tags: string[];
   emotions: string[];
   mistakes: string[];

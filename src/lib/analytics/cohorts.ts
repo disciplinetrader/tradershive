@@ -11,10 +11,11 @@ import type { AnalyticsRecord, AccountSnapshot } from "./model";
 import { computePerformance, type PerformanceMetrics } from "./expectancy";
 import { buildEquitySeries } from "./equity";
 import { computeDrawdown } from "./drawdown";
-import {
-  classifySession, DEFAULT_SESSIONS, hourOfDay, weekdayLabel, monthKey, quarterKey,
-  type SessionWindow,
-} from "./periods";
+import { hourOfDay, weekdayLabel, monthKey, quarterKey } from "./periods";
+// Sessions come from the canonical rule only. Analytics used to fall back to a
+// UTC time-band partition here, which put two vocabularies into one groupBy —
+// see MS-2 and the note atop `periods.ts`.
+import { sessionAt, SESSION_LABELS } from "@/lib/market-sessions";
 
 /** Below this many trades a cohort is never ranked best/worst (§9). */
 export const DEFAULT_MIN_SAMPLE = 10;
@@ -108,14 +109,13 @@ export interface PlaybookRow extends CohortRow {
 export function playbookAnalytics(
   records: readonly AnalyticsRecord[],
   opts: CohortOptions = {},
-  sessions: SessionWindow[] = DEFAULT_SESSIONS,
 ): PlaybookRow[] {
   const base = groupBy(records, (r) => r.journal.playbook ?? r.journal.setup, opts);
   return base.map((row) => {
     const rs = records.filter((r) => (r.journal.playbook ?? r.journal.setup) === row.key);
 
     const symbolRows = groupBy(rs, (r) => r.symbol, opts);
-    const sessionRows = groupBy(rs, (r) => r.journal.session ?? classifySession(r.entryTime, sessions)?.id ?? null, opts);
+    const sessionRows = groupBy(rs, (r) => r.journal.session ?? sessionAt(r.entryTime), opts);
 
     const answered = rs.filter((r) => r.journal.followedPlan != null);
     const conf = new Map<number, number>();
@@ -193,14 +193,13 @@ export interface TimeAnalytics {
 export function timeAnalytics(
   records: readonly AnalyticsRecord[],
   opts: CohortOptions = {},
-  sessions: SessionWindow[] = DEFAULT_SESSIONS,
 ): TimeAnalytics {
   const tz = opts.timezone ?? "UTC";
-  const sessionLabel = (id: string) => sessions.find((s) => s.id === id)?.label ?? id;
+  const sessionLabel = (id: string) => SESSION_LABELS[id as keyof typeof SESSION_LABELS] ?? id;
 
   const sessionRows = groupBy(
     records,
-    (r) => r.journal.session ?? classifySession(r.entryTime, sessions)?.id ?? null,
+    (r) => r.journal.session ?? sessionAt(r.entryTime),
     opts,
     sessionLabel,
   );

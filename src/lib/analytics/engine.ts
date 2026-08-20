@@ -18,7 +18,7 @@ import {
   accountComparison, breakdowns, playbookAnalytics, timeAnalytics, DEFAULT_MIN_SAMPLE,
   type BreakdownBundle, type PlaybookRow, type PortfolioComparison, type TimeAnalytics,
 } from "./cohorts";
-import { DEFAULT_SESSIONS, type Resolution, type SessionWindow } from "./periods";
+import { type Resolution } from "./periods";
 
 export type AnalyticsState =
   | "no_trades"
@@ -67,7 +67,13 @@ export interface AnalyticsResult {
 export interface EngineOptions {
   resolution?: Resolution;
   minSample?: number;
-  sessionWindows?: SessionWindow[];
+  /**
+   * REMOVED 2026-08-20 (MS-2). This configured a UTC time-band partition used
+   * as a fallback when a trade had no journal session label. Sessions now come
+   * from `@/lib/market-sessions` in every path, so there is nothing for a
+   * caller to configure here. Time bands still exist in `periods.ts` under
+   * their own name; they are simply not a session.
+   */
   behaviourThresholds?: BehaviourThresholds;
 }
 
@@ -95,12 +101,11 @@ export function runAnalytics(
   filters: AnalyticsFilters,
   options: EngineOptions = {},
 ): AnalyticsResult {
-  const sessions = options.sessionWindows ?? DEFAULT_SESSIONS;
   const resolution = options.resolution ?? "trade";
   const tz = dataset.timezone;
   const excludeFees = filters.excludeFees;
 
-  const records = applyFilters(dataset.records, filters, sessions);
+  const records = applyFilters(dataset.records, filters);
   const startingBalance = scopedStartingBalance(dataset.accounts, filters.accounts);
 
   const cohortOpts = {
@@ -159,9 +164,9 @@ export function runAnalytics(
     risk: computeRisk(records, { startingBalance }),
     execution: computeExecutionQuality(records),
     behaviour: computeBehaviour(records, { excludeFees, thresholds: options.behaviourThresholds }),
-    playbooks: playbookAnalytics(records, cohortOpts, sessions),
+    playbooks: playbookAnalytics(records, cohortOpts),
     breakdown: breakdowns(records, cohortOpts),
-    time: timeAnalytics(records, cohortOpts, sessions),
+    time: timeAnalytics(records, cohortOpts),
     comparison: accountComparison(records, dataset.accounts, cohortOpts),
     coverage: {
       riskBasisPercent: (withRisk / n) * 100,

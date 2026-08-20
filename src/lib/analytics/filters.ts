@@ -7,7 +7,7 @@
  */
 
 import type { AnalyticsRecord } from "./model";
-import { classifySession, DEFAULT_SESSIONS, type SessionWindow } from "./periods";
+import { sessionAt } from "@/lib/market-sessions";
 
 export type OutcomeFilter = "all" | "profit" | "loss" | "breakeven";
 export type ArchiveFilter = "active" | "archived" | "both";
@@ -63,7 +63,6 @@ function hits(selected: string[], value: string | null | undefined): boolean {
 export function matchesFilters(
   record: AnalyticsRecord,
   filters: AnalyticsFilters,
-  sessionWindows: SessionWindow[] = DEFAULT_SESSIONS,
 ): boolean {
   if (filters.archived === "active" && record.archived) return false;
   if (filters.archived === "archived" && !record.archived) return false;
@@ -84,8 +83,11 @@ export function matchesFilters(
   if (!hits(filters.journalStatuses, record.journal.status)) return false;
 
   if (filters.sessions.length) {
-    const session = record.journal.session ?? classifySession(record.entryTime, sessionWindows)?.id ?? null;
-    if (!session || !filters.sessions.includes(session)) return false;
+    // Same expression as `selectFilterOptions`, deliberately: the dropdown is
+    // built from this and matched against it, so any divergence silently drops
+    // trades that belong in the selected session (MS-2).
+    const session = record.journal.session ?? sessionAt(record.entryTime);
+    if (!filters.sessions.includes(session)) return false;
   }
 
   if (filters.tags.length && !filters.tags.some((t) => record.journal.tags.includes(t))) return false;
@@ -101,9 +103,8 @@ export function matchesFilters(
 export function applyFilters(
   records: readonly AnalyticsRecord[],
   filters: AnalyticsFilters,
-  sessionWindows?: SessionWindow[],
 ): AnalyticsRecord[] {
-  return records.filter((r) => matchesFilters(r, filters, sessionWindows));
+  return records.filter((r) => matchesFilters(r, filters));
 }
 
 /** True when nothing is narrowed — used to tell "no trades" from "no matches". */
