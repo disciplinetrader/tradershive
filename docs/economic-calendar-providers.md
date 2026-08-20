@@ -296,6 +296,63 @@ releases with scheduled times, consensus and outcomes.
 **Verdict: not a candidate.** Cheap and well documented, and aimed at a
 different problem.
 
+### HorizonFX "Economic Calendar API" (RapidAPI) — promising, one gate unverified
+
+`GET https://economic-calendar-api.p.rapidapi.com/calendar`, headers
+`X-RapidAPI-Key` + `X-RapidAPI-Host`. RapidAPI-only; no direct endpoint.
+
+**Measured 2026-08-20 without an account:**
+
+| Request | Result |
+|---|---|
+| no key | `401 {"message":"Invalid API key..."}` |
+| syntactically valid bogus key | `403 {"message":"You are not subscribed to this API."}` |
+
+So even the FREE tier requires a RapidAPI account and an explicit subscribe
+step. Cannot be tested without signing up.
+
+**Documented response** — the best shape of any candidate:
+`id, eventId, name, countryCode, currencyCode, dateUtc, volatility, actual,
+consensus, previous, unit, isBetterThanExpected`. That is actual AND consensus
+AND previous, plus a volatility/impact field and currency, mapping onto
+`economic_events` as cleanly as FMP and with international coverage rather than
+Business Quant's US-only.
+
+**The fine print, found before spending anything.** The vendor's own page lists
+**"historical data access" as a Pro ($5/mo) feature**, alongside "enhanced rate
+limits". That is precisely the axis that decides this: if the free tier serves
+only current and upcoming events, it reproduces faireconomy's exact failing and
+is worth nothing to us. The marketing sample showing NFP on 2024-01-15 with
+`actual: "216K"` is a marketing sample — the same category of evidence as FMP's
+documented response, which turned out not to describe what the free tier
+actually serves.
+
+**Provenance risk, worth weighing separately from price.** The page describes
+"auto-scraping every 5 minutes" and lists compatibility with TradingView,
+FXStreet, Forex Factory and Investing. That is a scraper over other people's
+calendars, operated by a party with no track record found, not a licensed feed.
+For a dependency the replay overlay reads on every session, that is a real
+durability question — scrapers break when their sources change, and there is no
+contractual anyone to call.
+
+**If a paid test is ever wanted, this is a far safer one than FMP.** $5/mo,
+billed and cancelled self-serve through RapidAPI's dashboard, versus FMP's $29
+with no refunds under any circumstances and email-only cancellation. Different
+risk class entirely. Not pursued now: the standing constraint is free-only.
+
+**The test to run once a free RapidAPI key exists** — a past window, which is
+the whole question:
+
+```bash
+curl -s "https://economic-calendar-api.p.rapidapi.com/calendar?from=2024-01-15&to=2024-01-16"   -H "X-RapidAPI-Key: YOUR_KEY"   -H "X-RapidAPI-Host: economic-calendar-api.p.rapidapi.com" | head -c 800
+```
+
+- **Events with populated `actual`** → free tier serves historical outcomes,
+  and this becomes the leading option on price. Verify coverage for EUR and GBP
+  before committing, not just USD.
+- **Events with `actual: null`, or empty, or a 403 mentioning the plan** →
+  historical access is Pro-gated. Then it is a $5/mo question, not a free one.
+
 ### Alpha Vantage — probably not applicable
 
 Offers economic *indicator time series* (GDP, CPI, unemployment as historical
@@ -320,6 +377,7 @@ scheduled, forecast and released on a date in the past"*.
 | **Trading Economics** | yes | **yes** | **yes, deep** | **yes** |
 | FMP | yes | documented, unverified | unverified | unknown — gated above free |
 | Business Quant | upcoming only | latest reading only | **no** | **no** — US only, snapshot not log |
+| HorizonFX (RapidAPI) | yes | documented | **Pro-gated?** | unknown — needs a free key to settle |
 
 Only EODHD and Trading Economics are confirmed to do the job.
 
