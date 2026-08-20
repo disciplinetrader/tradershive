@@ -163,4 +163,61 @@ export const SESSION_CASES: SessionCase[] = [
     expect: "new_york",
     why: "17:00 BST exactly — London's close is exclusive, so only New York remains",
   },
+
+  // ---- The weekend, and the week's two edges (MS-1 / MD-6) ----------------
+  //
+  // Added 2026-08-20, BEFORE the weekday gate was written. Every case above
+  // this comment falls on a weekday, so both implementations agreed with a
+  // fixture that never asked the question — MS-1 warned that any fix must add
+  // these first or the blind spot survives it.
+  //
+  // The gate is keyed on each centre's LOCAL weekday, not UTC. Those disagree
+  // near midnight, which is exactly where this would otherwise hide: the two
+  // Sydney cases below are the same local Monday 07:30 an hour apart in UTC,
+  // because the FX week opens an hour earlier in UTC during southern DST.
+  {
+    at: "2026-07-10T21:30:00Z",
+    expect: "off_hours",
+    why: "Sydney local Sat 07:30 — inside Sydney's HOURS but the week has closed. Returned `sydney` before the gate; this is the week-close edge.",
+  },
+  {
+    at: "2026-07-11T10:00:00Z",
+    expect: "off_hours",
+    why: "London local Sat 11:00 — inside London's hours on a shut market. Returned `london` before the gate.",
+  },
+  {
+    at: "2026-07-11T14:00:00Z",
+    expect: "off_hours",
+    why: "London Sat 15:00 and New York Sat 10:00. Returned `london_ny_overlap` before the gate — the week's highest-liquidity label, on a Saturday.",
+  },
+  {
+    at: "2026-07-12T10:00:00Z",
+    expect: "off_hours",
+    why: "London local Sun 11:00 — still shut. Sunday DAYTIME is not trading; only Sunday evening is.",
+  },
+  {
+    at: "2026-07-12T20:30:00Z",
+    expect: "off_hours",
+    why: "Sydney local Mon 06:30 — the week has not opened yet. Guards an over-eager gate that opens on local Monday midnight.",
+  },
+  {
+    at: "2026-07-12T21:30:00Z",
+    expect: "sydney",
+    why: "Sydney local Mon 07:30 — the FX week OPENS here, on a Sunday in UTC. A naive `skip Saturday and Sunday` gate fails this case, which is why it is here.",
+  },
+  {
+    at: "2026-01-17T14:00:00Z",
+    expect: "off_hours",
+    why: "London local Sat 14:00 in winter — the weekend gate must not depend on DST",
+  },
+  {
+    at: "2026-01-18T19:30:00Z",
+    expect: "off_hours",
+    why: "Sydney local Mon 06:30 on AEDT — same local instant as the July case, an hour earlier in UTC",
+  },
+  {
+    at: "2026-01-18T20:30:00Z",
+    expect: "sydney",
+    why: "Sydney local Mon 07:30 on AEDT — the week opens at 20:30Z in January and 21:30Z in July. Pinning both stops a fix that hardcodes a UTC hour.",
+  },
 ];

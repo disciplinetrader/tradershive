@@ -90,11 +90,51 @@ function minutesInZone(at: Date, zone: string): number {
   return hour * 60 + minute;
 }
 
+/**
+ * Weekday at `zone`, 0 = Sunday .. 6 = Saturday.
+ *
+ * Keyed on the centre's LOCAL weekday, never UTC. The two disagree for several
+ * hours around every local midnight, and that gap is precisely where the FX
+ * week's edges live — Sydney's Monday morning IS Sunday evening in UTC.
+ */
+const WEEKDAY_INDEX: Record<string, number> = {
+  Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
+};
+
+function weekdayInZone(at: Date, zone: string): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: zone,
+    weekday: "short",
+  }).formatToParts(at);
+  const w = parts.find((p) => p.type === "weekday")?.value ?? "";
+  return WEEKDAY_INDEX[w] ?? -1;
+}
+
+/**
+ * The FX trading week, in each centre's LOCAL weekday: Monday to Friday.
+ *
+ * Uniform across all four centres, and that uniformity is the point. Expressed
+ * in UTC the week is ragged — it opens Sunday evening and closes Friday
+ * evening — which is what tempts a fix into hardcoding UTC hours. Expressed
+ * locally it is simply the working week everywhere, and the ragged UTC edges
+ * fall out for free: Sydney local Monday 07:00 is Sunday 21:00Z in southern
+ * winter and 20:00Z in southern summer, and neither number appears here.
+ *
+ * This is the model `src/lib/market-data/sessions.ts` already carried while
+ * the canonical rule did not (MD-6). It is now here, and that module defers to
+ * this one.
+ */
+const TRADING_WEEKDAYS: ReadonlySet<number> = new Set([1, 2, 3, 4, 5]);
+
 /** Is this centre trading at this instant? */
 export function isSessionOpen(key: SessionKey, at: Date | string | number): boolean {
   const d = toDate(at);
   if (!d) return false;
   const { zone, open, close } = SESSION_HOURS[key];
+  // Weekday first: a centre inside its hours on a Saturday is still shut, and
+  // reporting otherwise is what made `london_ny_overlap` reachable on a day
+  // the market does not trade.
+  if (!TRADING_WEEKDAYS.has(weekdayInZone(d, zone))) return false;
   const m = minutesInZone(d, zone);
   return m >= open * 60 && m < close * 60;
 }
@@ -180,6 +220,10 @@ export function nextSessionOpen(
     const da = Number(parts.find((p) => p.type === "day")?.value);
 
     const candidate = zonedWallTimeToUtc(y, mo - 1, da, open, 0, zone);
+    // A candidate landing on a local Saturday or Sunday is an open that does
+    // not happen. Without this, replay's session jump targets offer a "London
+    // open" on a weekend (MS-1) and the forward seek lands on an arbitrary bar.
+    if (!TRADING_WEEKDAYS.has(weekdayInZone(candidate, zone))) continue;
     if (candidate.getTime() >= start.getTime()) return candidate;
   }
   return null;
@@ -197,9 +241,13 @@ export function nextEquitiesOpen(from: Date | string | number, maxDays = 8): Dat
     const y = Number(parts.find((p) => p.type === "year")?.value);
     const mo = Number(parts.find((p) => p.type === "month")?.value);
     const da = Number(parts.find((p) => p.type === "day")?.value);
+    // NYSE is Monday to Friday. Exchange holidays are a separate problem and
+    // are NOT modelled here — this gate removes weekends only, and a holiday
+    // will still be offered as an open.
     const candidate = zonedWallTimeToUtc(
       y, mo - 1, da, NY_EQUITIES_OPEN.hour, NY_EQUITIES_OPEN.minute, NY_EQUITIES_OPEN.zone,
     );
+    if (!TRADING_WEEKDAYS.has(weekdayInZone(candidate, NY_EQUITIES_OPEN.zone))) continue;
     if (candidate.getTime() >= start.getTime()) return candidate;
   }
   return null;

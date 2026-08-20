@@ -32,6 +32,7 @@ function SessionsPage() {
               </div>
               <div className="mt-2 text-xs text-muted-foreground">
                 Opens <span className="text-foreground/80 font-mono">{fmt(s.openUtcMinute)}</span> · Closes <span className="text-foreground/80 font-mono">{fmt(s.closeUtcMinute)}</span>
+                <span className="ml-1 opacity-70">local{s.zone ? ` · ${s.zone}` : ""}</span>
               </div>
             </div>
           ))}

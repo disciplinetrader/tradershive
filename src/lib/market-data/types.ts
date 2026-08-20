@@ -97,9 +97,16 @@ export interface SessionWindow {
   code: string;
   name: string;
   market: MarketKind;
+  /**
+   * NOMINAL standard-time minutes, for labelling only. An hour out for half
+   * the year — see the note in `market-data/sessions.ts`. Never compute with
+   * these; ask `@/lib/market-sessions` instead.
+   */
   openUtcMinute: number;
   closeUtcMinute: number;
   weekdays: number[];
+  /** IANA zone the centre's hours are actually defined in. */
+  zone?: string;
   color?: string | null;
 }
 
