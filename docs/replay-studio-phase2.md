@@ -459,6 +459,18 @@ P&L defects — BA-8 in particular is marked LIVE DEFECT affecting real balances
      forecast, never the outcome.
 
   A provider with history and actuals fixes both; nothing else does.
+
+  **Options researched 2026-08-20 — see
+  [`economic-calendar-providers.md`](./economic-calendar-providers.md).**
+  Two corrections to the above came out of it. The feed has no `actual` FIELD
+  at all, so the column can never fill from this source — "measured 0 of 96"
+  understates it. And history DOES accumulate forward, because the ingest
+  upserts and never deletes; the deficit is backwards only. Finnhub and Twelve
+  Data are both eliminated by direct measurement. EODHD ($599.90/yr, actuals,
+  history from 2020) is the option to beat, and because it backfills to 2020,
+  **waiting costs almost nothing** — a subscription bought in six months
+  recovers the same data as one bought today. Decision remains the product
+  owner's.
 - **EC-2 — CLOSED 2026-08-20**, confirmed by an unattended fire (see the end
   of this entry). Scheduled 2026-08-19: `economic-calendar-daily`, 05:17 UTC, 30 s
   timeout, against `tradershive.lovable.app`, authenticating with the new
