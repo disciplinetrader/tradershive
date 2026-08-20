@@ -33,31 +33,54 @@
 -- verified from its returned rows.
 
 -- ── STEP 0 · MEASURE. Nothing is deleted here. ────────────────────────────
--- Splits every twelvedata row into poisoned (written before the fix) and
--- clean (written after), per symbol. This is the query that decides the scope
--- of STEP 2 — read it before running anything else.
+-- `provider_code` alone is NOT a clean boundary, and this step is what makes
+-- the scope precise instead of assumed. Twelve Data rows written AFTER the fix
+-- deployed are correct, and deleting them costs credits we do not have.
+--
+-- 0a · Import BATCHES. Rows from one import share a narrow created_at window,
+-- so a batch is the unit that is poisoned or clean — not an individual row.
+-- `saturday_bars` is the evidence: forex closes Friday 22:00 UTC, so a batch
+-- containing Saturday bars has been shifted. That is a property of the DATA,
+-- not of a provider label or a guessed timestamp.
 
-select symbol,
+select date_trunc('hour', created_at) as import_batch,
+       symbol,
        timeframe,
-       count(*)                                                                    as rows_total,
-       count(*) filter (where created_at <  timestamptz '2026-08-14 00:00:00+00')  as poisoned,
-       count(*) filter (where created_at >= timestamptz '2026-08-14 00:00:00+00')  as clean,
-       min(ts)         as first_bar,
-       max(ts)         as last_bar,
-       min(created_at) as first_written,
-       max(created_at) as last_written
+       count(*)                                                as rows,
+       min(ts)                                                 as first_bar,
+       max(ts)                                                 as last_bar,
+       count(*) filter (where extract(dow from ts) = 6)        as saturday_bars
   from public.historical_candles
  where provider_code = 'twelvedata'
- group by symbol, timeframe
- order by rows_total desc;
+ group by 1, 2, 3
+ order by import_batch;
 
--- The boundary is 2026-08-14 00:00 UTC, not the commit's 08-13 09:45. A commit
--- is not a deploy, and rows written between the two are still poisoned. Erring
--- later deletes slightly more and cannot leave bad data behind.
+-- READ IT LIKE THIS:
+--   saturday_bars > 0   → that batch is definitively shifted. Delete it.
+--   saturday_bars = 0   → NOT proof of cleanliness. A batch covering only
+--                         Monday–Thursday cannot show Saturday bars whether it
+--                         is shifted or not. Fall back to 0b.
 --
--- If `clean` is 0 everywhere, the scoped and unscoped deletes are identical
--- and the scoping question is moot — use STEP 2 as written anyway, since it
--- stays correct if that changes.
+-- 0b · The timestamp question, answered rather than guessed. The fix commit
+-- 08f52e13 is 2026-08-13 09:45:26 UTC; the DEPLOY is later than that by an
+-- unknown amount.
+
+select min(created_at) as first_written,
+       max(created_at) as last_written,
+       count(*) filter (where created_at >= timestamptz '2026-08-13 09:45:26+00') as written_after_fix_commit,
+       count(*)        as rows_total
+  from public.historical_candles
+ where provider_code = 'twelvedata';
+
+-- If `written_after_fix_commit` is 0, then no twelvedata row can possibly be
+-- correct, `provider_code` IS a clean boundary after all, and STEP 2 may drop
+-- its date predicate entirely. This is the expected outcome and it makes the
+-- whole scoping question moot — but it is now CHECKED rather than assumed.
+--
+-- If it is NOT 0, do not delete on a guessed boundary. Take the earliest
+-- created_at of the first batch showing `saturday_bars = 0` AND written after
+-- the fix, and use that as <BOUNDARY> in STEP 2. Rows at or after it are
+-- correct and must be kept.
 
 -- ── STEP 1 · CONFIRM the poisoning independently ──────────────────────────
 -- Do not trust `created_at` alone to mean "wrong". Forex closes Friday 22:00
@@ -85,9 +108,13 @@ select count(*) filter (where extract(dow from ts) = 6)                       as
 -- Binance rows are untouched by the predicate. Verify that in STEP 3 rather
 -- than trusting it here.
 
+-- Substitute <BOUNDARY> with the value STEP 0b produced. If
+-- written_after_fix_commit was 0, use timestamptz '2026-08-14 00:00:00+00',
+-- which is then provably equivalent to deleting every twelvedata row.
+
 delete from public.historical_candles
  where provider_code = 'twelvedata'
-   and created_at < timestamptz '2026-08-14 00:00:00+00';
+   and created_at < timestamptz '<BOUNDARY>';
 
 -- ── STEP 3 · VERIFY, in a SEPARATE run after a reload ─────────────────────
 -- A re-read inside the session that made the change sees its own uncommitted
@@ -107,9 +134,25 @@ select provider_code,
 -- before anything else is imported.
 
 -- ── AFTER: re-import, and NOT through historical-sync ─────────────────────
--- `historical-sync` loops all 33 enabled symbols serially in one request with
--- no delay between symbols and none between Twelve Data pages (EC-5). Against
--- 8 credits/min that is what produced GBP/USD's two 429s. Importing EUR/USD
--- and GBP/USD needs a single-symbol, throttle-aware path — the slice/pacing
--- work EC-5 already identifies as the prerequisite for scheduling it at all.
--- Purging without that path means the cache stays empty rather than refilling.
+-- DO NOT use `historical-sync`. It selects every `is_enabled = true` symbol
+-- and loops them serially in one request (`hooks/historical-sync.ts:55,67`)
+-- with no delay between symbols and none between Twelve Data pages (EC-5).
+-- Against 8 credits/min that is exactly what produced GBP/USD's two 429s on
+-- 2026-08-20. Re-importing through it would reproduce the failure this purge
+-- is cleaning up after.
+--
+-- USE THE ADMIN PAGE: `/admin/historical`, which calls `runHistoricalImport`
+-- (`market-data/historical.functions.ts:282`) — ONE symbol per invocation, by
+-- symbol id, with explicit `from`/`to` and timeframe, recorded as
+-- `triggered_by: 'admin'`. No new code is needed; the paced path already
+-- exists, it has simply never been the one used.
+--
+-- Pacing: run EUR/USD 15m first, confirm it landed, then GBP/USD 15m. Two
+-- separate invocations minutes apart. The window (2026-06-26 → 08-14 at 15m)
+-- is ~4,700 bars, inside Twelve Data's 5,000-row page, so each symbol is
+-- roughly one request — trivially inside the budget when they are not fired
+-- as part of a 33-symbol burst.
+--
+-- Verify each import by its `historical_import_jobs` row — status, phase,
+-- candles_inserted, error_message — and not by the absence of a complaint.
+-- That table is where GBP/USD's two 429s were found.
