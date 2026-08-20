@@ -257,6 +257,45 @@ written confirmation is a direct answer rather than a plan-table inference.
 or does not arrive within a few days, take EODHD and stop spending time on a
 $252/yr question.
 
+### Business Quant — ELIMINATED 2026-08-20, on three independent grounds
+
+Checked because it advertises `actual` and `previous` on a free tier. It does,
+and that is not the same thing as what we need.
+
+`GET https://data.businessquant.com/calendar/economic` (key required; a keyless
+call returns `{"detail":"API key is missing."}`, so the check below is from
+documented response shape rather than a live call — but the disqualifiers are
+STRUCTURAL, and a key would only confirm them).
+
+**1 · It is a per-indicator snapshot, not an event log.** Each row is one
+INDICATOR carrying `latest_value`, `prior_value`, `change_abs`, `change_pct`,
+`last_release`, `next_release`, `days_until_next`, `release_state`. So it
+answers "what is CPI now, and when does it next print". It does not answer
+"what did CPI print on 2024-03-12", which is the only question the replay
+overlay asks.
+
+**2 · The date range cannot reach the past.** `from_date` / `till_date` filter
+on `next_release` — upcoming releases only. There is no parameter that
+retrieves historical releases.
+
+**3 · United States only.** The product is explicitly "US macro indicators".
+Our overlay is currency-driven via `currenciesForSymbol`, so a EUR/USD session
+needs EUR events and a GBP/USD session needs GBP. A US-only feed covers one leg
+of every pair we trade. This alone is fatal regardless of the other two.
+
+**And it is missing a field the current free feed already has.** The response
+carries no forecast or consensus at all — `latest_value` and `prior_value`
+only. faireconomy at least publishes `forecast`. So adopting this would trade
+one gap for a different one and lose ground.
+
+The "historical data lives in a separate economic-data API" caveat is the
+tell, and it is accurate: that separate API is macro TIME-SERIES (GDP, CPI,
+unemployment as series), which is a different product from a calendar of
+releases with scheduled times, consensus and outcomes.
+
+**Verdict: not a candidate.** Cheap and well documented, and aimed at a
+different problem.
+
 ### Alpha Vantage — probably not applicable
 
 Offers economic *indicator time series* (GDP, CPI, unemployment as historical
@@ -279,7 +318,8 @@ scheduled, forecast and released on a date in the past"*.
 | Twelve Data | no endpoint | — | — | no |
 | **EODHD** | yes | **yes** | **yes, from 2020** | **yes** |
 | **Trading Economics** | yes | **yes** | **yes, deep** | **yes** |
-| FMP | yes | unverified | unverified | unknown |
+| FMP | yes | documented, unverified | unverified | unknown — gated above free |
+| Business Quant | upcoming only | latest reading only | **no** | **no** — US only, snapshot not log |
 
 Only EODHD and Trading Economics are confirmed to do the job.
 
