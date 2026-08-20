@@ -321,6 +321,72 @@ fabricated label chosen over an honest one.
 
 ---
 
+## MS-2 — Cohort sessions mix two vocabularies in one groupBy
+
+**Area:** Analytics / cohorts · **Found:** 2026-08-20 · **Status:** open ·
+**NOT the same defect as MS-1 — investigated 2026-08-20 and it is not a DST bug**
+
+`src/lib/analytics/periods.ts` carries a third session model, and the obvious
+reading — that it is MS-1 again — is wrong on investigation.
+
+### The fixed-UTC choice is deliberate, and half-right
+
+`periods.ts:123` states it: *"Default FX session map, expressed in UTC so DST
+in the user tz cannot skew it."* That defends a real risk — the user's
+configured IANA timezone must not move bucket boundaries — and fixing the
+windows in UTC does prevent it. It defends the **wrong DST**, though: London's
+hours move relative to UTC when *London* changes clocks, not when the user
+does.
+
+### And they are not session windows at all
+
+`0-8, 8-13, 13-21, 21-24` is a complete, non-overlapping partition of the day.
+`classifySession` can never return null, has no `off_hours`, and has no
+overlap concept. It is **time-of-day bucketing wearing session names** — which
+for year-over-year cohort comparison is arguably the correct shape, and is a
+defensible reason to leave it alone.
+
+### The actual defect: two vocabularies keyed into one groupBy
+
+`cohorts.ts:118` and `:203` group on
+`r.journal.session ?? classifySession(...)?.id` — the canonical DB label first,
+this partition only as a fallback. The two id sets do not match:
+
+| `detect_session` | `periods.ts` | |
+|---|---|---|
+| `london` | `london` | collides correctly |
+| `sydney` | `sydney` | collides correctly |
+| `tokyo` | `asia` | **different id, same thing** |
+| `new_york` | `newyork` | **different id, same thing** |
+| `london_ny_overlap` | — | no counterpart |
+| `off_hours` | — | no counterpart |
+
+So one cohort table can show `new_york` and `newyork` as separate rows for the
+same session, and `tokyo` beside `asia`. Two of four ids collide by luck; two
+do not; two canonical labels have no counterpart.
+
+**MS-1's fix made this more visible, not less.** `off_hours` was rare before
+2026-08-20 and is now written for every weekend trade. A weekend trade WITH a
+journal label groups under `off_hours`; one without falls into whichever UTC
+bucket its hour lands in. Same cohort, two rules.
+
+### The question to answer before changing anything
+
+Not "is fixed UTC wrong" — it is defensible for its stated purpose. It is
+**should the fallback exist at all.** Options:
+
+1. **Drop the fallback.** Group only on `journal.session`; rows without one get
+   `null` and are excluded. One vocabulary, honestly incomplete.
+2. **Map the fallback onto the canonical vocabulary.** Keep UTC bucketing but
+   emit `tokyo` / `new_york` / `off_hours` so the ids collide correctly.
+3. **Rename the buckets to what they are** — time-of-day bands, not sessions —
+   and show them as a separate cohort dimension from the session one.
+
+Option 2 is the smallest change that removes the split-row bug; option 3 is the
+honest one. Not decided.
+
+---
+
 ## MIG-1 — A migration's GRANT is in the repo and not in the database
 
 **Area:** Tooling / migrations · **Found:** 2026-08-20 · **Status:** open,
