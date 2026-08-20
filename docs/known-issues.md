@@ -253,19 +253,71 @@ different from weekday bars.
 - **Statistics and journal analytics.** Any per-session or per-day aggregate
   now includes days the market did not trade.
 
-### Three options, none taken
+### INVESTIGATED AND DECIDED 2026-08-20
 
-1. **Filter at ingest** — drop out-of-session bars in `upsertCandles`. Cleanest
-   downstream, but it bakes a market-hours calendar into the importer and is
-   irreversible for anything already stored.
-2. **Gate at read** — keep the rows, exclude them in the read path. Reversible,
-   and lets a future consumer opt in, but every reader has to remember.
-3. **Accept them and make consumers session-aware** — the largest change, and
-   the only one that also fixes MS-1.
+The three options as originally written conflated **two separate decisions**
+with different answers.
 
-This is deliberately not decided here. It needs the same product judgement
-EC-1 does, and it is not urgent: nothing is currently wrong, and the bars are
-real data rather than fabrications.
+**The BARS: unchanged, shown as-is.** Suppressing them would make replay
+diverge from the live chart, which renders the same rows from the same cache.
+Two views of one instrument disagreeing is this project's most-repeated defect
+class — two P&L formulas (BA-10), two `historical_candles` writers (MD-4), and
+two session rules (below). Hiding real data would not merely bend the honesty
+principle; it would manufacture that exact bug family. No code needed: nothing
+suppresses them today.
+
+**The LABEL: it is not absent, it is confidently WRONG.** Measured 2026-08-20
+by calling both implementations directly:
+
+| Instant | `market-sessions` (canonical) | `market-data/sessions` |
+|---|---|---|
+| Sat 2026-07-11 10:00Z | `london` | `(none)` |
+| **Sat 2026-07-11 14:00Z** | **`london_ny_overlap`** | `(none)` |
+| Sun 2026-07-12 10:00Z | `london` | `(none)` |
+| Sun 2026-07-12 23:00Z | `sydney` | `sydney` — agree, both correct |
+| Wed 2026-07-15 10:00Z | `london` | `london` — agree, correct |
+
+`london_ny_overlap` on a Saturday is the strongest claim the vocabulary can
+make — the highest-liquidity window of the week — asserted on a day the market
+is shut. "Undefined behaviour" understates it; undefined would be safer.
+
+### The actual defect is a sixth session module, not the gating
+
+There are **two** session implementations and they already disagree on exactly
+this question:
+
+| | `src/lib/market-sessions/index.ts` | `src/lib/market-data/sessions.ts` |
+|---|---|---|
+| Weekday gating | **none** | `weekdays` per centre |
+| Sydney | no weekend model | `[0,1,2,3,4]` — models the Sunday-evening open |
+| Consumers | journal, statistics, paper-trading, replay | `SessionsBar`, `market.sessions` route |
+
+Commit `0281df96` ("five session definitions become one") pointed four
+consumers at the canonical rule and **missed this one** — and the orphan is the
+one that is CORRECT, including the subtle part that naive "skip Sat and Sun"
+gets wrong: Sydney `[0,1,2,3,4]` already encodes that Sunday evening IS
+trading.
+
+So the fix is not to invent weekday gating. It is to port a model that already
+works and then converge the two, leaving one rule.
+
+### Decision, 2026-08-20
+
+1. Weekend cases into `market-sessions/cases.ts` **first** — MS-1 warns every
+   existing case falls on a weekday, so both implementations agree with a
+   fixture that never asks the question. Fixture before fix.
+2. Port the `weekdays` model into `market-sessions/index.ts`; return
+   `off_hours` outside the FX week.
+3. **Converge `market-data/sessions.ts` onto the canonical rule.** Do not leave
+   two implementations behind.
+4. Bars unchanged.
+
+**Crypto labelling, settled by the product owner 2026-08-20:** gate on FX only;
+weekend crypto is labelled `off_hours` as well. Crypto genuinely trading 24/7
+does not mean it has *sessions* in this vocabulary — `off_hours` means "outside
+every defined session", which is honestly true for crypto on a Saturday.
+Inventing crypto-specific session names to avoid `off_hours` would be a
+fabricated label chosen over an honest one.
 
 ---
 
@@ -1572,6 +1624,21 @@ Two things a correct model needs and this one lacks:
   (no weekend trades exist to label), so in practice it mislabels **crypto**
   trades with FX session names — and crypto is the one asset class for which
   these sessions arguably mean nothing anyway.
+
+  > **THAT PREMISE EXPIRED 2026-08-20, and it is why MS-1 stopped being low
+  > priority.** "Forex cannot hit this" was true when written on 2026-08-17.
+  > MD-5 then established that the feed serves genuine weekend forex bars, and
+  > MSYM-1 shipped multi-symbol replay over exactly that data on 2026-08-20. A
+  > trader can now close a EUR/USD trade on a Saturday bar; `sessionAt` returns
+  > `london_ny_overlap`; `journal/session-detect.ts:39` writes it to
+  > `journal_entries.session`; and `statistics/session.ts:13` groups it into
+  > the which-session-do-I-trade-best-in statistic.
+  >
+  > So a shipped feature converted a crypto-only annoyance into a forex
+  > data-integrity bug. Nothing about MS-1 changed — its blast radius changed
+  > underneath it, because a DIFFERENT item removed the condition that had been
+  > containing it. Worth recording precisely: this is the shape of thing that
+  > turns backlog into urgent without anyone editing the backlog.
 - **Statistics.** The same rows then group under London/New York in
   `inferSession`, so "which session do I trade best in" counts weekend crypto
   as weekday FX.
