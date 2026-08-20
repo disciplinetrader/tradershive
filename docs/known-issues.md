@@ -437,6 +437,56 @@ that is the control, and it is why the bug was intermittent by time of day.
 
 ---
 
+## HD-2 — The sync slice would have starved on permanently-failing symbols
+
+**Area:** Market data / cron · **Found:** 2026-08-20 while building HD-1 ·
+**Status:** worked around, root cause is CX-1
+
+`historical-sync` orders its slice `latest_imported ASC NULLS FIRST`, which is
+correct for fairness — never-synced symbols first, and each run leaves what it
+touched at the back, so the catalog cycles with no offset state to store.
+
+It has one failure mode, and HD-1's smaller slice would have triggered it
+immediately. **`latest_imported` only advances on a successful write.** The
+eight crypto symbols route to Binance, which answers 403 to this deployment
+permanently (CX-1), so they can never succeed and never advance — they sort
+first for ever.
+
+At the old slice of 8 this merely wasted capacity. At HD-1's slice of 2 it is
+fatal in two ways at once:
+
+1. Both forward slots go to the same two dead symbols every run, so **none of
+   the 25 reachable symbols ever syncs**.
+2. The backward phase is gated on the forward phase, so **depth is never built
+   either**.
+
+A job that runs every 15 minutes for ever and accomplishes nothing, while
+reporting a 207 that looks like partial progress.
+
+### Worked around, not fixed
+
+`UNREACHABLE_SOURCES = ["binance"]` excludes them from both phases. Remove it
+when CX-1 is resolved — it is referenced from the constant so the reason
+travels with the code.
+
+### The related design correction
+
+The backward phase was originally gated on `failed > 0`. That is wrong for the
+same reason: the gate exists to avoid pushing requests into a **rate limit**,
+and a 403, a bad symbol or a parse error consumes no further budget. Gating on
+any failure would stall depth on an unrelated fault for ever. It now gates on
+`isThrottle()` — 429 / "rate limit" / "too many requests" — which is the
+condition the gate was actually written for.
+
+### Worth generalising
+
+Any queue ordered by a "last success" column starves on a permanently-failing
+member. The general fix is to order by last ATTEMPT rather than last success,
+which needs somewhere to record attempts. Not built here; noted because this
+pattern will recur the next time a source goes permanently dark.
+
+---
+
 ## MIG-1 — A migration's GRANT is in the repo and not in the database
 
 **Area:** Tooling / migrations · **Found:** 2026-08-20 · **Status:** open,

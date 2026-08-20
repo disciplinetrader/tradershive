@@ -12,6 +12,7 @@ import { resolveHistoricalProvider, nativeSymbolForProvider } from "./routing";
 
 import type { HistoricalCandle, HistoricalTimeframe } from "./types";
 import { AGGREGATE_FROM, HISTORICAL_TF_SECONDS } from "./types";
+import { backwardWindow, stepMsFor } from "./backfill";
 
 type Admin = Awaited<ReturnType<typeof loadAdmin>>;
 async function loadAdmin() {
@@ -458,4 +459,78 @@ export async function runIncrementalUpdate(symbolRow: {
     triggeredBy: "cron",
     aggregateHigherTfs: true,
   });
+}
+
+/**
+ * HD-1 · extend a symbol's history BACKWARD by one step.
+ *
+ * Counterpart to `runIncrementalUpdate`, and deliberately the same shape: read
+ * the edge from the DATA, ask for one bounded slice, stop. The window
+ * arithmetic lives in `./backfill` where it is pure and tested; everything
+ * here is the database and provider plumbing around it.
+ *
+ * Both edges come from `historical_candles`, never from
+ * `historical_symbols.earliest_available` / `latest_imported`. The forward
+ * walk already works that way, and for the backward walk it also sidesteps
+ * MD-4: the chart's cache-through writes candles without touching those
+ * columns, so a trader opening an old chart moves the real back edge while the
+ * column does not follow.
+ *
+ * Exhaustion is recorded in `metadata`, which is already `jsonb` on that
+ * table — no migration. Without it, a symbol whose provider has no more
+ * history would re-request the same empty range every run, for ever, out of a
+ * budget with no room to waste.
+ */
+export async function runBackwardUpdate(symbolRow: {
+  id: string; symbol: string; native_symbol: string; source_code: string;
+  base_timeframe: string; metadata?: Record<string, unknown> | null;
+}) {
+  const admin = await loadAdmin();
+  const tf = (symbolRow.base_timeframe || "1m") as HistoricalTimeframe;
+
+  const [{ data: first }, { data: last }] = await Promise.all([
+    admin.from("historical_candles").select("ts")
+      .eq("symbol", symbolRow.symbol).eq("timeframe", tf)
+      .order("ts", { ascending: true }).limit(1).maybeSingle(),
+    admin.from("historical_candles").select("ts")
+      .eq("symbol", symbolRow.symbol).eq("timeframe", tf)
+      .order("ts", { ascending: false }).limit(1).maybeSingle(),
+  ]);
+
+  const meta = (symbolRow.metadata ?? {}) as Record<string, unknown>;
+  const window = backwardWindow({
+    earliestTs: first?.ts ? new Date(first.ts).getTime() : null,
+    latestTs: last?.ts ? new Date(last.ts).getTime() : null,
+    stepMs: stepMsFor(tf),
+    exhausted: Boolean(meta.backfill_exhausted_at),
+  });
+
+  if ("skip" in window) return { skipped: true, reason: window.skip };
+
+  const result = await runImport({
+    symbol: symbolRow.symbol,
+    nativeSymbol: symbolRow.native_symbol,
+    sourceCode: symbolRow.source_code,
+    timeframe: tf,
+    from: window.from,
+    to: window.to,
+    // Distinguishable from the forward walk in `historical_import_jobs`, which
+    // is where GBP/USD's two 429s were found. A backward run that starts
+    // failing must be attributable without reading timestamps.
+    triggeredBy: "cron:backfill",
+    // The forward walk aggregates; a backward one would re-derive higher
+    // timeframes over a window it has only partially filled.
+    aggregateHigherTfs: false,
+  });
+
+  // Nothing came back for a range the provider should have covered: it has no
+  // more history. Recorded so the range is never asked for again.
+  if (!result?.inserted) {
+    await admin.from("historical_symbols").update({
+      metadata: { ...meta, backfill_exhausted_at: new Date().toISOString() },
+    } as never).eq("id", symbolRow.id);
+    return { ...result, exhausted: true };
+  }
+
+  return result;
 }
