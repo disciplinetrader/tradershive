@@ -39,6 +39,7 @@ import { ChartContextMenu, type ChartOrderIntent } from "@/components/chart/Char
 import { bracketFor } from "@/lib/replay/chart-trading";
 import { findSymbol } from "@/lib/paper-trading/symbols";
 import { useReplayStudio } from "./context";
+import { useSecondarySymbol } from "./useSecondarySymbol";
 
 /** Decimals inferred from price magnitude — FX pairs need more than indices. */
 function decimalsFor(price: number | null): number {
@@ -65,15 +66,30 @@ export interface StudioChartProps {
   initialTimeframe?: Timeframe;
   /** Hide the focused-chart controls: drawing rail, indicators, trading. */
   compact?: boolean;
+  /**
+   * MSYM-1 · render a DIFFERENT instrument than the session's, projected onto
+   * the session's clock. A pane given one is display-only and can never place
+   * an order — enforced here rather than by the caller, because the execution
+   * engine decides fills on price with no symbol on the tick, so a secondary
+   * pane that could trade would fill the primary symbol's orders.
+   */
+  secondarySymbol?: string | null;
 }
 
 export function StudioChart({
   onAdapterReady, drawingStore: sharedStore, initialTimeframe, compact = false,
+  secondarySymbol = null,
 }: StudioChartProps) {
   const {
     view, sessionId, riskPercent, setRiskPercent, placeMarketOrder, sizeForRisk, price: livePrice,
-    seekForwardTo, symbol: sessionSymbol, placeOrderAt,
+    seekForwardTo, symbol: sessionSymbol, placeOrderAt, market: sessionMarket,
   } = useReplayStudio();
+  /**
+   * A secondary pane is read-only no matter what the caller passed. `compact`
+   * is a layout preference; this is a correctness guard.
+   */
+  const isSecondary = !!secondarySymbol;
+  const readOnly = compact || isSecondary;
   const [armed, setArmed] = useState<ArmedOrder | null>(null);
   const [newsOn, setNewsOn] = useState(true);
   const tradingLive = view?.transport.lifecycle !== "completed";
@@ -122,7 +138,7 @@ export function StudioChart({
   const [adapter, setAdapter] = useState<ChartAdapter | null>(null);
   const fittedRef = useRef(false);
 
-  const symbol = view?.dataset.label.split(" ")[0] ?? "";
+  const symbol = secondarySymbol ?? view?.dataset.label.split(" ")[0] ?? "";
   const baseTf = (view?.dataset.timeframe ?? "5m") as Timeframe;
 
   // ---- display timeframe (folded from the base, never re-fetched) ---------
@@ -161,10 +177,28 @@ export function StudioChart({
     if (sessionId) drawingStore.setScope(`replay:${sessionId}`);
   }, [drawingStore, sessionId]);
 
+  // The clock's position in absolute time: the open of the newest bar the
+  // session has consumed. This — not an index — is what a second instrument
+  // can be projected onto, because two symbols do not share a bar grid.
+  const primaryRaw = (view?.candles ?? []) as unknown as Candle[];
+  const primaryTimeMs = primaryRaw.length ? primaryRaw[primaryRaw.length - 1].time : null;
+
+  const secondary = useSecondarySymbol({
+    symbol: secondarySymbol,
+    timeframe: baseTf,
+    from: view?.dataset.startTime ?? 0,
+    to: view?.dataset.endTime ?? 0,
+    market: sessionMarket ?? undefined,
+    primaryTimeMs,
+  });
+
   const candles: Candle[] = useMemo(() => {
-    const raw = (view?.candles ?? []) as unknown as Candle[];
+    // Secondary bars are fetched at the session's BASE timeframe and folded by
+    // the same aggregator, so a secondary pane inherits the fold guarantees
+    // rather than getting a second, differently-behaved path.
+    const raw = isSecondary ? secondary.candles : primaryRaw;
     return aggregateCandles(raw, baseTf, displayTf);
-  }, [view?.candles, baseTf, displayTf]);
+  }, [isSecondary, secondary.candles, primaryRaw, baseTf, displayTf]);
 
   const lastPrice = candles.length ? candles[candles.length - 1].close : null;
   const decimals = decimalsFor(lastPrice);
@@ -320,7 +354,7 @@ export function StudioChart({
             In a grid these controls are per-account, not per-pane — four
             risk fields and four Buy buttons over one position would be four
             ways to ask the same question. */}
-        {compact ? null : (
+        {readOnly ? null : (
         <>
         <div className="mx-1 h-4 w-px shrink-0 bg-border/60" />
 
@@ -495,7 +529,7 @@ export function StudioChart({
         {/* Drawing rail — identical toolset to the live terminal. */}
         <div className={cn(
           "w-[44px] shrink-0 flex-col items-center gap-0.5 overflow-y-auto border-r border-border/60 bg-card/30 py-1",
-          compact ? "hidden" : "hidden md:flex",
+          readOnly ? "hidden" : "hidden md:flex",
         )}>
           <DrawingToolRail
             store={drawingStore}
@@ -521,19 +555,40 @@ export function StudioChart({
                layout can be checked for what it SHOWS rather than for
                what it was handed. */
             data-timeframe={displayTf}
+            /* MSYM-1 · the instrument and the newest bar this pane is
+               DRAWING. The multi-symbol guarantee is an inequality between
+               panes — no pane's newest bar may be later than the primary's —
+               and an inequality can only be asserted if both sides are
+               readable from the DOM. Reading it off React state instead would
+               test the state, which is exactly what a desync survives. */
+            data-symbol={symbol}
+            data-last-bar={candles.length ? String(candles[candles.length - 1].time) : ""}
+            data-secondary={isSecondary ? "1" : "0"}
           />
-          <StudioTradeLayer
-            adapter={adapter}
-            tick={`${view?.transport.cursor ?? 0}:${displayTf}:${chartBounds.width}x${chartBounds.height}`}
-            decimals={decimals}
-            armed={armed}
-            onPlaced={() => setArmed(null)}
-          />
+          {/* Order and position lines belong to the SESSION's instrument. On a
+              secondary pane they would draw the primary symbol's entry, stop
+              and target as price levels on a chart where those numbers mean
+              nothing. A fold pane still gets them: same instrument, same
+              levels. */}
+          {isSecondary ? null : (
+            <StudioTradeLayer
+              adapter={adapter}
+              tick={`${view?.transport.cursor ?? 0}:${displayTf}:${chartBounds.width}x${chartBounds.height}`}
+              decimals={decimals}
+              armed={armed}
+              onPlaced={() => setArmed(null)}
+            />
+          )}
           {/* Right-click trading. The SAME menu the live workspace mounts —
               one component, two mount points. Alerts are excluded because
               Replay has none, and a row that cannot do anything is worse than
               a missing one. */}
-          {tradingLive && (
+          {/* `tradingLive` alone is not enough: right-click placement would
+              submit against the SESSION's symbol while the trader is looking
+              at another instrument's chart. The engine decides fills on price
+              with no symbol on the tick, so that order would fill on prices
+              this chart never showed. */}
+          {tradingLive && !isSecondary && (
             <ChartContextMenu
               adapter={adapter}
               sym={symbolMeta}

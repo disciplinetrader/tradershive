@@ -30,6 +30,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { cn } from "@/lib/utils";
 import { StudioChart } from "./StudioChart";
 import { useReplayStudio } from "./context";
+import { symbolsByMarket, findSymbol, type PaperMarket } from "@/lib/paper-trading/symbols";
 
 const LAYOUT_ICON = { 1: Square, 2: Columns2, 4: Grid2x2 } as const;
 const LAYOUT_LABEL = { 1: "Single chart", 2: "Two charts", 4: "Four charts" } as const;
@@ -46,8 +47,28 @@ function readCount(sessionId: string): PaneCount | null {
   }
 }
 
+const symbolKey = (sessionId: string) => `thive.replay.panes.symbols.${sessionId}`;
+
+function readSymbols(sessionId: string): (string | null)[] | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(symbolKey(sessionId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return null;
+    // Pane 0 is always the session's own instrument, whatever was stored.
+    const next = Array.from({ length: 4 }, (_, i) =>
+      typeof parsed[i] === "string" ? (parsed[i] as string) : null,
+    );
+    next[0] = null;
+    return next;
+  } catch {
+    return null;
+  }
+}
+
 export function StudioPanes() {
-  const { view, sessionId } = useReplayStudio();
+  const { view, sessionId, symbol: sessionSymbol, market: sessionMarket } = useReplayStudio();
   const baseTf = (view?.dataset.timeframe ?? "5m") as Timeframe;
 
   const [count, setCount] = useState<PaneCount>(1);
@@ -84,9 +105,49 @@ export function StudioPanes() {
   const storeRef = useRef<DrawingStore | null>(null);
   if (!storeRef.current) storeRef.current = new DrawingStore();
 
+  /**
+   * MSYM-1 · per-pane instrument. `null` means the session's own symbol.
+   *
+   * Pane 0 is never reassignable: it is the focused chart that owns trading,
+   * and the execution engine fills on price with no symbol on the tick, so the
+   * pane that can place orders must be the pane showing the instrument those
+   * orders execute against.
+   */
+  const [symbols, setSymbols] = useState<(string | null)[]>(() => [null, null, null, null]);
+  useEffect(() => {
+    const stored = readSymbols(sessionId);
+    if (stored) setSymbols(stored);
+  }, [sessionId]);
+
+  const assignSymbol = useCallback(
+    (index: number, symbol: string | null) => {
+      if (index === 0) return;
+      setSymbols((prev) => {
+        const next = [...prev];
+        next[index] = symbol;
+        try {
+          window.localStorage.setItem(symbolKey(sessionId), JSON.stringify(next));
+        } catch {
+          /* quota — the assignment simply does not persist */
+        }
+        return next;
+      });
+    },
+    [sessionId],
+  );
+
+  /** Instruments offerable to a secondary pane, minus the session's own. */
+  const options = useMemo(() => {
+    const market = (sessionMarket ?? findSymbol(sessionSymbol ?? "")?.market ?? "forex") as PaperMarket;
+    const own = (sessionSymbol ?? "").toUpperCase();
+    return symbolsByMarket(market).filter((m) => m.symbol.toUpperCase() !== own);
+  }, [sessionMarket, sessionSymbol]);
+
   const panes = useMemo(
-    () => Array.from({ length: count }, (_, i) => ({ key: i, tf: timeframes[i] ?? baseTf })),
-    [count, timeframes, baseTf],
+    () => Array.from({ length: count }, (_, i) => ({
+      key: i, tf: timeframes[i] ?? baseTf, symbol: i === 0 ? null : (symbols[i] ?? null),
+    })),
+    [count, timeframes, baseTf, symbols],
   );
 
   return (
@@ -120,7 +181,12 @@ export function StudioPanes() {
         })}
         {count > 1 ? (
           <span className="pl-2 text-[10px] text-muted-foreground">
-            Folded from the same {baseTf} tape — no pane can run ahead of the clock.
+            {panes.some((p) => p.symbol)
+              /* The old copy claimed one tape, which stops being true the
+                 moment a pane shows another instrument. The guarantee that
+                 survives is the clock one, so say only that. */
+              ? `One clock — no pane can run ahead of it. Only ${sessionSymbol ?? "the session symbol"} can be traded.`
+              : `Folded from the same ${baseTf} tape — no pane can run ahead of the clock.`}
           </span>
         ) : null}
       </div>
@@ -143,7 +209,22 @@ export function StudioPanes() {
               // Pane 1 is the focused chart: it keeps the drawing rail, the
               // indicator menu and the trading controls. The rest are views.
               compact={i > 0}
+              secondarySymbol={pane.symbol}
             />
+            {i > 0 ? (
+              <select
+                className="absolute right-2 top-1.5 z-30 h-6 rounded border border-border/60 bg-background/95 px-1 text-[10px] text-foreground shadow-sm"
+                value={pane.symbol ?? ""}
+                aria-label={`Instrument for pane ${i + 1}`}
+                data-testid={`pane-symbol-${i}`}
+                onChange={(e) => assignSymbol(i, e.target.value || null)}
+              >
+                <option value="">{sessionSymbol ?? "Session symbol"} (fold)</option>
+                {options.map((m) => (
+                  <option key={m.symbol} value={m.symbol}>{m.symbol}</option>
+                ))}
+              </select>
+            ) : null}
           </div>
         ))}
       </div>
