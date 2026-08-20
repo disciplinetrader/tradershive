@@ -1160,16 +1160,39 @@ misread as a local time.
 
 ### Outstanding — purge the poisoned cache
 
+**PRIORITISED 2026-08-20. Runbook: `docs/migrations/twelvedata-cache-purge.sql`.**
+
 36,267 rows (`provider_code='twelvedata'`) in `historical_candles` were written
 with the shifted timestamps. They are wrong by ~10h and will merge into any
-chart window that reaches them. Apply by hand, per this project's convention:
+chart window that reaches them.
 
-```sql
-delete from public.historical_candles where provider_code = 'twelvedata';
-```
+**This stopped being a stale warning on 2026-08-20.** MSYM-1's two-instrument
+observation was about to be built on EUR/USD, and **all 4,735 of its 15m rows
+are `provider_code='twelvedata'`** — measured that day. The contamination is
+reaching new work, not just sitting in the table.
 
-Binance rows (8,644) are correct and must be kept. The table is a cache — the
-chart backfills on demand, so deleting costs one refetch per window viewed.
+Two things changed since this was written, both handled in the runbook:
+
+- **The unscoped delete is no longer obviously safe.** Rows written after the
+  fix (`08f52e13`, 2026-08-13 09:45 UTC) are correct, and deleting them costs a
+  refetch against the 8-credits/min budget in
+  [MD-1](#md-1--the-free-twelve-data-plan-cannot-fund-the-poll-rate-the-ui-asks-for) —
+  the same budget that returned **two plain 429s** on GBP/USD's import
+  attempts on 2026-08-20. Over-deleting used to be free. It is not now. The
+  runbook scopes on `created_at` and measures before deleting.
+- **36,267 and 4,735 do not reconcile.** Nobody knows why. Step 0 of the
+  runbook answers it, and nothing is deleted until it has.
+
+The runbook also confirms the shift independently rather than trusting the
+provider label: forex closes Friday 22:00 UTC, so legitimate 15m data has
+essentially no Saturday bars, and a ~10h forward shift puts Friday afternoon
+into Saturday morning where it can be counted.
+
+Binance rows (8,644) are correct and must be kept — epoch milliseconds cannot
+be misread as a local time. The table is a cache, so deleting costs one
+refetch per window viewed; at 8 credits/min that refetch needs the
+single-symbol throttle-aware path EC-5 describes, **not** `historical-sync`'s
+all-33-symbols loop, which is what tripped the budget in the first place.
 
 ### Guard for next time
 
