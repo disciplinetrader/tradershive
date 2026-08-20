@@ -189,6 +189,49 @@ which is the whole question. Read it as:
 - **An error or empty array** → the endpoint is gated above free. Re-test on
   Starter if $29 is worth a month's trial, otherwise EODHD.
 
+### FMP — free tier MEASURED as gated, 2026-08-20
+
+A live call on a real free key returned:
+
+```
+Restricted Endpoint: This endpoint is not available under your current
+subscription please visit our subscription page to upgrade your plan
+```
+
+**Free tier is eliminated for certain.** Note the wording: this is an
+ENDPOINT-level gate, not a history-depth one. So the "5 years / 30+ years"
+column in the plan table describes historical RANGE and says nothing about
+which plans unlock this endpoint. Two different axes; only the second decides
+this.
+
+**Whether Starter ($29/mo) unlocks it is still unknown**, and could not be
+established from any public source.
+
+### Why NOT to buy Starter as a test
+
+- **No refunds, at all.** FMP's Terms of Service: *"All sales are final, and
+  the Company does not offer any money-back guarantees. You are not entitled
+  to a refund for any purchase under any circumstances."* A $29 probe is spent
+  either way.
+- **Cancellation is not self-serve** — it requires emailing
+  `info@financialmodelingprep.com`, and Trustpilot reviews report charges
+  continuing after cancellation requests. Treat as a signal, not a verdict, but
+  it means the downside is not bounded at $29.
+- The prize is ~$252/yr (FMP Starter $348 vs EODHD $599.90). Taking an
+  unbounded billing risk to chase that, on a feature the product owner has
+  said can wait, is the wrong shape of bet.
+
+**The free measurement that has not been used: ask FMP pre-sales.** "Does the
+Starter plan include `/stable/economic-calendar`?" — one email, definitive,
+answerable only by them. Today's lesson is not "measure at any cost", it is
+"do not act on a proxy when a direct answer is available", and a vendor's
+written confirmation is a direct answer rather than a plan-table inference.
+
+**Recommendation:** email first. If Starter is confirmed, buy it and run the
+2024 curl immediately to verify what was promised. If the answer is ambiguous
+or does not arrive within a few days, take EODHD and stop spending time on a
+$252/yr question.
+
 ### Alpha Vantage — probably not applicable
 
 Offers economic *indicator time series* (GDP, CPI, unemployment as historical
