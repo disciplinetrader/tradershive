@@ -33,21 +33,26 @@ select jobname,
 -- rather than repointing the one job you already knew about.
 
 -- ── STEP 2 · repoint every job on the alias ───────────────────────────────
+-- NOT a `do` block. Proved 2026-08-20: in this SQL editor a DO block runs,
+-- raises every NOTICE, and its writes are discarded — the first version of
+-- this step reported success twice and changed nothing. Plain statements
+-- commit. See docs/known-issues.md and never use `for ... loop` here.
+--
+-- This is one set-returning select: cron.schedule is called once per matching
+-- row, reading each job's own name, schedule and command. The returned rows
+-- ARE the evidence — one jobid per job repointed, so an empty result means
+-- nothing matched rather than nothing happened.
 
-do $$
-declare j record; newcmd text;
-begin
-  for j in
-    select jobname, schedule, command from cron.job
-     where command like '%project--%'
-  loop
-    newcmd := regexp_replace(j.command,
-                             'https://project--[^/'']*\.lovable\.app',
-                             'https://tradershive.lovable.app', 'g');
-    perform cron.schedule(j.jobname, j.schedule, newcmd);
-    raise notice 'repointed %', j.jobname;
-  end loop;
-end $$;
+select cron.schedule(
+         jobname,
+         schedule,
+         regexp_replace(command,
+                        'https://project--[^/'']*\.lovable\.app',
+                        'https://tradershive.lovable.app', 'g')
+       ) as jobid,
+       jobname
+  from cron.job
+ where command like '%project--%';
 
 -- ── STEP 3 · verify the URL actually changed ──────────────────────────────
 -- Check the VALUE, not that the statement ran. A zero-row loop raises no
@@ -60,6 +65,10 @@ select jobname,
  order by jobname;
 
 -- Expect still_on_preview = false for every row.
+--
+-- RUN THIS IN A SEPARATE RUN, AFTER RELOADING THE EDITOR. A re-read inside
+-- the session that made the change sees the uncommitted write and reports
+-- success — it cannot detect the failure this step exists to catch.
 
 -- ── STEP 4 · confirm by work done, not by inspection ──────────────────────
 -- battle-tick runs every minute, so this answers within ~2 minutes. A 200 is

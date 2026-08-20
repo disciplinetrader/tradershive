@@ -35,43 +35,38 @@
 
 select count(*) as queued from public.matchmaking_queue;
 
--- ── STEP 1 · the swap, atomically ─────────────────────────────────────────
--- Both in one block so there is no window with two finalizers pointed at the
--- same rows, and none with no settlement at all.
+-- ── STEP 1 · the swap, as TWO PLAIN STATEMENTS ───────────────────────────
+-- The original version of this step was one atomic `do` block. It ran, raised
+-- both notices including a computed length(secret)=64, and wrote NOTHING —
+-- proved 2026-08-20 with an inert probe. In this SQL editor a DO block's
+-- writes are discarded. Plain statements commit. Never reintroduce the loop.
+--
+-- Cost of the split: a few seconds with neither job scheduled. That is the
+-- harmless direction — the hazard was ever having TWO finalizers, not none,
+-- and nothing is due to settle in the gap. Run unschedule FIRST.
 
-do $do$
-declare secret text; newcmd text;
-begin
-  -- Borrow the secret from the job proven working at 05:17 today.
-  select substring(command from '"x-cron-secret"\s*:\s*"([^"]+)"')
-    into secret
-    from cron.job
-   where jobname = 'economic-calendar-daily';
+select cron.unschedule('battle-settlement-every-minute');
 
-  if secret is null or length(secret) < 32 then
-    raise exception 'refusing: read no plausible secret (got %)',
-                    coalesce(secret, '<null>');
-  end if;
+-- Returns `t`. Then, still reading the secret rather than pasting it:
 
-  newcmd := format($cmd$
-  select net.http_post(
-    url                  := 'https://tradershive.lovable.app/api/public/hooks/battle-tick',
-    headers              := '{"Content-Type":"application/json","x-cron-secret":"%s"}'::jsonb,
-    body                 := '{}'::jsonb,
-    timeout_milliseconds := 30000
-  );
-$cmd$, secret);
+select cron.schedule(
+  'battle-tick-every-minute',
+  '* * * * *',
+  format(
+    $cmd$select net.http_post(url:='https://tradershive.lovable.app/api/public/hooks/battle-tick',headers:='{"Content-Type":"application/json","x-cron-secret":"%s"}'::jsonb,body:='{}'::jsonb,timeout_milliseconds:=30000);$cmd$,
+    s.secret
+  )
+) as jobid
+from (
+  select substring(command from '"x-cron-secret"\s*:\s*"([^"]+)"') as secret
+    from cron.job where jobname = 'economic-calendar-daily'
+) s
+where length(s.secret) = 64;
 
-  perform cron.schedule('battle-tick-every-minute', '* * * * *', newcmd);
-  raise notice 'scheduled battle-tick-every-minute (secret %% chars: %)', length(secret);
-
-  if exists (select 1 from cron.job where jobname = 'battle-settlement-every-minute') then
-    perform cron.unschedule('battle-settlement-every-minute');
-    raise notice 'unscheduled battle-settlement-every-minute';
-  else
-    raise notice 'battle-settlement-every-minute was already absent';
-  end if;
-end $do$;
+-- The `where length(s.secret) = 64` is the guard. If the secret cannot be
+-- read, this returns ZERO ROWS and never calls cron.schedule — rather than
+-- quietly writing an empty secret, which is yesterday's placeholder bug in a
+-- new costume. Zero rows means nothing happened; a jobid means it did.
 
 -- ── STEP 2 · verify the VALUE, not that it ran ────────────────────────────
 -- Checking that a job exists is not checking what it will send.
@@ -86,6 +81,10 @@ select jobname,
   from cron.job
  order by jobname;
 
+-- RELOAD THE EDITOR AND RUN THIS AS A SEPARATE RUN. A re-read inside the
+-- session that made the change sees the uncommitted write and reports
+-- success; it cannot detect the failure mode this step exists to catch.
+--
 -- Expect: battle-tick-every-minute present, '* * * * *', active, on
 -- tradershive.lovable.app, secret_matches = true. And
 -- battle-settlement-every-minute GONE from the list entirely.

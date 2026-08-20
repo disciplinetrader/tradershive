@@ -424,8 +424,9 @@ its own specs. The wizard test drives the real entry point.
 
 ## Still open
 
-**Approved working order (2026-08-20):** ~~EC-3~~ (fixed) → **EC-7** →
-MSYM-1 → EC-1 → HD-1 → SYM-1.
+**Approved working order (2026-08-20):** EC-3 (reopened) → **EC-7** →
+MSYM-1 → EC-1 → HD-1 → SYM-1. EC-8 gates all of them — nothing applied
+through the SQL editor can be trusted until its workaround is used.
 
 EC-7 replaced EC-3's second half rather than being added to it: EC-3 turned out
 to be a host repoint affecting five jobs, and the `battle-tick` it was logged
@@ -629,12 +630,20 @@ P&L defects — BA-8 in particular is marked LIVE DEFECT affecting real balances
   — per-symbol errors go into `results` and never affect the status — and a
   33-symbol serial pass in one request is likely to exceed the platform's
   execution limit regardless of pg_net's timeout.
-- **EC-3 — FIXED 2026-08-20.** Scheduled jobs pointed at the gated preview
-  alias `project--<uuid>.lovable.app`, which serves `403` + `noindex` on normal
-  pages and carries no `x-deployment-id`; the hook answers there only because
-  `/api/public/*` is exempt from site auth. Repointed at
-  `tradershive.lovable.app` via `docs/migrations/cron-host-repoint.sql`,
-  verified by a real fire rather than by inspection.
+- **EC-3 — STILL OPEN.** Marked FIXED on 2026-08-20 and it was not; see
+  **EC-8**. Scheduled jobs point at the gated preview alias
+  `project--<uuid>.lovable.app`, which serves `403` + `noindex` on normal pages
+  and carries no `x-deployment-id`; the hook answers there only because
+  `/api/public/*` is exempt from site auth. The repoint was run and reported
+  success, but the `do` block it used never committed — a fresh `select` later
+  the same day showed all five jobs still on the alias. Re-run
+  `docs/migrations/cron-host-repoint.sql`, whose step 2 is now a plain
+  statement, and verify in a SEPARATE run after reloading.
+
+  The "verified by a real fire" claim was worthless and worth understanding
+  why: `net._http_response` does not retain the request URL, and the preview
+  alias answers `200` too. A fire proved the endpoint responded, never which
+  host it responded on.
 
   **This entry was wrong in both particulars, and the correction is the
   useful part.** It named `battle-tick` and described the scope as one job.
@@ -656,6 +665,36 @@ P&L defects — BA-8 in particular is marked LIVE DEFECT affecting real balances
 
   Auth was never affected — all five were answering `200` on the alias
   throughout, confirmed before the repoint rather than assumed.
+- **EC-8 — a `do` block in the SQL editor runs, prints its notices, and
+  commits nothing.** **Found:** 2026-08-20 · **Status:** open, mechanism
+  unexplained; the workaround is proven.
+
+  Two changes were applied and reported done that day — EC-3's host repoint and
+  EC-7's cron swap. Both used `do $$ ... perform cron.schedule() ... $$`. Both
+  printed every expected `RAISE NOTICE`, including a computed
+  `length(secret) = 64` that could only come from real execution. Neither wrote
+  anything: a fresh `select` showed the original state on all six jobs.
+
+  Isolated with an inert probe —
+  `select cron.schedule('commit-probe','0 0 31 2 *','select 1')`, re-read in a
+  new run, then unscheduled. February 31st never arrives, so the job could
+  never fire. **The probe persisted.** Plain statements commit; the `do` block
+  did not.
+
+  Not universal: a `do` block on 2026-08-19 DID commit, which is why the five
+  jobs carry the right secret today. So the rule is "never rely on one", not
+  "they never work". The mechanism is still unexplained.
+
+  **Two rules follow, and both are now in the runbooks.** Write a
+  set-returning `select` that calls the function once per row instead of a
+  `for ... loop` — it commits, and the returned rows are the evidence rather
+  than a side-channel message. And **verify in a separate run after a
+  reload**: a re-read inside the session that made the change sees the
+  uncommitted write and reports success, so it cannot detect this at all.
+
+  `NOTICE` is emitted during execution, never at commit. That is the whole
+  defect, and it is the same shape as pg_cron reporting "succeeded" for a
+  statement that only queued an HTTP request.
 - **EC-7 — nothing starts a battle that nobody is watching.**
   **Found:** 2026-08-20 · **Status:** open, runbook written, not yet applied.
 
