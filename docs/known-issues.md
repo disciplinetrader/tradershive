@@ -1602,7 +1602,37 @@ time-of-day analytics, and that is a product call.
 ## MS-1 — The session rule has no concept of weekends
 
 **Area:** Market sessions (journal, statistics, paper trading, replay) ·
-**Found:** 2026-08-17 · **Status:** open, low priority
+**Found:** 2026-08-17 · **Status:** **FIXED 2026-08-20** — `4a90492f`, both
+languages, verified by parity against the live database
+
+> **Resolution.** The trading week is now gated on each centre's LOCAL weekday
+> (Monday-Friday), in `src/lib/market-sessions/index.ts` and mirrored in
+> `public.detect_session`. `nextSessionOpen` and `nextEquitiesOpen` are gated
+> too, so replay no longer offers a London open on a Saturday.
+>
+> Local rather than UTC is the whole trick: expressed locally the week is
+> simply Monday-to-Friday everywhere, and the ragged UTC edges fall out for
+> free — Sydney local Monday 07:00 is 21:00Z in southern winter and 20:00Z in
+> southern summer, and neither number appears in the code. A naive "skip
+> Saturday and Sunday" gate deletes the week's real open; the fixture case at
+> `2026-07-12T21:30:00Z` exists to catch exactly that.
+>
+> **Verified, not merely tested.** Nine weekend cases went into `cases.ts`
+> BEFORE the gate was written and eight failed immediately. `check:sessions`
+> then confirmed TypeScript and SQL agree across all 32 fixture cases against
+> the live database — so the DB trigger that writes `journal_entries.session`
+> now labels weekends `off_hours` as well.
+>
+> **Adding those cases caught the fixture asserting the bug.** The test
+> "crosses a DST boundary without drifting an hour" probed 2026-10-24, a
+> SATURDAY, and asserted London opening on it. This entry warned the fixture
+> never asked about weekends; it was worse — it answered wrongly.
+>
+> **Two things this did NOT do.** Existing `journal_entries.session` rows keep
+> their old labels (`session-backfill.sql` is a separate, deliberate decision
+> about rewriting a trader's history). And `src/lib/analytics/periods.ts`
+> remains a THIRD session implementation on fixed UTC hours with neither DST
+> nor weekday awareness — logged, not folded in.
 
 `src/lib/market-sessions` models each centre as a daily open/close in its own
 timezone. It has no weekday awareness, so it reports London as open at 08:00
