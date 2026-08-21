@@ -487,6 +487,76 @@ pattern will recur the next time a source goes permanently dark.
 
 ---
 
+## HD-3 — The backward walk starved the forward walk through `latest_imported`
+
+**Area:** Market data / cron · **Found:** 2026-08-21 while predicting hs-3's
+output before the first scheduled fire · **Status:** fixed in the repo,
+**awaiting deploy** — this project publishes by hand
+
+`runImport` wrote `latest_imported` unconditionally to the last bar of whatever
+window it had just imported, while the line directly beneath it guarded
+`earliest_available` to only ever move older. Harmless for as long as every
+import walked forward. HD-1 added a walk that does not.
+
+A backfill window is old by construction, so completing one stamped an **old
+`latest_imported`** onto a symbol whose stored data was current. That column is
+the forward slice's sort key (`latest_imported ASC NULLS FIRST`), so every
+backfilled symbol jumped to the head of the forward queue. When the forward
+phase reached it, `runIncrementalUpdate` derived its window from `max(ts)` in
+the DATA, found nothing to fetch, and returned `{ skipped: true }` **before**
+`runImport` — so the column was never corrected and the symbol stayed at the
+head.
+
+Steady state: the backward phase manufactures stale-looking symbols faster than
+the forward phase can clear them, both forward slots are permanently occupied
+by symbols that need no forward work, and today's bars stop arriving for the
+rest of the catalog. Depth keeps building correctly throughout, because
+`earliest_available` was already guarded — which is what would have made this
+hard to spot from the outside. The job reports 200 and `synced: 2` the whole
+time.
+
+Same family as [HD-2](#hd-2--the-sync-slice-would-have-starved-on-permanently-failing-symbols):
+a queue ordered by a column that only advances on a real write. HD-2's
+starvation arrived from outside, in Binance's permanent 403. This one we
+manufactured ourselves, in the feature designed to use that queue.
+
+### Why it did not show up in the first fires
+
+`NULLS FIRST` outranks any timestamp, so while never-synced symbols still had
+`latest_imported IS NULL` they sorted ahead of the old-dated ones the backward
+phase was creating. With 25 eligible symbols at 2 per run it takes roughly 13
+fires — about three hours at the 15-minute cadence — before the NULLs are
+exhausted and the defect becomes reachable. It was found by reasoning about
+hs-3's expected output, not by observing a failure.
+
+### The fix
+
+`src/lib/market-data/historical/edges.ts` — `edgePatch()`, pure and tested,
+carved out for the same reason `backfill.ts` was: the direction each column may
+move is a decision, and everything around it is plumbing.
+
+```
+earliest_available  only ever moves EARLIER
+latest_imported     only ever moves LATER
+```
+
+An import landing inside the recorded bounds returns an empty patch and the
+caller skips the write entirely. Comparisons are strict, so touching an edge is
+not extending it. Eight cases in `__tests__/edges.test.ts`, including a
+59-step backward walk — HD-1's full run to 120 days — asserting the front edge
+is untouched by every one of them.
+
+### Worth generalising, again
+
+HD-2 already said it: any queue ordered by a "last success" column starves on a
+member that cannot advance it. HD-3 is the same sentence with a different
+cause — the member could advance it, and we moved it the wrong way. The
+durable form of the rule is that a **column describing an outer bound must be
+monotonic in code**, not by the convention that only one kind of caller writes
+it. That convention held for as long as there was only one kind of caller.
+
+---
+
 ## MIG-1 — A migration's GRANT is in the repo and not in the database
 
 **Area:** Tooling / migrations · **Found:** 2026-08-20 · **Status:** open,

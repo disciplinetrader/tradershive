@@ -13,6 +13,7 @@ import { resolveHistoricalProvider, nativeSymbolForProvider } from "./routing";
 import type { HistoricalCandle, HistoricalTimeframe } from "./types";
 import { AGGREGATE_FROM, HISTORICAL_TF_SECONDS } from "./types";
 import { backwardWindow, stepMsFor } from "./backfill";
+import { edgePatch } from "./edges";
 
 type Admin = Awaited<ReturnType<typeof loadAdmin>>;
 async function loadAdmin() {
@@ -352,20 +353,35 @@ export async function runImport(rawOpts: RunImportOpts) {
     // Snapshots for replay
     const snaps = await writeSnapshots(admin, opts.symbol, opts.timeframe, clean);
 
-    // Update symbol coverage
+    // Update symbol coverage.
+    //
+    // Both columns are monotonic and in OPPOSITE directions, and which way
+    // each may move is not the same question as which way this import ran —
+    // see `./edges` (HD-3). `latest_imported` used to be written
+    // unconditionally here, which meant a backward walk stamped an old front
+    // edge onto a current symbol and starved the forward slice that sorts on
+    // it.
     if (clean.length > 0) {
-      const earliestIso = new Date(clean[0].ts).toISOString();
-      const latestIso = new Date(clean[clean.length - 1].ts).toISOString();
       const { data: sym } = await admin
         .from("historical_symbols")
         .select("id, earliest_available, latest_imported")
         .eq("symbol", opts.symbol).maybeSingle();
       if (sym) {
-        const patch: Record<string, string> = { latest_imported: latestIso };
-        if (!sym.earliest_available || new Date(sym.earliest_available).getTime() > clean[0].ts) {
-          patch.earliest_available = earliestIso;
+        const patch = edgePatch(
+          {
+            earliestAvailable: sym.earliest_available
+              ? new Date(sym.earliest_available).getTime() : null,
+            latestImported: sym.latest_imported
+              ? new Date(sym.latest_imported).getTime() : null,
+          },
+          // `clean` is sorted ascending by `validate`, so these are the bounds.
+          { firstTs: clean[0].ts, lastTs: clean[clean.length - 1].ts },
+        );
+        // Empty when the import landed inside what was already recorded —
+        // skip the write rather than issue an update that changes nothing.
+        if (Object.keys(patch).length > 0) {
+          await admin.from("historical_symbols").update(patch as any).eq("id", sym.id);
         }
-        await admin.from("historical_symbols").update(patch as any).eq("id", sym.id);
       }
     }
 
