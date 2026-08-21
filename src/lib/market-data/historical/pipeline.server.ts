@@ -12,7 +12,7 @@ import { resolveHistoricalProvider, nativeSymbolForProvider } from "./routing";
 
 import type { HistoricalCandle, HistoricalTimeframe } from "./types";
 import { AGGREGATE_FROM, HISTORICAL_TF_SECONDS } from "./types";
-import { backwardWindow, stepMsFor } from "./backfill";
+import { backwardWindow, stepMsFor, BACKFILL_EMPTY_LIMIT } from "./backfill";
 import { edgePatch } from "./edges";
 
 type Admin = Awaited<ReturnType<typeof loadAdmin>>;
@@ -514,10 +514,16 @@ export async function runBackwardUpdate(symbolRow: {
   ]);
 
   const meta = (symbolRow.metadata ?? {}) as Record<string, unknown>;
+  const attemptedFrom =
+    typeof meta.backfill_attempted_from === "number" ? meta.backfill_attempted_from : null;
+  const emptyStreak =
+    typeof meta.backfill_empty_streak === "number" ? meta.backfill_empty_streak : 0;
+
   const window = backwardWindow({
     earliestTs: first?.ts ? new Date(first.ts).getTime() : null,
     latestTs: last?.ts ? new Date(last.ts).getTime() : null,
     stepMs: stepMsFor(tf),
+    attemptedFrom,
     exhausted: Boolean(meta.backfill_exhausted_at),
   });
 
@@ -539,14 +545,46 @@ export async function runBackwardUpdate(symbolRow: {
     aggregateHigherTfs: false,
   });
 
-  // Nothing came back for a range the provider should have covered: it has no
-  // more history. Recorded so the range is never asked for again.
+  // Nothing came back. That is NOT sufficient evidence of exhaustion.
+  //
+  // A US-hours instrument returns nothing whenever a 2-day window lands clear
+  // of a session — Saturday 13:29 to Monday 13:29 holds no NYSE trading at
+  // all, and the market opens one minute later. Marking on the first empty
+  // step made an ordinary weekend permanently fatal to every equity and ETF
+  // in the catalog. Forex is immune only because Twelve Data serves it 24/7
+  // (MD-5), which is why this stayed invisible.
+  //
+  // So an empty step advances the cursor and increments a streak; only
+  // BACKFILL_EMPTY_LIMIT consecutive empties mean the provider has genuinely
+  // run out. Writing `backfill_attempted_from` is the half that matters most:
+  // without it the next run recomputes the identical window, because
+  // `earliestTs` derives from stored data that an empty step did not change.
   if (!result?.inserted) {
-    await admin.from("historical_symbols").update({
-      metadata: { ...meta, backfill_exhausted_at: new Date().toISOString() },
-    } as never).eq("id", symbolRow.id);
-    return { ...result, exhausted: true };
+    const streak = emptyStreak + 1;
+    const done = streak >= BACKFILL_EMPTY_LIMIT;
+    const patch: Record<string, unknown> = {
+      ...meta,
+      backfill_attempted_from: window.from,
+      backfill_empty_streak: streak,
+    };
+    if (done) patch.backfill_exhausted_at = new Date().toISOString();
+    const { error } = await admin
+      .from("historical_symbols").update({ metadata: patch } as never).eq("id", symbolRow.id);
+    // supabase-js returns { error }, it does not throw (MD-8). An unread
+    // result here would silently stall the cursor and loop the same window.
+    if (error) throw error;
+    return { ...result, empty: true, emptyStreak: streak, exhausted: done };
   }
+
+  // A real step. Move the cursor with it and clear the streak, so a closure
+  // encountered earlier costs nothing once the walk is past it.
+  const { error: cursorError } = await admin
+    .from("historical_symbols")
+    .update({
+      metadata: { ...meta, backfill_attempted_from: window.from, backfill_empty_streak: 0 },
+    } as never)
+    .eq("id", symbolRow.id);
+  if (cursorError) throw cursorError;
 
   return result;
 }

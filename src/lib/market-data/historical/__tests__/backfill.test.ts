@@ -3,6 +3,7 @@ import {
   backwardWindow,
   BACKFILL_STEP_DAYS,
   BACKFILL_TARGET_DAYS,
+  BACKFILL_EMPTY_LIMIT,
 } from "../backfill";
 
 /**
@@ -122,5 +123,77 @@ describe("backwardWindow — the walk converges", () => {
       .toEqual({ skip: "target-reached" });
     // And it landed exactly on the target, not past it.
     expect(earliestTs).toBe(T - BACKFILL_TARGET_DAYS * DAY);
+  });
+});
+
+/**
+ * The attempted-cursor. Added after the walk was found to be unable to step
+ * over a closed market.
+ *
+ * `earliestTs` comes from `min(ts)` of stored candles, so a window that
+ * returns nothing leaves it unmoved and the next run computes the IDENTICAL
+ * window. Before this, that was masked by marking the symbol exhausted on the
+ * first empty step — which made an ordinary weekend permanently fatal to every
+ * US-hours symbol. Removing that mark without a cursor would have replaced a
+ * silent stop with an infinite retry, which is worse.
+ */
+describe("backwardWindow — stepping over an empty window", () => {
+  const MIN = 60_000;
+  const T = Date.UTC(2026, 7, 21, 0, 0, 0);
+  const DAY = 86_400_000;
+  const base = { stepMs: MIN, latestTs: T };
+
+  it("without a cursor, an empty step recomputes the same window", () => {
+    // The defect, pinned so it cannot come back.
+    const first = backwardWindow({ ...base, earliestTs: T - 2 * DAY });
+    const again = backwardWindow({ ...base, earliestTs: T - 2 * DAY });
+    expect(again).toEqual(first);
+  });
+
+  it("with a cursor, each empty step advances exactly one step earlier", () => {
+    let attemptedFrom: number | null = null;
+    const seen: number[] = [];
+    for (let i = 0; i < 3; i++) {
+      const w = backwardWindow({ ...base, earliestTs: T - 2 * DAY, attemptedFrom });
+      if ("skip" in w) throw new Error(`unexpected skip: ${w.skip}`);
+      seen.push(w.from);
+      attemptedFrom = w.from; // the step returned nothing; only the attempt moved
+    }
+    // One step of ground, plus the one bar the window drops to stay clear of
+    // what is already held. That extra bar is the no-overlap guarantee, so it
+    // is asserted rather than rounded away.
+    const stride = BACKFILL_STEP_DAYS * DAY + MIN;
+    expect(seen[0] - seen[1]).toBe(stride);
+    expect(seen[1] - seen[2]).toBe(stride);
+    expect(seen[0] - seen[2]).toBe(2 * stride);
+  });
+
+  it("a cursor never re-requests a range already held", () => {
+    const held = T - 2 * DAY;
+    const w = backwardWindow({ ...base, earliestTs: held, attemptedFrom: held });
+    if ("skip" in w) throw new Error("unexpected skip");
+    expect(w.to).toBeLessThan(held);
+  });
+
+  it("data below the cursor wins — a chart load hands the walk back the real edge", () => {
+    // MD-8 made this reachable: the chart cache-through can now fill a range
+    // below where the walk had probed. The data edge must take precedence, or
+    // the walk strands itself above rows it already has.
+    const w = backwardWindow({
+      ...base,
+      earliestTs: T - 30 * DAY,        // a chart filled far below
+      attemptedFrom: T - 6 * DAY,      // the walk had only probed to here
+    });
+    if ("skip" in w) throw new Error("unexpected skip");
+    expect(w.to).toBe(T - 30 * DAY - MIN);
+  });
+
+  it("the empty limit is a bounded cost, not an unbounded probe", () => {
+    // Four steps of two days is the most a closure can cost before the caller
+    // calls it exhausted. A normal weekend needs two, a long weekend three.
+    expect(BACKFILL_EMPTY_LIMIT * BACKFILL_STEP_DAYS).toBeLessThan(
+      BACKFILL_TARGET_DAYS,
+    );
+    expect(BACKFILL_EMPTY_LIMIT).toBeGreaterThanOrEqual(3);
   });
 });

@@ -748,6 +748,84 @@ cache.
 
 ---
 
+## HD-4 — A weekend was permanently fatal to every US-hours symbol
+
+**Area:** Market data · **Found:** 2026-08-21, reasoning about why HD-3's check
+came back clean · **Status:** **fixed in the repo, awaiting deploy** · Caught
+before it fired — zero symbols were marked when the fix was written
+
+`runBackwardUpdate` marked a symbol exhausted the moment a backward step
+inserted nothing:
+
+```ts
+if (!result?.inserted) {
+  await admin.from("historical_symbols").update({
+    metadata: { ...meta, backfill_exhausted_at: new Date().toISOString() },
+  })
+```
+
+`backwardWindow` then returns `{ skip: "exhausted" }` for ever. For a 24/7
+instrument that inference is sound. For a US-hours one it is not: a 2-day
+window that lands clear of a session returns nothing legitimately. Walking AAPL
+back from Aug 19 13:30, the second step covers **Sat 13:29 → Mon 13:29** —
+Saturday, Sunday, and Monday up to one minute before the 13:30 open. Zero bars,
+and the symbol stops deepening permanently.
+
+That is 9 of 22 enabled symbols: 5 equities and the 4 ETF proxies. Forex is
+immune only because Twelve Data serves it 24/7 ([MD-5](#md-5--twelve-data-serves-continuous-247-forex-weekends-included)),
+which is why nothing surfaced during HD-1's first day.
+
+### Why the obvious fix is wrong twice over
+
+**Calendar inference does not work.** `tradableMs` in `coverage.ts` looks like
+the tool for this and is not — it models a weekday calendar, not sessions.
+Measured 2026-08-21 against that exact window: it reports **13.48 tradable
+hours and 219 expected 1m bars** where the true count is zero, so a
+`tradableMs > 0` gate would still mark AAPL exhausted. It also reports **zero
+for a forex weekend** that the provider genuinely serves, which would make
+forex skip steps that would have returned data. Getting it right by calendar
+needs per-exchange session hours *and* a holiday calendar.
+
+**Simply not marking exhausted is worse than the bug.** `backwardWindow`
+anchors on `earliestTs`, which comes from `min(ts)` of stored candles. An empty
+step changes no stored data, so the next run computes the **identical** window —
+for ever, one credit per symbol per run. The exhaustion mark was the only thing
+stopping an infinite retry.
+
+### The fix
+
+Provider-truth instead of calendar-inference, in two parts:
+
+- **An attempted-cursor.** `backfill_attempted_from` records the `from` of every
+  attempt, and `backwardWindow` anchors on `min(earliestTs, attemptedFrom)`, so
+  an empty step still advances one stride. `min` rather than the cursor alone
+  so that a chart load filling a range below the cursor hands the walk back to
+  the real data edge.
+- **An empty streak.** `backfill_empty_streak` increments on an empty step and
+  resets on any insert. `backfill_exhausted_at` is set only at
+  `BACKFILL_EMPTY_LIMIT = 4`. A closure is bounded — two steps for a normal
+  weekend, three for a long one — while genuine exhaustion is unbounded. Cost
+  of the guard: at most four wasted credits, once, per symbol that truly ends.
+
+### What made it urgent rather than deferrable
+
+[MD-8](#md-8--the-charts-candle-cache-has-never-written-a-single-row) widened
+the blast radius the same day it was fixed. `upsertCandles` uses
+`ignoreDuplicates: true` with `count: "exact"`, so `inserted` counts rows
+**written**, not rows present. Now that chart loads persist, a chart that fills
+the range the walk is about to request produces `inserted = 0` on a fully
+populated window — a second false-exhaustion path that did not exist before
+that morning.
+
+### Standing rule
+
+**An empty result is not the same fact as an impossible one.** Before treating
+"nothing came back" as permanent, ask whether the window could have contained
+anything. Where that question needs a calendar, prefer asking the provider
+repeatedly with a bounded budget over modelling the calendar.
+
+---
+
 ## MIG-1 — A migration's GRANT is in the repo and not in the database
 
 **Area:** Tooling / migrations · **Found:** 2026-08-20 · **Status:** open,

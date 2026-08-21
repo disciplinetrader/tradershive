@@ -71,6 +71,31 @@ export const BACKFILL_TARGET_DAYS = 120;
  */
 export const BACKFILL_STEP_DAYS = 2;
 
+/**
+ * Consecutive empty steps before a symbol is called exhausted.
+ *
+ * One empty step is not evidence. A US-hours instrument returns nothing
+ * whenever a 2-day window lands clear of a session — Saturday 13:29 to Monday
+ * 13:29 contains no NYSE trading at all, and the market reopens one minute
+ * later. Marking on the first empty step is what made every equity and ETF a
+ * permanent casualty of an ordinary weekend.
+ *
+ * Four, because a closure is bounded and exhaustion is not. A normal weekend
+ * costs at most two steps, a long holiday weekend three; a provider that has
+ * genuinely run out returns empty for ever. So the cost of the guard is at
+ * most four wasted credits, once, per symbol that truly ends — against
+ * permanently losing depth on every US-hours symbol in the catalog.
+ *
+ * The calendar alternative was rejected deliberately. `tradableMs` in
+ * `coverage.ts` cannot answer this: it models a weekday calendar, not
+ * sessions, so it reports 13.48 tradable hours for that Saturday-to-Monday
+ * window (219 expected 1m bars against a true zero) and reports zero for a
+ * forex weekend that Twelve Data actually serves (MD-5). Getting it right by
+ * calendar would need per-exchange session hours AND a holiday calendar.
+ * Asking the provider needs neither.
+ */
+export const BACKFILL_EMPTY_LIMIT = 4;
+
 export type BackwardSkip = "no-data" | "target-reached" | "exhausted";
 
 export type BackwardWindow =
@@ -84,6 +109,16 @@ export interface BackwardWindowArgs {
   latestTs: number | null;
   /** One bar, in ms, at the symbol's base timeframe. */
   stepMs: number;
+  /**
+   * `from` of the last attempted window, successful or not.
+   *
+   * Without it an empty step cannot advance: `earliestTs` derives from
+   * `min(ts)` of stored candles, so a window that returns nothing leaves the
+   * anchor unmoved and the next run computes the identical window, for ever.
+   * Tracking what was ATTEMPTED rather than only what is HELD is what lets
+   * the walk step over a closed market.
+   */
+  attemptedFrom?: number | null;
   targetDays?: number;
   stepDays?: number;
   /** Provider has already reported no more history behind `earliestTs`. */
@@ -101,7 +136,7 @@ export interface BackwardWindowArgs {
  */
 export function backwardWindow(args: BackwardWindowArgs): BackwardWindow {
   const {
-    earliestTs, latestTs, stepMs,
+    earliestTs, latestTs, stepMs, attemptedFrom = null,
     targetDays = BACKFILL_TARGET_DAYS,
     stepDays = BACKFILL_STEP_DAYS,
     exhausted = false,
@@ -116,8 +151,18 @@ export function backwardWindow(args: BackwardWindowArgs): BackwardWindow {
   const floor = latestTs - targetDays * DAY_MS;
   if (earliestTs <= floor) return { skip: "target-reached" };
 
+  // Walk from the earlier of what we HOLD and what we last ASKED FOR. They are
+  // the same value on every successful step — an import moves `min(ts)` to the
+  // window it just filled — and they diverge only after an empty one, which is
+  // exactly when the walk needs to keep moving anyway.
+  //
+  // `min` rather than `attemptedFrom` alone so a chart load that fills a range
+  // below the cursor (now possible: MD-8) hands the walk back to the real data
+  // edge instead of leaving it stranded above.
+  const anchor = attemptedFrom == null ? earliestTs : Math.min(earliestTs, attemptedFrom);
+
   // One bar clear of what we hold, so nothing is re-fetched and no gap opens.
-  const to = earliestTs - stepMs;
+  const to = anchor - stepMs;
   // Clamped, so the last step lands exactly on the target rather than past it.
   const from = Math.max(to - stepDays * DAY_MS, floor);
 
