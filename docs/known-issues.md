@@ -106,8 +106,15 @@ partially working.
 
 ## MD-4 — Two writers fill `historical_candles`, and only one is visible
 
-**Area:** Market data · **Found:** 2026-08-20 · **Status:** open · **Blocks
-MD-2's purge until the probe below is run**
+**Area:** Market data · **Found:** 2026-08-20 · **Status:** **superseded
+2026-08-21 by [MD-8](#md-8--the-charts-candle-cache-has-never-written-a-single-row)**
+— the probe was run and the answer was that the second writer does not write at
+all. MD-2's purge is cancelled, not merely unblocked.
+
+> **The table below is wrong and kept for the record.** `historical_candles`
+> has ONE working writer, not two. The chart cache-through row describes an
+> intention: its upsert names a conflict target the table does not have, the
+> result was never inspected, and it has never persisted a row.
 
 `historical_candles` has two independent writers:
 
@@ -631,6 +638,95 @@ so each broken symbol costs 4 credits and a 2-symbol slice costs 8 — the whole
 per-minute budget, near-instantly, every 15 minutes, for zero rows. Observed
 directly: a manual sweep paced at 4/min was refused with "10 API credits were
 used" because a scheduled run was firing at the same time.
+
+---
+
+## MD-8 — The chart's candle cache has never written a single row
+
+**Area:** Market data · **Found:** 2026-08-21 · **Status:** **fixed in the
+repo, awaiting deploy** · **Severity: high — affects every trader loading any
+chart, and has since the unique constraint was created**
+
+`twelveDataCandles` fetches candles for a chart and then upserts them into
+`historical_candles` as a cache. The upsert has never succeeded. Not
+intermittently — never.
+
+```ts
+.upsert(rows.slice(i, i + 500), { onConflict: "symbol,timeframe,ts" })
+```
+
+The table's only unique constraint is `UNIQUE (symbol, timeframe,
+provider_code, ts)`. `hc_lookup_idx` and `hcandles_sym_tf_ts_idx` cover the
+same columns but are **not unique**, so neither can serve as a conflict target.
+Postgres answers `42P10` — *"there is no unique or exclusion constraint
+matching the ON CONFLICT specification"* — to every batch.
+
+### The second defect, which hid the first
+
+```ts
+} catch (e) {
+  console.warn("[twelvedata] candle cache backfill failed:", (e as Error).message);
+}
+```
+
+**supabase-js does not throw on a PostgREST error — it returns `{ error }`.**
+The result was never inspected, so the `catch` never ran and that `console.warn`
+never printed. There was no log line to find, no warning anyone missed. The
+failure was not merely quiet; it was completely invisible, which is why it
+survived a full investigation into this exact table (MD-4) without being caught.
+
+### How it was found
+
+Not by looking for it. A chart was loaded to probe whether the cache-through
+path stored *shifted* timestamps, and `min(ts)` afterwards was unchanged — the
+chart rendered history back to Aug 11 while the database held nothing before
+Aug 19. Every row for that symbol, at every timeframe, traced to the cron
+importer by `created_at` landing on `:45` boundaries.
+
+MD-4's question was never "does the chart path store shifted data". It was
+"does the chart path store anything".
+
+### What it invalidates
+
+- **MD-4's premise.** Its table lists two writers of `historical_candles`. There
+  is one. The chart column of that table describes an intention, not a
+  behaviour.
+- **MD-4's own dismissal of this bug.** It noted the mismatch and reasoned *"it
+  evidently does not raise, since the rows exist, so the live table has a
+  constraint the migration files do not describe."* The rows exist because the
+  **importer** wrote them. The inference was sound and the premise was wrong.
+- **A justification inside HD-1.** `backfill.ts` argued for deriving the back
+  edge from `min(ts)` because "a trader opening an old chart moves the real back
+  edge while the column stays put". Chart loads move nothing. The decision
+  stands on its own merits; the reason was corrected in place rather than left
+  to mislead.
+
+### Cost
+
+Every chart load re-fetches from Twelve Data, because nothing was ever cached,
+against a measured 8 credits/min and 800/day. That is a standing drain on the
+same budget HD-1 was carefully paced around — and the likely reason a
+ground-truth sweep paced at 4/min was refused with "10 API credits were used"
+while a scheduled run was firing.
+
+### The fix
+
+Conflict target matched to the real constraint —
+`symbol,timeframe,provider_code,ts`, identical to `upsertCandles`
+(`pipeline.server.ts:161`), which is the same write against the same table and
+has always worked. The upsert result is now checked, failures are logged at
+`error` with symbol, timeframe and row count, and surfaced on the response as
+`cacheWriteError`. A cache write that fails must not blank a chart that has
+data to draw, but it must never be invisible again.
+
+### Standing rule
+
+**A swallowed database write is not a caught error unless the result was
+inspected.** Any `.upsert()`, `.insert()` or `.update()` whose `{ error }` is
+not read is unhandled no matter how much `try`/`catch` surrounds it. This is the
+second time this table's writers have been misread from the outside; the first
+cost MD-4 a wrong conclusion, and this cost roughly a week of a silently dead
+cache.
 
 ---
 
@@ -1651,8 +1747,23 @@ select id, status_code, error_msg, created
 
 ## MD-2 — Twelve Data datetimes were parsed as UTC when they are not
 
-**Area:** Market data · **Found:** 2026-08-13 · **Status:** code fixed; cache
-purge outstanding
+**Area:** Market data · **Found:** 2026-08-13 · **Status:** **RESOLVED
+2026-08-21 by measurement. The purge is cancelled — do not run it.**
+
+> STEP 1's value comparison was run against both stored batches and both are
+> clean. EUR/USD 15m — the exact 4,735-row batch written 2026-08-14 13:41 that
+> the purge targeted — matches fresh data to the digit at 00:00, 10:00 and
+> 13:45 on 2026-07-15. GBP/USD 15m, written 2026-08-20 by an admin import,
+> matches at all three of its reference timestamps too. A +10h shift would
+> have shown 64 pips of divergence.
+>
+> The premise has now failed two different tests: first as the Saturday-bar
+> count, which [MD-5](#md-5--twelve-data-serves-continuous-247-forex-weekends-included)
+> invalidated, and now as a value comparison. And the third writer the purge
+> also worried about does not exist —
+> [MD-8](#md-8--the-charts-candle-cache-has-never-written-a-single-row) has
+> never written a row. STEP 2 is struck in
+> `docs/migrations/twelvedata-cache-purge.sql`.
 
 The actual cause of the 9–10 hour lag on forex, metals and indices, replacing
 the incorrect diagnosis recorded in [MD-1](#md-1--the-free-twelve-data-plan-cannot-fund-the-poll-rate-the-ui-asks-for).

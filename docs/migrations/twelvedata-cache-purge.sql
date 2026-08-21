@@ -1,3 +1,35 @@
+-- ═══════════════════════════════════════════════════════════════════════════
+-- RESOLVED 2026-08-21 — DO NOT RUN STEP 2. THIS PURGE IS CANCELLED.
+--
+-- MD-2 is closed by measurement, not by argument. STEP 1's value comparison
+-- was finally run against both stored batches, and both are CLEAN:
+--
+--   EUR/USD 15m, the exact 4,735-row batch written 2026-08-14 13:41 that this
+--   file was written to delete:
+--     2026-07-15 00:00Z  stored open 1.14241  = fresh 1.14241   clean
+--     2026-07-15 10:00Z  stored open 1.14180  = fresh 1.14180   clean
+--     2026-07-15 13:45Z  stored open 1.14270  = fresh 1.14270   clean
+--
+--   GBP/USD 15m, written 2026-08-20 10:21 by an admin import:
+--     2026-08-14 14:30Z  stored open 1.35598  = fresh 1.35598   clean
+--     2026-08-15 00:00Z  stored open 1.35293  = fresh 1.35293   clean
+--     2026-08-15 00:30Z  stored open 1.35331  = fresh 1.35331   clean
+--
+-- A +10h shift would have put 1.34956 at 14:30 — 64 pips away, not a rounding
+-- question. Two independently-written batches across two symbols are correct.
+--
+-- The "third writer" this file also worried about does not exist either. The
+-- chart cache-through path has never written a single row (MD-8): its
+-- `onConflict` named a constraint the table does not have, and the error was
+-- never inspected. So `provider_code = 'twelvedata'` rows come from the
+-- importer alone, and they are clean.
+--
+-- Running STEP 2 would delete correct forex data that costs credits to
+-- replace, on a premise that has now been tested twice and failed twice --
+-- first as the invalid Saturday-bar count (MD-5), now as a value comparison.
+-- STEP 0 and STEP 1 are kept as the method that settled it. STEP 2 is struck.
+-- ═══════════════════════════════════════════════════════════════════════════
+
 -- MD-2 · purge the timezone-poisoned Twelve Data cache.
 --
 -- Recorded as outstanding in docs/known-issues.md since 2026-08-13 and never
@@ -134,9 +166,13 @@ select ts, open, high, low, close
 -- written_after_fix_commit was 0, use timestamptz '2026-08-14 00:00:00+00',
 -- which is then provably equivalent to deleting every twelvedata row.
 
-delete from public.historical_candles
- where provider_code = 'twelvedata'
-   and created_at < timestamptz '<BOUNDARY>';
+-- STRUCK 2026-08-21. Measured clean; deleting would destroy correct data.
+-- Left in place, disabled, so the reasoning above stays attached to the
+-- statement it cancels rather than becoming folklore.
+--
+-- delete from public.historical_candles
+--  where provider_code = 'twelvedata'
+--    and created_at < timestamptz '<BOUNDARY>';
 
 -- ── STEP 3 · VERIFY, in a SEPARATE run after a reload ─────────────────────
 -- A re-read inside the session that made the change sees its own uncommitted

@@ -444,7 +444,31 @@ export const twelveDataCandles = createServerFn({ method: "POST" })
         volume: Number(v.volume ?? 0),
       }));
 
-      // ---------- 3. Backfill cache (best-effort) ----------
+      // ---------- 3. Backfill cache ----------
+      //
+      // MD-8. This wrote nothing at all between the day the unique constraint
+      // was created and 2026-08-21. Two defects, and the second hid the first:
+      //
+      //   * `onConflict` named `symbol,timeframe,ts`. The table's only unique
+      //     constraint is `(symbol, timeframe, provider_code, ts)`, and the
+      //     two same-columns indexes are NOT unique, so they cannot serve as
+      //     a conflict target either. Postgres answered 42P10 — "no unique or
+      //     exclusion constraint matching the ON CONFLICT specification" —
+      //     to every batch.
+      //   * The result was never inspected. supabase-js does NOT throw on a
+      //     PostgREST error, it returns `{ error }`, so the surrounding
+      //     `catch` never ran and the `console.warn` inside it never printed.
+      //     There was no log line to find.
+      //
+      // Consequence: every chart load re-fetched from Twelve Data because
+      // nothing was ever cached, against an 8 credits/min budget.
+      //
+      // The conflict target now matches the importer's (`upsertCandles`,
+      // pipeline.server.ts:161), which is the same write against the same
+      // table and has always worked. Errors are surfaced on the response
+      // rather than swallowed: a cache write failing must not blank a chart
+      // that already has data to draw, but it must not be invisible either.
+      let cacheWriteError: string | null = null;
       if (fetched.length) {
         try {
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -455,12 +479,20 @@ export const twelveDataCandles = createServerFn({ method: "POST" })
             provider_code: "twelvedata",
           }));
           for (let i = 0; i < rows.length; i += 500) {
-            await supabaseAdmin
+            const { error } = await supabaseAdmin
               .from("historical_candles")
-              .upsert(rows.slice(i, i + 500) as any, { onConflict: "symbol,timeframe,ts" });
+              .upsert(rows.slice(i, i + 500) as any, {
+                onConflict: "symbol,timeframe,provider_code,ts",
+                ignoreDuplicates: true,
+              });
+            if (error) throw error;
           }
         } catch (e) {
-          console.warn("[twelvedata] candle cache backfill failed:", (e as Error).message);
+          cacheWriteError = (e as Error).message;
+          console.error(
+            "[twelvedata] candle cache write FAILED",
+            { symbol: data.symbol, timeframe: data.timeframe, rows: fetched.length, error: cacheWriteError },
+          );
         }
       }
 
@@ -479,6 +511,8 @@ export const twelveDataCandles = createServerFn({ method: "POST" })
         cached: !fetched.length,
         degraded: !!upstreamError,
         error: upstreamError ?? undefined,
+        // Surfaced, not swallowed — see MD-8. Null on a healthy write.
+        cacheWriteError: cacheWriteError ?? undefined,
       };
     } catch (e) {
       return { error: (e as Error).message };

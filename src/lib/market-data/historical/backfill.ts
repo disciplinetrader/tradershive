@@ -17,14 +17,20 @@
  * ── Why the caller must pass `earliestTs`, not `earliest_available` ────────
  *
  * `historical_symbols.earliest_available` looks like the right cursor and is
- * not. `twelveDataCandles` writes into `historical_candles` on a chart load
- * and does NOT touch that column (MD-4), so a trader opening an old chart
- * moves the real back edge while the column stays put. A cursor-driven walk
- * would then re-request a range it already holds, spending credits from a
- * budget with no room to waste them.
+ * not. Deriving from `min(ts)` in the data cannot go stale, and mirrors how
+ * the forward walk already derives from `max(ts)` rather than
+ * `latest_imported`. Any writer that adds candles without touching the column
+ * — and the column is only ever written by `runImport` — desynchronises a
+ * cursor-driven walk, which would then re-request a range it already holds,
+ * spending credits from a budget with no room to waste them.
  *
- * Deriving from `min(ts)` in the data cannot go stale, and mirrors how the
- * forward walk already derives from `max(ts)` rather than `latest_imported`.
+ * CORRECTION 2026-08-21. This originally justified itself by saying the chart
+ * cache-through moves the real back edge while the column stays put, so "a
+ * trader opening an old chart" would desynchronise the cursor. That is false:
+ * the chart path has never written a single row (MD-8 — its `onConflict`
+ * named a constraint that does not exist, and the error was never inspected).
+ * The decision is unchanged and still correct, because deriving from the data
+ * is right regardless of who writes it. The reason given for it was wrong.
  *
  * ── The budget this is shaped around ───────────────────────────────────────
  *
