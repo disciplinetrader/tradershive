@@ -29,6 +29,9 @@ survives the session that wrote them.
 | `historical-sync/hs-fix-disable-gated.sql` | ✅ applied 2026-08-21 — MD-7, 7 rows disabled |
 | `historical-sync/hs-fix-dax.sql` | ✅ applied 2026-08-21 — GER40 repointed off `DAX` |
 | `historical-sync/hs-fix-verify.sql` | ✅ verified 2026-08-21 — twelvedata 18/25, binance 8/8 |
+| `historical-sync/hs-fix-add-etfs.sql` | ⏳ adds SPY/QQQ/DIA/IWM; expect 4 rows back |
+| `historical-sync/hs-hd3-check.sql` | ⏳ HD-3 — any `front_edge_stale = true` is pre-deploy damage |
+| `historical-sync/hs-hd3-repair.sql` | ⏳ HD-3 — one-time front-edge repair, no-op once clean |
 | `historical-sync/hs-rollback.sql` | unschedule |
 
 **Tracking an unapplied migration.** A new table goes in

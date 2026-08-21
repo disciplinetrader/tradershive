@@ -614,14 +614,32 @@ if (sameProvider && storedNative) return storedNative;   // routing.ts:127
 stored value wins and the deletion is bypassed completely. The code believes
 indices are unclaimed; the database has been asking for `SPX` ever since.
 
+### Logged, deliberately not fixed: `providers/mock.ts`
+
+`mock.ts:44-46` still carries `SPX500` / `NAS100` / `US30` with mock prices
+(19500 / 5500 / 40000), and `replay/market-data.ts:81` has a `US30` price
+fallback. Same code/data drift as this entry, different file. **Left alone on
+2026-08-21 by decision** — it is a dev-only provider that is never selected in
+production and touches nothing live. Noted so it is not re-derived as a finding
+later. `journal/instruments.ts` also keeps those names as aliases, and that one
+is CORRECT and must stay: a trader may journal a NAS100 trade taken at another
+broker.
+
 ### The other half is still missing
 
 That same decision said indices would be traded as the ETFs themselves —
 SPY / QQQ / DIA / IWM. **None of the four exist in `historical_symbols`.** So
 neither half landed: the broken rows were not disabled and the replacements
-were not added. MD-7 completes the removal only. Adding the ETFs is an open
-decision, and it carries the question DAX just illustrated — whether a proxy
-trading at $46.98 should be presented under an index's name.
+were not added. MD-7 completed the removal half. **The add half closed 2026-08-21**
+(`20260821104500_add_etf_proxy_symbols.sql`).
+
+The "should a proxy carry an index's name" question turned out to be already
+answered and already implemented — `paper-trading/symbols.ts:60` states the
+rule: the ETFs are named as the ETFs they are, the price shown IS the price
+traded, and the index tickers stay unclaimed so a real feed can take them
+later. SPY/QQQ/DIA/IWM were fully wired on the trading side the whole time;
+`historical_symbols` was the only catalog that never got them, which is why
+they read as "missing" from a query against that one table.
 
 ### Why no source-level filter could have caught it
 
