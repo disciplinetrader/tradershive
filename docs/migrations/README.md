@@ -19,6 +19,13 @@ survives the session that wrote them.
 | `order-ticket-exits/ot-{1..6}.sql` | ✅ applied 2026-08-12 — one bare statement each, verified individually |
 | `order-ticket-exits/ot-{7..9}.sql` | ✅ applied 2026-08-12 — leg cap + allocation trigger, behaviourally verified |
 | `order-ticket-exits/ot-{1..9}-verify.sql` | their verifies, one per statement |
+| `historical-sync-cron.sql` | annotated reference — **do not paste from it** |
+| `historical-sync/hs-0-precondition.sql` | ⏳ gate — jobs_now/already_exists/secret_len before scheduling |
+| `historical-sync/hs-1-schedule.sql` | ⏳ creates `historical-sync-15min`; a jobid means it landed, zero rows means nothing did |
+| `historical-sync/hs-2-verify.sql` | ⏳ its verify — **fresh connection, after a reload** (EC-8) |
+| `historical-sync/hs-3-jobs.sql` | ⏳ evidence from `historical_import_jobs`, not from the fire response |
+| `historical-sync/hs-4-depth.sql` | ⏳ depth growing; run at apply time and again the next day |
+| `historical-sync/hs-rollback.sql` | unschedule |
 
 **Tracking an unapplied migration.** A new table goes in
 `scripts/pending-tables.json` between writing the migration and applying it.

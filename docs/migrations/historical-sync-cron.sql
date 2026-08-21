@@ -1,3 +1,23 @@
+-- ANNOTATED REFERENCE — DO NOT PASTE FROM THIS FILE.
+--
+-- Every statement below also exists as a bare one-statement file in
+-- `historical-sync/`. Open those and copy from there: this editor truncates
+-- long pastes mid-statement and still reports success, and STEP 1 is the
+-- longest statement in this repo's cron work.
+--
+--   hs-0-precondition.sql  gate — read the source secret before using it
+--   hs-1-schedule.sql      the create
+--   hs-2-verify.sql        fresh connection, after a reload
+--   hs-3-jobs.sql          evidence from historical_import_jobs
+--   hs-4-depth.sql         depth actually growing
+--   hs-rollback.sql        unschedule
+--
+-- PRE-FLIGHT, done 2026-08-21 before any of this: an unauthenticated POST to
+-- the endpoint answered `401 Unauthorized`, not 404 and not 503. So the route
+-- is deployed at that host and CRON_SECRET is configured on the deployment —
+-- both checked before scheduling something to call it 96 times a day, and
+-- neither inferred from the fact that other jobs work.
+--
 -- Schedule `historical-sync`. It has NEVER been scheduled — confirmed
 -- 2026-08-18 and again 2026-08-20 against `cron.job`, which holds six jobs and
 -- none of them this one. A create, not a repair.
@@ -49,6 +69,27 @@
 -- and discards its writes (EC-8). Plain statements only, verified from
 -- returned values.
 
+-- ── STEP 0 · GATE. Read the secret before borrowing it. ───────────────────
+-- STEP 1 reads the secret from `economic-calendar-daily` and guards on
+-- `length = 64`, so a failed read returns zero rows rather than scheduling an
+-- empty secret. But zero rows is an ambiguous thing to stare at — it looks
+-- identical to a paste that never ran. Establishing the starting state first
+-- makes STEP 1's outcome unambiguous either way.
+--
+-- Expect: jobs_now = 6, already_exists = 0, secret_len = 64.
+--
+-- already_exists = 1 means this HAS been scheduled after all and the premise
+-- of the whole file is wrong — stop and re-read `cron.job` before running
+-- STEP 1, which would otherwise overwrite it (cron.schedule upserts on
+-- jobname). secret_len null or not 64 means the source job is gone or has
+-- changed shape; find another working job to read from rather than falling
+-- back to pasting a literal.
+
+select (select count(*) from cron.job) as jobs_now,
+       (select count(*) from cron.job where jobname = 'historical-sync-15min') as already_exists,
+       length((select substring(command from '"x-cron-secret"\s*:\s*"([^"]+)"')
+                 from cron.job where jobname = 'economic-calendar-daily')) as secret_len;
+
 -- ── STEP 1 · schedule it ──────────────────────────────────────────────────
 -- The secret is read from `economic-calendar-daily`, which has been firing
 -- unattended and authenticating since 2026-08-20 05:17 UTC. The
@@ -96,7 +137,13 @@ select jobname,
 -- did anything, and a 200 over an empty run is exactly the blind spot EC-5
 -- was about. The job table is the evidence.
 --
--- Wait for two fires (~30 minutes), then:
+-- WHEN. `*/15 * * * *` fires at :00, :15, :30 and :45 UTC, so the first due
+-- fire is the next quarter-hour boundary after STEP 1 returned a jobid — at
+-- most 15 minutes away, possibly 30 seconds. Two fires is therefore ~30
+-- minutes, and an empty result BEFORE that boundary is not a finding: it is
+-- the check running early, which is exactly how `economic-calendar-daily` was
+-- read as broken 33 minutes before its first fire was due. Compute the
+-- boundary, then wait for it.
 
 select triggered_by,
        status,
@@ -128,6 +175,7 @@ select symbol,
        (max(ts)::date - min(ts)::date) as days_deep,
        count(*)       as bars
   from public.historical_candles
+ where timeframe = '1m'
  group by symbol
  order by days_deep asc;
 
@@ -135,6 +183,12 @@ select symbol,
 -- symbols per run and 96 runs a day across 25 eligible symbols, each symbol
 -- gets roughly 7-8 steps a day, so expect a shallow symbol to gain ~15 days
 -- of depth per day until it reaches 120 and stops.
+--
+-- Filtered to `1m` because that is the base timeframe every symbol walks on
+-- and the only one the backward phase writes: `runBackwardUpdate` passes
+-- `aggregateHigherTfs: false`, so a 5m or 1h row in the same table comes from
+-- the forward walk's aggregation over a different span and would blur the
+-- min(ts) this reads depth from.
 
 -- ── Rollback ──────────────────────────────────────────────────────────────
 -- select cron.unschedule('historical-sync-15min');
