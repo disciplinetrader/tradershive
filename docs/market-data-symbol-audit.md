@@ -61,7 +61,22 @@ endpoint, never locally.
 
 The 2026-08-14 decision was that indices are traded as the ETFs themselves —
 SPY / QQQ / DIA / IWM, whose engine symbol already *is* the Twelve Data
-ticker. **None of the four exist in `historical_symbols`.**
+ticker. **None of the four exist in `historical_symbols`.** Confirmed
+2026-08-21: the table holds exactly 33 rows in all states, and a query for
+`IWM,SPY,QQQ,DIA` returns `[]` — not disabled rows, no rows.
+
+All four serve correctly, measured 2026-08-21 06:39 UTC:
+
+| Proxy | Result |
+|---|---|
+| IWM | OK · ETF · NYSE · USD · $297.68 |
+| SPY | OK · ETF · NYSE · USD · $762.64 |
+| QQQ | OK · ETF · NASDAQ · USD · $710.95 |
+| DIA | OK · ETF · NYSE · USD · $527.50 |
+
+So none of them is failing, and none can be: nothing has ever requested them.
+An absent row produces no import job, no error and no candles — which is
+indistinguishable from "working" in every dashboard that counts failures.
 
 So that decision was half-applied: the index mappings came out of `routing.ts`
 and neither the broken index rows were disabled nor the replacement ETF rows
