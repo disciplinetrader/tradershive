@@ -557,6 +557,82 @@ it. That convention held for as long as there was only one kind of caller.
 
 ---
 
+## MD-7 — The catalog still asks for tickers a code change retired
+
+**Area:** Market data · **Found:** 2026-08-21, auditing why every scheduled
+sync failed · **Status:** migration written
+(`20260821063500_disable_unreachable_symbols.sql`), **not yet applied**
+
+Seven of the 25 enabled Twelve Data symbols cannot produce data. Measured
+individually — see [the symbol audit](market-data-symbol-audit.md) — because
+market class turned out not to predict it: XAU/USD serves and XAG/USD is
+plan-gated.
+
+Three distinct faults hide behind one status code:
+
+| Fault | Symbols | Fixable by |
+|---|---|---|
+| plan-gated | WTI/USD, XAG/USD, SPX500 (`SPX`) | an account upgrade |
+| invalid ticker | BRENT/USD, NAS100 (`IXIC`), US30 (`DJI`) | nothing at any price |
+| **wrong instrument** | GER40 (`DAX`) | not failing — see below |
+
+### GER40 is the one that matters
+
+`DAX` returns **HTTP 200**, `type: ETF`, `exchange: NASDAQ`, close **$46.98** —
+a US-listed ETF standing in for a ~24,000-point German index quoted in EUR. It
+does not error, so it would have imported 2,880 candles of the wrong instrument
+under a `phase: 'completed'` job row, with bars in the summary confirming
+success. Same shape as MD-2: wrong data stored under a healthy status.
+
+Disabling only the symbols that *error* would have left this one running. That
+is the entire reason this is a seven-row migration rather than the two-row one
+that the day's first two failures suggested.
+
+### Root cause: a code change that never reached the data
+
+Migration `20260731054056` wrote `native_symbol` of `SPX`, `IXIC`, `DJI` and
+`DAX` onto the four index rows. The 2026-08-14 ETF-proxy decision removed those
+mappings from `routing.ts`, whose comment states they are "intentionally left
+unmapped and unclaimed for a future licensed index feed."
+
+The rows were never touched, and `nativeSymbolForProvider` prefers them:
+
+```ts
+const sameProvider = !!storedProvider && storedProvider.toLowerCase() === providerCode.toLowerCase();
+if (sameProvider && storedNative) return storedNative;   // routing.ts:127
+```
+
+`source_code` is `twelvedata` and the resolved provider is `twelvedata`, so the
+stored value wins and the deletion is bypassed completely. The code believes
+indices are unclaimed; the database has been asking for `SPX` ever since.
+
+### The other half is still missing
+
+That same decision said indices would be traded as the ETFs themselves —
+SPY / QQQ / DIA / IWM. **None of the four exist in `historical_symbols`.** So
+neither half landed: the broken rows were not disabled and the replacements
+were not added. MD-7 completes the removal only. Adding the ETFs is an open
+decision, and it carries the question DAX just illustrated — whether a proxy
+trading at $46.98 should be presented under an index's name.
+
+### Why no source-level filter could have caught it
+
+`UNREACHABLE_SOURCES` excludes a *provider*, which is the right shape for CX-1's
+Binance block and the wrong shape for this. These seven share a provider with
+the 18 that work. The distinction is per-row, so the exclusion has to live in
+the data — `is_enabled = false` — and it takes effect on the next fire with no
+deploy, unlike [HD-3](#hd-3--the-backward-walk-starved-the-forward-walk-through-latest_imported).
+
+### Cost while it stood
+
+Gated symbols still spend credits. `runImport` retries 3 times before failing,
+so each broken symbol costs 4 credits and a 2-symbol slice costs 8 — the whole
+per-minute budget, near-instantly, every 15 minutes, for zero rows. Observed
+directly: a manual sweep paced at 4/min was refused with "10 API credits were
+used" because a scheduled run was firing at the same time.
+
+---
+
 ## MIG-1 — A migration's GRANT is in the repo and not in the database
 
 **Area:** Tooling / migrations · **Found:** 2026-08-20 · **Status:** open,

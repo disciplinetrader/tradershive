@@ -26,6 +26,9 @@ survives the session that wrote them.
 | `historical-sync/hs-3-jobs.sql` | ⏳ evidence from `historical_import_jobs`, not from the fire response |
 | `historical-sync/hs-4-depth.sql` | ⏳ depth growing; run at apply time and again the next day |
 | `historical-sync/hs-census.sql` | rows per timeframe — separates "no 1m data yet" from "hs-4's filter is wrong" |
+| `historical-sync/hs-fix-disable-gated.sql` | ⏳ MD-7 — disables the 7 unreachable symbols; expect 7 rows back |
+| `historical-sync/hs-fix-dax.sql` | ⏳ MD-7 — repoints GER40 off `DAX` so it fails loudly if re-enabled |
+| `historical-sync/hs-fix-verify.sql` | ⏳ its verify — expect twelvedata 18/25, binance 8/8 |
 | `historical-sync/hs-rollback.sql` | unschedule |
 
 **Tracking an unapplied migration.** A new table goes in
