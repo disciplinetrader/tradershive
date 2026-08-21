@@ -748,11 +748,26 @@ cache.
 
 ---
 
-## HD-4 — A weekend was permanently fatal to every US-hours symbol
+## HD-4 — Twelve Data reports an empty window as an error, and both walks believed it
 
-**Area:** Market data · **Found:** 2026-08-21, reasoning about why HD-3's check
-came back clean · **Status:** **fixed in the repo, awaiting deploy** · Caught
-before it fired — zero symbols were marked when the fix was written
+**Area:** Market data · **Found:** 2026-08-21 · **Status:** **fixed in the
+repo, awaiting deploy** · **REVISED after the first fix proved unreachable —
+read the revision before the original**
+
+> **Revision, same day.** This was first written up as "a weekend is
+> permanently fatal to US-hours symbols", and that symptom is real. But the
+> fix built for it — an attempted-cursor and an empty-step streak — could never
+> execute, because an empty window does not arrive as `inserted = 0`. It
+> arrives as a **thrown provider error**.
+>
+> Proved by driving the exact sequence the fix predicted and watching it fail
+> at a different layer: both the forward and backward calls returned
+> HTTP 400 *"No data is available on the specified dates"*, and metadata never
+> changed because the streak code was never reached.
+>
+> The cause and the symptom are kept in one entry deliberately. Splitting them
+> would put "weekends kill US symbols" and "empty is reported as an error" in
+> different places, and the second is the reason the first exists.
 
 `runBackwardUpdate` marked a symbol exhausted the moment a backward step
 inserted nothing:
@@ -791,6 +806,40 @@ anchors on `earliestTs`, which comes from `min(ts)` of stored candles. An empty
 step changes no stored data, so the next run computes the **identical** window —
 for ever, one credit per symbol per run. The exhaustion mark was the only thing
 stopping an infinite retry.
+
+### The layer the first fix missed
+
+`providers.server.ts` threw on any `status: "error"` from Twelve Data. But the
+provider reports an empty window that way rather than returning an empty array:
+
+```
+AAPL 1m  2026-08-20 20:00 → 2026-08-21 11:40   (Thu close → Fri pre-open)
+AAPL 1m  2026-08-15 13:29 → 2026-08-17 13:29   (the weekend window)
+  both → 400 "No data is available on the specified dates."
+```
+
+Both ranges are valid, chronological and past-dated. Neither contains NYSE
+trading. So `runImport` threw, burned its three retries, marked the job
+`failed` and rethrew — and `if (!result?.inserted)` was never evaluated.
+
+**The forward walk had the same defect and it was already live**, not waiting
+on a weekend: any US-hours symbol whose window sits between one close and the
+next open gets this 400, which is ~17.5 hours a day plus weekends. At 9 such
+symbols in a 22-symbol rotation, every fire that picked one spent 4 credits
+(one attempt plus three retries) and wrote a `failed` row for a window that was
+merely outside trading hours.
+
+`isEmptyWindowError` in `./provider-errors` now translates that one response
+into an empty result at the boundary, so both walks see the empty array the
+pipeline already handles. It is matched on the 400 **and** the message
+together, because the provider's other errors are real faults catalogued the
+same morning — plan gating (404), invalid ticker (404) and throttling (429)
+must keep throwing. Widening it would convert an entitlement gate into "no
+data", which is how GER40 imported a $46.98 ETF as a German index.
+
+An empty forward window still writes a job row with `candles_inserted: 0`. A
+zero-row completion that happened is a different fact from a call that never
+ran, and silence is the worse of the two.
 
 ### The fix
 

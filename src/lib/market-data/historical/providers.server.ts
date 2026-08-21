@@ -8,6 +8,7 @@
 
 import type { HistoricalCandle, HistoricalTimeframe } from "./types";
 import { HISTORICAL_TF_SECONDS } from "./types";
+import { isEmptyWindowError } from "./provider-errors";
 
 export interface HistoricalDataProvider {
   readonly code: string;
@@ -274,6 +275,11 @@ export class TwelveDataHistoricalProvider implements HistoricalDataProvider {
       }
 
       const json = (await res.json()) as any;
+      // "No data on the specified dates" is an empty result wearing an error's
+      // clothes. Translated here, at the boundary, so both walks see the empty
+      // array the rest of the pipeline already knows how to handle. Narrow on
+      // purpose — see `./provider-errors`.
+      if (isEmptyWindowError(json)) break;
       if (json?.status === "error") {
         throw new HistoricalProviderError("twelvedata", String(json.message ?? "API error"), {
           httpStatus: res.status, responseType: contentType, apiCode: String(json.code ?? ""),
