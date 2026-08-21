@@ -866,6 +866,33 @@ the range the walk is about to request produces `inserted = 0` on a fully
 populated window — a second false-exhaustion path that did not exist before
 that morning.
 
+### Live verification deferred to the scheduled job — 2026-08-21
+
+The three-call sequence could not be driven: the Twelve Data **daily** cap was
+reached at **806/800**, so no amount of spacing would have let it run. Manual
+curls stopped there rather than being retried against an exhausted quota.
+
+What the day spent it on, honestly: roughly 40 credits went on the MD-7 catalog
+audit and the ground-truth fetches for MD-2 and MD-4, which is the cost of
+measuring instead of inferring and was worth it. The rest went to the cron — and
+a large share of that to **this very defect**, since every US-hours symbol
+picked outside market hours spent 4 credits (one attempt plus three retries) on
+a window that was merely shut. Post-fix an empty window costs one request
+instead of four, so tomorrow's consumption should fall materially without
+anything else changing.
+
+**The job was deliberately left scheduled.** A 429 is not an empty-window
+error, so it still throws, no metadata is written, no streak increments and no
+symbol can be falsely marked exhausted — the failure is loud, recorded and
+self-healing at the daily reset. Unscheduling would have traded a night of
+honest 429 rows for the risk of nobody switching it back on.
+
+The unit tests are not synthetic: all four payloads in
+`__tests__/provider-errors.test.ts` are responses measured against the live API
+today, including the exact 400 this fix turns on. That is why the fix is
+trusted as deployed correctly while the live observation waits for the counter
+to reset.
+
 ### Standing rule
 
 **An empty result is not the same fact as an impossible one.** Before treating
