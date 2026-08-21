@@ -21,6 +21,68 @@ its own. Everything left is a decision, not code: EC-1 (provider) and MSYM-1
 
 ---
 
+## 2026-08-21 — the depth thread
+
+Began as "schedule the job we wrote yesterday" and ended having found three
+defects, one of which was invisible by construction. Arc in order:
+
+| | Outcome |
+| --- | --- |
+| **HD-1** | **PROVEN IN PRODUCTION.** `historical-sync-15min` scheduled (jobid 23), fires every quarter hour, real 1m data landing. |
+| **HD-3** | **New, fixed, awaiting deploy.** The backward walk stamped an old `latest_imported` and starved the forward walk. Found by prediction, not observation. |
+| **MD-7** | **New, fixed, applied.** Seven catalog symbols no provider can serve — three faults behind one 404, plus one that returns 200. |
+| **IWM** | **Not a defect.** No catalog row at all. The ETF proxies were never added; that decision is still open. |
+
+### The proof
+
+First clean fire: AAPL and MSFT, 780 1m bars each, window 2026-08-19 13:30 →
+2026-08-20 19:59 — two US cash sessions exactly, which is the equity-hours case
+predicted before the run. Zero failed rows.
+
+`hs-3` reported `bars = 2066` against a stored 1m count of 1560. **Not a
+discrepancy — an exact reconciliation.** `candles_inserted` is
+`inserted + aggInserted` (`pipeline.server.ts:392`), and `AGGREGATE_FROM` fans
+1m out to 5m/15m/30m/1H/4H/1D in the same pass:
+
+```
+per symbol   5m 156 + 15m 52 + 30m 26 + 1H 13 + 4H 4 + 1D 2   = 253
+two symbols  1m 1560  +  agg 506                              = 2066
+```
+
+Worth keeping: **`candles_inserted` will never equal a single-timeframe row
+count** on a forward run. It counts the aggregates too. The backward walk
+passes `aggregateHigherTfs: false`, so `cron:backfill` rows are the only ones
+where the two numbers agree.
+
+### The one that would not have been found by watching
+
+GER40 mapped to `DAX`, which returns **HTTP 200**, `type: ETF`,
+`exchange: NASDAQ`, close **$46.98** — a US-listed ETF standing in for a
+~24,000-point German index quoted in EUR. Every other broken symbol 404s. This
+one succeeds and stores garbage under a `phase: completed` row.
+
+Excluding only what errors would have left it running. That is the whole reason
+MD-7 is a seven-row migration rather than the two-row one the first two
+failures suggested, and the reason the audit swept all 33 enabled symbols
+instead of the ones that surfaced.
+
+### Method notes worth carrying forward
+
+- **Class membership never predicted entitlement.** XAU/USD serves, XAG/USD is
+  plan-gated: same market, same ticker shape. Every symbol had to be measured
+  individually.
+- **A 404 is three different faults.** Plan-gated (an upgrade fixes it),
+  invalid ticker (nothing fixes it), and — separately — a 200 that is wrong.
+  Collapsing them would have produced the wrong remedy twice.
+- **Reachability is origin-dependent.** Binance answered 200 from a developer
+  machine while remaining blocked from the deployment (CX-1). That question is
+  answerable only from the deployment, so the local result was discarded rather
+  than recorded as a pass.
+- **An absent row is invisible to every failure count.** GER40 hid behind a
+  200; IWM hid behind having no row at all. Opposite directions, same week.
+
+---
+
 ## 2026-08-19 — the cron thread
 
 Began as "schedule one small cron job" (EC-2) and ended somewhere else. Full
@@ -34,7 +96,8 @@ arc, in the order it unfolded:
 | **EC-5** | **Done, and already proven.** One `jobResponse` helper across all eight hooks: 200 / 207 / 500. |
 | **MSYM-1** | **Reframed.** Forex is the path; crypto is blocked by CX-1, permanently. |
 | **CX-1** | **New, external.** Binance unreachable from the deployment. |
-| **HD-1, EC-1, EC-3, SYM-1** | Open, logged with enough detail to pick up cold. |
+| **HD-1** | **Closed 2026-08-21** — see the depth thread below. |
+| **EC-1, EC-3, SYM-1** | Open, logged with enough detail to pick up cold. |
 | **EC-6** | **New 2026-08-20.** EC-2's fire fell inside the existing week, so the feed's weekly advance is still unobserved. Check back Mon 2026-08-24. |
 
 Three things worth carrying forward.
