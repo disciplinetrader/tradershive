@@ -20,15 +20,15 @@ survives the session that wrote them.
 | `order-ticket-exits/ot-{7..9}.sql` | ✅ applied 2026-08-12 — leg cap + allocation trigger, behaviourally verified |
 | `order-ticket-exits/ot-{1..9}-verify.sql` | their verifies, one per statement |
 | `historical-sync-cron.sql` | annotated reference — **do not paste from it** |
-| `historical-sync/hs-0-precondition.sql` | ⏳ gate — jobs_now/already_exists/secret_len before scheduling |
-| `historical-sync/hs-1-schedule.sql` | ⏳ creates `historical-sync-15min`; a jobid means it landed, zero rows means nothing did |
-| `historical-sync/hs-2-verify.sql` | ⏳ its verify — **fresh connection, after a reload** (EC-8) |
+| `historical-sync/hs-0-precondition.sql` | ✅ run 2026-08-21 — 6 jobs, secret_len 64, clean start |
+| `historical-sync/hs-1-schedule.sql` | ✅ applied 2026-08-21 — jobid 23 |
+| `historical-sync/hs-2-verify.sql` | ✅ verified 2026-08-21 — 7 jobs, active, secret_matches |
 | `historical-sync/hs-3-jobs.sql` | ⏳ evidence from `historical_import_jobs`, not from the fire response |
 | `historical-sync/hs-4-depth.sql` | ⏳ depth growing; run at apply time and again the next day |
 | `historical-sync/hs-census.sql` | rows per timeframe — separates "no 1m data yet" from "hs-4's filter is wrong" |
-| `historical-sync/hs-fix-disable-gated.sql` | ⏳ MD-7 — disables the 7 unreachable symbols; expect 7 rows back |
-| `historical-sync/hs-fix-dax.sql` | ⏳ MD-7 — repoints GER40 off `DAX` so it fails loudly if re-enabled |
-| `historical-sync/hs-fix-verify.sql` | ⏳ its verify — expect twelvedata 18/25, binance 8/8 |
+| `historical-sync/hs-fix-disable-gated.sql` | ✅ applied 2026-08-21 — MD-7, 7 rows disabled |
+| `historical-sync/hs-fix-dax.sql` | ✅ applied 2026-08-21 — GER40 repointed off `DAX` |
+| `historical-sync/hs-fix-verify.sql` | ✅ verified 2026-08-21 — twelvedata 18/25, binance 8/8 |
 | `historical-sync/hs-rollback.sql` | unschedule |
 
 **Tracking an unapplied migration.** A new table goes in

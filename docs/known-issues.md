@@ -560,8 +560,9 @@ it. That convention held for as long as there was only one kind of caller.
 ## MD-7 — The catalog still asks for tickers a code change retired
 
 **Area:** Market data · **Found:** 2026-08-21, auditing why every scheduled
-sync failed · **Status:** migration written
-(`20260821063500_disable_unreachable_symbols.sql`), **not yet applied**
+sync failed · **Status:** **fixed — applied 2026-08-21**
+(`20260821063500_disable_unreachable_symbols.sql`), verified on a fresh query
+at twelvedata 18/25 enabled, binance 8/8
 
 Seven of the 25 enabled Twelve Data symbols cannot produce data. Measured
 individually — see [the symbol audit](market-data-symbol-audit.md) — because
