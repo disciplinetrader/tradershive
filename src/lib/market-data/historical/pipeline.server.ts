@@ -7,7 +7,7 @@
  * Backward-compatible with the original runImport() API.
  */
 
-import { getHistoricalProvider } from "./providers.server";
+import { getHistoricalProvider, HistoricalProviderError } from "./providers.server";
 import { resolveHistoricalProvider, nativeSymbolForProvider } from "./routing";
 
 import type { HistoricalCandle, HistoricalTimeframe } from "./types";
@@ -403,13 +403,28 @@ export async function runImport(rawOpts: RunImportOpts) {
     return { jobId, fetched: rawCandles.length, inserted, aggregated: aggInserted, skipped, gaps: gaps.length, snapshots: snaps, warnings };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+
+    // A throttle is the one failure that retrying makes WORSE.
+    //
+    // The credit window is per MINUTE and the backoff below is 1s/2s/4s — 7
+    // seconds across all three retries, so every one of them lands inside the
+    // same minute that produced the 429 and spends another credit. That turned
+    // a run budgeted at 4 credits into 16 against a ceiling of 8, and
+    // guaranteed all three retries failed too.
+    //
+    // Failing immediately hands the message to `isThrottle` in the cron route
+    // on THIS cycle, so the backward phase is skipped before it spends
+    // anything. Recovery is the next invocation's real minute boundary — a
+    // longer sleep here would only hold a cron request open across it.
+    const throttled = e instanceof HistoricalProviderError && e.detail.httpStatus === 429;
+
     // Retry logic
     const { data: jobRow } = await admin
       .from("historical_import_jobs")
       .select("retry_count, max_retries").eq("id", jobId).maybeSingle();
     const retryCount = (jobRow?.retry_count ?? 0) as number;
     const maxRetries = (jobRow?.max_retries ?? 3) as number;
-    if (retryCount < maxRetries) {
+    if (!throttled && retryCount < maxRetries) {
       await admin.from("historical_import_jobs").update({
         retry_count: retryCount + 1,
         phase: "queued", status: "running",

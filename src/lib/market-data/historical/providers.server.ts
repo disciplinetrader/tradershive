@@ -8,7 +8,7 @@
 
 import type { HistoricalCandle, HistoricalTimeframe } from "./types";
 import { HISTORICAL_TF_SECONDS } from "./types";
-import { isEmptyWindowError } from "./provider-errors";
+import { isEmptyWindowError, type ProviderErrorBody } from "./provider-errors";
 
 export interface HistoricalDataProvider {
   readonly code: string;
@@ -179,6 +179,21 @@ const TD_INTERVAL: Partial<Record<HistoricalTimeframe, string>> = {
   "1H": "1h", "4H": "4h", "1D": "1day", "1W": "1week", "1M": "1month",
 };
 
+/**
+ * Parse a response body that may not be JSON at all.
+ *
+ * Used on the error paths, where the body is already in hand as text and a
+ * failure to parse is itself informative — an interstitial or proxy page is
+ * not an empty window, and must keep falling through to the throw.
+ */
+function parseJsonBody(body: string): ProviderErrorBody | null {
+  try {
+    return JSON.parse(body);
+  } catch {
+    return null;
+  }
+}
+
 /** Structured provider failure — always actionable, never silent. */
 export class HistoricalProviderError extends Error {
   constructor(
@@ -255,6 +270,21 @@ export class TwelveDataHistoricalProvider implements HistoricalDataProvider {
 
       if (!res.ok) {
         const body = await res.text().catch(() => res.statusText);
+
+        // An empty window arrives as HTTP 400, so `res.ok` is false and this
+        // guard throws before `res.json()` at the JSON branch below is ever
+        // reached — which made the check down there unreachable for the one
+        // case it was written for. Measured 2026-08-21 from the body alone;
+        // the transport status was never part of that measurement, so both
+        // walks kept treating "the market was shut" as a fault and burned
+        // three retries on it every cycle.
+        //
+        // Same predicate, run here against the text this branch already holds.
+        // Additive: the 200-path check stays, because a body-level error can
+        // still arrive with `res.ok` true. Gated on 400 specifically — a 404
+        // entitlement gate or a 429 throttle must never reach it.
+        if (res.status === 400 && isEmptyWindowError(parseJsonBody(body))) break;
+
         const planLocked = /available starting with|upgrade/i.test(body);
         throw new HistoricalProviderError(
           "twelvedata",
