@@ -1,5 +1,94 @@
 # EC-1 — economic calendar provider options
 
+> ## STATUS 2026-08-24 · XOOMAR SHIPPED AS A SECOND SOURCE · FF UNCHANGED
+>
+> Supersedes the 2026-08-20 status below, which stands as the record of the
+> paid-provider evaluation and is still the right answer if a paid feed is ever
+> bought.
+>
+> **What shipped:** `xoomar.server.ts`, additive. ForexFactory remains the
+> primary breadth source, unchanged, for every currency. Xoomar adds `actual`
+> values for US high-signal releases — the field FF structurally never
+> publishes. No cross-source dedup: both write independently tagged by
+> `source`, so CPI/NFP/FOMC can produce two rows, one per source. Accepted
+> until real usage shows it needs a precedence rule.
+>
+> **Two caveats this source ships with. Both are live; neither is a bug in our
+> code.**
+>
+> **(a) The look-ahead filter depends on a cosmetic field.** Xoomar's response
+> mixes a genuine release calendar (22 records over 2026-01→08) with a macro
+> time series (36 records) whose `actual` is stamped to the START of the period
+> it describes — 31 to 41 days before that value was published. Measured pairs:
+> a value stamped `2026-01-01` was published `2026-02-11` (41 days); one
+> stamped `2026-07-01` was published `2026-08-07` (37 days). Ingesting those
+> would put numbers into `economic_events` dated before they were knowable, in
+> the table that feeds the replay overlay.
+>
+> `classify()` in `xoomar.server.ts` separates them on `periodLabel` shape
+> (`"June 2026"` / `"July 2026 meeting"` / `"Q2 2026 Advance"` are releases;
+> `"2026-07"` is a period stamp), backed by a second measured signal — the
+> period-start family is day-1 of a month in 36/36 cases and the release family
+> in 0/22.
+>
+> It is a **whitelist, so it fails closed**: an unrecognised label shape is
+> refused with a named warning rather than admitted as a release. The failure
+> mode is therefore *missing events*, never wrong ones. **But `periodLabel` is
+> a cosmetic field Xoomar can change without notice, and the day they do, this
+> source goes quiet rather than loud.** So unlike ForexFactory, this one needs
+> its sync log watched: a sudden drop in Xoomar rows, or `filtered` rising
+> toward the total, means the label format moved and `classify()` needs a new
+> shape — not that the calendar went empty.
+>
+> **(b) `scheduledAt` is an hour early at one DST boundary.** Timestamps are
+> genuine UTC and DST-aware — 21 of 22 release records land exactly on 08:30 ET
+> (BLS/BEA) or 14:00 ET (FOMC), correctly shifting between EST and EDT. The
+> exception is `2026-03-06T12:30Z`, which is 07:30 ET; 2026 DST did not begin
+> until March 8, so it should be `13:30Z`. The provider switched to EDT two
+> days early.
+>
+> **Deliberately not corrected.** `event_time` is part of
+> `economic_events`'s unique key `(event_time, currency, title)`, so shifting
+> it in our code would fork one event into two rows the moment upstream fixes
+> theirs — trading a one-hour display error for permanent duplicates. Expect
+> this to recur each March and November.
+>
+> ## moomoo — evaluated, scored best, dropped on ToS. DO NOT RE-EVALUATE.
+>
+> moomoo's `/api/v1.0/quote/economic-calendar/hot` was measured on 2026-08-24
+> and is **the best-quality source found in this whole investigation** — the
+> only one carrying `previous` AND forecast (`predictive`) AND actual
+> (`announce`) on the same record, addressed by date, with no look-ahead at
+> all. Its `announce` was populated 5/5 on past dates and 0/3 on future ones,
+> and its timestamps verified exactly against the 2026-08-07 non-farm payrolls
+> release under every timezone value tested.
+>
+> **It was dropped solely on an unresolved question about whether the API
+> agreement permits displaying the data to end users.** That is a licensing
+> question. Nothing measured counts against the source, and on data quality it
+> beats what shipped in its place.
+>
+> The working implementation — Ed25519 request signing, `hot` polling, the
+> Chinese→English mapping tables, 14 tests — is preserved on branch
+> **`wip/moomoo-economic-calendar`** (commit `cb999be`). It is not merged and
+> not deployed. If redistribution turns out to be permitted, recover that
+> branch rather than starting again.
+>
+> Its two costs, for the record: ~0.4 US events/day (~4% of FF's volume, so a
+> supplement and never a replacement), and Chinese-only text with no locale
+> control — `lang`, `locale`, `language`, `market` and `Accept-Language` all
+> return identical Chinese, hence the mapping tables on that branch.
+>
+> Also settled on the same day and worth not repeating: moomoo's
+> `/economic-calendar/search` **cannot** be used for this. It is keyword-only —
+> `date`, `from`/`to`, `begin_time`, `start_time`, `order`, `sort`, `sort_by`
+> are all silently ignored, and `time_order_type` applies only to
+> `search_type=2/3`, never to `1`, the only type carrying values. Its results
+> are relevance-ranked, so `keyword=CPI` returned a window four weeks stale
+> containing nothing from the current week. No keyword list fixes that. A sweep
+> of 22 candidate paths found no indicator/series/detail endpoint; `hot` and
+> `search` are the only two that exist.
+
 > ## STATUS 2026-08-20 · WAITING ON FMP'S ANSWER · EODHD IS THE FALLBACK
 >
 > **Decision deferred, deliberately. Nothing is urgent** — EODHD backfills to

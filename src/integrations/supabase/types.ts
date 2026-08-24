@@ -4659,6 +4659,7 @@ export type Database = {
           id: string
           impact: string
           previous: string | null
+          raw_payload: Json | null
           source: string
           title: string
           updated_at: string
@@ -4672,6 +4673,7 @@ export type Database = {
           id?: string
           impact?: string
           previous?: string | null
+          raw_payload?: Json | null
           source?: string
           title: string
           updated_at?: string
@@ -4685,6 +4687,7 @@ export type Database = {
           id?: string
           impact?: string
           previous?: string | null
+          raw_payload?: Json | null
           source?: string
           title?: string
           updated_at?: string

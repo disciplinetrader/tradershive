@@ -33,6 +33,7 @@ survives the session that wrote them.
 | `historical-sync/hs-hd3-check.sql` | ⏳ HD-3 — any `front_edge_stale = true` is pre-deploy damage |
 | `historical-sync/hs-hd3-repair.sql` | ⏳ HD-3 — one-time front-edge repair, no-op once clean |
 | `historical-sync/hs-rollback.sql` | unschedule |
+| `economic-calendar-raw-payload.sql` | ⏳ EC-1 — adds `economic_events.raw_payload`; one statement, idempotent |
 
 **Tracking an unapplied migration.** A new table goes in
 `scripts/pending-tables.json` between writing the migration and applying it.
