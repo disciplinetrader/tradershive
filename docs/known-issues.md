@@ -2195,6 +2195,54 @@ time-of-day analytics, and that is a product call.
 
 ---
 
+## EC-9 — Replay Studio's "Next" button reveals an unreached event
+
+**Area:** Replay Studio · economic calendar · **Found:** 2026-08-24 ·
+**Status:** open — **left unfixed on purpose, may well be intended**
+
+`StudioChart` gates its news markers on the replay clock:
+`visibleNews = newsEvents.filter(e => e.timeMs <= marketTime)`
+(`StudioChart.tsx:273`). An event the session has not reached has no marker,
+so it cannot be clicked and its detail — forecast included — is unreachable.
+`StudioNewsLayer` is fed that same gated list and inherits the guarantee.
+
+**One place escapes that gate.** The toolbar's "Next" button
+(`StudioChart.tsx:438-452`) is built from
+`nextNews = newsEvents.find(e => e.timeMs > marketTime)` — unreached by
+definition — and renders its **currency and title**, with its **UTC
+timestamp** in the tooltip:
+
+```tsx
+Next: {nextNews.currency} {nextNews.title.slice(0, 22)}
+…
+Jump to {new Date(nextNews.timeMs).toISOString()…} UTC
+```
+
+**Why this is not obviously a bug.** In a real market the calendar is
+published in advance — a live trader knows that payrolls land at 12:30 on
+Friday, and knows the consensus forecast too. The only genuinely unknowable
+quantity before a release is `actual`, and that is not exposed here. So this
+may be a deliberate convenience rather than a leak, and it predates the
+popover work that found it.
+
+**Why it is recorded anyway.** It is the *only* place unreached event data
+reaches the UI, and that fact is invisible from anywhere except this button.
+Anyone who later wants an upcoming-event preview should start here — it is
+the existing precedent, and building a second one without noticing it would
+leave two surfaces disagreeing about what a replay session is allowed to
+know.
+
+**If it is ever decided to be a leak,** the fix is to render the schedule
+without the identity — "Next event in 2h 14m" seeks just as well and reveals
+nothing. Do not simply delete the button; seeking to the next release is a
+genuinely useful control.
+
+Deliberately NOT changed by the popover work of 2026-08-24, which held the
+strict rule (gate on `visibleNews`, never `newsEvents`) precisely so that
+loosening it stays a decision someone makes about replay integrity rather
+than a side effect of a feature.
+
+---
 ## MS-1 — The session rule has no concept of weekends
 
 **Area:** Market sessions (journal, statistics, paper trading, replay) ·

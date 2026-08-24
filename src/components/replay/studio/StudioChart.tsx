@@ -21,6 +21,7 @@ import { INDICATOR_TOGGLES } from "@/lib/chart/indicator-registry";
 import { DrawingStore } from "@/lib/chart/drawings/store";
 import { aggregatableFrom, aggregateCandles } from "@/lib/replay/aggregate";
 import { useEconomicEvents } from "@/lib/economic-calendar/api";
+import { StudioNewsLayer } from "./StudioNewsLayer";
 import { currenciesForSymbol } from "@/lib/economic-calendar/types";
 import type { Candle, Timeframe } from "@/lib/market-data/types";
 import { Button } from "@/components/ui/button";
@@ -565,6 +566,21 @@ export function StudioChart({
             data-last-bar={candles.length ? String(candles[candles.length - 1].time) : ""}
             data-secondary={isSecondary ? "1" : "0"}
           />
+          {/* Detail for the news markers drawn above. Fed the SAME gated list
+              the markers are built from — `visibleNews`, never `newsEvents` —
+              so an event the replay clock has not reached has no marker,
+              nothing to click and no reachable forecast.
+              Both panes get it: a fold pane shows the same instrument's
+              calendar, and on a secondary symbol the currencies differ but the
+              events are still real context for the bar under them. */}
+          {newsOn ? (
+            <StudioNewsLayer
+              adapter={adapter}
+              events={visibleNews}
+              tick={`${view?.transport.cursor ?? 0}:${displayTf}:${chartBounds.width}x${chartBounds.height}`}
+              chartTimezone={settings.timezone}
+            />
+          ) : null}
           {/* Order and position lines belong to the SESSION's instrument. On a
               secondary pane they would draw the primary symbol's entry, stop
               and target as price levels on a chart where those numbers mean

@@ -44,6 +44,7 @@ import { type EconomicEvent, type NewsImpact, IMPACT_ORDER } from "@/lib/economi
 import {
   formatDayHeading, formatEventClock, formatValue, timezoneAbbrev,
 } from "@/lib/economic-calendar/format";
+import { ImpactDots } from "@/components/economic-calendar/ImpactDots";
 import { detectTimezone, dayKey } from "@/lib/analytics/periods";
 import { cn } from "@/lib/utils";
 
@@ -64,36 +65,6 @@ const ALL_IMPACTS: { id: NewsImpact; label: string }[] = [
   { id: "low", label: "Low" },
   { id: "holiday", label: "Holiday" },
 ];
-
-/**
- * Impact as visual weight, not a word.
- *
- * A filled/half/hollow ramp rather than three red circles: it survives
- * greyscale and colour-vision deficiency, where a red-count would not. The
- * colours stay in StudioChart's vocabulary — high is `destructive`, the same
- * token its high-impact markers use — so the two surfaces agree on what
- * "high" looks like even though they agree on nothing else.
- */
-function ImpactDots({ impact }: { impact: NewsImpact }) {
-  const filled = impact === "high" ? 3 : impact === "medium" ? 2 : impact === "low" ? 1 : 0;
-  const tone =
-    impact === "high" ? "bg-destructive" :
-    impact === "medium" ? "bg-warning" :
-    impact === "low" ? "bg-muted-foreground" : "bg-primary";
-  return (
-    <span className="inline-flex items-center gap-0.5" title={`${impact} impact`} aria-label={`${impact} impact`}>
-      {[0, 1, 2].map((i) => (
-        <span
-          key={i}
-          className={cn(
-            "h-1.5 w-1.5 rounded-full",
-            i < filled ? tone : "bg-border",
-          )}
-        />
-      ))}
-    </span>
-  );
-}
 
 /** One published figure. Always rendered, em-dash when absent. */
 function Figure({ label, value }: { label: string; value: string | null }) {
