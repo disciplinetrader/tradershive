@@ -35,7 +35,7 @@ survives the session that wrote them.
 | `historical-sync/hs-rollback.sql` | unschedule |
 | `economic-calendar-raw-payload.sql` | ✅ applied 2026-08-24 — `economic_events.raw_payload`; column verified live |
 | `economic-calendar/ec-1-xoomar-rows.sql` | ✅ run 2026-08-24 post-fix — 14 rows, 9 with actual, 5 without, 14 with payload, 2026-06-05..2026-10-02. (First run, pre-fix, returned 0: the 90-day window had not yet synced — superseded) |
-| `economic-calendar/ec-2-filtered.sql` | ◐ run 2026-08-24 — empty, pre-trigger. `net._http_response` is TTL-pruned, so run it soon after a sync |
+| `economic-calendar/ec-2-filtered.sql` | ✅ run 2026-08-24 — response-side view of the sync `ec-1` read table-side: id 86279 @ 12:37 reported fetched 14, `filtered: 9`, upserted 14, with_actual 9, no errors or warnings. Both views agree. The same result set still held the PRE-FIX run (id 86212 @ 12:05: fetched 5, filtered 0, with_actual 0), so one query captures the `DAYS_BACK` 7→90 before/after in a single artifact |
 | `economic-calendar/ec-3-lookahead.sql` | ✅ run 2026-08-24 post-fix — empty, and NOT vacuous: the same sync reported `filtered: 9`, so 9 look-ahead records were actively refused and none reached the table. **This is the pass condition.** (First run was empty over 0 rows and proved nothing — superseded, kept because "empty because nothing was checked" and "empty because the filter held" look identical and are not) |
 | `economic-calendar/ec-4-trigger-fire.sql` | ✅ run 2026-08-24 — fired, request_id 86212; secret read from `cron.job`, no substitution |
 | `economic-calendar/ec-5-trigger-read.sql` | ✅ run 2026-08-24 — returned row 86212; confirmed the `xoomar` key, i.e. the deploy is live |
