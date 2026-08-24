@@ -282,7 +282,7 @@ export async function runImport(rawOpts: RunImportOpts) {
     // Downloading
     await setPhase(admin, jobId, "downloading", 5);
     const fetchStart = Date.now();
-    const rawCandles = await provider.fetchCandles({
+    const { candles: rawCandles, confirmedEmpty } = await provider.fetchCandles({
       nativeSymbol: opts.nativeSymbol,
       timeframe: opts.timeframe,
       from: opts.from,
@@ -292,12 +292,35 @@ export async function runImport(rawOpts: RunImportOpts) {
     await admin.from("historical_import_jobs").update({ provider_response_ms: providerMs } as any).eq("id", jobId);
 
     // Never report success with zero candles — that hides provider failures.
-    if (!rawCandles.length) {
+    //
+    // ...unless the provider itself vouched for the window being empty. That
+    // verdict is `isEmptyWindowError`, decided at the provider boundary and
+    // carried here as `confirmedEmpty`; before it existed this guard could not
+    // tell "the market was shut" from "we asked for the wrong thing", so it
+    // called both a failure. TSLA and MSFT then spent 4 credits per empty
+    // window (1 + 3 retries of the identical request) and never returned to
+    // `runBackwardUpdate`, which meant `backfill_attempted_from` was never
+    // written and the next cycle recomputed the same window — for ever.
+    //
+    // What still throws, unchanged and on purpose:
+    //   · rows came back and the parse filters dropped every one of them
+    //     (range/finite checks) — a real symbol-mapping or timezone fault;
+    //   · an empty page with no error envelope at all, which states nothing.
+    // Both leave `confirmedEmpty` unset, so both still land in the throw.
+    if (!rawCandles.length && !confirmedEmpty) {
       throw new Error(
         `[${opts.sourceCode}] returned 0 candles for ${opts.symbol} (${opts.nativeSymbol}) ` +
         `${opts.timeframe} ${new Date(opts.from).toISOString()} → ${new Date(opts.to).toISOString()}. ` +
         `Check the symbol mapping or the provider's coverage for this range.`,
       );
+    }
+    if (!rawCandles.length) {
+      // Leaves a trace that separates this from a fetch that returned bars, so
+      // an empty step is auditable in `historical_sync_logs` without inferring
+      // it from a zero count.
+      await log(admin, jobId, opts.symbol, opts.sourceCode, "info",
+        "Provider confirmed this window is empty — recording an empty step",
+        { from: opts.from, to: opts.to, timeframe: opts.timeframe, confirmedEmpty: true });
     }
 
     if (await isCancelled(admin, jobId)) return { jobId, cancelled: true };

@@ -10,6 +10,31 @@ import type { HistoricalCandle, HistoricalTimeframe } from "./types";
 import { HISTORICAL_TF_SECONDS } from "./types";
 import { isEmptyWindowError, type ProviderErrorBody } from "./provider-errors";
 
+/**
+ * What a fetch returned, and whether the provider VOUCHED for an empty window.
+ *
+ * A bare `HistoricalCandle[]` cannot answer the only question the caller has
+ * when it is empty: is this "the market was shut" or "we asked for the wrong
+ * thing"? `isEmptyWindowError` already settles that here, at the boundary —
+ * it just had nowhere to put the answer, so `runImport` re-derived "0 candles
+ * means something is broken" and burned three retries on every weekend.
+ *
+ * `confirmedEmpty` is that answer, and NOTHING else. It is set only where the
+ * provider explicitly said "your range was fine, there is nothing in it".
+ * Absence is the safe default: a provider that never sets it keeps the old
+ * behaviour, and the caller keeps throwing.
+ */
+export interface FetchCandlesResult {
+  candles: HistoricalCandle[];
+  /**
+   * True when the provider returned its own "no data on the specified dates"
+   * verdict for this window. Only meaningful when `candles` is empty — a
+   * multi-page walk can confirm the window's far end after earlier pages
+   * returned real bars, and that is a complete result, not an empty one.
+   */
+  confirmedEmpty?: boolean;
+}
+
 export interface HistoricalDataProvider {
   readonly code: string;
   readonly label: string;
@@ -19,7 +44,7 @@ export interface HistoricalDataProvider {
     timeframe: HistoricalTimeframe;
     from: number; // epoch ms
     to: number;   // epoch ms
-  }): Promise<HistoricalCandle[]>;
+  }): Promise<FetchCandlesResult>;
   earliest(nativeSymbol: string): Promise<number | null>;
 }
 
@@ -39,7 +64,7 @@ export class BinanceHistoricalProvider implements HistoricalDataProvider {
 
   async fetchCandles({ nativeSymbol, timeframe, from, to }: {
     nativeSymbol: string; timeframe: HistoricalTimeframe; from: number; to: number;
-  }): Promise<HistoricalCandle[]> {
+  }): Promise<FetchCandlesResult> {
     const interval = BINANCE_TF[timeframe];
     if (!interval) throw new Error(`Binance: unsupported timeframe ${timeframe}`);
     const stepMs = HISTORICAL_TF_SECONDS[timeframe] * 1000;
@@ -80,7 +105,9 @@ export class BinanceHistoricalProvider implements HistoricalDataProvider {
       // Gentle throttle to respect weight limits.
       await new Promise((r) => setTimeout(r, 120));
     }
-    return out;
+    // No `confirmedEmpty`: Binance reports an empty window as an empty array,
+    // which is indistinguishable from a bad symbol here. Unchanged behaviour.
+    return { candles: out };
   }
 
   async earliest(nativeSymbol: string): Promise<number | null> {
@@ -117,7 +144,7 @@ export class StooqHistoricalProvider implements HistoricalDataProvider {
 
   async fetchCandles({ nativeSymbol, timeframe, from, to }: {
     nativeSymbol: string; timeframe: HistoricalTimeframe; from: number; to: number;
-  }): Promise<HistoricalCandle[]> {
+  }): Promise<FetchCandlesResult> {
     if (!this.supports.includes(timeframe)) {
       throw new Error(`Stooq: intraday not supported (${timeframe}). Daily (1D) and above only.`);
     }
@@ -129,7 +156,7 @@ export class StooqHistoricalProvider implements HistoricalDataProvider {
     const res = await fetch(url.toString(), { headers: { "User-Agent": "TradersHIVE/1.0" } });
     if (!res.ok) throw new Error(`Stooq HTTP ${res.status}`);
     const csv = await res.text();
-    if (!csv || csv.toLowerCase().startsWith("no data")) return [];
+    if (!csv || csv.toLowerCase().startsWith("no data")) return { candles: [] };
     // Stooq now serves a JavaScript proof-of-work interstitial to non-browser
     // clients. Never treat that HTML as "no candles" — fail loudly so the
     // import job records a real error instead of silently importing nothing.
@@ -140,7 +167,7 @@ export class StooqHistoricalProvider implements HistoricalDataProvider {
       );
     }
     const lines = csv.trim().split(/\r?\n/);
-    if (lines.length < 2) return [];
+    if (lines.length < 2) return { candles: [] };
     if (!/^date,/i.test(lines[0])) {
       throw new Error(`Stooq returned an unexpected response format: ${lines[0].slice(0, 80)}`);
     }
@@ -154,11 +181,15 @@ export class StooqHistoricalProvider implements HistoricalDataProvider {
       if (!Number.isFinite(op + hi + lo + cl)) continue;
       out.push({ ts, open: op, high: hi, low: lo, close: cl, volume: Number(v || 0) });
     }
-    return out;
+    // No `confirmedEmpty` on any of this provider's three empty exits. The
+    // literal "no data" body above is the closest thing it has to a verdict,
+    // but it is also what an unknown ticker returns — the ambiguity Twelve
+    // Data's 400-plus-message pair is narrow enough to avoid. Unchanged.
+    return { candles: out };
   }
 
   async earliest(nativeSymbol: string): Promise<number | null> {
-    const candles = await this.fetchCandles({
+    const { candles } = await this.fetchCandles({
       nativeSymbol, timeframe: "1D",
       from: 0, to: Date.now(),
     });
@@ -235,7 +266,7 @@ export class TwelveDataHistoricalProvider implements HistoricalDataProvider {
 
   async fetchCandles({ nativeSymbol, timeframe, from, to }: {
     nativeSymbol: string; timeframe: HistoricalTimeframe; from: number; to: number;
-  }): Promise<HistoricalCandle[]> {
+  }): Promise<FetchCandlesResult> {
     const interval = TD_INTERVAL[timeframe];
     if (!interval) {
       throw new HistoricalProviderError("twelvedata", `unsupported timeframe ${timeframe}`, { symbol: nativeSymbol });
@@ -246,6 +277,10 @@ export class TwelveDataHistoricalProvider implements HistoricalDataProvider {
     const out: HistoricalCandle[] = [];
     let cursor = from;
     let guard = 0;
+    // Set ONLY by the two `isEmptyWindowError` sites below. The third exit on
+    // an empty page (`values.length === 0`, a 200 with no error envelope) is
+    // deliberately excluded: the provider said nothing there, so neither do we.
+    let confirmedEmpty = false;
 
     while (cursor < to && guard++ < 50) {
       const pageTo = Math.min(to, cursor + PAGE * stepMs);
@@ -283,7 +318,10 @@ export class TwelveDataHistoricalProvider implements HistoricalDataProvider {
         // Additive: the 200-path check stays, because a body-level error can
         // still arrive with `res.ok` true. Gated on 400 specifically — a 404
         // entitlement gate or a 429 throttle must never reach it.
-        if (res.status === 400 && isEmptyWindowError(parseJsonBody(body))) break;
+        if (res.status === 400 && isEmptyWindowError(parseJsonBody(body))) {
+          confirmedEmpty = true;
+          break;
+        }
 
         const planLocked = /available starting with|upgrade/i.test(body);
         throw new HistoricalProviderError(
@@ -309,7 +347,10 @@ export class TwelveDataHistoricalProvider implements HistoricalDataProvider {
       // clothes. Translated here, at the boundary, so both walks see the empty
       // array the rest of the pipeline already knows how to handle. Narrow on
       // purpose — see `./provider-errors`.
-      if (isEmptyWindowError(json)) break;
+      if (isEmptyWindowError(json)) {
+        confirmedEmpty = true;
+        break;
+      }
       if (json?.status === "error") {
         throw new HistoricalProviderError("twelvedata", String(json.message ?? "API error"), {
           httpStatus: res.status, responseType: contentType, apiCode: String(json.code ?? ""),
@@ -337,7 +378,7 @@ export class TwelveDataHistoricalProvider implements HistoricalDataProvider {
     }
 
     out.sort((a, b) => a.ts - b.ts);
-    return out;
+    return { candles: out, confirmedEmpty };
   }
 
   async earliest(nativeSymbol: string): Promise<number | null> {
