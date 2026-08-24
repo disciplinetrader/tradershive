@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { Activity, Bell, LayoutGrid, Radio, Search, Settings2 } from "lucide-react";
+import { Activity, Bell, CalendarClock, LayoutGrid, Radio, Search, Settings2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const TABS = [
@@ -7,6 +7,7 @@ const TABS = [
   { to: "/market/symbols", label: "Symbols", icon: Search },
   { to: "/market/alerts", label: "Alerts", icon: Bell },
   { to: "/market/sessions", label: "Sessions", icon: Radio },
+  { to: "/market/economic-calendar", label: "Calendar", icon: CalendarClock },
   { to: "/market/providers", label: "Providers", icon: Activity },
   { to: "/market/settings", label: "Settings", icon: Settings2 },
 ];

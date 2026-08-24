@@ -92,6 +92,7 @@ import { Route as AuthenticatedMarketSymbolsRouteImport } from './routes/_authen
 import { Route as AuthenticatedMarketSettingsRouteImport } from './routes/_authenticated/market.settings'
 import { Route as AuthenticatedMarketSessionsRouteImport } from './routes/_authenticated/market.sessions'
 import { Route as AuthenticatedMarketProvidersRouteImport } from './routes/_authenticated/market.providers'
+import { Route as AuthenticatedMarketEconomicCalendarRouteImport } from './routes/_authenticated/market.economic-calendar'
 import { Route as AuthenticatedMarketAlertsRouteImport } from './routes/_authenticated/market.alerts'
 import { Route as AuthenticatedLeaderboardLeagueRouteImport } from './routes/_authenticated/leaderboard.league'
 import { Route as AuthenticatedLeaderboardGlobalRouteImport } from './routes/_authenticated/leaderboard.global'
@@ -673,6 +674,12 @@ const AuthenticatedMarketProvidersRoute =
   AuthenticatedMarketProvidersRouteImport.update({
     id: '/providers',
     path: '/providers',
+    getParentRoute: () => AuthenticatedMarketRoute,
+  } as any)
+const AuthenticatedMarketEconomicCalendarRoute =
+  AuthenticatedMarketEconomicCalendarRouteImport.update({
+    id: '/economic-calendar',
+    path: '/economic-calendar',
     getParentRoute: () => AuthenticatedMarketRoute,
   } as any)
 const AuthenticatedMarketAlertsRoute =
@@ -1508,6 +1515,7 @@ export interface FileRoutesByFullPath {
   '/leaderboard/global': typeof AuthenticatedLeaderboardGlobalRoute
   '/leaderboard/league': typeof AuthenticatedLeaderboardLeagueRoute
   '/market/alerts': typeof AuthenticatedMarketAlertsRoute
+  '/market/economic-calendar': typeof AuthenticatedMarketEconomicCalendarRoute
   '/market/providers': typeof AuthenticatedMarketProvidersRoute
   '/market/sessions': typeof AuthenticatedMarketSessionsRoute
   '/market/settings': typeof AuthenticatedMarketSettingsRoute
@@ -1695,6 +1703,7 @@ export interface FileRoutesByTo {
   '/leaderboard/global': typeof AuthenticatedLeaderboardGlobalRoute
   '/leaderboard/league': typeof AuthenticatedLeaderboardLeagueRoute
   '/market/alerts': typeof AuthenticatedMarketAlertsRoute
+  '/market/economic-calendar': typeof AuthenticatedMarketEconomicCalendarRoute
   '/market/providers': typeof AuthenticatedMarketProvidersRoute
   '/market/sessions': typeof AuthenticatedMarketSessionsRoute
   '/market/settings': typeof AuthenticatedMarketSettingsRoute
@@ -1900,6 +1909,7 @@ export interface FileRoutesById {
   '/_authenticated/leaderboard/global': typeof AuthenticatedLeaderboardGlobalRoute
   '/_authenticated/leaderboard/league': typeof AuthenticatedLeaderboardLeagueRoute
   '/_authenticated/market/alerts': typeof AuthenticatedMarketAlertsRoute
+  '/_authenticated/market/economic-calendar': typeof AuthenticatedMarketEconomicCalendarRoute
   '/_authenticated/market/providers': typeof AuthenticatedMarketProvidersRoute
   '/_authenticated/market/sessions': typeof AuthenticatedMarketSessionsRoute
   '/_authenticated/market/settings': typeof AuthenticatedMarketSettingsRoute
@@ -2105,6 +2115,7 @@ export interface FileRouteTypes {
     | '/leaderboard/global'
     | '/leaderboard/league'
     | '/market/alerts'
+    | '/market/economic-calendar'
     | '/market/providers'
     | '/market/sessions'
     | '/market/settings'
@@ -2292,6 +2303,7 @@ export interface FileRouteTypes {
     | '/leaderboard/global'
     | '/leaderboard/league'
     | '/market/alerts'
+    | '/market/economic-calendar'
     | '/market/providers'
     | '/market/sessions'
     | '/market/settings'
@@ -2496,6 +2508,7 @@ export interface FileRouteTypes {
     | '/_authenticated/leaderboard/global'
     | '/_authenticated/leaderboard/league'
     | '/_authenticated/market/alerts'
+    | '/_authenticated/market/economic-calendar'
     | '/_authenticated/market/providers'
     | '/_authenticated/market/sessions'
     | '/_authenticated/market/settings'
@@ -3180,6 +3193,13 @@ declare module '@tanstack/react-router' {
       path: '/providers'
       fullPath: '/market/providers'
       preLoaderRoute: typeof AuthenticatedMarketProvidersRouteImport
+      parentRoute: typeof AuthenticatedMarketRoute
+    }
+    '/_authenticated/market/economic-calendar': {
+      id: '/_authenticated/market/economic-calendar'
+      path: '/economic-calendar'
+      fullPath: '/market/economic-calendar'
+      preLoaderRoute: typeof AuthenticatedMarketEconomicCalendarRouteImport
       parentRoute: typeof AuthenticatedMarketRoute
     }
     '/_authenticated/market/alerts': {
@@ -4435,6 +4455,7 @@ const AuthenticatedLeaderboardRouteWithChildren =
 
 interface AuthenticatedMarketRouteChildren {
   AuthenticatedMarketAlertsRoute: typeof AuthenticatedMarketAlertsRoute
+  AuthenticatedMarketEconomicCalendarRoute: typeof AuthenticatedMarketEconomicCalendarRoute
   AuthenticatedMarketProvidersRoute: typeof AuthenticatedMarketProvidersRoute
   AuthenticatedMarketSessionsRoute: typeof AuthenticatedMarketSessionsRoute
   AuthenticatedMarketSettingsRoute: typeof AuthenticatedMarketSettingsRoute
@@ -4444,6 +4465,8 @@ interface AuthenticatedMarketRouteChildren {
 
 const AuthenticatedMarketRouteChildren: AuthenticatedMarketRouteChildren = {
   AuthenticatedMarketAlertsRoute: AuthenticatedMarketAlertsRoute,
+  AuthenticatedMarketEconomicCalendarRoute:
+    AuthenticatedMarketEconomicCalendarRoute,
   AuthenticatedMarketProvidersRoute: AuthenticatedMarketProvidersRoute,
   AuthenticatedMarketSessionsRoute: AuthenticatedMarketSessionsRoute,
   AuthenticatedMarketSettingsRoute: AuthenticatedMarketSettingsRoute,

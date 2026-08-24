@@ -18,6 +18,15 @@ export interface EconomicEvent {
   actual: string | null;
   forecast: string | null;
   previous: string | null;
+  /**
+   * Which ingest wrote the row — 'faireconomy' or 'xoomar'.
+   *
+   * Surfaced because the two sources deliberately do NOT de-duplicate: the
+   * same US release arrives from both under different titles and cannot
+   * collide on the unique key. Without the tag, two near-identical NFP rows
+   * read as a rendering bug rather than the decision they are.
+   */
+  source: string;
 }
 
 export const IMPACT_ORDER: Record<NewsImpact, number> = {

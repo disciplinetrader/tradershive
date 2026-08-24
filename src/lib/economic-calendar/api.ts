@@ -18,6 +18,7 @@ interface Row {
   actual: string | null;
   forecast: string | null;
   previous: string | null;
+  source: string;
 }
 
 function toEvent(r: Row): EconomicEvent {
@@ -30,6 +31,7 @@ function toEvent(r: Row): EconomicEvent {
     actual: r.actual,
     forecast: r.forecast,
     previous: r.previous,
+    source: r.source,
   };
 }
 
@@ -41,7 +43,7 @@ export async function fetchEconomicEvents(opts: {
 }): Promise<EconomicEvent[]> {
   let q = supabase
     .from("economic_events")
-    .select("id,event_time,currency,title,impact,actual,forecast,previous")
+    .select("id,event_time,currency,title,impact,actual,forecast,previous,source")
     .gte("event_time", new Date(opts.fromMs).toISOString())
     .lte("event_time", new Date(opts.toMs).toISOString())
     .order("event_time", { ascending: true })
