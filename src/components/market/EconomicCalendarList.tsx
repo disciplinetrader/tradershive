@@ -152,6 +152,26 @@ export function EconomicCalendarList() {
 
   const todayKey = useMemo(() => dayKey(Date.now(), timezone), [timezone]);
 
+  /**
+   * How many events each level holds in the loaded window.
+   *
+   * Counted over the UNFILTERED fetch, not over what is currently shown, so a
+   * level reports the same number whether or not its chip is on — otherwise
+   * every count but the active ones would read 0 and the number would be
+   * useless for the decision it exists to inform.
+   *
+   * That decision: turning Low on is otherwise blind. It adds ~3 events some
+   * weeks and ~48 others, and the difference between "a couple more rows" and
+   * "the page is now mostly noise" should be visible before the click, not
+   * after it. No extra round trip — this is a pass over data already held.
+   */
+  const counts = useMemo(() => {
+    if (!data) return null;
+    const c: Record<NewsImpact, number> = { high: 0, medium: 0, low: 0, holiday: 0 };
+    for (const e of data) c[e.impact] += 1;
+    return c;
+  }, [data]);
+
   const days = useMemo(() => {
     const visible = (data ?? []).filter((e) => impacts.includes(e.impact));
     const buckets = new Map<string, EconomicEvent[]>();
@@ -192,6 +212,13 @@ export function EconomicCalendarList() {
           >
             <ImpactDots impact={i.id} />
             <span className="ml-1.5">{i.label}</span>
+            {/* Quiet on purpose: smaller, dimmed and tabular so the numbers
+                line up as a column the eye can compare, without competing
+                with the label for attention. Absent entirely while loading —
+                a placeholder 0 would read as "this level is empty". */}
+            {counts ? (
+              <span className="ml-1 text-[10px] tabular-nums opacity-60">{counts[i.id]}</span>
+            ) : null}
           </Button>
         ))}
         <span className="ml-auto text-xs text-muted-foreground">

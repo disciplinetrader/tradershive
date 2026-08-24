@@ -34,11 +34,14 @@ survives the session that wrote them.
 | `historical-sync/hs-hd3-repair.sql` | ⏳ HD-3 — one-time front-edge repair, no-op once clean |
 | `historical-sync/hs-rollback.sql` | unschedule |
 | `economic-calendar-raw-payload.sql` | ✅ applied 2026-08-24 — `economic_events.raw_payload`; column verified live |
-| `economic-calendar/ec-1-xoomar-rows.sql` | ⏳ EC-1 — Xoomar rows landing; expect ~22, non-zero `with_actual` |
-| `economic-calendar/ec-2-filtered.sql` | ⏳ EC-1 — `filtered` per run from `net._http_response`; expect ~36 of 58 |
-| `economic-calendar/ec-3-lookahead.sql` | ⏳ EC-1 — look-ahead spot-check; **empty means the filter holds** |
-| `economic-calendar/ec-4-trigger-fire.sql` | ⏳ fires the hook once; reads the secret from `cron.job`, no substitution |
-| `economic-calendar/ec-5-trigger-read.sql` | ⏳ reads the body back; run ~35 s after ec-4 |
+| `economic-calendar/ec-1-xoomar-rows.sql` | ✅ run 2026-08-24 post-fix — 14 rows, 9 with actual, 5 without, 14 with payload, 2026-06-05..2026-10-02. (First run, pre-fix, returned 0: the 90-day window had not yet synced — superseded) |
+| `economic-calendar/ec-2-filtered.sql` | ◐ run 2026-08-24 — empty, pre-trigger. `net._http_response` is TTL-pruned, so run it soon after a sync |
+| `economic-calendar/ec-3-lookahead.sql` | ✅ run 2026-08-24 post-fix — empty, and NOT vacuous: the same sync reported `filtered: 9`, so 9 look-ahead records were actively refused and none reached the table. **This is the pass condition.** (First run was empty over 0 rows and proved nothing — superseded, kept because "empty because nothing was checked" and "empty because the filter held" look identical and are not) |
+| `economic-calendar/ec-4-trigger-fire.sql` | ✅ run 2026-08-24 — fired, request_id 86212; secret read from `cron.job`, no substitution |
+| `economic-calendar/ec-5-trigger-read.sql` | ✅ run 2026-08-24 — returned row 86212; confirmed the `xoomar` key, i.e. the deploy is live |
+| `historical-sync/hs-hd4-errors.sql` | ⏳ HD-4 — failure classes for cron/cron:backfill, last 24h |
+| `historical-sync/hs-hd4-verify-jobs.sql` | ⏳ HD-4 — job health, last 24h |
+| `historical-sync/hs-hd4-verify-logs.sql` | ⏳ HD-4 — sync logs, last 2h; joins `historical_import_jobs` for `triggered_by` |
 
 **Tracking an unapplied migration.** A new table goes in
 `scripts/pending-tables.json` between writing the migration and applying it.

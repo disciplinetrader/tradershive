@@ -62,6 +62,20 @@
 > | `fetched` | **14** | releases kept |
 > | `withActual` | **9** | of those, already published |
 >
+> **CONFIRMED LIVE end-to-end — the sync at 2026-08-24 12:37 UTC reported
+> `filtered: 9`, `fetched: 14`, `withActual: 9`, matching the pre-deploy API
+> measurement above exactly.** `ec-1-xoomar-rows.sql` then found 14 rows in
+> `economic_events` with 9 carrying an `actual`, and `ec-3-lookahead.sql`
+> returned empty — empty against a run that had actively refused 9 look-ahead
+> records, not against an empty table.
+>
+> Both facts are kept deliberately: predicted from the API, then observed in
+> production. That pairing is what makes the `filtered: 0` alarm below
+> trustworthy rather than theoretical — the signal is known to fire on real
+> data, so a zero means something changed rather than meaning the check was
+> never exercised. An expectation that has only ever been derived, never seen,
+> is the same shape of non-evidence as the vacuous first `ec-3` run.
+>
 > The absolute numbers slide as the window moves, so compare the *structure*,
 > not the integers. Roughly 4–6 refusals accrue per month-start spanned, giving
 > **~9–18 expected at a 90-day window**.
