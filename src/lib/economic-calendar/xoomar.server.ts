@@ -90,8 +90,29 @@ const ENDPOINT = "https://xoomar.com/api/markets/calendar";
  * Backwards because `actual` is null until the release fires and is filled in
  * afterwards — re-reading recent days is how an outcome reaches us at all.
  * Forwards to accumulate the schedule ahead of the session that needs it.
+ *
+ * ── Why 90 days back and not 7 ─────────────────────────────────────────────
+ *
+ * This was 7, which is below this feed's event spacing and produced a run that
+ * looked broken while behaving correctly. Measured 2026-08-24: the previous two
+ * US releases were 2026-08-07 and 2026-08-12, i.e. 17 and 12 days earlier, so a
+ * 7-day lookback stopped at 2026-08-17 and landed in the gap AFTER both. The
+ * window held five unreleased events, `withActual` was 0, and `filtered` was 0
+ * — all arithmetically correct, all evidence of nothing.
+ *
+ * 90 is chosen to sit far above the threshold rather than just past it. The
+ * measured minimums are ~17 days to catch the last release and ~54 to reach a
+ * month-start the look-ahead family occupies, but those are today's spacing;
+ * a constant tuned to them silently degrades the first time a release calendar
+ * shifts. 90 always spans two or three month-starts and several published
+ * releases. The cost is one request per run against a sparse feed with
+ * idempotent upserts, so re-reading old events is free.
+ *
+ * DAYS_FORWARD stays 45: at the 2026-08-24 measurement the furthest scheduled
+ * event was 2026-10-02 and the window reached 2026-10-08, so it already covers
+ * everything the provider publishes ahead.
  */
-const DAYS_BACK = 7;
+const DAYS_BACK = 90;
 const DAYS_FORWARD = 45;
 
 /** All three publishers are US federal agencies. */
@@ -282,8 +303,12 @@ export interface XoomarSyncResult {
   warnings: string[];
   /** Look-ahead and unrecognised records refused before the write. */
   filtered: number;
-  windowFrom: string | null;
-  windowTo: string | null;
+  /** The window ASKED for, as sent — `yyyy-MM-dd`. Diagnoses a bad query. */
+  requestedFrom: string;
+  requestedTo: string;
+  /** The span actually RETURNED, ISO. Shows real coverage; null when empty. */
+  earliestEvent: string | null;
+  latestEvent: string | null;
   /**
    * Rows carrying a published outcome — the number that justifies this
    * provider existing, since ForexFactory's equivalent is structurally always
@@ -336,8 +361,17 @@ export async function syncXoomarCalendar(now: Date = new Date()): Promise<Xoomar
     errors,
     warnings,
     filtered,
-    windowFrom: times[0] ?? null,
-    windowTo: times[times.length - 1] ?? null,
+    // What we ASKED for, verbatim, and separately what came BACK. These used to
+    // be one pair reporting the returned span under a name that reads like the
+    // request, which on 2026-08-24 made a correctly-formed query look
+    // misconfigured: the response said the window began 2026-08-26, two days in
+    // the future, when the request had correctly asked from 2026-08-17 and the
+    // provider simply had nothing earlier. Diagnosing that cost a round trip
+    // the fields existed to prevent.
+    requestedFrom: from,
+    requestedTo: to,
+    earliestEvent: times[0] ?? null,
+    latestEvent: times[times.length - 1] ?? null,
     withActual: payload.filter((r) => r.actual != null).length,
   };
 }

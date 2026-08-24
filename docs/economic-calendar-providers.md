@@ -36,9 +36,48 @@
 > mode is therefore *missing events*, never wrong ones. **But `periodLabel` is
 > a cosmetic field Xoomar can change without notice, and the day they do, this
 > source goes quiet rather than loud.** So unlike ForexFactory, this one needs
-> its sync log watched: a sudden drop in Xoomar rows, or `filtered` rising
-> toward the total, means the label format moved and `classify()` needs a new
-> shape — not that the calendar went empty.
+> its sync log watched.
+>
+> ### What to watch — CORRECTED 2026-08-24, the first version was wrong
+>
+> The original guidance here said to watch for `filtered` **rising** toward the
+> fetched total. That was wrong in a way worth recording, because it read
+> healthy while proving nothing.
+>
+> The first live run returned `filtered: 0`, which under that rule looked
+> perfect. It meant the opposite: `DAYS_BACK` was 7, and **the look-ahead
+> family only exists at month-starts, the most recent of which was 54 days
+> back**, so no refusable record was ever inside the window. The filter had not
+> passed — it had never run. A signal that cannot fire is not a green light.
+>
+> `DAYS_BACK` is now 90, which always spans two or three month-starts, so
+> `filtered` is a live signal rather than a structural zero.
+>
+> **Baseline, measured 2026-08-24 against `from=2026-05-26&to=2026-10-08`:**
+>
+> | field | value | meaning |
+> |---|---|---|
+> | records returned by the API | 23 | |
+> | `filtered` | **9** | look-ahead records refused |
+> | `fetched` | **14** | releases kept |
+> | `withActual` | **9** | of those, already published |
+>
+> The absolute numbers slide as the window moves, so compare the *structure*,
+> not the integers. Roughly 4–6 refusals accrue per month-start spanned, giving
+> **~9–18 expected at a 90-day window**.
+>
+> - **`filtered: 0`** — now an alarm, not a pass. A 90-day window always
+>   contains month-starts, so zero refusals means the period-start family
+>   stopped matching `^\d{4}-\d{2}$`, i.e. the label format moved.
+> - **`filtered` climbing toward the API's total, with `fetched` collapsing** —
+>   the release-shaped labels stopped matching. Same root cause, other side.
+> - **`fetched` healthy but `withActual` at 0** — the window drifted forward off
+>   the released events. Check `requestedFrom` before suspecting the provider.
+> - **`requestedFrom` / `requestedTo`** report the window ASKED for;
+>   `earliestEvent` / `latestEvent` report what came BACK. Read the first pair
+>   to diagnose a bad query and the second for real coverage. They were one
+>   conflated pair until 2026-08-24, which is what made a correct request look
+>   broken.
 >
 > **(b) `scheduledAt` is an hour early at one DST boundary.** Timestamps are
 > genuine UTC and DST-aware — 21 of 22 release records land exactly on 08:30 ET
