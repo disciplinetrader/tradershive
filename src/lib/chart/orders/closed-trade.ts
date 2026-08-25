@@ -23,7 +23,7 @@
  */
 
 import { resultOf, type TradeResult } from "@/lib/journal/derive";
-import { closureAggregate } from "./position-manager";
+import { closureAggregate, stopDistance } from "./position-manager";
 import type {
   CloseReason, ExecutionSource, OrderDirection, OrderType, PositionOrder,
 } from "./model";
@@ -204,7 +204,11 @@ export function buildClosedTrade(
 
   const d = agg
     ? (() => {
-        const riskAmount = Math.abs((order.riskBasis ?? Math.abs(fillPrice - initialStop))) * agg.quantity;
+        // Durable record: a fictional basis written here is unrecoverable
+        // without rewriting booked history. `stopDistance` returns null with no
+        // stop, and 0 is this file's existing "no basis" value.
+        const riskAmount =
+          Math.abs(order.riskBasis ?? (stopDistance(fillPrice, initialStop) ?? 0)) * agg.quantity;
         const fees = PHASE4_FEES;
         const grossPnl = agg.realizedPnl;
         const netPnl = grossPnl - fees;

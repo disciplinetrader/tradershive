@@ -383,7 +383,11 @@ export function StudioTradeLayer({ adapter, tick, decimals, armed, draft, onDraf
                   <span className="font-semibold">{isLong ? "LONG" : "SHORT"}</span>
                   <span>{qty ? qty.toFixed(2) : "—"}</span>
                   <span className={pnl >= 0 ? "text-success" : "text-danger"}>{money(pnl)}</span>
-                  <span className="text-muted-foreground">{r.toFixed(2)}R</span>
+                  {/* No stop means no risk to measure against, so there is no
+                      R — not "0.00R", which reads as a real (flat) result. */}
+                  <span className="text-muted-foreground">
+                    {Number.isFinite(order.stop) ? `${r.toFixed(2)}R` : "—"}
+                  </span>
                   {live ? (
                     <>
                       <LineAction label="Move stop to break-even" onClick={() => breakEven(order.id)}>

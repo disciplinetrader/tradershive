@@ -69,8 +69,30 @@ export function remainingQuantityOf(order: PositionOrder): number {
 export function riskBasisOf(order: PositionOrder): number {
   if (order.riskBasis && order.riskBasis > 0) return order.riskBasis;
   const fill = order.fillPrice ?? order.entry;
-  const stop = order.initialStop ?? order.stop;
-  return Math.abs(fill - stop);
+  return stopDistance(fill, order.initialStop ?? order.stop) ?? 0;
+}
+
+/**
+ * Distance from a fill to a stop, or NULL when there is no usable stop.
+ *
+ * The one place this subtraction is allowed to happen. Written once and shared
+ * because the same coercion had already been made three times independently:
+ * `Math.abs(fill - stop)` with an absent stop does not throw and does not
+ * produce NaN — `fill - null` is `fill - 0`, so the "risk distance" comes back
+ * as the ENTIRE FILL PRICE. Measured: a stopless position at 63,000 reported a
+ * risk basis of 63000, which is large, finite and completely fictional. Every
+ * R-multiple derived from it is then a small, plausible-looking, wrong number.
+ *
+ * That is worse than a crash: it reaches the position label, the blotter and
+ * the durable closed-trade record looking like a real measurement. Same family
+ * as the `exitFor` bug that closed a targetless long at price 0.
+ *
+ * Callers decide what absent means for them — 0 where the existing convention
+ * is already "0 means no basis", null where a display needs to say so.
+ */
+export function stopDistance(fill: number, stop: number | null | undefined): number | null {
+  if (!Number.isFinite(fill) || !Number.isFinite(stop as number)) return null;
+  return Math.abs(fill - (stop as number));
 }
 
 /** Total account-currency risk the position was originally sized against. */
@@ -131,7 +153,10 @@ export function openExecution(order: PositionOrder, now = Date.now()): PositionO
   if (order.executions?.some((e) => e.kind === "open")) return order;
   const qty = effectiveQuantity(order);
   const fill = order.fillPrice ?? order.entry;
-  const basis = Math.abs(fill - (order.initialStop ?? order.stop));
+  // Seeded ONCE at fill time and never re-derived, so a fictional basis here is
+  // baked into the position for its whole life. `?? 0` lands on the existing
+  // `basis > 0` guard below, which stores `undefined` rather than a fake number.
+  const basis = stopDistance(fill, order.initialStop ?? order.stop) ?? 0;
   const e = exec(order, "open", { quantity: qty, price: fill, remainingQuantity: qty, time: now });
   return {
     ...order,
