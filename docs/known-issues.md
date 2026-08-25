@@ -2448,3 +2448,67 @@ Worth auditing the other icon-only controls in the same bar in the same pass —
 step, step-candle and skip (`PlaybackControls.tsx:97-120`) are also unlabelled,
 though those are stateless actions and so carry only the accessibility half of
 this problem, not the confusion half.
+
+---
+
+## RS-2 — Replay Studio commits an order before the trader has placed its levels
+
+**Area:** Replay Studio · chart trading · **Found:** 2026-08-25 ·
+**Status:** open — **scoped, deliberately not started.** Feature work, not a
+defect fix. The constraint analysis below is done; do not redo it.
+
+Studio has no pre-commit stage. `onLayerClick` computes a bracket and commits
+in the same gesture:
+
+```ts
+const levels = bracketFor(armed.direction, clicked, { stopFraction, rr });
+placeOrderAt(armed.direction, levels, { size: sizeForRisk(levels.entry, levels.stop) });
+```
+
+`placeOrderAt` (`studio/context.tsx:404-436`) calls `placeOrEditOrder` straight
+away, so the order exists the instant the chart is clicked. `bracketFor` is
+called with a hardcoded `{ stopFraction: 0.002, rr: 2 }` at all three sites
+(`StudioChart.tsx:122`, `:482`, `:493`), which makes 2R a recommendation the
+tool issues on the trader's behalf. `StudioTradeLayer` draws lines only for
+already-committed rows; while `armed` it sets a crosshair and waits.
+
+Stop and target ARE draggable once the order exists (`modifyLevels`,
+`modifyPendingLevels`). What is missing is placing them BEFORE committing.
+
+### Scoped approach — arm, draw a draft, position, then commit
+
+The draggable machinery already exists and is reusable as-is: `OrderLine`,
+`OrderLabel`, `startDrag`, and the `modifyLevels` path in `StudioTradeLayer`.
+They are currently wired only to committed rows. The work is an uncommitted
+draft in that layer plus a confirm step — not new rendering primitives.
+
+### The constraint that looks like a blocker and is not
+
+`PositionOrder.stop` / `.target` are non-nullable (`orders/model.ts:51-64`),
+`validateOrder` rejects anything else outright — *"Entry, stop and target must
+all be positive prices"* (`:255-257`) — and `sizeForRisk(entry, stop)` derives
+position size from the stop DISTANCE (`studio/context.tsx:393-401`), returning
+a meaningless `1` unit when there is none.
+
+**None of that blocks drag-then-commit.** In that flow the trader places the
+stop before the order is created, so a stop exists at commit time: sizing has
+its input and validation passes. The model needs no change.
+
+What those constraints DO block is committing an order with no stop at all.
+That is a different feature, materially more expensive — nullable model fields,
+a validation change, and a decision about what risk-based sizing even means
+without a stop — and it is not required here.
+
+### Related, already done
+
+`TradePlanner` (live/paper workspace, not Studio) was moved to exactly this
+model on 2026-08-25: levels start null and the trader drags to place them. It
+was the cheaper half because `PlanInputs`/`computePlan` already accepted null
+levels, so only the component's own state type and render gating needed
+changing. Studio is the harder half only because it commits immediately, not
+because its model is less capable.
+
+Worth reading that change first — the UX question it had to answer applies here
+too: an unplaced level has no coordinate, so it has no handle, so there is
+nothing to drag. It parks the handle on the entry line, at zero distance, which
+keeps it grabbable while proposing no ratio.

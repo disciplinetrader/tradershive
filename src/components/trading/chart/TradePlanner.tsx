@@ -24,12 +24,27 @@ import { computePlan, fmtPrice } from "@/lib/trading/plan-math";
 import { cn } from "@/lib/utils";
 
 type Handle = "entry" | "sl" | "tp";
+/**
+ * `sl` and `tp` are null until the trader has actually placed them.
+ *
+ * They used to be seeded to a 20-pip / 40-pip bracket on the click that placed
+ * entry, which is a 2R recommendation the tool was making on the trader's
+ * behalf — and the number was arbitrary, not derived from volatility or from
+ * any setting. Starting unset means the tool measures a plan instead of
+ * proposing one. `PlanInputs`/`computePlan` already accept null on both, so
+ * the maths needed no change to support this.
+ */
 type Plan = {
   side: TradeSide;
   entry: number;
-  sl: number;
-  tp: number;
+  sl: number | null;
+  tp: number | null;
 };
+
+/** A plan whose levels the trader has finished placing. */
+type PlacedPlan = Plan & { sl: number; tp: number };
+
+const isPlaced = (p: Plan): p is PlacedPlan => p.sl != null && p.tp != null;
 
 interface Props {
   adapter: ChartAdapter | null;
@@ -40,8 +55,13 @@ interface Props {
   leverage: number;
   defaultRiskPct?: number;
   livePrice?: number;
-  /** Called when user clicks "Send to Order Panel". Parent opens the trade. */
-  onSend?: (p: Plan & { lot: number }) => void;
+  /**
+   * Called when user clicks "Send to Order Panel". Parent opens the trade.
+   *
+   * Takes a PLACED plan: the button is disabled until both levels exist, so
+   * the parent keeps receiving concrete numbers and needs no null handling.
+   */
+  onSend?: (p: PlacedPlan & { lot: number }) => void;
 }
 
 export function TradePlanner({
@@ -82,12 +102,8 @@ export function TradePlanner({
       const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
       const price = adapter.yToPrice(e.clientY - rect.top);
       if (price == null || !Number.isFinite(price)) return;
-      // Default SL / TP: 20 pips risk, 40 pips reward (2R)
-      const risk = sym.pipSize * 20;
-      const reward = sym.pipSize * 40;
-      const sl = side === "long" ? price - risk : price + risk;
-      const tp = side === "long" ? price + reward : price - reward;
-      setPlan({ side, entry: price, sl, tp });
+      // Entry only. SL and TP are the trader's to place — see `Plan`.
+      setPlan({ side, entry: price, sl: null, tp: null });
     },
     [active, plan, adapter, sym, side],
   );
@@ -103,9 +119,16 @@ export function TradePlanner({
       setPlan((p) => {
         if (!p) return p;
         if (h === "entry") {
-          const slDelta = p.sl - p.entry;
-          const tpDelta = p.tp - p.entry;
-          return { ...p, entry: price, sl: price + slDelta, tp: price + tpDelta };
+          // Carry only the levels that exist; an unplaced one stays unplaced
+          // rather than being conjured into existence by moving entry.
+          const slDelta = p.sl != null ? p.sl - p.entry : null;
+          const tpDelta = p.tp != null ? p.tp - p.entry : null;
+          return {
+            ...p,
+            entry: price,
+            sl: slDelta != null ? price + slDelta : null,
+            tp: tpDelta != null ? price + tpDelta : null,
+          };
         }
         if (h === "sl") return { ...p, sl: price };
         return { ...p, tp: price };
@@ -142,8 +165,8 @@ export function TradePlanner({
 
   if (!active || !sym) return null;
   const entryY = plan && adapter ? adapter.priceToY(plan.entry) : null;
-  const slY = plan && adapter ? adapter.priceToY(plan.sl) : null;
-  const tpY = plan && adapter ? adapter.priceToY(plan.tp) : null;
+  const slY = plan?.sl != null && adapter ? adapter.priceToY(plan.sl) : null;
+  const tpY = plan?.tp != null && adapter ? adapter.priceToY(plan.tp) : null;
 
   const flipSide = () => {
     setSide((s) => (s === "long" ? "short" : "long"));
@@ -151,14 +174,16 @@ export function TradePlanner({
       setPlan((p) => {
         if (!p) return p;
         const newSide: TradeSide = p.side === "long" ? "short" : "long";
-        // Mirror SL/TP so risk/reward stays sensible
-        const slDist = Math.abs(p.entry - p.sl);
-        const tpDist = Math.abs(p.entry - p.tp);
+        // Mirror whichever levels exist so risk/reward stays sensible.
+        // Flipping an unplaced level would place it, which is the seeding
+        // behaviour this tool no longer does.
+        const slDist = p.sl != null ? Math.abs(p.entry - p.sl) : null;
+        const tpDist = p.tp != null ? Math.abs(p.entry - p.tp) : null;
         return {
           ...p,
           side: newSide,
-          sl: newSide === "long" ? p.entry - slDist : p.entry + slDist,
-          tp: newSide === "long" ? p.entry + tpDist : p.entry - tpDist,
+          sl: slDist == null ? null : newSide === "long" ? p.entry - slDist : p.entry + slDist,
+          tp: tpDist == null ? null : newSide === "long" ? p.entry + tpDist : p.entry - tpDist,
         };
       });
     }
@@ -193,29 +218,54 @@ export function TradePlanner({
       </AnimatePresence>
 
       {/* Zones + handles */}
-      {plan && entryY != null && slY != null && tpY != null && (
+      {plan && entryY != null && (
         <>
-          {/* Reward zone (entry -> tp) */}
-          <div
-            className="absolute left-0 right-16 bg-success/10"
-            style={{ top: Math.min(entryY, tpY), height: Math.abs(tpY - entryY) }}
-          />
-          {/* Risk zone (entry -> sl) */}
-          <div
-            className="absolute left-0 right-16 bg-danger/10"
-            style={{ top: Math.min(entryY, slY), height: Math.abs(slY - entryY) }}
-          />
+          {/* Zones exist only where a level does — an unplaced SL or TP shades
+              nothing, because there is no risk or reward to show yet. */}
+          {tpY != null ? (
+            <div
+              className="absolute left-0 right-16 bg-success/10"
+              style={{ top: Math.min(entryY, tpY), height: Math.abs(tpY - entryY) }}
+            />
+          ) : null}
+          {slY != null ? (
+            <div
+              className="absolute left-0 right-16 bg-danger/10"
+              style={{ top: Math.min(entryY, slY), height: Math.abs(slY - entryY) }}
+            />
+          ) : null}
           {(["entry", "sl", "tp"] as Handle[]).map((h) => {
-            const y = h === "entry" ? entryY : h === "sl" ? slY : tpY;
+            const placedY = h === "entry" ? entryY : h === "sl" ? slY : tpY;
             const price = h === "entry" ? plan.entry : h === "sl" ? plan.sl : plan.tp;
             const color = h === "entry" ? "#3b82f6" : h === "sl" ? "#ef4444" : "#22c55e";
             const label = h === "entry" ? "ENTRY" : h === "sl" ? "SL" : "TP";
+            // An unplaced level parks ON the entry line: zero distance, so it
+            // proposes no ratio, while staying grabbable. Rendering nothing
+            // would be the honest depiction of "unset" and would also leave
+            // the trader no way to set it — the handle IS the control.
+            const unplaced = placedY == null;
+            const y = placedY ?? entryY;
             return (
               <div key={h} className="absolute left-0 right-16 flex items-center" style={{ top: y - 10, height: 20 }}>
-                <div className="h-px flex-1" style={{ background: color, boxShadow: `0 0 6px ${color}` }} />
+                {/* A dashed rail reads as "not placed yet" without inventing a level. */}
                 <div
-                  className="pointer-events-auto ml-2 flex select-none items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-bold uppercase text-white"
-                  style={{ background: color, borderColor: color, cursor: "ns-resize" }}
+                  className={cn("flex-1", unplaced ? "border-t border-dashed" : "h-px")}
+                  style={unplaced
+                    ? { borderColor: color, opacity: 0.5 }
+                    : { background: color, boxShadow: `0 0 6px ${color}` }}
+                />
+                <div
+                  className={cn(
+                    "pointer-events-auto ml-2 flex select-none items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-bold uppercase text-white",
+                    unplaced && "opacity-60",
+                  )}
+                  style={{
+                    background: color,
+                    borderColor: color,
+                    borderStyle: unplaced ? "dashed" : "solid",
+                    cursor: "ns-resize",
+                  }}
+                  title={unplaced ? `Drag to place ${label}` : undefined}
                   onPointerDown={(e) => {
                     e.stopPropagation();
                     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
@@ -223,7 +273,7 @@ export function TradePlanner({
                     force((n) => n + 1);
                   }}
                 >
-                  {label} · {fmtPrice(sym, price)}
+                  {label} · {price != null ? fmtPrice(sym, price) : "drag to place"}
                 </div>
               </div>
             );
@@ -232,7 +282,7 @@ export function TradePlanner({
       )}
 
       {/* Floating stats panel */}
-      {plan && result && (
+      {plan && result && (() => { const placed = isPlaced(plan); return (
         <div className="pointer-events-auto absolute right-4 top-4 z-30 w-64 rounded-lg border border-border/60 bg-background/95 p-3 text-xs shadow-xl backdrop-blur">
           <div className="mb-2 flex items-center justify-between">
             <div className="flex items-center gap-1.5 font-semibold">
@@ -260,7 +310,14 @@ export function TradePlanner({
           </div>
 
 
-          <StatRow label="RR" value={`1 : ${result.rr.toFixed(2)}`} accent={result.rr >= 2 ? "green" : result.rr >= 1 ? "amber" : "red"} />
+          {/* An unplaced level yields rr 0, and "1 : 0.00" reads as a real
+              (terrible) ratio rather than as "not set yet". Say nothing
+              instead of saying something false. */}
+          <StatRow
+            label="RR"
+            value={placed ? `1 : ${result.rr.toFixed(2)}` : "—"}
+            accent={!placed ? undefined : result.rr >= 2 ? "green" : result.rr >= 1 ? "amber" : "red"}
+          />
           <StatRow label="Pips risk / reward" value={`${result.pipsRisk.toFixed(1)} / ${result.pipsReward.toFixed(1)}`} />
           <StatRow label="Points" value={`${result.pointsRisk.toFixed(sym.decimals)} / ${result.pointsReward.toFixed(sym.decimals)}`} />
           <StatRow label="Lot size" value={result.lot.toFixed(2)} />
@@ -271,15 +328,20 @@ export function TradePlanner({
           <StatRow label="Margin" value={`$${result.margin.toFixed(2)}`} />
           {livePrice != null && <StatRow label="Live" value={fmtPrice(sym, livePrice)} muted />}
 
+          {/* Nothing is sendable until BOTH levels are placed. `rr <= 0`
+              already covered this incidentally — an unset SL gives rr 0 — but
+              the intent is now explicit rather than a side effect, and the
+              narrowing is what lets `onSend` take a fully-placed plan. */}
           <button
-            onClick={() => onSend?.({ ...plan, lot: result.lot })}
-            disabled={result.lot <= 0 || result.rr <= 0}
+            onClick={() => { if (placed) onSend?.({ ...plan, lot: result.lot }); }}
+            disabled={!placed || result.lot <= 0 || result.rr <= 0}
+            title={placed ? undefined : "Place a stop loss and a take profit first"}
             className="mt-2 w-full rounded-md bg-primary py-1.5 text-[11px] font-bold uppercase text-primary-foreground disabled:opacity-40"
           >
             Send to order panel
           </button>
         </div>
-      )}
+      ); })()}
     </div>
   );
 }
