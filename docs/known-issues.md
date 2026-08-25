@@ -2335,3 +2335,63 @@ answer for an FX-session vocabulary, but it reads as "no session" on an asset
 that trades continuously. That is a naming decision, not an implementation one,
 and it should be settled before the rule changes — the answer determines whether
 weekend gating applies to all markets or only to FX.
+
+---
+
+## EC-10 — `DrawingLayer` projects anchors through the exact-match `timeToX`
+
+**Area:** Chart drawings · projection · **Found:** 2026-08-25 ·
+**Status:** open — out of scope for the news-marker ticket that found it
+
+`DrawingLayer.tsx:69` places a drawing's anchor with:
+
+```ts
+const x = adapter.timeToX(a.t);
+```
+
+`ChartAdapter.timeToX` is `chart.timeScale().timeToCoordinate(...)`
+(`adapters/lightweight.ts`), which resolves the time with
+`timeToIndex(time, /* findNearest */ false)`. Upstream that returns **null for
+any timestamp that is not a bar's own `time`** — non-exact matches hit
+`return findNearest ? index : null` (lightweight-charts 5.x,
+`dist/lightweight-charts.development.mjs:6037-6051`). It is exact-match only.
+
+So an anchor whose timestamp does not land exactly on a bar open projects to
+`null`, and whatever the caller does with a null x — skip the anchor, collapse
+it to 0 — is wrong.
+
+**This is the same root cause as the news-marker popover that could not be
+clicked**, fixed 2026-08-25 in `StudioNewsLayer`: the markers were visible
+because the renderer snaps them to the nearest bar, while the overlay's
+hit-targets vanished because `timeToX` did not. That fix moved the layer onto
+`getCoords().x`, the adapter's interpolating projection
+(`timeToLogical` → `logicalToCoordinate`), which handles between-bar times and
+extrapolates past the last bar.
+
+### Why it is usually invisible
+
+Drawings are normally created BY a click on the chart and snapped to bar times,
+so `a.t` usually is a bar open and the exact-match path happens to work. It
+should be expected to fail when:
+
+- the timeframe fold changes the bar grid under an existing drawing — a 1H
+  anchor at 13:00 is not a bar open once the pane folds to 4H;
+- a drawing is imported, restored from a snapshot, or copied between panes on
+  different folds;
+- an anchor is placed programmatically from an event or trade timestamp rather
+  than from a click.
+
+The fold case is the one to worry about: it is reachable from the timeframe
+buttons in normal use, and it silently degrades saved annotations.
+
+### Fixing it
+
+Swap to `getCoords()?.x(a.t)` and handle the `getCoords` absence (it is
+optional on the interface). Do NOT simply flip `timeToX` to `findNearest: true`
+— `timeToX` is a documented exact-match primitive and other callers may be
+relying on the null to mean "not a bar"; widening it changes behaviour under
+every caller at once.
+
+Worth checking in the same pass whether any other overlay reaches for
+`timeToX`. At the time of writing the only consumers are `DrawingLayer` and the
+now-fixed `StudioNewsLayer`.

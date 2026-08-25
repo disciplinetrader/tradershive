@@ -46,8 +46,20 @@ export interface ChartAdapter {
   /** Coordinate transforms — used by DOM overlays (order lines, drawings). */
   priceToY(price: number): number | null;
   yToPrice(y: number): number | null;
+  /**
+   * EXACT-MATCH projection: null unless `timeMs` is a bar's own timestamp.
+   * For an arbitrary time (a news release, a drawing anchor between bars) use
+   * `getCoords().x`, which interpolates. See EC-10 in docs/known-issues.md.
+   */
   timeToX(timeMs: number): number | null;
   xToTime(x: number): number | null;
+
+  /**
+   * Layout inputs the renderer lays its own series markers out with, so a DOM
+   * overlay can place hit-targets exactly where those markers are drawn.
+   * Null when the renderer draws no such markers.
+   */
+  markerLayout?(): { barSpacing: number; fontSize: number } | null;
 
   /** Screenshot the current viewport as PNG. */
   screenshot(): Promise<Blob | null>;

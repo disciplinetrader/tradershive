@@ -577,6 +577,10 @@ export function StudioChart({
             <StudioNewsLayer
               adapter={adapter}
               events={visibleNews}
+              /* The SAME folded array pushed to the series — markers snap to
+                 these bars, so the layer must resolve against them and not the
+                 base-timeframe tape. */
+              candles={candles}
               tick={`${view?.transport.cursor ?? 0}:${displayTf}:${chartBounds.width}x${chartBounds.height}`}
               chartTimezone={settings.timezone}
             />

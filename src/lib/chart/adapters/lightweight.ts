@@ -586,6 +586,17 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
     kind: "lightweight-charts",
     setCandles(candles) {
       resizeToContainer();
+      // ── TEMPORARY · fold-freeze instrumentation ────────────────────────
+      // Diagnostic only, no behaviour change. Remove once the 2H fold freeze
+      // is reproduced with real numbers. Opt in from the console with
+      //   localStorage.chartFoldDebug = "1"
+      // so a normal session is not spammed. Logs the fold tick in full, then
+      // one line per tick tracking whether the newest bar is still inside the
+      // visible range — which is what decides whether the renderer follows new
+      // bars or pins the viewport and lets them append off-screen.
+      const foldDebug = (() => {
+        try { return localStorage.getItem("chartFoldDebug") === "1"; } catch { return false; }
+      })();
 
       // Preserve the visible *time* window across data swaps. Logical indices
       // mean different things on different timeframes, so keeping the raw
@@ -639,6 +650,52 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
         }
       }
 
+
+      if (foldDebug) {
+        const stepChanged = barStep !== prevStep;
+        let range: { from: number; to: number } | null = null;
+        try {
+          const r = ts.getVisibleLogicalRange();
+          range = r ? { from: Number(r.from), to: Number(r.to) } : null;
+        } catch { range = null; }
+        const lastIdx = barTimes.length - 1;
+        if (stepChanged) {
+          // The fold tick. `from`/`to` here are what the restore branch asked
+          // for; `range` is what the renderer actually accepted.
+          const first = barTimes[0];
+          const last = barTimes[lastIdx];
+          const margin = barStep * 20;
+          const clampedFrom = keepFrom != null ? Math.max(keepFrom, first - margin) : null;
+          const clampedTo = clampedFrom != null && keepTo != null
+            ? Math.min(Math.max(keepTo, clampedFrom + barStep * 30), last + margin)
+            : null;
+          console.log("[fold] SWITCH", {
+            prevStepMs: prevStep,
+            barStepMs: barStep,
+            keepFrom: keepFrom != null ? new Date(keepFrom).toISOString() : null,
+            keepTo: keepTo != null ? new Date(keepTo).toISOString() : null,
+            requestedFrom: clampedFrom != null ? timeToLogical(clampedFrom) : null,
+            requestedTo: clampedTo != null ? timeToLogical(clampedTo) : null,
+            appliedRange: range,
+            barTimesLength: barTimes.length,
+            candlesLength: candles.length,
+            lastBarIndex: lastIdx,
+            didInitialFit,
+          });
+        } else if (range) {
+          // Per-tick. `lastBarVisible: false` is the freeze signature: the
+          // renderer compensates the right offset to keep the same bars on
+          // screen, so appended bars render outside the viewport.
+          console.log("[fold] TICK", {
+            rangeFrom: Number(range.from.toFixed(2)),
+            rangeTo: Number(range.to.toFixed(2)),
+            candlesLength: candles.length,
+            lastBarIndex: lastIdx,
+            lastBarVisible: range.from <= lastIdx && lastIdx <= range.to,
+            barsPastRangeEnd: Number((lastIdx - range.to).toFixed(2)),
+          });
+        }
+      }
 
       // Safety: if the primitive lost its host (series rebuilt), re-attach so
       // saved drawings are repainted against the freshly loaded series.
@@ -960,6 +1017,14 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
       }));
       if (!externalMarkers) externalMarkers = createSeriesMarkers(priceSeries, mapped) as any;
       else externalMarkers.setMarkers(mapped);
+    },
+    markerLayout() {
+      try {
+        return {
+          barSpacing: chart.timeScale().options().barSpacing,
+          fontSize: chart.options().layout.fontSize,
+        };
+      } catch { return null; }
     },
     setDrawingsSource(source) {
       drawingsSource = source;
