@@ -35,9 +35,8 @@ import { ChartTextEditor } from "@/components/chart/ChartTextEditor";
 import { ObjectTree } from "@/components/chart/ObjectTree";
 import { useChartDrawings } from "@/components/chart/useChartDrawings";
 
-import { StudioTradeLayer, type ArmedOrder } from "./StudioTradeLayer";
+import { StudioTradeLayer, draftIsComplete, type ArmedOrder, type DraftOrder } from "./StudioTradeLayer";
 import { ChartContextMenu, type ChartOrderIntent } from "@/components/chart/ChartContextMenu";
-import { bracketFor } from "@/lib/replay/chart-trading";
 import { findSymbol } from "@/lib/paper-trading/symbols";
 import { useReplayStudio } from "./context";
 import { useSecondarySymbol } from "./useSecondarySymbol";
@@ -92,6 +91,14 @@ export function StudioChart({
   const isSecondary = !!secondarySymbol;
   const readOnly = compact || isSecondary;
   const [armed, setArmed] = useState<ArmedOrder | null>(null);
+  /**
+   * The order being positioned but not yet placed.
+   *
+   * Owned here rather than in `StudioTradeLayer` so the armed status bar below
+   * can host the commit and cancel controls; the layer renders and drags it.
+   * Only a finished drag propagates up, so this is one update per gesture.
+   */
+  const [draft, setDraft] = useState<DraftOrder | null>(null);
   const [newsOn, setNewsOn] = useState(true);
   const tradingLive = view?.transport.lifecycle !== "completed";
   // The session row's symbol, not the dataset label parsed below: the label
@@ -102,9 +109,15 @@ export function StudioChart({
   );
 
   /**
-   * Turn a right-click intent into an order, through the SAME derivation the
-   * armed click-to-place flow uses (`bracketFor`) and the same submission path
-   * (`placeOrderAt` / `placeMarketOrder`).
+   * Turn a right-click intent into either a market order or a DRAFT, through
+   * the same submission path the armed flow uses.
+   *
+   * Limit and stop intents open a draft the trader positions and confirms —
+   * the same gesture the toolbar's BUY/SELL arming produces, so the two ways
+   * into a resting order cannot mean two different trades. Market intents are
+   * deliberately untouched: they fill instantly, so there is no window in
+   * which to position anything, and handing back a filled position with no
+   * stop would be worse than the bracket they place today. See RS-3.
    *
    * The menu decides WHAT the click means; this decides nothing about order
    * semantics beyond routing. That split is what stops Replay growing a second
@@ -118,21 +131,52 @@ export function StudioChart({
       }
       if (intent.kind === "alert" || intent.kind === "drawing") return;
 
+      // Opens a DRAFT at the clicked price, exactly as the armed flow does.
+      // `bracketFor` used to derive a 2R stop and target here and commit in the
+      // same gesture; its own contract was that the two chart gestures must
+      // agree, so both moved together rather than leaving the menu placing
+      // levels the trader never chose.
       const direction = intent.kind.startsWith("buy") ? "buy" : "sell";
-      const levels = bracketFor(direction, intent.price, { stopFraction: 0.002, rr: 2 });
-      placeOrderAt(direction, levels, { size: sizeForRisk(levels.entry, levels.stop) });
+      setDraft({ direction, entry: intent.price, stop: null, target: null });
+      setArmed({ direction, stopFraction: 0.002, rr: 2 });
     },
-    [placeMarketOrder, placeOrderAt, sizeForRisk],
+    [placeMarketOrder],
   );
 
 
   // Esc always disarms order placement, so the chart never gets stuck armed.
+  // It discards a half-positioned draft with it — the draft is the arming
+  // gesture in progress, so cancelling one without the other would strand
+  // whichever was left.
   useEffect(() => {
-    if (!armed) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setArmed(null); };
+    if (!armed && !draft) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { setArmed(null); setDraft(null); }
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [armed]);
+  }, [armed, draft]);
+
+  /**
+   * Commit the draft.
+   *
+   * Only reachable once both levels are positioned: `validateOrder` requires
+   * entry, stop and target to be positive, and the size comes from the stop
+   * distance. That is why the order model never needed nullable levels — by
+   * this point they are real numbers chosen by the trader.
+   */
+  const commitDraft = useCallback(() => {
+    if (!draftIsComplete(draft)) return;
+    const levels = { entry: draft.entry, stop: draft.stop, target: draft.target };
+    placeOrderAt(draft.direction, levels, { size: sizeForRisk(levels.entry, levels.stop) });
+    setDraft(null);
+    setArmed(null);
+  }, [draft, placeOrderAt, sizeForRisk]);
+
+  const cancelDraft = useCallback(() => {
+    setDraft(null);
+    setArmed(null);
+  }, []);
   const hostRef = useRef<HTMLDivElement | null>(null);
   const chartWrapRef = useRef<HTMLDivElement | null>(null);
   const adapterRef = useRef<ChartAdapter | null>(null);
@@ -610,7 +654,8 @@ export function StudioChart({
               tick={`${view?.transport.cursor ?? 0}:${displayTf}:${chartBounds.width}x${chartBounds.height}`}
               decimals={decimals}
               armed={armed}
-              onPlaced={() => setArmed(null)}
+              draft={draft}
+              onDraftChange={setDraft}
             />
           )}
           {/* Right-click trading. The SAME menu the live workspace mounts —
@@ -631,9 +676,44 @@ export function StudioChart({
               onIntent={onChartIntent}
             />
           )}
-          {armed ? (
+          {/* Status bar for order placement. Three states, because the flow now
+              has three: nothing drafted, drafted but incomplete, ready. */}
+          {draft ? (
+            <div
+              data-testid="draft-status-bar"
+              className="absolute left-1/2 top-3 z-40 flex -translate-x-1/2 items-center gap-2 rounded-full border border-border/60 bg-background/95 px-3 py-1 text-[11px] shadow-lg backdrop-blur"
+            >
+              <span className="font-semibold uppercase">
+                {draft.direction === "buy" ? "Long" : "Short"} draft
+              </span>
+              <span className="text-muted-foreground">
+                {draftIsComplete(draft)
+                  ? `${riskPercent}% risk`
+                  : `Drag ${draft.stop == null ? "STOP" : ""}${draft.stop == null && draft.target == null ? " and " : ""}${draft.target == null ? "TARGET" : ""} into place`}
+              </span>
+              <Button
+                size="sm"
+                className="h-6 px-2 text-[11px]"
+                disabled={!draftIsComplete(draft)}
+                title={draftIsComplete(draft) ? undefined : "Place a stop and a target first"}
+                data-testid="draft-commit"
+                onClick={commitDraft}
+              >
+                Place order
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6 px-2 text-[11px]"
+                data-testid="draft-cancel"
+                onClick={cancelDraft}
+              >
+                Cancel
+              </Button>
+            </div>
+          ) : armed ? (
             <div className="pointer-events-none absolute left-1/2 top-3 z-40 -translate-x-1/2 rounded-full border border-border/60 bg-background/95 px-3 py-1 text-[11px] shadow-lg backdrop-blur">
-              Click the chart to place a {armed.direction === "buy" ? "buy" : "sell"} order · {riskPercent}% risk · Esc to cancel
+              Click the chart to set the {armed.direction === "buy" ? "buy" : "sell"} entry · {riskPercent}% risk · Esc to cancel
             </div>
           ) : null}
           {textEditor ? (

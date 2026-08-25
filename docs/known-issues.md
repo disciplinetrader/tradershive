@@ -2377,70 +2377,6 @@ action, `aria-pressed={playing}` for the state, and a tooltip that states both
 
 ---
 
-## RS-2 — Replay Studio commits an order before the trader has placed its levels
-
-**Area:** Replay Studio · chart trading · **Found:** 2026-08-25 ·
-**Status:** open — **scoped, deliberately not started.** Feature work, not a
-defect fix. The constraint analysis below is done; do not redo it.
-
-Studio has no pre-commit stage. `onLayerClick` computes a bracket and commits
-in the same gesture:
-
-```ts
-const levels = bracketFor(armed.direction, clicked, { stopFraction, rr });
-placeOrderAt(armed.direction, levels, { size: sizeForRisk(levels.entry, levels.stop) });
-```
-
-`placeOrderAt` (`studio/context.tsx:404-436`) calls `placeOrEditOrder` straight
-away, so the order exists the instant the chart is clicked. `bracketFor` is
-called with a hardcoded `{ stopFraction: 0.002, rr: 2 }` at all three sites
-(`StudioChart.tsx:122`, `:482`, `:493`), which makes 2R a recommendation the
-tool issues on the trader's behalf. `StudioTradeLayer` draws lines only for
-already-committed rows; while `armed` it sets a crosshair and waits.
-
-Stop and target ARE draggable once the order exists (`modifyLevels`,
-`modifyPendingLevels`). What is missing is placing them BEFORE committing.
-
-### Scoped approach — arm, draw a draft, position, then commit
-
-The draggable machinery already exists and is reusable as-is: `OrderLine`,
-`OrderLabel`, `startDrag`, and the `modifyLevels` path in `StudioTradeLayer`.
-They are currently wired only to committed rows. The work is an uncommitted
-draft in that layer plus a confirm step — not new rendering primitives.
-
-### The constraint that looks like a blocker and is not
-
-`PositionOrder.stop` / `.target` are non-nullable (`orders/model.ts:51-64`),
-`validateOrder` rejects anything else outright — *"Entry, stop and target must
-all be positive prices"* (`:255-257`) — and `sizeForRisk(entry, stop)` derives
-position size from the stop DISTANCE (`studio/context.tsx:393-401`), returning
-a meaningless `1` unit when there is none.
-
-**None of that blocks drag-then-commit.** In that flow the trader places the
-stop before the order is created, so a stop exists at commit time: sizing has
-its input and validation passes. The model needs no change.
-
-What those constraints DO block is committing an order with no stop at all.
-That is a different feature, materially more expensive — nullable model fields,
-a validation change, and a decision about what risk-based sizing even means
-without a stop — and it is not required here.
-
-### Related, already done
-
-`TradePlanner` (live/paper workspace, not Studio) was moved to exactly this
-model on 2026-08-25: levels start null and the trader drags to place them. It
-was the cheaper half because `PlanInputs`/`computePlan` already accepted null
-levels, so only the component's own state type and render gating needed
-changing. Studio is the harder half only because it commits immediately, not
-because its model is less capable.
-
-Worth reading that change first — the UX question it had to answer applies here
-too: an unplaced level has no coordinate, so it has no handle, so there is
-nothing to drag. It parks the handle on the entry line, at zero distance, which
-keeps it grabbable while proposing no ratio.
-
----
-
 ## EC-10 — WITHDRAWN · the "bug" was in code that never ran
 
 **Area:** Chart drawings · projection · **Found:** 2026-08-25 ·
@@ -2489,6 +2425,52 @@ cannot distinguish "correct" from "never executed" — only running it can.
 for where it is MOUNTED, not just where it is defined. One command, and it would
 have retired this entry before any of the work.
 
-Compare EC-9 and RS-2, which are also unfixed but were verified against running
+Compare EC-9 and RS-1, which are also unfixed but were verified against running
 code — the difference is not the quality of the reading, it is whether anything
 executed it.
+
+---
+
+## RS-3 — `placeMarketOrder` keeps its own hardcoded 2R bracket
+
+**Area:** Replay Studio · chart trading · **Found:** 2026-08-25 ·
+**Status:** open — **deliberately out of scope** of the drag-then-commit work
+that shipped 2026-08-25 for the resting-order paths
+
+A fourth hardcoded-2R site, independent of `bracketFor` and untouched by the
+draft work (`studio/context.tsx:354-355`):
+
+```ts
+const dist = opts.stopDistance ?? Math.max(price * 0.002, 1e-8);
+const target = opts.targetDistance ?? dist * 2;
+```
+
+Reached by the `B` / `S` hotkeys and by the right-click menu's
+"buy market" / "sell market" entries. Every other way of opening an order in
+Studio now starts from levels the trader positioned; this one still ships a
+0.2% stop and a 2R target the tool chose.
+
+### Why it was left
+
+A market order fills instantly, so there is no pre-commit window to drag
+anything in. The obvious symmetry — fill with no stop and no target, let the
+trader drag them on afterwards — is worse, not better: it hands back a LIVE
+position carrying unmanaged risk for as long as it takes to notice and place a
+stop. A flat 2R is a worse recommendation than none, but it is a better
+default than an unprotected position.
+
+### What a fix would have to decide
+
+Not "remove the default" but "what should an express order do instead". Options
+worth weighing, none free:
+
+- a stop derived from recent range (ATR-like) rather than a flat 0.2% — still
+  a recommendation, but one connected to the instrument;
+- fill with a stop and NO target, since an unset target carries no risk while
+  an unset stop does — needs nullable target levels in the order model, which
+  the drag-then-commit work explicitly declined as another ticket's scope;
+- require arming before a market order too, which removes the express path and
+  is probably the wrong trade for a hotkey.
+
+Worth settling alongside whatever decides the wider question of whether Studio
+should ever propose a level.

@@ -16,7 +16,6 @@ import { Scissors, Shield, X } from "lucide-react";
 import type { ChartAdapter } from "@/lib/chart/adapter";
 import type { PositionOrder } from "@/lib/chart/orders/model";
 import { positionMetricsFor } from "@/lib/chart/orders/service";
-import { bracketFor } from "@/lib/replay/chart-trading";
 import {
   AXIS_INSET, DragTooltip, LineAction, OrderLabel, OrderLine,
 } from "@/components/trading/chart/order-line-ui";
@@ -24,7 +23,17 @@ import {
 import { useReplayStudio } from "./context";
 
 type Handle = "stop" | "target" | "entry";
-type DragState = { orderId: string; handle: Handle; kind: "position" | "pending"; price: number };
+
+/**
+ * A drag either edits a LIVE order through the store, or edits the
+ * uncommitted draft, which exists only in React state. The two commit to
+ * completely different places on pointer-up, so they are separate variants
+ * rather than an optional `orderId` — `modifyLevels` needs an order id and a
+ * draft has no order to modify.
+ */
+type DragState =
+  | { on: "order"; orderId: string; handle: Handle; kind: "position" | "pending"; price: number }
+  | { on: "draft"; handle: Handle; price: number };
 
 export interface ArmedOrder {
   direction: "buy" | "sell";
@@ -34,14 +43,46 @@ export interface ArmedOrder {
   rr: number;
 }
 
+/**
+ * An order the trader is still positioning. Nothing has been placed yet.
+ *
+ * `stop` and `target` are null until dragged out. They used to arrive
+ * pre-computed at a hardcoded 2R, which made the tool issue a recommendation
+ * on the trader's behalf; starting unset means the levels are the trader's.
+ *
+ * Both must be placed before this can be committed — `validateOrder` requires
+ * entry, stop and target to be positive, and `sizeForRisk` derives position
+ * size from the stop distance. By commit time both are real numbers, which is
+ * why nothing in the order model had to become nullable.
+ */
+export interface DraftOrder {
+  direction: "buy" | "sell";
+  entry: number;
+  stop: number | null;
+  target: number | null;
+}
+
+/** A draft is only committable once both levels have been positioned. */
+export function draftIsComplete(
+  d: DraftOrder | null,
+): d is DraftOrder & { stop: number; target: number } {
+  return !!d && d.stop != null && d.target != null;
+}
+
 interface Props {
   adapter: ChartAdapter | null;
   /** Anything that changes when chart geometry moves (cursor, timeframe, size). */
   tick?: number | string;
   decimals: number;
-  /** When set, the next chart click places an order at that price. */
+  /** When set, the next chart click STARTS a draft at that price. */
   armed?: ArmedOrder | null;
-  onPlaced?: () => void;
+  /**
+   * The uncommitted draft, owned by `StudioChart` so its status bar can host
+   * the commit and cancel controls. Only pointer-UP propagates: the in-flight
+   * drag price stays local, so a drag is one update up here, not one per frame.
+   */
+  draft?: DraftOrder | null;
+  onDraftChange?: (d: DraftOrder | null) => void;
 }
 
 function money(v: number): string {
@@ -49,16 +90,20 @@ function money(v: number): string {
   return `${sign}$${Math.abs(v).toFixed(2)}`;
 }
 
-export function StudioTradeLayer({ adapter, tick, decimals, armed, onPlaced }: Props) {
+export function StudioTradeLayer({ adapter, tick, decimals, armed, draft, onDraftChange }: Props) {
   const {
     positions, pending, price, view,
     modifyLevels, modifyPendingLevels, partialClose, breakEven,
-    closePositionNow, cancelOrder, placeOrderAt, sizeForRisk,
+    closePositionNow, cancelOrder,
   } = useReplayStudio();
 
   const hostRef = useRef<HTMLDivElement | null>(null);
   const [, force] = useState(0);
   const [drag, setDrag] = useState<DragState | null>(null);
+  // Read by the pointer-up handler. Keeping the draft out of that effect's deps
+  // stops the drag listeners being torn down and re-added mid-gesture.
+  const draftRef = useRef<DraftOrder | null>(null);
+  draftRef.current = draft ?? null;
   const [hover, setHover] = useState<string | null>(null);
 
   const live = view?.transport.lifecycle !== "completed";
@@ -87,7 +132,13 @@ export function StudioTradeLayer({ adapter, tick, decimals, armed, onPlaced }: P
     const onUp = () => {
       setDrag((d) => {
         if (d) {
-          if (d.kind === "position") {
+          if (d.on === "draft") {
+            // Nothing exists to modify yet — this writes the positioned level
+            // back into the draft, and the order is created only on commit.
+            if (draftRef.current) {
+              onDraftChange?.({ ...draftRef.current, [d.handle]: d.price } as DraftOrder);
+            }
+          } else if (d.kind === "position") {
             modifyLevels(d.orderId, d.handle === "stop" ? { stop: d.price } : { target: d.price });
           } else {
             modifyPendingLevels(d.orderId, { [d.handle]: d.price } as { entry?: number; stop?: number; target?: number });
@@ -102,10 +153,10 @@ export function StudioTradeLayer({ adapter, tick, decimals, armed, onPlaced }: P
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
     };
-  }, [drag, adapter, modifyLevels, modifyPendingLevels]);
+  }, [drag, adapter, modifyLevels, modifyPendingLevels, onDraftChange]);
 
   const priceOf = (o: PositionOrder, handle: Handle): number => {
-    if (drag && drag.orderId === o.id && drag.handle === handle) return drag.price;
+    if (drag && drag.on === "order" && drag.orderId === o.id && drag.handle === handle) return drag.price;
     return handle === "stop" ? o.stop : handle === "target" ? o.target : (o.fillPrice ?? o.entry);
   };
 
@@ -151,23 +202,52 @@ export function StudioTradeLayer({ adapter, tick, decimals, armed, onPlaced }: P
       if (!live) return;
       if ((e.target as HTMLElement).closest("[data-line-action]")) return;
       e.preventDefault();
-      setDrag({ orderId, handle, kind, price: current });
+      setDrag({ on: "order", orderId, handle, kind, price: current });
     };
 
-  // Arm-to-place: one click on the chart drops a full entry / stop / target.
+  /** Drag one of the draft's levels. An unplaced one starts from the entry. */
+  const startDraftDrag = (handle: Handle, current: number) =>
+    (e: React.PointerEvent) => {
+      if (!live) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setDrag({ on: "draft", handle, price: current });
+    };
+
+  /**
+   * Draft geometry. An unplaced level has no price of its own, so its handle
+   * parks ON the entry line — zero distance, proposing no ratio, but still
+   * grabbable. Rendering nothing would be the honest picture of "unset" and
+   * would also leave the trader nothing to drag: the handle IS the control.
+   */
+  const draftView = useMemo(() => {
+    if (!draft || !adapter) return null;
+    const at = (handle: Handle, stored: number | null): { price: number | null; y: number | null } => {
+      const price = drag?.on === "draft" && drag.handle === handle ? drag.price : stored;
+      return { price, y: price != null ? adapter.priceToY(price) : null };
+    };
+    const entryY = adapter.priceToY(draft.entry);
+    const stop = at("stop", draft.stop);
+    const target = at("target", draft.target);
+    return { entryY, stop, target };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft, adapter, drag, tick]);
+
+  /**
+   * Arm-to-place: the click sets the ENTRY and nothing else.
+   *
+   * It used to derive a full 2R bracket and commit the order in the same
+   * gesture, so the trader's first sight of their stop and target was as a
+   * placed trade at levels the tool chose. Now it opens a draft the trader
+   * positions and then confirms; ignored once a draft exists, so a stray click
+   * cannot restart one that is half-positioned.
+   */
   const onLayerClick = (e: React.MouseEvent) => {
-    if (!armed || !adapter || !hostRef.current || !live) return;
+    if (!armed || draft || !adapter || !hostRef.current || !live) return;
     const rect = hostRef.current.getBoundingClientRect();
     const clicked = adapter.yToPrice(e.clientY - rect.top);
     if (clicked == null || !Number.isFinite(clicked)) return;
-    // Shared with the right-click menu — see `bracketFor`. Two chart gestures,
-    // one derivation, so the same click cannot mean two different trades.
-    const levels = bracketFor(armed.direction, clicked, {
-      stopFraction: armed.stopFraction,
-      rr: armed.rr,
-    });
-    placeOrderAt(armed.direction, levels, { size: sizeForRisk(levels.entry, levels.stop) });
-    onPlaced?.();
+    onDraftChange?.({ direction: armed.direction, entry: clicked, stop: null, target: null });
   };
 
   if (!adapter) return null;
@@ -179,13 +259,99 @@ export function StudioTradeLayer({ adapter, tick, decimals, armed, onPlaced }: P
       className="absolute inset-0 z-10 select-none"
       style={{ pointerEvents: armed ? "auto" : "none", cursor: armed ? "crosshair" : undefined }}
     >
+      {/* The uncommitted draft. Ghosted so it never reads as a live position. */}
+      {draft && draftView && draftView.entryY != null ? (() => {
+        const { entryY, stop, target } = draftView;
+        const tone = draft.direction === "buy" ? "buy" : "sell";
+        const dragHandle = drag?.on === "draft" ? drag.handle : null;
+        // An unplaced handle is parked relative to the entry, offset by a fixed
+        // number of PIXELS — not a price — so the two never sit on top of each
+        // other and both stay grabbable. The chip still reads "—", so no
+        // distance is being proposed; only the conventional side is (target
+        // beyond the entry, stop behind it), which is a fact about direction
+        // rather than a recommendation about size.
+        const GHOST_OFFSET = 22;
+        const parkedY = (handle: "stop" | "target") => {
+          const beyond = draft.direction === "buy" ? -GHOST_OFFSET : GHOST_OFFSET;
+          return entryY + (handle === "target" ? beyond : -beyond);
+        };
+        const level = (
+          handle: "stop" | "target",
+          y: number | null,
+          price: number | null,
+          lineTone: "stop" | "profit",
+          text: string,
+        ) => {
+          const placed = price != null;
+          const lineY = y ?? parkedY(handle);
+          return (
+            <>
+              <OrderLine
+                y={lineY}
+                tone={lineTone}
+                ghost={!placed}
+                active={dragHandle === handle}
+              />
+              <OrderLabel
+                y={lineY}
+                tone={lineTone}
+                ghost={!placed}
+                expanded={hover === `draft:${handle}` || dragHandle === handle}
+                onMouseEnter={() => setHover(`draft:${handle}`)}
+                onMouseLeave={() => setHover(null)}
+                onPointerDown={startDraftDrag(handle, price ?? draft.entry)}
+                title={placed ? `Drag to move the ${text.toLowerCase()}` : `Drag to place the ${text.toLowerCase()}`}
+                testId={`draft-${handle}`}
+                label={
+                  <span className="font-semibold">
+                    {placed ? text : `${text} · DRAG TO PLACE`}
+                  </span>
+                }
+                axis={placed ? fmt(price) : "—"}
+              />
+            </>
+          );
+        };
+        return (
+          // Sized to the host so it is a real box rather than a zero-height
+          // grouping div: the handles inside are absolutely positioned, which
+          // left this collapsed and untestable. `pointer-events-none` keeps it
+          // from swallowing chart clicks — each handle re-enables its own.
+          <div data-testid="studio-draft-order" className="pointer-events-none absolute inset-0">
+            {/* Entry first so it sits BENEATH the two draggable handles. All
+                three coincide while the levels are unplaced, and the topmost
+                element is the one a pointer finds — with entry last, neither
+                handle could be grabbed at all. */}
+            <OrderLine y={entryY} tone={tone} solid />
+            <OrderLabel
+              y={entryY}
+              tone={tone}
+              draggable={false}
+              expanded={hover === "draft:entry"}
+              onMouseEnter={() => setHover("draft:entry")}
+              onMouseLeave={() => setHover(null)}
+              title="Draft entry — confirm to place the order"
+              testId="draft-entry"
+              label={
+                <span className="font-semibold">
+                  DRAFT {draft.direction === "buy" ? "LONG" : "SHORT"}
+                </span>
+              }
+              axis={fmt(draft.entry)}
+            />
+            {level("target", target.y, target.price, "profit", "TARGET")}
+            {level("stop", stop.y, stop.price, "stop", "STOP")}
+          </div>
+        );
+      })() : null}
+
       {rows.map((row) => {
         const { order, entryY, stopY, targetY, pnl, r, qty } = row;
         if (entryY == null) return null;
         const isLong = order.direction === "buy";
         const tone = isLong ? "buy" : "sell";
         const key = order.id;
-        const dragging = drag?.orderId === order.id ? drag : null;
+        const dragging = drag?.on === "order" && drag.orderId === order.id ? drag : null;
 
         return (
           <div key={key}>
@@ -298,7 +464,7 @@ export function StudioTradeLayer({ adapter, tick, decimals, armed, onPlaced }: P
         if (entryY == null) return null;
         const tone = order.direction === "buy" ? "buy" : "sell";
         const key = order.id;
-        const dragging = drag?.orderId === order.id ? drag : null;
+        const dragging = drag?.on === "order" && drag.orderId === order.id ? drag : null;
         return (
           <div key={key}>
             <OrderLine y={entryY} tone={tone} active={dragging?.handle === "entry"} />

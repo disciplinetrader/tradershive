@@ -153,3 +153,124 @@ describe("context-menu hit-test", () => {
     expect(pickDrawingAt([d], c, g.x1 - 400, g.entryY + 400)).toBeNull();
   });
 });
+
+/**
+ * A trend line whose endpoints sit at arbitrary times, deliberately NOT on any
+ * round bar boundary. That is the whole point: after a fold the coarse grid
+ * will not contain these instants, and the projection has to interpolate to
+ * place them.
+ */
+function trendLine(): Drawing {
+  return makeDrawing("trend_line", [
+    { time: T0 + 7 * MIN, price: 1900 },
+    { time: T0 + 43 * MIN, price: 1950 },
+  ]);
+}
+
+/**
+ * Project, or fail loudly.
+ *
+ * `ChartCoords.x` and `.y` are typed `number | null`, and a null is not a
+ * curiosity here — it is precisely the failure that made a chart overlay's
+ * hit-targets silently stop existing while the thing they sat on still drew.
+ * Swallowing it with `?? 0` would let that regression pass as a hit at the
+ * origin, so it throws instead.
+ */
+function must(v: number | null, what: string): number {
+  if (v == null) throw new Error(`projection returned null for ${what}`);
+  return v;
+}
+
+/** Midpoint of a two-point drawing in pixels, via the stub's own converters. */
+function midpoint(d: Drawing, c: ChartCoords) {
+  const [a, b] = d.points;
+  return {
+    x: (must(c.x(a.time), "a.time") + must(c.x(b.time), "b.time")) / 2,
+    y: (must(c.y(a.price), "a.price") + must(c.y(b.price), "b.price")) / 2,
+  };
+}
+
+describe("trend line survives a timeframe fold", () => {
+  /**
+   * A fold changes the bar grid under drawings that are already on the chart.
+   * In coordinate terms that is a different pixels-per-ms (bars get wider, so
+   * the same span maps elsewhere) plus the viewport translation the fold's
+   * restore applies. Both are simulated by swapping the converters, which is
+   * what this file exists to do.
+   *
+   * SCOPE, stated so this is not read as more than it is: this asserts
+   * `render.ts` behaves correctly GIVEN a ChartCoords that interpolates. It
+   * does not exercise the real adapter's `buildCoords().x`. That integration
+   * gap is deliberate — covering it means sampling pixels out of the chart
+   * canvas, which was judged disproportionate for a path already shown correct.
+   */
+  const base = () => coords({ scaleX: 0.001, offsetX: 0 });
+  const folded = () => coords({ scaleX: 0.00025, offsetX: -120 });
+
+  it("still hit-tests on the line after the fold", () => {
+    const d = trendLine();
+    const before = base();
+    const after = folded();
+
+    const mBefore = midpoint(d, before);
+    expect(hitTest(d, before, mBefore.x, mBefore.y)).toBe(true);
+
+    const mAfter = midpoint(d, after);
+    expect(hitTest(d, after, mAfter.x, mAfter.y)).toBe(true);
+  });
+
+  it("actually moves on screen, so the fold is not being simulated as a no-op", () => {
+    // Without this the suite above could pass while asserting nothing: if the
+    // two coord sets projected identically, "survives the fold" would be
+    // vacuously true.
+    const d = trendLine();
+    const mBefore = midpoint(d, base());
+    const mAfter = midpoint(d, folded());
+    expect(mAfter.x).not.toBeCloseTo(mBefore.x, 1);
+  });
+
+  it("keeps its stored times and prices across the fold", () => {
+    const d = trendLine();
+    const before = snapshot(d);
+    midpoint(d, folded());
+    hitTest(d, folded(), 0, 0);
+    expect(snapshot(d)).toBe(before);
+  });
+
+  it("places endpoints that fall between bars of the coarser grid", () => {
+    // The EC-10 class of failure: an exact-match projection returns null for a
+    // timestamp that is not a bar's own open, the drawing is not painted, and
+    // it silently stops being selectable. Both endpoints here are off-grid.
+    const d = trendLine();
+    const c = folded();
+    for (const pt of d.points) {
+      const x = c.x(pt.time);
+      const y = c.y(pt.price);
+      // Not null and not NaN: the two shapes "this point has no coordinate"
+      // takes, either of which loses the drawing.
+      expect(x).not.toBeNull();
+      expect(y).not.toBeNull();
+      expect(Number.isFinite(x as number)).toBe(true);
+      expect(Number.isFinite(y as number)).toBe(true);
+      expect(hitTest(d, c, x as number, y as number)).toBe(true);
+    }
+  });
+
+  it("still misses where the line is not, after the fold", () => {
+    // Guards the opposite regression: a projection collapsing to a constant
+    // would make every probe "hit" and the suite above would pass regardless.
+    const d = trendLine();
+    const c = folded();
+    const m = midpoint(d, c);
+    expect(hitTest(d, c, m.x, m.y + 400)).toBe(false);
+    expect(hitTest(d, c, m.x - 600, m.y)).toBe(false);
+  });
+
+  it("is not selectable once hidden, fold or no fold", () => {
+    const d = { ...trendLine(), hidden: true };
+    const c = folded();
+    const m = midpoint(d, c);
+    expect(hitTest(d, c, m.x, m.y)).toBe(false);
+    expect(pickDrawingAt([d], c, m.x, m.y)).toBeNull();
+  });
+});
