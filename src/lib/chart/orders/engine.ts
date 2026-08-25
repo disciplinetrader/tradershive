@@ -169,8 +169,33 @@ export function exitFor(
   const { bid, ask } = quoteAt(price, costs);
   // The quote this position would get if it closed right now.
   const exitQuote = long ? bid : ask;
-  const stopHit = long ? exitQuote <= order.stop : exitQuote >= order.stop;
-  const targetHit = long ? exitQuote >= order.target : exitQuote <= order.target;
+
+  // A LEVEL THAT DOES NOT EXIST CAN NEVER TRIGGER.
+  //
+  // A position is allowed to carry no stop, no target, or neither: that means
+  // it has no protection or no objective, not that the level sits at zero.
+  // Without these guards the comparisons below coerce the absent level and
+  // fire on the first tick. Measured, with exitQuote = 63000:
+  //
+  //   long,  target = null -> exitQuote >= null -> TRUE, closePrice null -> 0
+  //   short, stop   = null -> exitQuote >= null -> TRUE
+  //
+  // Neither throws. Both produce a plausible-looking exit stamped
+  // "take_profit" / "stop_loss" that is written to the durable trade tape and
+  // into analytics, where it is expensive to unpick — a booked-but-wrong
+  // closure cannot be reopened at a later price without corrupting the journal
+  // further. This is the reason optional levels could not simply be typed as
+  // nullable and left to the existing comparisons.
+  //
+  // `Number.isFinite` rather than `!= null` on purpose: undefined and NaN are
+  // the same statement as null here — there is no usable level — and NaN
+  // comparisons are quietly false, which would look like "never triggers"
+  // while actually meaning "silently unprotected".
+  const hasStop = Number.isFinite(order.stop);
+  const hasTarget = Number.isFinite(order.target);
+
+  const stopHit = hasStop && (long ? exitQuote <= order.stop : exitQuote >= order.stop);
+  const targetHit = hasTarget && (long ? exitQuote >= order.target : exitQuote <= order.target);
 
   // Stop takes priority: within a single discrete tick we cannot know the
   // path, so we assume the adverse level was touched first.

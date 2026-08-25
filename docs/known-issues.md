@@ -2474,3 +2474,138 @@ worth weighing, none free:
 
 Worth settling alongside whatever decides the wider question of whether Studio
 should ever propose a level.
+
+---
+
+## RS-4 — Studio's order flow does not match FXReplay: levels are optional and instant, not gated
+
+**Area:** Replay Studio · chart trading · order model ·
+**Found:** 2026-08-25 · **Status:** open — **scoped, deliberately not started.**
+Architecture change, not a bug fix. The analysis below is done; do not redo it.
+
+> **Do NOT revert commit `4f4fa148`.** It carries the drawings-fold regression
+> tests as well as the draft flow, and those are unrelated and worth keeping.
+> This is an EDIT-FORWARD ticket.
+
+### The real behaviour, confirmed by video
+
+Established by frame-by-frame review of two real FXReplay recordings — watched,
+not inferred from documentation. That distinction matters: the previous
+iteration of this design was built from a support article and got the mechanism
+wrong.
+
+1. Buy/Sell fills a **market order immediately** on click. No draft, no
+   pre-commit stage, no confirm button. Position and P&L are live at once.
+2. The position starts with **no stop and no target**. Neither is seeded and
+   neither is required to exist.
+3. A compact widget on the position's row offers **+TP / +SL**. Interacting
+   with either adds THAT level, independently of the other.
+4. Each addition **applies instantly on its own**. There is no shared commit
+   gate. A position may carry just a stop, just a target, both, or neither,
+   indefinitely.
+5. TP/SL are live-editable columns on the Open Positions blotter — they belong
+   to the position, not to a separate pending object.
+
+### What ships today, and why it was left alone
+
+Studio currently does arm -> click sets entry -> drag BOTH levels -> explicit
+"Place order". That is a stricter, more deliberate flow than the real product:
+it forces explicit placement of both levels before anything is committed.
+
+It is not broken, and it is internally consistent. It was shipped and left in
+place deliberately rather than rushed toward the real behaviour, because the
+pivot introduces the two landmines below and doing that badly is far worse than
+being conservative. Whoever picks this up is REPLACING a working flow, not
+repairing a broken one — there is no pressure to hurry.
+
+### ⚠ The load-bearing risk: `exitFor` has no null guards
+
+`engine.ts:165-197` compares levels with raw operators. Measured coercion with
+`exitQuote = 63000`:
+
+```
+long,  stop  = null  -> stopHit:   false
+long,  target= null  -> targetHit: TRUE   -> closePrice: null -> 0
+short, stop  = null  -> stopHit:   TRUE
+short, target= null  -> targetHit: false
+```
+
+**A long with no target takes profit instantly at price 0. A short with no stop
+stops out instantly.** Neither throws. Both produce a plausible-looking exit
+stamped `reason: "stop_loss"` / `"take_profit"`, which is then written to the
+durable trade tape and into analytics.
+
+That is the single reason this was not attempted in the session that scoped it.
+A booked-but-wrong closure is not cheaply undone — re-opening at a later price
+corrupts the journal worse than leaving it. **Any implementation must guard
+these explicitly before a single nullable level reaches the engine**, and must
+have e2e coverage proving a stopless position SURVIVES ticks that would
+previously have force-closed it. That test is the deliverable, not a nicety.
+
+### The sizing gap — needs a product decision before any code
+
+`sizeForRisk(entry, stop)` (`studio/context.tsx:393-401`) derives position size
+from the **stop distance**. With no stop the distance is 0 and it returns a
+fallback of `1` unit, which is meaningless money.
+
+Real FXReplay sizes by **lots**. Studio's toolbar is built around a **Risk %**
+input. So this pivot does not merely make levels optional — it removes the
+input Studio's whole sizing model depends on. Without a replacement, every
+stopless market fill is sized at 1 unit.
+
+Decide this FIRST: a lots/units control, what Risk % means (or whether it is
+hidden) when no stop exists, and what a later +SL does to the size of an
+already-open position. It is a product decision with UI attached, not a detail
+to settle mid-implementation.
+
+### Open question — limit and stop orders were never observed
+
+Both recordings showed only market Buy/Sell. The natural assumption is to keep
+`validateOrder`'s `entry/stop/target > 0` requirement strict for limit and stop
+orders while relaxing it for market fills — but **that is inferred, not
+confirmed**. Verify it against real FXReplay limit-order behaviour before
+building it in. It decides whether this is "market orders are special" or "all
+Studio orders have optional levels", which are materially different tickets.
+
+### Model work, once those two are settled
+
+`validateOrder` gates every placement at `service.ts:103`.
+
+| Item | Where |
+|---|---|
+| `stop`/`target` nullable, plus derived `risk`/`reward`/`rr` | `orders/model.ts:51-64` |
+| `validateOrder` relaxation (market only, pending the question above) | `orders/model.ts:255-257` |
+| `riskPerUnit` — R-multiple is undefined with no stop | `position-manager.ts:72, 134, 267` |
+| `breakEven` / `trailing` — both need a stop, must refuse when absent | `position-manager.ts:303-391` |
+| `modifyLevels` — becomes "add OR move", today assumes a level exists | `position-manager.ts:397-406` |
+| Closed-trade record — `initialStop ?? order.stop` | `closed-trade.ts:190-191, 250-251` |
+| ~44 non-null `.stop` / `.target` reads to audit | orders module, excl. tests |
+| 8 test files | `orders/__tests__/` |
+
+**No migration needed.** `chart_closed_trades.initial_stop`, `final_stop`,
+`initial_target` and `final_target` are already nullable. Worth knowing up
+front, since migrations here are applied by hand.
+
+### What to keep and delete from the current draft flow
+
+| Piece | Verdict |
+|---|---|
+| Ghost-handle rendering — parked at entry, dashed, "drag to place", `OrderLine`'s `ghost` prop | **KEEP.** This is already the +SL/+TP affordance; it just attaches to a live position instead of a draft |
+| `DraftOrder`, `draftIsComplete`, draft state, status bar, commit/cancel | **DELETE.** The shared gate is exactly what is wrong |
+| `DragState`'s second variant (`on: "draft"`) | **DELETE.** No draft means no second variant; reverts to the simpler shape |
+| `e2e/ui/replay-draft-order.spec.ts` | **REWRITE.** Its assertions encode the gate being removed. The scaffolding — seed/teardown, `orderCount`, `dragHandle` — transfers directly |
+
+Note the ghost-handle pattern also solved a problem the replacement will hit
+again: an unplaced level has no coordinate, so it has no handle, so there is
+nothing to drag. It parks at the entry line at zero distance — grabbable, and
+proposing no ratio.
+
+### The principle worth carrying over
+
+"No default value, no tacit ratio" was right and should survive the rewrite.
+What was wrong was the mechanism: optional-and-instant-per-level, not
+required-and-gated-together. The same principle already shipped in
+`TradePlanner`, which is a different surface (live/paper workspace, plan then
+send to the order panel), never claimed to match FXReplay, and is **unaffected
+by this ticket** — paper trading's schemas already treat `stop_loss` and
+`take_profit` as nullable.
