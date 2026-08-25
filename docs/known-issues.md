@@ -2338,116 +2338,42 @@ weekend gating applies to all markets or only to FX.
 
 ---
 
-## EC-10 — `DrawingLayer` projects anchors through the exact-match `timeToX`
-
-**Area:** Chart drawings · projection · **Found:** 2026-08-25 ·
-**Status:** open — out of scope for the news-marker ticket that found it
-
-`DrawingLayer.tsx:69` places a drawing's anchor with:
-
-```ts
-const x = adapter.timeToX(a.t);
-```
-
-`ChartAdapter.timeToX` is `chart.timeScale().timeToCoordinate(...)`
-(`adapters/lightweight.ts`), which resolves the time with
-`timeToIndex(time, /* findNearest */ false)`. Upstream that returns **null for
-any timestamp that is not a bar's own `time`** — non-exact matches hit
-`return findNearest ? index : null` (lightweight-charts 5.x,
-`dist/lightweight-charts.development.mjs:6037-6051`). It is exact-match only.
-
-So an anchor whose timestamp does not land exactly on a bar open projects to
-`null`, and whatever the caller does with a null x — skip the anchor, collapse
-it to 0 — is wrong.
-
-**This is the same root cause as the news-marker popover that could not be
-clicked**, fixed 2026-08-25 in `StudioNewsLayer`: the markers were visible
-because the renderer snaps them to the nearest bar, while the overlay's
-hit-targets vanished because `timeToX` did not. That fix moved the layer onto
-`getCoords().x`, the adapter's interpolating projection
-(`timeToLogical` → `logicalToCoordinate`), which handles between-bar times and
-extrapolates past the last bar.
-
-### Why it is usually invisible
-
-Drawings are normally created BY a click on the chart and snapped to bar times,
-so `a.t` usually is a bar open and the exact-match path happens to work. It
-should be expected to fail when:
-
-- the timeframe fold changes the bar grid under an existing drawing — a 1H
-  anchor at 13:00 is not a bar open once the pane folds to 4H;
-- a drawing is imported, restored from a snapshot, or copied between panes on
-  different folds;
-- an anchor is placed programmatically from an event or trade timestamp rather
-  than from a click.
-
-The fold case is the one to worry about: it is reachable from the timeframe
-buttons in normal use, and it silently degrades saved annotations.
-
-### Fixing it
-
-Swap to `getCoords()?.x(a.t)` and handle the `getCoords` absence (it is
-optional on the interface). Do NOT simply flip `timeToX` to `findNearest: true`
-— `timeToX` is a documented exact-match primitive and other callers may be
-relying on the null to mean "not a bar"; widening it changes behaviour under
-every caller at once.
-
-Worth checking in the same pass whether any other overlay reaches for
-`timeToX`. At the time of writing the only consumers are `DrawingLayer` and the
-now-fixed `StudioNewsLayer`.
-
----
-
-## RS-1 — The play/pause button is distinguishable only by its icon
+## RS-1 — The playback transport's step buttons have no accessible name
 
 **Area:** Replay Studio · playback controls · accessibility ·
-**Found:** 2026-08-25 · **Status:** open — not fixed, logged for its own pass
+**Found:** 2026-08-25 · **Status:** open — narrowed, the play/pause half shipped
 
-`PlaybackControls.tsx:86-92` renders one toggle whose entire state signal is
-which glyph is inside it:
+Three icon-only buttons in `PlaybackControls.tsx` carry no accessible name:
+step (`:106`), step-candle (`:115`) and skip-10 (`:124`). Each is a `Button`
+with `size="icon"` whose only child is a Lucide glyph. A tooltip is not a
+substitute — Radix's `TooltipContent` does not name its trigger, so a screen
+reader announces these as unlabelled buttons.
 
-```tsx
-<Button onClick={toggle} disabled={!t.canPlay && !t.canPause}>
-  {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-</Button>
-…
-<TooltipContent>Play / pause (Space)</TooltipContent>
-```
+The fix is one `aria-label` each, matching the tooltip text already written for
+them. They are stateless actions, so unlike the play/pause toggle they need no
+`aria-pressed` and carry no ambiguity about current state — this is purely the
+accessibility half.
 
-There is no text, no `aria-label`, and the tooltip reads **"Play / pause
-(Space)" in both states**. So nothing outside the icon says whether the session
-is currently running.
+### What already shipped
 
-### Two separate problems
+The play/pause toggle was the sharp end of this and was fixed on 2026-08-25.
+It renders `{playing ? <Pause/> : <Play/>}`, where the glyph names the ACTION
+on click — so a Pause icon means the session is RUNNING. That is the ordinary
+convention, but it reads exactly backwards to anyone treating the icon as a
+status indicator, and the tooltip said `"Play / pause (Space)"` in both states,
+so there was no second signal to check against.
 
-**Confusion.** The icon follows the usual convention — it names the ACTION the
-click performs, so a Pause glyph means "playing, click to pause". That is
-conventional and probably correct, but it is exactly backwards from reading it
-as a status indicator, and there is no second signal to disambiguate. This
-already cost real investigation time: during the fold-freeze work of
-2026-08-25 a session reported as "the UI showed PAUSED" produced continuous
-chart ticks, which is impossible while paused — the engine emits nothing and
-the rAF loop returns early (`controller.ts:157`). The most likely explanation
-was that the Pause glyph was read as "it is paused" while the session was in
-fact playing. That was never confirmed, and it is recorded here as motive
-rather than as proof.
+That ambiguity cost real time: during the fold-freeze investigation a session
+reported as "the UI showed PAUSED" was producing continuous chart ticks, which
+is impossible while paused — the engine emits nothing and the rAF loop returns
+early (`controller.ts:157`). The most likely explanation was the Pause glyph
+being read as "it is paused". That was never confirmed and is recorded as
+motive, not proof.
 
-**Accessibility.** An icon-only button with no accessible name is announced by
-a screen reader as an unlabelled button, and its state is not conveyed at all.
-This one is not a matter of taste — a control whose only state channel is a
-glyph has no state for a non-visual user.
-
-### Fixing it
-
-Give the button a state-dependent accessible name and tooltip — `aria-label`
-of "Pause" / "Play" tracking `playing`, with tooltip text to match, rather than
-one static string covering both. Consider `aria-pressed` so the toggle state is
-announced rather than inferred.
-
-Worth auditing the other icon-only controls in the same bar in the same pass —
-step, step-candle and skip (`PlaybackControls.tsx:97-120`) are also unlabelled,
-though those are stateless actions and so carry only the accessibility half of
-this problem, not the confusion half.
+It now carries `aria-label={playing ? "Pause (Space)" : "Play (Space)"}` for the
+action, `aria-pressed={playing}` for the state, and a tooltip that states both
+(`"Playing — pause (Space)"` / `"Paused — play (Space)"`). The glyphs are
+`aria-hidden`.
 
 ---
 
@@ -2512,3 +2438,57 @@ Worth reading that change first — the UX question it had to answer applies her
 too: an unplaced level has no coordinate, so it has no handle, so there is
 nothing to drag. It parks the handle on the entry line, at zero distance, which
 keeps it grabbable while proposing no ratio.
+
+---
+
+## EC-10 — WITHDRAWN · the "bug" was in code that never ran
+
+**Area:** Chart drawings · projection · **Found:** 2026-08-25 ·
+**Status:** closed — **entry was wrong; the component was deleted**
+
+Kept as a record rather than deleted outright, because the way this entry
+failed is more useful than the entry ever was. It is NOT open work.
+
+### What was claimed
+
+EC-10 reported that `DrawingLayer.tsx:69` projected anchors with
+`adapter.timeToX`, which resolves with `findNearest: false` and returns null
+for any timestamp that is not a bar's own open — the same root cause as the
+news-marker popover that could not be clicked. The entry asserted the fault was
+*"reachable from the toolbar in normal use"*, on the reasoning that a timeframe
+fold moves the bar grid out from under existing drawings.
+
+The code reading was accurate. The impact claim was invented.
+
+### What was actually true
+
+`src/features/replay/drawings/` was **dead code**. Nothing outside that
+directory imported any of its five files, and `DrawingLayer` had no mount point
+anywhere in the app. It could not misplace a drawing because it never drew one.
+
+Studio's real drawings go `DrawingStore` (`@/lib/chart/drawings/store`) → the
+adapter's `drawingsPaneView` primitive → `buildCoords()` →
+`lib/chart/drawings/render.ts`, which has always used the interpolating
+`c.x(...)`. That path never had the bug. The directory was deleted 2026-08-25;
+after the `StudioNewsLayer` fix there is now no live consumer of `timeToX` at
+all.
+
+### Why it is worth a record
+
+The entry was written, reviewed, and a fix was implemented and approved — all
+without anyone establishing that the file executes. A grep for the symbol's
+definition was done; a grep for its mount was not. Both fix and entry described
+real code and were internally consistent, which is exactly what made them
+convincing.
+
+It surfaced only because a runtime check was demanded before shipping: the
+attempt to write an e2e spec found there was nothing to drive. Static reading
+cannot distinguish "correct" from "never executed" — only running it can.
+
+**The cheap precaution:** before filing or fixing a defect in a component, grep
+for where it is MOUNTED, not just where it is defined. One command, and it would
+have retired this entry before any of the work.
+
+Compare EC-9 and RS-2, which are also unfixed but were verified against running
+code — the difference is not the quality of the reading, it is whether anything
+executed it.

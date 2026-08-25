@@ -43,7 +43,7 @@
  * from the renderer with upstream line numbers; this file only decides which
  * events to place. Getting it wrong is invisible — the marker still draws, the
  * target just is not under it — which is exactly how the original miss survived
- * review. `DrawingLayer` still has the projection half of that bug: see EC-10.
+ * review — the marker looked right, so nobody clicked it.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 

@@ -14,7 +14,7 @@ const barTimes = [
 
 describe("snapMarkerIndex — the rule that decides whether a marker is clickable", () => {
   it("snaps an off-bar release forward to the next bar, as the renderer does", () => {
-    // The EC-10 case: a 12:30 print on an hourly tape. The old exact-match
+    // The reported case: a 12:30 print on an hourly tape. The old exact-match
     // projection returned null here and rendered no hit-target at all.
     expect(snapMarkerIndex(barTimes, Date.UTC(2026, 6, 20, 12, 30))).toBe(1);
   });

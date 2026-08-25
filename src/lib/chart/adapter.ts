@@ -49,7 +49,12 @@ export interface ChartAdapter {
   /**
    * EXACT-MATCH projection: null unless `timeMs` is a bar's own timestamp.
    * For an arbitrary time (a news release, a drawing anchor between bars) use
-   * `getCoords().x`, which interpolates. See EC-10 in docs/known-issues.md.
+   * `getCoords().x`, which interpolates. A null x renders nothing, silently,
+   * so a caller that ignores it loses the element rather than misplacing it.
+   *
+   * `StudioNewsLayer` is the cautionary case: it projected raw event times
+   * here, most releases do not land on a bar open, and its hit-targets simply
+   * never rendered while the canvas markers stayed visible.
    */
   timeToX(timeMs: number): number | null;
   xToTime(x: number): number | null;

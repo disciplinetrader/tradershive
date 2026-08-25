@@ -79,17 +79,26 @@ export function PlaybackControls() {
     <div className="flex h-12 shrink-0 items-center gap-2 overflow-x-auto border-t border-border/60 bg-card/60 px-3">
       <Tooltip>
         <TooltipTrigger asChild>
+          {/* The glyph names the ACTION on click, so a Pause icon means the
+              session is RUNNING. That is conventional but reads backwards to
+              anyone treating it as a status light, and with one static tooltip
+              there was no second signal to check against — which cost real
+              time during the fold-freeze investigation. `aria-pressed` carries
+              the state, the label carries the action, and the tooltip now says
+              both. See RS-1. */}
           <Button
             size="icon"
             className="h-8 w-8 shrink-0"
             variant={playing ? "secondary" : "default"}
             onClick={toggle}
             disabled={!t.canPlay && !t.canPause}
+            aria-label={playing ? "Pause (Space)" : "Play (Space)"}
+            aria-pressed={playing}
           >
-            {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+            {playing ? <Pause aria-hidden="true" className="h-4 w-4" /> : <Play aria-hidden="true" className="h-4 w-4" />}
           </Button>
         </TooltipTrigger>
-        <TooltipContent>Play / pause (Space)</TooltipContent>
+        <TooltipContent>{playing ? "Playing — pause (Space)" : "Paused — play (Space)"}</TooltipContent>
       </Tooltip>
 
       <Tooltip>
