@@ -2395,3 +2395,56 @@ every caller at once.
 Worth checking in the same pass whether any other overlay reaches for
 `timeToX`. At the time of writing the only consumers are `DrawingLayer` and the
 now-fixed `StudioNewsLayer`.
+
+---
+
+## RS-1 — The play/pause button is distinguishable only by its icon
+
+**Area:** Replay Studio · playback controls · accessibility ·
+**Found:** 2026-08-25 · **Status:** open — not fixed, logged for its own pass
+
+`PlaybackControls.tsx:86-92` renders one toggle whose entire state signal is
+which glyph is inside it:
+
+```tsx
+<Button onClick={toggle} disabled={!t.canPlay && !t.canPause}>
+  {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+</Button>
+…
+<TooltipContent>Play / pause (Space)</TooltipContent>
+```
+
+There is no text, no `aria-label`, and the tooltip reads **"Play / pause
+(Space)" in both states**. So nothing outside the icon says whether the session
+is currently running.
+
+### Two separate problems
+
+**Confusion.** The icon follows the usual convention — it names the ACTION the
+click performs, so a Pause glyph means "playing, click to pause". That is
+conventional and probably correct, but it is exactly backwards from reading it
+as a status indicator, and there is no second signal to disambiguate. This
+already cost real investigation time: during the fold-freeze work of
+2026-08-25 a session reported as "the UI showed PAUSED" produced continuous
+chart ticks, which is impossible while paused — the engine emits nothing and
+the rAF loop returns early (`controller.ts:157`). The most likely explanation
+was that the Pause glyph was read as "it is paused" while the session was in
+fact playing. That was never confirmed, and it is recorded here as motive
+rather than as proof.
+
+**Accessibility.** An icon-only button with no accessible name is announced by
+a screen reader as an unlabelled button, and its state is not conveyed at all.
+This one is not a matter of taste — a control whose only state channel is a
+glyph has no state for a non-visual user.
+
+### Fixing it
+
+Give the button a state-dependent accessible name and tooltip — `aria-label`
+of "Pause" / "Play" tracking `playing`, with tooltip text to match, rather than
+one static string covering both. Consider `aria-pressed` so the toggle state is
+announced rather than inferred.
+
+Worth auditing the other icon-only controls in the same bar in the same pass —
+step, step-candle and skip (`PlaybackControls.tsx:97-120`) are also unlabelled,
+though those are stateless actions and so carry only the accessibility half of
+this problem, not the confusion half.

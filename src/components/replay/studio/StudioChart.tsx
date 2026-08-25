@@ -249,8 +249,22 @@ export function StudioChart({
     }
   }, [candles]);
 
-  // Refit once after a timeframe fold so the new bar width is sensible.
-  useEffect(() => { fittedRef.current = false; }, [displayTf]);
+  // NO refit on a fold. `setCandles` already carries the viewport across a
+  // timeframe change — it translates the visible window from the old bar grid
+  // to the new one and guarantees the newest bar stays inside it — so a refit
+  // here is not a safety net, it is a second opinion that overrides the first.
+  //
+  // It also fired at the wrong time. This effect is declared AFTER the
+  // `[candles]` effect above, so on the fold commit `setCandles` ran while
+  // `fittedRef` was still true and the refit was deferred to the NEXT change
+  // to `candles`. Playing, that was the following tick — measured as a
+  // one-frame viewport snap from the restored window to fit-all, which is the
+  // 2-3 bar stutter traders reported on a fold. Paused, there was no next
+  // change at all, so nothing ran and the chart sat stranded until something
+  // else moved it.
+  //
+  // `fittedRef` still guards the genuine first-data fit above; only the
+  // per-fold reset is gone.
 
   useEffect(() => { adapterRef.current?.syncOverlayIndicators(indicators, candles); }, [indicators, candles]);
   useEffect(() => { adapterRef.current?.syncSubPaneIndicators(indicators, candles); }, [indicators, candles]);

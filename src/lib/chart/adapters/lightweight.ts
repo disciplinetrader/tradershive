@@ -586,13 +586,21 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
     kind: "lightweight-charts",
     setCandles(candles) {
       resizeToContainer();
-      // ── TEMPORARY · fold-freeze instrumentation ────────────────────────
-      // Diagnostic only, no behaviour change. Remove once the 2H fold freeze
-      // is reproduced with real numbers. Opt in from the console with
+      // ── fold-viewport instrumentation · DO NOT REMOVE ──────────────────
+      //
+      // NOT leftover debug scaffolding. `e2e/ui/replay-fold-freeze.spec.ts`
+      // reads these two log lines and asserts on them — it is the regression
+      // coverage for the timeframe-fold freeze, and it is the only thing
+      // watching the viewport-restore logic below. Deleting this flag does not
+      // fail a build or a typecheck; it makes that spec silently assert
+      // nothing. If it ever needs to go, retire the spec in the same change.
+      //
+      // Opt in from the console so a normal session is not spammed:
       //   localStorage.chartFoldDebug = "1"
-      // so a normal session is not spammed. Logs the fold tick in full, then
+      //
+      // Diagnostic only — no behaviour change. Logs the fold tick in full, then
       // one line per tick tracking whether the newest bar is still inside the
-      // visible range — which is what decides whether the renderer follows new
+      // visible range, which is what decides whether the renderer follows new
       // bars or pins the viewport and lets them append off-screen.
       const foldDebug = (() => {
         try { return localStorage.getItem("chartFoldDebug") === "1"; } catch { return false; }
@@ -608,6 +616,11 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
       const prevStep = barStep;
       let keepFrom: number | null = null;
       let keepTo: number | null = null;
+      // What the restore ACTUALLY asked the renderer for, recorded rather than
+      // recomputed: the diagnostic below used to re-derive this math and drifted
+      // out of step with it the moment the clamp was added.
+      let appliedFrom: number | null = null;
+      let appliedTo: number | null = null;
       if (barTimes.length) {
         const range = ts.getVisibleLogicalRange();
         if (range) {
@@ -641,9 +654,38 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
           // from a higher timeframe can't leave the chart looking empty.
           const clampedFrom = Math.max(keepFrom, first - margin);
           const clampedTo = Math.min(Math.max(keepTo, clampedFrom + barStep * 30), last + margin);
-          const from = timeToLogical(clampedFrom);
-          const to = timeToLogical(clampedTo);
+          let from = timeToLogical(clampedFrom);
+          let to = timeToLogical(clampedTo);
           if (from != null && to != null && to > from) {
+            // The restored window must always contain the NEWEST bar.
+            //
+            // Preserving the pre-fold window in time is right, but it says
+            // nothing about where the tape's head ended up: fold from a
+            // viewport scrolled back into history and the translated window
+            // legitimately stops short of it. The renderer then treats the
+            // series as "not at the right edge" and, on every subsequent
+            // append, compensates the right offset to keep the same bars on
+            // screen — so new bars accumulate off-screen and the chart looks
+            // frozen while price, trades and the axis all advance.
+            //
+            // Measured on a 5m->2H fold from a centred viewport: requested
+            // range ended at logical 23.35 with the newest bar at 25, i.e.
+            // 1.65 bars past the edge, and the chart stayed stuck until
+            // something else moved the viewport.
+            //
+            // TRANSLATE rather than widen. Stretching `to` up to the head
+            // would silently zoom out by the shortfall; shifting both ends
+            // keeps the span — and therefore the trader's zoom — exactly as it
+            // was, which is the whole reason this branch exists instead of a
+            // blanket `fitContent()`.
+            const lastIdx = barTimes.length - 1;
+            if (to < lastIdx) {
+              const shift = lastIdx - to;
+              from += shift;
+              to += shift;
+            }
+            appliedFrom = from;
+            appliedTo = to;
             try { ts.setVisibleLogicalRange({ from: from as Logical, to: to as Logical }); }
             catch { /* range rejected — leave as-is */ }
           }
@@ -660,40 +702,42 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
         } catch { range = null; }
         const lastIdx = barTimes.length - 1;
         if (stepChanged) {
-          // The fold tick. `from`/`to` here are what the restore branch asked
-          // for; `range` is what the renderer actually accepted.
-          const first = barTimes[0];
-          const last = barTimes[lastIdx];
-          const margin = barStep * 20;
-          const clampedFrom = keepFrom != null ? Math.max(keepFrom, first - margin) : null;
-          const clampedTo = clampedFrom != null && keepTo != null
-            ? Math.min(Math.max(keepTo, clampedFrom + barStep * 30), last + margin)
-            : null;
-          console.log("[fold] SWITCH", {
+          // The fold tick. `requestedFrom`/`requestedTo` are the values the
+          // restore actually handed the renderer, recorded at the point of
+          // application rather than re-derived here — re-deriving them silently
+          // missed the newest-bar clamp and reported a range that was never
+          // asked for. `appliedRange` is the renderer's own reading, which may
+          // still be one commit behind.
+          //
+          // Stringified inline, NOT passed as an object: Chrome logs an object
+          // as a live reference that only serialises once a human expands it,
+          // so every export path (copy, Save as, screenshot) captures the word
+          // "Object" and nothing else. Plain text survives all of them.
+          console.log("[fold] SWITCH " + JSON.stringify({
             prevStepMs: prevStep,
             barStepMs: barStep,
             keepFrom: keepFrom != null ? new Date(keepFrom).toISOString() : null,
             keepTo: keepTo != null ? new Date(keepTo).toISOString() : null,
-            requestedFrom: clampedFrom != null ? timeToLogical(clampedFrom) : null,
-            requestedTo: clampedTo != null ? timeToLogical(clampedTo) : null,
+            requestedFrom: appliedFrom,
+            requestedTo: appliedTo,
             appliedRange: range,
             barTimesLength: barTimes.length,
             candlesLength: candles.length,
             lastBarIndex: lastIdx,
             didInitialFit,
-          });
+          }));
         } else if (range) {
           // Per-tick. `lastBarVisible: false` is the freeze signature: the
           // renderer compensates the right offset to keep the same bars on
           // screen, so appended bars render outside the viewport.
-          console.log("[fold] TICK", {
+          console.log("[fold] TICK " + JSON.stringify({
             rangeFrom: Number(range.from.toFixed(2)),
             rangeTo: Number(range.to.toFixed(2)),
             candlesLength: candles.length,
             lastBarIndex: lastIdx,
             lastBarVisible: range.from <= lastIdx && lastIdx <= range.to,
             barsPastRangeEnd: Number((lastIdx - range.to).toFixed(2)),
-          });
+          }));
         }
       }
 
