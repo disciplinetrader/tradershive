@@ -2811,23 +2811,49 @@ editor's success message), and error surfacing in `replay-trade-sync.ts` so a
 rejected durable write can never again be silent — it logs and raises a toast,
 while still degrading to local-only trading rather than breaking the session.
 
-### Sizing — still the one unmade product decision
+### Sizing — SETTLED 2026-08-26, and the earlier pricing was wrong
 
-Unchanged and still blocking Stage C. `sizeForRisk(entry, stop)` derives size
-from stop distance; with no stop the distance is 0 and it returns a fallback of
-`1` unit. (The 2026-08-26 consolidation under RS-3 made every market route go
-through it, which fixed routes disagreeing with each other — it did **not** fix
-what the function returns when there is no stop.)
+`sizeForRisk(entry, stop)` derives size from stop distance, so with no stop
+there is nothing to divide by. Three options were priced for this — a fixed unit
+default (A), a quantity field (B), adopting `lot_size` the way
+`PositionLinesLive` does (C) — and Option A shipped as provisional because C was
+judged "a second model change on top of this one".
 
-The reference implementation sidesteps this entirely: `PositionLinesLive` never
-derives size, it reads **`lot_size` off the trade** (`OpenTradeLine`, line 37).
-That may itself be the answer — Studio orders adopting a lot-size field rather
-than deriving size from Risk %, which is also what real FXReplay does.
+**That pricing was wrong in its premise. Option C was not unbuilt — it was
+UNWIRED.**
 
-**Flagging it as a real option, not a decision made.** It still needs the
-questions in the main entry answered: what Risk % means (or whether it is
-hidden) when no stop exists, and what a later +SL does to the size of an
-already-open position.
+`src/lib/replay/settings.ts:20` has defined `defaultLotSize` all along, with an
+input on the Replay Settings page (`replay.settings.tsx:66`) and localStorage
+persistence. **Nothing read it.** A user-facing setting connected to nothing.
+
+So the work was never "add lot sizing"; it was "wire the lot-size setting that
+already exists, and delete the duplicate". Studio now reads `defaultLotSize`
+for a stopless fill, and the provisional `defaultUnits` control added to the
+toolbar the same day is gone.
+
+⚠ **LOTS IN, UNITS OUT.** `defaultLotSize` is in LOTS; `PositionOrder.size` is
+consumed in UNITS. They differ by `contractSize` — 1 for crypto, 100,000 for
+every forex pair — so passing lots straight through does not error, it
+understates forex P&L by five orders of magnitude and tests clean on crypto.
+That is [BA-9](#ba-9--size-is-validated-as-lots-and-consumed-as-units). The
+conversion is `lotsToUnits` in `lib/replay/chart-trading.ts`, applied once at
+the context boundary, and it is unit-tested against a forex contract size
+specifically — a crypto-only case would pass against unconverted lots.
+
+**The wider lesson, and it cost a control:** the provisional `defaultUnits`
+field was added to the toolbar *next to Risk %* while `defaultLotSize` sat
+unread in Settings. That is the same defect this whole day opened with — three
+Buy buttons that disagreed — reproduced in miniature while fixing it. **Before
+adding a control for a decision, grep for whether the setting already exists.**
+A dead setting looks exactly like a missing one from the code that needs it.
+
+`defaultRiskPct` in the same file is ALSO unread — Studio's toolbar carries its
+own `riskPercent` state instead. Left alone deliberately rather than swept in,
+but it is the same trap armed and waiting.
+
+What this does NOT change: a later `+SL` on an open position still does not
+resize it. Re-sizing an open trade changes the basis its P&L is measured
+against mid-flight, which is worse than an arbitrary size.
 
 ### Two things that will bite Stage B's e2e spec
 
@@ -2935,13 +2961,22 @@ the same decision Stage C already owes an answer for. Options, none free:
 - **Fill at the click price** — removes the drift by removing the realism, and
   is probably wrong for a replay tool whose point is honest execution.
 
-Whichever is chosen has to agree with the sizing question in
-[RS-4](#rs-4--studios-order-flow-does-not-match-fxreplay-levels-are-optional-and-instant-not-gated):
-if Studio adopts a `lot_size` field instead of deriving size from Risk %, this
-defect changes shape — size stops depending on the stop distance at all, and the
-drift becomes a reporting problem rather than a sizing one. **Decide the two
-together.** Deciding this one alone risks building a correction that the sizing
-change then makes meaningless.
+**Update 2026-08-26 — the companion sizing question is now settled, and it
+narrows this one.** RS-4's sizing decision was resolved by wiring
+`defaultLotSize`, a Replay Setting that already existed and was read by nothing.
+A STOPLESS fill is therefore sized in lots and does not depend on the stop
+distance at all, so fill drift cannot distort its size — for that case this is
+purely a reporting problem.
+
+It is still a real defect for a fill that DOES carry a stop, which is every
+right-click limit/stop order and any market order given an explicit level: those
+are sized by `sizeForRisk` against the click price while the fill lands
+elsewhere. The measured 1% → 1.57% above is exactly that path.
+
+So the scope shrank rather than closing: **this is now a defect of stop-carrying
+orders only.** The four options above still stand for those, and "re-derive
+nothing and disclose" is the cheapest of them now that the stopless case is out
+of scope.
 
 ---
 
@@ -3129,10 +3164,10 @@ Order of work:
    single relaxation point, still pending the limit/stop question above.
 3. **Stage B/C** — port the `PositionLinesLive` ghost-handle pattern per the
    addendum.
-4. **Settle sizing with
-   [RS-5](#rs-5--position-size-is-computed-against-the-click-price-the-stop-is-not)**,
-   still the one genuinely unmade product decision, and now with a second reason
-   to be answered in the same pass.
+4. **Sizing — DONE 2026-08-26.** Settled by wiring `defaultLotSize`, which
+   already existed and was read by nothing — see "Sizing — SETTLED" above.
+   [RS-5](#rs-5--position-size-is-computed-against-the-click-price-the-stop-is-not)
+   remains open on its own terms: fill drift is a separate defect.
 
 The runtime landmines that made this dangerous — the `exitFor` coercion and the
 `riskBasisOf` family — were closed by Stage 1 and Stage A-prime and are already

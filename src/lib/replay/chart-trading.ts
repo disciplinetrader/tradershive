@@ -266,3 +266,21 @@ export function marketOrderSize(opts: {
   // fall back to one unit rather than opening a zero-size position.
   return Number.isFinite(opts.defaultUnits) && opts.defaultUnits > 0 ? opts.defaultUnits : 1;
 }
+
+/**
+ * Convert a LOT size to the UNITS `PositionOrder.size` is consumed in.
+ *
+ * This is BA-9's trap, isolated and named. `size` is validated as "lot size"
+ * and consumed as units; the two differ by `contractSize`, which is 1 for
+ * crypto and 100,000 for every forex pair. Passing lots straight through does
+ * not error — it understates forex P&L by five orders of magnitude, and it
+ * tests clean on crypto because there the factor is 1.
+ *
+ * A non-positive or non-finite lot size is not a sizing decision, so it falls
+ * back to one lot rather than opening a zero-size position.
+ */
+export function lotsToUnits(lots: number, contractSize: number): number {
+  const l = Number.isFinite(lots) && lots > 0 ? lots : 1;
+  const c = Number.isFinite(contractSize) && contractSize > 0 ? contractSize : 1;
+  return l * c;
+}

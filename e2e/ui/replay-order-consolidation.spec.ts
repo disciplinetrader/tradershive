@@ -58,6 +58,22 @@ async function seed(sb: SupabaseClient, userId: string, tag: string) {
   return String((data as { id: string }).id);
 }
 
+/**
+ * Sizing for a stopless fill comes from `defaultLotSize` in Replay Settings,
+ * which is persisted in localStorage. Seeding it before navigation is how a
+ * test drives the REAL wiring — there is deliberately no chart-side control any
+ * more, because a second sizing input beside this one was the duplication that
+ * had to go.
+ */
+async function setDefaultLots(page: Page, lots: number) {
+  await page.addInitScript((v) => {
+    localStorage.setItem(
+      "traders-hive:replay-settings:v1",
+      JSON.stringify({ defaultLotSize: v }),
+    );
+  }, lots);
+}
+
 async function openStudio(page: Page, sessionId: string) {
   await page.addInitScript(() => localStorage.setItem("thv:tour:completed:v1", "1"));
   await page.goto(`/replay/studio?id=${sessionId}`);
@@ -109,11 +125,9 @@ async function readRow(page: Page): Promise<Row> {
  * convincing: entry, stop and target all match too, because they were placed at
  * the same cursor.
  */
-async function buy(page: Page, sessionId: string, opts: { qty?: number } = {}) {
+async function buy(page: Page, sessionId: string, opts: { lots?: number } = {}) {
+  if (opts.lots != null) await setDefaultLots(page, opts.lots);
   await openStudio(page, sessionId);
-  if (opts.qty != null) {
-    await page.getByLabel("Default position size in units when no stop is set").fill(String(opts.qty));
-  }
   await page.getByTestId("studio-buy").click();
   await stepOneBar(page);
 }
@@ -176,6 +190,11 @@ test.describe("studio order entry is one Buy and one Sell", () => {
     for (const gone of ["Buy limit", "Sell limit", "Buy market", "Sell market"]) {
       await expect(page.getByRole("button", { name: gone, exact: true })).toHaveCount(0);
     }
+    // And no chart-side sizing control: lot size lives in Replay Settings, and
+    // a second input here is the duplication this whole consolidation removed.
+    await expect(
+      page.getByLabel("Default position size in units when no stop is set"),
+    ).toHaveCount(0);
   });
 
   test("a market Buy fills instantly with NO stop and NO target", async ({ page }) => {
@@ -202,12 +221,19 @@ test.describe("studio order entry is one Buy and one Sell", () => {
     expect(Number(row.qty)).toBeGreaterThan(0);
   });
 
-  test("the Qty field sizes a stopless fill, and Risk % does not", async ({ page }) => {
+  test("defaultLotSize sizes a stopless fill, and Risk % does not", async ({ page }) => {
     /**
-     * RS-4 Option A. With no stop there is no distance to divide the risk
-     * budget by, so Risk % cannot size the position and `defaultUnits` does.
-     * Both halves are asserted: that Qty moves the size, and that Risk % does
-     * NOT — otherwise a build that quietly resurrected risk-sizing would pass.
+     * RS-4/RS-5's sizing question, settled. With no stop there is no distance to
+     * divide the risk budget by, so Risk % cannot size the position and the
+     * trader's `defaultLotSize` does.
+     *
+     * BTC/USDT has `contractSize: 1`, so lots and units coincide here and the
+     * numbers below read directly. The conversion itself is unit-tested against
+     * a forex contract size (`lotsToUnits`, BA-9) — a crypto-only assertion
+     * would pass just as well against unconverted lots.
+     *
+     * Both halves are asserted: that lot size moves the size, and that Risk %
+     * does NOT — otherwise a build that quietly resurrected risk-sizing passes.
      */
     const [a, b] = [
       await seed(sb, ids().userId, `${tag}q1`),
@@ -215,21 +241,21 @@ test.describe("studio order entry is one Buy and one Sell", () => {
     ];
     extraSessions.push(a, b);
 
-    await buy(page, a, { qty: 1 });
+    await buy(page, a, { lots: 1 });
     expect(Number((await readRow(page)).qty)).toBeCloseTo(1, 2);
 
-    await buy(page, b, { qty: 3 });
+    await buy(page, b, { lots: 3 });
     expect(Number((await readRow(page)).qty)).toBeCloseTo(3, 2);
 
     // Risk % is still on the toolbar and still means something — but not here.
     const c = await seed(sb, ids().userId, `${tag}q3`);
     extraSessions.push(c);
+    await setDefaultLots(page, 2);
     await openStudio(page, c);
     await page.getByLabel("Risk per trade in percent of equity").fill("5");
-    await page.getByLabel("Default position size in units when no stop is set").fill("2");
     await page.getByTestId("studio-buy").click();
     await stepOneBar(page);
-    // 2 units because Qty says 2 — NOT a risk-derived number.
+    // 2 units because the lot size says 2 — NOT a risk-derived number.
     expect(Number((await readRow(page)).qty)).toBeCloseTo(2, 2);
   });
 
@@ -245,7 +271,7 @@ test.describe("studio order entry is one Buy and one Sell", () => {
      */
     const id = await seed(sb, ids().userId, `${tag}widget`);
     extraSessions.push(id);
-    await buy(page, id, { qty: 2 });
+    await buy(page, id, { lots: 2 });
 
     const widget = page.locator('[data-testid^="studio-position-"]').first();
     await expect(widget).toBeVisible({ timeout: 20_000 });
@@ -274,7 +300,7 @@ test.describe("studio order entry is one Buy and one Sell", () => {
      */
     const id = await seed(sb, ids().userId, `${tag}noclick`);
     extraSessions.push(id);
-    await buy(page, id, { qty: 2 });
+    await buy(page, id, { lots: 2 });
 
     const sl = page.locator('[data-testid$="-sl"]').first();
     await expect(sl).toBeVisible({ timeout: 20_000 });
@@ -293,7 +319,7 @@ test.describe("studio order entry is one Buy and one Sell", () => {
      */
     const id = await seed(sb, ids().userId, `${tag}drag`);
     extraSessions.push(id);
-    await buy(page, id, { qty: 2 });
+    await buy(page, id, { lots: 2 });
 
     const before = await readRow(page);
     expect(before.stop).toBe("—");
@@ -318,7 +344,7 @@ test.describe("studio order entry is one Buy and one Sell", () => {
   test("the widget's X closes the position immediately", async ({ page }) => {
     const id = await seed(sb, ids().userId, `${tag}close`);
     extraSessions.push(id);
-    await buy(page, id, { qty: 2 });
+    await buy(page, id, { lots: 2 });
     await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 20_000 });
 
     await page.locator('[data-testid$="-close"]').first().click();

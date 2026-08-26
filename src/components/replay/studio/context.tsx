@@ -24,7 +24,9 @@ import {
   updatePositionLevels, partialClosePosition, moveStopToBreakEven,
 } from "@/lib/chart/orders/service";
 import { inferOrderType } from "@/lib/chart/orders/model";
-import { marketOrderSize } from "@/lib/replay/chart-trading";
+import { useReplaySettings } from "@/lib/replay/settings";
+import { findSymbol } from "@/lib/paper-trading/symbols";
+import { lotsToUnits, marketOrderSize } from "@/lib/replay/chart-trading";
 import type { OrderStores } from "@/lib/chart/orders/service";
 import type { PositionOrder } from "@/lib/chart/orders/model";
 import type { ClosedTrade } from "@/lib/chart/orders/closed-trade";
@@ -90,9 +92,12 @@ export interface StudioValue {
   equity: number | null;
   /** Risk budget per trade, in percent of equity. Drives default sizing. */
   riskPercent: number;
-  /** Units used when a market order opens with no stop. RS-4 Option A. */
+  /**
+   * Units used when a market order opens with no stop — `defaultLotSize` from
+   * Replay Settings, converted from lots. Read-only here: it is edited in
+   * Replay Settings, not on the chart, so there is exactly one place to set it.
+   */
   defaultUnits: number;
-  setDefaultUnits: (n: number) => void;
   setRiskPercent: (pct: number) => void;
   /** Units implied by the risk budget for a given entry/stop pair. */
   sizeForRisk: (entry: number, stop: number) => number;
@@ -365,14 +370,29 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
   const [riskPercent, setRiskPercent] = useState(1);
 
   /**
-   * Size used when a market order opens with NO stop, in units.
+   * Size used when a market order opens with NO stop.
    *
-   * Provisional (RS-4 Option A). Risk % cannot size a position with no stop —
-   * there is no distance to divide by — so rather than fabricate a number this
-   * is the trader's own default, surfaced on the toolbar next to Risk % so it
-   * is a visible choice rather than a hidden constant.
+   * RS-4's sizing question, settled: this is the trader's `defaultLotSize` from
+   * Replay Settings — a setting that already existed, already had a UI, and was
+   * read by nothing. The A/B/C options priced earlier were wrong in their
+   * premise: Option C (size as a property of the position, in lots, the way
+   * FXReplay does it) was not unbuilt, it was UNWIRED.
+   *
+   * ⚠ LOTS IN, UNITS OUT. `PositionOrder.size` is consumed as UNITS; this
+   * setting is in LOTS. The two differ by `contractSize` — 1 for crypto and
+   * 100,000 for every forex pair — so passing lots straight through does not
+   * error, it understates forex P&L by five orders of magnitude and tests clean
+   * on crypto. That is BA-9. The conversion happens here, once, at the boundary.
    */
-  const [defaultUnits, setDefaultUnits] = useState(1);
+  const { settings: replaySettings } = useReplaySettings();
+  const contractSize = useMemo(
+    () => (session?.symbol ? findSymbol(session.symbol)?.contractSize || 1 : 1),
+    [session?.symbol],
+  );
+  const defaultUnits = useMemo(
+    () => lotsToUnits(Number(replaySettings.defaultLotSize), contractSize),
+    [replaySettings.defaultLotSize, contractSize],
+  );
 
   const sizeForRisk = useCallback(
     (entry: number, stop: number) => {
@@ -434,13 +454,12 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
           stop,
           target: tp,
           /**
-           * Option A sizing — PROVISIONAL, pending RS-4/RS-5's product call.
+           * Sizing — settled (RS-4 / RS-5).
            *
            * With a stop, Risk % means what it says and sizes the position.
            * Without one there is no distance to divide the risk budget by, so
-           * the trader's own `defaultUnits` is used instead of a derived
-           * number. It is arbitrary — but VISIBLY arbitrary, sitting in a field
-           * on the toolbar, rather than a fabricated risk figure.
+           * the size comes from `defaultLotSize` in Replay Settings, converted
+           * from lots to units. One control, in one place, already built.
            *
            * Adding a stop later deliberately does NOT resize the position:
            * re-sizing an open trade changes the basis its P/L is measured
@@ -673,7 +692,6 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
     equity,
     riskPercent,
     defaultUnits,
-    setDefaultUnits,
     setRiskPercent,
     sizeForRisk,
     placeOrderAt,

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { bracketFor, marketOrderSize } from "../chart-trading";
+import { bracketFor, lotsToUnits, marketOrderSize } from "../chart-trading";
 import { inferOrderType } from "@/lib/chart/orders/model";
 
 /**
@@ -113,5 +113,35 @@ describe("marketOrderSize", () => {
     expect(marketOrderSize({ stop: null, riskSized: 0, defaultUnits: NaN })).toBe(1);
     expect(marketOrderSize({ stop: 62_000, riskSized: NaN, defaultUnits: 3 })).toBe(3);
     expect(marketOrderSize({ stop: 62_000, riskSized: -5, defaultUnits: 3 })).toBe(3);
+  });
+});
+
+/**
+ * BA-9, isolated.
+ *
+ * `defaultLotSize` is in LOTS and `PositionOrder.size` is consumed in UNITS.
+ * The bug this guards is silent on crypto (contractSize 1) and 100,000x on
+ * forex, which is exactly why it needs a forex case and a crypto case side by
+ * side — a crypto-only test would pass against the unconverted value.
+ */
+describe("lotsToUnits", () => {
+  it("multiplies by contract size — forex is the case that matters", () => {
+    expect(lotsToUnits(1, 100_000)).toBe(100_000);
+    expect(lotsToUnits(0.1, 100_000)).toBeCloseTo(10_000, 6);
+  });
+
+  it("is a no-op on crypto, which is why the forex case above exists", () => {
+    // Passing lots straight through would ALSO give 1 here. Only the forex
+    // case distinguishes converted from unconverted.
+    expect(lotsToUnits(1, 1)).toBe(1);
+    expect(lotsToUnits(2.5, 1)).toBe(2.5);
+  });
+
+  it("never yields a zero or non-finite size", () => {
+    expect(lotsToUnits(0, 100_000)).toBe(100_000);
+    expect(lotsToUnits(NaN, 100_000)).toBe(100_000);
+    expect(lotsToUnits(-3, 100_000)).toBe(100_000);
+    expect(lotsToUnits(2, 0)).toBe(2);
+    expect(lotsToUnits(2, NaN)).toBe(2);
   });
 });
