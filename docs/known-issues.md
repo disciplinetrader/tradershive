@@ -2530,8 +2530,17 @@ should ever propose a level.
 ## RS-4 — Studio's order flow does not match FXReplay: levels are optional and instant, not gated
 
 **Area:** Replay Studio · chart trading · order model ·
-**Found:** 2026-08-25 · **Status:** open — **scoped, deliberately not started.**
-Architecture change, not a bug fix. The analysis below is done; do not redo it.
+**Found:** 2026-08-25 · **Status:** open — **scoped, RE-PRICED 2026-08-26, ready
+to start.** The analysis below is done; do not redo it.
+
+> **⚠ The original pricing was wrong and the entry below still reads as if it
+> were not.** This was filed as "architecture change, not a bug fix", on a
+> reading of Stage A's revert that treated 51 type errors as evidence the change
+> could not be scoped. It was measured properly on 2026-08-26 — see
+> **[Re-pricing](#re-pricing-2026-08-26--stage-a-is-a-refactor-not-an-architecture-project)**
+> at the end of this entry. Stage A is a ~57-error, 82%-in-module refactor with
+> ten mechanical null checks outside it. **Do Stage A.** Convergence onto
+> `paper_trades` was priced in the same pass and rejected.
 
 > **Do NOT revert commit `4f4fa148`.** It carries the drawings-fold regression
 > tests as well as the draft flow, and those are unrelated and worth keeping.
@@ -2630,7 +2639,14 @@ Studio orders have optional levels", which are materially different tickets.
 | `modifyLevels` — becomes "add OR move", today assumes a level exists | `position-manager.ts:397-406` |
 | Closed-trade record — `initialStop ?? order.stop` | `closed-trade.ts:190-191, 250-251` |
 | ~44 non-null `.stop` / `.target` reads to audit | orders module, excl. tests |
-| 8 test files | `orders/__tests__/` |
+| ~~8 test files~~ **0 — measured, they compile unchanged** | `orders/__tests__/` |
+
+The two rows above were estimates. The audit is now measured: see
+[Re-pricing](#re-pricing-2026-08-26--stage-a-is-a-refactor-not-an-architecture-project).
+The test-file row was simply wrong — `tsconfig.json` includes `src/**/*.ts`, so
+`orders/__tests__/` IS type-checked, and widening produces **zero** errors there
+because the suites construct real numbers, which satisfy `number | null`. They
+need NEW cases for the null paths, not fixes to existing ones.
 
 **No migration needed.** `chart_closed_trades.initial_stop`, `final_stop`,
 `initial_target` and `final_target` are already nullable. Worth knowing up
@@ -2734,8 +2750,9 @@ The Stage 1 and A′ guards are all `Number.isFinite`, not `!= null` — the A�
 commit says outright that null, undefined and NaN are the same statement. So a
 stopless position **is already representable in the existing non-nullable
 `number` type as `NaN`**, with zero type changes, and `exitFor` correctly
-refuses to trigger on it. It looks like it dodges the 51-error widening that
-sank Stage A.
+refuses to trigger on it. It looks like it dodges the type widening that sank
+Stage A — a widening since measured at 57 errors, only ten of them outside the
+orders module.
 
 It does not. The costs, all real:
 
@@ -2884,3 +2901,199 @@ defect changes shape — size stops depending on the stop distance at all, and t
 drift becomes a reporting problem rather than a sizing one. **Decide the two
 together.** Deciding this one alone risks building a correction that the sizing
 change then makes meaningless.
+
+---
+
+## Re-pricing 2026-08-26 — Stage A is a refactor, not an architecture project
+
+Belongs to [RS-4](#rs-4--studios-order-flow-does-not-match-fxreplay-levels-are-optional-and-instant-not-gated).
+Everything here was **measured**, not estimated: the widening was applied, `tsc`
+was run, the output was counted by file, and the change was reverted. The tree
+was clean before and after.
+
+### The premise this entry was written on is wrong
+
+RS-4, and the session that scoped it, treat `lib/chart/orders` as "Studio's
+model" and `paper_trades` as "the workspace's model". **Trading Workspace mounts
+both.** It uses `usePositionOrders` — the same `PositionOrder` model
+(`TradingWorkspace.tsx:449`) — for the Position Tool, *and* `PositionLinesLive`
+over `paper_trades` (`:1006`).
+
+The real split is **chart-drawing-derived orders (in-memory) vs account-backed
+trades (server)**, and `lib/chart/orders` has three consumers:
+
+| Consumer | Entry point |
+|---|---|
+| Replay Studio | `studio/context.tsx` to `placeOrEditOrder` |
+| Battle Arena | `BattleChart.tsx:20` to `placeOrEditOrder` directly |
+| Trading Workspace's Position Tool | `usePositionOrders` (`TradingWorkspace.tsx:449`) |
+
+Any plan that says "move Studio onto the other model" must reckon with the fact
+that this **does not delete the second system.**
+
+### Stage A, measured
+
+`stop` and `target` widened to `number | null` on both `PositionOrder` and
+`OrderDraft`, then `bunx tsc --noEmit`:
+
+| Location | Errors | Character |
+|---|---|---|
+| `lib/chart/orders/*` — the module that owns the concept | **47 (82%)** | model 16, service 11, position-manager 7, engine 7, closed-trade 6 |
+| `BattleChart.tsx` | 4 | 2 assignments, 2 `possibly null` at render |
+| `StudioTradeLayer.tsx` | 2 | assignment to a `number` prop |
+| `PendingOrdersPanel.tsx` | 2 | `possibly null` at a format site |
+| `usePositionOrders.ts` | 1 | argument pass-through |
+| `PositionOrderDialog.tsx` | 1 | `possibly null` at a format site |
+| `orders/__tests__/` (8 files, in tsconfig scope) | **0** | compile unchanged |
+| **Total** | **57** | |
+
+**The old figure of 51 was roughly right; the conclusion drawn from it was not.**
+Every one of the ten consumer errors is a display or pass-through null check —
+`'p.stop' is possibly 'null'` at a formatting site, or `number | null` assigned
+to a `number` prop. **None is structural.** They are the same em-dash treatment
+Stage A-prime already applied in `StudioTradeLayer`.
+
+"51 type errors across 10 files... it cannot be scoped to the market-order path"
+is true about the count and wrong about the implication. The blast radius
+*outside the module that owns the concept* is ten mechanical fixes in five
+files. Teaching `lib/chart/orders` that a level can be absent is not incidental
+damage — it is the ticket.
+
+### The zero-distance seed — dead end, do not try it
+
+The tempting narrower fix: keep `stop`/`target` non-nullable, seed them at the
+entry price (zero distance), and require the trader to drag them out before they
+mean anything — the way `TradePlanner` starts unplaced.
+
+**`validateOrder` rejects it twice**, and neither guard is incidental:
+
+- `model.ts:268` — `if (stop >= entry)` gives *"Buy order: stop loss must be
+  below entry."* A zero-distance stop IS `stop === entry`.
+- `model.ts:283` — `if (risk <= 0)` gives *"Risk is zero or negative — move the
+  stop away from the entry price."*
+
+So it needs **the same relaxation as the null representation** — it is not a way
+around the widening, it is the widening with a worse representation.
+
+And forcing it through is actively harmful: `sizeForRisk(entry, stop)` divides
+by the stop distance, so a zero distance returns the `1` fallback and every
+seeded position is sized at one unit — **reintroducing exactly the bug fixed in
+RS-3 on 2026-08-26.** A sentinel that is indistinguishable from a real level at
+the type level, rejected by the validator, and silently destroys sizing. Null is
+strictly better on all three counts.
+
+### Why the split is partly genuine — three real reasons
+
+These are not historical accidents, and a convergence plan has to solve each:
+
+**1 - Market-time stamping.** `chart_closed_trades` stores explicit
+`entry_time BIGINT` / `exit_time BIGINT`. `paper_trades.opened_at` is
+`TIMESTAMPTZ NOT NULL DEFAULT now()`, and **`openTradeSchema`
+(`paper-trading.functions.ts:215`) has no `opened_at` field at all** — there is
+no way to pass market time through it. A trade replayed on 2026-07-05 data would
+be stamped with today's wall clock. That is the
+[JR-6](#jr-6--manual-entries-written-before-2026-08-17-carry-a-fabricated-open-time)
+bug class, already on this list.
+
+**2 - Cursor-exact resume.** `SessionSnapshot` (`replay/session/model.ts:61`)
+carries `orders: PositionOrder[]` alongside the clock cursor and the event tail,
+so a session restores to an exact observation index. `paper_trades` has no
+observation-index concept.
+
+**3 - Session scoping.** `paper_trades.account_id` is `NOT NULL` and `openTrade`
+pre-flights against `paper_accounts` balance. Replay sessions carry their own
+`initial_balance` and are not accounts.
+[BA-11](#ba-11--battle-replay-writes-pl-that-never-reaches-balance-or-statistics)
+is the precedent for what a replay-shaped writer does to that table.
+
+**NOT a reason: backward scrubbing.** The clock refuses it outright —
+*"Backwards seeks are refused here — rewinding is a session-level operation...
+because trades cannot be un-executed"* — and there is no rewind in the
+controller. Replay is forward-only, exactly like live. Do not cite scrubbing as
+a justification for the split; it does not exist.
+
+**Throughput is real but proves less than it appears.** `MAX_SPEED` is 100 and
+`CANDLES_PER_SECOND_AT_1X` is 1, with up to 4 observations per candle, so 100x
+is ~400 observations/sec; `seekForwardTo` replays every intervening observation
+synchronously, so a one-day jump on 5m bars is 1,100+ in a single burst. Against
+that, the live feed's fallback floor is 60s per symbol
+(`SNAPSHOT_MIN_GAP_MS`), the SL/TP monitor polls at 3s and position rows at 4s.
+A per-tick round-trip is infeasible by two to three orders of magnitude — **but
+neither system does per-tick writes.** Studio autosaves every 5s / 400
+observations with an immediate flush on fills and closes
+(`DEFAULT_AUTOSAVE_POLICY`); the live system writes per user action and
+evaluates ticks client-side in `useSlTpMonitor`. Both already evaluate in memory
+and persist on events. The throughput number justifies an in-memory
+**evaluation layer**, which both have — not a second **model**.
+
+### Historical, not genuine — the duplication worth resenting
+
+The separation has reasons. The **parallel feature set** does not: both sides
+grew their own implementations of the same capabilities.
+
+| Capability | `lib/chart/orders` | `paper_trades` side |
+|---|---|---|
+| Partial close | `position-manager.ts` | `partialCloseTrade` (server fn) |
+| Break-even | `moveStopToBreakEven` | `moveToBreakEven` (server fn) |
+| TP ladder / staged exits | `take-profit.ts` | `paper_trade_exits` + `updateExitLeg` |
+| **Trailing stops** | `trailing.ts` | **absent — nothing in `trading-engine/` or `paper-trading/`** |
+| Executions tape, `riskBasis`, `remainingQuantity` | yes | no |
+
+Two implementations of partial close, break-even and the exit ladder is real
+duplication and a real maintenance tax. Note the asymmetry in the last two rows:
+`lib/chart/orders` is the **richer** model, so moving Studio onto `paper_trades`
+would be a feature *downgrade* unless trailing were ported first.
+
+### Convergence onto `paper_trades` — PRICED AND REJECTED
+
+Recorded so it is not re-proposed as the obvious clean answer. What it would
+actually take:
+
+- add `opened_at` / `closed_at` to `openTrade` / `closeTrade` and plumb market
+  time through every caller;
+- session scoping — a throwaway `paper_account` per replay session, or a session
+  column plus excluding replay rows from balance, `account_statistics` and every
+  analytics reader (the BA-11 trap, on the table the dashboard and journal read);
+- port trailing to the server model;
+- replace snapshot resume with a cursor rebuild, or keep snapshots anyway;
+- **keep an in-memory evaluation cache regardless**, per the throughput note;
+- migrate Battle Arena **and** the Workspace's Position Tool too — otherwise
+  `lib/chart/orders` stays alive and you maintain two systems *plus* a migrated
+  Studio.
+
+That last point is decisive. **Convergence does not delete the second system**
+unless all three consumers move. Rejected: it is many times Stage A's cost, it
+solves none of RS-4's actual problem (optional levels) on its own, and it leaves
+the duplication standing unless carried far beyond Studio.
+
+The cheaper version of the same instinct is already the plan: the two sides
+share `order-line-ui` and `use-chart-geometry` today, and the
+[addendum](#rs-4--addendum-2026-08-26--the-reference-implementation-already-exists)
+proposes sharing more UI and math primitives by porting `PositionLinesLive`'s
+pattern. That captures most of the anti-duplication benefit without touching
+either persistence model.
+
+### Recommendation — do Stage A
+
+**Stage A is a ~57-error refactor, 82% of it inside the module that owns the
+concept, plus ten mechanical null-check fixes across five files and zero test
+fixes. It is not the architecture project it was priced as on 2026-08-25.**
+
+Order of work:
+
+1. **Stage A** — widen `stop`/`target` to `number | null` on `PositionOrder` and
+   `OrderDraft`; teach `lib/chart/orders` that a level can be absent (the 47);
+   apply the ten display null checks; add null-path test cases.
+2. **Relax `validateOrder` for market orders only** (`model.ts:250-257`) — the
+   single relaxation point, still pending the limit/stop question above.
+3. **Stage B/C** — port the `PositionLinesLive` ghost-handle pattern per the
+   addendum.
+4. **Settle sizing with
+   [RS-5](#rs-5--position-size-is-computed-against-the-click-price-the-stop-is-not)**,
+   still the one genuinely unmade product decision, and now with a second reason
+   to be answered in the same pass.
+
+The runtime landmines that made this dangerous — the `exitFor` coercion and the
+`riskBasisOf` family — were closed by Stage 1 and Stage A-prime and are already
+`Number.isFinite`-guarded, so they accept an absent level correctly the day the
+type allows one.
