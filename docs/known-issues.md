@@ -1842,6 +1842,69 @@ choice is the first decision on this task, not an implementation detail.
 
 ---
 
+## MD-9 — `provider_market_assignments` reads fail intermittently, and it is unclear whether users are affected
+
+**Area:** Market data · provider routing · **Found:** 2026-08-26 ·
+**Status:** open — **ambiguous between quota and a structural fault, and that
+distinction is the whole point of the entry.**
+
+Observed repeatedly during a Playwright UI run, on every test that waits for a
+live price:
+
+```
+[market-data] failed to load assignments: Error: Something went wrong. Please try again.
+```
+
+`market-data/engine.ts:103` catches it and warns. The assignment table decides
+which provider serves which market, so a failed read leaves the engine with no
+routing — and everything downstream of a quote simply never resolves.
+
+### What it did to the suite
+
+Seven UI tests failed, all on TIMEOUTS rather than assertions:
+`cold-start`, `positions-table`, `floating-order`, `margin-bar`,
+`sl-tp-handles`. Every one is a Trading Workspace spec that needs a live quote.
+**Every Replay Studio spec passed** — Studio replays stored historical candles
+and never asks for one. The failure distribution is a clean split along "does
+this test need a live price", which is what points at the assignment read rather
+than at the specs.
+
+Wall clock went from ~9 min to 26.4 min for the same suite: tests spending their
+budget waiting on quotes that never arrive.
+
+### The ambiguity, and why it matters
+
+**Quota is the likely explanation.** The full UI suite ran four times that day
+plus many single-spec runs, against the 8-credits-per-minute budget recorded in
+[MD-1](#md-1--the-free-twelve-data-plan-cannot-fund-the-poll-rate-the-ui-asks-for).
+The failures were also INTERMITTENT, not total — in one re-run `cold-start`
+GBP/USD, BTC/USDT and AAPL passed while XAU/USD had failed, and `margin-bar`
+passed one test and failed the other. That pattern reads as rate limiting.
+
+**But it has not been established.** "Something went wrong. Please try again." is
+a generic server-function error, not a quota message, and nothing was checked
+against the provider's actual rate-limit response. The alternative is that the
+read fails for a structural reason — RLS, a bad row, a server-function fault —
+that happens to be intermittent for some other reason.
+
+**If it is structural, this is not test noise: it is users opening Trading
+Workspace and getting no quotes.** The engine degrades with a `console.warn`, so
+a real user sees a chart that never prices rather than an error that says why.
+That is exactly the class of silent failure this file already documents twice
+over — an unread `{ error }` and a discarded write.
+
+### Where to start
+
+- Reproduce with the suite idle and the credit budget rested. If it clears
+  completely, quota is confirmed and the fix is suite pacing, not the engine.
+- If it persists on an idle budget, read the actual error from the server
+  function rather than the caught generic — `engine.ts:103` currently logs the
+  wrapper, not the cause.
+- Either way, the `console.warn` deserves a user-visible degradation state.
+  A chart that cannot price should say so.
+
+---
+
 ## MD-1 — The free Twelve Data plan cannot fund the poll rate the UI asks for
 
 **Area:** Market data · **Found:** 2026-08-13 · **Status:** open — code side
@@ -2103,6 +2166,60 @@ about the leverage divisor used to compute required margin.
 
 ---
 
+## E2E-2 — `monte-carlo.test.ts` times out on vitest's default 5s under suite load
+
+**Area:** Test infrastructure · unit suite · **Found:** 2026-08-26 ·
+**Status:** open — small, and worth doing properly rather than by reflex
+
+(Filed under the `E2E-` prefix because it shares
+[E2E-1](#e2e-1--the-ui-suite-fails-as-a-suite-while-its-specs-pass-individually)'s
+area — test infrastructure — not because it is an end-to-end test. It is a
+vitest unit test.)
+
+`runMonteCarlo — the sampler is unbiased, not merely deterministic > converges on
+the exact bootstrap distribution as seeds are averaged` fails in a full
+`vitest run` with:
+
+```
+Error: Test timed out in 5000ms.
+```
+
+### It is not flaky, and it is not a wrong number
+
+The test is **fully deterministic** — fixed seeds (`1000 + s * 7919`), fixed
+`RUNS = 200`, fixed thresholds. There is no randomness, no clock and no shared
+state. It fails on TIME, not on an assertion; the convergence values are fine.
+
+Established on 2026-08-26:
+
+| Condition | Result |
+|---|---|
+| Run alone | 17/17 pass |
+| Full suite | times out at 5000ms |
+| Full suite on committed `main`, unrelated changes stashed | **same failure** |
+
+So it is pre-existing, it is not caused by whatever change happens to be in
+flight, and "it passed yesterday" only means the machine was quieter.
+
+### Why it is worth a considered fix rather than a bumped number
+
+200 Monte Carlo runs is real work. 5000ms is **vitest's default**, not a budget
+anyone chose for this test — it has simply been close enough to the line to pass
+on an idle machine and fail on a busy one. Giving it an explicit timeout is the
+right fix precisely because it forces someone to pick a number on purpose.
+
+What it must NOT become is a number tuned upward whenever a run goes red. If the
+test genuinely needs more than a few seconds, that is worth knowing: it is the
+kind of cost that belongs in the test's own comment, next to the DP-convolution
+constants it checks against.
+
+### Not to be confused with
+
+A regression in the sampler. The distribution assertions have never been
+observed failing — only the clock.
+
+---
+
 ## E2E-1 — The UI suite fails as a suite while its specs pass individually
 
 **Area:** Test infrastructure · **Found:** 2026-08-16 · **Status:** open, unassigned
@@ -2167,6 +2284,38 @@ this state, so it is the one spec that could still be hiding a real regression �
 most plausibly from the `overflow-hidden` clip added to the position overlay in
 `12bcce21`, which is exactly the kind of change that could clip the entry line
 the spec hovers.
+
+### Update 2026-08-26 — a second candidate cause, and one suspicion cleared
+
+**`sl-tp-handles` HAS now been seen green.** Both its tests passed in a full
+suite run on 2026-08-26 (45 passed / 3 skipped). That substantially clears the
+`overflow-hidden` regression theory above — the spec is not hiding a broken
+overlay, it is a victim of the same suite condition as the other four.
+
+**A new candidate cause, which the "where to start" list does not have.** A
+later run the same day failed 7 tests, and every failing test logged this,
+repeatedly:
+
+```
+[market-data] failed to load assignments: Error: Something went wrong.
+```
+
+That is `market-data/engine.ts:103` failing to read
+`provider_market_assignments` — the table deciding which provider serves which
+market. No assignments means no live quotes, so every test that waits on a price
+times out. It fits the failure distribution exactly: the failures were
+`cold-start`, `positions-table`, `floating-order`, `margin-bar` and
+`sl-tp-handles` — every one a Trading Workspace spec that needs a live quote —
+while **every Replay Studio spec passed**, because Studio replays stored
+historical candles and never asks for one.
+
+This does not replace the dev-server-degradation theory; both can be true, and
+the empty-DOM probe above is still unexplained by it. But it is cheaper to test
+and it predicts which specs fail, which degradation alone does not.
+
+**Chase [MD-9](#md-9--provider_market_assignments-reads-fail-intermittently-and-it-is-unclear-whether-users-are-affected) first**, and specifically settle whether the assignment read
+is failing on quota or structurally. If structural, this stops being a test
+problem.
 
 ---
 
