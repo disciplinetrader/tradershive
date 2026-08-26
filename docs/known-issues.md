@@ -2770,6 +2770,47 @@ It does not. The costs, all real:
 Do the widening properly, or do not do it. The sentinel buys a smaller diff and
 pays for it in a category of bug this ticket already exists to prevent.
 
+### Trap 3 — "no migration needed" was wrong (2026-08-26)
+
+Alongside the `exitFor` and `riskBasisOf` coercions, because it is the same
+mistake wearing different clothes: a value that means "there is no measurement"
+being forced into a shape that can only express a number.
+
+RS-4's model-work table said, correctly, **"No migration needed —
+`chart_closed_trades.initial_stop`, `final_stop`, `initial_target` and
+`final_target` are already nullable."** That is true, and it is about the four
+LEVEL columns.
+
+Stage A nullified two **DERIVED** columns the note never mentioned:
+
+| Column | Was | Stage A writes |
+|---|---|---|
+| `initial_risk_distance` | `NUMERIC NOT NULL DEFAULT 0` | `null` with no stop |
+| `realized_r` | `NUMERIC NOT NULL DEFAULT 0` | `null` with no stop |
+
+Every stopless close 400'd on the upsert. Nothing surfaced it: the write result
+was discarded (`await supabase...` with no `{ error }` read), so it failed
+through the full unit suite, the full Playwright suite, and a publish, leaving
+only a bare `400` in the browser console — found by accident while debugging an
+unrelated test assertion. **One real trade was lost this way** before it was
+caught (audited from the session snapshot, which persists the order book on an
+independent path; see `scripts/audit-lost-trades.ts`).
+
+The Stage A commit message repeated "No migration needed" verbatim from this
+entry without rechecking. The note was not wrong; applying it to columns it
+never covered was.
+
+**The lesson: when widening a type, re-audit the DB schema for every column the
+change can reach — not only the ones a prior note mentions.** Derived columns
+are the ones that get missed, because the note that cleared the schema was
+written about the source fields.
+
+Two fixes shipped with it: `20260826120000_nullable_closed_trade_risk_columns.sql`
+(applied by hand, verified by writing a NULL row rather than trusting the
+editor's success message), and error surfacing in `replay-trade-sync.ts` so a
+rejected durable write can never again be silent — it logs and raises a toast,
+while still degrading to local-only trading rather than breaking the session.
+
 ### Sizing — still the one unmade product decision
 
 Unchanged and still blocking Stage C. `sizeForRisk(entry, stop)` derives size

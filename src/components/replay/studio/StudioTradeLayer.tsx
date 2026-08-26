@@ -15,12 +15,14 @@ import { Scissors, Shield, X } from "lucide-react";
 
 import type { ChartAdapter } from "@/lib/chart/adapter";
 import type { PositionOrder } from "@/lib/chart/orders/model";
+import { hasLevel } from "@/lib/chart/orders/model";
 import { positionMetricsFor } from "@/lib/chart/orders/service";
 import {
   AXIS_INSET, DragTooltip, LineAction, OrderLabel, OrderLine,
 } from "@/components/trading/chart/order-line-ui";
 
 import { useReplayStudio } from "./context";
+import { PositionWidget } from "./PositionWidget";
 
 type Handle = "stop" | "target" | "entry";
 
@@ -32,7 +34,20 @@ type Handle = "stop" | "target" | "entry";
  * draft has no order to modify.
  */
 type DragState =
-  | { on: "order"; orderId: string; handle: Handle; kind: "position" | "pending"; price: number }
+  | {
+      on: "order"; orderId: string; handle: Handle;
+      kind: "position" | "pending"; price: number;
+      /**
+       * Has the pointer actually moved since it went down?
+       *
+       * A level is CREATED by dragging outward from the widget, so until the
+       * pointer moves there is nothing to draw and nothing to commit. Without
+       * this flag a plain click would place a level at the entry price —
+       * zero distance, which `validateOrder` rejects as zero-risk and which
+       * RS-4 recorded as a dead end. A click that never moves does nothing.
+       */
+      moved: boolean;
+    }
   | { on: "draft"; handle: Handle; price: number };
 
 export interface ArmedOrder {
@@ -91,33 +106,6 @@ function money(v: number): string {
 }
 
 
-/**
- * Where an unplaced level's ghost handle parks.
- *
- * 0.5% of entry on the correct side, ported from `PositionLinesLive`
- * (`trading/chart/PositionLinesLive.tsx`) — NOT parked ON the entry the way the
- * draft flow's ghosts were. That difference is deliberate and load-bearing.
- *
- * The draft flow could park at zero distance because it had a commit gate: the
- * "Place order" button stayed disabled until both levels were positioned, so a
- * zero-distance level never reached the store. A live position has no gate —
- * `modifyLevels` applies on pointer-up — so a handle parked on the entry would
- * turn a plain click into `stop === entry`. That is a zero-risk stop: it fails
- * `validateOrder`'s own rule, it is unsizeable, and it is exactly the
- * zero-distance dead end RS-4 rejected.
- *
- * A fraction rather than a fixed pip count, so it lands sensibly on a 64,000
- * crypto price and on a 1.10 FX rate alike. The precise number matters far less
- * than being on the correct side of entry and immediately draggable.
- */
-function ghostLevel(direction: "buy" | "sell", entry: number, kind: "stop" | "target"): number {
-  const offset = Math.abs(entry) * 0.005;
-  // The stop sits against the trade, the target with it.
-  const against = direction === "buy" ? -1 : 1;
-  const raw = kind === "stop" ? entry + against * offset : entry - against * offset;
-  return Math.max(Number.EPSILON, raw);
-}
-
 export function StudioTradeLayer({ adapter, tick, decimals, armed, draft, onDraftChange }: Props) {
   const {
     positions, pending, price, view,
@@ -155,7 +143,10 @@ export function StudioTradeLayer({ adapter, tick, decimals, armed, draft, onDraf
       const rect = el.getBoundingClientRect();
       const next = adapter.yToPrice(e.clientY - rect.top);
       if (next == null || !Number.isFinite(next)) return;
-      setDrag((d) => (d ? { ...d, price: next } : d));
+      // Any movement at all promotes the gesture from "pressed" to "dragging",
+      // which is what makes the level real. Until then `moved` stays false and
+      // the line is not drawn.
+      setDrag((d) => (d ? { ...d, price: next, ...(d.on === "order" ? { moved: true } : {}) } : d));
     };
     const onUp = () => {
       setDrag((d) => {
@@ -167,8 +158,11 @@ export function StudioTradeLayer({ adapter, tick, decimals, armed, draft, onDraf
               onDraftChange?.({ ...draftRef.current, [d.handle]: d.price } as DraftOrder);
             }
           } else if (d.kind === "position") {
-            modifyLevels(d.orderId, d.handle === "stop" ? { stop: d.price } : { target: d.price });
-          } else {
+            // A press that never moved creates nothing — see `startLevel`.
+            if (d.moved) {
+              modifyLevels(d.orderId, d.handle === "stop" ? { stop: d.price } : { target: d.price });
+            }
+          } else if (d.moved) {
             modifyPendingLevels(d.orderId, { [d.handle]: d.price } as { entry?: number; stop?: number; target?: number });
           }
         }
@@ -192,13 +186,41 @@ export function StudioTradeLayer({ adapter, tick, decimals, armed, draft, onDraf
    * trader ADD the level is positioned separately, on the entry.
    */
   const priceOf = (o: PositionOrder, handle: Handle): number | null => {
-    if (drag && drag.on === "order" && drag.orderId === o.id && drag.handle === handle) return drag.price;
+    if (drag && drag.on === "order" && drag.orderId === o.id && drag.handle === handle) {
+      // A press that has not moved yet is not a level. Returning `drag.price`
+      // here would draw the line AT THE ENTRY the instant the button is
+      // pressed — a line at a price the trader never chose, which is precisely
+      // the ghost-handle appearance this widget replaced.
+      return drag.moved ? drag.price : (handle === "stop" ? o.stop : handle === "target" ? o.target : o.entry);
+    }
     return handle === "stop" ? o.stop : handle === "target" ? o.target : (o.fillPrice ?? o.entry);
   };
 
   /** Project a price, passing absence straight through. */
   const yOf = (v: number | null): number | null =>
     v == null || !adapter ? null : adapter.priceToY(v);
+
+  /**
+   * Begin CREATING a level by dragging outward from the widget.
+   *
+   * The drag starts pinned to the entry with `moved: false`, so nothing renders
+   * and nothing commits until the pointer actually travels. That is the whole
+   * difference between this and the ghost handles it replaces: a ghost was a
+   * line at a price the trader had not chosen, visible before any gesture.
+   *
+   * A click that never moves creates nothing. There is no honest default
+   * distance to fall back to, and the one obvious candidate — the entry itself
+   * — is a zero-risk level `validateOrder` rejects outright.
+   */
+  const startLevel = (orderId: string, handle: "stop" | "target", entryY: number) =>
+    (e: React.PointerEvent) => {
+      if (!live || !adapter) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const at = adapter.yToPrice(entryY);
+      if (at == null || !Number.isFinite(at)) return;
+      setDrag({ on: "order", orderId, handle, kind: "position", price: at, moved: false });
+    };
 
   const rows = useMemo(() => {
     if (!adapter) return [];
@@ -259,7 +281,7 @@ export function StudioTradeLayer({ adapter, tick, decimals, armed, draft, onDraf
       const from = current ?? fallback;
       if (from == null || !Number.isFinite(from)) return;
       e.preventDefault();
-      setDrag({ on: "order", orderId, handle, kind, price: from });
+      setDrag({ on: "order", orderId, handle, kind, price: from, moved: true });
     };
 
   /** Drag one of the draft's levels. An unplaced one starts from the entry. */
@@ -425,42 +447,23 @@ export function StudioTradeLayer({ adapter, tick, decimals, armed, draft, onDraf
               />
             ) : null}
 
-            {/* Entry — immutable, with the position actions */}
+            {/* Entry — the line, plus the position widget that owns every
+                action on this position. The widget is NOT `OrderLabel`: that
+                one hides its content until hover, which is right for a level
+                and wrong for a position's P/L, size and close button. */}
             <OrderLine y={entryY} tone={tone} solid />
-            <OrderLabel
+            <PositionWidget
               y={entryY}
-              tone={tone}
-              draggable={false}
-              expanded={hover === `${key}:entry`}
-              onMouseEnter={() => setHover(`${key}:entry`)}
-              onMouseLeave={() => setHover(null)}
-              title={`${isLong ? "Long" : "Short"} ${order.symbol}`}
-              label={
-                <>
-                  <span className="font-semibold">{isLong ? "LONG" : "SHORT"}</span>
-                  <span>{qty ? qty.toFixed(2) : "—"}</span>
-                  <span className={pnl >= 0 ? "text-success" : "text-danger"}>{money(pnl)}</span>
-                  {/* No stop means no risk to measure against, so there is no
-                      R — not "0.00R", which reads as a real (flat) result. */}
-                  <span className="text-muted-foreground">
-                    {Number.isFinite(order.stop) ? `${r.toFixed(2)}R` : "—"}
-                  </span>
-                  {live ? (
-                    <>
-                      <LineAction label="Move stop to break-even" onClick={() => breakEven(order.id)}>
-                        <Shield className="h-2.5 w-2.5" />
-                      </LineAction>
-                      <LineAction label="Close half" onClick={() => partialClose(order.id, 0.5)}>
-                        <Scissors className="h-2.5 w-2.5" />
-                      </LineAction>
-                      <LineAction danger label="Close position" onClick={() => closePositionNow(order.id)}>
-                        <X className="h-2.5 w-2.5" />
-                      </LineAction>
-                    </>
-                  ) : null}
-                </>
-              }
-              axis={fmt(row.entry)}
+              testId={`studio-position-${order.id}`}
+              direction={order.direction}
+              qty={qty}
+              pnl={pnl}
+              rText={hasLevel(order.stop) ? `${r.toFixed(2)}R` : "—"}
+              live={live}
+              hasStop={hasLevel(order.stop)}
+              hasTarget={hasLevel(order.target)}
+              onStartLevel={(handle) => startLevel(order.id, handle, entryY)}
+              onClose={() => closePositionNow(order.id)}
             />
 
             {/* Stop */}
@@ -479,37 +482,6 @@ export function StudioTradeLayer({ adapter, tick, decimals, armed, draft, onDraf
                   axis={fmt(row.stop)}
                 />
               </>
-            ) : live ? (
-              /* No stop — offer one. The handle IS the control: rendering
-                 nothing would be the honest picture of "unprotected" and would
-                 also leave the trader nothing to grab. */
-              (() => {
-                const gp = ghostLevel(order.direction, row.entry ?? 0, "stop");
-                const gy = yOf(gp);
-                return gy == null ? null : (
-                  <>
-                    <OrderLine y={gy} tone="stop" ghost />
-                    <OrderLabel
-                      y={gy}
-                      tone="stop"
-                      ghost
-                      testId={`studio-sl-add-${order.id}`}
-                      expanded={hover === `${key}:stop-add`}
-                      onMouseEnter={() => setHover(`${key}:stop-add`)}
-                      onMouseLeave={() => setHover((h) => (h === `${key}:stop-add` ? null : h))}
-                      onPointerDown={startDrag(order.id, "stop", "position", null, gp)}
-                      title="Drag to set a stop loss, or click to place it here"
-                      label={
-                        <>
-                          <span className="font-semibold text-muted-foreground">Add stop</span>
-                          <span className="tabular-nums text-muted-foreground">drag to place</span>
-                        </>
-                      }
-                      axis={<span className="tabular-nums opacity-80">+ SL</span>}
-                    />
-                  </>
-                );
-              })()
             ) : null}
 
             {/* Target */}
@@ -528,37 +500,6 @@ export function StudioTradeLayer({ adapter, tick, decimals, armed, draft, onDraf
                   axis={fmt(row.target)}
                 />
               </>
-            ) : live ? (
-              /* No target — same affordance, mirrored. An unset target carries
-                 no risk the way an unset stop does, so this is the lower-stakes
-                 half; it exists so the two levels behave identically. */
-              (() => {
-                const gp = ghostLevel(order.direction, row.entry ?? 0, "target");
-                const gy = yOf(gp);
-                return gy == null ? null : (
-                  <>
-                    <OrderLine y={gy} tone="profit" ghost />
-                    <OrderLabel
-                      y={gy}
-                      tone="profit"
-                      ghost
-                      testId={`studio-tp-add-${order.id}`}
-                      expanded={hover === `${key}:target-add`}
-                      onMouseEnter={() => setHover(`${key}:target-add`)}
-                      onMouseLeave={() => setHover((h) => (h === `${key}:target-add` ? null : h))}
-                      onPointerDown={startDrag(order.id, "target", "position", null, gp)}
-                      title="Drag to set a take profit, or click to place it here"
-                      label={
-                        <>
-                          <span className="font-semibold text-muted-foreground">Add target</span>
-                          <span className="tabular-nums text-muted-foreground">drag to place</span>
-                        </>
-                      }
-                      axis={<span className="tabular-nums opacity-80">+ TP</span>}
-                    />
-                  </>
-                );
-              })()
             ) : null}
 
             {dragging && (dragging.handle === "stop" || dragging.handle === "target") ? (

@@ -118,13 +118,21 @@ async function buy(page: Page, sessionId: string, opts: { qty?: number } = {}) {
   await stepOneBar(page);
 }
 
-/** Drag a chart-overlay handle vertically by `dy` pixels. */
-async function dragHandle(page: Page, locator: Locator, dy: number) {
+/**
+ * Press a widget control and drag vertically by `dy`.
+ *
+ * Aimed at the CENTRE of the control's own box — these are small buttons on a
+ * row that tracks a moving price line, so the grab point has to be the element
+ * itself rather than an offset from a full-width row.
+ *
+ * The intermediate moves matter: the level is only created once the pointer has
+ * actually travelled (`moved`), so a single jump would be a less faithful
+ * imitation of a human drag than a stepped one.
+ */
+async function dragFrom(page: Page, locator: Locator, dy: number) {
   const box = await locator.boundingBox();
-  if (!box) throw new Error("handle has no bounding box");
-  // The pill sits at the right-hand end of a full-width row; grab it there so
-  // the pointer lands on the handle rather than on empty chart.
-  const x = Math.round(box.x + box.width - 24);
+  if (!box) throw new Error("control has no bounding box");
+  const x = Math.round(box.x + box.width / 2);
   const y = Math.round(box.y + box.height / 2);
   await page.mouse.move(x, y);
   await page.mouse.down();
@@ -225,41 +233,106 @@ test.describe("studio order entry is one Buy and one Sell", () => {
     expect(Number((await readRow(page)).qty)).toBeCloseTo(2, 2);
   });
 
-  test("the ghost handle adds a stop to a live position without resizing it", async ({ page }) => {
+  test("the position widget appears on the entry line, and an unset level draws nothing", async ({ page }) => {
     /**
-     * The other half of the pivot: a bare fill has to be protectable without a
-     * ticket. The ghost handle is the affordance — parked off the entry, dashed,
-     * draggable on sight, exactly as `PositionLinesLive` does it in the live
-     * workspace.
+     * The widget replaced ghost handles: dashed full-width lines parked 0.5%
+     * off the entry, which read as levels that had been SET. An unset level now
+     * draws NOTHING — the only thing on screen is the widget, whose controls
+     * are buttons rather than prices.
      *
+     * Asserting the absence is the point. "Widget is visible" would pass just
+     * as well with the old ghosts still on the chart beside it.
+     */
+    const id = await seed(sb, ids().userId, `${tag}widget`);
+    extraSessions.push(id);
+    await buy(page, id, { qty: 2 });
+
+    const widget = page.locator('[data-testid^="studio-position-"]').first();
+    await expect(widget).toBeVisible({ timeout: 20_000 });
+    // One row, everything on it: side, both level controls, P/L, R, size, close.
+    await expect(widget).toContainText("LONG");
+    await expect(page.locator('[data-testid$="-sl"]').first()).toBeVisible();
+    await expect(page.locator('[data-testid$="-tp"]').first()).toBeVisible();
+    await expect(page.locator('[data-testid$="-close"]').first()).toBeVisible();
+
+    // The ghost affordance is gone for good.
+    await expect(page.locator('[data-testid^="studio-sl-add-"]')).toHaveCount(0);
+    await expect(page.locator('[data-testid^="studio-tp-add-"]')).toHaveCount(0);
+
+    // And no level exists to draw: the blotter is the canonical check.
+    const row = await readRow(page);
+    expect(row.stop).toBe("—");
+    expect(row.target).toBe("—");
+  });
+
+  test("pressing SL without dragging creates nothing", async ({ page }) => {
+    /**
+     * There is no honest default distance, and the one obvious candidate — the
+     * entry itself — is a zero-risk level `validateOrder` rejects. So a click
+     * that never moves must do nothing at all, rather than quietly placing a
+     * stop somewhere the trader did not choose.
+     */
+    const id = await seed(sb, ids().userId, `${tag}noclick`);
+    extraSessions.push(id);
+    await buy(page, id, { qty: 2 });
+
+    const sl = page.locator('[data-testid$="-sl"]').first();
+    await expect(sl).toBeVisible({ timeout: 20_000 });
+    await sl.click();
+
+    // Give any (wrong) write time to land before asserting it did not.
+    await page.waitForTimeout(1_000);
+    expect((await readRow(page)).stop).toBe("—");
+  });
+
+  test("dragging SL out of the widget creates the level without resizing", async ({ page }) => {
+    /**
      * "Without resizing" is the load-bearing half. Re-deriving size when a stop
      * arrives would change the basis the position's P/L is measured against
      * mid-flight, which is worse than an arbitrary size.
      */
-    const id = await seed(sb, ids().userId, `${tag}ghost`);
+    const id = await seed(sb, ids().userId, `${tag}drag`);
     extraSessions.push(id);
     await buy(page, id, { qty: 2 });
 
     const before = await readRow(page);
     expect(before.stop).toBe("—");
 
-    const ghost = page.locator('[data-testid^="studio-sl-add-"]').first();
-    await expect(ghost).toBeVisible({ timeout: 20_000 });
-
+    const sl = page.locator('[data-testid$="-sl"]').first();
+    await expect(sl).toBeVisible({ timeout: 20_000 });
     // A long's stop goes BELOW the entry, i.e. down-screen.
-    await dragHandle(page, ghost, 60);
+    await dragFrom(page, sl, 70);
 
     await expect.poll(async () => (await readRow(page)).stop, { timeout: 15_000 }).not.toBe("—");
     const after = await readRow(page);
-    // A real stop, below the entry.
     expect(Number(after.stop)).toBeGreaterThan(0);
     expect(Number(after.stop)).toBeLessThan(Number(after.entry));
     // R becomes measurable the moment a stop exists.
     expect(after.r).not.toBe("—");
     // ...and the position was NOT resized by acquiring one.
     expect(after.qty).toBe(before.qty);
-    // The ghost is gone: the level exists now, so the "add" affordance retires.
-    await expect(page.locator('[data-testid^="studio-sl-add-"]')).toHaveCount(0);
+    // The control retires: the level now has its own draggable line.
+    await expect(page.locator('[data-testid$="-sl"]')).toHaveCount(0);
+  });
+
+  test("the widget's X closes the position immediately", async ({ page }) => {
+    const id = await seed(sb, ids().userId, `${tag}close`);
+    extraSessions.push(id);
+    await buy(page, id, { qty: 2 });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 20_000 });
+
+    await page.locator('[data-testid$="-close"]').first().click();
+
+    /**
+     * The position leaves the book. Asserting the widget vanished would prove
+     * only that the widget vanished — a cancel would do that too.
+     *
+     * Counting rows to zero does NOT work: the blotter renders its empty state
+     * INSIDE a `<tr>`, so an empty table still has one row. Measured while
+     * debugging this test — the close was working and the assertion was wrong.
+     */
+    await expect(page.locator("table tbody tr")).toContainText(/No open positions/i, { timeout: 15_000 });
+    await expect(page.locator('[data-testid^="studio-position-"]')).toHaveCount(0);
   });
 
   test("right-click still opens the limit/stop draft flow", async ({ page }) => {
