@@ -176,7 +176,7 @@ export function StudioBlotter({ className }: { className?: string }) {
             <TableBody>
               {tab === "positions" ? (
                 positions.length === 0 ? (
-                  <Empty text="No open positions. Use the chart or the Buy/Sell buttons to take a trade." />
+                  <Empty text="No open positions. Use Buy or Sell on the chart toolbar to take a trade." />
                 ) : (
                   positions.map((p) => {
                     const m = positionMetricsFor(p, price);

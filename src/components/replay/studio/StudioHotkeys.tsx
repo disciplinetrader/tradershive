@@ -19,6 +19,13 @@ import { useReplayStudio } from "./context";
 
 const SPEED_LADDER = [0.25, 0.5, 1, 2, 4, 10, 25, 50, 100];
 
+/**
+ * `B` / `S` say "at risk %" and now mean it. They routed through
+ * `placeMarketOrder` with no size before the order paths were consolidated,
+ * which took the old `?? 1` fallback — so the label had been advertising a
+ * sizing rule the hotkey did not follow. The default moved into
+ * `placeMarketOrder` itself; every market route sizes off Risk % now.
+ */
 export const STUDIO_SHORTCUTS: { keys: string; label: string }[] = [
   { keys: "Space", label: "Play / pause" },
   { keys: "→", label: "Step forward one bar" },
@@ -28,7 +35,7 @@ export const STUDIO_SHORTCUTS: { keys: string; label: string }[] = [
   { keys: "S", label: "Market sell at risk %" },
   { keys: "E", label: "Move stop to break-even (newest position)" },
   { keys: "C", label: "Close newest position" },
-  { keys: "Esc", label: "Disarm order placement / cancel drawing" },
+  { keys: "Esc", label: "Cancel a right-click limit/stop draft, or a drawing" },
   { keys: "?", label: "Show this shortcut list" },
 ];
 

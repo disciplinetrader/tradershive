@@ -10,6 +10,16 @@ enough detail to pick up cold. Remove an entry when it ships a fix.
 > and 100,000 for forex, so it tests clean and ships wrong. Two callers convert
 > explicitly today; a third would inherit the bug.
 
+> **Sizing a position from a stop distance? Read
+> [RS-5](#rs-5--position-size-is-computed-against-the-click-price-the-stop-is-not)
+> before trusting the number.**
+> Size is computed against the price under the cursor at click time, while the
+> stop is set independently and does not move when the fill lands elsewhere.
+> Measured 2026-08-26 on one BTC fill: an intended **1%** of equity opened
+> carrying **1.57%**. Nothing errors, and the blotter reports the position as
+> correctly sized, because it shows the fill price rather than the price the
+> size was derived from.
+
 > **Unparking Battle Arena? Read
 > [BA-11](#ba-11--battle-replay-writes-pl-that-never-reaches-balance-or-statistics)
 > before touching the replay writer, and fix it in the same pass.**
@@ -2434,8 +2444,48 @@ executed it.
 ## RS-3 — `placeMarketOrder` keeps its own hardcoded 2R bracket
 
 **Area:** Replay Studio · chart trading · **Found:** 2026-08-25 ·
-**Status:** open — **deliberately out of scope** of the drag-then-commit work
-that shipped 2026-08-25 for the resting-order paths
+**Status:** open — the seed itself is unfixed. **Narrowed 2026-08-26:** the
+four market routes were consolidated into one, so there is now exactly ONE site
+carrying the seed instead of four.
+
+### Update 2026-08-26 — consolidation, and a sizing bug found on the way
+
+Studio's order entry was reduced to one Buy and one Sell (toolbar). Removed:
+the "Buy limit" / "Sell limit" arming buttons and the sidebar's "Buy market" /
+"Sell market" pair. Resting orders keep their flow, reached by right-clicking
+the chart — the same place the live workspace puts them.
+
+The consolidation surfaced a defect nobody had filed. `placeMarketOrder`
+defaulted to `size: opts.size ?? 1`, and **only the toolbar Buy/Sell passed a
+real size**. The sidebar pair, the `B` / `S` hotkeys and the right-click market
+entries all took the fallback, so they opened positions of **1 unit** regardless
+of the Risk % field — two buttons an inch apart disagreeing by orders of
+magnitude in money. `STUDIO_SHORTCUTS` had been advertising `B` as *"Market buy
+at risk %"* the whole time.
+
+Fixed by moving the default INTO `placeMarketOrder`
+(`size: opts.size ?? sizeForRisk(price, stop)`), which required hoisting the
+`equity` / `riskPercent` / `sizeForRisk` block above it. Every market route now
+sizes off Risk %, and a caller can no longer forget.
+
+This is a rescoping of RS-3, not a fix for it: the 0.2% stop and 2R target are
+still the tool's choice. The point of consolidating first is that RS-4 Stage B
+now has one call site to change.
+
+Note that making every market route size off Risk % fixed the routes DISAGREEING
+with each other. It did not make the resulting risk exact — see
+[RS-5](#rs-5--position-size-is-computed-against-the-click-price-the-stop-is-not),
+where the size is derived at the click price and the fill lands elsewhere.
+
+`e2e/ui/replay-draft-order.spec.ts` is **skipped, not deleted** — its entry
+gesture was the removed toolbar button. Re-pointing it at the right-click menu
+was deliberately not spent, since Stage B is expected to rewrite it. The file
+carries its own note.
+
+### Original entry (2026-08-25)
+
+Written when this was one of four sites; the reasoning below still stands for
+the surviving one.
 
 A fourth hardcoded-2R site, independent of `bracketFor` and untouched by the
 draft work (`studio/context.tsx:354-355`):
@@ -2609,3 +2659,228 @@ required-and-gated-together. The same principle already shipped in
 send to the order panel), never claimed to match FXReplay, and is **unaffected
 by this ticket** — paper trading's schemas already treat `stop_loss` and
 `take_profit` as nullable.
+
+---
+
+## RS-4 · Addendum 2026-08-26 — the reference implementation already exists
+
+Investigated after a Trading Workspace screen recording showed the exact
+interaction Stage B/C was scoped to build from scratch. It is already shipped,
+mounted, and covered by its own e2e spec. **Do not build Stage B/C from a blank
+file — port this.**
+
+### The reference: `src/components/trading/chart/PositionLinesLive.tsx`
+
+Mounted at exactly one place, `TradingWorkspace.tsx:1006`. On a live position
+with no stop or target, it renders a grabbable ghost handle for the missing
+level; dragging it sets that level, on release, independently of the other. No
+ticket, no draft, no commit button. The `"Moving Stop"` / `"Moving Target"`
+drag tooltip is line 725.
+
+The pattern is three parts, all worth copying verbatim in shape:
+
+| Piece | Where | What it solves |
+|---|---|---|
+| `defaultLevel(sym, direction, entry, kind)` | line 73 | An unset level has no coordinate, so it has no handle, so there is nothing to grab. Parks it at 0.5% of entry on the correct side — scale-free, works at 64,000 and at 1.10 |
+| Ghost handles `+ SL` / `+ TP` | lines 636–689 | Revealed on proximity to the position; `ghost` + `testId` props |
+| `beginDrag(id, handle, price, seed)` | line 264 | `seed: true` writes the placeholder into `overrides` up front, so a **plain click with no movement still commits at the default**. Existing levels are not seeded, so a stray click does not re-issue a write for the price it already has |
+
+Its e2e spec — **`e2e/ui/sl-tp-handles.spec.ts`** — drives `sl-add-${id}` and
+`tp-add-${id}`. Model Studio's spec on it directly; the RS-4 deliverable
+("a stopless position SURVIVES ticks") slots into the same shape.
+
+### How much is already shared
+
+More than expected. **`StudioTradeLayer` already imports the same primitives**
+(`StudioTradeLayer.tsx:20-21` → `components/trading/chart/order-line-ui`:
+`OrderLine`, `OrderLabel`, `LineAction`, `DragTooltip`, `AXIS_INSET`), and the
+`ghost` and `testId` props the pattern needs are already on those primitives
+(`order-line-ui.tsx:32, 73-74, 98, 133`).
+
+Studio also **already drags a live position's stop and target** —
+`startDrag(order.id, "stop", "position", row.stop)` at `StudioTradeLayer.tsx:419`
+and `:437`, committing through `modifyLevels`. Its `DragTooltip` (line 446)
+shows two rows where the reference shows five (Price, R:R, Potential profit,
+Potential loss, Floating P/L).
+
+So the missing UI is narrower than the RS-4 table implies: a handle for a level
+that does not exist yet, and a richer tooltip. What is NOT shared is the model —
+the workspace runs on `lib/trading-engine` + `paper_trades`
+(`stop_loss?: number | null` natively, `modifyTrade` persists null to remove a
+level), Studio runs on `lib/chart/orders`. **The port crosses a model boundary;
+the blocker in the main entry above is unchanged.**
+
+### Two findings that narrow Stage C
+
+**1. `updatePositionLevels` does not call `validateOrder`.**
+`service.ts:656-677` writes straight through `withLevels`. The
+drag-a-level-onto-a-live-position write — precisely the Stage C gesture — is
+already ungated. The `entry/stop/target > 0` requirement bites only at
+*placement*, `placeOrEditOrder` → `validateOrder` (`service.ts:103`).
+
+**2. `validateOrder`'s finite check is the single relaxation point.**
+`model.ts:250-257`. Relaxing it *for market orders only* is the minimal change
+that lets a stopless position be created — and it is the one place to do it,
+which also keeps the "market orders are special vs. all orders optional" open
+question above honest, because the two answers differ by the scope of this one
+guard.
+
+### ⛔ The NaN-sentinel shortcut — NOT RECOMMENDED
+
+Recorded so it is not rediscovered as a clever idea by someone who cannot see
+why it was rejected.
+
+The Stage 1 and A′ guards are all `Number.isFinite`, not `!= null` — the A′
+commit says outright that null, undefined and NaN are the same statement. So a
+stopless position **is already representable in the existing non-nullable
+`number` type as `NaN`**, with zero type changes, and `exitFor` correctly
+refuses to trigger on it. It looks like it dodges the 51-error widening that
+sank Stage A.
+
+It does not. The costs, all real:
+
+- **It is a type lie.** `stop: number` would hold a value the type forbids in
+  meaning, and every future reader is entitled to trust the annotation.
+- **~44 non-null `.stop` / `.target` reads are unguarded.** Those that do not
+  use `Number.isFinite` propagate NaN into displays as the literal string
+  `"NaN"`. Better than A′'s silent-but-plausible 63000, still wrong.
+- **It does not survive persistence.** The order store persists via
+  `JSON.stringify` (`store.ts:176`), which turns `NaN` into `null`. After a
+  refresh the field holds `null` — the very value the type forbids. The guarded
+  reads handle it identically, so this converges rather than corrupting, but the
+  representation is then not even the one that was chosen.
+
+Do the widening properly, or do not do it. The sentinel buys a smaller diff and
+pays for it in a category of bug this ticket already exists to prevent.
+
+### Sizing — still the one unmade product decision
+
+Unchanged and still blocking Stage C. `sizeForRisk(entry, stop)` derives size
+from stop distance; with no stop the distance is 0 and it returns a fallback of
+`1` unit. (The 2026-08-26 consolidation under RS-3 made every market route go
+through it, which fixed routes disagreeing with each other — it did **not** fix
+what the function returns when there is no stop.)
+
+The reference implementation sidesteps this entirely: `PositionLinesLive` never
+derives size, it reads **`lot_size` off the trade** (`OpenTradeLine`, line 37).
+That may itself be the answer — Studio orders adopting a lot-size field rather
+than deriving size from Risk %, which is also what real FXReplay does.
+
+**Flagging it as a real option, not a decision made.** It still needs the
+questions in the main entry answered: what Risk % means (or whether it is
+hidden) when no stop exists, and what a later +SL does to the size of an
+already-open position.
+
+### Two things that will bite Stage B's e2e spec
+
+Both found while writing `e2e/ui/replay-order-consolidation.spec.ts`, both cost
+a debugging pass, neither is a defect.
+
+**Studio resumes its saved book.** Loading the same `replay_sessions.id` twice
+restores the previous run's positions rather than starting empty. A spec that
+measures two orders against one session id reads the FIRST one back both times,
+and the failure is quiet and convincing — entry, stop and target all match too,
+because they were placed at the same cursor. **Seed one session per
+measurement.**
+
+**A market order fills one bar after it is sized.** Studio sizes at the price
+under the cursor when the button is clicked, but the order needs one
+observation to fill, and fills at the NEXT bar's price while the stop stays
+where it was placed. Measured: sized at 63,072.01, filled at 63,144.01 — 72
+points of drift, turning an intended $99.65 of risk into $156.53 realized. The
+blotter reports `averageEntry` (the fill), so **any absolute risk assertion made
+through the DOM measures the drift, not the sizing** — assert a ratio instead
+(double the Risk %, expect double the size).
+
+That drift is pre-existing and unchanged by the consolidation, but it is a real
+correctness gap in risk management, not merely a testing inconvenience: a
+position sized for 1% that opens carrying 1.57% is a risk model the trader did
+not choose. **It now has its own entry —
+[RS-5](#rs-5--position-size-is-computed-against-the-click-price-the-stop-is-not)
+— because it is too easy to lose in a subsection about writing specs.** Decide
+it alongside Stage C's sizing question; the two answers constrain each other.
+
+---
+
+## RS-5 — Position size is computed against the click price; the stop is not
+
+**Area:** Replay Studio · chart trading · risk management ·
+**Found:** 2026-08-26 · **Status:** open — **pre-existing**, not introduced by
+the order-entry consolidation that shipped the same day. Measured, not inferred.
+
+Studio derives position size from the stop DISTANCE at the moment the button is
+clicked:
+
+```ts
+size = (equity × riskPercent / 100) / |clickPrice − stop|
+```
+
+A market order does not fill at `clickPrice`. It is triggerable on sight
+(`engine.ts` — `case "market": return true`) but still needs one observation,
+so it fills at the NEXT bar's price. The stop was already written at a fixed
+price and does not follow. The distance the position actually carries is
+therefore `|fillPrice − stop|`, which is not the distance it was sized against.
+
+### Measured
+
+One BTC/USDT fill, 10,000 balance, Risk % left at its default of 1:
+
+| | |
+|---|---|
+| Sizing price (click) | 63,072.01 |
+| Stop written | 62,945.86598 |
+| Sized distance | 126.14 |
+| Size | 0.79274 |
+| **Intended risk** | **$99.65 — 1.00% of equity** ✅ |
+| Fill price (next bar) | 63,144.01 |
+| Drift | 72.00 |
+| Realized distance | 198.14 |
+| **Realized risk** | **$156.53 — 1.57% of equity** ❌ |
+
+The sizing arithmetic is correct. The gap is entirely that two numbers are
+captured at two different moments and only one of them moves.
+
+### Why it is easy to miss
+
+Nothing errors and nothing looks wrong. The blotter's position row reports
+`averageEntry` — the FILL — so the row shows a stop distance consistent with
+its own displayed entry, and a reader checking `size × |entry − stop|` against
+the risk budget sees a number that disagrees with the Risk % field with no
+indication of which half is at fault. This cost a debugging pass while writing
+`e2e/ui/replay-order-consolidation.spec.ts`, where an absolute risk assertion
+failed against correct sizing code.
+
+It also means **an e2e assertion cannot measure sizing through the DOM**. Assert
+a ratio instead — double the Risk %, expect double the size — which is what that
+spec now does.
+
+### Direction of the error is not symmetric in practice
+
+Drift is unsigned in principle: a favourable gap reduces realized risk as easily
+as an adverse one increases it. But the case that matters is the adverse one,
+because it is the one that breaches a risk limit the trader believes they set.
+A trader who types 1% and receives 1.57% has not been warned, and on a prop-firm
+challenge (see the challenge envelope work) that is the difference between
+passing and breaching.
+
+### Not fixed here, and what it interacts with
+
+Left alone deliberately: the fix is a product decision, not a patch, and it is
+the same decision Stage C already owes an answer for. Options, none free:
+
+- **Size after the fill** — derive size from `fillPrice`, which needs the stop
+  to be known at fill time and the order to be sized post-hoc;
+- **Move the stop with the fill** — preserve the intended DISTANCE rather than
+  the intended price, which silently relocates a level the trader chose;
+- **Re-derive nothing and disclose** — show realized risk on the position row
+  when it differs from intended by more than a threshold;
+- **Fill at the click price** — removes the drift by removing the realism, and
+  is probably wrong for a replay tool whose point is honest execution.
+
+Whichever is chosen has to agree with the sizing question in
+[RS-4](#rs-4--studios-order-flow-does-not-match-fxreplay-levels-are-optional-and-instant-not-gated):
+if Studio adopts a `lot_size` field instead of deriving size from Risk %, this
+defect changes shape — size stops depending on the stop distance at all, and the
+drift becomes a reporting problem rather than a sizing one. **Decide the two
+together.** Deciding this one alone risks building a correction that the sizing
+change then makes meaningless.

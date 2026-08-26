@@ -18,20 +18,10 @@ function Empty({ text }: { text: string }) {
 }
 
 export function SessionSidebar({ className }: { className?: string }) {
-  const { positions, pending, trades, view, price, closePositionNow, cancelOrder, placeMarketOrder } = useReplayStudio();
-  const live = view?.transport.lifecycle !== "completed";
+  const { positions, pending, trades, view, price, closePositionNow, cancelOrder } = useReplayStudio();
 
   return (
     <aside className={cn("flex w-full shrink-0 flex-col border-l border-border/60 bg-card/30 md:w-[320px]", className)}>
-
-      <div className="grid grid-cols-2 gap-2 border-b border-border/60 p-2">
-        <Button size="sm" onClick={() => placeMarketOrder("buy")} disabled={!live || price == null}>
-          Buy market
-        </Button>
-        <Button size="sm" variant="secondary" onClick={() => placeMarketOrder("sell")} disabled={!live || price == null}>
-          Sell market
-        </Button>
-      </div>
 
       <Tabs defaultValue="positions" className="flex min-h-0 flex-1 flex-col">
         <TabsList className="mx-2 mt-2 grid grid-cols-5">
@@ -45,7 +35,7 @@ export function SessionSidebar({ className }: { className?: string }) {
         <TabsContent value="positions" className="min-h-0 flex-1">
           <ScrollArea className="h-full">
             {positions.length === 0 ? (
-              <Empty text="No open positions. Place a market order to start practising." />
+              <Empty text="No open positions. Use Buy or Sell on the chart toolbar to take a trade." />
             ) : (
               positions.map((p) => {
                 const m = positionMetricsFor(p, price);
