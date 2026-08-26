@@ -10,6 +10,16 @@ enough detail to pick up cold. Remove an entry when it ships a fix.
 > and 100,000 for forex, so it tests clean and ships wrong. Two callers convert
 > explicitly today; a third would inherit the bug.
 
+> **Sizing a position from a stop distance? Read
+> [RS-5](#rs-5--position-size-is-computed-against-the-click-price-the-stop-is-not)
+> before trusting the number.**
+> Size is computed against the price under the cursor at click time, while the
+> stop is set independently and does not move when the fill lands elsewhere.
+> Measured 2026-08-26 on one BTC fill: an intended **1%** of equity opened
+> carrying **1.57%**. Nothing errors, and the blotter reports the position as
+> correctly sized, because it shows the fill price rather than the price the
+> size was derived from.
+
 > **Unparking Battle Arena? Read
 > [BA-11](#ba-11--battle-replay-writes-pl-that-never-reaches-balance-or-statistics)
 > before touching the replay writer, and fix it in the same pass.**
@@ -2462,6 +2472,11 @@ This is a rescoping of RS-3, not a fix for it: the 0.2% stop and 2R target are
 still the tool's choice. The point of consolidating first is that RS-4 Stage B
 now has one call site to change.
 
+Note that making every market route size off Risk % fixed the routes DISAGREEING
+with each other. It did not make the resulting risk exact — see
+[RS-5](#rs-5--position-size-is-computed-against-the-click-price-the-stop-is-not),
+where the size is derived at the click price and the fill lands elsewhere.
+
 `e2e/ui/replay-draft-order.spec.ts` is **skipped, not deleted** — its entry
 gesture was the removed toolbar button. Re-pointing it at the right-click menu
 was deliberately not spent, since Stage B is expected to rewrite it. The file
@@ -2777,7 +2792,95 @@ blotter reports `averageEntry` (the fill), so **any absolute risk assertion made
 through the DOM measures the drift, not the sizing** — assert a ratio instead
 (double the Risk %, expect double the size).
 
-That drift is pre-existing and unchanged by the consolidation, but Stage C
-should decide whether it is acceptable: a position sized for 1% that opens
-carrying 1.57% is a risk model the trader did not choose. It is the same class
-of question as the sizing decision above and probably wants answering with it.
+That drift is pre-existing and unchanged by the consolidation, but it is a real
+correctness gap in risk management, not merely a testing inconvenience: a
+position sized for 1% that opens carrying 1.57% is a risk model the trader did
+not choose. **It now has its own entry —
+[RS-5](#rs-5--position-size-is-computed-against-the-click-price-the-stop-is-not)
+— because it is too easy to lose in a subsection about writing specs.** Decide
+it alongside Stage C's sizing question; the two answers constrain each other.
+
+---
+
+## RS-5 — Position size is computed against the click price; the stop is not
+
+**Area:** Replay Studio · chart trading · risk management ·
+**Found:** 2026-08-26 · **Status:** open — **pre-existing**, not introduced by
+the order-entry consolidation that shipped the same day. Measured, not inferred.
+
+Studio derives position size from the stop DISTANCE at the moment the button is
+clicked:
+
+```ts
+size = (equity × riskPercent / 100) / |clickPrice − stop|
+```
+
+A market order does not fill at `clickPrice`. It is triggerable on sight
+(`engine.ts` — `case "market": return true`) but still needs one observation,
+so it fills at the NEXT bar's price. The stop was already written at a fixed
+price and does not follow. The distance the position actually carries is
+therefore `|fillPrice − stop|`, which is not the distance it was sized against.
+
+### Measured
+
+One BTC/USDT fill, 10,000 balance, Risk % left at its default of 1:
+
+| | |
+|---|---|
+| Sizing price (click) | 63,072.01 |
+| Stop written | 62,945.86598 |
+| Sized distance | 126.14 |
+| Size | 0.79274 |
+| **Intended risk** | **$99.65 — 1.00% of equity** ✅ |
+| Fill price (next bar) | 63,144.01 |
+| Drift | 72.00 |
+| Realized distance | 198.14 |
+| **Realized risk** | **$156.53 — 1.57% of equity** ❌ |
+
+The sizing arithmetic is correct. The gap is entirely that two numbers are
+captured at two different moments and only one of them moves.
+
+### Why it is easy to miss
+
+Nothing errors and nothing looks wrong. The blotter's position row reports
+`averageEntry` — the FILL — so the row shows a stop distance consistent with
+its own displayed entry, and a reader checking `size × |entry − stop|` against
+the risk budget sees a number that disagrees with the Risk % field with no
+indication of which half is at fault. This cost a debugging pass while writing
+`e2e/ui/replay-order-consolidation.spec.ts`, where an absolute risk assertion
+failed against correct sizing code.
+
+It also means **an e2e assertion cannot measure sizing through the DOM**. Assert
+a ratio instead — double the Risk %, expect double the size — which is what that
+spec now does.
+
+### Direction of the error is not symmetric in practice
+
+Drift is unsigned in principle: a favourable gap reduces realized risk as easily
+as an adverse one increases it. But the case that matters is the adverse one,
+because it is the one that breaches a risk limit the trader believes they set.
+A trader who types 1% and receives 1.57% has not been warned, and on a prop-firm
+challenge (see the challenge envelope work) that is the difference between
+passing and breaching.
+
+### Not fixed here, and what it interacts with
+
+Left alone deliberately: the fix is a product decision, not a patch, and it is
+the same decision Stage C already owes an answer for. Options, none free:
+
+- **Size after the fill** — derive size from `fillPrice`, which needs the stop
+  to be known at fill time and the order to be sized post-hoc;
+- **Move the stop with the fill** — preserve the intended DISTANCE rather than
+  the intended price, which silently relocates a level the trader chose;
+- **Re-derive nothing and disclose** — show realized risk on the position row
+  when it differs from intended by more than a threshold;
+- **Fill at the click price** — removes the drift by removing the realism, and
+  is probably wrong for a replay tool whose point is honest execution.
+
+Whichever is chosen has to agree with the sizing question in
+[RS-4](#rs-4--studios-order-flow-does-not-match-fxreplay-levels-are-optional-and-instant-not-gated):
+if Studio adopts a `lot_size` field instead of deriving size from Risk %, this
+defect changes shape — size stops depending on the stop distance at all, and the
+drift becomes a reporting problem rather than a sizing one. **Decide the two
+together.** Deciding this one alone risks building a correction that the sizing
+change then makes meaningless.
