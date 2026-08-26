@@ -531,50 +531,31 @@ export function StudioChart({
             />
             %
           </label>
+          {/* ONE Buy, ONE Sell — the whole of Studio's order entry.
+              Studio used to carry three Buy affordances: these, a "Buy limit"
+              arming button beside them, and a "Buy market" pair in the sidebar.
+              Three buttons for one account and one position are three ways to
+              ask the same question, and they did not even agree on the answer —
+              the sidebar pair sized every position at 1 unit while these two
+              sized off Risk %.
+              Resting orders did not go with them: right-click the chart for
+              Buy/Sell Limit and Stop, which is where the live workspace puts
+              them too. */}
           <Button
             size="sm"
-            variant={armed?.direction === "buy" ? "default" : "ghost"}
-            className="h-6 shrink-0 px-2 text-[11px]"
-            disabled={!tradingLive}
-            onClick={() =>
-              setArmed((a) => (a?.direction === "buy" ? null : { direction: "buy", stopFraction: 0.002, rr: 2 }))
-            }
-          >
-            Buy limit
-          </Button>
-          <Button
-            size="sm"
-            variant={armed?.direction === "sell" ? "default" : "ghost"}
-            className="h-6 shrink-0 px-2 text-[11px]"
-            disabled={!tradingLive}
-            onClick={() =>
-              setArmed((a) => (a?.direction === "sell" ? null : { direction: "sell", stopFraction: 0.002, rr: 2 }))
-            }
-          >
-            Sell limit
-          </Button>
-          <div className="mx-1 h-4 w-px shrink-0 bg-border/60" />
-          <Button
-            size="sm"
+            data-testid="studio-buy"
             className="h-6 shrink-0 bg-emerald-600 px-2 text-[11px] text-white hover:bg-emerald-600/90"
             disabled={!tradingLive || livePrice == null}
-            onClick={() => {
-              if (livePrice == null) return;
-              const dist = Math.max(Math.abs(livePrice) * 0.002, 1e-8);
-              placeMarketOrder("buy", { stopDistance: dist, targetDistance: dist * 2, size: sizeForRisk(livePrice, livePrice - dist) });
-            }}
+            onClick={() => placeMarketOrder("buy")}
           >
             Buy
           </Button>
           <Button
             size="sm"
+            data-testid="studio-sell"
             className="h-6 shrink-0 bg-rose-600 px-2 text-[11px] text-white hover:bg-rose-600/90"
             disabled={!tradingLive || livePrice == null}
-            onClick={() => {
-              if (livePrice == null) return;
-              const dist = Math.max(Math.abs(livePrice) * 0.002, 1e-8);
-              placeMarketOrder("sell", { stopDistance: dist, targetDistance: dist * 2, size: sizeForRisk(livePrice, livePrice + dist) });
-            }}
+            onClick={() => placeMarketOrder("sell")}
           >
             Sell
           </Button>

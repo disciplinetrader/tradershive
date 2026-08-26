@@ -348,36 +348,6 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
 
   const price = view?.candles.length ? view.candles[view.candles.length - 1].close : null;
 
-  const placeMarketOrder = useCallback(
-    (direction: "buy" | "sell", opts: { stopDistance?: number; targetDistance?: number; size?: number } = {}) => {
-      if (!stores || !view || price == null) return;
-      const dist = opts.stopDistance ?? Math.max(price * 0.002, 1e-8);
-      const target = opts.targetDistance ?? dist * 2;
-      const stop = direction === "buy" ? price - dist : price + dist;
-      const tp = direction === "buy" ? price + target : price - target;
-      const drawing = makeDrawing(direction === "buy" ? "long_position" : "short_position", [
-        { time: view.transport.marketTime, price },
-        { time: view.transport.marketTime, price: stop },
-      ]);
-      stores.drawings.add(drawing);
-      placeOrEditOrder(
-        stores,
-        {
-          symbol: view.dataset.label.split(" ")[0],
-          direction,
-          orderType: "market",
-          entry: price,
-          stop,
-          target: tp,
-          size: opts.size ?? 1,
-          drawingId: drawing.id,
-        },
-        { marketPrice: price },
-      );
-    },
-    [stores, view, price],
-  );
-
   // ── Phase C · chart-native trading ──────────────────────────────────────
   // Equity is a projection: starting balance + realized tape + open P/L.
   const realizedPnl = trades.reduce((sum, t) => sum + (Number.isFinite(t.netPnl) ? t.netPnl : 0), 0);
@@ -399,6 +369,56 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
       return Number.isFinite(units) && units > 0 ? units : 1;
     },
     [equity, riskPercent],
+  );
+
+  /**
+   * The ONE market-order path in Studio.
+   *
+   * Every express route into a position now lands here — the toolbar's Buy /
+   * Sell, the B / S hotkeys, and the right-click menu's market entries. Before
+   * consolidation the toolbar passed a risk-derived size while the other three
+   * passed nothing and took the `?? 1` fallback, so two buttons an inch apart
+   * opened positions differing by orders of magnitude in money. The default
+   * lives in here precisely so a caller cannot forget it.
+   *
+   * The 0.2% stop and 2R target are still the tool's choice, not the trader's.
+   * That is RS-3, and it is deliberately NOT fixed here: removing the seed
+   * requires levels the order model cannot yet represent (`stop`/`target` are
+   * non-nullable in orders/model.ts). Consolidating first means there is now
+   * exactly one site to change when RS-4 Stage B lands, instead of four.
+   */
+  const placeMarketOrder = useCallback(
+    (direction: "buy" | "sell", opts: { stopDistance?: number; targetDistance?: number; size?: number } = {}) => {
+      if (!stores || !view || price == null) return;
+      const dist = opts.stopDistance ?? Math.max(price * 0.002, 1e-8);
+      const target = opts.targetDistance ?? dist * 2;
+      const stop = direction === "buy" ? price - dist : price + dist;
+      const tp = direction === "buy" ? price + target : price - target;
+      const drawing = makeDrawing(direction === "buy" ? "long_position" : "short_position", [
+        { time: view.transport.marketTime, price },
+        { time: view.transport.marketTime, price: stop },
+      ]);
+      stores.drawings.add(drawing);
+      placeOrEditOrder(
+        stores,
+        {
+          symbol: view.dataset.label.split(" ")[0],
+          direction,
+          orderType: "market",
+          entry: price,
+          stop,
+          target: tp,
+          // Sized off the SAME stop this order is about to carry, so the
+          // Risk % field means what it says on every market route. The old
+          // `?? 1` fallback is gone: one unit is not a risk decision, it is
+          // the absence of one.
+          size: opts.size ?? sizeForRisk(price, stop),
+          drawingId: drawing.id,
+        },
+        { marketPrice: price },
+      );
+    },
+    [stores, view, price, sizeForRisk],
   );
 
   const placeOrderAt = useCallback(
