@@ -378,9 +378,16 @@ export function BattleChart() {
           lineWidth: 2,
           axisLabelVisible: true,
         }),
-        a.addPriceLine({ price: p.stop, color: down, title: "SL", lineStyle: 2, lineWidth: 1 }),
-        a.addPriceLine({ price: p.target, color: up, title: "TP", lineStyle: 2, lineWidth: 1 }),
       );
+      // A level that does not exist gets NO line. Drawing one anyway would put
+      // it at price 0 — pinned to the bottom of the chart, labelled "SL", and
+      // read as a stop the trader does not have.
+      if (p.stop != null) {
+        linesRef.current.push(a.addPriceLine({ price: p.stop, color: down, title: "SL", lineStyle: 2, lineWidth: 1 }));
+      }
+      if (p.target != null) {
+        linesRef.current.push(a.addPriceLine({ price: p.target, color: up, title: "TP", lineStyle: 2, lineWidth: 1 }));
+      }
     }
   }, [positions, adapterTick, contractSize]);
 
@@ -679,11 +686,11 @@ export function BattleChart() {
                   </div>
                   <div className="mt-1 flex items-center justify-between font-mono text-[10px] tabular-nums text-muted-foreground">
                     <span title="Entry">@{entry.toFixed(2)}</span>
-                    <span className="text-danger" title="Stop loss">
-                      SL {p.stop.toFixed(2)}
+                    <span className="text-danger" title={p.stop == null ? "No stop loss set" : "Stop loss"}>
+                      SL {p.stop == null ? "—" : p.stop.toFixed(2)}
                     </span>
-                    <span className="text-success" title="Take profit">
-                      TP {p.target.toFixed(2)}
+                    <span className="text-success" title={p.target == null ? "No take profit set" : "Take profit"}>
+                      TP {p.target == null ? "—" : p.target.toFixed(2)}
                     </span>
                   </div>
                 </div>

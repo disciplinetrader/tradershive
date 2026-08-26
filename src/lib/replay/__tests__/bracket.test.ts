@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { bracketFor } from "../chart-trading";
+import { bracketFor, marketOrderSize } from "../chart-trading";
 import { inferOrderType } from "@/lib/chart/orders/model";
 
 /**
@@ -70,5 +70,48 @@ describe("inferOrderType — what the context menu now offers", () => {
     // a stop. This returns `market`, and the menu hides the pending row.
     expect(inferOrderType("buy", 100, null, TICK)).toBe("market");
     expect(inferOrderType("sell", 100, undefined, TICK)).toBe("market");
+  });
+});
+
+/**
+ * RS-4 Option A - sizing when the stop may not exist.
+ *
+ * Dropping the seeded bracket means `placeMarketOrder` can produce
+ * `stop: null`, and `sizeForRisk` divides by the stop distance. The branch that
+ * decides what happens instead is one line, and one line that decides how much
+ * money is at risk earns its own cases.
+ *
+ * Mutation-verified: collapsing the branch to `riskSized` alone fails the
+ * no-stop cases; collapsing it to `defaultUnits` alone fails the risk-sized
+ * ones. Both are asserted so neither collapse passes.
+ */
+describe("marketOrderSize", () => {
+  it("uses the risk-derived size when a stop exists", () => {
+    expect(marketOrderSize({ stop: 62_000, riskSized: 0.79, defaultUnits: 1 })).toBe(0.79);
+  });
+
+  it("falls back to the trader's default when there is NO stop", () => {
+    // The whole point of Option A: not a fabricated risk number, a chosen one.
+    expect(marketOrderSize({ stop: null, riskSized: 0.79, defaultUnits: 2.5 })).toBe(2.5);
+  });
+
+  it("ignores a risk-derived size that a null stop makes meaningless", () => {
+    // `sizeForRisk` returns its own `1` fallback with a zero distance. Passing
+    // that through would look deliberate and would not be.
+    expect(marketOrderSize({ stop: null, riskSized: 1, defaultUnits: 4 })).toBe(4);
+  });
+
+  it("an explicit size wins over both", () => {
+    expect(marketOrderSize({ explicit: 10, stop: 62_000, riskSized: 0.79, defaultUnits: 1 })).toBe(10);
+    expect(marketOrderSize({ explicit: 10, stop: null, riskSized: 0.79, defaultUnits: 1 })).toBe(10);
+  });
+
+  it("never opens a zero or non-finite size", () => {
+    // A zero-size position is not a smaller trade, it is a trade that books no
+    // money while looking open.
+    expect(marketOrderSize({ stop: null, riskSized: 0, defaultUnits: 0 })).toBe(1);
+    expect(marketOrderSize({ stop: null, riskSized: 0, defaultUnits: NaN })).toBe(1);
+    expect(marketOrderSize({ stop: 62_000, riskSized: NaN, defaultUnits: 3 })).toBe(3);
+    expect(marketOrderSize({ stop: 62_000, riskSized: -5, defaultUnits: 3 })).toBe(3);
   });
 });

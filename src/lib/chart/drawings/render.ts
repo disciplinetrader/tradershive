@@ -541,7 +541,13 @@ function drawClosedTrade(
 
   // Result badge — realized only. Live P/L is never painted after closure.
   const sign = t.netPnl > 0 ? "+" : "";
-  const label = `${t.direction === "buy" ? "Long" : "Short"} · ${sign}${t.netPnl.toFixed(2)} · ${t.realizedR >= 0 ? "+" : ""}${t.realizedR.toFixed(2)}R · ${CLOSE_REASON_TEXT[t.closeReason]}`;
+  // An em-dash where R would go, not "0.00R": a trade with no stop has a real
+  // P/L and no risk to measure it against, and a printed zero reads as a
+  // genuine flat result. Same call as the position label (Stage A').
+  const rText = t.realizedR == null
+    ? "—"
+    : `${t.realizedR >= 0 ? "+" : ""}${t.realizedR.toFixed(2)}R`;
+  const label = `${t.direction === "buy" ? "Long" : "Short"} · ${sign}${t.netPnl.toFixed(2)} · ${rText} · ${CLOSE_REASON_TEXT[t.closeReason]}`;
   const anchorX = xx ?? ex ?? (g ? g.x2 : 0);
   const anchorY = xy ?? ey ?? (g ? g.entryY : 0);
   ctx.font = POS_FONT(10, 700);
@@ -688,7 +694,9 @@ function drawExecutionMarks(
     const isEntry = mk.kind === "open" || mk.kind === "scale_in";
     const tone = isEntry
       ? entryTone
-      : mk.realizedR >= 0
+      // No R means no verdict, so the marker takes the neutral-positive tone
+      // rather than being painted red for a loss it cannot know about.
+      : (mk.realizedR ?? 0) >= 0
         ? POS_GREEN
         : POS_RED;
 

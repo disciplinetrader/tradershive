@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { db, ids } from "./fixtures";
 
@@ -40,8 +40,6 @@ import { db, ids } from "./fixtures";
 
 const TITLE = "E2E ORDER CONSOLIDATION RUN";
 const BALANCE = 10_000;
-/** Studio's default Risk % — the toolbar input's initial state. */
-const RISK_PCT = 1;
 
 async function seed(sb: SupabaseClient, userId: string, tag: string) {
   const { data, error } = await sb.from("replay_sessions").insert({
@@ -80,37 +78,58 @@ async function stepOneBar(page: Page) {
   await page.keyboard.press("ArrowRight");
 }
 
-/**
- * Open a session, set Risk %, buy, and report the quantity the blotter shows.
- *
- * ⚠ Each call needs its OWN session. Studio snapshots its book and RESUMES it
- * on the next load of the same session id, so calling this twice against one
- * session reads back the FIRST buy's position and reports its quantity again.
- * That failure is quiet and convincing: entry, stop and target all match too,
- * because they were placed at the same cursor. It cost a debugging pass here,
- * and it will bite the RS-4 Stage B spec the same way.
- *
- * The Risk input is filled BEFORE the click so focus lands on the button
- * afterwards: `StudioHotkeys.isTypingTarget` ignores keys while an input has
- * focus, so stepping the bar from inside the field would silently do nothing.
- */
-async function buyAtRisk(page: Page, sessionId: string, riskPct: number): Promise<number> {
-  await openStudio(page, sessionId);
-  await page.getByLabel("Risk per trade in percent of equity").fill(String(riskPct));
-  await page.getByTestId("studio-buy").click();
-  await stepOneBar(page);
+/** The blotter's open-position row, read by column index. */
+type Row = { qty: string; entry: string; stop: string; target: string; r: string };
 
-  // The positions blotter is the only table with rows at this point.
+/**
+ * Read the single open-position row.
+ *
+ * Columns: Symbol, Side, Qty, Avg entry, Stop, Target, Price, P/L, R, Manage.
+ * Read as TEXT, not as numbers, because the values under test now include the
+ * em-dash the blotter prints for a level that does not exist — and `Number("—")`
+ * is NaN, which would make "no stop" and "unreadable" indistinguishable.
+ */
+async function readRow(page: Page): Promise<Row> {
   const row = page.locator("table tbody tr").first();
   await expect(row).toBeVisible({ timeout: 20_000 });
   const cells = row.locator("td");
-  const num = async (i: number) => Number((await cells.nth(i).textContent())?.replace(/[^0-9.-]/g, ""));
-  // Symbol, Side, Qty, Avg entry, Stop, Target, Price, P/L, R, Manage
-  const [qty, entry, stop] = [await num(2), await num(3), await num(4)];
-  expect(Number.isFinite(qty) && qty > 0).toBe(true);
-  // A long's stop sits below its entry — proves we read the row we think we did.
-  expect(stop).toBeLessThan(entry);
-  return qty;
+  const txt = async (i: number) => ((await cells.nth(i).textContent()) ?? "").trim();
+  return {
+    qty: await txt(2), entry: await txt(3), stop: await txt(4),
+    target: await txt(5), r: await txt(8),
+  };
+}
+
+/**
+ * Open a fresh session and take a market Buy.
+ *
+ * ⚠ Each call needs its OWN session. Studio snapshots its book and RESUMES it
+ * on the next load of the same session id, so calling this twice against one
+ * session reads back the FIRST buy's position. That failure is quiet and
+ * convincing: entry, stop and target all match too, because they were placed at
+ * the same cursor.
+ */
+async function buy(page: Page, sessionId: string, opts: { qty?: number } = {}) {
+  await openStudio(page, sessionId);
+  if (opts.qty != null) {
+    await page.getByLabel("Default position size in units when no stop is set").fill(String(opts.qty));
+  }
+  await page.getByTestId("studio-buy").click();
+  await stepOneBar(page);
+}
+
+/** Drag a chart-overlay handle vertically by `dy` pixels. */
+async function dragHandle(page: Page, locator: Locator, dy: number) {
+  const box = await locator.boundingBox();
+  if (!box) throw new Error("handle has no bounding box");
+  // The pill sits at the right-hand end of a full-width row; grab it there so
+  // the pointer lands on the handle rather than on empty chart.
+  const x = Math.round(box.x + box.width - 24);
+  const y = Math.round(box.y + box.height / 2);
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x, y + dy, { steps: 12 });
+  await page.mouse.up();
 }
 
 // The first spec to touch /replay/studio pays Vite's cold-start compile, which
@@ -151,23 +170,96 @@ test.describe("studio order entry is one Buy and one Sell", () => {
     }
   });
 
-  test("Buy fills a market order sized off Risk %, not a 1-unit fallback", async ({ page }) => {
-    // One session per measurement — see the warning on `buyAtRisk`.
-    const [one, two] = [await seed(sb, ids().userId, `${tag}a`), await seed(sb, ids().userId, `${tag}b`)];
-    extraSessions.push(one, two);
+  test("a market Buy fills instantly with NO stop and NO target", async ({ page }) => {
+    /**
+     * The change the whole RS-3/RS-4 arc was for.
+     *
+     * Studio used to seed a 0.2% stop and a 2R target on every market fill —
+     * levels the tool chose, presented as the trader's own risk. A bare fill now
+     * carries neither, and the blotter says so with an em-dash rather than a
+     * number. Asserting the em-dash specifically matters: a "0.00" here would
+     * mean a level AT zero, which is what the old coercion bugs produced.
+     */
+    const id = await seed(sb, ids().userId, `${tag}bare`);
+    extraSessions.push(id);
+    await buy(page, id);
 
-    const atOne = await buyAtRisk(page, one, RISK_PCT);
-    const atTwo = await buyAtRisk(page, two, RISK_PCT * 2);
+    const row = await readRow(page);
+    expect(row.stop).toBe("—");
+    expect(row.target).toBe("—");
+    // No stop means no risk to measure against, so R is absent, not zero.
+    expect(row.r).toBe("—");
+    // The position is REAL: it filled, and it is sized.
+    expect(Number(row.entry)).toBeGreaterThan(0);
+    expect(Number(row.qty)).toBeGreaterThan(0);
+  });
 
-    // The fallback's fingerprint. Weak alone, which is why the ratio follows.
-    expect(atOne).not.toBe(1);
+  test("the Qty field sizes a stopless fill, and Risk % does not", async ({ page }) => {
+    /**
+     * RS-4 Option A. With no stop there is no distance to divide the risk
+     * budget by, so Risk % cannot size the position and `defaultUnits` does.
+     * Both halves are asserted: that Qty moves the size, and that Risk % does
+     * NOT — otherwise a build that quietly resurrected risk-sizing would pass.
+     */
+    const [a, b] = [
+      await seed(sb, ids().userId, `${tag}q1`),
+      await seed(sb, ids().userId, `${tag}q2`),
+    ];
+    extraSessions.push(a, b);
 
-    // Twice the risk budget over the same stop distance is twice the size.
-    // Both loads start at the same cursor with no trades, so equity is 10,000
-    // in each and the only variable is the Risk % field. Tolerance covers the
-    // blotter's 2dp rounding of the quantity.
-    expect(atTwo / atOne).toBeGreaterThan(1.95);
-    expect(atTwo / atOne).toBeLessThan(2.05);
+    await buy(page, a, { qty: 1 });
+    expect(Number((await readRow(page)).qty)).toBeCloseTo(1, 2);
+
+    await buy(page, b, { qty: 3 });
+    expect(Number((await readRow(page)).qty)).toBeCloseTo(3, 2);
+
+    // Risk % is still on the toolbar and still means something — but not here.
+    const c = await seed(sb, ids().userId, `${tag}q3`);
+    extraSessions.push(c);
+    await openStudio(page, c);
+    await page.getByLabel("Risk per trade in percent of equity").fill("5");
+    await page.getByLabel("Default position size in units when no stop is set").fill("2");
+    await page.getByTestId("studio-buy").click();
+    await stepOneBar(page);
+    // 2 units because Qty says 2 — NOT a risk-derived number.
+    expect(Number((await readRow(page)).qty)).toBeCloseTo(2, 2);
+  });
+
+  test("the ghost handle adds a stop to a live position without resizing it", async ({ page }) => {
+    /**
+     * The other half of the pivot: a bare fill has to be protectable without a
+     * ticket. The ghost handle is the affordance — parked off the entry, dashed,
+     * draggable on sight, exactly as `PositionLinesLive` does it in the live
+     * workspace.
+     *
+     * "Without resizing" is the load-bearing half. Re-deriving size when a stop
+     * arrives would change the basis the position's P/L is measured against
+     * mid-flight, which is worse than an arbitrary size.
+     */
+    const id = await seed(sb, ids().userId, `${tag}ghost`);
+    extraSessions.push(id);
+    await buy(page, id, { qty: 2 });
+
+    const before = await readRow(page);
+    expect(before.stop).toBe("—");
+
+    const ghost = page.locator('[data-testid^="studio-sl-add-"]').first();
+    await expect(ghost).toBeVisible({ timeout: 20_000 });
+
+    // A long's stop goes BELOW the entry, i.e. down-screen.
+    await dragHandle(page, ghost, 60);
+
+    await expect.poll(async () => (await readRow(page)).stop, { timeout: 15_000 }).not.toBe("—");
+    const after = await readRow(page);
+    // A real stop, below the entry.
+    expect(Number(after.stop)).toBeGreaterThan(0);
+    expect(Number(after.stop)).toBeLessThan(Number(after.entry));
+    // R becomes measurable the moment a stop exists.
+    expect(after.r).not.toBe("—");
+    // ...and the position was NOT resized by acquiring one.
+    expect(after.qty).toBe(before.qty);
+    // The ghost is gone: the level exists now, so the "add" affordance retires.
+    await expect(page.locator('[data-testid^="studio-sl-add-"]')).toHaveCount(0);
   });
 
   test("right-click still opens the limit/stop draft flow", async ({ page }) => {

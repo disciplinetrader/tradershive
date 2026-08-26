@@ -90,6 +90,34 @@ function money(v: number): string {
   return `${sign}$${Math.abs(v).toFixed(2)}`;
 }
 
+
+/**
+ * Where an unplaced level's ghost handle parks.
+ *
+ * 0.5% of entry on the correct side, ported from `PositionLinesLive`
+ * (`trading/chart/PositionLinesLive.tsx`) — NOT parked ON the entry the way the
+ * draft flow's ghosts were. That difference is deliberate and load-bearing.
+ *
+ * The draft flow could park at zero distance because it had a commit gate: the
+ * "Place order" button stayed disabled until both levels were positioned, so a
+ * zero-distance level never reached the store. A live position has no gate —
+ * `modifyLevels` applies on pointer-up — so a handle parked on the entry would
+ * turn a plain click into `stop === entry`. That is a zero-risk stop: it fails
+ * `validateOrder`'s own rule, it is unsizeable, and it is exactly the
+ * zero-distance dead end RS-4 rejected.
+ *
+ * A fraction rather than a fixed pip count, so it lands sensibly on a 64,000
+ * crypto price and on a 1.10 FX rate alike. The precise number matters far less
+ * than being on the correct side of entry and immediately draggable.
+ */
+function ghostLevel(direction: "buy" | "sell", entry: number, kind: "stop" | "target"): number {
+  const offset = Math.abs(entry) * 0.005;
+  // The stop sits against the trade, the target with it.
+  const against = direction === "buy" ? -1 : 1;
+  const raw = kind === "stop" ? entry + against * offset : entry - against * offset;
+  return Math.max(Number.EPSILON, raw);
+}
+
 export function StudioTradeLayer({ adapter, tick, decimals, armed, draft, onDraftChange }: Props) {
   const {
     positions, pending, price, view,
@@ -155,10 +183,22 @@ export function StudioTradeLayer({ adapter, tick, decimals, armed, draft, onDraf
     };
   }, [drag, adapter, modifyLevels, modifyPendingLevels, onDraftChange]);
 
-  const priceOf = (o: PositionOrder, handle: Handle): number => {
+  /**
+   * Where a handle sits, or `null` when the level does not exist.
+   *
+   * `null` is not "off-screen" — it is "this position carries no stop", which
+   * is a state the order model can now express. Rendering it at 0 would draw a
+   * stop line pinned to the bottom of the chart. The ghost handle that lets a
+   * trader ADD the level is positioned separately, on the entry.
+   */
+  const priceOf = (o: PositionOrder, handle: Handle): number | null => {
     if (drag && drag.on === "order" && drag.orderId === o.id && drag.handle === handle) return drag.price;
     return handle === "stop" ? o.stop : handle === "target" ? o.target : (o.fillPrice ?? o.entry);
   };
+
+  /** Project a price, passing absence straight through. */
+  const yOf = (v: number | null): number | null =>
+    v == null || !adapter ? null : adapter.priceToY(v);
 
   const rows = useMemo(() => {
     if (!adapter) return [];
@@ -170,9 +210,9 @@ export function StudioTradeLayer({ adapter, tick, decimals, armed, draft, onDraf
       return {
         order: p,
         entry, stop, target,
-        entryY: adapter.priceToY(entry),
-        stopY: adapter.priceToY(stop),
-        targetY: adapter.priceToY(target),
+        entryY: yOf(entry),
+        stopY: yOf(stop),
+        targetY: yOf(target),
         pnl: m?.totalPnl ?? 0,
         r: m?.floatingR ?? 0,
         qty: m?.remainingQuantity ?? p.size ?? 0,
@@ -188,21 +228,38 @@ export function StudioTradeLayer({ adapter, tick, decimals, armed, draft, onDraf
       entry: priceOf(o, "entry"),
       stop: priceOf(o, "stop"),
       target: priceOf(o, "target"),
-      entryY: adapter.priceToY(priceOf(o, "entry")),
-      stopY: adapter.priceToY(priceOf(o, "stop")),
-      targetY: adapter.priceToY(priceOf(o, "target")),
+      entryY: yOf(priceOf(o, "entry")),
+      stopY: yOf(priceOf(o, "stop")),
+      targetY: yOf(priceOf(o, "target")),
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adapter, pending, drag, tick]);
 
-  const fmt = (v: number) => v.toFixed(decimals);
+  const fmt = (v: number | null | undefined) =>
+    v == null || !Number.isFinite(v) ? "—" : v.toFixed(decimals);
 
-  const startDrag = (orderId: string, handle: Handle, kind: "position" | "pending", current: number) =>
+  /**
+   * Begin dragging a level handle.
+   *
+   * `current` is `null` when the level does not exist yet — the ghost-handle
+   * case. The drag then starts from `fallback` (the entry line), which is where
+   * the ghost is parked, so grabbing it and releasing without moving places the
+   * level at the entry rather than doing nothing.
+   */
+  const startDrag = (
+    orderId: string,
+    handle: Handle,
+    kind: "position" | "pending",
+    current: number | null,
+    fallback?: number,
+  ) =>
     (e: React.PointerEvent) => {
       if (!live) return;
       if ((e.target as HTMLElement).closest("[data-line-action]")) return;
+      const from = current ?? fallback;
+      if (from == null || !Number.isFinite(from)) return;
       e.preventDefault();
-      setDrag({ on: "order", orderId, handle, kind, price: current });
+      setDrag({ on: "order", orderId, handle, kind, price: from });
     };
 
   /** Drag one of the draft's levels. An unplaced one starts from the entry. */
@@ -422,6 +479,37 @@ export function StudioTradeLayer({ adapter, tick, decimals, armed, draft, onDraf
                   axis={fmt(row.stop)}
                 />
               </>
+            ) : live ? (
+              /* No stop — offer one. The handle IS the control: rendering
+                 nothing would be the honest picture of "unprotected" and would
+                 also leave the trader nothing to grab. */
+              (() => {
+                const gp = ghostLevel(order.direction, row.entry ?? 0, "stop");
+                const gy = yOf(gp);
+                return gy == null ? null : (
+                  <>
+                    <OrderLine y={gy} tone="stop" ghost />
+                    <OrderLabel
+                      y={gy}
+                      tone="stop"
+                      ghost
+                      testId={`studio-sl-add-${order.id}`}
+                      expanded={hover === `${key}:stop-add`}
+                      onMouseEnter={() => setHover(`${key}:stop-add`)}
+                      onMouseLeave={() => setHover((h) => (h === `${key}:stop-add` ? null : h))}
+                      onPointerDown={startDrag(order.id, "stop", "position", null, gp)}
+                      title="Drag to set a stop loss, or click to place it here"
+                      label={
+                        <>
+                          <span className="font-semibold text-muted-foreground">Add stop</span>
+                          <span className="tabular-nums text-muted-foreground">drag to place</span>
+                        </>
+                      }
+                      axis={<span className="tabular-nums opacity-80">+ SL</span>}
+                    />
+                  </>
+                );
+              })()
             ) : null}
 
             {/* Target */}
@@ -440,6 +528,37 @@ export function StudioTradeLayer({ adapter, tick, decimals, armed, draft, onDraf
                   axis={fmt(row.target)}
                 />
               </>
+            ) : live ? (
+              /* No target — same affordance, mirrored. An unset target carries
+                 no risk the way an unset stop does, so this is the lower-stakes
+                 half; it exists so the two levels behave identically. */
+              (() => {
+                const gp = ghostLevel(order.direction, row.entry ?? 0, "target");
+                const gy = yOf(gp);
+                return gy == null ? null : (
+                  <>
+                    <OrderLine y={gy} tone="profit" ghost />
+                    <OrderLabel
+                      y={gy}
+                      tone="profit"
+                      ghost
+                      testId={`studio-tp-add-${order.id}`}
+                      expanded={hover === `${key}:target-add`}
+                      onMouseEnter={() => setHover(`${key}:target-add`)}
+                      onMouseLeave={() => setHover((h) => (h === `${key}:target-add` ? null : h))}
+                      onPointerDown={startDrag(order.id, "target", "position", null, gp)}
+                      title="Drag to set a take profit, or click to place it here"
+                      label={
+                        <>
+                          <span className="font-semibold text-muted-foreground">Add target</span>
+                          <span className="tabular-nums text-muted-foreground">drag to place</span>
+                        </>
+                      }
+                      axis={<span className="tabular-nums opacity-80">+ TP</span>}
+                    />
+                  </>
+                );
+              })()
             ) : null}
 
             {dragging && (dragging.handle === "stop" || dragging.handle === "target") ? (

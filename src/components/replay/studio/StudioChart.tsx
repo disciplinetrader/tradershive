@@ -82,6 +82,7 @@ export function StudioChart({
 }: StudioChartProps) {
   const {
     view, sessionId, riskPercent, setRiskPercent, placeMarketOrder, sizeForRisk, price: livePrice,
+    defaultUnits, setDefaultUnits,
     seekForwardTo, symbol: sessionSymbol, placeOrderAt, market: sessionMarket,
   } = useReplayStudio();
   /**
@@ -541,6 +542,24 @@ export function StudioChart({
               Resting orders did not go with them: right-click the chart for
               Buy/Sell Limit and Stop, which is where the live workspace puts
               them too. */}
+          {/* Sizing when there IS no stop. Risk % divides the budget by the
+              stop distance, so with no stop it has nothing to divide by —
+              this is the number used instead. Provisional, RS-4 Option A. */}
+          <label
+            className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-muted-foreground"
+            title="Position size used when an order opens with no stop"
+          >
+            Qty
+            <input
+              type="number"
+              min={0.0001}
+              step={0.01}
+              value={defaultUnits}
+              onChange={(e) => setDefaultUnits(Number(e.target.value) || 1)}
+              className="h-6 w-14 rounded border border-border/60 bg-background px-1 text-right font-mono text-[11px] text-foreground"
+              aria-label="Default position size in units when no stop is set"
+            />
+          </label>
           <Button
             size="sm"
             data-testid="studio-buy"

@@ -54,14 +54,25 @@ export interface PositionOrder {
   direction: OrderDirection;
   orderType: OrderType;
   entry: number;
-  stop: number;
-  target: number;
-  /** Absolute price distance entry → stop. */
-  risk: number;
-  /** Absolute price distance entry → target. */
-  reward: number;
-  /** reward / risk. */
-  rr: number;
+  /**
+   * Protective stop, or `null` when the position carries none.
+   *
+   * A market order may be opened with no stop and no target: that is a
+   * position with no protection and no objective, NOT one whose levels sit at
+   * zero. Every read must ask before using it — `Number.isFinite` rather than
+   * `!= null`, because undefined and NaN say the same thing here and NaN
+   * comparisons are quietly false, which reads as "never triggers" while
+   * actually meaning "silently unprotected". See RS-4.
+   */
+  stop: number | null;
+  /** Objective, or `null` when the position has none. Same rules as `stop`. */
+  target: number | null;
+  /** Absolute price distance entry → stop; `null` when there is no stop. */
+  risk: number | null;
+  /** Absolute price distance entry → target; `null` when there is no target. */
+  reward: number | null;
+  /** reward / risk; `null` unless BOTH levels exist. */
+  rr: number | null;
   /**
    * Position size in **UNITS of the instrument**, not lots. Null until account
    * sizing is connected.
@@ -109,9 +120,9 @@ export interface PositionOrder {
   /** Entry price requested before slippage. */
   requestedEntry?: number;
   /** Stop as it stood at fill time. */
-  initialStop?: number;
+  initialStop?: number | null;
   /** Target as it stood at fill time. */
-  initialTarget?: number;
+  initialTarget?: number | null;
 
 
   // ── Advanced position management (Phase 6) ─────────────────────────────
@@ -143,7 +154,8 @@ export interface PositionOrder {
   /** Realised P/L in quote currency (× size when sizing is known). */
   realizedPnl?: number;
   /** Realised result expressed in R multiples. */
-  realizedR?: number;
+  /** `null` when the position carried no stop — see `LivePositionMetrics.r`. */
+  realizedR?: number | null;
   archivedAt?: number;
 }
 
@@ -195,8 +207,10 @@ export interface OrderDraft {
   direction: OrderDirection;
   orderType: OrderType;
   entry: number;
-  stop: number;
-  target: number;
+  /** Protective stop, or `null` to open with none. See `PositionOrder.stop`. */
+  stop: number | null;
+  /** Objective, or `null` to open with none. See `PositionOrder.target`. */
+  target: number | null;
   /**
    * UNITS, not lots — see the warning on `PositionOrder.size`. Multiply lots by
    * the symbol's `contractSize` before constructing a draft, or forex P&L comes
@@ -252,8 +266,36 @@ export function validateOrder(
     return { ok: false, errors: ["Trading values must be finite numbers. Infinity and NaN are rejected."] };
   }
 
-  if (![entry, stop, target].every((v) => v > 0)) {
-    return { ok: false, errors: ["Entry, stop and target must all be positive prices."] };
+  if (!(entry > 0)) {
+    return { ok: false, errors: ["Entry must be a positive price."] };
+  }
+
+  /**
+   * Optional levels are a MARKET-ORDER privilege (RS-4).
+   *
+   * A market order fills instantly, so there is no pre-commit window in which
+   * to position anything; it is opened and then protected, which is what the
+   * real product does. A resting order is the opposite — it is composed before
+   * it exists, so there is no reason to accept an incomplete one, and a pending
+   * order with no stop would sit in the book for hours as an unprotected
+   * position waiting to happen.
+   *
+   * ⚠ The limit/stop half of this is INFERRED, not confirmed. RS-4 flags it:
+   * both FXReplay recordings showed only market Buy/Sell, so "resting orders
+   * stay strict" is the conservative reading rather than an observed rule. If
+   * evidence turns up either way, this is the single place that changes.
+   */
+  const levelsOptional = orderType === "market";
+
+  if (!levelsOptional && !(hasLevel(stop) && hasLevel(target))) {
+    return {
+      ok: false,
+      errors: ["A resting order needs both a stop and a target before it can be placed."],
+    };
+  }
+
+  if ((hasLevel(stop) && !(stop > 0)) || (hasLevel(target) && !(target > 0))) {
+    return { ok: false, errors: ["Stop and target must be positive prices when set."] };
   }
 
   // The message says "lot size" and the field holds UNITS. That mismatch is
@@ -264,25 +306,30 @@ export function validateOrder(
     errors.push("Lot size must be between 0 and 1,000,000,000.");
   }
 
+  // Each level is judged only if it exists. An absent one is not a level on the
+  // wrong side of the entry — it is the absence of a constraint.
   if (direction === "buy") {
-    if (stop >= entry) errors.push("Buy order: stop loss must be below entry.");
-    if (target <= entry) errors.push("Buy order: take profit must be above entry.");
+    if (hasLevel(stop) && stop >= entry) errors.push("Buy order: stop loss must be below entry.");
+    if (hasLevel(target) && target <= entry) errors.push("Buy order: take profit must be above entry.");
   } else {
-    if (stop <= entry) errors.push("Sell order: stop loss must be above entry.");
-    if (target >= entry) errors.push("Sell order: take profit must be below entry.");
+    if (hasLevel(stop) && stop <= entry) errors.push("Sell order: stop loss must be above entry.");
+    if (hasLevel(target) && target >= entry) errors.push("Sell order: take profit must be below entry.");
   }
 
-  const risk = Math.abs(entry - stop);
-  const reward = Math.abs(target - entry);
+  const risk = levelDistance(entry, stop);
+  const reward = levelDistance(entry, target);
 
-  if (risk > 1_000_000_000_000) errors.push("Invalid risk value (numeric overflow).");
-  if (reward > 1_000_000_000_000) errors.push("Invalid reward value (numeric overflow).");
+  if (risk != null && risk > 1_000_000_000_000) errors.push("Invalid risk value (numeric overflow).");
+  if (reward != null && reward > 1_000_000_000_000) errors.push("Invalid reward value (numeric overflow).");
 
+  // A stop that EXISTS still may not sit on top of the entry: a zero-distance
+  // stop is unsizeable (it divides into the risk budget) and is the reason the
+  // "seed both levels at the entry price" shortcut was rejected — see RS-4.
   const tick = opts.tick && opts.tick > 0 ? opts.tick : 0;
-  if (risk <= 0 || (tick > 0 && risk < tick)) {
+  if (risk != null && (risk <= 0 || (tick > 0 && risk < tick))) {
     errors.push("Risk is zero or negative — move the stop away from the entry price.");
   }
-  if (reward <= 0) {
+  if (reward != null && reward <= 0) {
     errors.push("Reward is zero or negative — move the target away from the entry price.");
   }
 
@@ -302,14 +349,54 @@ export function validateOrder(
   return { ok: errors.length === 0, errors };
 }
 
+/* ══════════════════════════════════════════════════════════════════════
+   Absent levels — the single place that decides what "no level" means
+   ══════════════════════════════════════════════════════════════════════ */
+
+/**
+ * True when a level is really there.
+ *
+ * `Number.isFinite` rather than `!= null` on purpose, and this is the whole
+ * reason the helper exists: `undefined` and `NaN` say exactly what `null` says
+ * here — there is no usable level — and NaN comparisons are quietly false,
+ * which reads as "never triggers" while actually meaning "silently
+ * unprotected". Stage 1 and Stage A' both reached for `Number.isFinite`
+ * independently; this is that decision, named once.
+ */
+export function hasLevel(v: number | null | undefined): v is number {
+  return Number.isFinite(v as number);
+}
+
+/**
+ * Absolute distance between a price and a level, or `null` when the level is
+ * absent.
+ *
+ * THE subtraction. Three sites had each written `Math.abs(a - b)` against a
+ * possibly-absent level before Stage A' (`riskBasisOf`, `openExecution`, the
+ * closed-trade builder), and every one of them silently coerced: `fill - null`
+ * is `fill - 0`, so an absent stop reported a risk distance equal to the ENTIRE
+ * FILL PRICE — large, finite and completely fictional. Route every level
+ * distance through here so there is no fourth.
+ */
+export function levelDistance(price: number, level: number | null | undefined): number | null {
+  if (!hasLevel(price) || !hasLevel(level)) return null;
+  return Math.abs(price - level);
+}
+
+/** Divide two possibly-absent distances into an R:R, or `null`. */
+export function ratioOf(reward: number | null, risk: number | null): number | null {
+  if (!hasLevel(reward) || !hasLevel(risk) || risk <= 0) return null;
+  return reward / risk;
+}
+
 export function newOrderId() {
   return `o_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`;
 }
 
 /** Materialise a validated draft into a canonical pending order. */
 export function createOrder(draft: OrderDraft, now = Date.now()): PositionOrder {
-  const risk = Math.abs(draft.entry - draft.stop);
-  const reward = Math.abs(draft.target - draft.entry);
+  const risk = levelDistance(draft.entry, draft.stop);
+  const reward = levelDistance(draft.entry, draft.target);
   return {
     id: newOrderId(),
     symbol: draft.symbol,
@@ -320,7 +407,7 @@ export function createOrder(draft: OrderDraft, now = Date.now()): PositionOrder 
     target: draft.target,
     risk,
     reward,
-    rr: risk > 0 ? reward / risk : 0,
+    rr: ratioOf(reward, risk),
     size: draft.size,
     status: "pending",
     source: ORDER_SOURCE,
@@ -330,17 +417,26 @@ export function createOrder(draft: OrderDraft, now = Date.now()): PositionOrder 
   };
 }
 
-/** Re-derive risk/reward after an edit (drag or numeric change). */
+/**
+ * Re-derive risk/reward after an edit (drag or numeric change).
+ *
+ * `undefined` and `null` are DIFFERENT arguments here, and the difference is
+ * load-bearing now that levels are optional: omitting a key leaves that level
+ * alone, while passing `null` REMOVES it. Collapsing the two with `??` — which
+ * is what this did while levels were mandatory — would make "clear the stop"
+ * silently mean "keep the stop", so a trader who removed protection would still
+ * be carrying it.
+ */
 export function withLevels(
   order: PositionOrder,
-  levels: { entry?: number; stop?: number; target?: number; orderType?: OrderType },
+  levels: { entry?: number; stop?: number | null; target?: number | null; orderType?: OrderType },
   now = Date.now(),
 ): PositionOrder {
   const entry = levels.entry ?? order.entry;
-  const stop = levels.stop ?? order.stop;
-  const target = levels.target ?? order.target;
-  const risk = Math.abs(entry - stop);
-  const reward = Math.abs(target - entry);
+  const stop = levels.stop === undefined ? order.stop : levels.stop;
+  const target = levels.target === undefined ? order.target : levels.target;
+  const risk = levelDistance(entry, stop);
+  const reward = levelDistance(entry, target);
   return {
     ...order,
     entry,
@@ -349,7 +445,7 @@ export function withLevels(
     orderType: levels.orderType ?? order.orderType,
     risk,
     reward,
-    rr: risk > 0 ? reward / risk : 0,
+    rr: ratioOf(reward, risk),
     updatedAt: now,
   };
 }
@@ -378,16 +474,22 @@ export interface LivePositionMetrics {
   pnl: number;
   /** True when P/L is per-unit because position size is unknown. */
   perUnit: boolean;
-  /** Floating result in R multiples. */
-  r: number;
+  /**
+   * Floating result in R multiples, or `null` when there is no stop.
+   *
+   * `null` rather than 0: with no stop there is no risk to measure against, and
+   * "0.00R" reads as a real flat result rather than as an absent measurement.
+   * Displays show an em-dash. Same call Stage A' made for `riskBasisOf`.
+   */
+  r: number | null;
   /** Unrealised move as a percentage of the fill price. */
   pct: number;
-  /** Absolute distance from market to the stop. */
-  toStop: number;
-  /** Absolute distance from market to the target. */
-  toTarget: number;
-  /** Fraction of the way from fill to target, clamped 0…1. */
-  progress: number;
+  /** Absolute distance from market to the stop; `null` when there is no stop. */
+  toStop: number | null;
+  /** Absolute distance from market to the target; `null` when there is none. */
+  toTarget: number | null;
+  /** Fraction of the way from fill to target, or `null` with no target. */
+  progress: number | null;
 }
 
 export function livePositionMetrics(
@@ -399,18 +501,19 @@ export function livePositionMetrics(
   const price = marketPrice as number;
   const sign = order.direction === "buy" ? 1 : -1;
   const move = (price - fill) * sign;
-  const risk = Math.abs(fill - order.stop);
-  const reward = Math.abs(order.target - fill);
+  const risk = levelDistance(fill, order.stop);
+  const reward = levelDistance(fill, order.target);
   return {
     move,
     // `move * size` is money only when `size` is units. See PositionOrder.size.
     pnl: order.size && order.size > 0 ? move * order.size : move,
     perUnit: !(order.size && order.size > 0),
-    r: risk > 0 ? move / risk : 0,
+    // Signed: `move` keeps its direction, only the DIVISOR is optional.
+    r: risk != null && risk > 0 ? move / risk : null,
     pct: fill !== 0 ? (move / fill) * 100 : 0,
-    toStop: Math.abs(price - order.stop),
-    toTarget: Math.abs(order.target - price),
-    progress: reward > 0 ? Math.min(1, Math.max(0, move / reward)) : 0,
+    toStop: levelDistance(price, order.stop),
+    toTarget: levelDistance(price, order.target),
+    progress: reward != null && reward > 0 ? Math.min(1, Math.max(0, move / reward)) : null,
   };
 }
 
@@ -419,9 +522,11 @@ export function realizedResult(order: PositionOrder, closePrice: number) {
   const fill = order.fillPrice ?? order.entry;
   const sign = order.direction === "buy" ? 1 : -1;
   const move = (closePrice - fill) * sign;
-  const risk = Math.abs(fill - order.stop);
+  const risk = levelDistance(fill, order.stop);
   return {
     realizedPnl: order.size && order.size > 0 ? move * order.size : move,
-    realizedR: risk > 0 ? move / risk : 0,
+    // A trade closed with no stop has a real P/L and NO R. Reporting 0 would
+    // put a fabricated flat result into the durable tape and into analytics.
+    realizedR: risk != null && risk > 0 ? move / risk : null,
   };
 }

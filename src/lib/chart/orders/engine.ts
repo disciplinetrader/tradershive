@@ -35,6 +35,7 @@
  */
 
 import type { ExecutionSource, CloseReason, OrderType, PositionOrder } from "./model";
+import { hasLevel } from "./model";
 
 export interface MarketTick {
   price: number;
@@ -191,11 +192,16 @@ export function exitFor(
   // the same statement as null here — there is no usable level — and NaN
   // comparisons are quietly false, which would look like "never triggers"
   // while actually meaning "silently unprotected".
-  const hasStop = Number.isFinite(order.stop);
-  const hasTarget = Number.isFinite(order.target);
+  // Bound to locals so the narrowing survives into the bodies below. Stage 1
+  // wrote these same two conditions against a non-nullable `number`, where
+  // `Number.isFinite` guarded the VALUE but told the type system nothing;
+  // `hasLevel` is a type predicate, so the compiler now enforces what that
+  // guard always meant.
+  const stop = hasLevel(order.stop) ? order.stop : null;
+  const target = hasLevel(order.target) ? order.target : null;
 
-  const stopHit = hasStop && (long ? exitQuote <= order.stop : exitQuote >= order.stop);
-  const targetHit = hasTarget && (long ? exitQuote >= order.target : exitQuote <= order.target);
+  const stopHit = stop != null && (long ? exitQuote <= stop : exitQuote >= stop);
+  const targetHit = target != null && (long ? exitQuote >= target : exitQuote <= target);
 
   // Stop takes priority: within a single discrete tick we cannot know the
   // path, so we assume the adverse level was touched first.
@@ -205,7 +211,7 @@ export function exitFor(
       orderId: order.id,
       // Gap through the stop → the trader eats the gap, measured on the side
       // the position actually closes at.
-      closePrice: long ? Math.min(exitQuote, order.stop) : Math.max(exitQuote, order.stop),
+      closePrice: long ? Math.min(exitQuote, stop) : Math.max(exitQuote, stop),
       reason: "stop_loss",
       executionSource: "stop_loss",
     };
@@ -214,7 +220,7 @@ export function exitFor(
     return {
       kind: "exit",
       orderId: order.id,
-      closePrice: order.target, // no price improvement
+      closePrice: target, // no price improvement
       reason: "take_profit",
       executionSource: "take_profit",
     };

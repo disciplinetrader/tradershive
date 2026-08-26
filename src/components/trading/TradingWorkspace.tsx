@@ -1571,7 +1571,7 @@ function TradingWorkspaceInner() {
             const order = positionOrders.confirmDraft(d);
             if (order) {
               toast.success(`${order.direction === "buy" ? "Buy" : "Sell"} order pending`, {
-                description: `${order.symbol} @ ${order.entry.toFixed(decimals)} · R:R 1 : ${order.rr.toFixed(2)}`,
+                description: `${order.symbol} @ ${order.entry.toFixed(decimals)}${order.rr == null ? "" : ` · R:R 1 : ${order.rr.toFixed(2)}`}`,
               });
             }
           }}

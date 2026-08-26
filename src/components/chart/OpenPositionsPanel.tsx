@@ -60,7 +60,8 @@ interface Props {
  * EUR/USD was quoted to 5 decimals, and the panel's own default was 4, which
  * belongs to no instrument at all. Each row carries `o.symbol`; use it.
  */
-function fmt(v: number, symbol: string) {
+function fmt(v: number | null | undefined, symbol: string) {
+  if (v == null || !Number.isFinite(v)) return "—";
   return fmtPrice(symbol, v);
 }
 
@@ -71,7 +72,8 @@ function fmt(v: number, symbol: string) {
  * a BTC result read `+117.3` and a gold one would read `+117.30` — the same
  * currency amount rendered two ways depending on what was charted.
  */
-function money(v: number) {
+function money(v: number | null | undefined) {
+  if (v == null || !Number.isFinite(v)) return "—";
   return `${v > 0 ? "+" : ""}${formatCurrency(v)}`;
 }
 
@@ -83,7 +85,15 @@ function money(v: number) {
  * rendered as `-0.90`, which is not a shortened label but a different and
  * plausible-looking number.
  */
-function signedR(v: number) {
+/**
+ * An absent measurement prints an em-dash, never a zero.
+ *
+ * "0.00R" and "$0.00" are real readings — a flat trade. A position with no stop
+ * has no risk to measure against at all, and the two must not look the same on
+ * screen. Same call Stage A' made for the position label.
+ */
+function signedR(v: number | null | undefined) {
+  if (v == null || !Number.isFinite(v)) return "—";
   return `${v > 0 ? "+" : ""}${v.toFixed(2)}R`;
 }
 
@@ -173,11 +183,11 @@ export function OpenPositionsPanel({
                 Real R {m ? signedR(m.realizedR) : "—"}
               </span>
               <span title="Floating + realized R">Total R {m ? signedR(m.totalR) : "—"}</span>
-              <span title="Currency still at risk if the stop is hit">Risk {m ? formatCurrency(m.remainingRisk) : "—"}</span>
+              <span title="Currency still at risk if the stop is hit">Risk {m && m.remainingRisk != null ? formatCurrency(m.remainingRisk) : "—"}</span>
               <span title="Guaranteed result if the stop is hit from here" data-testid="open-position-locked">
                 Locked {m ? money(m.lockedProfit) : "—"}
               </span>
-              <span title="Reward to risk from the current price">RR {m ? m.currentRR.toFixed(2) : "—"}</span>
+              <span title="Reward to risk from the current price">RR {m?.currentRR != null ? m.currentRR.toFixed(2) : "—"}</span>
               <span>→ SL {m ? fmt(m.distanceToStop, o.symbol) : "—"}</span>
               <span>→ TP {m ? fmt(m.distanceToTarget, o.symbol) : "—"}</span>
             </div>

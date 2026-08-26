@@ -48,10 +48,10 @@ export function PendingOrdersPanel({ orders, decimals = 4, onEdit, onCancel, cla
           </span>
           <span className="font-mono tabular-nums">{o.symbol}</span>
           <span className="font-mono tabular-nums text-muted-foreground">
-            E {o.entry.toFixed(decimals)} · SL {o.stop.toFixed(decimals)} · TP {o.target.toFixed(decimals)}
+            E {o.entry.toFixed(decimals)} · SL {o.stop?.toFixed(decimals) ?? "—"} · TP {o.target?.toFixed(decimals) ?? "—"}
           </span>
           <span className="ml-auto font-mono tabular-nums text-muted-foreground" data-testid="pending-order-rr">
-            1 : {o.rr.toFixed(2)}
+            {o.rr == null ? "—" : `1 : ${o.rr.toFixed(2)}`}
           </span>
           <Button
             size="sm"

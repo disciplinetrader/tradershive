@@ -349,9 +349,14 @@ export function usePositionOrders({
   const applyTakeProfits = useCallback((orderId: string, legs?: TakeProfitLeg[]) => {
     const order = orderStore.byId(orderId);
     if (!order) return { ok: false as const, errors: ["Position not found."] };
+    // A default ladder is derived from the target; with no target there is
+    // nothing to ladder toward, so refuse rather than build one against `0`.
+    if (!legs?.length && order.target == null) {
+      return { ok: false as const, errors: ["Set a target before applying a take-profit ladder."] };
+    }
     const next = legs?.length
       ? legs
-      : defaultLadder(order.direction, order.fillPrice ?? order.entry, order.target);
+      : defaultLadder(order.direction, order.fillPrice ?? order.entry, order.target as number);
     return setTakeProfits(stores, orderId, next);
   }, [stores]);
 

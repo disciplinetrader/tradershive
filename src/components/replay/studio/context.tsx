@@ -24,6 +24,7 @@ import {
   updatePositionLevels, partialClosePosition, moveStopToBreakEven,
 } from "@/lib/chart/orders/service";
 import { inferOrderType } from "@/lib/chart/orders/model";
+import { marketOrderSize } from "@/lib/replay/chart-trading";
 import type { OrderStores } from "@/lib/chart/orders/service";
 import type { PositionOrder } from "@/lib/chart/orders/model";
 import type { ClosedTrade } from "@/lib/chart/orders/closed-trade";
@@ -89,6 +90,9 @@ export interface StudioValue {
   equity: number | null;
   /** Risk budget per trade, in percent of equity. Drives default sizing. */
   riskPercent: number;
+  /** Units used when a market order opens with no stop. RS-4 Option A. */
+  defaultUnits: number;
+  setDefaultUnits: (n: number) => void;
   setRiskPercent: (pct: number) => void;
   /** Units implied by the risk budget for a given entry/stop pair. */
   sizeForRisk: (entry: number, stop: number) => number;
@@ -360,6 +364,16 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
 
   const [riskPercent, setRiskPercent] = useState(1);
 
+  /**
+   * Size used when a market order opens with NO stop, in units.
+   *
+   * Provisional (RS-4 Option A). Risk % cannot size a position with no stop —
+   * there is no distance to divide by — so rather than fabricate a number this
+   * is the trader's own default, surfaced on the toolbar next to Risk % so it
+   * is a visible choice rather than a hidden constant.
+   */
+  const [defaultUnits, setDefaultUnits] = useState(1);
+
   const sizeForRisk = useCallback(
     (entry: number, stop: number) => {
       const distance = Math.abs(entry - stop);
@@ -382,21 +396,32 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
    * lives in here precisely so a caller cannot forget it.
    *
    * The 0.2% stop and 2R target are still the tool's choice, not the trader's.
-   * That is RS-3, and it is deliberately NOT fixed here: removing the seed
-   * requires levels the order model cannot yet represent (`stop`/`target` are
-   * non-nullable in orders/model.ts). Consolidating first means there is now
-   * exactly one site to change when RS-4 Stage B lands, instead of four.
+   * NO SEEDED BRACKET (RS-3, closed by RS-4 Stage A).
+   *
+   * A market Buy or Sell fills instantly with `stop: null` and `target: null`
+   * — no protection and no objective, because the tool has no business
+   * inventing either. The trader adds them afterwards by dragging the ghost
+   * handles on the position, which is what the live workspace already does and
+   * what the real product does. The old 0.2% stop and 2R target were a
+   * recommendation dressed as a decision.
+   *
+   * `stopDistance` / `targetDistance` remain accepted so a caller that DOES
+   * know the levels (a test, or a future preset) can still supply them. They
+   * simply no longer have defaults.
    */
   const placeMarketOrder = useCallback(
     (direction: "buy" | "sell", opts: { stopDistance?: number; targetDistance?: number; size?: number } = {}) => {
       if (!stores || !view || price == null) return;
-      const dist = opts.stopDistance ?? Math.max(price * 0.002, 1e-8);
-      const target = opts.targetDistance ?? dist * 2;
-      const stop = direction === "buy" ? price - dist : price + dist;
-      const tp = direction === "buy" ? price + target : price - target;
+      const dist = opts.stopDistance;
+      const target = opts.targetDistance;
+      const stop = dist == null ? null : direction === "buy" ? price - dist : price + dist;
+      const tp = target == null ? null : direction === "buy" ? price + target : price - target;
+      // Both anchors sit on the entry when there is no stop: a position drawing
+      // is two points and cannot express a missing one, and the entry is where
+      // the ghost handle parks so it stays grabbable.
       const drawing = makeDrawing(direction === "buy" ? "long_position" : "short_position", [
         { time: view.transport.marketTime, price },
-        { time: view.transport.marketTime, price: stop },
+        { time: view.transport.marketTime, price: stop ?? price },
       ]);
       stores.drawings.add(drawing);
       placeOrEditOrder(
@@ -408,17 +433,31 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
           entry: price,
           stop,
           target: tp,
-          // Sized off the SAME stop this order is about to carry, so the
-          // Risk % field means what it says on every market route. The old
-          // `?? 1` fallback is gone: one unit is not a risk decision, it is
-          // the absence of one.
-          size: opts.size ?? sizeForRisk(price, stop),
+          /**
+           * Option A sizing — PROVISIONAL, pending RS-4/RS-5's product call.
+           *
+           * With a stop, Risk % means what it says and sizes the position.
+           * Without one there is no distance to divide the risk budget by, so
+           * the trader's own `defaultUnits` is used instead of a derived
+           * number. It is arbitrary — but VISIBLY arbitrary, sitting in a field
+           * on the toolbar, rather than a fabricated risk figure.
+           *
+           * Adding a stop later deliberately does NOT resize the position:
+           * re-sizing an open trade changes the basis its P/L is measured
+           * against mid-flight, which is worse than an arbitrary size.
+           */
+          size: marketOrderSize({
+            explicit: opts.size,
+            stop,
+            riskSized: stop == null ? 0 : sizeForRisk(price, stop),
+            defaultUnits,
+          }),
           drawingId: drawing.id,
         },
         { marketPrice: price },
       );
     },
-    [stores, view, price, sizeForRisk],
+    [stores, view, price, sizeForRisk, defaultUnits],
   );
 
   const placeOrderAt = useCallback(
@@ -633,6 +672,8 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
     cancelOrder,
     equity,
     riskPercent,
+    defaultUnits,
+    setDefaultUnits,
     setRiskPercent,
     sizeForRisk,
     placeOrderAt,

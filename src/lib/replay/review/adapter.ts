@@ -11,6 +11,7 @@
  * fact that does not exist stays `null`.
  */
 
+import { levelDistance, ratioOf } from "@/lib/chart/orders/model";
 import type { ClosedTrade } from "@/lib/chart/orders/closed-trade";
 import type { ReplayEvent } from "@/lib/replay/session/events";
 import type { AttemptTelemetry, ReplayTradeLike } from "@/lib/journal/replay-compare";
@@ -25,8 +26,11 @@ export function replayTradeLikeFrom(
 ): ReplayTradeLike {
   const balance =
     typeof opts.startingBalance === "number" && opts.startingBalance > 0 ? opts.startingBalance : null;
-  const riskDistance = Math.abs(trade.fillPrice - trade.initialStop);
-  const rewardDistance = Math.abs(trade.initialTarget - trade.fillPrice);
+  // This file already treated the levels as possibly-absent downstream
+  // (`stop_loss: Number.isFinite(...) ? ... : null`); the distances now agree
+  // with that rather than coercing an absent level to 0 first.
+  const riskDistance = levelDistance(trade.fillPrice, trade.initialStop);
+  const rewardDistance = levelDistance(trade.fillPrice, trade.initialTarget);
 
   return {
     id: trade.id,
@@ -39,7 +43,7 @@ export function replayTradeLikeFrom(
     risk_pct: balance != null && Number.isFinite(trade.riskAmount)
       ? (Math.abs(trade.riskAmount) / balance) * 100
       : null,
-    rr_planned: riskDistance > 0 && rewardDistance > 0 ? rewardDistance / riskDistance : null,
+    rr_planned: ratioOf(rewardDistance, riskDistance),
     rr_realized: trade.riskAmount > 0 && Number.isFinite(trade.realizedR) ? trade.realizedR : null,
     pnl: trade.netPnl,
     opened_at: iso(trade.entryTime) ?? new Date(0).toISOString(),
@@ -96,9 +100,10 @@ export function telemetryFromEvents(
   const stopChanges = trades.filter(
     (t) => Number.isFinite(t.finalStop) && Number.isFinite(t.initialStop) && t.finalStop !== t.initialStop,
   ).length;
-  const breakEven = trades.filter(
-    (t) => Number.isFinite(t.finalStop) && Math.abs(t.finalStop - t.fillPrice) < Math.abs(t.fillPrice) * 1e-9,
-  ).length;
+  const breakEven = trades.filter((t) => {
+    const d = levelDistance(t.fillPrice, t.finalStop);
+    return d != null && d < Math.abs(t.fillPrice) * 1e-9;
+  }).length;
   const targetChanges = trades.filter(
     (t) => Number.isFinite(t.finalTarget) && Number.isFinite(t.initialTarget) && t.finalTarget !== t.initialTarget,
   ).length;

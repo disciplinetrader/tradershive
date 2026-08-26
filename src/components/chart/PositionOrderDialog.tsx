@@ -6,6 +6,7 @@
  * intact, Cancel discards the pending intent (the drawing is untouched).
  */
 
+import { levelDistance, ratioOf } from "@/lib/chart/orders/model";
 import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogPortal } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -170,10 +171,13 @@ export function PositionOrderDialog({
 
   if (!draft || !current) return null;
 
-  const fmt = (n: number) => (Number.isFinite(n) ? n.toFixed(decimals) : "—");
+  const fmt = (n: number | null | undefined) => (Number.isFinite(n as number) ? (n as number).toFixed(decimals) : "—");
   const risk = riskDistance;
-  const reward = Math.abs(current.target - current.entry);
-  const rr = risk > 0 ? reward / risk : 0;
+  // This dialog edits RESTING orders, which `validateOrder` still requires to
+  // carry both levels — but the shared type cannot express "required here", so
+  // the absent case is handled rather than asserted away.
+  const reward = levelDistance(current.entry, current.target);
+  const rr = ratioOf(reward, risk);
   const distance = entryDistance(current, marketPrice);
   const isBuy = current.direction === "buy";
   const step = tick && tick > 0 ? tick : 10 ** -decimals;
@@ -290,7 +294,7 @@ export function PositionOrderDialog({
             </div>
             <Row label="Risk" value={fmt(risk)} tone="down" />
             <Row label="Reward" value={fmt(reward)} tone="up" />
-            <Row label="Risk : Reward" value={`1 : ${rr.toFixed(2)}`} />
+            <Row label="Risk : Reward" value={rr == null ? "—" : `1 : ${rr.toFixed(2)}`} />
             <Row
               label="Distance to market"
               value={distance == null ? "—" : `${distance >= 0 ? "+" : ""}${fmt(distance)}`}

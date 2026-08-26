@@ -24,6 +24,7 @@
 
 import { resultOf, type TradeResult } from "@/lib/journal/derive";
 import { closureAggregate, stopDistance } from "./position-manager";
+import { levelDistance } from "./model";
 import type {
   CloseReason, ExecutionSource, OrderDirection, OrderType, PositionOrder,
 } from "./model";
@@ -51,11 +52,15 @@ export interface ClosedTrade {
   entryTime: number;
 
   /** Protective levels as they stood at fill time. */
-  initialStop: number;
-  initialTarget: number;
+  /** Stop as it stood at fill; `null` when the position never carried one. */
+  initialStop: number | null;
+  /** Target at fill; `null` when it never carried one. */
+  initialTarget: number | null;
   /** Protective levels as they stood at close time (drag / break-even). */
-  finalStop: number;
-  finalTarget: number;
+  /** Stop at close; `null` when there was none. */
+  finalStop: number | null;
+  /** Target at close; `null` when there was none. */
+  finalTarget: number | null;
 
   exitPrice: number;
   exitTime: number;
@@ -73,8 +78,17 @@ export interface ClosedTrade {
   /** Account-currency risk the trade was sized against. */
   riskAmount: number;
   /** Price distance fill → initial stop. */
-  initialRiskDistance: number;
-  realizedR: number;
+  /**
+   * |fill − initial stop|; `null` when the trade carried no stop.
+   *
+   * `null`, never 0. This column is durable and uncorrectable after the fact,
+   * and a 0 here is indistinguishable from a real zero-distance measurement —
+   * it would read as "we measured no risk" rather than "there was no risk to
+   * measure". Every R derived downstream inherits whichever it is.
+   */
+  initialRiskDistance: number | null;
+  /** Realised R; `null` when there was no stop to measure against. */
+  realizedR: number | null;
   returnPercent: number;
 
   slippage: number;
@@ -104,7 +118,8 @@ export interface DerivedClosedTrade {
   netPnl: number;
   result: TradeResult;
   riskAmount: number;
-  realizedR: number;
+  /** `null` when there is no stop to measure R against. */
+  realizedR: number | null;
   returnPercent: number;
 }
 
@@ -128,7 +143,8 @@ export function deriveClosedTrade(input: {
   direction: OrderDirection;
   fillPrice: number;
   exitPrice: number;
-  initialStop: number;
+  /** `null` when the position carried no stop — risk is then unmeasurable. */
+  initialStop: number | null;
   quantity: number | null;
   fees?: number;
 }): DerivedClosedTrade {
@@ -140,8 +156,8 @@ export function deriveClosedTrade(input: {
   const grossPnl = move * qty;
   const netPnl = grossPnl - fees;
 
-  const distance = Math.abs(input.fillPrice - input.initialStop);
-  const riskAmount = distance * qty;
+  const distance = levelDistance(input.fillPrice, input.initialStop);
+  const riskAmount = distance == null ? 0 : distance * qty;
 
   return {
     grossPnl,
@@ -149,7 +165,7 @@ export function deriveClosedTrade(input: {
     netPnl,
     result: resultOf(netPnl) ?? "breakeven",
     riskAmount,
-    realizedR: riskAmount > 0 ? netPnl / riskAmount : 0,
+    realizedR: riskAmount > 0 ? netPnl / riskAmount : null,
     returnPercent: input.fillPrice !== 0 ? (move / input.fillPrice) * 100 : 0,
   };
 }
@@ -219,7 +235,7 @@ export function buildClosedTrade(
           netPnl,
           result: resultOf(netPnl) ?? ("breakeven" as const),
           riskAmount,
-          realizedR: riskAmount > 0 ? netPnl / riskAmount : 0,
+          realizedR: riskAmount > 0 ? netPnl / riskAmount : null,
           returnPercent: fillPrice !== 0 ? (move / fillPrice) * 100 : 0,
         };
       })()
@@ -267,7 +283,7 @@ export function buildClosedTrade(
       netPnl: d.netPnl,
 
       riskAmount: d.riskAmount,
-      initialRiskDistance: Math.abs(fillPrice - initialStop),
+      initialRiskDistance: levelDistance(fillPrice, initialStop),
       realizedR: d.realizedR,
       returnPercent: d.returnPercent,
 

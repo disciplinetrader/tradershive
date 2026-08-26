@@ -42,7 +42,15 @@ const MORE_FILTERS: { id: TradeFilter; label: string }[] = [
 ];
 
 /** `+1.46R` as one token — see the same note in OpenPositionsPanel. */
-function signedR(v: number) {
+/**
+ * An absent measurement prints an em-dash, never a zero.
+ *
+ * "0.00R" and "$0.00" are real readings — a flat trade. A position with no stop
+ * has no risk to measure against at all, and the two must not look the same on
+ * screen. Same call Stage A' made for the position label.
+ */
+function signedR(v: number | null | undefined) {
+  if (v == null || !Number.isFinite(v)) return "—";
   return `${v >= 0 ? "+" : ""}${v.toFixed(2)}R`;
 }
 

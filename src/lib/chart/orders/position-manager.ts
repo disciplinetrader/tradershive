@@ -34,6 +34,7 @@ import {
 } from "./executions";
 import { isLive } from "./lifecycle";
 import type { CloseReason, OrderDirection, PositionOrder } from "./model";
+import { hasLevel, levelDistance, ratioOf } from "./model";
 import { allocatedPercent, legTriggered, type TakeProfitLeg } from "./take-profit";
 import { improvesStop, nextTrailingStop, type TrailingContext } from "./trailing";
 
@@ -91,8 +92,9 @@ export function riskBasisOf(order: PositionOrder): number {
  * is already "0 means no basis", null where a display needs to say so.
  */
 export function stopDistance(fill: number, stop: number | null | undefined): number | null {
-  if (!Number.isFinite(fill) || !Number.isFinite(stop as number)) return null;
-  return Math.abs(fill - (stop as number));
+  // Delegates to the shared primitive rather than repeating the subtraction —
+  // repeating it is precisely how this bug got written three times.
+  return levelDistance(fill, stop);
 }
 
 /** Total account-currency risk the position was originally sized against. */
@@ -289,8 +291,8 @@ export function scaleIn(order: PositionOrder, req: ScaleInRequest): ManageResult
 
   const agg = aggregateExecutions([...(order.executions ?? []), e]);
   const entry = agg.averageEntry;
-  const risk = Math.abs(entry - order.stop);
-  const reward = Math.abs(order.target - entry);
+  const risk = levelDistance(entry, order.stop);
+  const reward = levelDistance(entry, order.target);
 
   return {
     ok: true,
@@ -300,7 +302,7 @@ export function scaleIn(order: PositionOrder, req: ScaleInRequest): ManageResult
       fillPrice: entry,
       risk,
       reward,
-      rr: risk > 0 ? reward / risk : 0,
+      rr: ratioOf(reward, risk),
       // Sizing is now known in units even if it was per-unit before.
       size: agg.remainingQuantity,
     }, now),
@@ -342,6 +344,18 @@ export function applyBreakEven(
   const offset = Number.isFinite(opts.offset ?? NaN) ? (opts.offset as number) : 0;
   const target = order.direction === "buy" ? entry + offset : entry - offset;
 
+  /**
+   * Break-even MOVES a stop; it does not create one.
+   *
+   * With no stop there is nothing to move, and quietly setting one at the entry
+   * would be this function inventing protection the trader never asked for —
+   * a different action wearing break-even's name. Refuse and say so; the
+   * drag-to-add handle on the position is how a stop gets created. (RS-4.)
+   */
+  if (!hasLevel(order.stop)) {
+    return { ok: false, error: "This position has no stop to move. Add one first." };
+  }
+
   if (order.stop === target) return { ok: false, error: "Stop is already at break-even." };
   if (!improvesStop(order.direction, order.stop, target, opts.price)) {
     return {
@@ -382,7 +396,9 @@ export function evaluateAutoBreakEven(
   if (!isLive(order.status)) return null;
 
   const m = advancedMetrics(order, price);
-  if (!m || m.floatingR < trigger) return null;
+  // No stop means no R, and `null < trigger` would coerce to `0 < trigger`
+  // and fire the automatic break-even on a position that has no stop to move.
+  if (!m || m.floatingR == null || m.floatingR < trigger) return null;
 
   const res = applyBreakEven(order, { price, now, auto: true });
   return res.ok && res.order ? res.order : null;
@@ -403,7 +419,11 @@ export function applyTrailing(
   now = Date.now(),
 ): PositionOrder | null {
   if (!isLive(order.status)) return null;
-  const stop = nextTrailingStop(order, order.trailing, ctx);
+  // A trail ratchets an EXISTING stop in one direction. With none there is
+  // nothing to ratchet, and `nextTrailingStop`'s monotonic guard has no prior
+  // value to compare against — it would accept any candidate. Refuse. (RS-4.)
+  if (!hasLevel(order.stop)) return null;
+  const stop = nextTrailingStop({ ...order, stop: order.stop }, order.trailing, ctx);
   if (stop === null) return null;
 
   const e = exec(order, "stop_move", {
@@ -419,7 +439,7 @@ export function applyTrailing(
 /** Record a manual protective-level drag on the tape. */
 export function recordLevelMove(
   order: PositionOrder,
-  levels: { stop?: number; target?: number },
+  levels: { stop?: number | null; target?: number | null },
   now = Date.now(),
 ): PositionOrder {
   let next = order;
@@ -533,23 +553,39 @@ export interface AdvancedPositionMetrics {
   averageExit: number | null;
 
   floatingPnl: number;
-  floatingR: number;
+  /**
+   * Floating R, or `null` when the position carries no stop.
+   *
+   * `initialRiskAmount` returns 0 for a stopless position — Stage A' chose 0
+   * there because this file's existing convention was "0 means no basis". That
+   * convention cannot survive into a DISPLAYED value: "0.00R" reads as a real
+   * flat result. Caught by the browser, not by the unit tests, which asserted
+   * the store rather than the blotter.
+   */
+  floatingR: number | null;
   realizedPnl: number;
-  realizedR: number;
+  /** Realised R across closed legs; `null` with no stop. */
+  realizedR: number | null;
   totalPnl: number;
-  totalR: number;
+  /** Floating + realised R; `null` with no stop. */
+  totalR: number | null;
 
   /** Currency still at risk if the stop is hit from here. */
-  remainingRisk: number;
+  /** Currency still at risk; `null` when the position carries no stop. */
+  remainingRisk: number | null;
   /** Guaranteed currency result if the stop is hit from here (can be < 0). */
-  lockedProfit: number;
+  /** Profit locked in by the stop; `null` when there is no stop. */
+  lockedProfit: number | null;
   /** Reward-to-risk from the current market to stop / target. */
-  currentRR: number;
+  /** Live reward:risk; `null` unless BOTH levels exist. */
+  currentRR: number | null;
   /** Notional exposure of the remaining size. */
   marginUsed: number;
 
-  distanceToStop: number;
-  distanceToTarget: number;
+  /** Distance to the stop; `null` when there is no stop. */
+  distanceToStop: number | null;
+  /** Distance to the target; `null` when there is no target. */
+  distanceToTarget: number | null;
   perUnit: boolean;
 }
 
@@ -576,13 +612,21 @@ export function advancedMetrics(
   const floatingPnl = move * remaining;
   const realizedPnl = agg?.realizedPnl ?? order.realizedPnl ?? 0;
   const realizedR = agg?.realizedR ?? order.realizedR ?? 0;
+  // `realizedR` above keeps its 0 default because a position with no closed
+  // legs really has realised nothing; the R fields below are what change.
 
   // Currency the position would give back from here if the stop is hit.
-  const stopMove = favourableMove(order.direction, averageEntry, order.stop);
-  const atStop = stopMove * remaining;
+  // Every one of these is undefined without the level it measures against.
+  // `atStop` in particular feeds `remainingRisk` and `lockedProfit`: a zero
+  // there would report a stopless position as risking nothing at all, which is
+  // the exact inversion of the truth.
+  const stopMove = hasLevel(order.stop)
+    ? favourableMove(order.direction, averageEntry, order.stop)
+    : null;
+  const atStop = stopMove == null ? null : stopMove * remaining;
 
-  const toStop = Math.abs(price - order.stop);
-  const toTarget = Math.abs(order.target - price);
+  const toStop = levelDistance(price, order.stop);
+  const toTarget = levelDistance(price, order.target);
 
   return {
     originalQuantity: original,
@@ -592,17 +636,17 @@ export function advancedMetrics(
     averageExit: agg?.averageExit ?? null,
 
     floatingPnl,
-    floatingR: riskAmount > 0 ? floatingPnl / riskAmount : 0,
+    floatingR: riskAmount > 0 ? floatingPnl / riskAmount : null,
     realizedPnl,
-    realizedR,
+    realizedR: riskAmount > 0 ? realizedR : null,
     totalPnl: realizedPnl + floatingPnl,
-    totalR: riskAmount > 0 ? realizedR + floatingPnl / riskAmount : realizedR,
+    totalR: riskAmount > 0 ? realizedR + floatingPnl / riskAmount : null,
 
     // Only adverse exposure counts as risk; a protective stop already in
     // profit has no remaining risk, it has locked profit.
-    remainingRisk: Math.max(0, -(realizedPnl + atStop)),
-    lockedProfit: realizedPnl + atStop,
-    currentRR: toStop > 0 ? toTarget / toStop : 0,
+    remainingRisk: atStop == null ? null : Math.max(0, -(realizedPnl + atStop)),
+    lockedProfit: atStop == null ? null : realizedPnl + atStop,
+    currentRR: ratioOf(toTarget, toStop),
     marginUsed: remaining * price,
 
     distanceToStop: toStop,

@@ -10,6 +10,8 @@
  *   pnl = (direction === "long" ? exit - entry : entry - exit) * lots
  * so what the chart shows is what the engine books.
  */
+
+import { hasLevel } from "@/lib/chart/orders/model";
 import type { Candle, OrderType, ReplayTrade } from "./types";
 
 export type ChartSide = "long" | "short";
@@ -223,4 +225,44 @@ export function openR(trade: ReplayTrade, price: number): number | null {
   const risk = Math.abs(trade.entry_price - trade.stop_loss) * trade.lot_size;
   if (risk <= 0) return null;
   return openPnl(trade, price) / risk;
+}
+
+/**
+ * Size for a MARKET order, given that its stop may not exist.
+ *
+ * RS-4 Option A — PROVISIONAL, pending the product decision RS-4 and RS-5 both
+ * still owe an answer for.
+ *
+ * With a stop, Risk % means what it says: the budget divided by the stop
+ * distance. Without one there is no distance to divide by, and the honest
+ * options were to fabricate a number, refuse the order, or use a size the
+ * trader chose. This is the third: `defaultUnits` comes from a field on the
+ * Studio toolbar, sitting next to Risk %, so an arbitrary size is at least a
+ * VISIBLE arbitrary size rather than a hidden constant.
+ *
+ * Extracted from `placeMarketOrder` so the rule can be tested without mounting
+ * a provider — the branch is one line, and one line that decides how much money
+ * is at risk deserves its own cases.
+ *
+ * Note what this deliberately does NOT do: it is never consulted again. Adding
+ * a stop to an already-open position does not resize it, because re-sizing an
+ * open trade changes the basis its P/L is measured against mid-flight.
+ */
+export function marketOrderSize(opts: {
+  /** Caller-supplied size wins outright — a preset or a test. */
+  explicit?: number;
+  /** The stop this order will carry, or `null` for a bare fill. */
+  stop: number | null;
+  /** Risk-derived size. Only meaningful when `stop` is present. */
+  riskSized: number;
+  /** Trader's default, used when there is no stop to size against. */
+  defaultUnits: number;
+}): number {
+  if (opts.explicit != null && Number.isFinite(opts.explicit)) return opts.explicit;
+  if (hasLevel(opts.stop) && Number.isFinite(opts.riskSized) && opts.riskSized > 0) {
+    return opts.riskSized;
+  }
+  // A non-positive or non-finite default is not a sizing decision either;
+  // fall back to one unit rather than opening a zero-size position.
+  return Number.isFinite(opts.defaultUnits) && opts.defaultUnits > 0 ? opts.defaultUnits : 1;
 }

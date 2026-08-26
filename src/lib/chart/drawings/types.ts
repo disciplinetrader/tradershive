@@ -143,7 +143,8 @@ export interface ExecutionMark {
   /** Mirrors ExecutionKind from the order layer (kept structural to avoid a cycle). */
   kind: string;
   quantity: number;
-  realizedR: number;
+  /** `null` when the position carried no stop — there is no R to report. */
+  realizedR: number | null;
   label?: string;
 }
 
@@ -155,7 +156,8 @@ export interface ClosedTradeStamp {
   exitPrice: number;
   direction: "buy" | "sell";
   netPnl: number;
-  realizedR: number;
+  /** `null` when the trade carried no stop. Rendered as an em-dash. */
+  realizedR: number | null;
   closeReason: "manual" | "stop_loss" | "take_profit";
   outcome: "win" | "loss" | "breakeven";
 }

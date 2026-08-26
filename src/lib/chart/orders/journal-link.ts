@@ -14,6 +14,7 @@
  * store is the only mutator, and it only sets the entry id.
  */
 
+import { levelDistance, ratioOf } from "./model";
 import { createEntry, fetchEntry, type EntryInsert, type JournalEntry } from "@/lib/journal/api";
 import type { ClosedTrade } from "./closed-trade";
 import { tradeDuration, tradeResult } from "./closed-trade";
@@ -65,10 +66,13 @@ export function journalInsertFromTrade(trade: ClosedTrade, userId: string): Entr
         // Canonical derivation inputs — keeps Journal R identical to trade R.
         risk_amount: trade.riskAmount,
         planned_entry: trade.requestedEntry,
-        expected_rr:
-          trade.initialRiskDistance > 0
-            ? Math.abs(trade.initialTarget - trade.fillPrice) / trade.initialRiskDistance
-            : null,
+        // Already `null`-tolerant by design: a trade with no stop, no target,
+        // or neither has no planned R:R, and the Journal has always accepted
+        // null here rather than a fabricated ratio.
+        expected_rr: ratioOf(
+          levelDistance(trade.fillPrice, trade.initialTarget),
+          trade.initialRiskDistance,
+        ),
         exit_reason: CLOSE_REASON_TO_EXIT_REASON[trade.closeReason],
         result: tradeResult(trade),
         // Provenance — the link back to the immutable execution record.

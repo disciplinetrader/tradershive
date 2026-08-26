@@ -126,7 +126,7 @@ describe("Phase 4 — closed trade record", () => {
     const derived = deriveTrade(insert as never);
 
     expect(derived.netPnl).toBeCloseTo(t.netPnl, 8);
-    expect(derived.r ?? 0).toBeCloseTo(t.realizedR, 6);
+    expect(derived.r ?? 0).toBeCloseTo(t.realizedR ?? 0, 6);
     expect(derived.result).toBe(tradeResult(t));
   });
 
@@ -247,7 +247,7 @@ describe("Phase 4 — derivation parity", () => {
     const a = deriveClosedTrade({ direction: "buy", fillPrice: 100, exitPrice: 110, initialStop: 95, quantity: 1 });
     const b = deriveClosedTrade({ direction: "buy", fillPrice: 100, exitPrice: 110, initialStop: 95, quantity: 7 });
     expect(a.realizedR).toBeCloseTo(2, 8);
-    expect(b.realizedR).toBeCloseTo(a.realizedR, 8);
+    expect(b.realizedR).toBeCloseTo(a.realizedR as number, 8);
     expect(b.netPnl).toBeCloseTo(a.netPnl * 7, 8);
   });
 

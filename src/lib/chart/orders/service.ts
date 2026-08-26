@@ -21,7 +21,7 @@ import type { ClosedTradeStore } from "./trade-store";
 import { closedTradeStore } from "./trade-store";
 import { buildClosedTrade, tradeResult, type ClosedTrade } from "./closed-trade";
 import {
-  ORDER_TYPE_LABELS, createOrder, newPositionId, realizedResult, validateOrder, withLevels,
+  ORDER_TYPE_LABELS, createOrder, hasLevel, newPositionId, realizedResult, validateOrder, withLevels,
   type CloseReason, type OrderDraft, type PositionOrder,
 } from "./model";
 import { isLive, transition } from "./lifecycle";
@@ -75,9 +75,15 @@ function syncDrawingGeometry(stores: OrderStores, order: PositionOrder) {
   const d = stores.drawings.list().find((x) => x.id === order.drawingId);
   if (!d || d.points.length < 3) return false;
   const points = d.points.map((p) => ({ ...p }));
+  /**
+   * A position drawing is three anchors and cannot express a missing one, so an
+   * absent level parks its anchor ON the entry — zero height, drawing no band.
+   * The ghost handle the trader drags to ADD the level is positioned separately
+   * by `StudioTradeLayer`. See RS-4's addendum.
+   */
   points[0] = { ...points[0], price: order.entry };
-  points[1] = { ...points[1], price: order.target };
-  points[2] = { ...points[2], price: order.stop };
+  points[1] = { ...points[1], price: order.target ?? order.entry };
+  points[2] = { ...points[2], price: order.stop ?? order.entry };
   stores.drawings.patch(order.drawingId, {
     points,
     orderId: order.id,
@@ -219,8 +225,10 @@ export function fillOrder(
     // Phase 4 immutable snapshot — captured once, never rewritten. A later
     // stop drag or break-even move cannot re-base the original risk.
     requestedEntry: current.requestedEntry ?? current.entry,
-    initialStop: current.initialStop ?? current.stop,
-    initialTarget: current.initialTarget ?? current.target,
+    // A stopless fill snapshots `null`, which is the correct answer and the
+    // one the durable record must keep.
+    initialStop: current.initialStop ?? current.stop ?? null,
+    initialTarget: current.initialTarget ?? current.target ?? null,
   }, now);
   if (!filled) return null; // already filled / cancelled — no duplicate
   stores.orders.replace(filled);
@@ -340,7 +348,8 @@ export function closePosition(
   let base = live;
   let closePrice = opts.price;
   let realizedPnl: number;
-  let realizedR: number;
+  // `null` when the position carried no stop: there is no R to report.
+  let realizedR: number | null;
 
   if (live.executions?.length && remainingQuantityOf(live) > 0) {
     const kind = opts.reason === "stop_loss"
@@ -411,7 +420,18 @@ function applyManaged(
   return closePosition(
     stores,
     next.id,
-    { price: opts.price ?? next.stop, reason: opts.reason, market: opts.market },
+    /**
+     * The position is already flat on the tape, so `closureAggregate` supplies
+     * the real close price and this argument only has to be finite to clear
+     * `closePosition`'s guard. With no stop there is no implied level to fall
+     * back to, so fall back to the fill — never to `null`, which would make the
+     * guard reject and silently skip finalisation.
+     */
+    {
+      price: opts.price ?? next.stop ?? next.fillPrice ?? next.entry,
+      reason: opts.reason,
+      market: opts.market,
+    },
     now,
   );
 }
@@ -656,14 +676,30 @@ export function runEngineTick(
 export function updatePositionLevels(
   stores: OrderStores,
   orderId: string,
-  levels: { stop?: number; target?: number },
+  levels: { stop?: number | null; target?: number | null },
   now = Date.now(),
 ): PositionOrder | null {
   const order = stores.orders.byId(orderId);
   if (!order || !isLive(order.status)) return null;
 
-  const stop = Number.isFinite(levels.stop ?? NaN) ? (levels.stop as number) : order.stop;
-  const target = Number.isFinite(levels.target ?? NaN) ? (levels.target as number) : order.target;
+  /**
+   * "Add OR move OR clear" — one function, three intents, distinguished by the
+   * SHAPE of the argument rather than by its value:
+   *
+   *   key absent      → leave that level exactly as it is
+   *   finite number   → set it (adding one that was absent is the same write)
+   *   explicit null   → remove it
+   *
+   * The old form collapsed the last two: `Number.isFinite(null)` is false, so
+   * passing `null` to clear a stop silently kept it. That is the difference
+   * between a trader removing protection and believing they had.
+   */
+  const stop = levels.stop === undefined
+    ? order.stop
+    : hasLevel(levels.stop) ? levels.stop : null;
+  const target = levels.target === undefined
+    ? order.target
+    : hasLevel(levels.target) ? levels.target : null;
   if (stop === order.stop && target === order.target) return order;
 
   // Phase 6: a manual drag is an execution-history event too, so the
