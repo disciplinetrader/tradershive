@@ -81,7 +81,11 @@ export function StudioChart({
   secondarySymbol = null,
 }: StudioChartProps) {
   const {
-    view, sessionId, riskPercent, setRiskPercent, placeMarketOrder, sizeForRisk, price: livePrice,
+    // `riskPercent` is still READ here — both draft status bars quote it — but
+    // it is no longer WRITTEN from this toolbar: it lives in Replay Settings,
+    // beside the lot size, because it sizes the right-click draft flow rather
+    // than the Buy/Sell buttons it used to sit next to.
+    view, sessionId, riskPercent, placeMarketOrder, sizeForRisk, price: livePrice,
     defaultLots, setDefaultLots,
     seekForwardTo, symbol: sessionSymbol, placeOrderAt, market: sessionMarket,
   } = useReplayStudio();
@@ -541,20 +545,6 @@ export function StudioChart({
               className="h-6 w-16 rounded border border-border/60 bg-background px-1 text-right font-mono text-[11px] text-foreground"
               aria-label="Lot size for market orders"
             />
-          </label>
-          <label className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-            Risk
-            <input
-              type="number"
-              min={0.1}
-              max={10}
-              step={0.1}
-              value={riskPercent}
-              onChange={(e) => setRiskPercent(Number(e.target.value) || 0.1)}
-              className="h-6 w-12 rounded border border-border/60 bg-background px-1 text-right font-mono text-[11px] text-foreground"
-              aria-label="Risk per trade in percent of equity"
-            />
-            %
           </label>
           {/* ONE Buy, ONE Sell — the whole of Studio's order entry.
               Studio used to carry three Buy affordances: these, a "Buy limit"

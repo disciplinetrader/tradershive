@@ -388,7 +388,27 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
       : null;
   const equity = startingBalance == null ? null : startingBalance + realizedPnl + openPnl;
 
-  const [riskPercent, setRiskPercent] = useState(1);
+  // One settings hook for the whole provider: both sizing inputs and the
+  // risk budget read from it, so there is a single subscription and a single
+  // source of truth.
+  const { settings: replaySettings, updateSettings } = useReplaySettings();
+
+  /**
+   * Risk budget for a RESTING order, read from Replay Settings.
+   *
+   * Not local state. Studio held its own `useState(1)` here while
+   * `defaultRiskPct` sat unread in the settings file with an input already on
+   * the Replay Settings page — the same shape as the `defaultLotSize` /
+   * `defaultUnits` duplication, and the second one found in that file.
+   */
+  const riskPercent = Number(replaySettings.defaultRiskPct);
+  const setRiskPercent = useCallback(
+    (pct: number) => {
+      if (!Number.isFinite(pct) || pct <= 0) return;
+      updateSettings({ defaultRiskPct: pct });
+    },
+    [updateSettings],
+  );
 
   /**
    * Size used when a market order opens with NO stop.
@@ -405,7 +425,6 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
    * error, it understates forex P&L by five orders of magnitude and tests clean
    * on crypto. That is BA-9. The conversion happens here, once, at the boundary.
    */
-  const { settings: replaySettings, updateSettings } = useReplaySettings();
   const contractSize = useMemo(
     () => (session?.symbol ? findSymbol(session.symbol)?.contractSize || 1 : 1),
     [session?.symbol],

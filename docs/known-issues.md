@@ -3115,9 +3115,33 @@ Buy buttons that disagreed — reproduced in miniature while fixing it. **Before
 adding a control for a decision, grep for whether the setting already exists.**
 A dead setting looks exactly like a missing one from the code that needs it.
 
-`defaultRiskPct` in the same file is ALSO unread — Studio's toolbar carries its
-own `riskPercent` state instead. Left alone deliberately rather than swept in,
-but it is the same trap armed and waiting.
+### Update 2026-08-27 — the second dead setting was also the answer
+
+`defaultRiskPct` in the same file was ALSO unread, while Studio's toolbar
+carried its own `riskPercent` state. It has now been wired the same way, for the
+same reason: Risk % sizes the RIGHT-CLICK draft flow (`commitDraft` ->
+`sizeForRisk`), not the Buy/Sell buttons it sat beside, so a control implying
+otherwise was misleading. It moved to Replay Settings — **where its input
+already existed** (`replay.settings.tsx:70`) — and the toolbar now carries only
+a Lots field.
+
+**That is twice.** Both dead settings in `lib/replay/settings.ts` turned out to
+be the answer to a decision that had been priced as new work:
+
+| Setting | Priced as | Actually |
+|---|---|---|
+| `defaultLotSize` | "Option C — adopt lot sizing, a second model change" | Built, with a Settings input, unread |
+| `defaultRiskPct` | "Risk % needs somewhere to live if we remove the toolbar field" | Built, with a Settings input, unread |
+
+In both cases the estimate was wrong in the same direction and for the same
+reason: **the code that needed the setting could not see it, so the setting
+looked absent, so the work looked like construction rather than connection.**
+A dead setting is indistinguishable from a missing one at the call site — the
+only way to tell is to grep the settings module before pricing the decision.
+
+Worth noting the near-miss: the first fix ADDED a duplicate control
+(`defaultUnits`) beside the unread `defaultLotSize` rather than finding it. The
+second was found only because the first had just been corrected.
 
 What this does NOT change: a later `+SL` on an open position still does not
 resize it. Re-sizing an open trade changes the basis its P&L is measured

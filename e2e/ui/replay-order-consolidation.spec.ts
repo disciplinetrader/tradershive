@@ -75,6 +75,14 @@ async function seed(sb: SupabaseClient, userId: string, tag: string) {
  * working. Earlier versions of this file used them and passed only because
  * nothing checked affordability.
  */
+async function setReplaySettings(page: Page, patch: Record<string, number>) {
+  await page.addInitScript((v) => {
+    const KEY = "traders-hive:replay-settings:v1";
+    const prev = JSON.parse(localStorage.getItem(KEY) ?? "{}");
+    localStorage.setItem(KEY, JSON.stringify({ ...prev, ...v }));
+  }, patch);
+}
+
 async function setDefaultLots(page: Page, lots: number) {
   await page.addInitScript((v) => {
     localStorage.setItem(
@@ -202,6 +210,12 @@ test.describe("studio order entry is one Buy and one Sell", () => {
     }
     // The toolbar sizes in LOTS, and the old units control is gone for good.
     await expect(page.getByLabel("Lot size for market orders")).toBeVisible();
+    // Risk % has moved to Replay Settings: it sizes the right-click draft flow,
+    // not the Buy/Sell buttons it used to sit beside, and a control implies it
+    // governs what is next to it.
+    await expect(
+      page.getByLabel("Risk per trade in percent of equity"),
+    ).toHaveCount(0);
     await expect(
       page.getByLabel("Default position size in units when no stop is set"),
     ).toHaveCount(0);
@@ -260,9 +274,10 @@ test.describe("studio order entry is one Buy and one Sell", () => {
     // Risk % is still on the toolbar and still means something — but not here.
     const c = await seed(sb, ids().userId, `${tag}q3`);
     extraSessions.push(c);
-    await setDefaultLots(page, 0.2);
+    // Risk % lives in Replay Settings now, so it is set there — and it must
+    // still make no difference to a stopless fill.
+    await setReplaySettings(page, { defaultLotSize: 0.2, defaultRiskPct: 5 });
     await openStudio(page, c);
-    await page.getByLabel("Risk per trade in percent of equity").fill("5");
     await page.getByTestId("studio-buy").click();
     await stepOneBar(page);
     // 0.2 units because the lot size says 0.2 — NOT a risk-derived number.
@@ -460,6 +475,67 @@ test.describe("studio order entry is one Buy and one Sell", () => {
       () => JSON.parse(localStorage.getItem("traders-hive:replay-settings:v1") ?? "{}"),
     );
     expect(stored.defaultLotSize).toBeCloseTo(0.4, 6);
+  });
+
+  test("the draft flow sizes from the Risk % SETTING, not a toolbar copy", async ({ page }) => {
+    /**
+     * Risk % moved out of the toolbar and into Replay Settings, because it
+     * sizes the right-click draft flow rather than the Buy/Sell buttons it used
+     * to sit beside. This proves the draft flow actually READS the setting.
+     *
+     * Asserted through arithmetic on the resulting order, not by reading a
+     * number off the status bar. `sizeForRisk` is
+     *
+     *     size = (equity x riskPct / 100) / |entry - stop|
+     *
+     * so with entry and stop taken from the committed order itself, the size is
+     * fully determined and a stale 1% copy cannot produce it. A status-bar
+     * assertion would pass against exactly that stale copy, which is the same
+     * hole the lots test avoids.
+     */
+    const id = await seed(sb, ids().userId, `${tag}risk`);
+    extraSessions.push(id);
+
+    // 2%, deliberately NOT the default of 1 — a hardcoded fallback would show.
+    await setReplaySettings(page, { defaultRiskPct: 2 });
+    await openStudio(page, id);
+
+    const box = await chartCanvas(page).boundingBox();
+    if (!box) throw new Error("no chart canvas");
+    await page.mouse.click(
+      Math.round(box.x + box.width * 0.5),
+      Math.round(box.y + box.height * 0.7),
+      { button: "right" },
+    );
+    await page.getByRole("button", { name: /Buy (Limit|Stop)/i }).click();
+    await expect(page.getByTestId("studio-draft-order")).toBeVisible();
+
+    await dragFrom(page, page.getByTestId("draft-stop"), 70);
+    await dragFrom(page, page.getByTestId("draft-target"), -70);
+    await expect(page.getByTestId("draft-commit")).toBeEnabled();
+    await page.getByTestId("draft-commit").click();
+
+    // Orders tab columns: Symbol, Side, Type, Entry, Stop, Target, R:R, Status.
+    await page.getByRole("tab", { name: /^Orders/ }).click();
+    const row = page.locator("table tbody tr").first();
+    await expect(row).toBeVisible({ timeout: 15_000 });
+    const cell = async (i: number) =>
+      Number(((await row.locator("td").nth(i).textContent()) ?? "").replace(/[^0-9.-]/g, ""));
+    const entry = await cell(3);
+    const stop = await cell(4);
+    expect(entry).toBeGreaterThan(0);
+    expect(stop).toBeGreaterThan(0);
+
+    // The size the chart reports for this pending order, from its own testid.
+    const sizeEl = page.locator('[data-testid^="pending-size-"]').first();
+    await expect(sizeEl).toBeVisible({ timeout: 10_000 });
+    const size = Number(((await sizeEl.textContent()) ?? "").trim());
+
+    const expected = (10_000 * 2 / 100) / Math.abs(entry - stop);
+    // 2% of $10,000 over the chosen stop distance. At 1% it would be half this,
+    // which is far outside the tolerance below.
+    expect(size).toBeGreaterThan(expected * 0.9);
+    expect(size).toBeLessThan(expected * 1.1);
   });
 
   test("right-click still opens the limit/stop draft flow", async ({ page }) => {

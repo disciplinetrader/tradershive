@@ -543,7 +543,12 @@ export function StudioTradeLayer({ adapter, tick, decimals, armed, draft, onDraf
               label={
                 <>
                   <span className="font-semibold uppercase">{order.orderType.replace("_", " ")}</span>
-                  <span>{order.size ? order.size.toFixed(2) : "—"}</span>
+                  {/* Own testid: the label's text runs the size straight into
+                      the axis price ("buy limit0.411.14270"), so a regex over
+                      the row cannot tell the two numbers apart. */}
+                  <span data-testid={`pending-size-${order.id}`}>
+                    {order.size ? order.size.toFixed(2) : "—"}
+                  </span>
                   {live ? (
                     <LineAction danger label="Cancel order" onClick={() => cancelOrder(order.id)}>
                       <X className="h-2.5 w-2.5" />

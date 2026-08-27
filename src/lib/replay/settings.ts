@@ -29,7 +29,18 @@ export type ReplaySettings = {
    * notional guard in `validateOrder`.
    */
   defaultLotSize: number;
-  /** Default risk % prefilled in the order ticket */
+  /**
+   * Risk budget per trade, as a percent of equity.
+   *
+   * Sizes a RESTING order — the right-click limit/stop draft flow, where the
+   * stop is known before the fill and the budget can therefore be divided by a
+   * real distance. Market orders do not use it: with no stop there is nothing
+   * to divide by, and they size from `defaultLotSize` instead.
+   *
+   * Was unread until 2026-08-27, while Studio's toolbar carried its own
+   * `riskPercent` state — the second dead setting in this file to turn out to
+   * be the answer to a decision priced as new work. See RS-4.
+   */
   defaultRiskPct: number;
   /** Commission per lot per side (currency units) */
   commissionPerLot: number;
