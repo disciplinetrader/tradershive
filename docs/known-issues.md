@@ -203,6 +203,21 @@ had a stop — 8.2%** — and the share is structurally falling, because Replay
 Studio now opens stopless positions by design (RS-4). Any metric that needs a
 stop is a metric about a shrinking, self-selected subset.
 
+**Confirmed independently 2026-08-27**, on a different table and a different
+question. Profiling `journal_entries` for the primary account
+(`7ffcbd29-592b-4e99-a489-bf22244512f6`) while investigating
+[MD-10](#md-10--historical_candles-holds-nothing-for-most-symbols-actually-traded-so-ideal-outcomes-cannot-be-measured-at-all)
+returned **5 of 93 closed entries carrying a `stop_loss` — 5.4%**. All five are
+crypto; the forex, indices and metals entries carry none at all.
+
+Two measurements, taken months apart for unrelated reasons, on different
+tables, agreeing on the shape: 8.2% and 5.4%, and the later one lower. This is
+the evidence for treating a stop-dependent metric as a minority view rather
+than the primary one — and for the parallel decision in
+`excursions.functions.ts`, where a trade with no stop settles as `no_stop`
+(TERMINAL, mfe_r is unreachable) while its `mfe_pnl` is still stored and still
+useful. Ideal RR is per-trade only, and on this evidence it always will be.
+
 ### Why it cannot be computed today
 
 **Neither `paper_trades` nor `journal_entries` records account equity at fill
@@ -3831,73 +3846,191 @@ type allows one.
 
 ---
 
-## MD-10 — The Binance 1m path stores nothing, and it is the single biggest reason journal excursions cannot be measured
+## MD-10 — `historical_candles` holds nothing for most symbols actually traded, so ideal outcomes cannot be measured at all
 
 **Area:** Market data · historical import · **Found:** 2026-08-27 ·
-**Status:** open — **filed, not investigated. Suspected larger than every
-backfill fix shipped alongside it.**
+**Status:** open — **the store, not the backfill, is the binding constraint on
+this feature. Re-derived against the primary account 2026-08-27.**
 
-### The measurement
+### The finding
 
-Taken from one real account on 2026-08-27, while diagnosing why the excursion
-backfill measured 3 trades in 20 minutes:
+Of the ten symbols the primary account has closed trades on, **seven have zero
+rows in `historical_candles` at every timeframe**, an eighth has 5m only, and
+two are fully covered:
 
 ```
-journal entries eligible for excursion measurement:   41
-  ...of which crypto:                                 37   (90%)
-  ...of which BTC/USDT alone:                         26   (63%)
-
-historical_candles, 1m:   BTC/USDT 0 · ETH/USDT 0 · SOL/USDT 0 · XRP/USDT 0
-historical_candles, 5m:   BTC/USDT 8,644
-historical_candles, 1m:   XAU/USD 18,458 · EUR/USD 10,942
+EUR/USD    10,942 @ 1m   + all higher timeframes
+XAU/USD    18,458 @ 1m   + all higher timeframes
+BTC/USDT    8,644 @ 5m   — and ZERO at 1m
+XRP/USDT · ETH/USDT · SOL/USDT · BNB · ADA · NAS100
+           ZERO rows, every timeframe
 ```
 
-Every crypto symbol is `is_enabled = true` in `historical_symbols` with
-`source_code = binance` and a plausible `native_symbol` (`BTCUSDT`). BTC/USDT
-even carries `latest_imported = 2026-07-31`. And yet **not one 1m row exists
-for any crypto symbol**, while the same table holds 8,644 BTC/USDT rows at 5m
-and five figures of 1m rows for the twelvedata symbols.
+`historical_candles` has no user scoping, so this is a property of the table,
+not of an account.
 
-### Why it matters more than it looks
+### What it costs, measured on the primary account (7ffcbd29, 93 closed trades)
 
-`timeframeFor` picks `1m` for any trade shorter than four hours, which is most
-of a scalping history. So for 37 of 41 queued entries the excursion pipeline
-asks for a 1m series that does not exist, falls through to an on-demand import
-that returns nothing, retries it three times with backoff, and settles
-`no_data`. That is ~22s per entry spent to discover an empty store, against a
-metered provider, per attempt, on every run.
+```
+crypto    80  (86%)   — 61 need a 1m series, 14 are sub-candle, 5 carry a stop
+forex      7
+indices    3
+metals     3
+```
 
-**The four entries that DID measure are all forex or metals on twelvedata**
-(three `backfilled`, one `stored`). The twelvedata path works. The Binance path
-produces nothing and has apparently never produced a 1m row.
+**Roughly 6 of 93 trades — about 6% — can ever be measured**, and only because
+EUR/USD and XAU/USD happen to be the two covered symbols. The single largest
+block is **53 BTC/USDT trades with a median duration of 694s (~11.6 min)**:
+`timeframeFor` puts every one of them in the 1m bucket, and the store holds 5m
+for that symbol and nothing at 1m. They are not slow to measure. They are
+unmeasurable.
 
-So the backfill's throughput fixes — the time budget, the retry handling, the
-sub-candle terminal status — make the feature behave honestly on a history it
-still cannot measure. **Fixing this is worth more than all of them.**
+### Why the original framing was wrong
+
+This was first filed as "the Binance 1m path stores nothing", inferred from a
+test account (`079e385b`) whose 41-row queue was 90% crypto. That framing was
+too narrow in two ways, and both make the problem bigger:
+
+1. **It is not confined to 1m, and not to Binance.** NAS100 is an index, not
+   crypto, and it has nothing at any timeframe. Six of the seven empty symbols
+   are empty at 1D as much as at 1m.
+2. **It is not a latency or throughput problem at all.** Every fix shipped in
+   `92e0dc33` — the time budget, batch retry, sub-candle terminal status,
+   measured ETA — makes the backfill behave honestly. None of them can measure
+   a trade whose candles do not exist. **The ideal-outcomes feature cannot
+   function on a real crypto-heavy history regardless of how good the backfill
+   is.**
+
+The per-account proportions differ (the test account was 41 eligible / 37
+crypto / 18 sub-candle; the primary account is 93 closed / 80 crypto / 14
+sub-candle), but both point the same way, and the store fact underlying them is
+shared.
 
 ### What has NOT been checked
 
 Filed deliberately without investigation. Open questions, in the order worth
 asking:
 
-1. **Does the 5m data prove the 1m path ran?** `runImport` aggregates 1m into
-   higher timeframes (`aggregateHigherTfs: timeframe === "1m"`), so 8,644 rows
-   at 5m with zero at 1m is internally contradictory — unless the 5m rows came
-   from a 5m-base import, or unless something deletes 1m after aggregating.
+1. **Why does BTC/USDT hold 8,644 rows at 5m and none at 1m?** `runImport`
+   aggregates 1m UP into higher timeframes (`aggregateHigherTfs: timeframe ===
+   "1m"`), so 5m-without-1m is internally contradictory unless the 5m rows came
+   from a 5m-base import, or something deletes 1m after aggregating.
    [MD-4](#md-4--two-writers-fill-historical_candles-and-only-one-is-visible)
    is the obvious suspect and should be read first.
-2. **Can the deployed worker reach Binance at all?** `api.binance.com`
-   geo-blocks a number of regions and has been known to refuse datacentre
-   ranges. A worker that cannot reach it would fail identically to an empty
-   window, and `historical_import_jobs` holds the answer — that table is
-   RLS-hidden from a normal user, so this needs an admin read, not a guess.
-3. **Is `latest_imported = 2026-07-31` on BTC/USDT truthful?** If the symbol row
-   advanced while nothing was stored, that is a second writer disagreeing with
-   the data it claims to describe, and the same shape as MD-4.
+2. **Are the seven empty symbols enabled, routed, and reachable?** They are
+   `is_enabled = true` with plausible `native_symbol` values, so the failure is
+   downstream of the catalog. `historical_import_jobs` holds the answer and is
+   RLS-hidden from a normal user — this needs an admin read, not a guess.
+   Whether the deployed worker can reach `api.binance.com` at all is part of
+   the same question; that host geo-blocks regions and datacentre ranges, and a
+   blocked worker fails identically to an empty window.
+3. **Is `latest_imported` truthful?** BTC/USDT carries `2026-07-31` while
+   holding no 1m rows. A symbol row advancing while nothing is stored is a
+   second writer disagreeing with the data it claims to describe — MD-4 again.
+4. **Does anything backfill a symbol on first use?** Ten traded symbols and two
+   covered ones suggests coverage is a side effect of something else (a cron
+   list, a manual import) rather than of trading a symbol.
 
-### How to reproduce the measurement
+### Ranking
 
-`scripts/audit-excursions.ts` reports excursion coverage per account. The candle
-counts above came from a direct `historical_candles` count per symbol and
-timeframe, which any signed-in user can run — the table is readable, unlike
-`historical_import_jobs`.
+Above the remaining backfill work, and above the excursion feature's UI. The
+backfill fixes were worth doing — they stopped the queue re-attempting
+unmeasurable rows forever — but they raise measurable coverage from ~6% to ~6%.
+This entry is what moves that number.
+
+### How to reproduce
+
+Per-account population needs the SQL editor, because RLS hides other users'
+rows from any normal client:
+
+```sql
+select user_id,
+       count(*) as closed,
+       count(excursion_status) as with_status,
+       count(excursion_computed_at) as measured
+from journal_entries
+where closed_at is not null and deleted_at is null
+group by user_id order by closed desc;
+```
+
+Store coverage for the symbols one account actually trades — this is the query
+that settled the framing:
+
+```sql
+select symbol, timeframe, count(*) as candles
+from historical_candles
+where symbol in (
+  select distinct symbol from journal_entries
+  where user_id = '<uuid>'
+    and closed_at is not null and deleted_at is null)
+group by 1,2 order by 1,2;
+```
+
+`scripts/audit-excursions.ts` reports excursion coverage per account, but **it
+signs in with `E2E_HOST_EMAIL`, so it reports the TEST account unless you
+change that** — that is how this entry came to be filed on the wrong account's
+numbers for several hours on 2026-08-27. Any script that authenticates this way
+should print the email it signed in as, and the reader should check it before
+believing the output.
+
+---
+
+## JR-7 — NAS100 entries have zero duration: `opened_at == closed_at`
+
+**Area:** Journal · data quality · **Found:** 2026-08-27 ·
+**Status:** open — **observed, not investigated. Probably
+[JR-6](#jr-6--manual-entries-written-before-2026-08-17-carry-a-fabricated-open-time),
+but that is not established.**
+
+### The observation
+
+Profiling the primary account's 93 closed journal entries by symbol
+(see [MD-10](#md-10--historical_candles-holds-nothing-for-most-symbols-actually-traded-so-ideal-outcomes-cannot-be-measured-at-all)
+for the query), NAS100 returned:
+
+```
+symbol   trades   sub_candle   min_s   med_s   max_s
+NAS100        3            3       0       0       0
+```
+
+Minimum, median and maximum duration all zero. `opened_at == closed_at` on
+every one.
+
+### Why it is filed separately from JR-6
+
+JR-6 already describes this exact symptom — `ManualEntryDialog` stamped the
+browser's local noon into BOTH `opened_at` and `closed_at`, and it lists
+"`opened_at == closed_at`, so duration is zero" among the consequences. So the
+first thing to check is whether these three rows are JR-6 rows.
+
+They are filed apart because two things do not obviously fit:
+
+- **JR-6 is about MANUAL entries.** If these three came from Replay Studio or
+  an import rather than `ManualEntryDialog`, the cause is different code and
+  JR-6's forward-only fix does not cover it.
+- **JR-6 stamps local noon into both columns.** That predicts a specific value,
+  not merely equality. If `opened_at` is not noon-in-some-timezone, something
+  else wrote these.
+
+One query separates the two cases:
+
+```sql
+select id, opened_at, closed_at, created_at, source
+from journal_entries
+where symbol = 'NAS100' and opened_at = closed_at
+  and user_id = '7ffcbd29-592b-4e99-a489-bf22244512f6';
+```
+
+Noon-local values with a `created_at` before 2026-08-17 means JR-6, and this
+entry should be folded into it. Anything else means a second writer producing
+the same corruption, which is the more expensive answer.
+
+### Why it matters beyond three rows
+
+A zero-duration trade is unmeasurable by construction — `attemptExcursion`
+rejects `to <= from` as `unusable` before it reaches a provider, so these rows
+are already terminal and cost nothing. The concern is not the excursion queue.
+It is that **duration is an input to session, hold-time and time-of-day
+analytics**, and a zero there is not a missing value that reads as missing: it
+is a number that reads as a real, extremely fast trade. Three rows is what was
+visible on one symbol on one account; nothing has established the true count.
