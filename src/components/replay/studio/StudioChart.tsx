@@ -82,6 +82,7 @@ export function StudioChart({
 }: StudioChartProps) {
   const {
     view, sessionId, riskPercent, setRiskPercent, placeMarketOrder, sizeForRisk, price: livePrice,
+    defaultLots, setDefaultLots,
     seekForwardTo, symbol: sessionSymbol, placeOrderAt, market: sessionMarket,
   } = useReplayStudio();
   /**
@@ -517,6 +518,30 @@ export function StudioChart({
 
         {/* Phase C · chart-native trading controls */}
         <div className="ml-auto flex shrink-0 items-center gap-1 pl-2">
+          {/* Lot size — what Buy and Sell beside it actually use.
+              Bound to `defaultLotSize` in Replay Settings, NOT to local state:
+              `setDefaultLots` writes the setting and every `useReplaySettings`
+              consumer is notified, so editing here shows in Settings and
+              editing there shows here. A control holding its own copy beside an
+              unread setting is exactly the bug that produced `defaultUnits`. */}
+          <label
+            className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-muted-foreground"
+            title="Lot size for a market order. Also editable in Replay Settings."
+          >
+            Lots
+            <input
+              type="number"
+              min={0.001}
+              step={0.01}
+              value={defaultLots}
+              onChange={(e) => {
+                const v = Number(e.target.value);
+                if (Number.isFinite(v) && v > 0) setDefaultLots(v);
+              }}
+              className="h-6 w-16 rounded border border-border/60 bg-background px-1 text-right font-mono text-[11px] text-foreground"
+              aria-label="Lot size for market orders"
+            />
+          </label>
           <label className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-muted-foreground">
             Risk
             <input

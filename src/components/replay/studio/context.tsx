@@ -94,10 +94,13 @@ export interface StudioValue {
   riskPercent: number;
   /**
    * Units used when a market order opens with no stop — `defaultLotSize` from
-   * Replay Settings, converted from lots. Read-only here: it is edited in
-   * Replay Settings, not on the chart, so there is exactly one place to set it.
+   * Replay Settings, converted from lots via `contractSize`.
    */
   defaultUnits: number;
+  /** The same setting in LOTS, as the trader types it. */
+  defaultLots: number;
+  /** Writes `defaultLotSize` back to Replay Settings. One source of truth. */
+  setDefaultLots: (lots: number) => void;
   setRiskPercent: (pct: number) => void;
   /** Units implied by the risk budget for a given entry/stop pair. */
   sizeForRisk: (entry: number, stop: number) => number;
@@ -402,7 +405,7 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
    * error, it understates forex P&L by five orders of magnitude and tests clean
    * on crypto. That is BA-9. The conversion happens here, once, at the boundary.
    */
-  const { settings: replaySettings } = useReplaySettings();
+  const { settings: replaySettings, updateSettings } = useReplaySettings();
   const contractSize = useMemo(
     () => (session?.symbol ? findSymbol(session.symbol)?.contractSize || 1 : 1),
     [session?.symbol],
@@ -410,6 +413,25 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
   const defaultUnits = useMemo(
     () => lotsToUnits(Number(replaySettings.defaultLotSize), contractSize),
     [replaySettings.defaultLotSize, contractSize],
+  );
+
+  /**
+   * The lot size as the trader typed it, and the writer for it.
+   *
+   * Exposed so the chart toolbar can edit THE SETTING rather than hold a copy.
+   * `updateSettings` persists to localStorage and dispatches
+   * `replay-settings-changed`, which every `useReplaySettings` consumer listens
+   * for — so a toolbar edit shows up in Replay Settings and vice versa, with no
+   * second source of truth. A duplicate control beside an unread setting is the
+   * bug that produced `defaultUnits`; this is the shape that avoids it.
+   */
+  const defaultLots = Number(replaySettings.defaultLotSize);
+  const setDefaultLots = useCallback(
+    (lots: number) => {
+      if (!Number.isFinite(lots) || lots <= 0) return;
+      updateSettings({ defaultLotSize: lots });
+    },
+    [updateSettings],
   );
 
   const sizeForRisk = useCallback(
@@ -716,6 +738,8 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
     equity,
     riskPercent,
     defaultUnits,
+    defaultLots,
+    setDefaultLots,
     setRiskPercent,
     sizeForRisk,
     placeOrderAt,

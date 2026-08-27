@@ -200,8 +200,8 @@ test.describe("studio order entry is one Buy and one Sell", () => {
     for (const gone of ["Buy limit", "Sell limit", "Buy market", "Sell market"]) {
       await expect(page.getByRole("button", { name: gone, exact: true })).toHaveCount(0);
     }
-    // And no chart-side sizing control: lot size lives in Replay Settings, and
-    // a second input here is the duplication this whole consolidation removed.
+    // The toolbar sizes in LOTS, and the old units control is gone for good.
+    await expect(page.getByLabel("Lot size for market orders")).toBeVisible();
     await expect(
       page.getByLabel("Default position size in units when no stop is set"),
     ).toHaveCount(0);
@@ -423,6 +423,43 @@ test.describe("studio order entry is one Buy and one Sell", () => {
     await expect(page.getByRole("tab", { name: /^Orders/ })).not.toContainText(/[0-9]/);
     await stepOneBar(page);
     await expect(page.locator("table tbody tr")).toContainText(/No open positions/i);
+  });
+
+  test("the toolbar lot input and Replay Settings are the same setting", async ({ page }) => {
+    /**
+     * One source of truth, asserted in BOTH directions.
+     *
+     * The failure this guards against is not a broken input — it is a control
+     * that holds its own copy and drifts from the setting it appears to edit.
+     * That is precisely the bug that produced the `defaultUnits` field: a
+     * toolbar control sitting beside an unread `defaultLotSize`, each confidently
+     * showing a different number.
+     *
+     * Direction 1 is asserted through BEHAVIOUR, not just the input's value —
+     * the size the order actually opens at is the thing the setting is for, and
+     * an input that displays the right number while sizing from a stale copy
+     * would pass a value-only check.
+     */
+    const id = await seed(sb, ids().userId, `${tag}sync`);
+    extraSessions.push(id);
+
+    // Settings -> toolbar: seed the stored setting, read it off the chart.
+    await setDefaultLots(page, 0.25);
+    await openStudio(page, id);
+    const lots = page.getByLabel("Lot size for market orders");
+    await expect(lots).toHaveValue("0.25");
+
+    // Toolbar -> order: editing here must change what Buy actually opens.
+    await lots.fill("0.4");
+    await page.getByTestId("studio-buy").click();
+    await stepOneBar(page);
+    expect(Number((await readRow(page)).qty)).toBeCloseTo(0.4, 3);
+
+    // Toolbar -> storage: the edit reached the setting, not a local copy.
+    const stored = await page.evaluate(
+      () => JSON.parse(localStorage.getItem("traders-hive:replay-settings:v1") ?? "{}"),
+    );
+    expect(stored.defaultLotSize).toBeCloseTo(0.4, 6);
   });
 
   test("right-click still opens the limit/stop draft flow", async ({ page }) => {
