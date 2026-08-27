@@ -5,7 +5,9 @@ import { PositionOrderStore } from "@/lib/chart/orders/store";
 import { placeOrEditOrder, updatePositionLevels, runEngineTick } from "@/lib/chart/orders/service";
 import { exitFor } from "@/lib/chart/orders/engine";
 import { applyBreakEven, applyTrailing, advancedMetrics } from "@/lib/chart/orders/position-manager";
-import { validateOrder, withLevels, hasLevel, levelDistance, ratioOf } from "@/lib/chart/orders/model";
+import {
+  validateOrder, withLevels, hasLevel, levelDistance, ratioOf, MAX_NOTIONAL_LEVERAGE,
+} from "@/lib/chart/orders/model";
 import type { OrderDraft, PositionOrder } from "@/lib/chart/orders/model";
 import type { Drawing } from "@/lib/chart/drawings/types";
 
@@ -387,5 +389,87 @@ describe("R is null rather than 0 when there is no stop", () => {
     expect(m.distanceToTarget).toBeNull();
     // Money is still real: P/L does not depend on a stop.
     expect(m.floatingPnl).toBeCloseTo(1_000, 6);
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════════════
+   7 · Affordability — notional against equity, not quantity
+   ═══════════════════════════════════════════════════════════════════ */
+
+describe("validateOrder · the notional cap", () => {
+  /**
+   * THE GAP THAT LET IT SHIP.
+   *
+   * Every test written for Studio sizing asserted a QUANTITY. `qty 1.00` on
+   * BTC/USDT passed every gate — nothing ever asked whether one Bitcoin on a
+   * $10,000 account was sane. On forex the same blindness was worse: a default
+   * of "1 lot" became 100,000 units, $114,270 of notional, 11.4x leverage, and
+   * the only limit in the codebase was an absurdity cap at 1e9 units.
+   *
+   * So these cases assert MONEY. A quantity is meaningless without a contract
+   * size and a price; notional is the thing a trader can actually be ruined by.
+   *
+   * The forex case is not decoration. `contractSize` is 1 on crypto, so lots,
+   * units and quantity all coincide there and a crypto-only suite cannot see
+   * this class of bug at all — which is exactly how it reached production.
+   */
+  const EQUITY = 10_000;
+
+  function fx(size: number): OrderDraft {
+    // EUR/USD at 1.1427. `size` is UNITS: 100_000 units = 1 standard lot.
+    return { ...draft(), symbol: "EUR/USD", entry: 1.1427, size };
+  }
+
+  it("REJECTS the exact order that shipped: 1 standard lot of EUR/USD on $10k", () => {
+    // 100_000 x 1.1427 = $114,270 against a $100,000 cap.
+    const res = validateOrder(fx(100_000), { equity: EQUITY });
+    expect(res.ok).toBe(false);
+    expect(res.errors.join(" ")).toMatch(/Position too large/i);
+  });
+
+  it("names all three numbers, because a generic failure says which to change: none", () => {
+    const res = validateOrder(fx(100_000), { equity: EQUITY });
+    const msg = res.errors.join(" ");
+    expect(msg).toContain("$114,270");   // attempted notional
+    expect(msg).toContain("$10,000");    // equity
+    expect(msg).toContain("$100,000");   // the cap
+  });
+
+  it("ACCEPTS the new default: 0.1 lots of EUR/USD", () => {
+    // 10_000 x 1.1427 = $11,427 — comfortably inside 10x.
+    expect(validateOrder(fx(10_000), { equity: EQUITY }).ok).toBe(true);
+  });
+
+  it("caps on notional, not on quantity — the same qty passes or fails on price", () => {
+    // Identical size; only the price differs. A quantity-based cap cannot tell
+    // these apart, which is the entire point.
+    const cheap = validateOrder({ ...draft(), entry: 1, size: 50_000 }, { equity: EQUITY });
+    const dear = validateOrder({ ...draft(), entry: 10, size: 50_000 }, { equity: EQUITY });
+    expect(cheap.ok).toBe(true);   // $50,000
+    expect(dear.ok).toBe(false);   // $500,000
+  });
+
+  it("allows exactly the cap and refuses a hair over", () => {
+    const atCap = EQUITY * MAX_NOTIONAL_LEVERAGE;
+    expect(validateOrder({ ...draft(), entry: 1, size: atCap }, { equity: EQUITY }).ok).toBe(true);
+    expect(validateOrder({ ...draft(), entry: 1, size: atCap * 1.0001 }, { equity: EQUITY }).ok).toBe(false);
+  });
+
+  it("does NOT run when the caller has no equity to check against", () => {
+    // A geometry-only caller must not be blocked by an account rule. This is
+    // also the guard's own failure mode: omit equity and it silently vanishes.
+    expect(validateOrder(fx(100_000)).ok).toBe(true);
+    expect(validateOrder(fx(100_000), { equity: null }).ok).toBe(true);
+    expect(validateOrder(fx(100_000), { equity: 0 }).ok).toBe(true);
+  });
+
+  it("crypto is checked by the same rule, in money", () => {
+    // 1 BTC at 63,000 = $63,000, which is UNDER a $100,000 cap and therefore
+    // allowed. Recorded deliberately: 6.3x is inside the chosen ceiling, so the
+    // cap is not a substitute for a sensible default — it is a backstop.
+    const btc = { ...draft(), symbol: "BTC/USDT", entry: 63_000, size: 1 };
+    expect(validateOrder(btc, { equity: EQUITY }).ok).toBe(true);
+    // Two Bitcoin is $126,000 and is refused.
+    expect(validateOrder({ ...btc, size: 2 }, { equity: EQUITY }).ok).toBe(false);
   });
 });

@@ -16,7 +16,18 @@ export type TradingMode = "netting" | "hedging";
 export type ReplaySettings = {
   /** Netting = 1 net position per symbol; Hedging = multiple positions allowed */
   tradingMode: TradingMode;
-  /** Default lot size prefilled in the order ticket */
+  /**
+   * Default lot size for an order that is not sized by risk.
+   *
+   * 0.1 (a mini lot) — the value observed in FXReplay's own recordings, and a
+   * defensible default on a practice account: 10,000 units of a forex pair is
+   * ~$1 per pip, so a 100-pip loss is 1% of a $10,000 balance.
+   *
+   * This was `1` until 2026-08-26, which is ONE STANDARD LOT — 100,000 units,
+   * ~$114,000 of notional, over 11x leverage on a $10,000 account. It reached
+   * production because nothing downstream checked affordability; see the
+   * notional guard in `validateOrder`.
+   */
   defaultLotSize: number;
   /** Default risk % prefilled in the order ticket */
   defaultRiskPct: number;
@@ -30,7 +41,7 @@ export type ReplaySettings = {
 
 export const DEFAULT_REPLAY_SETTINGS: ReplaySettings = {
   tradingMode: "hedging",
-  defaultLotSize: 1,
+  defaultLotSize: 0.1,
   defaultRiskPct: 1,
   commissionPerLot: 0,
   spread: 0,

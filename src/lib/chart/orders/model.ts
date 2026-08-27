@@ -254,14 +254,43 @@ export interface OrderValidation {
  *  · risk must be non-zero (no zero-risk positions)
  *  · limit / stop order types must sit on the correct side of the market
  */
+/**
+ * Maximum position notional, as a multiple of account equity.
+ *
+ * 10x is a round, defensible ceiling: it permits ordinary leveraged forex
+ * practice while refusing the account-ending sizes an unchecked default can
+ * produce. It is NOT a risk model — a stop is what bounds loss. This bounds
+ * only how much exposure one order may request.
+ */
+export const MAX_NOTIONAL_LEVERAGE = 10;
+
+/** Compact money for validation copy — no locale surprises in an error string. */
+function fmtMoney(v: number): string {
+  const abs = Math.abs(v);
+  const s = abs >= 1000 ? abs.toLocaleString("en-US", { maximumFractionDigits: 0 })
+                        : abs.toFixed(2);
+  return `${v < 0 ? "-" : ""}$${s}`;
+}
+
 export function validateOrder(
   draft: OrderDraft,
-  opts: { marketPrice?: number | null; tick?: number; maxRiskPct?: number } = {},
+  opts: {
+    marketPrice?: number | null;
+    tick?: number;
+    maxRiskPct?: number;
+    /**
+     * Account equity, for the notional cap below. Omit and the cap does not
+     * run — callers that genuinely have no account (a pure geometry check)
+     * must not be blocked by one.
+     */
+    equity?: number | null;
+  } = {},
 ): OrderValidation {
   const errors: string[] = [];
   const { entry, stop, target, direction, orderType, size } = draft;
 
-  const values = [entry, stop, target, size, opts.marketPrice, opts.maxRiskPct].filter(v => v !== undefined && v !== null);
+  const values = [entry, stop, target, size, opts.marketPrice, opts.maxRiskPct, opts.equity]
+    .filter((v) => v !== undefined && v !== null);
   if (values.some(v => !Number.isFinite(v))) {
     return { ok: false, errors: ["Trading values must be finite numbers. Infinity and NaN are rejected."] };
   }
@@ -304,6 +333,34 @@ export function validateOrder(
   // renaming the field; do both together, not this one alone.
   if (size != null && (size <= 0 || size > 1_000_000_000)) {
     errors.push("Lot size must be between 0 and 1,000,000,000.");
+  }
+
+  /**
+   * Affordability. Nothing in this module checked it before 2026-08-26.
+   *
+   * A $10,000 practice account opened 100,000 units of EUR/USD — $114,270 of
+   * notional, 11.4x leverage — and every layer accepted it, because the ONLY
+   * limit was the 1e9 absurdity cap above. The bad default that produced it was
+   * a one-line fix; the absence of any affordability check is the reason such a
+   * default could reach production unremarked, and that is what this closes.
+   *
+   * Notional is `size x entry` — size is in UNITS, so this is real money at the
+   * requested price, not a lot count. The cap is 10x equity: enough to practise
+   * normal leveraged forex, far short of an account-ending position.
+   *
+   * The error names the three numbers, because "invalid order" tells a trader
+   * nothing about which of the three to change.
+   */
+  if (size != null && hasLevel(opts.equity) && opts.equity > 0) {
+    const notional = Math.abs(size * entry);
+    const cap = opts.equity * MAX_NOTIONAL_LEVERAGE;
+    if (Number.isFinite(notional) && notional > cap) {
+      errors.push(
+        `Position too large: ${fmtMoney(notional)} of exposure against ` +
+        `${fmtMoney(opts.equity)} equity. The limit is ${MAX_NOTIONAL_LEVERAGE}x ` +
+        `equity (${fmtMoney(cap)}). Reduce the size.`,
+      );
+    }
   }
 
   // Each level is judged only if it exists. An absent one is not a level on the

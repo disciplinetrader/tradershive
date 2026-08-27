@@ -65,6 +65,16 @@ async function seed(sb: SupabaseClient, userId: string, tag: string) {
  * more, because a second sizing input beside this one was the duplication that
  * had to go.
  */
+/**
+ * ⚠ Keep these lot sizes AFFORDABLE. `validateOrder` caps a position at 10x
+ * equity, and these sessions carry $10,000 — so on BTC/USDT at ~$63,000 any lot
+ * size above ~1.5 is refused outright and the test sees no position at all.
+ *
+ * That is not an obstacle to work around: fixtures of 2-3 BTC on a $10,000
+ * account were never realistic, and the guard catching them is the guard
+ * working. Earlier versions of this file used them and passed only because
+ * nothing checked affordability.
+ */
 async function setDefaultLots(page: Page, lots: number) {
   await page.addInitScript((v) => {
     localStorage.setItem(
@@ -241,22 +251,22 @@ test.describe("studio order entry is one Buy and one Sell", () => {
     ];
     extraSessions.push(a, b);
 
-    await buy(page, a, { lots: 1 });
-    expect(Number((await readRow(page)).qty)).toBeCloseTo(1, 2);
+    await buy(page, a, { lots: 0.1 });
+    expect(Number((await readRow(page)).qty)).toBeCloseTo(0.1, 3);
 
-    await buy(page, b, { lots: 3 });
-    expect(Number((await readRow(page)).qty)).toBeCloseTo(3, 2);
+    await buy(page, b, { lots: 0.3 });
+    expect(Number((await readRow(page)).qty)).toBeCloseTo(0.3, 3);
 
     // Risk % is still on the toolbar and still means something — but not here.
     const c = await seed(sb, ids().userId, `${tag}q3`);
     extraSessions.push(c);
-    await setDefaultLots(page, 2);
+    await setDefaultLots(page, 0.2);
     await openStudio(page, c);
     await page.getByLabel("Risk per trade in percent of equity").fill("5");
     await page.getByTestId("studio-buy").click();
     await stepOneBar(page);
-    // 2 units because the lot size says 2 — NOT a risk-derived number.
-    expect(Number((await readRow(page)).qty)).toBeCloseTo(2, 2);
+    // 0.2 units because the lot size says 0.2 — NOT a risk-derived number.
+    expect(Number((await readRow(page)).qty)).toBeCloseTo(0.2, 3);
   });
 
   test("the position widget appears on the entry line, and an unset level draws nothing", async ({ page }) => {
@@ -271,7 +281,7 @@ test.describe("studio order entry is one Buy and one Sell", () => {
      */
     const id = await seed(sb, ids().userId, `${tag}widget`);
     extraSessions.push(id);
-    await buy(page, id, { lots: 2 });
+    await buy(page, id, { lots: 0.2 });
 
     const widget = page.locator('[data-testid^="studio-position-"]').first();
     await expect(widget).toBeVisible({ timeout: 20_000 });
@@ -300,7 +310,7 @@ test.describe("studio order entry is one Buy and one Sell", () => {
      */
     const id = await seed(sb, ids().userId, `${tag}noclick`);
     extraSessions.push(id);
-    await buy(page, id, { lots: 2 });
+    await buy(page, id, { lots: 0.2 });
 
     const sl = page.locator('[data-testid$="-sl"]').first();
     await expect(sl).toBeVisible({ timeout: 20_000 });
@@ -319,7 +329,7 @@ test.describe("studio order entry is one Buy and one Sell", () => {
      */
     const id = await seed(sb, ids().userId, `${tag}drag`);
     extraSessions.push(id);
-    await buy(page, id, { lots: 2 });
+    await buy(page, id, { lots: 0.2 });
 
     const before = await readRow(page);
     expect(before.stop).toBe("—");
@@ -344,7 +354,7 @@ test.describe("studio order entry is one Buy and one Sell", () => {
   test("the widget's X closes the position immediately", async ({ page }) => {
     const id = await seed(sb, ids().userId, `${tag}close`);
     extraSessions.push(id);
-    await buy(page, id, { lots: 2 });
+    await buy(page, id, { lots: 0.2 });
     await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 20_000 });
 
     await page.locator('[data-testid$="-close"]').first().click();
@@ -359,6 +369,60 @@ test.describe("studio order entry is one Buy and one Sell", () => {
      */
     await expect(page.locator("table tbody tr")).toContainText(/No open positions/i, { timeout: 15_000 });
     await expect(page.locator('[data-testid^="studio-position-"]')).toHaveCount(0);
+  });
+
+  test("an unaffordable order is refused, and says why", async ({ page }) => {
+    /**
+     * This test exists because of a mutation the TYPE SYSTEM cannot catch.
+     *
+     * `OrderContext.equity` is optional, so deleting it from Studio's three
+     * placement calls compiles cleanly, passes every unit test — those call
+     * `validateOrder` directly and supply equity themselves — and silently
+     * disables the affordability guard everywhere it actually matters. A guard
+     * that is never fed is worse than no guard, because the code reads as
+     * protected.
+     *
+     * So this drives the REAL path: Studio -> placeOrEditOrder -> validateOrder,
+     * with a lot size big enough that the cap must refuse it. Verified by
+     * mutation: removing `equity` from the call sites makes this fail while
+     * tsc and the whole unit suite stay green.
+     *
+     * 5 lots of BTC/USDT is ~$315,000 of notional against $10,000 equity —
+     * 31x, far past the 10x cap.
+     */
+    const id = await seed(sb, ids().userId, `${tag}toobig`);
+    extraSessions.push(id);
+
+    await setDefaultLots(page, 5);
+    await openStudio(page, id);
+    await page.getByTestId("studio-buy").click();
+
+    /**
+     * The message is asserted FIRST, before anything slow.
+     *
+     * A toast auto-dismisses after a few seconds, so checking it at the END of
+     * the test — after a bar step and a table assertion — measures the toast's
+     * lifetime rather than whether it ever appeared. That mistake made this
+     * test fail against a working guard.
+     */
+    await expect(page.getByText(/Position too large/i).first()).toBeVisible({ timeout: 10_000 });
+    /**
+     * It names the numbers, so the trader knows which one to change. Only the
+     * STABLE two are asserted here: equity and the cap are fixtures, while the
+     * notional depends on the bar price under the cursor at click time and
+     * moves with the dataset. The exact three-number message is pinned in the
+     * unit test, where the entry price is fixed.
+     */
+    const toast = page.getByText(/Position too large/i).first();
+    await expect(toast).toContainText("$10,000");    // equity
+    await expect(toast).toContainText("$100,000");   // the 10x cap
+
+    // Refused: nothing reaches the book, as a pending order or otherwise.
+    // `/^Ord/` would match BOTH the sidebar's "Ord" tab and the blotter's
+    // "Orders" tab; anchor on the blotter's, which is the longer name.
+    await expect(page.getByRole("tab", { name: /^Orders/ })).not.toContainText(/[0-9]/);
+    await stepOneBar(page);
+    await expect(page.locator("table tbody tr")).toContainText(/No open positions/i);
   });
 
   test("right-click still opens the limit/stop draft flow", async ({ page }) => {

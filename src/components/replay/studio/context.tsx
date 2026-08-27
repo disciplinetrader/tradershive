@@ -163,6 +163,24 @@ function startCursorFor(session: any, observations: number): number {
   return 0;
 }
 
+/**
+ * Report a refused order.
+ *
+ * `placeOrEditOrder` returns `{ ok: false, errors }`; it does not throw. Three
+ * call sites discarded that result, so a rejected order was indistinguishable
+ * from a placed one — the button clicked, nothing appeared, and no reason was
+ * given. Same shape as the discarded closed-trade write and the unread
+ * `{ error }` fixed earlier the same day.
+ *
+ * It matters most for the affordability cap: a guard that refuses silently
+ * teaches the trader the app is broken rather than that the order was too big.
+ */
+function reportPlacement(res: { ok: boolean; errors?: string[] }): boolean {
+  if (res.ok) return true;
+  toast.error("Order not placed", { description: res.errors?.[0] ?? "The order was refused." });
+  return false;
+}
+
 export function ReplayStudioProvider({ id, children }: { id: string; children: ReactNode }) {
   const getSess = useServerFn(getReplaySession);
   const getCandles = useServerFn(getReplayCandles);
@@ -444,7 +462,7 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
         { time: view.transport.marketTime, price: stop ?? price },
       ]);
       stores.drawings.add(drawing);
-      placeOrEditOrder(
+      reportPlacement(placeOrEditOrder(
         stores,
         {
           symbol: view.dataset.label.split(" ")[0],
@@ -473,8 +491,10 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
           }),
           drawingId: drawing.id,
         },
-        { marketPrice: price },
-      );
+        // `equity` feeds validateOrder's notional cap. Omitting it silently
+        // disables the guard, which is the failure mode the guard exists for.
+        { marketPrice: price, equity },
+      ));
     },
     [stores, view, price, sizeForRisk, defaultUnits],
   );
@@ -496,7 +516,7 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
         { time, price: stop },
       ]);
       stores.drawings.add(drawing);
-      placeOrEditOrder(
+      reportPlacement(placeOrEditOrder(
         stores,
         {
           symbol: view.dataset.label.split(" ")[0],
@@ -508,8 +528,10 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
           size: opts.size ?? sizeForRisk(entry, stop),
           drawingId: drawing.id,
         },
-        { marketPrice: price },
-      );
+        // `equity` feeds validateOrder's notional cap. Omitting it silently
+        // disables the guard, which is the failure mode the guard exists for.
+        { marketPrice: price, equity },
+      ));
     },
     [stores, view, price, sizeForRisk],
   );
@@ -529,7 +551,7 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
       const entry = Number.isFinite(levels.entry ?? NaN) ? (levels.entry as number) : order.entry;
       const stop = Number.isFinite(levels.stop ?? NaN) ? (levels.stop as number) : order.stop;
       const target = Number.isFinite(levels.target ?? NaN) ? (levels.target as number) : order.target;
-      placeOrEditOrder(
+      reportPlacement(placeOrEditOrder(
         stores,
         {
           symbol: order.symbol,
@@ -541,8 +563,10 @@ export function ReplayStudioProvider({ id, children }: { id: string; children: R
           size: order.size,
           drawingId: order.drawingId,
         },
-        { marketPrice: price },
-      );
+        // `equity` feeds validateOrder's notional cap. Omitting it silently
+        // disables the guard, which is the failure mode the guard exists for.
+        { marketPrice: price, equity },
+      ));
     },
     [stores, price],
   );

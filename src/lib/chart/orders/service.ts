@@ -54,6 +54,14 @@ export interface OrderContext {
   tick?: number;
   /** Asset class recorded on the closed trade, when the caller knows it. */
   market?: string | null;
+  /**
+   * Account equity, forwarded to `validateOrder`'s notional cap.
+   *
+   * Optional because not every caller has an account — but note what optional
+   * MEANS here: a caller that omits it gets no affordability check at all. If
+   * you have equity, pass it.
+   */
+  equity?: number | null;
 }
 
 

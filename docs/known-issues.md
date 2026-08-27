@@ -10,6 +10,14 @@ enough detail to pick up cold. Remove an entry when it ships a fix.
 > and 100,000 for forex, so it tests clean and ships wrong. Two callers convert
 > explicitly today; a third would inherit the bug.
 
+> **Writing a call that persists, validates or places anything? Read
+> [PAT-1](#pat-1--discarded-return-values-a-failed-call-is-indistinguishable-from-a-successful-one)
+> first.** `supabase-js` and this codebase's own service functions return a
+> RESULT OBJECT rather than throwing, so `await doTheThing(...)` with the result
+> discarded looks identical whether it succeeded or failed. Four instances
+> surfaced on 2026-08-26 alone; every one hid a real failure from the user AND
+> from a fully green test suite.
+
 > **Sizing a position from a stop distance? Read
 > [RS-5](#rs-5--position-size-is-computed-against-the-click-price-the-stop-is-not)
 > before trusting the number.**
@@ -30,6 +38,76 @@ enough detail to pick up cold. Remove an entry when it ships a fix.
 > by `closeTrade` moved both to the cent. It is an unclamped writer into the
 > table the dashboard, journal and every report read — so the damage lands
 > outside battle-arena even though the defect is inside it.
+
+---
+
+## PAT-1 — Discarded return values: a failed call is indistinguishable from a successful one
+
+**Area:** Cross-cutting · error handling · **Found:** 2026-08-26 ·
+**Status:** open — **filed as a PATTERN, not four bugs. The individual instances
+below are fixed; the sweep is not done.**
+
+### The mechanism
+
+`supabase-js` does not throw on a failed request. It resolves with
+`{ data, error }`. Several of this codebase's own functions follow the same
+shape — `placeOrEditOrder` returns `{ ok: false, errors }`, never throws.
+
+So this line:
+
+```ts
+await supabase.from("x").upsert(row);
+```
+
+is **syntactically indistinguishable** from a successful write. It has no unused
+variable, so lint says nothing. It is `await`ed, so it looks careful. It
+compiles, because the return type is a value nobody is obliged to read. And the
+failure it swallows produces no log, no toast, and no test failure — the call
+"completed", so every assertion downstream of "did the function run" passes.
+
+That combination is what makes this a pattern worth a name rather than four
+tickets: **the correct code and the broken code look the same, and every safety
+net in this project is blind to the difference.**
+
+### The four instances, all from one day
+
+| # | Site | What it hid |
+|---|---|---|
+| 1 | `replay-trade-sync.ts` — closed-trade `upsert` | Every stopless close 400'd on a `NOT NULL` column. **One real trade was lost.** Found by accident, via a bare `400` in the browser console while debugging an unrelated assertion |
+| 2 | `replay-trade-sync.ts` — the `patch` alongside it | Same shape, same file, same silence |
+| 3 | `market-data/engine.ts:103` — assignment read | Caught and `console.warn`ed, no user-visible state. Charts that never price, with no explanation. See [MD-9](#md-9--provider_market_assignments-reads-fail-intermittently-and-it-is-unclear-whether-users-are-affected) |
+| 4 | `studio/context.tsx` — `placeOrEditOrder` at three call sites | A refused order produced NOTHING: no order, no message, no clue. Surfaced only when an affordability guard was added and its rejections were invisible |
+
+Instance 1 is the one to remember. It ran through a full unit suite, a full
+Playwright suite, **and a publish**, losing durable records the whole time.
+
+### Why the tests could not catch it
+
+Each instance was covered by tests that asserted the *observable* outcome — the
+position closed, the chart rendered, the order was placed — and every one of
+those outcomes was true. The failure was in a side effect nobody looked at.
+A test can only catch a discarded return if it asserts the thing the return was
+about, which means knowing the call can fail at all.
+
+### Recommended: an audit sweep, as its own task
+
+**Not done, and deliberately not attempted inside the fixes above.** Worth
+scoping properly:
+
+- Find `await`ed calls whose result is discarded, starting with every
+  `supabase.from(...)` mutation — `.insert(`, `.update(`, `.upsert(`, `.delete(`
+  — then internal functions returning `{ ok }` or `{ error }`.
+- Decide a house rule per call class. Not everything needs a toast: a failed
+  READ that degrades to empty is often correct, while a failed WRITE almost
+  never is. The distinction used in the fixes above was **"did the user lose
+  something they will look for later?"** — write failures toast, read failures
+  log.
+- Consider whether a lint rule can carry it. `no-floating-promises` does not
+  help (these are awaited); this needs "result object was not read", which is
+  closer to a custom rule than an off-the-shelf one.
+
+Until that sweep happens, assume any `await`ed persistence call in this codebase
+may be failing silently right now, and check the result before trusting it.
 
 ---
 
@@ -3032,6 +3110,62 @@ not choose. **It now has its own entry —
 [RS-5](#rs-5--position-size-is-computed-against-the-click-price-the-stop-is-not)
 — because it is too easy to lose in a subsection about writing specs.** Decide
 it alongside Stage C's sizing question; the two answers constrain each other.
+
+---
+
+## RS-6 — A "market" order sits visibly pending while playback is paused
+
+**Area:** Replay Studio · chart trading · **Status:** open — **pre-existing, and
+deliberately NOT fixed in the pass that found it.** It needs a product decision,
+not a patch.
+
+Click Buy with playback paused and the order does not fill. It enters the book
+as pending and waits for the next observation, because that is how the execution
+engine works: `triggersEntry` returns true for a market order, but something has
+to tick before `evaluateTick` can act on it.
+
+What the trader sees meanwhile is the PENDING-ORDER label —
+`StudioTradeLayer.tsx:545`, which renders the order type and size:
+
+```
+MARKET 100000.00   [x]
+```
+
+— and no position widget, because there is no position. The blotter reads
+`Orders 1` and `No open positions`.
+
+### Why it deserves an entry rather than a shrug
+
+It was misread as a broken feature by someone who had just built the thing they
+were looking at. The report was "the TP and SL buttons are gone" — reasonable,
+because the position widget carrying those controls genuinely was not on screen,
+and the object that WAS on screen looked like a filled position with a size on
+it. Measured on 2026-08-26: before a tick, widget count 0 and both level
+controls absent; after one bar, widget present with both controls. Nothing was
+broken.
+
+A control labelled "market" that does not fill immediately is a contradiction in
+terms. Every trading platform a user has met fills a market order on click.
+
+### The decision, which is genuinely open
+
+- **Fill on placement when the clock is paused.** Honest to the label, and the
+  price is unambiguous — it is the price under the cursor, the same one used to
+  size the order. Costs a special case in the engine's "nothing executes without
+  an observation" rule, which is load-bearing for determinism.
+- **Label it queued.** Keep the engine rule intact and change the copy: the
+  pending row for an unfilled market order says so, and ideally says what
+  unblocks it ("fills on the next bar — press play or step"). Cheaper, honest,
+  and leaves the trader holding a state they did not ask for.
+
+The first is what users expect; the second is what the engine wants. Not a
+coin-flip — but not a call to make inside a bug fix either.
+
+### Do not confuse with
+
+The affordability guard added the same day. That REFUSES an order outright, with
+a message; it never leaves one pending. If an order is sitting in the book, it
+was accepted.
 
 ---
 
