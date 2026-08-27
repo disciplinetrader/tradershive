@@ -185,6 +185,70 @@ the two URL conventions do not also have to be reconciled later.
 
 ---
 
+## AN-2 — No equity snapshot at entry, so risk-relative metrics cannot be measured
+
+**Area:** Analytics · trade records · **Found:** 2026-08-27 ·
+**Status:** open — **the metric is worth having; the blocker is a missing column,
+and it will never backfill.**
+
+### The metric this blocks
+
+"Could-have profit as a percentage of account equity at entry." It is the
+stop-free equivalent of R: it says how large the available move was RELATIVE TO
+THE ACCOUNT, and unlike Ideal RR it is measurable on every trade rather than
+only the minority that carry a stop.
+
+That distinction is not academic. On one real account, **7 of 85 closed trades
+had a stop — 8.2%** — and the share is structurally falling, because Replay
+Studio now opens stopless positions by design (RS-4). Any metric that needs a
+stop is a metric about a shrinking, self-selected subset.
+
+### Why it cannot be computed today
+
+**Neither `paper_trades` nor `journal_entries` records account equity at fill
+time.** `paper_trades` has `risk_amount`; `journal_entries` has `risk_pct`.
+Neither is a balance, and `paper_accounts.balance` / `.equity` are CURRENT
+values — what the account is worth now, not what it was worth when the trade
+opened.
+
+### Why reconstruction is not good enough
+
+It is tempting, and the machinery exists: `lib/statistics/calculations.ts:116`
+already builds an equity curve, and `starting_balance` is already selected into
+the analytics dataset. Starting balance plus cumulative closed P/L up to a trade
+gives a number.
+
+**It gives a number, not the number.** The reconstruction silently drifts wrong
+on any account with:
+
+- deposits or withdrawals — the curve assumes trading P/L is the only thing that
+  moves a balance;
+- trades from mixed sources — the analytics dataset merges paper trades,
+  journal entries and imports, and a denominator built from that union is not
+  any single account's equity;
+- open positions at the time — floating P/L moved real equity and is not in the
+  closed-trade curve.
+
+Each of those produces a plausible percentage that is quietly false, which is
+the failure mode this file documents more than any other.
+
+### The fix, and its one hard limitation
+
+**Snapshot equity onto the trade at fill time.** One column
+(`paper_trades.equity_at_entry`), written once by the code that already knows
+the account state when it opens a position. Cheap, exact, and it removes the
+reconstruction entirely.
+
+**It will not backfill.** The value is only knowable at the moment of the fill;
+for existing history it is gone. So the metric would be available for trades
+opened after the change and blank before it — which is honest, and is the
+correct trade rather than a reconstructed figure that looks complete.
+
+That asymmetry is the reason to add the column SOON even if the metric is built
+later: every day without it is another day of history that can never carry it.
+
+---
+
 ## BA-1 — Matchmaking creates battles with no participants
 
 **Area:** Battle Arena · **Found:** 2026-08-07 · **Status:** open — **ARMED
