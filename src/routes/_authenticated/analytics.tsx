@@ -14,6 +14,16 @@ import { cn } from "@/lib/utils";
 import type { TradeSourceTab } from "@/lib/statistics/types";
 
 export const Route = createFileRoute("/_authenticated/analytics")({
+  /**
+   * Passthrough so the statistics filter params survive navigation.
+   *
+   * `StatisticsProvider` keeps filters in the URL — that is what makes a
+   * filtered view reloadable and shareable — and an unvalidated route would
+   * drop them. Nothing is typed here on purpose: the grammar is owned by
+   * `lib/statistics/filters.ts`, and duplicating it in four routes is four
+   * places to disagree.
+   */
+  validateSearch: (search: Record<string, unknown>) => search,
   head: () => ({
     meta: [
       { title: "Analytics Center — TradersHIVE" },

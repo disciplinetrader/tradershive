@@ -111,6 +111,80 @@ may be failing silently right now, and check the result before trusting it.
 
 ---
 
+## AN-1 — Analytics filters: two systems, one dimension with no data, and one unanswered question
+
+**Area:** Analytics · filtering · **Found:** 2026-08-27 ·
+**Status:** open — filed alongside the filter work that shipped the same day
+(outcome, day-of-week, hour-of-day, chips, URL persistence). These three were
+deliberately NOT built.
+
+### 1 · Tags: the filter field has no data behind it
+
+`StatisticsFilters.tags` is declared, and **never read** by the predicate.
+The reason is upstream of the filter: **`AnalyticsTrade` has no tags field.**
+It carries `emotions`, `mistakes`, `setup`, `strategy` and `grade` — the
+statistics dataset simply does not load tags.
+
+So "add a Tags control" is not UI work. The dataset has to carry tags first,
+and until it does a control would filter nothing. `challengeId` is dead the same
+way: declared on the filter type, read by nothing.
+
+**This is the third declared-but-unread field found today**, after
+`defaultLotSize` and `defaultRiskPct` in
+[RS-7](#rs-7--four-of-replaysettings-six-fields-are-unread-and-they-need-opposite-fixes).
+**The pattern has now escaped settings files** — it is not a property of that
+module, it is a property of any type whose fields are written by hand and
+consumed somewhere else. RS-7's rule generalises: grep for the READER before
+assuming a declared field does anything, and when it has none, ask whether the
+data even exists before wiring it.
+
+Note the difference from RS-7's two, though: those were unread settings whose
+values were real and usable. This one is unread because there is nothing to
+read. Wiring it is not connection work — it is a dataset change.
+
+### 2 · Timezone: no data path, and a product decision first
+
+FXReplay exposes a Timezone filter. There is no equivalent here, and adding one
+is not a filter task, because it is ambiguous what it should do:
+
+- **Reinterpret** timestamps — a trade closed at 22:00 UTC becomes 17:00 in
+  New York, and it moves between day-of-week and hour-of-day buckets. This is
+  what a trader analysing "my London morning" actually wants.
+- **Label only** — show a timezone next to the times, changing nothing about
+  which trades match.
+
+The two produce different answers to "how do I trade on Friday afternoons",
+which is exactly the sort of question this feature exists for. The day and hour
+filters shipped today read **browser-local time and say so on the control**;
+that is honest and it is the only reading that does not claim a precision the
+data has not been given.
+
+### 3 · Two independent filter systems
+
+| | Statistics | Portfolio |
+|---|---|---|
+| State | `components/statistics/context.tsx` | `analytics/portfolio/provider.tsx` |
+| Predicate | `lib/statistics/filters.ts` | `lib/analytics/filters.ts` |
+| Bar | `statistics/FiltersBar.tsx` | `portfolio/FilterBar.tsx` |
+| Mounted on | analytics layout + 3 dashboard routes | `analytics.portfolio` only |
+
+Portfolio's is **richer** — it filters `assetClasses`, `playbooks`,
+`orderTypes`, `closeReasons`, `executionSources`, `journalStatuses`, `archived`,
+and `tags`, which the statistics one cannot.
+
+The user-visible consequence: **navigating to Portfolio silently drops your
+filters and presents a different set of controls.** Filter to "forex, losses,
+London", click Portfolio, and the view is unfiltered with no indication that
+anything was discarded.
+
+Converging them is its own ticket, and not a small one — the two consume
+different record shapes (`AnalyticsTrade` vs `AnalyticsRecord`), so the merge is
+a dataset question before it is a UI one. **The 2026-08-27 work deliberately
+mirrored portfolio's search-param grammar** (comma-joined values, short keys) so
+the two URL conventions do not also have to be reconciled later.
+
+---
+
 ## BA-1 — Matchmaking creates battles with no participants
 
 **Area:** Battle Arena · **Found:** 2026-08-07 · **Status:** open — **ARMED
