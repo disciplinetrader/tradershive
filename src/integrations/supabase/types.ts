@@ -5906,9 +5906,11 @@ export type Database = {
           updated_at: string
           user_id: string
           word_count: number
+          excursion_attempted_at: string | null
           excursion_computed_at: string | null
           excursion_path: Json | null
           excursion_source: string | null
+          excursion_status: string | null
           excursion_timeframe: string | null
           mae_price: number | null
           mae_r: number | null
@@ -5984,9 +5986,11 @@ export type Database = {
           updated_at?: string
           user_id: string
           word_count?: number
+          excursion_attempted_at?: string | null
           excursion_computed_at?: string | null
           excursion_path?: Json | null
           excursion_source?: string | null
+          excursion_status?: string | null
           excursion_timeframe?: string | null
           mae_price?: number | null
           mae_r?: number | null
@@ -6062,9 +6066,11 @@ export type Database = {
           updated_at?: string
           user_id?: string
           word_count?: number
+          excursion_attempted_at?: string | null
           excursion_computed_at?: string | null
           excursion_path?: Json | null
           excursion_source?: string | null
+          excursion_status?: string | null
           excursion_timeframe?: string | null
           mae_price?: number | null
           mae_r?: number | null

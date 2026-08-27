@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { FiltersBar } from "@/components/statistics/FiltersBar";
+import { ExcursionBackfill } from "@/components/statistics/ExcursionBackfill";
 import { useStatistics } from "@/components/statistics/context";
 import { AnalyticsProvider } from "@/components/analytics/AnalyticsProvider";
 import { BacktestSelector } from "@/components/analytics/BacktestSelector";
@@ -79,6 +80,11 @@ function AnalyticsLayout() {
         </div>
 
         <FiltersBar />
+
+        {/* Sits above the dataset, because until the backfill runs the ideal
+            metrics below are blank — and a blank column with no explanation
+            reads as a broken feature rather than as unmeasured data. */}
+        <ExcursionBackfill />
 
         <DatasetStatus />
         <SourceOutlet pathname={loc.pathname} />
