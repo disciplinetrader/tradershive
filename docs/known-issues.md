@@ -10,14 +10,6 @@ enough detail to pick up cold. Remove an entry when it ships a fix.
 > and 100,000 for forex, so it tests clean and ships wrong. Two callers convert
 > explicitly today; a third would inherit the bug.
 
-> **⚠ TOP OPEN ITEM (2026-08-27):
-> [MD-9](#md-9--provider_market_assignments-reads-fail-intermittently-and-it-is-unclear-whether-users-are-affected).**
-> `provider_market_assignments` reads are failing constantly, not intermittently,
-> which points at a structural fault rather than the quota first suspected. If it
-> is structural, real users open Trading Workspace and get no quotes while
-> `engine.ts:103` swallows the reason. **Settle whether it affects the deployed
-> app before starting any feature work.**
-
 > **Writing a call that persists, validates or places anything? Read
 > [PAT-1](#pat-1--discarded-return-values-a-failed-call-is-indistinguishable-from-a-successful-one)
 > first.** `supabase-js` and this codebase's own service functions return a
@@ -1931,9 +1923,36 @@ choice is the first decision on this task, not an implementation detail.
 ## MD-9 — `provider_market_assignments` reads fail intermittently, and it is unclear whether users are affected
 
 **Area:** Market data · provider routing · **Found:** 2026-08-26 ·
-**Status:** open — **TOP PRIORITY as of 2026-08-27. Evidence now favours a
-STRUCTURAL fault over quota, which would make this a live user-facing outage
-filed as test flakiness.** Nothing else ships until it is settled either way.
+**Status:** open — **RESOLVED IN DIAGNOSIS, DOWNGRADED 2026-08-27.** A local
+dev-environment setup issue, not a user-facing fault. It was escalated to top
+priority on a claim that turned out to be wrong; the correction is below, first,
+because the wrong version was acted on.
+
+> ### ⚠ The escalation was wrong. Read this before the rest of the entry.
+>
+> This entry previously claimed a failed assignment read "leaves the engine with
+> no routing", and therefore that real users could be opening Trading Workspace
+> and getting charts that never price.
+>
+> **`MarketDataEngine.init()` seeds `DEFAULT_ASSIGNMENTS` BEFORE it ever calls
+> the database** (`market-data/engine.ts:77-80`). Those defaults cover every
+> market — crypto to binance, everything else to twelvedata. A failed load
+> therefore leaves routing fully populated; the warn means "could not load the
+> DB OVERRIDES", not "no providers".
+>
+> Confirmed twice over on 2026-08-27:
+>
+> * **The DB mirrors the defaults exactly.** All 7 rows of
+>   `provider_market_assignments` match `DEFAULT_ASSIGNMENTS` — crypto to
+>   binance, everything else to twelvedata, no fallbacks. So a failed load
+>   changes routing for nobody, in any environment.
+> * **Quotes work while the warn fires.** A workspace opened on XAU/USD priced
+>   normally — `BUY 4598.48`, `[twelvedata] connected - plan=free`, and a real
+>   quote and candle payload — with the assignment warn present the whole time.
+>
+> The mistake was reading a `catch` block without reading the initialiser twenty
+> lines above it, and then reasoning forward from the failure to consequences
+> that the seeded defaults already prevented.
 
 Observed repeatedly during a Playwright UI run, on every test that waits for a
 live price:
@@ -1946,25 +1965,89 @@ live price:
 which provider serves which market, so a failed read leaves the engine with no
 routing — and everything downstream of a quote simply never resolves.
 
-### What it did to the suite
+### What it did to the suite: NOTHING. That attribution was also wrong.
 
-Seven UI tests failed, all on TIMEOUTS rather than assertions:
-`cold-start`, `positions-table`, `floating-order`, `margin-bar`,
-`sl-tp-handles`. Every one is a Trading Workspace spec that needs a live quote.
-**Every Replay Studio spec passed** — Studio replays stored historical candles
-and never asks for one. The failure distribution is a clean split along "does
-this test need a live price", which is what points at the assignment read rather
-than at the specs.
+Seven UI tests failed alongside this warn — `cold-start`, `positions-table`,
+`floating-order`, `margin-bar`, `sl-tp-handles`, all on TIMEOUTS rather than
+assertions, all Trading Workspace specs, while every Replay Studio spec passed.
+The split looked like "does this test need a live price", and this entry claimed
+the assignment read as the cause.
 
-Wall clock went from ~9 min to 26.4 min for the same suite: tests spending their
-budget waiting on quotes that never arrive.
+**It is not.** Two successive causes were proposed from that pattern and both
+were disproven by direct measurement:
+
+| Hypothesis | Disproven by |
+|---|---|
+| Quota / rate limiting | Failure was constant on a long-rested budget |
+| TwelveData failing for non-crypto | XAU/USD opened and priced normally in isolation — `BUY 4598.48`, `[twelvedata] connected - plan=free`, real quote and candle payloads — with the assignment warn present throughout |
+
+A workspace on a non-crypto symbol works fine while this warn fires. So the warn
+is not why those specs time out.
+
+**The suite failures belong to
+[E2E-1](#e2e-1--the-ui-suite-fails-as-a-suite-while-its-specs-pass-individually),**
+whose own evidence fits them exactly: specs pass individually and fail in
+aggregate, on timeouts, with a measured empty DOM and a dev server climbing to
+1.2 GB RSS. This entry sent E2E-1 chasing the wrong lead; that pointer is
+corrected there.
+
+The lesson worth keeping: **a failure pattern that fits a hypothesis is not
+evidence for it.** Both wrong causes fit the observed split perfectly. What
+settled it was opening the app and reading what the provider actually returned.
 
 ### The ambiguity, and why it matters
 
-**Update 2026-08-27 — quota is now the WEAKER hypothesis.**
+### The actual cause: a missing key, locally only
 
-The suite was run again many hours later, after any per-minute credit budget had
-long recovered. The failure was **identical and constant**, not intermittent:
+`listMarketAssignments` (`market-data/admin.functions.ts:132`) reads through
+**`supabaseAdmin`**, the service-role client. `createSupabaseAdminClient()`
+throws when `SUPABASE_SERVICE_ROLE_KEY` is absent — and that key is set in
+**none** of `.env`, `.env.local` or `.env.e2e.local`.
+
+So on a local dev server the server function throws on every call, the client
+catches it, and the warn prints on every page load. That is the whole
+phenomenon. It is not quota, it is not RLS (the service role bypasses RLS
+anyway), and it is not structural in the deployed sense — a deployed environment
+that has the key will not see it. The same missing key already has a footprint
+in this repo: a UI run once printed *"SUPABASE_SERVICE_ROLE_KEY is unset, so the
+cache WRITE cannot run here."*
+
+### The one caveat that keeps this open
+
+**It is harmless only because the database currently mirrors the defaults.**
+
+The moment anyone sets a real override in the Admin Panel — a different primary,
+or any fallback — a silent failed load silently REVERTS them to the built-in
+defaults, and nothing anywhere says so. The configuration would appear saved in
+the Admin Panel and have no effect on a client that failed to load it.
+
+That is why the [PAT-1](#pat-1--discarded-return-values-a-failed-call-is-indistinguishable-from-a-successful-one)
+surfacing is still worth doing here, and why this entry stays open rather than
+being deleted: today's benign reading is a property of the DATA, not of the code.
+
+### The Admin Panel's assignment UI is currently decorative
+
+Following directly from the row check: **every row in
+`provider_market_assignments` equals the built-in default.** So nothing the
+Admin Panel has ever configured has changed routing behaviour — the UI works,
+the writes land, and the resulting values are the ones the engine would have
+used anyway.
+
+Not a bug, and not an argument for removing it. Worth knowing before someone
+debugs a routing problem by adjusting assignments and concludes the panel is
+broken when their change happens to match the default, or assumes the panel has
+been steering traffic all along.
+
+### Superseded: the quota reasoning
+
+Kept because the way it was wrong is instructive — two successive causes were
+proposed from failure PATTERNS rather than from evidence, and both were wrong.
+
+**Quota was the first hypothesis.**
+
+The observation that moved it was sound; the conclusion drawn was not. The suite
+was run again many hours later, after any per-minute credit budget had long
+recovered. The failure was **identical and constant**, not intermittent:
 `[market-data] failed to load assignments` on every Workspace test, from the
 first to the last, across the whole run. The same specs failed
 (`cold-start`, `floating-order`, `margin-bar`, `positions-table`,
@@ -1974,18 +2057,10 @@ Rate limiting does not look like that. It clears when you stop hammering it, and
 it produces the ragged pass/fail mix seen on 2026-08-26 — not a uniform failure
 hours later on a rested budget.
 
-**What it means if it is structural.** `provider_market_assignments` is the
-routing table; a failed read leaves the engine with no provider for any market.
-That is not a test condition — it is **every real user who opens Trading
-Workspace getting a chart that never prices**, with `engine.ts:103` swallowing
-the cause into a `console.warn` nobody sees. A live outage, hiding inside a
-ticket originally filed as flaky tests. This is the
-[PAT-1](#pat-1--discarded-return-values-a-failed-call-is-indistinguishable-from-a-successful-one)
-pattern doing exactly what PAT-1 predicts.
-
-**Settle this before any further feature work.** The question is narrow: does
-the assignment read fail for a real signed-in user in the deployed app, or only
-in the test environment? Everything else waits on the answer.
+"Constant, not intermittent" was the right reading of the evidence — it IS
+constant, because the key is missing on every call. The error was jumping from
+"constant" to "structural, therefore user-facing" without checking what a failed
+load actually costs. It costs nothing, because the defaults are already seeded.
 
 ### The original reading, kept for the record
 
@@ -2428,13 +2503,19 @@ times out. It fits the failure distribution exactly: the failures were
 while **every Replay Studio spec passed**, because Studio replays stored
 historical candles and never asks for one.
 
-This does not replace the dev-server-degradation theory; both can be true, and
-the empty-DOM probe above is still unexplained by it. But it is cheaper to test
-and it predicts which specs fail, which degradation alone does not.
+**RETRACTED 2026-08-27.** The market-data lead was chased and is a dead end.
+The assignment read fails because `SUPABASE_SERVICE_ROLE_KEY` is unset locally,
+and a failed read costs nothing — `MarketDataEngine.init()` seeds defaults before
+querying, and the DB rows match those defaults exactly. Measured: a workspace on
+XAU/USD prices normally (`BUY 4598.48`, real quote and candle payloads) with the
+warn firing throughout. See [MD-9](#md-9--provider_market_assignments-reads-fail-intermittently-and-it-is-unclear-whether-users-are-affected).
 
-**Chase [MD-9](#md-9--provider_market_assignments-reads-fail-intermittently-and-it-is-unclear-whether-users-are-affected) first**, and specifically settle whether the assignment read
-is failing on quota or structurally. If structural, this stops being a test
-problem.
+So the suite failures are E2E-1's own problem after all, and **the
+dev-server-degradation theory above remains the only one with evidence behind
+it** — the empty DOM and the 1.2 GB RSS. Two hypotheses were proposed from the
+failure pattern (quota, then TwelveData) and both were disproven by direct
+measurement. The pattern fit both perfectly, which is exactly why it was not
+evidence.
 
 ---
 
