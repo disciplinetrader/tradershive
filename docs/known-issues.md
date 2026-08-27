@@ -3143,6 +3143,12 @@ Worth noting the near-miss: the first fix ADDED a duplicate control
 (`defaultUnits`) beside the unread `defaultLotSize` rather than finding it. The
 second was found only because the first had just been corrected.
 
+The rest of the file was then audited —
+[RS-7](#rs-7--four-of-replaysettings-six-fields-are-unread-and-they-need-opposite-fixes).
+Four more fields are unread, and they do NOT all want wiring: two of them are
+dead on purpose, and connecting those would break replay determinism. Read RS-7
+before applying this pattern again.
+
 What this does NOT change: a later `+SL` on an open position still does not
 resize it. Re-sizing an open trade changes the basis its P&L is measured
 against mid-flight, which is worse than an arbitrary size.
@@ -3175,6 +3181,88 @@ not choose. **It now has its own entry —
 [RS-5](#rs-5--position-size-is-computed-against-the-click-price-the-stop-is-not)
 — because it is too easy to lose in a subsection about writing specs.** Decide
 it alongside Stage C's sizing question; the two answers constrain each other.
+
+---
+
+## RS-7 — Four of `ReplaySettings`' six fields are unread, and they need OPPOSITE fixes
+
+**Area:** Replay Studio · settings · **Found:** 2026-08-27 ·
+**Status:** open — **audit done, nothing wired. Read the split before acting on
+any of it.**
+
+Audited after `defaultLotSize` and `defaultRiskPct` each turned out to be an
+unread setting that answered a decision already priced as new work (see
+[RS-4](#rs-4--studios-order-flow-does-not-match-fxreplay-levels-are-optional-and-instant-not-gated)).
+The obvious next question was "are there more?". There are four — and treating
+them as one category would cause a regression.
+
+Only two of the six fields are read anywhere:
+
+| Field | Reads via `settings.*` | Verdict |
+|---|---|---|
+| `defaultLotSize` | 3 | wired 2026-08-26 |
+| `defaultRiskPct` | 1 | wired 2026-08-27 |
+| `commissionPerLot` | **0** | CONNECT — but needs engine work first |
+| `tradingMode` | **0** | CONNECT — no feature behind it at all |
+| `spread` | **0** | **DO NOT CONNECT** |
+| `slippage` | **0** | **DO NOT CONNECT** |
+
+A raw grep is useless here: `spread` returns 169 hits and `slippage` 134, all
+from unrelated uses. Only four files touch `useReplaySettings`, and two of those
+are the settings module and its own page.
+
+### CONNECT — the lot-size pattern
+
+**`commissionPerLot`** — unread, with no session-row equivalent, and commission
+is not modelled in the replay engine at all: `ExecutionCosts`
+(`orders/engine.ts:74`) carries only `spread` and `slippage`. Closest in shape
+to the lot-size case, but it is NOT a pure connection job — the engine has to
+learn about commission before there is anything to connect to.
+
+**`tradingMode`** (netting vs hedging) — genuinely unimplemented. The only hit
+anywhere in the codebase is an unrelated comment in `trading-engine/engine.ts`.
+A control with no feature behind it: the user can pick a mode and nothing
+anywhere consults the choice.
+
+### DO NOT CONNECT — wiring these would be a regression
+
+**`spread` and `slippage` are dead deliberately.** Execution costs come from the
+SESSION ROW, not from settings — `studio/context.tsx:270` reads
+`session.spread` and `session.slippage`, and the comment directly above says
+why:
+
+> costs were snapshotted when the session was created, so replaying it tomorrow
+> — or on another machine, or after changing the default — fills exactly the
+> same way.
+
+That is a determinism guarantee. A live preference feeding execution costs means
+the same session replays differently after the trader changes an unrelated
+setting, which is precisely what snapshotting exists to prevent.
+
+So these are not "unwired" — they are a **second source of truth for a value
+that is deliberately frozen per session**. The defect is real but it is the
+opposite one: **Replay Settings shows editable Spread and Slippage controls that
+silently do nothing.** The fix is to REMOVE them, or to scope them to session
+CREATION (where they would legitimately seed the snapshot) — never to wire them
+into the running engine.
+
+### The lesson
+
+**An unread setting is a signal, not an answer.**
+
+Grepping the settings module before scoping a new control is now established as
+worth doing — it has twice turned construction into connection. But the follow-up
+question is the one that matters: **why** is it unread?
+
+- *Nobody wired it* → connect it, and the estimate was too high.
+- *Superseded by a deliberate design decision* → connecting it breaks the thing
+  that decision protected, and the estimate was for the wrong work entirely.
+
+From the call site these are **indistinguishable**. Both look like a field the
+code cannot see. They have opposite correct responses, and the only way to tell
+them apart is to find what DOES supply the value and read the comment explaining
+why. In this file, `spread` and `slippage` had that answer sitting four lines
+above their real reader.
 
 ---
 
