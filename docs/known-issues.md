@@ -10,6 +10,14 @@ enough detail to pick up cold. Remove an entry when it ships a fix.
 > and 100,000 for forex, so it tests clean and ships wrong. Two callers convert
 > explicitly today; a third would inherit the bug.
 
+> **⚠ TOP OPEN ITEM (2026-08-27):
+> [MD-9](#md-9--provider_market_assignments-reads-fail-intermittently-and-it-is-unclear-whether-users-are-affected).**
+> `provider_market_assignments` reads are failing constantly, not intermittently,
+> which points at a structural fault rather than the quota first suspected. If it
+> is structural, real users open Trading Workspace and get no quotes while
+> `engine.ts:103` swallows the reason. **Settle whether it affects the deployed
+> app before starting any feature work.**
+
 > **Writing a call that persists, validates or places anything? Read
 > [PAT-1](#pat-1--discarded-return-values-a-failed-call-is-indistinguishable-from-a-successful-one)
 > first.** `supabase-js` and this codebase's own service functions return a
@@ -1923,8 +1931,9 @@ choice is the first decision on this task, not an implementation detail.
 ## MD-9 — `provider_market_assignments` reads fail intermittently, and it is unclear whether users are affected
 
 **Area:** Market data · provider routing · **Found:** 2026-08-26 ·
-**Status:** open — **ambiguous between quota and a structural fault, and that
-distinction is the whole point of the entry.**
+**Status:** open — **TOP PRIORITY as of 2026-08-27. Evidence now favours a
+STRUCTURAL fault over quota, which would make this a live user-facing outage
+filed as test flakiness.** Nothing else ships until it is settled either way.
 
 Observed repeatedly during a Playwright UI run, on every test that waits for a
 live price:
@@ -1952,7 +1961,35 @@ budget waiting on quotes that never arrive.
 
 ### The ambiguity, and why it matters
 
-**Quota is the likely explanation.** The full UI suite ran four times that day
+**Update 2026-08-27 — quota is now the WEAKER hypothesis.**
+
+The suite was run again many hours later, after any per-minute credit budget had
+long recovered. The failure was **identical and constant**, not intermittent:
+`[market-data] failed to load assignments` on every Workspace test, from the
+first to the last, across the whole run. The same specs failed
+(`cold-start`, `floating-order`, `margin-bar`, `positions-table`,
+`sl-tp-handles`) and every Replay Studio spec passed, exactly as before.
+
+Rate limiting does not look like that. It clears when you stop hammering it, and
+it produces the ragged pass/fail mix seen on 2026-08-26 — not a uniform failure
+hours later on a rested budget.
+
+**What it means if it is structural.** `provider_market_assignments` is the
+routing table; a failed read leaves the engine with no provider for any market.
+That is not a test condition — it is **every real user who opens Trading
+Workspace getting a chart that never prices**, with `engine.ts:103` swallowing
+the cause into a `console.warn` nobody sees. A live outage, hiding inside a
+ticket originally filed as flaky tests. This is the
+[PAT-1](#pat-1--discarded-return-values-a-failed-call-is-indistinguishable-from-a-successful-one)
+pattern doing exactly what PAT-1 predicts.
+
+**Settle this before any further feature work.** The question is narrow: does
+the assignment read fail for a real signed-in user in the deployed app, or only
+in the test environment? Everything else waits on the answer.
+
+### The original reading, kept for the record
+
+**Quota was the likely explanation.** The full UI suite ran four times that day
 plus many single-spec runs, against the 8-credits-per-minute budget recorded in
 [MD-1](#md-1--the-free-twelve-data-plan-cannot-fund-the-poll-rate-the-ui-asks-for).
 The failures were also INTERMITTENT, not total — in one re-run `cold-start`
@@ -1973,8 +2010,12 @@ over — an unread `{ error }` and a discarded write.
 
 ### Where to start
 
-- Reproduce with the suite idle and the credit budget rested. If it clears
-  completely, quota is confirmed and the fix is suite pacing, not the engine.
+- **Done 2026-08-27, and it did NOT clear** — see the update above. That result
+  is what moved the hypothesis.
+- **Ask the deployed app, not the test server.** Sign in as a real user, open
+  Trading Workspace, and check whether quotes arrive and whether the warn fires.
+  This single check separates "our test environment" from "everyone", and it is
+  the one thing that has not been done.
 - If it persists on an idle budget, read the actual error from the server
   function rather than the caught generic — `engine.ts:103` currently logs the
   wrapper, not the cause.
