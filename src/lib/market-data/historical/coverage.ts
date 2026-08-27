@@ -152,9 +152,22 @@ export function checkCoverage(input: CoverageInput): CoverageResult {
   const firstTs = inRange[0] ?? null;
   const lastTs = inRange[inRange.length - 1] ?? null;
 
+  // `expected === 0` means the requested window is SHORTER THAN ONE CANDLE, so
+  // there is no floor to apply. The previous expression was `Math.min(
+  // minCandles, expected || minCandles)`, and `0 || minCandles` is
+  // `minCandles` — which demanded TWENTY candles of a window that can hold
+  // none. It was not a strict check, it was an unsatisfiable one: no provider,
+  // no retry and no amount of stored history could ever clear it, because the
+  // requirement was derived from the absence of a requirement.
+  //
+  // Measured 2026-08-27: 18 of 41 journal entries queued for excursion
+  // measurement were sub-candle scalps (BTC/USDT median window 0.7 min at 1m),
+  // every one of them permanently failing here and being re-queued forever.
+  const floor = expected > 0 ? Math.min(minCandles, expected) : 0;
+
   let reason: CoverageFailure | undefined;
   if (actual === 0) reason = "empty";
-  else if (actual < Math.min(minCandles, expected || minCandles)) reason = "too-few-candles";
+  else if (actual < floor) reason = "too-few-candles";
   else if (expected > 0 && ratio < minRatio) reason = "insufficient-ratio";
 
   return { ok: !reason, actual, expected, ratio, firstTs, lastTs, gaps, reason };

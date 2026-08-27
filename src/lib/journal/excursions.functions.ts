@@ -16,6 +16,7 @@ import {
   HistoricalDataUnavailableError,
   resolveHistoricalRange,
 } from "@/lib/market-data/historical/service.server";
+import { TF_MS } from "@/lib/market-data/historical/coverage";
 import { capPath, computeExcursions, timeframeFor } from "@/lib/journal/excursions";
 import type { Json, Database } from "@/integrations/supabase/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -121,6 +122,26 @@ export async function attemptExcursion(
   }
 
   const timeframe = timeframeFor(to - from);
+
+  // A trade shorter than one candle is TERMINAL, and it is a fact about the
+  // TRADE rather than about the data. There is no timeframe that helps: 1m is
+  // already the finest series this product stores, so a 40-second scalp has no
+  // candle series at any resolution, today or ever.
+  //
+  // Measuring it from the single candle that CONTAINS it would be worse than
+  // refusing. That candle's high and low describe a minute the trade occupied a
+  // fraction of, so the MAE/MFE it yields is a real number for the wrong
+  // window — the fabricated-measurement failure this whole module refuses.
+  //
+  // Recorded as `unusable`, not `no_data`: no_data is retryable, and 18 of the
+  // 41 rows queued on 2026-08-27 were exactly this shape, re-attempted every
+  // batch at ~22s each against a metered provider, forever.
+  const step = TF_MS[timeframe] ?? 0;
+  if (step > 0 && to - from < step) {
+    const secs = Math.round((to - from) / 1000);
+    return settle("unusable", `Trade lasted ${secs}s — shorter than one ${timeframe} candle`);
+  }
+
   let resolved;
   try {
     resolved = await resolveHistoricalRange(supabase, {
@@ -244,6 +265,8 @@ export type BackfillResult = {
   providerCalls: number;
   /** The provider refused on rate. The caller should pause, not fail. */
   rateLimited: boolean;
+  /** Returned on the time budget with rows left in hand. NOT an error. */
+  budgetExhausted: boolean;
 };
 
 /**
@@ -259,7 +282,10 @@ const ELIGIBLE = "excursion_computed_at.is.null";
 
 export const backfillExcursions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ limit: z.number().int().min(1).max(25).default(10) }).parse(d ?? {}))
+  .inputValidator((d) => z.object({
+    /** Upper bound on rows FETCHED. The time budget decides how many are attempted. */
+    limit: z.number().int().min(1).max(25).default(25),
+  }).parse(d ?? {}))
   .handler(async ({ data, context }): Promise<BackfillResult> => {
     const { supabase, userId } = context;
 
@@ -290,13 +316,34 @@ export const backfillExcursions = createServerFn({ method: "POST" })
     ) as EntryRow[];
 
     let ok = 0, terminal = 0, retryable = 0, providerCalls = 0, rateLimited = false;
+    let processed = 0, budgetExhausted = false;
+    const startedAt = Date.now();
 
     // SERIAL, never parallel. Parallelism is what turns a rate budget into a
     // burst, and the whole point of the throttle is to stay under a ceiling
     // this run does not own.
     for (const row of rows) {
+      // Return on a TIME budget rather than after a fixed row count.
+      //
+      // This request has a hard ceiling it does not control: the deployment
+      // sits behind Cloudflare, which gives up on a request that has not sent
+      // response headers within 100 seconds. A batch sized in ROWS cannot
+      // respect that, because per-row cost is not a constant — it was ~11s for
+      // a symbol with stored candles and ~22s for one that fell through to the
+      // import pipeline's retry cascade on 2026-08-27, and both numbers move
+      // the moment either of those paths changes. A fixed size tuned to
+      // today's timings is wrong by tomorrow.
+      //
+      // Budgeting time is stable across all of that: whatever each row costs,
+      // the request returns before the proxy kills it, with everything
+      // finished so far already committed to the rows.
+      if (Date.now() - startedAt >= TIME_BUDGET_MS) {
+        budgetExhausted = true;
+        break;
+      }
       if (providerCalls > 0) await sleep(PROVIDER_GAP_MS);
       const res = await attemptExcursion(supabase, userId, row);
+      processed += 1;
       if (res.hitProvider) providerCalls += 1;
       if (res.status === "ok") ok += 1;
       else if (res.status === "no_stop" || res.status === "unusable") terminal += 1;
@@ -312,16 +359,27 @@ export const backfillExcursions = createServerFn({ method: "POST" })
     }
 
     return {
-      processed: rows.length,
+      processed,
       ok, terminal, retryable,
       remaining: await countEligible(),
       providerCalls,
       rateLimited,
+      budgetExhausted,
     };
   });
 
 /** Spacing between provider calls, in ms. See MD-1 for the documented budget. */
 const PROVIDER_GAP_MS = 8_000;
+
+/**
+ * Wall-clock budget for ONE request, in ms.
+ *
+ * 60s against Cloudflare's 100s ceiling. The gap is deliberate and is not
+ * slack to be reclaimed: the check happens BEFORE a row is attempted, so a row
+ * started at 59s still gets to finish, and the slowest row observed cost ~22s.
+ * 60 + 22 leaves ~18s for the closing `countEligible` and the response.
+ */
+const TIME_BUDGET_MS = 60_000;
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 /** How much of a history is measurable, for the progress UI. */

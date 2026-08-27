@@ -35,16 +35,34 @@ import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/glass-card";
 import { backfillExcursions, excursionCoverage } from "@/lib/journal/excursions.functions";
 
-/** Matches PROVIDER_GAP_MS in excursions.functions.ts. */
-const GAP_MS = 8_000;
-const BATCH = 10;
+/** Upper bound on rows the server FETCHES; its time budget decides how many it attempts. */
+const BATCH = 25;
+/** A batch that fails is retried this many times before the run gives up. */
+const MAX_BATCH_RETRIES = 3;
 
-function eta(pending: number): string {
-  const secs = Math.round((pending * GAP_MS) / 1000);
+/**
+ * Estimate from MEASURED throughput, or say nothing.
+ *
+ * This used to be `pending * 8s`, the throttle constant — a number that never
+ * consulted the clock. It read "about 6 min" for 44 entries at the start of a
+ * run and "about 5 min" for 41 entries twenty minutes later, because the only
+ * input it had ever taken was the count. The real cost per entry was ~22s, and
+ * most of it was not the throttle at all.
+ *
+ * `null` until a batch has actually returned. An estimate that has measured
+ * nothing is not a conservative estimate, it is a fabricated one, and this
+ * panel has already spent a debugging session being believed.
+ */
+function eta(pending: number, msPerEntry: number | null): string | null {
+  if (!msPerEntry || msPerEntry <= 0 || pending <= 0) return null;
+  const secs = Math.round((pending * msPerEntry) / 1000);
   if (secs < 90) return `about ${secs}s`;
   const mins = Math.round(secs / 60);
-  return `about ${mins} min`;
+  if (mins < 90) return `about ${mins} min`;
+  return `about ${Math.round(mins / 60)} h`;
 }
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export function ExcursionBackfill() {
   const qc = useQueryClient();
@@ -53,6 +71,17 @@ export function ExcursionBackfill() {
 
   const [running, setRunning] = useState(false);
   const [done, setDone] = useState(0);
+  /** Observed ms per entry for THIS run. Null until a batch has returned. */
+  const [msPerEntry, setMsPerEntry] = useState<number | null>(null);
+  /**
+   * Queue depth as of the last batch RESPONSE.
+   *
+   * The coverage query is only invalidated when the run ends, so `c.pending` is
+   * frozen for the whole run. Multiplying a freshly measured rate by a stale
+   * count would reproduce the exact defect this change exists to fix — a
+   * number that moves while the estimate does not.
+   */
+  const [liveRemaining, setLiveRemaining] = useState<number | null>(null);
   const stopRef = useRef(false);
 
   const coverage = useQuery({
@@ -66,12 +95,41 @@ export function ExcursionBackfill() {
       stopRef.current = false;
       setRunning(true);
       setDone(0);
+      setMsPerEntry(null);
+      setLiveRemaining(null);
+      const startedAt = Date.now();
+      let attempts = 0;
+      let failures = 0;
       let guard = 0;
       // Bounded so a server that always reports work left cannot spin forever.
       while (!stopRef.current && guard < 500) {
         guard += 1;
-        const res = await backfillFn({ data: { limit: BATCH } });
-        setDone((d) => d + res.ok + res.terminal);
+
+        let res: Awaited<ReturnType<typeof backfillFn>>;
+        try {
+          res = await backfillFn({ data: { limit: BATCH } });
+          failures = 0;
+        } catch (e) {
+          // A failed batch is NOT a failed run. The queue is a query over the
+          // rows, so a request that dies mid-batch loses only the rows it had
+          // not reached — everything it finished is already committed and no
+          // longer matches. Ending the whole run here is what turned one
+          // dropped request into seventeen minutes of apparent silence.
+          failures += 1;
+          if (failures >= MAX_BATCH_RETRIES) throw e;
+          toast.warning(`Batch failed — retrying (${failures}/${MAX_BATCH_RETRIES})`, {
+            description: "Nothing measured so far was lost.",
+          });
+          await sleep(2_000 * failures);
+          continue;
+        }
+
+        attempts += res.processed;
+        setDone(attempts);
+        setLiveRemaining(res.remaining);
+        // Throughput measured over the whole run, not the last batch: batches
+        // differ wildly depending on which symbols they happen to contain.
+        if (attempts > 0) setMsPerEntry((Date.now() - startedAt) / attempts);
 
         if (res.rateLimited) {
           // Transient by definition: the rows stay eligible and nothing was
@@ -82,6 +140,9 @@ export function ExcursionBackfill() {
           break;
         }
         if (res.remaining === 0 || res.processed === 0) break;
+        // `budgetExhausted` is the normal case, not a stop condition: the
+        // server returned on its time budget with rows still queued, and the
+        // next iteration simply picks up where it left off.
       }
       setRunning(false);
       await qc.invalidateQueries({ queryKey: ["excursions", "coverage"] });
@@ -130,6 +191,8 @@ export function ExcursionBackfill() {
   if (!c || c.total === 0) return null;
 
   const pct = c.total ? Math.round((c.measured / c.total) * 100) : 0;
+  // The server's count while a run is in flight, the query's count otherwise.
+  const pending = running && liveRemaining != null ? liveRemaining : c.pending;
 
   return (
     <GlassCard className="p-4 space-y-3">
@@ -177,11 +240,15 @@ export function ExcursionBackfill() {
             {c.terminal} not measurable
           </span>
         ) : null}
-        {c.pending > 0 ? (
+        {pending > 0 ? (
           <span>
             {running
-              ? `measuring… ${done} done this run`
-              : `${c.pending} to go — ${eta(c.pending)}, limited by the market-data budget`}
+              ? `measuring… ${done} attempted, ${pending} to go${
+                  eta(pending, msPerEntry) ? ` — ${eta(pending, msPerEntry)} at the current rate` : ""
+                }`
+              : msPerEntry
+                ? `${pending} to go — ${eta(pending, msPerEntry)} at the last measured rate`
+                : `${pending} to go — run it to find out how long; the rate depends on which symbols are queued`}
           </span>
         ) : (
           <span className="text-success">Everything measurable is measured.</span>

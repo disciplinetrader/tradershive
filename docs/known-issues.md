@@ -3828,3 +3828,76 @@ The runtime landmines that made this dangerous — the `exitFor` coercion and th
 `riskBasisOf` family — were closed by Stage 1 and Stage A-prime and are already
 `Number.isFinite`-guarded, so they accept an absent level correctly the day the
 type allows one.
+
+---
+
+## MD-10 — The Binance 1m path stores nothing, and it is the single biggest reason journal excursions cannot be measured
+
+**Area:** Market data · historical import · **Found:** 2026-08-27 ·
+**Status:** open — **filed, not investigated. Suspected larger than every
+backfill fix shipped alongside it.**
+
+### The measurement
+
+Taken from one real account on 2026-08-27, while diagnosing why the excursion
+backfill measured 3 trades in 20 minutes:
+
+```
+journal entries eligible for excursion measurement:   41
+  ...of which crypto:                                 37   (90%)
+  ...of which BTC/USDT alone:                         26   (63%)
+
+historical_candles, 1m:   BTC/USDT 0 · ETH/USDT 0 · SOL/USDT 0 · XRP/USDT 0
+historical_candles, 5m:   BTC/USDT 8,644
+historical_candles, 1m:   XAU/USD 18,458 · EUR/USD 10,942
+```
+
+Every crypto symbol is `is_enabled = true` in `historical_symbols` with
+`source_code = binance` and a plausible `native_symbol` (`BTCUSDT`). BTC/USDT
+even carries `latest_imported = 2026-07-31`. And yet **not one 1m row exists
+for any crypto symbol**, while the same table holds 8,644 BTC/USDT rows at 5m
+and five figures of 1m rows for the twelvedata symbols.
+
+### Why it matters more than it looks
+
+`timeframeFor` picks `1m` for any trade shorter than four hours, which is most
+of a scalping history. So for 37 of 41 queued entries the excursion pipeline
+asks for a 1m series that does not exist, falls through to an on-demand import
+that returns nothing, retries it three times with backoff, and settles
+`no_data`. That is ~22s per entry spent to discover an empty store, against a
+metered provider, per attempt, on every run.
+
+**The four entries that DID measure are all forex or metals on twelvedata**
+(three `backfilled`, one `stored`). The twelvedata path works. The Binance path
+produces nothing and has apparently never produced a 1m row.
+
+So the backfill's throughput fixes — the time budget, the retry handling, the
+sub-candle terminal status — make the feature behave honestly on a history it
+still cannot measure. **Fixing this is worth more than all of them.**
+
+### What has NOT been checked
+
+Filed deliberately without investigation. Open questions, in the order worth
+asking:
+
+1. **Does the 5m data prove the 1m path ran?** `runImport` aggregates 1m into
+   higher timeframes (`aggregateHigherTfs: timeframe === "1m"`), so 8,644 rows
+   at 5m with zero at 1m is internally contradictory — unless the 5m rows came
+   from a 5m-base import, or unless something deletes 1m after aggregating.
+   [MD-4](#md-4--two-writers-fill-historical_candles-and-only-one-is-visible)
+   is the obvious suspect and should be read first.
+2. **Can the deployed worker reach Binance at all?** `api.binance.com`
+   geo-blocks a number of regions and has been known to refuse datacentre
+   ranges. A worker that cannot reach it would fail identically to an empty
+   window, and `historical_import_jobs` holds the answer — that table is
+   RLS-hidden from a normal user, so this needs an admin read, not a guess.
+3. **Is `latest_imported = 2026-07-31` on BTC/USDT truthful?** If the symbol row
+   advanced while nothing was stored, that is a second writer disagreeing with
+   the data it claims to describe, and the same shape as MD-4.
+
+### How to reproduce the measurement
+
+`scripts/audit-excursions.ts` reports excursion coverage per account. The candle
+counts above came from a direct `historical_candles` count per symbol and
+timeframe, which any signed-in user can run — the table is readable, unlike
+`historical_import_jobs`.
