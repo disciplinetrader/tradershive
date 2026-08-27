@@ -44,8 +44,8 @@ enough detail to pick up cold. Remove an entry when it ships a fix.
 ## PAT-1 — Discarded return values: a failed call is indistinguishable from a successful one
 
 **Area:** Cross-cutting · error handling · **Found:** 2026-08-26 ·
-**Status:** open — **filed as a PATTERN, not four bugs. The individual instances
-below are fixed; the sweep is not done.**
+**Status:** open — **filed as a PATTERN, not a bug count. Instances 1-5 are
+fixed; instance 6 is open; the sweep is not done.**
 
 ### The mechanism
 
@@ -69,7 +69,7 @@ That combination is what makes this a pattern worth a name rather than four
 tickets: **the correct code and the broken code look the same, and every safety
 net in this project is blind to the difference.**
 
-### The four instances, all from one day
+### The instances — four from one day, two found since
 
 | # | Site | What it hid |
 |---|---|---|
@@ -77,6 +77,12 @@ net in this project is blind to the difference.**
 | 2 | `replay-trade-sync.ts` — the `patch` alongside it | Same shape, same file, same silence |
 | 3 | `market-data/engine.ts:103` — assignment read | Caught and `console.warn`ed, no user-visible state. Charts that never price, with no explanation. See [MD-9](#md-9--provider_market_assignments-reads-fail-intermittently-and-it-is-unclear-whether-users-are-affected) |
 | 4 | `studio/context.tsx` — `placeOrEditOrder` at three call sites | A refused order produced NOTHING: no order, no message, no clue. Surfaced only when an affordability guard was added and its rejections were invisible |
+| 5 | `excursions.functions.ts` — `settle()`'s status `update` | Found 2026-08-27, fixed in `032adf4c`. The SUCCESS path 25 lines below throws on a failed write; this one discarded it, so a failed status write left a TERMINAL row unmarked and the backfill re-attempted an unmeasurable row every run, for ever, against a metered provider |
+| 6 | `service.server.ts:288` — the on-demand import's `catch` | **OPEN.** A missing `SUPABASE_SERVICE_ROLE_KEY` throws inside `runImport`, is caught here, and becomes a `console.warn` — so a whole class of import failure presents as "no data". See [MD-11](#md-11--the-on-demand-import-degrades-to-no-data-when-the-service-role-key-is-missing) |
+
+Instances 5 and 6 are worth noting for a reason beyond the count: both were
+found while investigating something else entirely, four months after the
+"one day" that produced the first four. The pattern is not a historical event.
 
 Instance 1 is the one to remember. It ran through a full unit suite, a full
 Playwright suite, **and a publish**, losing durable records the whole time.
@@ -206,7 +212,7 @@ stop is a metric about a shrinking, self-selected subset.
 **Confirmed independently 2026-08-27**, on a different table and a different
 question. Profiling `journal_entries` for the primary account
 (`7ffcbd29-592b-4e99-a489-bf22244512f6`) while investigating
-[MD-10](#md-10--historical_candles-holds-nothing-for-most-symbols-actually-traded-so-ideal-outcomes-cannot-be-measured-at-all)
+[MD-10](#md-10--what-cx-1-and-the-disabled-indices-actually-cost-86-of-a-real-history-cannot-be-measured)
 returned **5 of 93 closed entries carrying a `stop_loss` — 5.4%**. All five are
 crypto; the forex, indices and metals entries carry none at all.
 
@@ -3846,11 +3852,34 @@ type allows one.
 
 ---
 
-## MD-10 — `historical_candles` holds nothing for most symbols actually traded, so ideal outcomes cannot be measured at all
+## MD-10 — What CX-1 and the disabled indices actually cost: 86% of a real history cannot be measured
 
-**Area:** Market data · historical import · **Found:** 2026-08-27 ·
-**Status:** open — **the store, not the backfill, is the binding constraint on
-this feature. Re-derived against the primary account 2026-08-27.**
+**Area:** Market data · impact · **Found:** 2026-08-27 ·
+**Status:** open — **CONSEQUENCE ENTRY. The causes are
+[CX-1](./replay-studio-phase2.md) (Binance 403 to this deployment's egress) and
+the deliberate disabling of index symbols. This entry exists to record what
+they cost, which neither of those records.**
+
+### Read this first
+
+The causes are already filed and are NOT re-litigated here:
+
+- **Crypto — CX-1.** Binance answers 403 with an HTML body to this
+  deployment's egress, permanently. Measured 2026-08-19 on ETH/USDT and
+  SOL/USDT. It is a geo / datacenter-IP block, not an outage and not a defect
+  in our client. `historical-sync` excludes `source_code = binance` wholesale
+  via `UNREACHABLE_SOURCES` — deliberately, because a permanently-failing
+  symbol sorts first for ever under `latest_imported ASC NULLS FIRST` and would
+  starve the 25 reachable symbols (see
+  [HD-2](#hd-2--the-sync-slice-would-have-starved-on-permanently-failing-symbols)).
+- **NAS100 — by design.** `is_enabled = false`, along with GER40, SPX500, US30
+  and XAG/USD. Indices are traded through ETF proxies (SPY / QQQ / DIA / IWM),
+  a measured entitlement decision. See `docs/market-data-symbol-audit.md`.
+
+**This entry is the impact measurement.** A cause entry answers "why is the
+store empty"; nobody reading it learns that the ideal-outcomes feature cannot
+function. That is a different fact for a different reader, and it is the one
+that decides whether CX-1 is worth paying to resolve.
 
 ### The finding
 
@@ -3869,6 +3898,12 @@ XRP/USDT · ETH/USDT · SOL/USDT · BNB · ADA · NAS100
 `historical_candles` has no user scoping, so this is a property of the table,
 not of an account.
 
+All eight crypto symbols ARE enrolled in `historical_symbols` and ARE
+`is_enabled = true`, with correct native symbols and `base_timeframe = 1m`.
+Enrollment is not the gap. Seven of the eight carry `updated_at` exactly equal
+to their `created_at` (2026-07-20T09:15:43) with both edge columns null — they
+have never been imported at all, because the cron excludes their provider.
+
 ### What it costs, measured on the primary account (7ffcbd29, 93 closed trades)
 
 ```
@@ -3885,58 +3920,43 @@ block is **53 BTC/USDT trades with a median duration of 694s (~11.6 min)**:
 for that symbol and nothing at 1m. They are not slow to measure. They are
 unmeasurable.
 
-### Why the original framing was wrong
+The three NAS100 entries are the same shape from the other cause: tradable in
+the paper-trading catalog, disabled in the data catalog. **A symbol can be
+traded that can never be measured**, and nothing in either catalog says so.
 
-This was first filed as "the Binance 1m path stores nothing", inferred from a
-test account (`079e385b`) whose 41-row queue was 90% crypto. That framing was
-too narrow in two ways, and both make the problem bigger:
+### Why the earlier framings were wrong
 
-1. **It is not confined to 1m, and not to Binance.** NAS100 is an index, not
-   crypto, and it has nothing at any timeframe. Six of the seven empty symbols
-   are empty at 1D as much as at 1m.
-2. **It is not a latency or throughput problem at all.** Every fix shipped in
-   `92e0dc33` — the time budget, batch retry, sub-candle terminal status,
-   measured ETA — makes the backfill behave honestly. None of them can measure
-   a trade whose candles do not exist. **The ideal-outcomes feature cannot
-   function on a real crypto-heavy history regardless of how good the backfill
-   is.**
+This entry was filed twice on bad diagnoses, both corrected here:
 
-The per-account proportions differ (the test account was 41 eligible / 37
-crypto / 18 sub-candle; the primary account is 93 closed / 80 crypto / 14
-sub-candle), but both point the same way, and the store fact underlying them is
-shared.
+1. **"The Binance 1m path stores nothing."** Filed against a test account's
+   queue. Too narrow twice over: NAS100 is an index with nothing at ANY
+   timeframe, and six of the seven empty symbols are as empty at 1D as at 1m.
+2. **"A mystery in our import code," with the 5m-without-1m split pointing at
+   [MD-4](#md-4--two-writers-fill-historical_candles-and-only-one-is-visible).**
+   Both wrong. There is no mystery — CX-1 is the answer and predates this
+   entry by eight days. And the split is not a second writer and not a
+   deletion: `aggregateHigherTfs` is only true for a `1m` or `1D` base, so an
+   import run at `timeframe: "5m"` writes 5m ONLY. `scripts/seed-replay-battle.ts`
+   is that run — its header specifies BTC/USDT 5m over July 2026, 8,644 bars.
+   The 1m rows never existed. Nothing deleted them.
 
-### What has NOT been checked
-
-Filed deliberately without investigation. Open questions, in the order worth
-asking:
-
-1. **Why does BTC/USDT hold 8,644 rows at 5m and none at 1m?** `runImport`
-   aggregates 1m UP into higher timeframes (`aggregateHigherTfs: timeframe ===
-   "1m"`), so 5m-without-1m is internally contradictory unless the 5m rows came
-   from a 5m-base import, or something deletes 1m after aggregating.
-   [MD-4](#md-4--two-writers-fill-historical_candles-and-only-one-is-visible)
-   is the obvious suspect and should be read first.
-2. **Are the seven empty symbols enabled, routed, and reachable?** They are
-   `is_enabled = true` with plausible `native_symbol` values, so the failure is
-   downstream of the catalog. `historical_import_jobs` holds the answer and is
-   RLS-hidden from a normal user — this needs an admin read, not a guess.
-   Whether the deployed worker can reach `api.binance.com` at all is part of
-   the same question; that host geo-blocks regions and datacentre ranges, and a
-   blocked worker fails identically to an empty window.
-3. **Is `latest_imported` truthful?** BTC/USDT carries `2026-07-31` while
-   holding no 1m rows. A symbol row advancing while nothing is stored is a
-   second writer disagreeing with the data it claims to describe — MD-4 again.
-4. **Does anything backfill a symbol on first use?** Ten traded symbols and two
-   covered ones suggests coverage is a side effect of something else (a cron
-   list, a manual import) rather than of trading a symbol.
+What survives both corrections is the measurement, which is why this entry
+stays: the store is the binding constraint on ideal outcomes, and no amount of
+backfill quality changes that.
 
 ### Ranking
 
 Above the remaining backfill work, and above the excursion feature's UI. The
-backfill fixes were worth doing — they stopped the queue re-attempting
-unmeasurable rows forever — but they raise measurable coverage from ~6% to ~6%.
-This entry is what moves that number.
+fixes in `92e0dc33` — time budget, batch retry, sub-candle terminal status,
+measured ETA — were worth doing, because they stopped the queue re-attempting
+unmeasurable rows for ever. They raise measurable coverage from ~6% to ~6%.
+**Resolving CX-1 is what moves that number**, and the options there are a
+different crypto provider (Twelve Data carries crypto on paid tiers), a proxy,
+or accepting that crypto history stays at what is already stored.
+
+Note that resolving CX-1 alone would still not work today:
+[MD-11](#md-11--the-on-demand-import-degrades-to-no-data-when-the-service-role-key-is-missing)
+would silently swallow the first import the moment it was tried.
 
 ### How to reproduce
 
@@ -3973,6 +3993,12 @@ numbers for several hours on 2026-08-27. Any script that authenticates this way
 should print the email it signed in as, and the reader should check it before
 believing the output.
 
+**Do not re-probe Binance locally.** A developer machine returns HTTP 200 with
+live klines — measured again 2026-08-27, 121 bars of BTCUSDT 1m — which is
+exactly what CX-1 predicts and is not evidence about the deployment. The block
+is on the origin IP. The only valid test is the deployed endpoint:
+`historical-sync?symbol=BTC/USDT`.
+
 ---
 
 ## JR-7 — NAS100 entries have zero duration: `opened_at == closed_at`
@@ -3985,7 +4011,7 @@ but that is not established.**
 ### The observation
 
 Profiling the primary account's 93 closed journal entries by symbol
-(see [MD-10](#md-10--historical_candles-holds-nothing-for-most-symbols-actually-traded-so-ideal-outcomes-cannot-be-measured-at-all)
+(see [MD-10](#md-10--what-cx-1-and-the-disabled-indices-actually-cost-86-of-a-real-history-cannot-be-measured)
 for the query), NAS100 returned:
 
 ```
@@ -4034,3 +4060,130 @@ It is that **duration is an input to session, hold-time and time-of-day
 analytics**, and a zero there is not a missing value that reads as missing: it
 is a number that reads as a real, extremely fast trade. Three rows is what was
 visible on one symbol on one account; nothing has established the true count.
+
+---
+
+## MD-11 — The on-demand import degrades to "no data" when the service-role key is missing
+
+**Area:** Market data · historical import · error handling · **Found:**
+2026-08-27 · **Status:** open — **[PAT-1](#pat-1--discarded-return-values-a-failed-call-is-indistinguishable-from-a-successful-one)
+instance 6. Independent of [CX-1](./replay-studio-phase2.md), and the one that
+bites FIRST if CX-1 is ever resolved.**
+
+### The mechanism
+
+`resolveHistoricalRange` backfills a missing range on demand. That path needs
+admin credentials, because `historical_candles` grants writes to `service_role`
+only:
+
+```
+service.server.ts:257   const { runImport } = await import("./pipeline.server");
+pipeline.server.ts:217  const admin = await loadAdmin();        // -> supabaseAdmin
+client.server.ts:36     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) throw
+service.server.ts:286   } catch (e) {
+service.server.ts:288       console.warn(`[historical] on-demand import failed ...`)
+```
+
+`supabaseAdmin` is a lazy Proxy, so the throw happens on FIRST PROPERTY ACCESS
+inside `runImport` — not at module load, and not anywhere a startup check would
+see it. The `catch` at 286 then treats it exactly like a provider failure:
+`providerError` is set, the function falls through, and with `allowSynthetic`
+false it ends as `HistoricalDataUnavailableError`.
+
+### Why that is the wrong shape
+
+The caller cannot tell these apart, and they need opposite responses:
+
+| Actual cause | What the caller sees | What it should do |
+|---|---|---|
+| Provider has no candles for the window | "no data" | settle `no_data`, retry later — coverage improves over time |
+| Provider refused (403, CX-1) | "no data" | stop asking; it is permanent |
+| **We are not configured to write** | **"no data"** | **fail loudly — nothing about this is about market data** |
+
+In the excursion backfill this lands as `no_data`, which is RETRYABLE, so a
+misconfigured deployment re-attempts every eligible row on every run for ever
+and records a market-data verdict about an environment-variable problem. The
+only trace is a `console.warn` in worker logs nobody reads.
+
+### Why it matters independently of CX-1
+
+CX-1 makes crypto imports fail at the provider. If CX-1 were resolved tomorrow
+— a paid Twelve Data crypto tier, a proxy — **this defect would swallow the
+very first import attempt and report it as "no data" again**, and the obvious
+conclusion would be that the CX-1 fix had not worked. It sits in the on-demand
+path, which is precisely the path that matters once the block clears: it is
+what would backfill a symbol the moment someone trades or replays it.
+
+There is also direct evidence it has already happened. `scripts/seed-replay-battle.ts`
+records BTC/USDT being seeded at 5m rather than the intended 1m because
+"on-demand backfill needs SUPABASE_SERVICE_ROLE_KEY, which is not set" — the
+1m gap in [MD-10](#md-10--what-cx-1-and-the-disabled-indices-actually-cost-86-of-a-real-history-cannot-be-measured)
+is partly this defect's footprint, not only CX-1's.
+
+### What has NOT been checked
+
+- **Whether the deployment actually has the key.** `docs/replay-studio-phase2.md`
+  argues it must, since `historical-sync` reached Binance on 2026-08-19 and
+  could not have constructed `supabaseAdmin` otherwise. That is sound for the
+  cron. It says nothing about whether the same env reaches the on-demand path
+  in a server function, which is a different entry point.
+- **How many other callers share the shape.** `resolveHistoricalRange` is
+  called from four modules (excursions, both replay paths, `historical.functions`).
+  All four inherit this.
+
+### The fix, when it is taken
+
+Distinguish "cannot write" from "no data" at the catch. A missing service-role
+key is a configuration fault: it should surface as a distinct error the caller
+can classify TERMINAL-and-not-market-data, not as an absent candle. The
+excursion status vocabulary already has the right shape for this — `error` is
+retryable, `unusable` is terminal — but it currently never sees the
+distinction because the information is destroyed one layer down.
+
+---
+
+## HD-5 — A symbol's coverage edges describe whichever timeframe was imported, not its base
+
+**Area:** Market data · historical catalog · **Found:** 2026-08-27 ·
+**Status:** open, minor — **filed rather than fixed: the correction is a design
+question, not a typo.**
+
+### The observation
+
+`historical_symbols` for BTC/USDT:
+
+```
+base_timeframe      1m
+earliest_available  2026-07-01T05:25:00+00
+latest_imported     2026-07-31T05:40:00+00
+```
+
+Those two edges match the stored **5m** series exactly — same first and last
+bar. There is no 1m data for this symbol at all. So the columns describe
+coverage at a timeframe that is not the symbol's base, and nothing in the row
+records which timeframe they refer to.
+
+It happened because `scripts/seed-replay-battle.ts` ran an import with
+`timeframe: "5m"`, and `runImport` writes the edges for whatever timeframe it
+just imported (see [HD-3](#hd-3--the-backward-walk-starved-the-forward-walk-through-latest_imported)
+and `edges.ts`, which are about the same columns moving in the wrong
+direction).
+
+### Why it is not just cosmetic
+
+`historical-sync` orders its slice on `latest_imported ASC NULLS FIRST`. A
+symbol whose edge was advanced by a non-base-timeframe import sorts as though
+its base series were current when that series does not exist. BTC/USDT is
+shielded from this today only because `UNREACHABLE_SOURCES` excludes it from
+the slice entirely — remove that exclusion when CX-1 is resolved and this row
+would claim to be synced to 2026-07-31 with zero 1m bars behind the claim.
+
+### Why it is filed rather than fixed
+
+The honest correction depends on a decision nobody has made: are these columns
+**per symbol** or **per symbol-and-timeframe**? Per symbol means an import at a
+non-base timeframe must not touch them, and the current BTC/USDT values should
+be nulled. Per symbol-and-timeframe means the columns belong in a different
+table and every reader changes. One is a two-line guard plus a data fix; the
+other is a schema change. Both are defensible and the choice is not obvious
+from the code.

@@ -59,6 +59,30 @@ endpoint, never locally.
 
 ## The ETF proxies were never added
 
+> **SUPERSEDED 2026-08-27 — all four were added, and they are working.**
+> The section below is retained as the 2026-08-21 record. Current state:
+>
+> ```
+> DIA   enabled  1m:32,787  earliest 2026-04-27  latest 2026-08-27T14:28
+> IWM   enabled  1m:33,222  earliest 2026-04-27  latest 2026-08-26T19:59
+> QQQ   enabled  1m:24,236  earliest 2025-09-03  latest 2026-08-27T14:28
+> SPY   enabled  1m:33,194  earliest 2026-04-27  latest 2026-08-27T14:13
+> ```
+>
+> All four are enrolled in `historical_symbols`, enabled, routed to
+> `twelvedata`, syncing on the cron, and carrying five-figure 1m coverage plus
+> every higher timeframe. The "unmade decision" below has been made and
+> applied. The four INDEX rows (NAS100, GER40, SPX500, US30) are correspondingly
+> `is_enabled = false`, which completes the removal half too.
+>
+> One consequence is now filed as
+> [MD-10](./known-issues.md#md-10--what-cx-1-and-the-disabled-indices-actually-cost-86-of-a-real-history-cannot-be-measured):
+> a user can still TRADE NAS100 in the paper-trading catalog while it is
+> disabled in the data catalog, so those entries can never be measured and
+> nothing in either catalog says so.
+
+### The 2026-08-21 record, retained
+
 The 2026-08-14 decision was that indices are traded as the ETFs themselves —
 SPY / QQQ / DIA / IWM, whose engine symbol already *is* the Twelve Data
 ticker. **None of the four exist in `historical_symbols`.** Confirmed
