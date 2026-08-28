@@ -165,6 +165,26 @@ const BYBIT_PAGE = 1000;
 /** `retCode` for a well-formed request that matched no instrument. */
 const BYBIT_UNKNOWN_SYMBOL = 10001;
 
+/**
+ * Edge headers worth keeping when a request fails.
+ *
+ * Bybit sits behind CloudFront, and CloudFront answers a GEOGRAPHIC block and a
+ * rate/WAF block with the same status and a similar HTML body. `x-amz-cf-pop`
+ * names the edge that served it and `x-amz-cf-id` identifies the exact request
+ * to AWS — without them a 403 cannot be attributed, which is precisely the wall
+ * the 2026-08-28 investigation hit.
+ */
+const CDN_DIAG_HEADERS = ["x-amz-cf-pop", "x-amz-cf-id", "via", "x-cache", "retry-after"] as const;
+
+function captureCdnHeaders(res: Response): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const h of CDN_DIAG_HEADERS) {
+    const v = res.headers.get(h);
+    if (v) out[h] = v;
+  }
+  return out;
+}
+
 export class BybitHistoricalProvider implements HistoricalDataProvider {
   readonly code = "bybit";
   readonly label = "Bybit";
@@ -234,7 +254,27 @@ export class BybitHistoricalProvider implements HistoricalDataProvider {
       const res = await fetch(url.toString());
       if (!res.ok) {
         const body = await res.text().catch(() => res.statusText);
-        throw new Error(`Bybit HTTP ${res.status}: ${body.slice(0, 200)}`);
+        const cdn = captureCdnHeaders(res);
+        // Typed, so the retry policy in `pipeline.server.ts` can read the
+        // STATUS. It previously threw a plain `Error`, which made
+        // `e instanceof HistoricalProviderError && httpStatus === 429` never
+        // for this provider — so a 403 was retried three times against a block
+        // that cannot clear in seven seconds.
+        throw new HistoricalProviderError(
+          "bybit",
+          `HTTP ${res.status} on /v5/market/kline` +
+            (Object.keys(cdn).length
+              ? ` [${Object.entries(cdn).map(([k, v]) => `${k}=${v}`).join(" ")}]`
+              : " [no CDN headers present]"),
+          {
+            httpStatus: res.status,
+            responseType: res.headers.get("content-type") ?? undefined,
+            symbol: nativeSymbol,
+            timeframe,
+            body,
+            headers: cdn,
+          },
+        );
       }
       const json = (await res.json()) as {
         retCode?: number; retMsg?: string; result?: { list?: string[][] };
@@ -439,6 +479,16 @@ export class HistoricalProviderError extends Error {
       symbol?: string;
       timeframe?: string;
       body?: string;
+      /**
+       * CDN / edge headers captured at the failure, for diagnosis only.
+       *
+       * A CloudFront geographic block and a CloudFront rate block are both
+       * HTTP 403 with an HTML body; only the headers and the PoP identify
+       * which. Discarding them left a 403 unattributable — see the 2026-08-28
+       * Bybit investigation, where the response was already gone by the time
+       * anyone asked which edge served it.
+       */
+      headers?: Record<string, string>;
     } = {},
   ) {
     super(

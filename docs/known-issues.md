@@ -4268,3 +4268,170 @@ BTC/USDT-vs-BTC/USD basis was measured for Twelve Data (that one came back
 Until that exists, do not quote a number for this spread. If it turns out to be
 material, the fix is to move live crypto to Bybit too — it is reachable from
 both sides, which Binance is not.
+
+---
+
+## HD-6 — A killed request leaves its import job `running` for ever, and nothing reaps it
+
+**Area:** Market data · historical import · job lifecycle · **Found:**
+2026-08-28 · **Status:** open — **22 instances observed, 21 found after the
+fact and one caught live. Fix designed, not built.**
+
+### The mechanism
+
+`runImport` writes a terminal status from inside its own handler: `success` at
+the end of the `try`, `failed` in the `catch`. Both require the handler to
+still be executing. When the platform kills the request — the ceiling looks to
+be around 105s, see below — neither line runs, and **nothing else is
+responsible for the row**. It stays `status: running` permanently.
+
+Measured 2026-08-28: **21 rows stuck at `running`, the oldest from
+2026-08-19** — nine days — spanning `twelvedata`, `binance` and `bybit`, across
+EUR/USD, USD/JPY, XAU/USD, AAPL, MSFT, IWM, NAS100, SPX500 and ETH/USDT. A
+22nd was then caught mid-flight (see HD-7), which is the only reason the
+mechanism is confirmed rather than inferred.
+
+### What it does NOT do, checked explicitly
+
+**It does not block syncing.** Every read of `historical_import_jobs` was
+traced: `console.functions.ts` counts running jobs for a dashboard tile,
+`listHistoricalJobs` / `getImportQueue` / the health counters are display only,
+and `isCancelled` looks up the job it is currently running BY ID. The two paths
+that start work — the `historical-sync` cron and `runImport` — never consult
+the table. The cron selects from `historical_symbols` ordered by
+`latest_imported`; `runImport` inserts a fresh row unconditionally.
+
+So no symbol was starved. That was the first hypothesis and it was wrong, and
+it is recorded here so nobody re-derives it.
+
+### What it does cost
+
+- The admin console's "running jobs" tile reads 21 and means nothing.
+- `getImportQueue`'s `active` list is padded with nine-day-old corpses, so the
+  panel cannot show what is genuinely in flight.
+- **The latent cost is the real one.** The first change that DOES gate on a
+  running row — a concurrency guard, a duplicate-import check, an alert on
+  stuck jobs — inherits a poisoned table on day one. The bug is dormant, not
+  harmless.
+
+### The fix, and why it is sized against the platform rather than the workload
+
+A TTL sweep: mark `running` jobs older than a ceiling as `failed`, with a
+distinguishing message, in one `UPDATE` at the top of the `historical-sync`
+handler (which is already scheduled).
+
+**The TTL must NOT be derived from observed durations.** Today's maximum is
+tomorrow's truncation — that is exactly how `maxPages = 60` came to silently
+cap a 90-day import (PAT-1 instance 7). The sound anchor is that **no job can
+outlive the request that runs it**: `runImport` executes inside one Worker
+request, and when that request dies the process that would write a terminal
+status is gone. A job still `running` well past the platform ceiling is dead by
+definition, not slow.
+
+Observed distribution, 2026-08-28:
+
+```
+success   n=1,189   p95 14.6s   max 105.5s
+failed    n=1,733   p95  1.2s   max  24.0s
+cancelled n=19      (no duration, as expected)
+```
+
+**Proposed TTL: 15 minutes** — roughly 8.5x the maximum observed legitimate
+completion, and far beyond anything a request can survive. A future 365-day
+backfill is not endangered by it, because if that import needed 20 minutes the
+platform would kill it long before the TTL noticed.
+
+Mark them `failed` rather than `cancelled`: `cancelled` implies human intent,
+and `failed` lets `retryImportJob` pick them up.
+
+**The caveat belongs in the code comment.** This reasoning holds only while
+imports are request-bound. Move them to a durable queue or background execution
+and a job legitimately could outlive a request — at which point the TTL becomes
+the hazard it was designed to prevent.
+
+### A number worth correcting
+
+Maximum successful `duration_ms` is **105,501ms**, above the ~100s Cloudflare
+ceiling quoted throughout this investigation. Either the ceiling is higher here
+or `duration_ms` measures slightly wider than the request. `TIME_BUDGET_MS =
+60_000` in `excursions.functions.ts` was sized against the 100s figure; it is
+conservative either way, but the figure it was reasoned from is now suspect.
+
+---
+
+## HD-7 — The save phase costs two round-trips per chunk, and a 90-day 1m import cannot finish
+
+**Area:** Market data · historical import · **Found:** 2026-08-28 ·
+**Status:** half-fixed — **the progress throttle is applied; the range still
+has to be split by hand.**
+
+### Caught live
+
+A BTC/USDT 90-day 1m import, admin-triggered, sat at `phase: saving,
+progress: 66` for over 40 minutes. Two readings 248 seconds apart:
+
+```
+running_for_seconds  2420 -> 2668     progress  66 -> 66
+```
+
+Progress frozen while the clock advanced, against a ceiling of ~105s. The
+request had been dead for roughly 38 minutes while the row claimed to be
+saving. This is [HD-6](#hd-6--a-killed-request-leaves-its-import-job-running-for-ever-and-nothing-reaps-it)
+instance 22 — and the only one observed in flight rather than found days later,
+which is what confirmed the mechanism.
+
+### Why the save phase is so expensive
+
+`upsertCandles` chunks at 500 rows, and the old code awaited a progress write
+after EVERY chunk. Each progress write is its own round-trip to
+`historical_import_jobs`. So:
+
+```
+129,600 bars (90 days at 1m) / 500 = 260 upserts
+                                   + 260 progress writes
+                                   = ~520 sequential round-trips
+```
+
+At 50-100ms each that is 26-52 seconds in `saving` alone, before ~130 Bybit
+pages of fetching, aggregation into six higher timeframes (each its own chunked
+`upsertCandles`), and snapshots. A 90-day 1m import is **structurally** too
+large for one request. Not truncated — unable to finish.
+
+### The fix applied
+
+`shouldReportProgress` throttles progress to every 10th chunk, always
+reporting the last one. That takes the 90-day case from ~520 round-trips to
+~286, and costs nothing: nobody reads job progress at 0.4% resolution.
+
+The last-chunk guarantee is the load-bearing half and is pinned by tests. Skip
+it and a COMPLETED import leaves `progress` frozen short of 100 — which reads
+exactly like the dead job above. A cleanup that makes finished work look
+stalled would be worse than the bug it fixed. Three mutations are checked:
+dropping the `isLast` force, removing the throttle, and an off-by-one on the
+interval each turn a test red.
+
+### What is NOT fixed
+
+**Halving the traffic does not make 90 days fit.** The range still has to be
+split. Split it into 30-day passes, most recent first — `runImport` is
+idempotent (`onConflict ... ignoreDuplicates`), so successive smaller ranges
+compose without duplicating rows.
+
+The admin panel makes this clumsier than it should be: its Range field always
+ends at `now()`, so a caller cannot request an arbitrary earlier window even
+though `runHistoricalImport` accepts explicit `from`/`to`. Reaching depth means
+repeated overlapping passes rather than three disjoint ones. A from/to control
+in the panel would remove that entirely and is the obvious next change.
+
+### Why cancelling mid-`saving` was safe
+
+Worth recording, because "cancel it" looks risky in that phase and is not:
+
+- Each 500-row chunk is its own statement, so a killed request leaves a
+  **prefix of complete candles** — no torn rows, nothing to repair.
+- `ignoreDuplicates: true` on `(symbol, timeframe, provider_code, ts)` makes a
+  retry idempotent: it re-fetches, and writes only what is missing.
+- The symbol's coverage edges (`latest_imported` / `earliest_available`) are
+  written AFTER the save, aggregate and snapshot phases — so a job that died in
+  `saving` never advanced them, and the row does not claim coverage it lacks.
+  The opposite of [HD-5](#hd-5--a-symbols-coverage-edges-describe-whichever-timeframe-was-imported-not-its-base).

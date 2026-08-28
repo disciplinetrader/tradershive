@@ -141,6 +141,37 @@ function detectGaps(
   return gaps;
 }
 
+/** Chunks between progress writes. See `shouldReportProgress`. */
+const PROGRESS_EVERY_CHUNKS = 10;
+
+/**
+ * Should this chunk write a progress update?
+ *
+ * Progress used to be written after EVERY chunk, and each write is its own
+ * awaited round-trip to `historical_import_jobs`. At 500 rows per chunk that
+ * doubles the database traffic of the save phase: a 90-day 1m import is 129,600
+ * bars = 260 upserts, and the old code turned that into ~520 sequential
+ * round-trips. Measured 2026-08-28, that phase could not finish inside the
+ * platform's request ceiling — the job sat at `phase: saving, progress: 66` for
+ * over 40 minutes because the request had already been killed.
+ *
+ * Halving the traffic does not make a 90-day import fit (see HD-7 — the range
+ * has to be split), but it is the difference between a large import being
+ * merely slow and being impossible, and it costs nothing.
+ *
+ * The LAST chunk always reports, so progress always ends at 100 and a stalled
+ * job is never confused with a finished one whose final write was skipped.
+ * Extracted and exported purely so that invariant is testable: everything else
+ * here needs a live admin client.
+ */
+export function shouldReportProgress(
+  chunkIndex: number,
+  isLast: boolean,
+  every: number = PROGRESS_EVERY_CHUNKS,
+): boolean {
+  return isLast || chunkIndex % every === 0;
+}
+
 async function upsertCandles(
   admin: Admin, symbol: string, timeframe: HistoricalTimeframe,
   sourceCode: string, candles: HistoricalCandle[],
@@ -154,6 +185,7 @@ async function upsertCandles(
   }));
   let inserted = 0;
   const CHUNK = 500;
+  let chunkIndex = 0;
   for (let i = 0; i < rows.length; i += CHUNK) {
     const slice = rows.slice(i, i + CHUNK);
     const { error, count } = await admin
@@ -161,7 +193,10 @@ async function upsertCandles(
       .upsert(slice as any, { onConflict: "symbol,timeframe,provider_code,ts", ignoreDuplicates: true, count: "exact" });
     if (error) throw error;
     inserted += count ?? 0;
-    if (onProgress) await onProgress(Math.round(((i + slice.length) / rows.length) * 100));
+    chunkIndex += 1;
+    if (onProgress && shouldReportProgress(chunkIndex, i + CHUNK >= rows.length)) {
+      await onProgress(Math.round(((i + slice.length) / rows.length) * 100));
+    }
   }
   return { inserted, skipped: candles.length - inserted };
 }
@@ -212,6 +247,42 @@ export type RunImportOpts = {
   maxRetries?: number;
   existingJobId?: string; // for retries
 };
+
+/** Whether a failed import should be re-attempted, and why. */
+export type RetryDecision = { retry: boolean; reason: string };
+
+/**
+ * Classify an import failure into retry / do-not-retry.
+ *
+ * Extracted from `runImport`'s catch so the decision can be tested without a
+ * live admin client, a job row or a provider. The two refusals are refusals for
+ * DIFFERENT reasons, and collapsing them would lose that:
+ *
+ *   429  "you asked too fast". Not retried here because the credit window is
+ *        per MINUTE and the backoff is seconds — every retry lands inside the
+ *        same minute that produced the 429 and spends another credit. Measured:
+ *        a run budgeted at 4 credits became 16 against a ceiling of 8, and all
+ *        three retries failed too. Recovery is the next invocation's real
+ *        minute boundary; a longer sleep here would only hold the request open
+ *        across it. UNCHANGED — this predicate preserves it exactly.
+ *
+ *   403  "this edge will not serve your source IP". A CloudFront geographic or
+ *        WAF decision, evaluated per request, which does not soften with time.
+ *        Measured 2026-08-28 on Bybit: the body was literally "The Amazon
+ *        CloudFront distribution is configured to block access from your
+ *        country". Three retries at 1s/2s/4s cannot clear that, and they buried
+ *        the first attempt's response behind three identical ones.
+ *
+ * Everything else retries, including a bare `Error` from a network fault — a
+ * transport failure carries no status, and treating "no status" as terminal
+ * would make every timeout permanent.
+ */
+export function classifyImportFailure(e: unknown): RetryDecision {
+  const status = e instanceof HistoricalProviderError ? e.detail.httpStatus : undefined;
+  if (status === 429) return { retry: false, reason: "throttled" };
+  if (status === 403) return { retry: false, reason: "forbidden" };
+  return { retry: true, reason: status ? `http-${status}` : "transient" };
+}
 
 export async function runImport(rawOpts: RunImportOpts) {
   const admin = await loadAdmin();
@@ -439,7 +510,9 @@ export async function runImport(rawOpts: RunImportOpts) {
     // on THIS cycle, so the backward phase is skipped before it spends
     // anything. Recovery is the next invocation's real minute boundary — a
     // longer sleep here would only hold a cron request open across it.
-    const throttled = e instanceof HistoricalProviderError && e.detail.httpStatus === 429;
+    // Classified by `classifyImportFailure` above: 429 and 403 are terminal
+    // for different reasons, everything else retries.
+    const decision = classifyImportFailure(e);
 
     // Retry logic
     const { data: jobRow } = await admin
@@ -447,7 +520,7 @@ export async function runImport(rawOpts: RunImportOpts) {
       .select("retry_count, max_retries").eq("id", jobId).maybeSingle();
     const retryCount = (jobRow?.retry_count ?? 0) as number;
     const maxRetries = (jobRow?.max_retries ?? 3) as number;
-    if (!throttled && retryCount < maxRetries) {
+    if (decision.retry && retryCount < maxRetries) {
       await admin.from("historical_import_jobs").update({
         retry_count: retryCount + 1,
         phase: "queued", status: "running",
@@ -455,8 +528,16 @@ export async function runImport(rawOpts: RunImportOpts) {
       } as any).eq("id", jobId);
       await log(admin, jobId, opts.symbol, opts.sourceCode, "warn",
         `Retrying (${retryCount + 1}/${maxRetries}): ${msg}`);
-      // Exponential backoff
-      await new Promise((r) => setTimeout(r, 1000 * Math.pow(2, retryCount)));
+      // Exponential backoff WITH JITTER.
+      //
+      // Without jitter every symbol that fails in the same cron slice retries
+      // on the same 1s/2s/4s beat, so a shared upstream fault produces three
+      // synchronised bursts against the thing that just failed. The jitter is
+      // capped at the base delay so the schedule stays bounded and
+      // predictable: attempt N waits between base and 2x base.
+      const base = 1000 * Math.pow(2, retryCount);
+      const jitter = Math.floor(Math.random() * base);
+      await new Promise((r) => setTimeout(r, base + jitter));
       return runImport({ ...opts, existingJobId: jobId });
     }
     await admin.from("historical_import_jobs").update({

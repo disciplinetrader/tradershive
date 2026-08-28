@@ -52,6 +52,25 @@ const FROM = Date.UTC(2026, 6, 15, 0, 0, 0);
 const TO = Date.UTC(2026, 6, 15, 1, 0, 0);
 
 const TARGETS: { name: string; url: string }[] = [
+  /**
+   * The worker's own egress identity, FIRST, because every other line is
+   * uninterpretable without it.
+   *
+   * `cdn-cgi/trace` reports the source IP and country as seen from outside, so
+   * it answers the question the Bybit 403 raised: does this deployment's
+   * egress change between requests? CloudFront's geographic restriction is
+   * evaluated on exactly that IP's country, and nothing in this codebase has
+   * ever recorded it. Two probes minutes apart showing different `loc=` values
+   * would explain an intermittent 403 completely.
+   */
+  { name: "egress-identity (cloudflare trace)", url: "https://www.cloudflare.com/cdn-cgi/trace" },
+  /** Bybit's cheapest endpoint: reachability with no market-data semantics. */
+  { name: "bybit /v5/market/time", url: "https://api.bybit.com/v5/market/time" },
+  /** A minimal real kline read — 5 bars, deliberately small. */
+  {
+    name: "bybit /v5/market/kline (limit=5)",
+    url: "https://api.bybit.com/v5/market/kline?category=spot&symbol=BTCUSDT&interval=1&limit=5",
+  },
   {
     name: "data-api.binance.vision",
     url: `https://data-api.binance.vision/api/v3/klines?symbol=BTCUSDT&interval=1m&startTime=${FROM}&endTime=${TO}&limit=1000`,
@@ -69,6 +88,15 @@ const TARGETS: { name: string; url: string }[] = [
 /** Enough to tell JSON klines from an HTML block page, short enough not to dump a document into a log. */
 const BODY_PREFIX_CHARS = 300;
 
+/**
+ * CDN headers that distinguish one CloudFront verdict from another.
+ *
+ * Bybit is behind CloudFront, and a GEOGRAPHIC block and a rate/WAF block are
+ * both 403 with an HTML body. `x-amz-cf-pop` names the edge and `x-amz-cf-id`
+ * identifies the request to AWS; without them a 403 cannot be attributed.
+ */
+const CDN_HEADERS = ["x-amz-cf-pop", "x-amz-cf-id", "via", "x-cache", "retry-after", "server"] as const;
+
 /** Nothing here should take long; a hang is itself an answer and must not hold the request open. */
 const TIMEOUT_MS = 10_000;
 
@@ -78,6 +106,11 @@ type ProbeResult = {
   status: number | null;
   ms: number;
   contentType: string | null;
+  /** CDN/edge headers, present only when the origin sent them. */
+  cdn: Record<string, string>;
+  /** Parsed from `cdn-cgi/trace` on that target only; null elsewhere. */
+  egressIp: string | null;
+  egressCountry: string | null;
   /** Bars parsed, when the body is the JSON we expected. `null` when it is not. */
   bars: number | null;
   bodyPrefix: string;
@@ -93,6 +126,23 @@ async function probe(name: string, url: string): Promise<ProbeResult> {
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
     const text = await res.text();
+
+    const cdn: Record<string, string> = {};
+    for (const h of CDN_HEADERS) {
+      const v = res.headers.get(h);
+      if (v) cdn[h] = v;
+    }
+
+    // `cdn-cgi/trace` is line-oriented `key=value`, not JSON.
+    let egressIp: string | null = null;
+    let egressCountry: string | null = null;
+    if (text.startsWith("ip=") || text.includes("\nip=")) {
+      for (const line of text.split("\n")) {
+        if (line.startsWith("ip=")) egressIp = line.slice(3).trim();
+        else if (line.startsWith("loc=")) egressCountry = line.slice(4).trim();
+      }
+    }
+
     let bars: number | null = null;
     try {
       const j = JSON.parse(text);
@@ -108,6 +158,9 @@ async function probe(name: string, url: string): Promise<ProbeResult> {
       status: res.status,
       ms: Date.now() - started,
       contentType: res.headers.get("content-type"),
+      cdn,
+      egressIp,
+      egressCountry,
       bars,
       bodyPrefix: text.slice(0, BODY_PREFIX_CHARS),
       error: null,
@@ -119,6 +172,9 @@ async function probe(name: string, url: string): Promise<ProbeResult> {
       status: null,
       ms: Date.now() - started,
       contentType: null,
+      cdn: {},
+      egressIp: null,
+      egressCountry: null,
       bars: null,
       bodyPrefix: "",
       error: e instanceof Error ? e.message : String(e),
