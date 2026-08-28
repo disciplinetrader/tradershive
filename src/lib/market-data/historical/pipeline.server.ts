@@ -248,6 +248,166 @@ export type RunImportOpts = {
   existingJobId?: string; // for retries
 };
 
+/**
+ * How long a job may go without progress before it is presumed dead.
+ *
+ * Anchored to the PLATFORM, not the workload. `runImport` executes inside one
+ * request; when that request is killed, the process that would have written a
+ * terminal status no longer exists, so a job still `running` well past any
+ * possible request lifetime is dead by definition rather than slow. Maximum
+ * observed successful `duration_ms` is 105,501ms, so 15 minutes is ~8.5x the
+ * longest real completion and far beyond what a request survives.
+ *
+ * Deriving this from observed durations instead would be the `maxPages = 60`
+ * mistake again: today's maximum is tomorrow's false positive.
+ */
+export const STALE_JOB_TTL_MS = 15 * 60_000;
+
+export type StaleJobVerdict = { stale: boolean; reason: string; ageMs: number };
+
+/** The only fields staleness depends on. */
+export type StaleJobFields = {
+  status?: string | null;
+  updated_at?: string | null;
+  started_at?: string | null;
+  created_at?: string | null;
+};
+
+/**
+ * Is this import job dead, and why?
+ *
+ * PROGRESS-AWARE ON PURPOSE. The anchor is `updated_at`, which
+ * `trg_hij_updated_at` bumps on EVERY update — and `setPhase` is an update, so
+ * a job that is genuinely working refreshes it continuously. A four-hour
+ * legitimate import is never swept; a job whose request died stops moving
+ * within seconds. Anchoring on `created_at` or `started_at` instead would kill
+ * long healthy imports, which is the one outcome worse than leaving corpses.
+ *
+ * `status` is checked FIRST and is the only in-flight marker. `preparing` is a
+ * PHASE, not a status — a job is `status: running` while its phase moves
+ * through preparing, downloading, validating, saving, aggregating. So there is
+ * one test here, not one per phase, and `success` / `failed` / `cancelled` /
+ * `queued` can never match however old they are.
+ */
+export function classifyStaleJob(
+  job: StaleJobFields,
+  now: number,
+  ttlMs: number = STALE_JOB_TTL_MS,
+): StaleJobVerdict {
+  if (job.status !== "running") {
+    return { stale: false, reason: `status is ${job.status ?? "null"}`, ageMs: 0 };
+  }
+  // `updated_at` is the progress signal; the others are only a floor for a row
+  // that has somehow never been updated since insert.
+  const stampStr = job.updated_at ?? job.started_at ?? job.created_at ?? null;
+  const stamp = stampStr ? Date.parse(stampStr) : Number.NaN;
+  if (!Number.isFinite(stamp)) {
+    // Refuse rather than guess. A row with no usable timestamp cannot be shown
+    // to be dead, and a sweep that mutates on missing data is worse than one
+    // that leaves a corpse for a human to look at.
+    return { stale: false, reason: "no usable progress timestamp", ageMs: 0 };
+  }
+  const ageMs = now - stamp;
+  if (ageMs < ttlMs) return { stale: false, reason: "progressed within TTL", ageMs };
+  return { stale: true, reason: `no progress for ${Math.round(ageMs / 60_000)} min`, ageMs };
+}
+
+export type StaleSweepResult = {
+  checked: number;
+  swept: number;
+  recovered: Array<{ id: string; symbol: string | null; ageMs: number }>;
+};
+
+/**
+ * Mark jobs whose request died as `failed`, so they stop claiming to be alive.
+ *
+ * WHY `failed` AND NOT REQUEUED
+ *
+ * Nothing drains queued jobs today. Requeued rows would sit inert now and then
+ * all execute at once the moment a drain is introduced — the fix creating a
+ * worse incident than the defect. `failed` is also the state the admin panel
+ * already renders a Retry button for, and `retryImportJob` re-runs the row
+ * through `existingJobId` with its original range against an idempotent
+ * `upsertCandles`. So recovery stays a human decision with a visible
+ * affordance.
+ *
+ * WHY NOT `cancelled`
+ *
+ * `cancelled` means human intent. Nineteen rows already carry that meaning and
+ * overwriting it would destroy the only record of who stopped what.
+ *
+ * CONCURRENCY
+ *
+ * The recovery update is conditional on `status = 'running'`. Two sweeps racing
+ * the same row cannot both win: the second re-evaluates against the committed
+ * row, sees `failed`, and matches zero rows. That is also what makes repeated
+ * runs idempotent — a recovered row no longer satisfies the predicate.
+ */
+export async function sweepStaleImportJobs(
+  admin: Admin,
+  now: number = Date.now(),
+  ttlMs: number = STALE_JOB_TTL_MS,
+): Promise<StaleSweepResult> {
+  const { data, error } = await admin
+    .from("historical_import_jobs")
+    .select("id, symbol, timeframe, source_code, status, phase, updated_at, started_at, created_at")
+    .eq("status", "running");
+  if (error) throw error;
+
+  const rows = (data ?? []) as Array<Record<string, unknown>>;
+  const recovered: StaleSweepResult["recovered"] = [];
+
+  for (const row of rows) {
+    const verdict = classifyStaleJob(row as StaleJobFields, now, ttlMs);
+    if (!verdict.stale) continue;
+
+    const ageMin = Math.round(verdict.ageMs / 60_000);
+    const id = String(row.id);
+    const symbol = row.symbol == null ? null : String(row.symbol);
+    const sourceCode = row.source_code == null ? "" : String(row.source_code);
+    const message =
+      `Stale sweep: ${verdict.reason} (was ${row.status}/${row.phase}); ` +
+      `request presumed terminated by the platform. See HD-6.`;
+
+    // Conditional on `status` — this is the concurrency guard, not decoration.
+    const { data: hit, error: updErr } = await admin
+      .from("historical_import_jobs")
+      .update({
+        status: "failed",
+        phase: "failed",
+        finished_at: new Date(now).toISOString(),
+        error_message: message,
+      })
+      .eq("id", id)
+      .eq("status", "running")
+      .select("id");
+    if (updErr) throw updErr;
+    // Zero rows means another sweep won the race. Not an error, and NOT logged
+    // as a recovery — only the sweep that actually changed the row reports it.
+    if (!hit || hit.length === 0) continue;
+
+    await log(admin, id, symbol ?? "", sourceCode, "warn", message, {
+      previous_status: row.status,
+      previous_phase: row.phase,
+      previous_updated_at: row.updated_at,
+      stale_age_minutes: ageMin,
+      recovery_action: "failed",
+      timeframe: row.timeframe,
+    });
+    console.warn(
+      `[stale-sweep] recovered job ${id} ${symbol} ${String(row.timeframe)} ` +
+        `was ${row.status}/${row.phase}, no progress for ${ageMin}min -> failed`,
+    );
+    recovered.push({ id, symbol, ageMs: verdict.ageMs });
+  }
+
+  // DELIBERATELY SILENT when nothing was swept. This runs on every cron tick,
+  // and a per-run "0 stale jobs" line is noise that trains people to ignore the
+  // channel the real recoveries appear in. The count is still returned, so the
+  // caller can surface it in a response body without writing a log line.
+  return { checked: rows.length, swept: recovered.length, recovered };
+}
+
 /** Whether a failed import should be re-attempted, and why. */
 export type RetryDecision = { retry: boolean; reason: string };
 

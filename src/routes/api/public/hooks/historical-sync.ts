@@ -109,8 +109,30 @@ export const Route = createFileRoute("/api/public/hooks/historical-sync")({
         const symbolFilter = url.searchParams.get("symbol") ?? undefined;
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { runIncrementalUpdate, runBackwardUpdate } =
+        const { runIncrementalUpdate, runBackwardUpdate, sweepStaleImportJobs } =
           await import("@/lib/market-data/historical/pipeline.server");
+
+        // ---- Phase 0 - reap jobs whose request died --------------------------
+        //
+        // `runImport` writes its terminal status from inside its own handler, so
+        // a request killed by the platform leaves the row `running` for ever and
+        // nothing else is responsible for it. 21 such rows accumulated between
+        // 2026-08-19 and 2026-08-28 (HD-6).
+        //
+        // Here because this endpoint is already scheduled and already holds an
+        // admin client - it needs no new cron entry and no new secret. It runs
+        // BEFORE the slices because it is cheap and because a stale row should
+        // not survive a tick that failed for unrelated reasons.
+        //
+        // Never allowed to break the sync: a sweep fault is reported in the
+        // response body, not thrown. The sync is the job; the sweep is hygiene.
+        let staleSweep: Record<string, unknown>;
+        try {
+          staleSweep = { ...(await sweepStaleImportJobs(supabaseAdmin)) };
+        } catch (e) {
+          console.error("[historical-sync] stale sweep failed", e);
+          staleSweep = { error: e instanceof Error ? e.message : String(e) };
+        }
 
         let query = supabaseAdmin
           .from("historical_symbols")
@@ -223,6 +245,9 @@ export const Route = createFileRoute("/api/public/hooks/historical-sync")({
           results,
           backfill,
           backfillSkipped,
+          // Counts only. A zero sweep writes no log line anywhere; this is how
+          // it stays observable without one.
+          staleSweep,
         });
       }),
     },
