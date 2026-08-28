@@ -57,6 +57,26 @@ the origin IP, so this is the one reachability question that cannot be settled
 from anywhere except the deployment itself. Re-test by way of the deployed
 endpoint, never locally.
 
+> **The re-test path did not work until 2026-08-28.** `historical-sync` applied
+> `UNREACHABLE_SOURCES` BEFORE the `?symbol=` filter, so the recommended
+> `?symbol=BTC/USDT` matched zero rows and returned 200 having asked Binance
+> nothing at all — success reported for a probe that never ran. Fixed: an
+> explicit `?symbol=` now bypasses the exclusion, which is safe because the
+> exclusion exists to protect the automatic SLICE from head-of-line blocking
+> and a named symbol is not a slice.
+>
+> The other deployed probe is `/admin/market-data` → Test connection on
+> Binance. It runs server-side and logs to `provider_health_checks`, so the
+> result is readable afterwards — but it calls `/api/v3/ping`, not
+> `/api/v3/klines`, so a pass is suggestive rather than conclusive.
+>
+> **Live crypto quotes working in the app is NOT evidence against CX-1.** The
+> live Binance provider is client-side — it disables itself when
+> `typeof window === "undefined"` (`providers/binance.ts:51`) — so those calls
+> leave the user's browser on a residential IP and never touch the worker's
+> egress. Same host, same `/api/v3/klines` path, different origin IP. Do not
+> re-derive this.
+
 ## The ETF proxies were never added
 
 > **SUPERSEDED 2026-08-27 — all four were added, and they are working.**

@@ -64,6 +64,10 @@ const DEFAULT_BACKFILL_LIMIT = 2;
  * Head-of-line blocking by design, in other words. Remove this when CX-1 is
  * resolved; until then it is the difference between a job that works and one
  * that spins.
+ *
+ * It applies to the AUTOMATIC slice only. An explicit `?symbol=` bypasses it,
+ * so a named symbol can still be probed from the deployment — which is the
+ * only place CX-1 can be measured, since the block is on the origin IP.
  */
 const UNREACHABLE_SOURCES = ["binance"];
 
@@ -101,11 +105,24 @@ export const Route = createFileRoute("/api/public/hooks/historical-sync")({
         let query = supabaseAdmin
           .from("historical_symbols")
           .select("id, symbol, native_symbol, source_code, base_timeframe, latest_imported, earliest_available, metadata")
-          .eq("is_enabled", true)
-          .not("source_code", "in", `(${UNREACHABLE_SOURCES.join(",")})`);
+          .eq("is_enabled", true);
+
         // A single-symbol run, for verifying one instrument without spending
         // the budget on the whole slice.
+        //
+        // An explicit `?symbol=` BYPASSES `UNREACHABLE_SOURCES`, and that is
+        // the point of it. The exclusion exists to stop a permanently-failing
+        // provider starving the AUTOMATIC slice — head-of-line blocking under
+        // `latest_imported ASC NULLS FIRST`. A named single symbol is not a
+        // slice and cannot starve anything, so the reason does not apply.
+        //
+        // It did apply the filter first until 2026-08-28, which made the one
+        // documented way to re-test CX-1 — `?symbol=BTC/USDT` — match zero
+        // rows and return 200 with an empty result. A reachability probe that
+        // reports success while asking nothing is worse than no probe: it
+        // answers the question wrongly rather than declining to answer.
         if (symbolFilter) query = query.eq("symbol", symbolFilter);
+        else query = query.not("source_code", "in", `(${UNREACHABLE_SOURCES.join(",")})`);
 
         const { data: symbols, error } = await query
           .order("latest_imported", { ascending: true, nullsFirst: true })

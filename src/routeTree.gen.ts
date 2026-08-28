@@ -189,6 +189,7 @@ import { Route as ApiPublicHooksEmailWeeklyReportRouteImport } from './routes/ap
 import { Route as ApiPublicHooksEmailReengagementRouteImport } from './routes/api/public/hooks/email-reengagement'
 import { Route as ApiPublicHooksEmailQueueRouteImport } from './routes/api/public/hooks/email-queue'
 import { Route as ApiPublicHooksEmailMonthlyReportRouteImport } from './routes/api/public/hooks/email-monthly-report'
+import { Route as ApiPublicHooksEgressProbeRouteImport } from './routes/api/public/hooks/egress-probe'
 import { Route as ApiPublicHooksEconomicCalendarRouteImport } from './routes/api/public/hooks/economic-calendar'
 import { Route as ApiPublicHooksBattleTickRouteImport } from './routes/api/public/hooks/battle-tick'
 import { Route as ApiPublicHooksBattleSettlementRouteImport } from './routes/api/public/hooks/battle-settlement'
@@ -1251,6 +1252,12 @@ const ApiPublicHooksEmailMonthlyReportRoute =
     path: '/api/public/hooks/email-monthly-report',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksEgressProbeRoute =
+  ApiPublicHooksEgressProbeRouteImport.update({
+    id: '/api/public/hooks/egress-probe',
+    path: '/api/public/hooks/egress-probe',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksEconomicCalendarRoute =
   ApiPublicHooksEconomicCalendarRouteImport.update({
     id: '/api/public/hooks/economic-calendar',
@@ -1583,6 +1590,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/battle-settlement': typeof ApiPublicHooksBattleSettlementRoute
   '/api/public/hooks/battle-tick': typeof ApiPublicHooksBattleTickRoute
   '/api/public/hooks/economic-calendar': typeof ApiPublicHooksEconomicCalendarRoute
+  '/api/public/hooks/egress-probe': typeof ApiPublicHooksEgressProbeRoute
   '/api/public/hooks/email-monthly-report': typeof ApiPublicHooksEmailMonthlyReportRoute
   '/api/public/hooks/email-queue': typeof ApiPublicHooksEmailQueueRoute
   '/api/public/hooks/email-reengagement': typeof ApiPublicHooksEmailReengagementRoute
@@ -1771,6 +1779,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/battle-settlement': typeof ApiPublicHooksBattleSettlementRoute
   '/api/public/hooks/battle-tick': typeof ApiPublicHooksBattleTickRoute
   '/api/public/hooks/economic-calendar': typeof ApiPublicHooksEconomicCalendarRoute
+  '/api/public/hooks/egress-probe': typeof ApiPublicHooksEgressProbeRoute
   '/api/public/hooks/email-monthly-report': typeof ApiPublicHooksEmailMonthlyReportRoute
   '/api/public/hooks/email-queue': typeof ApiPublicHooksEmailQueueRoute
   '/api/public/hooks/email-reengagement': typeof ApiPublicHooksEmailReengagementRoute
@@ -1977,6 +1986,7 @@ export interface FileRoutesById {
   '/api/public/hooks/battle-settlement': typeof ApiPublicHooksBattleSettlementRoute
   '/api/public/hooks/battle-tick': typeof ApiPublicHooksBattleTickRoute
   '/api/public/hooks/economic-calendar': typeof ApiPublicHooksEconomicCalendarRoute
+  '/api/public/hooks/egress-probe': typeof ApiPublicHooksEgressProbeRoute
   '/api/public/hooks/email-monthly-report': typeof ApiPublicHooksEmailMonthlyReportRoute
   '/api/public/hooks/email-queue': typeof ApiPublicHooksEmailQueueRoute
   '/api/public/hooks/email-reengagement': typeof ApiPublicHooksEmailReengagementRoute
@@ -2183,6 +2193,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/battle-settlement'
     | '/api/public/hooks/battle-tick'
     | '/api/public/hooks/economic-calendar'
+    | '/api/public/hooks/egress-probe'
     | '/api/public/hooks/email-monthly-report'
     | '/api/public/hooks/email-queue'
     | '/api/public/hooks/email-reengagement'
@@ -2371,6 +2382,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/battle-settlement'
     | '/api/public/hooks/battle-tick'
     | '/api/public/hooks/economic-calendar'
+    | '/api/public/hooks/egress-probe'
     | '/api/public/hooks/email-monthly-report'
     | '/api/public/hooks/email-queue'
     | '/api/public/hooks/email-reengagement'
@@ -2576,6 +2588,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/battle-settlement'
     | '/api/public/hooks/battle-tick'
     | '/api/public/hooks/economic-calendar'
+    | '/api/public/hooks/egress-probe'
     | '/api/public/hooks/email-monthly-report'
     | '/api/public/hooks/email-queue'
     | '/api/public/hooks/email-reengagement'
@@ -2605,6 +2618,7 @@ export interface RootRouteChildren {
   ApiPublicHooksBattleSettlementRoute: typeof ApiPublicHooksBattleSettlementRoute
   ApiPublicHooksBattleTickRoute: typeof ApiPublicHooksBattleTickRoute
   ApiPublicHooksEconomicCalendarRoute: typeof ApiPublicHooksEconomicCalendarRoute
+  ApiPublicHooksEgressProbeRoute: typeof ApiPublicHooksEgressProbeRoute
   ApiPublicHooksEmailMonthlyReportRoute: typeof ApiPublicHooksEmailMonthlyReportRoute
   ApiPublicHooksEmailQueueRoute: typeof ApiPublicHooksEmailQueueRoute
   ApiPublicHooksEmailReengagementRoute: typeof ApiPublicHooksEmailReengagementRoute
@@ -3874,6 +3888,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksEmailMonthlyReportRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/egress-probe': {
+      id: '/api/public/hooks/egress-probe'
+      path: '/api/public/hooks/egress-probe'
+      fullPath: '/api/public/hooks/egress-probe'
+      preLoaderRoute: typeof ApiPublicHooksEgressProbeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/economic-calendar': {
       id: '/api/public/hooks/economic-calendar'
       path: '/api/public/hooks/economic-calendar'
@@ -4695,6 +4716,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksBattleSettlementRoute: ApiPublicHooksBattleSettlementRoute,
   ApiPublicHooksBattleTickRoute: ApiPublicHooksBattleTickRoute,
   ApiPublicHooksEconomicCalendarRoute: ApiPublicHooksEconomicCalendarRoute,
+  ApiPublicHooksEgressProbeRoute: ApiPublicHooksEgressProbeRoute,
   ApiPublicHooksEmailMonthlyReportRoute: ApiPublicHooksEmailMonthlyReportRoute,
   ApiPublicHooksEmailQueueRoute: ApiPublicHooksEmailQueueRoute,
   ApiPublicHooksEmailReengagementRoute: ApiPublicHooksEmailReengagementRoute,
