@@ -44,8 +44,9 @@ enough detail to pick up cold. Remove an entry when it ships a fix.
 ## PAT-1 — Discarded return values: a failed call is indistinguishable from a successful one
 
 **Area:** Cross-cutting · error handling · **Found:** 2026-08-26 ·
-**Status:** open — **filed as a PATTERN, not a bug count. Instances 1-5 are
-fixed; instance 6 is open; the sweep is not done.**
+**Status:** open — **filed as a PATTERN, not a bug count. Instances 1-5 and 7
+are fixed; instance 6 is open; the sweep is not done. Instance 7 was written
+INTO NEW CODE on the same day instance 6 was filed.**
 
 ### The mechanism
 
@@ -69,7 +70,7 @@ That combination is what makes this a pattern worth a name rather than four
 tickets: **the correct code and the broken code look the same, and every safety
 net in this project is blind to the difference.**
 
-### The instances — four from one day, two found since
+### The instances — four from one day, three found since
 
 | # | Site | What it hid |
 |---|---|---|
@@ -80,9 +81,34 @@ net in this project is blind to the difference.**
 | 5 | `excursions.functions.ts` — `settle()`'s status `update` | Found 2026-08-27, fixed in `032adf4c`. The SUCCESS path 25 lines below throws on a failed write; this one discarded it, so a failed status write left a TERMINAL row unmarked and the backfill re-attempted an unmeasurable row every run, for ever, against a metered provider |
 | 6 | `service.server.ts:288` — the on-demand import's `catch` | **OPEN.** A missing `SUPABASE_SERVICE_ROLE_KEY` throws inside `runImport`, is caught here, and becomes a `console.warn` — so a whole class of import failure presents as "no data". See [MD-11](#md-11--the-on-demand-import-degrades-to-no-data-when-the-service-role-key-is-missing) |
 
+| 7 | `providers.server.ts` — `BybitHistoricalProvider`'s page cap | **Written 2026-08-28, the same day instance 6 was filed, in a provider added to fix MD-10.** A hardcoded `pages++ < 60` truncated a 90-day BTC/USDT import at exactly 60,000 bars — 41.67 days — and RETURNED SUCCESS. `upsertCandles` committed the short series, `latest_imported` advanced over it, and the missing 2026-07-01..07-17 window read as data Bybit does not have. Found only because a Battle Arena coverage gate happened to require the truncated range |
+
 Instances 5 and 6 are worth noting for a reason beyond the count: both were
 found while investigating something else entirely, four months after the
 "one day" that produced the first four. The pattern is not a historical event.
+
+**Instance 7 is worth more than that, and softening it would waste it.** It was
+introduced on 2026-08-28, hours after instance 6 was written up, by the same
+author, into brand-new code whose entire purpose was to fix a data-availability
+bug — and it is the purest form of the pattern in this file. Nothing was
+discarded and nothing threw: a loop simply stopped early and returned what it
+had. There was no `{ error }` to read, which is why every mitigation listed
+below would have missed it.
+
+The generalisation the first six did not force:
+
+> **A bounded loop that returns its partial work is the same defect as a
+> discarded error.** Both hand the caller something indistinguishable from a
+> complete result. Any guard, cap, budget, `break`, or retry ceiling that can
+> stop work early must either be derived from the work itself, or must fail
+> loudly when it trips. A magic number that silently truncates is a discarded
+> return value wearing a `for` loop.
+
+The fix applied is both halves: the budget is now derived from
+`(to - from) / (stepMs * PAGE)`, so a larger range cannot outgrow it, and
+exhausting it throws rather than returning. Three mutation tests pin it —
+reverting the budget to a constant, and turning either the budget guard or the
+cursor-advance guard back into a `break`, each turn a test red.
 
 Instance 1 is the one to remember. It ran through a full unit suite, a full
 Playwright suite, **and a publish**, losing durable records the whole time.

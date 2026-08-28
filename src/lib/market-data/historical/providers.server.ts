@@ -184,7 +184,45 @@ export class BybitHistoricalProvider implements HistoricalDataProvider {
     let confirmedEmpty = false;
     let pages = 0;
 
-    while (cursor >= from && pages++ < 60) {
+    /**
+     * Page budget DERIVED from the work, never a fixed number.
+     *
+     * This was a hardcoded 60, copied from the shape of the Binance client
+     * without checking it against the range a backfill actually asks for. 60
+     * pages at 1m is 60,000 bars — 41.67 days. A 90-day import therefore
+     * stopped dead at 41.67 days, returned the bars it had, and reported
+     * SUCCESS. Measured 2026-08-28 on BTC/USDT: exactly 60,000 rows, first bar
+     * 2026-07-17T13:36, against a request that began 2026-05-30.
+     *
+     * Any fixed number reintroduces that the moment some range exceeds it, so
+     * the budget now scales with the span being fetched. The `+ 5` absorbs
+     * partial pages, gaps and a boundary that does not align to a page.
+     */
+    const maxPages = Math.ceil((to - from) / (stepMs * BYBIT_PAGE)) + 5;
+
+    /** Why the walk stopped. `null` means it ran the cursor past `from`. */
+    let exit: "short-page" | "confirmed-empty" | null = null;
+
+    while (cursor >= from) {
+      /**
+       * A truncated range is NOT a result. PAT-1.
+       *
+       * Returning `out` here would hand the caller a short series that is
+       * indistinguishable from a complete one — no error, no status, nothing
+       * to read — and `upsertCandles` would commit it, `latest_imported` would
+       * advance, and the gap would look like data the venue does not have.
+       * That is precisely how the 60-page cap hid for a full import cycle.
+       * The budget is generous and derived; exhausting it means something is
+       * wrong, and wrong must be loud.
+       */
+      if (pages >= maxPages) {
+        throw new Error(
+          `Bybit: page budget of ${maxPages} exhausted for ${nativeSymbol} ${timeframe} ` +
+          `after ${out.length} bars; cursor still at ${new Date(cursor).toISOString()} ` +
+          `with ${new Date(from).toISOString()} requested. Partial range withheld.`,
+        );
+      }
+      pages++;
       const url = new URL(`${BYBIT_REST}/v5/market/kline`);
       url.searchParams.set("category", "spot");
       url.searchParams.set("symbol", nativeSymbol.toUpperCase());
@@ -218,6 +256,7 @@ export class BybitHistoricalProvider implements HistoricalDataProvider {
         // reaching past the listing date after real pages is a complete
         // result, not an empty one.
         confirmedEmpty = out.length === 0;
+        exit = "confirmed-empty";
         break;
       }
 
@@ -234,16 +273,36 @@ export class BybitHistoricalProvider implements HistoricalDataProvider {
         out.push({ ts, open: o, high: h, low: l, close: c, volume: Number(row[5] ?? 0) });
       }
 
-      if (list.length < BYBIT_PAGE) break;
-      if (!Number.isFinite(oldest)) break;
+      // A short page means the venue has nothing older in range. Complete.
+      if (list.length < BYBIT_PAGE) { exit = "short-page"; break; }
+
+      // Everything below is anomalous rather than terminal. A full page that
+      // yields no in-window bar, or one that fails to move the cursor
+      // backwards, cannot be distinguished from a complete result by the
+      // caller — so it throws for the same reason the budget does.
+      if (!Number.isFinite(oldest)) {
+        throw new Error(
+          `Bybit: full page with no bar inside the window for ${nativeSymbol} ${timeframe} ` +
+          `at ${new Date(cursor).toISOString()}. Partial range withheld.`,
+        );
+      }
       const next = oldest - stepMs;
-      // Strictly decreasing, or stop. A page that fails to move the cursor
-      // backwards would otherwise refetch itself until the guard trips.
-      if (next >= cursor) break;
+      if (next >= cursor) {
+        throw new Error(
+          `Bybit: cursor failed to advance for ${nativeSymbol} ${timeframe} ` +
+          `at ${new Date(cursor).toISOString()}. Partial range withheld.`,
+        );
+      }
       cursor = next;
     }
 
     out.sort((a, b) => a.ts - b.ts);
+    // Attributable in worker logs: a legitimately short series can be told
+    // apart from a suspicious one without re-running anything.
+    console.info(
+      `[bybit] ${nativeSymbol} ${timeframe} ${out.length} bars in ${pages}/${maxPages} pages, ` +
+      `stopped: ${exit ?? "reached-from"}`,
+    );
     return { candles: out, confirmedEmpty };
   }
 

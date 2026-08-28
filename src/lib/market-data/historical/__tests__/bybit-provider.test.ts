@@ -91,6 +91,75 @@ describe("BybitHistoricalProvider · pagination direction", () => {
     expect(res.confirmedEmpty).toBe(false);
   });
 
+  it("fetches a range far beyond the old fixed 60-page cap", async () => {
+    // 70,000 one-minute bars — 70 pages. The previous hardcoded budget of 60
+    // truncated this at 60,000 and returned success, which is exactly what
+    // happened to the real BTC/USDT import on 2026-08-28.
+    const from = T0;
+    const to = T0 + 69_999 * MIN;
+    mockFetch((url) => ({
+      retCode: 0, retMsg: "OK",
+      result: { list: page(Number(url.searchParams.get("end")), 1000, from) },
+    }));
+    const res = await new BybitHistoricalProvider().fetchCandles({
+      nativeSymbol: "BTCUSDT", timeframe: "1m", from, to,
+    });
+    expect(res.candles).toHaveLength(70_000);
+    expect(res.candles[0].ts).toBe(from);
+  });
+
+  it("THROWS rather than truncating when the derived budget is exhausted", async () => {
+    // Full pages that advance the cursor only 10 minutes each: the walk can
+    // never reach `from` inside any sane budget. The old code returned the
+    // partial series; a caller could not tell it from a complete one, so
+    // `upsertCandles` would commit a gap and `latest_imported` would advance
+    // over it. PAT-1 — a partial result must not look like a whole one.
+    const from = T0;
+    const to = T0 + 2500 * MIN;
+    mockFetch((url) => {
+      const end = Number(url.searchParams.get("end"));
+      const rows: string[][] = [];
+      for (let i = 0; i < 1000; i++) rows.push(bar(end - (i % 10) * MIN, 100));
+      return { retCode: 0, retMsg: "OK", result: { list: rows } };
+    });
+    await expect(
+      new BybitHistoricalProvider().fetchCandles({
+        nativeSymbol: "BTCUSDT", timeframe: "1m", from, to,
+      }),
+    ).rejects.toThrow(/page budget .* exhausted/i);
+  });
+
+  it("THROWS when the cursor cannot advance", async () => {
+    // Asserted on the cursor message ALONE, with no `|page budget` fallback.
+    //
+    // The first version of this test allowed either error, and the mutation
+    // that turns the cursor guard back into a silent `break` still passed —
+    // because the walk then crawled forward one bar per page until the BUDGET
+    // threw instead. An alternation in a rejection matcher is the same weak
+    // assertion as a monotonicity check on the cursor: it accepts the failure
+    // mode it was written to exclude.
+    //
+    // So the mock has to genuinely stall the cursor: page one advances
+    // normally, page two returns bars entirely ABOVE the new cursor (still
+    // inside `to`, so they survive the window filter), leaving `oldest -
+    // stepMs >= cursor`.
+    const from = T0;
+    const to = T0 + 5000 * MIN;
+    let call = 0;
+    mockFetch((url) => {
+      const end = Number(url.searchParams.get("end"));
+      const rows = call++ === 0
+        ? page(end, 1000, from)
+        : page(to, 1000, from); // ignores the cursor: same top-of-range page again
+      return { retCode: 0, retMsg: "OK", result: { list: rows } };
+    });
+    await expect(
+      new BybitHistoricalProvider().fetchCandles({
+        nativeSymbol: "BTCUSDT", timeframe: "1m", from, to,
+      }),
+    ).rejects.toThrow(/cursor failed to advance/i);
+  });
+
   it("stops on a short page instead of spinning", async () => {
     const spy = mockFetch((url) => ({
       retCode: 0, retMsg: "OK",
