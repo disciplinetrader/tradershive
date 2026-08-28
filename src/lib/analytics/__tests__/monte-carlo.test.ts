@@ -152,6 +152,23 @@ describe("runMonteCarlo — the sampler is unbiased, not merely deterministic", 
     310.0, -175.5, 96.0, -85.0, 187.25, -240.0,
   ];
 
+  /**
+   * 10s, chosen rather than inherited. E2E-2.
+   *
+   * This test is deterministic — fixed seeds, fixed RUNS, fixed thresholds —
+   * and has never failed an assertion. It failed on the CLOCK, against
+   * vitest's 5000ms DEFAULT, which nobody picked for it: 200 Monte Carlo runs
+   * is real work, and 5s was merely close enough to pass on an idle machine.
+   * Measured under full-suite load on 2026-08-28: 5173ms, 5254ms, 6123ms.
+   *
+   * 10s is ~2x the slowest observed, and it is a CEILING rather than a target.
+   * If this ever needs raising again, that is a signal the test got more
+   * expensive, and the cost belongs in this comment — not in a bigger number.
+   *
+   * Scope: this timeout applies to THIS test only. RUNS is still 200, the
+   * seeds, assertions and sampler are untouched, and no global vitest timeout
+   * was changed.
+   */
   it("converges on the exact bootstrap distribution as seeds are averaged", () => {
     // Exact values from a DP convolution of the 12-fold bootstrap sum:
     // mean 228.25, median 223.75, P(sum > 0) = 64.949%.
@@ -166,7 +183,7 @@ describe("runMonteCarlo — the sampler is unbiased, not merely deterministic", 
     expect(Math.abs(medians / RUNS - 223.75)).toBeLessThan(10);
     expect(Math.abs(means / RUNS - 228.25)).toBeLessThan(6);
     expect(Math.abs(profits / RUNS - 0.64949)).toBeLessThan(0.01);
-  });
+  }, 10_000);
 
   it("can draw the first and the last element of the sample", () => {
     // Distinct powers of two, so a value identifies its index. An index the
