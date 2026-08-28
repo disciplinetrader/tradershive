@@ -61,13 +61,23 @@ const DEFAULT_BACKFILL_LIMIT = 2;
  * the backward phase is gated on a clean forward phase — depth would never be
  * built either.
  *
- * Head-of-line blocking by design, in other words. Remove this when CX-1 is
- * resolved; until then it is the difference between a job that works and one
- * that spins.
+ * Head-of-line blocking by design, in other words.
  *
  * It applies to the AUTOMATIC slice only. An explicit `?symbol=` bypasses it,
  * so a named symbol can still be probed from the deployment — which is the
  * only place CX-1 can be measured, since the block is on the origin IP.
+ *
+ * DORMANT SINCE 2026-08-28, AND KEPT ON PURPOSE. Crypto now routes to Bybit,
+ * so no enrolled symbol resolves to Binance and this list currently excludes
+ * nothing. It stays because `historical_symbols` is edited by hand: a row
+ * re-added with `source_code = 'binance'` would sort first for ever under
+ * `latest_imported ASC NULLS FIRST`, fail permanently against CX-1, and starve
+ * the slice again — silently, because a failing symbol never advances its own
+ * cursor. The guard costs nothing while empty and prevents a regression that
+ * presents as "sync stopped working" rather than as a bad row.
+ *
+ * Delete it only when Binance is reachable from the deployment, not merely
+ * when nothing routes there.
  */
 const UNREACHABLE_SOURCES = ["binance"];
 

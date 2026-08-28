@@ -4187,3 +4187,58 @@ be nulled. Per symbol-and-timeframe means the columns belong in a different
 table and every reader changes. One is a two-line guard plus a data fix; the
 other is a schema change. Both are defensible and the choice is not obvious
 from the code.
+
+---
+
+## MD-12 — Live crypto runs on Binance, historical crypto runs on Bybit
+
+**Area:** Market data · **Found:** 2026-08-28 · **Status:** open, accepted —
+**a deliberate split, recorded so it is a choice rather than a gap somebody
+finds later.**
+
+### The split
+
+| Path | Runs on | Venue |
+|---|---|---|
+| Live quotes / streaming | the user's **browser** | Binance (`stream.binance.com`, `api.binance.com`) |
+| Historical import | the **Cloudflare Worker** | Bybit (`api.bybit.com`) |
+
+Both are correct for where they run. Binance is unreachable from the worker's
+egress ([CX-1](./replay-studio-phase2.md), re-confirmed 2026-08-28 on
+`api.binance.com` AND `data-api.binance.vision`) and perfectly reachable from a
+residential browser, which is why live crypto has always worked while the store
+stayed empty. Moving live to Bybit as well would mean changing a path that is
+not broken, so it was not done.
+
+### What that costs
+
+**An unmeasured exchange spread.** The replay tape and the live quote can
+disagree for the same instant, because they come from two different order
+books. It is a spread on the SAME instrument — both venues list `BTCUSDT`
+spot — not a currency basis, so it should be a few basis points rather than a
+percentage. **That "should" is an expectation, not a measurement.** Nobody has
+compared a Bybit and a Binance bar at the same timestamp.
+
+Where it could surface:
+
+- A replay session priced off Bybit, with a live quote widget priced off
+  Binance, showing two prices at once.
+- A journal entry opened live at a Binance price and later measured for
+  MAE/MFE against Bybit candles — the excursion is computed against a tape the
+  fill did not come from.
+
+The second is the one that matters, and it is small: excursions measure a
+RANGE over minutes, so a few-bp venue offset moves MAE/MFE by far less than the
+candle-granularity error already accepted for sub-minute trades.
+
+### What would settle it
+
+One query's worth of work, not yet done: fetch the same minute from both venues
+across a day and report the distribution in basis points, the way the
+BTC/USDT-vs-BTC/USD basis was measured for Twelve Data (that one came back
+0.0 bp across 60 consecutive minutes, which is itself evidence Twelve Data's
+"BTC/USD" is a relabelled USDT feed).
+
+Until that exists, do not quote a number for this spread. If it turns out to be
+material, the fix is to move live crypto to Bybit too — it is reachable from
+both sides, which Binance is not.

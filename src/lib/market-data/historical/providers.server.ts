@@ -124,6 +124,149 @@ export class BinanceHistoricalProvider implements HistoricalDataProvider {
   }
 }
 
+/* ------------------------------ Bybit ------------------------------
+ *
+ * Crypto history, replacing Binance because Binance cannot be reached from
+ * this deployment (CX-1: 403 with an HTML body to the worker's egress, on both
+ * `api.binance.com` AND `data-api.binance.vision`, confirmed 2026-08-28 by
+ * `/api/public/hooks/egress-probe`). Bybit answered the same probe 200 with 61
+ * real 1m klines in 85ms, so the block is Binance-specific rather than a
+ * generic cloud-IP restriction.
+ *
+ * It is also the closer instrument, not merely the reachable one: Bybit lists
+ * the SAME `BTCUSDT`-style spot pairs the journal's trades are recorded
+ * against, so nothing here substitutes a USD spot price for a USDT pair.
+ *
+ * TWO WAYS THIS DIFFERS FROM THE BINANCE CLIENT ABOVE, BOTH LOAD-BEARING:
+ *
+ * 1. Bybit returns candles NEWEST-FIRST. Binance returns them oldest-first,
+ *    and its loop advances a cursor off the last bar it received. Copying that
+ *    shape here walks the wrong way and terminates after one page — so this
+ *    pages BACKWARDS from `end`, and sorts ascending once at the end.
+ *
+ * 2. Bybit distinguishes an empty window from a bad request, and Binance
+ *    cannot. `retCode: 0` with `list: []` is an explicit "your range was fine,
+ *    there is nothing in it", while an unknown symbol is `retCode: 10001`.
+ *    That is exactly the `confirmedEmpty` contract, so crypto gets the
+ *    HD-4 protection forex already has rather than inheriting Binance's
+ *    ambiguity.
+ */
+
+const BYBIT_REST = "https://api.bybit.com";
+
+const BYBIT_TF: Partial<Record<HistoricalTimeframe, string>> = {
+  "1m": "1", "5m": "5", "15m": "15", "30m": "30",
+  "1H": "60", "4H": "240", "1D": "D", "1W": "W", "1M": "M",
+};
+
+/** Bybit's hard cap per kline request. */
+const BYBIT_PAGE = 1000;
+
+/** `retCode` for a well-formed request that matched no instrument. */
+const BYBIT_UNKNOWN_SYMBOL = 10001;
+
+export class BybitHistoricalProvider implements HistoricalDataProvider {
+  readonly code = "bybit";
+  readonly label = "Bybit";
+  readonly supports: HistoricalTimeframe[] = ["1m","5m","15m","30m","1H","4H","1D","1W","1M"];
+
+  async fetchCandles({ nativeSymbol, timeframe, from, to }: {
+    nativeSymbol: string; timeframe: HistoricalTimeframe; from: number; to: number;
+  }): Promise<FetchCandlesResult> {
+    const interval = BYBIT_TF[timeframe];
+    if (!interval) throw new Error(`Bybit: unsupported timeframe ${timeframe}`);
+    const stepMs = HISTORICAL_TF_SECONDS[timeframe] * 1000;
+
+    const out: HistoricalCandle[] = [];
+    const seen = new Set<number>();
+    // Walk BACKWARDS: `cursor` is the inclusive upper edge of the next page.
+    let cursor = to;
+    let confirmedEmpty = false;
+    let pages = 0;
+
+    while (cursor >= from && pages++ < 60) {
+      const url = new URL(`${BYBIT_REST}/v5/market/kline`);
+      url.searchParams.set("category", "spot");
+      url.searchParams.set("symbol", nativeSymbol.toUpperCase());
+      url.searchParams.set("interval", interval);
+      url.searchParams.set("start", String(from));
+      url.searchParams.set("end", String(cursor));
+      url.searchParams.set("limit", String(BYBIT_PAGE));
+
+      const res = await fetch(url.toString());
+      if (!res.ok) {
+        const body = await res.text().catch(() => res.statusText);
+        throw new Error(`Bybit HTTP ${res.status}: ${body.slice(0, 200)}`);
+      }
+      const json = (await res.json()) as {
+        retCode?: number; retMsg?: string; result?: { list?: string[][] };
+      };
+
+      if (json?.retCode === BYBIT_UNKNOWN_SYMBOL) {
+        // NOT an empty window. A symbol Bybit does not list can never fill,
+        // and calling it empty would leave the row eligible for ever.
+        throw new Error(`Bybit: unknown symbol ${nativeSymbol} (retCode 10001)`);
+      }
+      if (json?.retCode !== 0) {
+        throw new Error(`Bybit retCode ${json?.retCode}: ${String(json?.retMsg ?? "unknown error")}`);
+      }
+
+      const list = json.result?.list ?? [];
+      if (list.length === 0) {
+        // `retCode: 0` with no rows is Bybit VOUCHING for the window. Only
+        // meaningful when nothing was collected at all — a backward walk
+        // reaching past the listing date after real pages is a complete
+        // result, not an empty one.
+        confirmedEmpty = out.length === 0;
+        break;
+      }
+
+      // Newest-first. `[startMs, open, high, low, close, volume, turnover]`.
+      let oldest = Number.POSITIVE_INFINITY;
+      for (const row of list) {
+        const ts = Number(row[0]);
+        if (!Number.isFinite(ts) || ts < from || ts > to) continue;
+        if (ts < oldest) oldest = ts;
+        if (seen.has(ts)) continue;
+        const o = Number(row[1]), h = Number(row[2]), l = Number(row[3]), c = Number(row[4]);
+        if (!Number.isFinite(o + h + l + c)) continue;
+        seen.add(ts);
+        out.push({ ts, open: o, high: h, low: l, close: c, volume: Number(row[5] ?? 0) });
+      }
+
+      if (list.length < BYBIT_PAGE) break;
+      if (!Number.isFinite(oldest)) break;
+      const next = oldest - stepMs;
+      // Strictly decreasing, or stop. A page that fails to move the cursor
+      // backwards would otherwise refetch itself until the guard trips.
+      if (next >= cursor) break;
+      cursor = next;
+    }
+
+    out.sort((a, b) => a.ts - b.ts);
+    return { candles: out, confirmedEmpty };
+  }
+
+  async earliest(nativeSymbol: string): Promise<number | null> {
+    // `limit=1` returns the NEWEST bar here, not the oldest — the opposite of
+    // Binance. Monthly candles instead: 1000 of them span ~83 years, so one
+    // request holds the whole listing and its last element is the first bar.
+    const url = new URL(`${BYBIT_REST}/v5/market/kline`);
+    url.searchParams.set("category", "spot");
+    url.searchParams.set("symbol", nativeSymbol.toUpperCase());
+    url.searchParams.set("interval", "M");
+    url.searchParams.set("limit", String(BYBIT_PAGE));
+    const res = await fetch(url.toString());
+    if (!res.ok) return null;
+    const json = (await res.json()) as { retCode?: number; result?: { list?: string[][] } };
+    if (json?.retCode !== 0) return null;
+    const list = json.result?.list ?? [];
+    if (!list.length) return null;
+    const ts = Number(list[list.length - 1][0]);
+    return Number.isFinite(ts) ? ts : null;
+  }
+}
+
 /* ------------------------------ Stooq ------------------------------
  *
  * Free, no-key daily OHLC feed for FX / metals / indices / commodities.
@@ -403,6 +546,10 @@ export class TwelveDataHistoricalProvider implements HistoricalDataProvider {
 /* ------------------------------ Registry ------------------------------ */
 
 const REGISTRY: Record<string, HistoricalDataProvider> = {
+  bybit: new BybitHistoricalProvider(),
+  // Retained though nothing routes to it: CX-1 blocks it from this deployment,
+  // but `historical_candles` still holds rows written under `provider_code =
+  // 'binance'`, and an explicit request must still resolve rather than throw.
   binance: new BinanceHistoricalProvider(),
   twelvedata: new TwelveDataHistoricalProvider(),
   // Optional, disabled by default — only reachable when a caller explicitly

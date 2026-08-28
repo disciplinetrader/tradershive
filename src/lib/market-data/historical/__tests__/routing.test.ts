@@ -11,7 +11,9 @@ afterEach(() => {
 
 describe("historical provider routing", () => {
   it("routes each market to its canonical provider", () => {
-    expect(canonicalProviderForMarket("crypto")).toBe("binance");
+    // Bybit, not Binance, since 2026-08-28 — CX-1 blocks Binance from this
+    // deployment's egress on both of its hostnames. See MD-10/MD-12.
+    expect(canonicalProviderForMarket("crypto")).toBe("bybit");
     for (const m of ["forex", "metals", "indices", "commodities", "stocks"]) {
       expect(canonicalProviderForMarket(m)).toBe("twelvedata");
     }
@@ -30,11 +32,20 @@ describe("historical provider routing", () => {
   });
 
   it("overrides a non-canonical stored provider", () => {
-    expect(resolveHistoricalProvider("crypto", "twelvedata").code).toBe("binance");
+    expect(resolveHistoricalProvider("crypto", "twelvedata").code).toBe("bybit");
+    // A row still storing the OLD crypto provider is overridden too, which is
+    // what lets the cutover deploy before the `historical_symbols` update runs.
+    const legacy = resolveHistoricalProvider("crypto", "binance");
+    expect(legacy.code).toBe("bybit");
+    expect(legacy.overrode).toBe(true);
   });
 
   it("maps native tickers per provider", () => {
     expect(nativeSymbolForProvider("binance", "BTC/USDT")).toBe("BTCUSDT");
+    // Bybit lists the identical ticker, so no `native_symbol` migration was
+    // needed for the eight enrolled crypto rows.
+    expect(nativeSymbolForProvider("bybit", "BTC/USDT")).toBe("BTCUSDT");
+    expect(nativeSymbolForProvider("bybit", "ETH/USDT")).toBe("ETHUSDT");
     expect(nativeSymbolForProvider("twelvedata", "EURUSD")).toBe("EUR/USD");
     expect(nativeSymbolForProvider("twelvedata", "XAU/USD")).toBe("XAU/USD");
     // Index ETFs are their own Twelve Data ticker — nothing to translate.

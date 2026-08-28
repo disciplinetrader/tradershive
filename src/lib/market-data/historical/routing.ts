@@ -13,9 +13,18 @@
 export type HistoricalMarket =
   | "crypto" | "forex" | "metals" | "indices" | "commodities" | "stocks";
 
-/** market → canonical historical provider code. */
+/**
+ * market → canonical historical provider code.
+ *
+ * Crypto moved from Binance to Bybit on 2026-08-28. Not a preference: CX-1 is
+ * a 403 to this deployment's egress on BOTH `api.binance.com` and
+ * `data-api.binance.vision`, confirmed by `/api/public/hooks/egress-probe`,
+ * while Bybit answered the same probe with real klines. Bybit also lists the
+ * same `BTCUSDT` spot pairs the journal records trades against, so this is a
+ * change of venue and not a change of instrument.
+ */
 export const HISTORICAL_PROVIDER_ROUTING: Record<HistoricalMarket, string> = {
-  crypto: "binance",
+  crypto: "bybit",
   forex: "twelvedata",
   metals: "twelvedata",
   indices: "twelvedata",
@@ -129,6 +138,13 @@ export function nativeSymbolForProvider(
 
   const sym = canonicalSymbol.toUpperCase();
   switch (providerCode) {
+    // Identical rule, verified 2026-08-28 against Bybit's 546 listed spot
+    // instruments: all eight enrolled crypto symbols exist under exactly the
+    // concatenated ticker (`BTC/USDT` → `BTCUSDT`). Deliberately NOT collapsed
+    // into one case with binance — they agree today by coincidence of format,
+    // not by contract, and a future divergence should touch one line.
+    case "bybit":
+      return sym.replace(/[^A-Z0-9]/g, "");
     case "binance":
       return sym.replace(/[^A-Z0-9]/g, "");
     case "twelvedata": {
