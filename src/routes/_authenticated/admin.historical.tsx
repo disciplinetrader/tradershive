@@ -72,7 +72,8 @@ function HistoricalAdminPage() {
       data: { symbolId, timeframe: tf, from: Date.now() - days * 86400_000, to: Date.now(), aggregate: true },
     }),
     onSuccess: (r: any) => {
-      toast.success(`Imported ${r?.inserted ?? 0} candles (${r?.aggregated ?? 0} aggregated)`);
+      // Queued, not imported: the fetch happens on the scheduled path.
+      toast.success(r?.deduped ? "Already queued" : "Import queued");
       qc.invalidateQueries({ queryKey: ["hist"] });
     },
     onError: (e: any) => toast.error(e?.message ?? "Import failed"),
@@ -86,7 +87,7 @@ function HistoricalAdminPage() {
       },
     }),
     onSuccess: (r: any) => {
-      toast.success(`Bulk import complete: ${r?.ok ?? 0} ok, ${r?.failed ?? 0} failed`);
+      toast.success(`Queued ${r?.enqueued ?? 0} import(s)${r?.deduped ? `, ${r.deduped} already queued` : ""}`);
       qc.invalidateQueries({ queryKey: ["hist"] });
     },
     onError: (e: any) => toast.error(e?.message ?? "Bulk import failed"),

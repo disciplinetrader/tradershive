@@ -288,14 +288,27 @@ export const runHistoricalImport = createServerFn({ method: "POST" })
       .from("historical_symbols").select("*").eq("id", data.symbolId).maybeSingle();
     if (error) throw error;
     if (!sym) throw new Error("Symbol not found");
-    const { runImport } = await import("./historical/pipeline.server");
+    // ENQUEUE ONLY - no provider call happens on this request.
+    //
+    // A Worker executes in the Cloudflare colo nearest whoever triggered it,
+    // and the colo decides the outbound egress. Measured 2026-08-29: the same
+    // request reached Bybit 200 through KR/ICN when triggered by pg_net, and
+    // 403 "configured to block access from your country" through IN/BOM when
+    // triggered from a browser - on the first request. Fetching inline here
+    // runs the provider call from an egress nobody chose.
+    //
+    // The scheduled `historical-sync` drain performs the fetch instead, on the
+    // pg_net path that already works. See `enqueueImportJob`.
+    const { enqueueImportJob } = await import("./historical/pipeline.server");
     const to = data.to ?? Date.now();
     const from = data.from ?? to - 90 * 86400_000;
-    return runImport({
-      symbol: sym.symbol, nativeSymbol: sym.native_symbol, sourceCode: sym.source_code,
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const res = await enqueueImportJob(supabaseAdmin, {
+      symbol: sym.symbol, sourceCode: sym.source_code,
       timeframe: data.timeframe, from, to,
-      triggeredBy: "admin", aggregateHigherTfs: data.aggregate, priority: data.priority,
+      aggregate: data.aggregate, priority: data.priority, triggeredBy: "admin",
     });
+    return { ...res, queued: true };
   });
 
 /** Bulk import — enqueue N symbols matching a filter. Runs sequentially to respect rate limits. */
@@ -318,25 +331,39 @@ export const bulkHistoricalImport = createServerFn({ method: "POST" })
     const { data: syms, error } = await q.order("priority", { ascending: true });
     if (error) throw error;
     if (!syms?.length) return { enqueued: 0, ok: 0, failed: 0 };
-    const { runImport } = await import("./historical/pipeline.server");
+    // ENQUEUE ONLY, for the same reason as `runHistoricalImport` above: this
+    // request may be executing in any colo, and the provider fetch must happen
+    // on the scheduled path.
+    //
+    // It also removes a second problem this function always had - it ran every
+    // matched symbol's import SEQUENTIALLY inside one request, so a bulk over
+    // a real catalog could not finish inside the platform's ceiling regardless
+    // of egress. Enqueuing N rows is bounded work; draining them is paced.
+    const { enqueueImportJob } = await import("./historical/pipeline.server");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const to = Date.now();
     const from = to - data.days * 86400_000;
-    let okCount = 0;
+    const jobIds: string[] = [];
+    let deduped = 0;
     let failCount = 0;
     for (const sym of syms) {
       try {
-        await runImport({
-          symbol: sym.symbol, nativeSymbol: sym.native_symbol, sourceCode: sym.source_code,
+        const r = await enqueueImportJob(supabaseAdmin, {
+          symbol: sym.symbol, sourceCode: sym.source_code,
           timeframe: data.timeframe, from, to,
+          aggregate: data.aggregate, priority: 200,
           triggeredBy: `bulk:${data.market ?? "all"}`,
-          aggregateHigherTfs: data.aggregate, priority: 200,
         });
-        okCount++;
+        jobIds.push(r.jobId);
+        if (r.deduped) deduped++;
       } catch {
         failCount++;
       }
     }
-    return { enqueued: syms.length, ok: okCount, failed: failCount };
+    return {
+      enqueued: jobIds.length, deduped, failed: failCount,
+      matched: syms.length, jobIds, queued: true,
+    };
   });
 
 /** Enable / disable all symbols matching a filter. */

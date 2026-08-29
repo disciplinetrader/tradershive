@@ -49,6 +49,42 @@ const MAX_LIMIT = 33;
 const DEFAULT_BACKFILL_LIMIT = 2;
 
 /**
+ * Queued admin jobs to execute per tick.
+ *
+ * ONE, and the number comes from the shape of the work rather than taste. The
+ * scheduled phases run 2 forward plus 2 backward imports over ~2-day windows -
+ * small, and the whole tick usually lands well under 20s (success p95 is
+ * 14.6s). A queued ADMIN job is a 30-90 day range and can plausibly consume the
+ * entire request on its own; the longest successful import observed is 105.5s.
+ *
+ * So at a drain limit of 2, starving the scheduled slice stops being an edge
+ * case and becomes the normal outcome. One is the largest value that keeps
+ * starvation exceptional. Override per call with `?drain=`.
+ */
+const DEFAULT_DRAIN_LIMIT = 1;
+
+/**
+ * Never START a queued job after this much of the request is gone.
+ *
+ * Guards against beginning work that cannot finish. It does not interrupt work
+ * in flight: a claimed job runs to its own conclusion, because abandoning it
+ * midway is precisely what manufactures the stale rows HD-6 cleans up.
+ */
+const QUEUE_START_DEADLINE_MS = 30_000;
+
+/**
+ * Skip the scheduled phases entirely past this point.
+ *
+ * Sized against the 105.5s longest observed successful import: 60s leaves real
+ * headroom, and a slice started at 61s that then needs 40s would be racing the
+ * platform for no benefit. Skipping is cheap because both phases order by
+ * `latest_imported ASC NULLS FIRST` - a symbol passed over this tick sorts
+ * first on the next one, so nothing is permanently starved and a missed slice
+ * costs 15 minutes.
+ */
+const SCHEDULED_SKIP_AFTER_MS = 60_000;
+
+/**
  * Sources that cannot succeed, excluded from the slice entirely.
  *
  * Binance answers 403 with an HTML body to this deployment's egress and does
@@ -100,6 +136,9 @@ export const Route = createFileRoute("/api/public/hooks/historical-sync")({
         const denied = checkCronAuth(request);
         if (denied) return denied;
 
+        // One clock for every budget decision in this handler.
+        const handlerStart = Date.now();
+
         // `limit` may come from the query string or the JSON body, so the cron
         // command and a manual curl can both set it.
         const url = new URL(request.url);
@@ -109,7 +148,7 @@ export const Route = createFileRoute("/api/public/hooks/historical-sync")({
         const symbolFilter = url.searchParams.get("symbol") ?? undefined;
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { runIncrementalUpdate, runBackwardUpdate, sweepStaleImportJobs } =
+        const { runIncrementalUpdate, runBackwardUpdate, sweepStaleImportJobs, drainQueuedJobs } =
           await import("@/lib/market-data/historical/pipeline.server");
 
         // ---- Phase 0 - reap jobs whose request died --------------------------
@@ -133,6 +172,50 @@ export const Route = createFileRoute("/api/public/hooks/historical-sync")({
           console.error("[historical-sync] stale sweep failed", e);
           staleSweep = { error: e instanceof Error ? e.message : String(e) };
         }
+
+        // ---- Phase 1 - drain admin-enqueued jobs ----------------------------
+        //
+        // AFTER the sweep, deliberately. The sweep releases rows whose request
+        // died; running it first means a job stuck `running` from a previous
+        // tick is already marked failed and cannot be mistaken for live work.
+        //
+        // BEFORE the scheduled phases, also deliberately. Admin work is
+        // explicitly requested by a person who is watching for it, while the
+        // scheduled slice is self-healing: it orders by `latest_imported ASC
+        // NULLS FIRST`, so anything it misses sorts first next tick.
+        //
+        // These jobs exist at all because a manual import must not perform the
+        // provider fetch itself - the browser-triggered colo reaches Bybit from
+        // an egress that CloudFront refuses. See `enqueueImportJob`.
+        const rawDrain = Number(
+          url.searchParams.get("drain") ?? (body as { drain?: unknown }).drain,
+        );
+        const drainLimit = Number.isFinite(rawDrain) && rawDrain >= 0
+          ? Math.min(Math.floor(rawDrain), MAX_LIMIT)
+          : DEFAULT_DRAIN_LIMIT;
+
+        let queueDrain: Record<string, unknown>;
+        try {
+          queueDrain = drainLimit === 0
+            ? { skipped: "drain=0" }
+            : {
+                ...(await drainQueuedJobs(supabaseAdmin, {
+                  limit: drainLimit,
+                  startedAt: handlerStart,
+                  deadlineMs: QUEUE_START_DEADLINE_MS,
+                })),
+              };
+        } catch (e) {
+          // Hygiene must never take the sync with it, same rule as the sweep.
+          console.error("[historical-sync] queue drain failed", e);
+          queueDrain = { error: e instanceof Error ? e.message : String(e) };
+        }
+
+        // Point 8: do not begin work that cannot safely complete.
+        const elapsedAfterDrain = Date.now() - handlerStart;
+        const scheduledSkipped = elapsedAfterDrain >= SCHEDULED_SKIP_AFTER_MS
+          ? `budget: ${Math.round(elapsedAfterDrain / 1000)}s elapsed before the scheduled slice`
+          : null;
 
         let query = supabaseAdmin
           .from("historical_symbols")
@@ -163,7 +246,7 @@ export const Route = createFileRoute("/api/public/hooks/historical-sync")({
         if (error) throw error;
 
         const results: Array<Record<string, unknown>> = [];
-        for (const s of symbols ?? []) {
+        for (const s of scheduledSkipped ? [] : (symbols ?? [])) {
           try {
             const r = await runIncrementalUpdate(s as never);
             results.push({ symbol: s.symbol, ok: true, ...(typeof r === "object" ? r : {}) });
@@ -191,7 +274,9 @@ export const Route = createFileRoute("/api/public/hooks/historical-sync")({
         let backfillSkipped: string | null = null;
 
         const throttled = results.some((r) => r.ok === false && isThrottle(r.error));
-        if (throttled) {
+        if (scheduledSkipped) {
+          backfillSkipped = scheduledSkipped;
+        } else if (throttled) {
           backfillSkipped = "forward phase hit a rate limit";
         } else {
           const rawBack = Number(
@@ -245,9 +330,12 @@ export const Route = createFileRoute("/api/public/hooks/historical-sync")({
           results,
           backfill,
           backfillSkipped,
-          // Counts only. A zero sweep writes no log line anywhere; this is how
-          // it stays observable without one.
+          // Counts only. A zero sweep and an empty drain write no log line
+          // anywhere; this is how both stay observable without one.
           staleSweep,
+          queueDrain,
+          scheduledSkipped,
+          elapsedMs: Date.now() - handlerStart,
         });
       }),
     },

@@ -408,6 +408,220 @@ export async function sweepStaleImportJobs(
   return { checked: rows.length, swept: recovered.length, recovered };
 }
 
+export type EnqueueImportOpts = {
+  symbol: string;
+  sourceCode: string;
+  timeframe: HistoricalTimeframe;
+  from: number;
+  to: number;
+  aggregate?: boolean;
+  priority?: number;
+  triggeredBy?: string;
+};
+
+export type EnqueueResult = { jobId: string; deduped: boolean };
+
+/**
+ * Record an import to be performed LATER, by the scheduled worker.
+ *
+ * WHY THE CALLER MUST NOT FETCH
+ *
+ * A Worker runs in the Cloudflare colo nearest whoever triggered it, and the
+ * colo determines the outbound egress. Measured 2026-08-29: the same probe
+ * reached Bybit with HTTP 200 through KR/ICN when triggered by pg_net from
+ * Supabase, and HTTP 403 "The Amazon CloudFront distribution is configured to
+ * block access from your country" through IN/BOM when triggered from a browser
+ * - on the FIRST request, with no sustained traffic. So an admin-triggered
+ * import that fetches inline is running the provider call from an egress we do
+ * not control and cannot predict.
+ *
+ * Enqueuing moves every provider call onto the pg_net-triggered path that
+ * already works. This does NOT fix the geographic dependency, it routes around
+ * it: if Supabase's region or Cloudflare's routing changes, the same failure
+ * returns on the "working" path. See MD-12 and CX-1.
+ *
+ * DEDUPE is by (source, symbol, timeframe, range) against jobs still `queued`
+ * or `running`, so a double-clicked button returns the existing job rather than
+ * a second identical one. Deliberately NOT a unique index: that needs a
+ * migration, and the residual race - two genuinely simultaneous inserts - costs
+ * one duplicate import of idempotent data rather than anything durable.
+ */
+export async function enqueueImportJob(
+  admin: Admin,
+  opts: EnqueueImportOpts,
+): Promise<EnqueueResult> {
+  const rangeFrom = new Date(opts.from).toISOString();
+  const rangeTo = new Date(opts.to).toISOString();
+
+  const { data: existing, error: dupErr } = await admin
+    .from("historical_import_jobs")
+    .select("id")
+    .eq("symbol", opts.symbol)
+    .eq("source_code", opts.sourceCode)
+    .eq("timeframe", opts.timeframe)
+    .eq("range_from", rangeFrom)
+    .eq("range_to", rangeTo)
+    .in("status", ["queued", "running"])
+    .limit(1);
+  if (dupErr) throw dupErr;
+  const hit = (existing ?? [])[0] as { id?: unknown } | undefined;
+  if (hit?.id) return { jobId: String(hit.id), deduped: true };
+
+  const { data, error } = await admin
+    .from("historical_import_jobs")
+    .insert({
+      symbol: opts.symbol,
+      source_code: opts.sourceCode,
+      timeframe: opts.timeframe,
+      range_from: rangeFrom,
+      range_to: rangeTo,
+      status: "queued",
+      phase: "queued",
+      triggered_by: opts.triggeredBy ?? "admin",
+      priority: opts.priority ?? 100,
+      // `aggregate` is a property of the REQUEST, not of the symbol, so it has
+      // to survive until the drain executes it. `metadata` already exists,
+      // which is why this needs no migration.
+      metadata: { aggregate: opts.aggregate !== false },
+    })
+    .select("id")
+    .single();
+  if (error) throw error;
+  return { jobId: String((data as { id: unknown }).id), deduped: false };
+}
+
+/**
+ * Take ownership of one queued job, or report that someone else did.
+ *
+ * The same conditional-update mechanism the stale sweep uses: the write
+ * requires `status = 'queued'`, so a second invocation re-evaluates against the
+ * committed row, matches nothing, and returns null. Losing that race is a
+ * normal outcome and not an error - no provider work happens, nothing is
+ * logged, and the caller simply moves on.
+ */
+export async function claimQueuedJob(
+  admin: Admin,
+  jobId: string,
+  now: number = Date.now(),
+): Promise<Record<string, unknown> | null> {
+  const { data, error } = await admin
+    .from("historical_import_jobs")
+    .update({
+      status: "running",
+      phase: "preparing",
+      started_at: new Date(now).toISOString(),
+    })
+    .eq("id", jobId)
+    .eq("status", "queued")
+    .select("id, symbol, source_code, timeframe, range_from, range_to, metadata");
+  if (error) throw error;
+  const rows = (data ?? []) as Array<Record<string, unknown>>;
+  return rows.length ? rows[0] : null;
+}
+
+export type DrainResult = {
+  considered: number;
+  claimed: number;
+  executed: number;
+  failed: number;
+  skipped: number;
+  results: Array<Record<string, unknown>>;
+};
+
+/** Injectable so the drain is testable without a provider or a network. */
+export type ImportRunner = (opts: RunImportOpts) => Promise<unknown>;
+
+/**
+ * Execute up to `limit` queued jobs through the EXISTING import path.
+ *
+ * Everything after the claim is `runImport` with `existingJobId`: provider
+ * selection, pagination, validation, persistence, progress, retry
+ * classification and the terminal write are all the code the scheduled path
+ * already runs. Duplicating any of it here would be a second implementation
+ * free to disagree with the first.
+ *
+ * `deadlineMs` stops the drain STARTING work it may not finish; it never
+ * interrupts work in flight. A job already claimed runs to its own conclusion,
+ * because abandoning a claimed job mid-flight is exactly what produces the
+ * stale rows HD-6 exists to clean up.
+ */
+export async function drainQueuedJobs(
+  admin: Admin,
+  opts: {
+    limit: number;
+    startedAt: number;
+    deadlineMs: number;
+    now?: () => number;
+    runner?: ImportRunner;
+  },
+): Promise<DrainResult> {
+  const now = opts.now ?? Date.now;
+  const runner: ImportRunner = opts.runner ?? ((o) => runImport(o));
+
+  const { data, error } = await admin
+    .from("historical_import_jobs")
+    .select("id")
+    .eq("status", "queued")
+    .order("priority", { ascending: true })
+    .order("created_at", { ascending: true })
+    .limit(opts.limit);
+  if (error) throw error;
+
+  const ids = ((data ?? []) as Array<{ id: unknown }>).map((r) => String(r.id));
+  const out: DrainResult = {
+    considered: ids.length, claimed: 0, executed: 0, failed: 0, skipped: 0, results: [],
+  };
+
+  for (const id of ids) {
+    if (now() - opts.startedAt >= opts.deadlineMs) {
+      out.skipped += 1;
+      continue;
+    }
+    const job = await claimQueuedJob(admin, id, now());
+    if (!job) {
+      out.skipped += 1;
+      continue;
+    }
+    out.claimed += 1;
+
+    const { data: sym } = await admin
+      .from("historical_symbols")
+      .select("native_symbol, market")
+      .eq("symbol", String(job.symbol))
+      .maybeSingle();
+    const symRow = sym as { native_symbol?: unknown; market?: string } | null;
+    const meta = (job.metadata ?? {}) as Record<string, unknown>;
+
+    try {
+      await runner({
+        symbol: String(job.symbol),
+        nativeSymbol: String(symRow?.native_symbol ?? job.symbol),
+        sourceCode: String(job.source_code),
+        market: symRow?.market ?? null,
+        timeframe: String(job.timeframe) as HistoricalTimeframe,
+        from: Date.parse(String(job.range_from)),
+        to: Date.parse(String(job.range_to)),
+        triggeredBy: "queue",
+        existingJobId: id,
+        aggregateHigherTfs: meta.aggregate !== false,
+      });
+      out.executed += 1;
+      out.results.push({ jobId: id, symbol: job.symbol, ok: true });
+    } catch (e) {
+      // `runImport` has already written the terminal status and its own log
+      // row, so the job stays visible as failed and manually retryable.
+      // Swallowed here so one bad job cannot take the rest of the tick with it.
+      out.failed += 1;
+      out.results.push({
+        jobId: id, symbol: job.symbol, ok: false,
+        error: e instanceof Error ? e.message : String(e),
+      });
+    }
+  }
+
+  return out;
+}
+
 /** Whether a failed import should be re-attempted, and why. */
 export type RetryDecision = { retry: boolean; reason: string };
 
