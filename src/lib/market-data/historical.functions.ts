@@ -3,7 +3,6 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const TF = z.enum(["1m","5m","15m","30m","1H","4H","1D","1W","1M"]);
-type Tf = z.infer<typeof TF>;
 
 /* ---------- Reads (auth required) ---------- */
 
@@ -456,8 +455,27 @@ export const runIncrementalSync = createServerFn({ method: "POST" })
       .from("historical_symbols").select("*").eq("id", data.id).maybeSingle();
     if (error) throw error;
     if (!sym) throw new Error("Symbol not found");
-    const { runIncrementalUpdate } = await import("./historical/pipeline.server");
-    return runIncrementalUpdate(sym as any);
+    /**
+     * QUEUED, not run here.
+     *
+     * This called `runIncrementalUpdate` inline, which calls `runImport`, which
+     * fetches from the provider — inside the admin's own request, from the colo
+     * nearest whoever clicked. Same egress defect as Retry/Resume: Bybit's
+     * CloudFront answers that colo with a 403 (MD-12/CX-1). The UI already said
+     * "Incremental sync queued"; now it is.
+     *
+     * The window is derived by the same `incrementalWindow` the scheduled path
+     * uses, so the range, timeframe, provider and aggregation are unchanged.
+     */
+    const { enqueueIncrementalUpdate } = await import("./historical/pipeline.server");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    return enqueueIncrementalUpdate(supabaseAdmin, {
+      id: sym.id,
+      symbol: sym.symbol,
+      native_symbol: sym.native_symbol,
+      source_code: sym.source_code,
+      base_timeframe: sym.base_timeframe,
+    });
   });
 
 /* ---------- Queue controls ---------- */
@@ -491,6 +509,21 @@ export const pauseImportJob = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/**
+ * Un-pause a job by putting it BACK ON THE QUEUE — never by running it here.
+ *
+ * This used to call `runImport` inline, which performed the provider fetch
+ * inside the admin's own request and therefore from the colo nearest whoever
+ * clicked Play. That is the browser egress Bybit's CloudFront answers with a
+ * 403 (MD-12/CX-1), and Commit 2 moved the manual import path off it. Resume
+ * and Retry were the two that were left behind — the two buttons most likely to
+ * be pressed immediately after a failure caused by that very egress.
+ *
+ * The job row is re-queued in place, so the id, symbol, timeframe, source,
+ * range, priority, metadata and aggregate preference are all carried untouched.
+ * `historical-sync` then claims and executes it from pg_net like any other
+ * queued job. See `requeueImportJob`.
+ */
 export const resumeImportJob = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => jobIdSchema.parse(d))
@@ -500,19 +533,29 @@ export const resumeImportJob = createServerFn({ method: "POST" })
       .select("*").eq("id", data.jobId).maybeSingle();
     if (error) throw error;
     if (!job) throw new Error("Job not found");
+    // Kept from the inline implementation: a job whose symbol is no longer
+    // registered must fail here rather than be queued for a worker that would
+    // have to guess the native symbol.
     const { data: sym } = await context.supabase.from("historical_symbols")
       .select("native_symbol").eq("symbol", job.symbol).maybeSingle();
     if (!sym) throw new Error("Symbol not found");
-    const { runImport } = await import("./historical/pipeline.server");
-    return runImport({
-      symbol: job.symbol, nativeSymbol: sym.native_symbol, sourceCode: job.source_code,
-      timeframe: job.timeframe as Tf,
-      from: new Date(job.range_from).getTime(),
-      to: new Date(job.range_to).getTime(),
-      triggeredBy: "resume", existingJobId: job.id, aggregateHigherTfs: true,
-    });
+    const { requeueImportJob } = await import("./historical/pipeline.server");
+    return { ok: true, ...(await requeueImportJob(context.supabase, job.id, "resume")) };
   });
 
+/**
+ * Retry a failed or cancelled job by RE-QUEUEING the same row.
+ *
+ * Same reasoning as `resumeImportJob`: the inline `runImport` this replaces ran
+ * the provider fetch from the admin's browser-triggered colo, which is the
+ * egress that produces the Bybit 403 in the first place. Retrying a job that
+ * failed for that reason therefore reproduced the failure with high
+ * reliability.
+ *
+ * No replacement job is inserted. The retry counter reset that the inline
+ * version did as a separate unchecked write is now part of the single
+ * conditional transition in `requeueImportJob`.
+ */
 export const retryImportJob = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => jobIdSchema.parse(d))
@@ -525,16 +568,8 @@ export const retryImportJob = createServerFn({ method: "POST" })
     const { data: sym } = await context.supabase.from("historical_symbols")
       .select("native_symbol").eq("symbol", job.symbol).maybeSingle();
     if (!sym) throw new Error("Symbol not found");
-    // Reset retry counter to allow another N tries
-    await context.supabase.from("historical_import_jobs").update({ retry_count: 0 }).eq("id", job.id);
-    const { runImport } = await import("./historical/pipeline.server");
-    return runImport({
-      symbol: job.symbol, nativeSymbol: sym.native_symbol, sourceCode: job.source_code,
-      timeframe: job.timeframe as Tf,
-      from: new Date(job.range_from).getTime(),
-      to: new Date(job.range_to).getTime(),
-      triggeredBy: "retry", existingJobId: job.id, aggregateHigherTfs: true,
-    });
+    const { requeueImportJob } = await import("./historical/pipeline.server");
+    return { ok: true, ...(await requeueImportJob(context.supabase, job.id, "retry")) };
   });
 
 /* ---------- Sessions & notifications ---------- */

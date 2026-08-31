@@ -19,7 +19,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { checkCoverage, describeCoverage, type CoverageResult, type CoverageTimeframe } from "./coverage";
-import { canonicalProviderCode } from "./providers.server";
+import { canonicalProviderCode, HistoricalProviderError } from "./providers.server";
 import { resolveHistoricalProvider } from "./routing";
 
 
@@ -91,7 +91,14 @@ export class HistoricalDataUnavailableError extends Error {
       remedy: string;
       registered: boolean;
       attemptedBackfill: boolean;
+      /**
+       * The on-demand import's failure message, whatever caused it. Kept under
+       * this name because callers already read it (`replay.functions.ts`);
+       * `errorKind` says whether the provider was actually responsible.
+       */
       providerError?: string;
+      /** Who failed: the venue, or this deployment. See `isInfrastructureFailure`. */
+      errorKind?: "provider" | "infrastructure";
     },
   ) {
     super(message);
@@ -205,6 +212,63 @@ async function findSymbolRow(db: Db, symbol: string) {
 }
 
 /**
+ * Failures that are OURS, not the venue's.
+ *
+ * The on-demand backfill catches everything `runImport` can throw and used to
+ * report all of it as `The data provider (x) rejected the request`. That
+ * sentence is false for a whole class of failure: a missing or invalid
+ * `SUPABASE_SERVICE_ROLE_KEY` throws before a single byte is sent to the
+ * provider, and the operator is then sent to investigate an exchange that was
+ * never contacted (MD-11).
+ *
+ * Deliberately NARROW, and deliberately not a taxonomy. It matches only
+ * signatures that cannot come from a market-data venue:
+ *
+ *   · the env-presence error raised by `createSupabaseAdminClient`;
+ *   · a PostgREST/Postgres error object, identified by its `code` — `PGRST301`
+ *     and friends, or a five-character SQLSTATE like `42501`;
+ *   · auth/RLS phrasing that only PostgREST produces.
+ *
+ * Everything else stays a provider error, which is the safe default: calling a
+ * genuine venue refusal "infrastructure" would send the operator to the wrong
+ * place just as surely, in the direction this project has actually been burned
+ * in before. A typed `HistoricalProviderError` short-circuits to `false` so no
+ * future wording change to a provider message can be caught by the regex.
+ */
+const INFRA_MESSAGE =
+  /missing supabase environment variable|invalid api ?key|no api key found|jwt (expired|is invalid|malformed)|permission denied|row-level security|violates row level security/i;
+
+export function isInfrastructureFailure(e: unknown): boolean {
+  if (e instanceof HistoricalProviderError) return false;
+
+  if (e && typeof e === "object") {
+    const code = (e as { code?: unknown }).code;
+    // PostgREST codes (`PGRST301`) and bare SQLSTATEs (`42501`, `23505`).
+    if (typeof code === "string" && (/^PGRST\d+$/.test(code) || /^[0-9A-Z]{5}$/.test(code))) {
+      return true;
+    }
+  }
+
+  const message = e instanceof Error ? e.message : String(e ?? "");
+  return INFRA_MESSAGE.test(message);
+}
+
+/**
+ * The remedy line for a failed on-demand import.
+ *
+ * Split out of `resolveHistoricalRange` so the classification is testable
+ * without a database, a provider or a symbol row — the branch is the defect, so
+ * the branch is what a test has to be able to reach.
+ */
+export function importFailureRemedy(routedCode: string, error: unknown, message: string): string {
+  return isInfrastructureFailure(error)
+    ? `The historical import could not run because of a server configuration or database error: ${message}. ` +
+      `This is NOT a rejection by ${routedCode} — the provider may never have been contacted. ` +
+      `Check the server logs and the Supabase service-role configuration.`
+    : `The data provider (${routedCode}) rejected the request: ${message}`;
+}
+
+/**
  * Resolve a historical range. Never returns fabricated data unless the
  * caller explicitly asked for it and the server allows it.
  */
@@ -247,7 +311,11 @@ export async function resolveHistoricalRange(db: Db, opts: ResolveOptions): Prom
 
   // ---- On-demand backfill from the real provider -------------------------
   let attemptedBackfill = false;
-  let providerError: string | undefined;
+  /** The import's failure message, whichever layer produced it. */
+  let importError: string | undefined;
+  let importErrorKind: "provider" | "infrastructure" | undefined;
+  /** The thrown value itself, kept so the remedy can classify it. */
+  let lastImportError: unknown;
 
   const routed = resolveHistoricalProvider(market, symbolRow?.source_code ?? null);
 
@@ -284,8 +352,14 @@ export async function resolveHistoricalRange(db: Db, opts: ResolveOptions): Prom
         };
       }
     } catch (e) {
-      providerError = e instanceof Error ? e.message : String(e);
-      console.warn(`[historical] on-demand import failed for ${symbol} ${timeframe} via ${routed.code}: ${providerError}`);
+      lastImportError = e;
+      importError = e instanceof Error ? e.message : String(e);
+      importErrorKind = isInfrastructureFailure(e) ? "infrastructure" : "provider";
+      // An infrastructure fault is this deployment being broken, not a venue
+      // saying no, so it is logged at error level rather than as a warning.
+      const line = `[historical] on-demand import failed for ${symbol} ${timeframe} via ${routed.code} (${importErrorKind}): ${importError}`;
+      if (importErrorKind === "infrastructure") console.error(line);
+      else console.warn(line);
     }
   }
 
@@ -315,8 +389,8 @@ export async function resolveHistoricalRange(db: Db, opts: ResolveOptions): Prom
     ? `${symbol} is not registered as a historical symbol. Add it in Admin → Market Data before replaying it.`
     : symbolRow.is_enabled === false
       ? `${symbol} is registered but disabled. Enable it in Admin → Market Data.`
-      : providerError
-        ? `The data provider (${routed.code}) rejected the request: ${providerError}`
+      : importError
+        ? importFailureRemedy(routed.code, lastImportError, importError)
         : `Run a historical import for ${symbol} · ${timeframe} covering this date range (provider: ${routed.code}).`;
 
   throw new HistoricalDataUnavailableError(
@@ -325,7 +399,8 @@ export async function resolveHistoricalRange(db: Db, opts: ResolveOptions): Prom
       symbol, timeframe, from, to, coverage, remedy,
       registered: !!symbolRow,
       attemptedBackfill,
-      providerError,
+      providerError: importError,
+      errorKind: importErrorKind,
     },
   );
 }

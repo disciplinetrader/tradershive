@@ -126,8 +126,11 @@ function HistoricalAdminPage() {
 
   const cancelMut = jobMut((id) => cancelFn({ data: { jobId: id } }), "Job cancelled");
   const pauseMut = jobMut((id) => pauseFn({ data: { jobId: id } }), "Job paused");
-  const resumeMut = jobMut((id) => resumeFn({ data: { jobId: id } }), "Job resumed");
-  const retryMut = jobMut((id) => retryFn({ data: { jobId: id } }), "Job retrying");
+  // Both re-queue the existing job for `historical-sync` to execute; neither
+  // runs the import here. The copy says so, because "retrying" implied a fetch
+  // was under way in this request - which is precisely what was removed.
+  const resumeMut = jobMut((id) => resumeFn({ data: { jobId: id } }), "Job resumed - queued for the next sync");
+  const retryMut = jobMut((id) => retryFn({ data: { jobId: id } }), "Job re-queued for the next sync");
 
   const markReadMut = useMutation({
     mutationFn: (id: string) => markReadFn({ data: { id } }),

@@ -519,6 +519,152 @@ export async function claimQueuedJob(
   return rows.length ? rows[0] : null;
 }
 
+/**
+ * Statuses a RETRY may legitimately re-queue from.
+ *
+ * `failed` is what the Retry button is offered on. `cancelled` is included
+ * because a cancel is an operator decision that a later operator is allowed to
+ * reverse, and the row still carries a complete, valid import definition.
+ *
+ * `success` is NOT retryable: re-running a completed import is a fresh request
+ * and belongs in `enqueueImportJob`, where it gets deduped against live work.
+ * `running` and `queued` are NOT retryable either, and that is the concurrency
+ * guard rather than tidiness — re-queuing a row the drain is already executing
+ * would put the same job through `runImport` twice against one job row, with
+ * two writers racing its phase and terminal status.
+ */
+export const RETRYABLE_STATUSES = ["failed", "cancelled"] as const;
+
+/**
+ * Statuses a RESUME may re-queue from. Exactly one.
+ *
+ * Resume means "un-pause", so a row that is not paused has nothing to resume;
+ * accepting anything wider would silently turn Resume into a second Retry with
+ * different reset semantics.
+ */
+export const RESUMABLE_STATUSES = ["paused"] as const;
+
+export type RequeueMode = "retry" | "resume";
+
+export type RequeueResult = {
+  jobId: string;
+  status: "queued";
+  phase: "queued";
+  requeued: true;
+  mode: RequeueMode;
+};
+
+/**
+ * Put an EXISTING job back on the queue for the scheduled worker to execute.
+ *
+ * WHY THIS IS NOT `runImport`
+ *
+ * Retry and Resume used to call `runImport` inline, which ran the provider
+ * fetch inside the admin's own request — from the Cloudflare colo nearest
+ * whoever clicked the button. That is the exact egress Commit 2 moved the
+ * manual import path off: measured 2026-08-29, the same probe reached Bybit
+ * through KR/ICN from pg_net (HTTP 200) and through IN/BOM from a browser
+ * (HTTP 403, "configured to block access from your country"). So the two
+ * buttons most likely to be pressed AFTER a 403 were the two that reproduced
+ * it. See `enqueueImportJob`, MD-12 and CX-1.
+ *
+ * WHY IT UPDATES RATHER THAN INSERTS
+ *
+ * The job row IS the record of the request: its id is what the operator is
+ * watching, what `historical_sync_logs.job_id` points at, and what the UI polls.
+ * Inserting a replacement would fork that history in two and leave the original
+ * parked in a terminal state for ever.
+ *
+ * WHY THE UPDATE IS CONDITIONAL
+ *
+ * `.in("status", allowed)` is evaluated by Postgres against the committed row,
+ * so two concurrent clicks cannot both win: the second re-evaluates, matches
+ * nothing, and gets zero rows back. The same mechanism `claimQueuedJob` and
+ * `sweepStaleImportJobs` use. Zero rows is therefore NOT success — it means the
+ * row moved underneath us (already re-queued, already claimed, already
+ * finished) and the caller must be told, not reassured.
+ *
+ * The queue claim remains the final execution guard: re-queuing only makes a
+ * row eligible, and `claimQueuedJob` still decides who actually runs it.
+ */
+export async function requeueImportJob(
+  db: Admin,
+  jobId: string,
+  mode: RequeueMode,
+): Promise<RequeueResult> {
+  const allowed: readonly string[] =
+    mode === "retry" ? RETRYABLE_STATUSES : RESUMABLE_STATUSES;
+
+  /**
+   * Common to both: the row must read as genuinely pending afterwards.
+   *
+   * `finished_at` and `cancelled_at` are cleared because a queued job has
+   * neither finished nor been cancelled — leaving either would make the row
+   * self-contradictory and would let a stale `finished_at` outlive the next
+   * run. `paused_at` is cleared for the same reason: it is the whole state
+   * Resume exists to leave.
+   *
+   * The counters (`candles_fetched`, `candles_inserted`, `gaps_detected`,
+   * `duration_ms`, `provider_response_ms`, ...) are deliberately NOT touched.
+   * `runImport` overwrites every one of them on its terminal write, so zeroing
+   * them here would buy nothing and would erase what the previous attempt
+   * actually achieved while the row sits in the queue.
+   */
+  const common = {
+    status: "queued",
+    phase: "queued",
+    finished_at: null,
+    cancelled_at: null,
+    paused_at: null,
+  };
+
+  /**
+   * RETRY resets the attempt; RESUME continues it.
+   *
+   * Retry means "run this import again from the start", so everything scoped to
+   * the failed attempt is cleared: `progress` back to 0, `started_at` back to
+   * null (the row has not started, and `claimQueuedJob` stamps a fresh one),
+   * `error_message` back to null because the error being retried is no longer
+   * the row's current state, and `retry_count` back to 0 — which is the one
+   * behaviour carried over verbatim from the old inline implementation, where
+   * it was already done for exactly this reason: to hand the job a full budget
+   * of `max_retries` again.
+   *
+   * Resume preserves `progress`, `started_at`, `retry_count` and
+   * `error_message`, because they belong to the attempt that is being
+   * continued rather than to a new one. Preserved `progress` is what stops
+   * Resume from being an indistinguishable second Retry in the UI: the row
+   * shows where it got to until execution actually restarts, at which point
+   * `runImport`'s own transition resets progress to 0 and clears the error.
+   * Nothing here needs to preserve the RANGE, the timeframe, the source, the
+   * priority, the metadata or the aggregate preference — none of them are in
+   * the patch, so the import definition is carried untouched by construction.
+   */
+  const patch = mode === "retry"
+    ? { ...common, progress: 0, started_at: null, error_message: null, retry_count: 0 }
+    : { ...common };
+
+  const { data, error } = await db
+    .from("historical_import_jobs")
+    .update(patch)
+    .eq("id", jobId)
+    .in("status", allowed)
+    .select("id");
+  if (error) throw error;
+
+  const rows = (data ?? []) as Array<{ id: unknown }>;
+  if (rows.length === 0) {
+    // Not success. Either the row is in a state this action may not touch, or
+    // a concurrent action moved it first.
+    throw new Error(
+      `Cannot ${mode} job ${jobId}: it is not in ${allowed.join(" or ")} state. ` +
+        `It may have already been re-queued, claimed by the sync worker, or finished.`,
+    );
+  }
+
+  return { jobId, status: "queued", phase: "queued", requeued: true, mode };
+}
+
 export type DrainResult = {
   considered: number;
   claimed: number;
@@ -690,11 +836,32 @@ export async function runImport(rawOpts: RunImportOpts) {
   let jobId: string;
   if (opts.existingJobId) {
     jobId = opts.existingJobId;
-    await admin.from("historical_import_jobs").update({
+    /**
+     * CHECKED, and the check is the point of it.
+     *
+     * This is a REQUIRED state transition, not bookkeeping: everything after it
+     * assumes the row now reads `running`/`preparing` with a cleared
+     * `error_message` and a live `started_at`. supabase-js never throws — it
+     * returns `{ error }` — so discarding the result meant an invalid or absent
+     * `SUPABASE_SERVICE_ROLE_KEY` produced a 401 here, was dropped on the floor,
+     * and execution walked on into the provider fetch with an admin client that
+     * cannot write. Every subsequent write then failed the same silent way,
+     * including the terminal one, so the run reported an outcome the database
+     * never received (MD-11).
+     *
+     * Throwing BEFORE the fetch is deliberate: no provider call is made against
+     * a client that has already proved it cannot record the answer. The row is
+     * left as `claimQueuedJob` set it — `running` — which is exactly the state
+     * `sweepStaleImportJobs` reaps after the TTL (HD-6), so nothing is stranded.
+     * Writing a `failed` status here would need the very client that just
+     * failed.
+     */
+    const { error: transitionErr } = await admin.from("historical_import_jobs").update({
       status: "running", phase: "preparing", progress: 0,
       started_at: new Date().toISOString(), finished_at: null,
       error_message: null, cancelled_at: null, paused_at: null,
     } as any).eq("id", jobId);
+    if (transitionErr) throw transitionErr;
   } else {
     const { data: jobRow, error: jobErr } = await admin
       .from("historical_import_jobs")
@@ -926,12 +1093,41 @@ export async function runImport(rawOpts: RunImportOpts) {
   }
 }
 
-export async function runIncrementalUpdate(symbolRow: {
+export type IncrementalSymbolRow = {
   id: string; symbol: string; native_symbol: string; source_code: string; base_timeframe: string;
-}) {
-  const admin = await loadAdmin();
+};
+
+/**
+ * The window an incremental sync would ask for, or nothing to do.
+ *
+ * `skipped` is a RESULT, not a failure: the front edge is already within one
+ * bar of now, so there is no complete candle to fetch.
+ */
+export type IncrementalWindow =
+  | { skipped: true }
+  | { skipped: false; timeframe: HistoricalTimeframe; from: number; to: number };
+
+/**
+ * Derive the forward window from the DATA, in ONE place.
+ *
+ * Extracted from `runIncrementalUpdate` so the scheduled path and the admin
+ * enqueue path cannot disagree about what "incremental" means. A second
+ * derivation beside this one would be free to drift — a different seed, a
+ * different step, a different skip threshold — and the two would then import
+ * different ranges under the same name.
+ *
+ * The edge comes from `historical_candles`, never from
+ * `historical_symbols.latest_imported`: the chart's cache-through writes
+ * candles without touching that column, so the column trails the real data
+ * (MD-4).
+ */
+export async function incrementalWindow(
+  db: Admin,
+  symbolRow: IncrementalSymbolRow,
+  now: number = Date.now(),
+): Promise<IncrementalWindow> {
   const tf = (symbolRow.base_timeframe || "1m") as HistoricalTimeframe;
-  const { data: last } = await admin
+  const { data: last } = await db
     .from("historical_candles")
     .select("ts")
     .eq("symbol", symbolRow.symbol).eq("timeframe", tf)
@@ -956,18 +1152,77 @@ export async function runIncrementalUpdate(symbolRow: {
    * backward-walking pass. See HD-1.
    */
   const SEED_DAYS = 2;
-  const from = last?.ts ? new Date(last.ts).getTime() + stepMs : Date.now() - SEED_DAYS * 86400_000;
-  const to = Date.now();
+  const from = last?.ts ? new Date(last.ts).getTime() + stepMs : now - SEED_DAYS * 86400_000;
+  const to = now;
   if (to - from < stepMs) return { skipped: true };
+  return { skipped: false, timeframe: tf, from, to };
+}
+
+export async function runIncrementalUpdate(symbolRow: IncrementalSymbolRow) {
+  const admin = await loadAdmin();
+  const window = await incrementalWindow(admin, symbolRow);
+  if (window.skipped) return { skipped: true };
   return runImport({
     symbol: symbolRow.symbol,
     nativeSymbol: symbolRow.native_symbol,
     sourceCode: symbolRow.source_code,
-    timeframe: tf,
-    from, to,
+    timeframe: window.timeframe,
+    from: window.from, to: window.to,
     triggeredBy: "cron",
     aggregateHigherTfs: true,
   });
+}
+
+/**
+ * The ADMIN half of an incremental sync: work out the window, queue it, return.
+ *
+ * `runIncrementalUpdate` above is the SCHEDULED half and still fetches inline,
+ * which is correct — it runs inside `historical-sync`, from pg_net, which is
+ * the egress that reaches Bybit. Called from a server function it is the same
+ * defect Retry and Resume had: a Worker runs in the colo nearest whoever
+ * clicked, and that colo picks the egress. Measured 2026-08-29, same probe,
+ * same host, same path:
+ *
+ *   pg_net (Supabase)  -> KR / ICN -> Bybit ICN57-P6 -> HTTP 200
+ *   browser (India)    -> IN / BOM -> Bybit MCI50-P5 -> HTTP 403
+ *
+ * The admin UI already claimed "Incremental sync queued" while the import ran
+ * inline. This makes the claim true rather than rewording it.
+ *
+ * The window is derived identically — same function, same seed, same step,
+ * same skip rule — and `{ skipped: true }` still enqueues nothing, because
+ * there is genuinely no complete bar to fetch. Dedupe, priority and the
+ * `aggregate` flag all come from `enqueueImportJob`, unchanged.
+ */
+export async function enqueueIncrementalUpdate(
+  db: Admin,
+  symbolRow: IncrementalSymbolRow,
+  now: number = Date.now(),
+): Promise<{ skipped: true } | (EnqueueResult & { skipped: false; timeframe: HistoricalTimeframe; from: number; to: number })> {
+  const window = await incrementalWindow(db, symbolRow, now);
+  if (window.skipped) return { skipped: true };
+
+  const res = await enqueueImportJob(db, {
+    symbol: symbolRow.symbol,
+    sourceCode: symbolRow.source_code,
+    timeframe: window.timeframe,
+    from: window.from,
+    to: window.to,
+    // `runIncrementalUpdate` passes `aggregateHigherTfs: true`; this is the
+    // same flag, carried in `metadata` so it survives until the drain.
+    aggregate: true,
+    /**
+     * NOT "cron". The inline version inherited that label from the scheduled
+     * caller it shared code with, which put human button-presses into the
+     * `triggered_by in ('cron','cron:backfill')` diagnostics
+     * (docs/migrations/historical-sync/hs-hd4-errors.sql). This is a person, so
+     * it says so, and it stays distinguishable from the explicit-range
+     * "admin" import.
+     */
+    triggeredBy: "admin:incremental",
+  });
+
+  return { ...res, skipped: false, timeframe: window.timeframe, from: window.from, to: window.to };
 }
 
 /**
