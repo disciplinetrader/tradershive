@@ -28,6 +28,7 @@ const DAY: PropChallengeDayRow = {
 
 function challenge(over: Partial<PropChallengeRow> = {}): PropChallengeRow {
   return {
+ user_id: 'u1',
     id: "c1",
     name: "Test",
     preset: "custom",

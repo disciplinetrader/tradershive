@@ -5,6 +5,7 @@
  */
 
 export type PropChallengeRow = {
+  user_id: string;
   id: string;
   name: string;
   preset: string;
