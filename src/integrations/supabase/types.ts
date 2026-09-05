@@ -7228,6 +7228,7 @@ export type Database = {
           direction: Database["public"]["Enums"]["paper_direction"]
           entry_price: number
           exit_price: number | null
+          fx_rate: number | null
           id: string
           lot_size: number
           market: Database["public"]["Enums"]["paper_market"]
@@ -7266,6 +7267,7 @@ export type Database = {
           direction: Database["public"]["Enums"]["paper_direction"]
           entry_price: number
           exit_price?: number | null
+          fx_rate?: number | null
           id?: string
           lot_size: number
           market: Database["public"]["Enums"]["paper_market"]
@@ -7304,6 +7306,7 @@ export type Database = {
           direction?: Database["public"]["Enums"]["paper_direction"]
           entry_price?: number
           exit_price?: number | null
+          fx_rate?: number | null
           id?: string
           lot_size?: number
           market?: Database["public"]["Enums"]["paper_market"]
