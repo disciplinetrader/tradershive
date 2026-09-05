@@ -15,6 +15,12 @@
 -- 2. Applying the equity clamp to produce the effective P&L
 -- 3. Updating account_statistics using the returned clamped_pnl
 --
+-- ARRAY SHAPE — this function uses RETURNS TABLE, which makes it a SET OF
+-- rows in PostgreSQL. Each call returns an array of one row via PostgREST.
+-- The caller must read result[0].new_balance and result[0].clamped_pnl,
+-- NOT destructure the result as a single object. The function uses RETURN NEXT
+-- to emit that row; without it, the OUT assignments would produce zero rows.
+--
 -- The RPC enforces the balance floor independently as defense-in-depth:
 -- if a future caller omits the pre-clamp, the balance can never go below
 -- zero when NBP is on. The two clamps are algebraically equivalent — see
@@ -88,6 +94,7 @@ BEGIN
  -- Return the authoritative state.
  new_balance := v_balance;
  clamped_pnl := v_pnl;
+ RETURN NEXT;
 END;
 $$;
 
