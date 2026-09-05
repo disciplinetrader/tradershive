@@ -21,7 +21,7 @@ const createSchema = z.object({
  min_trading_days: z.number().int().min(0).max(365),
  leverage: z.number().int().min(1).max(500),
  duration_days: z.number().int().min(1).max(365),
- commission_per_lot: z.number().min(0).max.default(0),
+ commission_per_lot: z.number().min(0).max(1000).default(0),
  spread_profile: z.enum(["tight","standard","wide"]).default("standard"),
  slippage_profile: z.enum(["none","standard","aggressive"]).default("standard"),
  weekend_hold_allowed: z.boolean().default(true),
