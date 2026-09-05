@@ -3221,7 +3221,7 @@ export type Database = {
           final_target: number | null
           gross_pnl: number
           id: string
-          initial_risk_distance: number
+          initial_risk_distance: number | null
           initial_stop: number | null
           initial_target: number | null
           journal_entry_id: string | null
@@ -3234,7 +3234,7 @@ export type Database = {
           position_id: string
           position_size: number | null
           quantity: number | null
-          realized_r: number
+          realized_r: number | null
           replay_session_id: string | null
           requested_entry: number | null
           return_percent: number
@@ -3261,7 +3261,7 @@ export type Database = {
           final_target?: number | null
           gross_pnl?: number
           id: string
-          initial_risk_distance?: number
+          initial_risk_distance?: number | null
           initial_stop?: number | null
           initial_target?: number | null
           journal_entry_id?: string | null
@@ -3274,7 +3274,7 @@ export type Database = {
           position_id: string
           position_size?: number | null
           quantity?: number | null
-          realized_r?: number
+          realized_r?: number | null
           replay_session_id?: string | null
           requested_entry?: number | null
           return_percent?: number
@@ -3301,7 +3301,7 @@ export type Database = {
           final_target?: number | null
           gross_pnl?: number
           id?: string
-          initial_risk_distance?: number
+          initial_risk_distance?: number | null
           initial_stop?: number | null
           initial_target?: number | null
           journal_entry_id?: string | null
@@ -3314,7 +3314,7 @@ export type Database = {
           position_id?: string
           position_size?: number | null
           quantity?: number | null
-          realized_r?: number
+          realized_r?: number | null
           replay_session_id?: string | null
           requested_entry?: number | null
           return_percent?: number
@@ -5861,6 +5861,12 @@ export type Database = {
           entry_quality: number | null
           entry_reason_html: string | null
           entry_reason_text: string | null
+          excursion_attempted_at: string | null
+          excursion_computed_at: string | null
+          excursion_path: Json | null
+          excursion_source: string | null
+          excursion_status: string | null
+          excursion_timeframe: string | null
           execution: number | null
           exit_price: number | null
           exit_quality: number | null
@@ -5870,23 +5876,30 @@ export type Database = {
           is_favorite: boolean
           is_public: boolean
           lot_size: number | null
+          mae_price: number | null
+          mae_r: number | null
           market: string | null
+          mfe_price: number | null
+          mfe_r: number | null
           mistake_flags: Json
           mistakes: string[]
           moderation_status: string | null
           narrative: Json
           notes_html: string | null
           notes_text: string | null
+          observation_cursor: number | null
           opened_at: string | null
           opened_tz: string | null
           patience: number | null
           playbook_review: Json
           pnl: number | null
           psychology: Json
+          rating: number | null
           reward_pct: number | null
           risk_mgmt: number | null
           risk_pct: number | null
           rr: number | null
+          rr_planned: number | null
           screenshots: string[]
           session: Database["public"]["Enums"]["journal_session"] | null
           session_auto_detected: boolean
@@ -5906,19 +5919,6 @@ export type Database = {
           updated_at: string
           user_id: string
           word_count: number
-          excursion_attempted_at: string | null
-          excursion_computed_at: string | null
-          excursion_path: Json | null
-          excursion_source: string | null
-          excursion_status: string | null
-          excursion_timeframe: string | null
-          mae_price: number | null
-          mae_r: number | null
-          mfe_price: number | null
-          mfe_r: number | null
-          observation_cursor: number | null
-          rating: number | null
-          rr_planned: number | null
         }
         Insert: {
           account_id?: string | null
@@ -5941,6 +5941,12 @@ export type Database = {
           entry_quality?: number | null
           entry_reason_html?: string | null
           entry_reason_text?: string | null
+          excursion_attempted_at?: string | null
+          excursion_computed_at?: string | null
+          excursion_path?: Json | null
+          excursion_source?: string | null
+          excursion_status?: string | null
+          excursion_timeframe?: string | null
           execution?: number | null
           exit_price?: number | null
           exit_quality?: number | null
@@ -5950,23 +5956,30 @@ export type Database = {
           is_favorite?: boolean
           is_public?: boolean
           lot_size?: number | null
+          mae_price?: number | null
+          mae_r?: number | null
           market?: string | null
+          mfe_price?: number | null
+          mfe_r?: number | null
           mistake_flags?: Json
           mistakes?: string[]
           moderation_status?: string | null
           narrative?: Json
           notes_html?: string | null
           notes_text?: string | null
+          observation_cursor?: number | null
           opened_at?: string | null
           opened_tz?: string | null
           patience?: number | null
           playbook_review?: Json
           pnl?: number | null
           psychology?: Json
+          rating?: number | null
           reward_pct?: number | null
           risk_mgmt?: number | null
           risk_pct?: number | null
           rr?: number | null
+          rr_planned?: number | null
           screenshots?: string[]
           session?: Database["public"]["Enums"]["journal_session"] | null
           session_auto_detected?: boolean
@@ -5986,19 +5999,6 @@ export type Database = {
           updated_at?: string
           user_id: string
           word_count?: number
-          excursion_attempted_at?: string | null
-          excursion_computed_at?: string | null
-          excursion_path?: Json | null
-          excursion_source?: string | null
-          excursion_status?: string | null
-          excursion_timeframe?: string | null
-          mae_price?: number | null
-          mae_r?: number | null
-          mfe_price?: number | null
-          mfe_r?: number | null
-          observation_cursor?: number | null
-          rating?: number | null
-          rr_planned?: number | null
         }
         Update: {
           account_id?: string | null
@@ -6021,6 +6021,12 @@ export type Database = {
           entry_quality?: number | null
           entry_reason_html?: string | null
           entry_reason_text?: string | null
+          excursion_attempted_at?: string | null
+          excursion_computed_at?: string | null
+          excursion_path?: Json | null
+          excursion_source?: string | null
+          excursion_status?: string | null
+          excursion_timeframe?: string | null
           execution?: number | null
           exit_price?: number | null
           exit_quality?: number | null
@@ -6030,23 +6036,30 @@ export type Database = {
           is_favorite?: boolean
           is_public?: boolean
           lot_size?: number | null
+          mae_price?: number | null
+          mae_r?: number | null
           market?: string | null
+          mfe_price?: number | null
+          mfe_r?: number | null
           mistake_flags?: Json
           mistakes?: string[]
           moderation_status?: string | null
           narrative?: Json
           notes_html?: string | null
           notes_text?: string | null
+          observation_cursor?: number | null
           opened_at?: string | null
           opened_tz?: string | null
           patience?: number | null
           playbook_review?: Json
           pnl?: number | null
           psychology?: Json
+          rating?: number | null
           reward_pct?: number | null
           risk_mgmt?: number | null
           risk_pct?: number | null
           rr?: number | null
+          rr_planned?: number | null
           screenshots?: string[]
           session?: Database["public"]["Enums"]["journal_session"] | null
           session_auto_detected?: boolean
@@ -6066,19 +6079,6 @@ export type Database = {
           updated_at?: string
           user_id?: string
           word_count?: number
-          excursion_attempted_at?: string | null
-          excursion_computed_at?: string | null
-          excursion_path?: Json | null
-          excursion_source?: string | null
-          excursion_status?: string | null
-          excursion_timeframe?: string | null
-          mae_price?: number | null
-          mae_r?: number | null
-          mfe_price?: number | null
-          mfe_r?: number | null
-          observation_cursor?: number | null
-          rating?: number | null
-          rr_planned?: number | null
         }
         Relationships: [
           {
@@ -6992,6 +6992,8 @@ export type Database = {
           championship_id: string | null
           created_at: string
           currency: string
+          default_commission: number
+          default_swap: number
           deleted_at: string | null
           equity: number
           id: string
@@ -7005,8 +7007,6 @@ export type Database = {
           negative_balance_protection: boolean
           starting_balance: number
           stop_out_level: number
-          default_commission: number
-          default_swap: number
           updated_at: string
           user_id: string
         }
@@ -7016,6 +7016,8 @@ export type Database = {
           championship_id?: string | null
           created_at?: string
           currency?: string
+          default_commission?: number
+          default_swap?: number
           deleted_at?: string | null
           equity?: number
           id?: string
@@ -7029,8 +7031,6 @@ export type Database = {
           negative_balance_protection?: boolean
           starting_balance?: number
           stop_out_level?: number
-          default_commission?: number
-          default_swap?: number
           updated_at?: string
           user_id: string
         }
@@ -7040,6 +7040,8 @@ export type Database = {
           championship_id?: string | null
           created_at?: string
           currency?: string
+          default_commission?: number
+          default_swap?: number
           deleted_at?: string | null
           equity?: number
           id?: string
@@ -7053,8 +7055,6 @@ export type Database = {
           negative_balance_protection?: boolean
           starting_balance?: number
           stop_out_level?: number
-          default_commission?: number
-          default_swap?: number
           updated_at?: string
           user_id?: string
         }
@@ -8253,48 +8253,56 @@ export type Database = {
           color: string
           content: string
           created_at: string
-          id: string
-          pinned: boolean
-          title: string
-          updated_at: string
           entry_id: string | null
           folder: string | null
+          id: string
+          pinned: boolean
           range_end: string | null
           range_start: string | null
           template: string | null
+          title: string
+          updated_at: string
           user_id: string
         }
         Insert: {
           color?: string
           content?: string
           created_at?: string
-          id?: string
-          pinned?: boolean
-          title?: string
-          updated_at?: string
           entry_id?: string | null
           folder?: string | null
+          id?: string
+          pinned?: boolean
           range_end?: string | null
           range_start?: string | null
           template?: string | null
+          title?: string
+          updated_at?: string
           user_id: string
         }
         Update: {
           color?: string
           content?: string
           created_at?: string
-          id?: string
-          pinned?: boolean
-          title?: string
-          updated_at?: string
           entry_id?: string | null
           folder?: string | null
+          id?: string
+          pinned?: boolean
           range_end?: string | null
           range_start?: string | null
           template?: string | null
+          title?: string
+          updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "quick_notes_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       quote_cache: {
         Row: {
@@ -9392,12 +9400,12 @@ export type Database = {
           requested_end: string | null
           requested_start: string | null
           settings: Json
+          slippage: number
           source_journal_id: string | null
           source_provider: string | null
-          slippage: number
           source_trade_id: string | null
-          spread: number
           source_type: string | null
+          spread: number
           status: string
           strategy_id: string | null
           symbol: string
@@ -9443,12 +9451,12 @@ export type Database = {
           requested_end?: string | null
           requested_start?: string | null
           settings?: Json
+          slippage?: number
           source_journal_id?: string | null
           source_provider?: string | null
-          slippage?: number
           source_trade_id?: string | null
-          spread?: number
           source_type?: string | null
+          spread?: number
           status?: string
           strategy_id?: string | null
           symbol: string
@@ -9494,12 +9502,12 @@ export type Database = {
           requested_end?: string | null
           requested_start?: string | null
           settings?: Json
+          slippage?: number
           source_journal_id?: string | null
           source_provider?: string | null
-          slippage?: number
           source_trade_id?: string | null
-          spread?: number
           source_type?: string | null
+          spread?: number
           status?: string
           strategy_id?: string | null
           symbol?: string
@@ -11983,6 +11991,7 @@ export type Database = {
       }
       user_settings: {
         Row: {
+          breakeven_band: number
           created_at: string
           locale: string
           notify_challenges: boolean
@@ -11991,11 +12000,11 @@ export type Database = {
           notify_push: boolean
           notify_rank_changes: boolean
           notify_weekly_report: boolean
-          breakeven_band: number
           updated_at: string
           user_id: string
         }
         Insert: {
+          breakeven_band?: number
           created_at?: string
           locale?: string
           notify_challenges?: boolean
@@ -12004,11 +12013,11 @@ export type Database = {
           notify_push?: boolean
           notify_rank_changes?: boolean
           notify_weekly_report?: boolean
-          breakeven_band?: number
           updated_at?: string
           user_id: string
         }
         Update: {
+          breakeven_band?: number
           created_at?: string
           locale?: string
           notify_challenges?: boolean
@@ -12017,7 +12026,6 @@ export type Database = {
           notify_push?: boolean
           notify_rank_changes?: boolean
           notify_weekly_report?: boolean
-          breakeven_band?: number
           updated_at?: string
           user_id?: string
         }
@@ -12239,6 +12247,10 @@ export type Database = {
       }
     }
     Functions: {
+      _join_battle_as: {
+        Args: { _battle_id: string; _user_id: string }
+        Returns: string
+      }
       admin_ai_usage_series: {
         Args: { _days?: number }
         Returns: {
@@ -12296,6 +12308,13 @@ export type Database = {
         Args: { _champ: string }
         Returns: number
       }
+      commit_settlement: {
+        Args: { _account_id: string; _clamped_pnl: number; _user_id: string }
+        Returns: {
+          clamped_pnl: number
+          new_balance: number
+        }[]
+      }
       community_recompute_reputation: {
         Args: { _user_id: string }
         Returns: undefined
@@ -12304,6 +12323,8 @@ export type Database = {
         Args: { _post_id: string }
         Returns: undefined
       }
+      detect_session: { Args: { at: string }; Returns: string }
+      detect_session_batch: { Args: { ats: string[] }; Returns: string[] }
       emit_battle_event: {
         Args: {
           _battle_id: string
@@ -12413,6 +12434,10 @@ export type Database = {
           participant_id: string
           registration_id: string
         }[]
+      }
+      journal_sync_tag_arrays_for: {
+        Args: { target: string }
+        Returns: undefined
       }
       recompute_battle_live_stats: {
         Args: { _battle_id: string }
@@ -12778,12 +12803,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -12807,11 +12832,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -12832,11 +12857,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -12857,11 +12882,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -12874,11 +12899,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
