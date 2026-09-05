@@ -177,7 +177,7 @@ GRANT EXECUTE ON FUNCTION public.join_battle(uuid, boolean) TO authenticated;
 -- - Participants created BEFORE queue DELETE and notifications
 -- - SELECT ... FOR UPDATE SKIP LOCKED for concurrency safety
 -- - ORDER BY joined_at ASC for deterministic FIFO pairing
--- - NULL pair check: CONTINUE if either SELECT returns NULL
+-- - NULL pair check: IF both users are non-NULL, proceed; otherwise skip
 -- - EXCEPTION handler per pair: one bad pair does not roll back the
 -- entire tick or affect battles processed earlier in the loop
 -- - Lobby promotion after both participants are created
@@ -227,10 +227,10 @@ BEGIN
  AND user_id != v_user_1
  ORDER BY joined_at ASC LIMIT 1 FOR UPDATE SKIP LOCKED;
 
- -- If either was taken by a concurrent tick, skip this pair.
- IF v_user_1 IS NULL OR v_user_2 IS NULL THEN
- CONTINUE;
- END IF;
+ -- If both users were locked successfully, create the battle and join them.
+ -- If either was taken by a concurrent tick, the pair is skipped silently —
+ -- the remaining queued users will be paired in the next tick.
+ IF v_user_1 IS NOT NULL AND v_user_2 IS NOT NULL THEN
 
  INSERT INTO public.battles(name, host_id, battle_type, ranked, start_at, end_at, status, visibility, starting_balance, min_participants, max_participants)
  VALUES (
@@ -274,6 +274,7 @@ BEGIN
  VALUES
  (v_user_1, 'match_found', 'Match Found!', 'Your battle arena is ready.', v_battle_id),
  (v_user_2, 'match_found', 'Match Found!', 'Your battle arena is ready.', v_battle_id);
+ END IF;
  EXCEPTION WHEN OTHERS THEN
  -- One bad pair must not roll back the entire tick or affect other battles
  -- processed earlier in this run. Log and continue.
