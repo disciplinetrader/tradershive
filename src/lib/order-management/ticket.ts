@@ -5,7 +5,7 @@
  * commission, risk %, R:R, liquidation price, etc.
  */
 
-import { findSymbol } from "@/lib/paper-trading/symbols";
+import { findSymbol, pipValuePerLot } from "@/lib/paper-trading/symbols";
 import {
   pnl as computePnl, notionalValue, marginRequired,
 } from "@/lib/paper-trading/calculations";
@@ -81,7 +81,7 @@ export function computeMetrics(
   const rule = profile.by_market[meta.market];
   const spreadPips = rule?.spread_pips ?? 0;
   const spreadCost = qty > 0
-    ? spreadPips * (meta.pipValuePerLot || 0) * qty
+    ? spreadPips * pipValuePerLot(meta) * qty
     : 0;
   const commission = validation.cost_estimate;
   const slippage = Math.abs(validation.fill_price - entryReference) * meta.contractSize * qty;

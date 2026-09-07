@@ -1,5 +1,5 @@
 import { tradeCalculation, type TradeCalc, formatCurrency, formatNumber } from "@/lib/paper-trading/calculations";
-import type { SymbolMeta } from "@/lib/paper-trading/symbols";
+import { pipValuePerLot, type SymbolMeta } from "@/lib/paper-trading/symbols";
 import type { ChartDraft } from "./types";
 
 /**
@@ -27,7 +27,7 @@ export function computeChartMetrics(params: {
 } {
   const base = tradeCalculation(params);
   const commission = (params.commissionPerLot ?? 0) * params.lot;
-  const spreadCost = (params.spreadPips ?? 0) * params.sym.pipValuePerLot * params.lot;
+  const spreadCost = (params.spreadPips ?? 0) * pipValuePerLot(params.sym) * params.lot;
   const potentialProfit = Math.max(0, base.rewardAmount - commission - spreadCost);
   const potentialLoss = base.riskAmount + commission + spreadCost;
   return { ...base, commission, spreadCost, potentialProfit, potentialLoss };

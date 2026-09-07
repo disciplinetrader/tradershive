@@ -9,7 +9,7 @@
  * `pipValuePerLot` where relevant so lot sizing behaviour is stable.
  */
 
-import type { SymbolMeta, PaperMarket } from "@/lib/paper-trading/symbols";
+import { pipValuePerLot, type SymbolMeta, type PaperMarket } from "@/lib/paper-trading/symbols";
 import type { CostProfileId, Side } from "./types";
 
 export type CostRule = {
@@ -126,5 +126,5 @@ export function dailySwap(
 ): number {
   const rule = profile.by_market[meta.market];
   const pips = side === "long" ? rule.swap_long_pips : rule.swap_short_pips;
-  return pips * meta.pipValuePerLot * lots;
+  return pips * pipValuePerLot(meta) * lots;
 }

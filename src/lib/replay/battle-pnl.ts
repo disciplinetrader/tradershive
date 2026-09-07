@@ -20,7 +20,7 @@
  * provably agree. See `isEnginePricedSymbol`.
  */
 
-import { findSymbol, type SymbolMeta } from "@/lib/paper-trading/symbols";
+import { findSymbol, pipValuePerLot, type SymbolMeta } from "@/lib/paper-trading/symbols";
 import type { ClosedTrade } from "@/lib/chart/orders/closed-trade";
 
 /**
@@ -71,7 +71,7 @@ export function isEnginePricedSymbol(symbol: string): boolean {
 
 function metaAgrees(meta: SymbolMeta): boolean {
   if (!meta.pipSize || !meta.contractSize) return false;
-  const ratio = meta.pipValuePerLot / meta.pipSize;
+  const ratio = pipValuePerLot(meta) / meta.pipSize;
   // Floating-point tolerance relative to the contract size: pipSize values like
   // 0.0001 do not divide exactly.
   return Math.abs(ratio - meta.contractSize) / meta.contractSize < 1e-9;
