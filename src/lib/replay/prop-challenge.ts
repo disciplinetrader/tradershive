@@ -215,6 +215,7 @@ export function evaluateReplayChallenge(input: ReplayChallengeInput): ReplayChal
 
   const row: PropChallengeRow = {
     id: "replay",
+    user_id: "replay",
     name: "Replay challenge",
     preset: rules.presetId,
     paper_account_id: null,

@@ -1,4 +1,4 @@
-import { priceDecimals, type SymbolMeta } from "./symbols";
+import { pipValuePerLot, priceDecimals, type SymbolMeta } from "./symbols";
 
 export type TradeSide = "long" | "short";
 
@@ -21,14 +21,17 @@ export function pipsBetween(sym: SymbolMeta, a: number, b: number): number {
 /** P/L in account currency, ignoring commission/swap. */
 export function pnl(sym: SymbolMeta, side: TradeSide, entry: number, exit: number, lot: number): number {
   const pipDist = (exit - entry) / sym.pipSize;
-  return pipDist * directionSign(side) * sym.pipValuePerLot * lot;
+  return pipDist * directionSign(side) * pipValuePerLot(sym) * lot;
 }
 
 /** Position size (lots) that risks `riskAmount` given SL distance. */
 export function lotForRisk(sym: SymbolMeta, entry: number, sl: number, riskAmount: number): number {
   const dist = pipsBetween(sym, entry, sl);
-  if (dist <= 0 || sym.pipValuePerLot <= 0) return 0;
-  const raw = riskAmount / (dist * sym.pipValuePerLot);
+ const pvl = pipValuePerLot(sym);
+ if (dist <= 0 || pvl <= 0) return 0;
+ const raw = riskAmount / (dist * pvl);
+
+
   const stepped = Math.max(sym.minLot, Math.round(raw / sym.lotStep) * sym.lotStep);
   return Math.min(sym.maxLot, Number(stepped.toFixed(4)));
 }
@@ -76,8 +79,8 @@ export function tradeCalculation(params: {
 
   const pipDistance = effectiveSl ? pipsBetween(sym, entry, effectiveSl) : 0;
   const pipReward = effectiveTp ? pipsBetween(sym, entry, effectiveTp) : 0;
-  const riskAmount = pipDistance * sym.pipValuePerLot * lot;
-  const rewardAmount = pipReward * sym.pipValuePerLot * lot;
+  const riskAmount = pipDistance * pipValuePerLot(sym) * lot;
+  const rewardAmount = pipReward * pipValuePerLot(sym) * lot;
   const rr = riskAmount > 0 ? rewardAmount / riskAmount : 0;
   const notional = notionalValue(sym, lot, entry);
   const margin = marginRequired(sym, lot, entry, leverage);

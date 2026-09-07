@@ -17,7 +17,7 @@
  * `actualRisk` separately and the UI shows the second one.
  */
 import { lotForRisk, pipsBetween, directionSign, type TradeSide } from "./calculations";
-import type { SymbolMeta } from "./symbols";
+import { pipValuePerLot, type SymbolMeta } from "./symbols";
 
 /** How the trader is expressing position size. */
 export type QuantityMode = "units" | "risk_currency" | "risk_percent";
@@ -73,7 +73,7 @@ const NO_RESULT: SizingResult = {
 
 /** Risk carried by `lot` given the stop distance, in account currency. */
 export function riskForLot(sym: SymbolMeta, entry: number, sl: number, lot: number): number {
-  return pipsBetween(sym, entry, sl) * sym.pipValuePerLot * lot;
+  return pipsBetween(sym, entry, sl) * pipValuePerLot(sym) * lot;
 }
 
 /**
@@ -144,7 +144,7 @@ export function resolveQuantity(params: {
   // may risk considerably more than asked, which is the opposite of what
   // someone typing into a "Risk $" field expects.
   let clamped: SizingResult["clamped"] = null;
-  const raw = requestedRisk / (pipsBetween(sym, entry, sl) * sym.pipValuePerLot);
+  const raw = requestedRisk / (pipsBetween(sym, entry, sl) * pipValuePerLot(sym));
   if (raw < sym.minLot) clamped = "min";
   else if (raw > sym.maxLot) clamped = "max";
   else if (Math.abs(lot - raw) > 1e-9) clamped = "step";
@@ -176,7 +176,7 @@ export function targetPriceForReward(params: {
   const reward = mode === "reward_percent" ? balance * (value / 100) : value;
   if (!(balance > 0) && mode === "reward_percent") return null;
 
-  const perPip = sym.pipValuePerLot * lot;
+  const perPip = pipValuePerLot(sym) * lot;
   if (perPip <= 0) return null;
 
   const pips = reward / perPip;
@@ -211,7 +211,7 @@ export function stopPriceForRisk(params: {
   if (mode === "risk_percent" && !(balance > 0)) return null;
 
   const risk = mode === "risk_percent" ? balance * (value / 100) : value;
-  const perPip = sym.pipValuePerLot * lot;
+  const perPip = pipValuePerLot(sym) * lot;
   if (perPip <= 0) return null;
 
   const pips = risk / perPip;
@@ -229,5 +229,5 @@ export function rewardForTargetPrice(
 ): number {
   const pips = pipsBetween(sym, entry, target);
   const signed = directionSign(side) * (target - entry) >= 0 ? 1 : -1;
-  return signed * pips * sym.pipValuePerLot * lot;
+  return signed * pips * pipValuePerLot(sym) * lot;
 }

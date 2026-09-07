@@ -11,7 +11,7 @@
  * registered here — no engine changes required.
  */
 
-import { SYMBOL_CATALOG, type PaperMarket, type SymbolMeta } from "@/lib/paper-trading/symbols";
+import { SYMBOL_CATALOG, pipValuePerLot, type PaperMarket, type SymbolMeta } from "@/lib/paper-trading/symbols";
 
 export type AssetClass = "forex" | "metals" | "indices" | "crypto" | "stocks" | "futures" | "options";
 
@@ -172,7 +172,7 @@ function specFromLegacy(meta: SymbolMeta): InstrumentSpec {
   const { base, quote } = currenciesFor(meta.symbol, cls);
   // Tick == smallest quoted increment == 10^-decimals; pip == meta.pipSize.
   const minTickSize = Math.pow(10, -meta.decimals);
-  const tickValue = (meta.pipValuePerLot * minTickSize) / meta.pipSize;
+  const tickValue = (pipValuePerLot(meta) * minTickSize) / meta.pipSize;
   return {
     symbol: meta.symbol,
     displayName: meta.name,
@@ -189,7 +189,7 @@ function specFromLegacy(meta: SymbolMeta): InstrumentSpec {
     pricePrecision: meta.decimals,
     quantityPrecision: Math.max(0, Math.round(-Math.log10(meta.lotStep))),
     pipSize: meta.pipSize,
-    pipValuePerLot: meta.pipValuePerLot,
+    pipValuePerLot: pipValuePerLot(meta),
     marginClass: marginClassFor(cls, meta.symbol),
     sessions: defaults.sessions ?? ["new_york"],
     swapEligible: defaults.swapEligible ?? true,

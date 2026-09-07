@@ -1620,8 +1620,9 @@ Worth resolving before anything else starts reading `ClockStatus`.
 
 ## BA-8 — Cross-pair pip values are stale; JPY P&L is wrong by a third to a half
 
-**Area:** Paper trading · **Found:** 2026-08-08 · **Status:** open, LIVE DEFECT
-affecting real balances
+**Area:** Paper trading · **Found:** 2026-08-08 · **Status:** partially fixed —
+catalog values corrected and the sizing defect is resolved; per-trade rate
+capture is outstanding
 
 `paper_trades.pnl` is computed as
 `((exit − entry) / pipSize) × sign × pipValuePerLot × lot`
@@ -1655,18 +1656,112 @@ The other 29 of 35 symbols are unaffected: they are USD-quoted, where
 `pipValuePerLot / pipSize` equals `contractSize` exactly and no conversion is
 involved.
 
-### Why it is not fixed here
+### What was fixed
 
-Found during the replay-battle P&L reconciliation, and deliberately **not**
-absorbed into it. Fixing it properly needs a per-symbol audit, a decision about
-where the rate comes from (a stored constant will just go stale again), and a
-decision about historical rows — repair, annotate, or leave. That deserves its
-own scrutiny rather than shipping as a side-effect of a replay feature.
+The hardcoded `pipValuePerLot` field is **deleted** from `SymbolMeta`. Its
+replacement is an `fxRate` field (quote currency units per 1 USD) plus a
+getter: `pipValuePerLot(meta) = (contractSize × pipSize) / fxRate`.
+
+The six cross-pair entries in `SYMBOL_CATALOG` now carry their current `fxRate`
+(equal to their `refPrice` for the six non-USD-quoted pairs, 1.0 for the rest).
+The getter derives the correct USD pip value at call time, so the catalog cannot
+stale it again — any rate update is a one-line data change.
+
+All 8 files that read `.pipValuePerLot` on `SymbolMeta` now call the getter.
+The compiler enforces this: the field no longer exists, so every reader must go
+through the function or fail to build.
+
+`metaAgrees` in `battle-pnl.ts` now reads the getter. Its formula is unchanged:
+`ratio = pipValuePerLot(meta) / pipSize`, compared to `contractSize`. For
+cross pairs, `(contractSize × pipSize / fxRate) / pipSize = contractSize /
+fxRate`, which never equals `contractSize`, so the gate stays shut.
+
+### Remaining gaps
+
+| # | Site | What is missing |
+|---|---|---|
+| 1 | `openTrade` (`paper-trading.functions.ts`) | Does not populate `paper_trades.fx_rate` on insert. The column exists and is typed (Insert/Update), but is never written. |
+| 2 | `closeTrade` / `partialCloseTrade` | Compute P&L from the catalog's `fxRate` at close time. If the catalog rate changes while a position is open, the trade's P&L shifts with no economic cause. |
+| 3 | `registerInstrumentPartial` (`instruments.ts:239`) | Builds `InstrumentSpec.pipValuePerLot` from `defaults.tickValue` rather than the getter, bypassing validation. Only caller is a scenario test; the compiler cannot catch a wrong value there. |
+
+### Current behaviour without per-trade capture
+
+Every trade computes from the catalog's `fxRate` at close time. A trade opened
+today and closed after a future rate update uses the new rate, not the rate at
+open. The catalog fix makes the current rate correct; the per-trade capture
+would make the historical rate preserved per trade.
 
 Related: [BA-10](#ba-10) is the umbrella; this is the concrete live damage.
 
 ---
 
+## BA-8a — `openTrade` does not capture per-trade fx_rate
+
+**Area:** Paper trading · **Found:** 2026-09-07 during BA-8 fix ·
+**Status:** open — missed during implementation, not addressed in this change
+
+`paper_trades.fx_rate` exists in the type definitions (Row, Insert, Update)
+and is present on every catalog entry, but `openTrade` (`paper-trading.functions.ts`)
+never writes it. The Zod schema (`openTradeSchema`, line 215) does not include
+it, and the `insert` at line 297 does not pass it.
+
+### What happened
+
+The BA-8 spec called for three things: (1) replace the hardcoded field with an
+`fxRate` column and a computed getter, (2) have `openTrade` write `fx_rate` on
+insert, and (3) have `closeTrade` and `partialCloseTrade` pass `trade.fx_rate`
+to `computePnl`. Only (1) was implemented. Items (2) and (3) were not done —
+the implementation did not cover them, they were not scoped out as a deliberate
+split. Calling them "deferred" would misrepresent what happened: the change was
+incomplete and the gap was only noticed during review, not planned.
+
+### Current behaviour
+
+`closeTrade` and `partialCloseTrade` compute P&L from the catalog's current
+`fxRate` at close time. If the catalog rate changes while a position is open,
+the trade's P&L shifts with no economic cause. A trade opened today against
+GBP/JPY at 202.14 and closed after a future update to 205.00 would see its
+P&L swing ~1.4% from a catalog edit, not from any market movement.
+
+### The fix
+
+Capture `meta.fxRate` at open: add it to `openTradeSchema`, write it in the
+`insert`, and have `closeTrade` / `partialCloseTrade` pass `trade.fx_rate` to
+`computePnl` rather than reading the live catalog. Not done in this change.
+
+---
+
+## BA-8b — `registerInstrumentPartial` bypasses the validated pipValuePerLot
+
+**Area:** Trading engine · instrument registry · **Found:** 2026-09-07 during
+BA-8 fix · **Status:** open — pre-existing, surfaced by the BA-8 audit
+
+`registerInstrumentPartial` (`src/lib/trading-engine/instruments.ts:239`) builds
+`InstrumentSpec.pipValuePerLot` from `defaults.tickValue ?? 1` rather than from
+the catalog getter. Only caller today is `scenarios-phase2.ts:137` registering
+a `DEMO-X` synthetic, so it is not a production path — but the function is part
+of the public API and the compiler cannot catch a wrong value there.
+
+### The shape of the risk
+
+`InstrumentSpec` has `pipValuePerLot` as a plain field. The getter that BA-8
+introduced is on `SymbolMeta` and only validates the catalog entries. Any
+`InstrumentSpec` constructed outside `specFromLegacy` carries whatever value
+the caller writes, including the `?? 1` fallback at line 239.
+
+If a custom instrument is registered and later consumed by
+`pipsToCash` / `riskPerLot` (the call sites at `tick-engine.ts:43` and
+`sizing.ts:79`), the wrong value propagates silently. The catalog gate at
+`metaAgrees` does not apply because there is no `SymbolMeta` to check against.
+
+### The fix
+
+Either route `registerInstrumentPartial` through `pipValuePerLot(meta)` when
+the partial includes a symbol that exists in the catalog, or drop the field
+from `InstrumentSpec` and have those call sites read the getter on demand.
+Not done in this change.
+
+---
 ## BA-9 — `size` is validated as lots and consumed as units
 
 **Area:** Chart execution engine · **Found:** 2026-08-08 · **Status:** open —
