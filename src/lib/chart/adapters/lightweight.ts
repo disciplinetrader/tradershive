@@ -653,7 +653,8 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
           // Clamp to the loaded history (plus a small margin) so a wide window
           // from a higher timeframe can't leave the chart looking empty.
           const clampedFrom = Math.max(keepFrom, first - margin);
-          const clampedTo = Math.min(Math.max(keepTo, clampedFrom + barStep * 30), last + margin);
+          const minBars = Math.min(30, barTimes.length);
+          const clampedTo = Math.min(Math.max(keepTo, clampedFrom + barStep * minBars), last + margin);
           let from = timeToLogical(clampedFrom);
           let to = timeToLogical(clampedTo);
           if (from != null && to != null && to > from) {
