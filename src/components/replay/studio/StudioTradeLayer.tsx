@@ -335,7 +335,7 @@ export function StudioTradeLayer({ adapter, tick, decimals, armed, draft, onDraf
     <div
       ref={hostRef}
       onClick={onLayerClick}
-      className="absolute inset-0 z-10 select-none"
+      className="absolute inset-0 z-10 select-none overflow-hidden"
       style={{ pointerEvents: armed ? "auto" : "none", cursor: armed ? "crosshair" : undefined }}
     >
       {/* The uncommitted draft. Ghosted so it never reads as a live position. */}
@@ -431,6 +431,8 @@ export function StudioTradeLayer({ adapter, tick, decimals, armed, draft, onDraf
         const tone = isLong ? "buy" : "sell";
         const key = order.id;
         const dragging = drag?.on === "order" && drag.orderId === order.id ? drag : null;
+        const hostHeight = hostRef.current?.getBoundingClientRect().height ?? 0;
+        const inBounds = hostHeight > 0 ? entryY - 13 >= 0 && entryY + 13 <= hostHeight : true;
 
         return (
           <div key={key}>
@@ -452,7 +454,8 @@ export function StudioTradeLayer({ adapter, tick, decimals, armed, draft, onDraf
                 one hides its content until hover, which is right for a level
                 and wrong for a position's P/L, size and close button. */}
             <OrderLine y={entryY} tone={tone} solid />
-            <PositionWidget
+            {inBounds ? (
+             <PositionWidget
               y={entryY}
               testId={`studio-position-${order.id}`}
               direction={order.direction}
@@ -465,6 +468,7 @@ export function StudioTradeLayer({ adapter, tick, decimals, armed, draft, onDraf
               onStartLevel={(handle) => startLevel(order.id, handle, entryY)}
               onClose={() => closePositionNow(order.id)}
             />
+ ) : null}
 
             {/* Stop */}
             {stopY != null ? (
