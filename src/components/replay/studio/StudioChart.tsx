@@ -11,11 +11,11 @@
  * terminal: drawings (with persistence + object tree) and indicators.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, Eye, EyeOff, LineChart, Newspaper, Shapes } from "lucide-react";
+import { Calendar, ChevronDown, Eye, EyeOff, LineChart, Newspaper, Shapes } from "lucide-react";
 
 import { createLightweightAdapter } from "@/lib/chart/adapters/lightweight";
 import type { ChartAdapter, ExternalMarker } from "@/lib/chart/adapter";
-import type { ChartSettings, IndicatorConfig, IndicatorKey } from "@/lib/chart/types";
+import type { ChartSettings, IndicatorConfig, IndicatorKey, PriceScaleMode } from "@/lib/chart/types";
 import type { ToolId } from "@/lib/chart/drawings/types";
 import { INDICATOR_TOGGLES } from "@/lib/chart/indicator-registry";
 import { DrawingStore } from "@/lib/chart/drawings/store";
@@ -253,20 +253,24 @@ export function StudioChart({
   const lastPrice = candles.length ? candles[candles.length - 1].close : null;
   const decimals = decimalsFor(lastPrice);
 
+  const [priceScale, setPriceScale] = useState<PriceScaleMode>("auto");
+  const [chartTimezone, setChartTimezone] = useState<string>("Exchange");
+  const [tzOpen, setTzOpen] = useState(false);
+
   const settings: ChartSettings = useMemo(
     () => ({
       chartType: "candles",
       timeframe: displayTf,
       symbol,
-      priceScale: "auto",
+      priceScale,
       crosshair: "normal",
       showGrid: true,
       showVolume: false,
       sessionShading: false,
       autoScale: true,
-      timezone: view?.dataset.timezone ?? "UTC",
+ timezone: chartTimezone === "Exchange" ? (view?.dataset.timezone ?? "UTC") : chartTimezone,
     }),
-    [symbol, displayTf, view?.dataset.timezone],
+    [symbol, displayTf, view?.dataset.timezone, priceScale, chartTimezone],
   );
 
   // Mount the renderer once — the adapter owns its own resize handling.
@@ -394,6 +398,115 @@ export function StudioChart({
     }
     return [...out.entries()];
   }, []);
+
+  const tzList = [
+    { value: "Exchange", label: "Exchange" },
+    { value: "Pacific/Honolulu", label: "(UTC-10) Honolulu" },
+    { value: "America/Anchorage", label: "(UTC-8) Anchorage" },
+    { value: "America/Juneau", label: "(UTC-8) Juneau" },
+    { value: "America/Los_Angeles", label: "(UTC-7) Los Angeles" },
+    { value: "America/Phoenix", label: "(UTC-7) Phoenix" },
+    { value: "America/Vancouver", label: "(UTC-7) Vancouver" },
+    { value: "America/Denver", label: "(UTC-6) Denver" },
+    { value: "America/Mexico_City", label: "(UTC-6) Mexico City" },
+    { value: "America/El_Salvador", label: "(UTC-6) San Salvador" },
+    { value: "America/Bogota", label: "(UTC-5) Bogota" },
+    { value: "America/Chicago", label: "(UTC-5) Chicago" },
+    { value: "America/Lima", label: "(UTC-5) Lima" },
+    { value: "America/Caracas", label: "(UTC-4) Caracas" },
+    { value: "America/New_York", label: "(UTC-4) New York" },
+    { value: "America/Toronto", label: "(UTC-4) Toronto" },
+    { value: "America/Argentina/Buenos_Aires", label: "(UTC-3) Buenos Aires" },
+    { value: "America/Halifax", label: "(UTC-3) Halifax" },
+    { value: "America/Santiago", label: "(UTC-3) Santiago" },
+    { value: "America/Sao_Paulo", label: "(UTC-3) Sao Paulo" },
+    { value: "Atlantic/Azores", label: "(UTC) Azores" },
+    { value: "Atlantic/Reykjavik", label: "(UTC) Reykjavik" },
+    { value: "Africa/Casablanca", label: "(UTC+1) Casablanca" },
+    { value: "Europe/Dublin", label: "(UTC+1) Dublin" },
+    { value: "Africa/Lagos", label: "(UTC+1) Lagos" },
+    { value: "Europe/Lisbon", label: "(UTC+1) Lisbon" },
+    { value: "Europe/London", label: "(UTC+1) London" },
+    { value: "Africa/Tunis", label: "(UTC+1) Tunis" },
+    { value: "Europe/Amsterdam", label: "(UTC+2) Amsterdam" },
+    { value: "Europe/Athens", label: "(UTC+2) Athens" },
+    { value: "Europe/Bucharest", label: "(UTC+2) Bucharest" },
+    { value: "Europe/Helsinki", label: "(UTC+2) Helsinki" },
+    { value: "Africa/Johannesburg", label: "(UTC+2) Johannesburg" },
+    { value: "Europe/Kiev", label: "(UTC+2) Kiev" },
+    { value: "Africa/Cairo", label: "(UTC+2) Cairo" },
+    { value: "Europe/Riga", label: "(UTC+2) Riga" },
+    { value: "Europe/Sofia", label: "(UTC+2) Sofia" },
+    { value: "Asia/Amman", label: "(UTC+3) Amman" },
+    { value: "Europe/Istanbul", label: "(UTC+3) Istanbul" },
+    { value: "Europe/Kaliningrad", label: "(UTC+3) Kaliningrad" },
+    { value: "Europe/Minsk", label: "(UTC+3) Minsk" },
+    { value: "Europe/Moscow", label: "(UTC+3) Moscow" },
+    { value: "Europe/Volgograd", label: "(UTC+3) Volgograd" },
+    { value: "Africa/Nairobi", label: "(UTC+3) Nairobi" },
+    { value: "Europe/Samara", label: "(UTC+4) Samara" },
+    { value: "Asia/Dubai", label: "(UTC+4) Dubai" },
+    { value: "Asia/Tbilisi", label: "(UTC+4) Tbilisi" },
+    { value: "Asia/Yerevan", label: "(UTC+4) Yerevan" },
+    { value: "Asia/Baku", label: "(UTC+4) Baku" },
+    { value: "Asia/Muscat", label: "(UTC+4) Muscat" },
+    { value: "Indian/Mauritius", label: "(UTC+4) Mauritius" },
+    { value: "Indian/Reunion", label: "(UTC+4) Reunion" },
+    { value: "Asia/Kabul", label: "(UTC+4:30) Kabul" },
+    { value: "Asia/Tashkent", label: "(UTC+5) Tashkent" },
+    { value: "Asia/Yekaterinburg", label: "(UTC+5) Yekaterinburg" },
+    { value: "Asia/Karachi", label: "(UTC+5) Karachi" },
+    { value: "Asia/Kolkata", label: "(UTC+5:30) Kolkata" },
+    { value: "Asia/Colombo", label: "(UTC+5:30) Colombo" },
+    { value: "Asia/Kathmandu", label: "(UTC+5:45) Kathmandu" },
+    { value: "Asia/Dhaka", label: "(UTC+6) Dhaka" },
+    { value: "Asia/Almaty", label: "(UTC+6) Almaty" },
+    { value: "Asia/Bishkek", label: "(UTC+6) Bishkek" },
+    { value: "Asia/Omsk", label: "(UTC+6) Omsk" },
+    { value: "Indian/Chagos", label: "(UTC+6) Chagos" },
+    { value: "Asia/Yangon", label: "(UTC+6:30) Yangon" },
+    { value: "Asia/Bangkok", label: "(UTC+7) Bangkok" },
+    { value: "Asia/Ho_Chi_Minh", label: "(UTC+7) Ho Chi Minh" },
+    { value: "Asia/Jakarta", label: "(UTC+7) Jakarta" },
+    { value: "Asia/Novosibirsk", label: "(UTC+7) Novosibirsk" },
+    { value: "Asia/Phnom_Penh", label: "(UTC+7) Phnom Penh" },
+    { value: "Asia/Vientiane", label: "(UTC+7) Vientiane" },
+    { value: "Asia/Hong_Kong", label: "(UTC+8) Hong Kong" },
+    { value: "Asia/Irkutsk", label: "(UTC+8) Irkutsk" },
+    { value: "Asia/Kuala_Lumpur", label: "(UTC+8) Kuala Lumpur" },
+    { value: "Asia/Macau", label: "(UTC+8) Macau" },
+    { value: "Asia/Shanghai", label: "(UTC+8) Shanghai" },
+    { value: "Asia/Singapore", label: "(UTC+8) Singapore" },
+    { value: "Asia/Taipei", label: "(UTC+8) Taipei" },
+    { value: "Asia/Ulaanbaatar", label: "(UTC+8) Ulaanbaatar" },
+    { value: "Asia/Pyongyang", label: "(UTC+8:30) Pyongyang" },
+    { value: "Asia/Tokyo", label: "(UTC+9) Tokyo" },
+    { value: "Asia/Seoul", label: "(UTC+9) Seoul" },
+    { value: "Asia/Yakutsk", label: "(UTC+9) Yakutsk" },
+    { value: "Australia/Adelaide", label: "(UTC+9:30) Adelaide" },
+    { value: "Australia/Darwin", label: "(UTC+9:30) Darwin" },
+    { value: "Australia/Brisbane", label: "(UTC+10) Brisbane" },
+    { value: "Australia/Hobart", label: "(UTC+10) Hobart" },
+    { value: "Asia/Vladivostok", label: "(UTC+10) Vladivostok" },
+    { value: "Australia/Melbourne", label: "(UTC+10) Melbourne" },
+    { value: "Australia/Sydney", label: "(UTC+10) Sydney" },
+    { value: "Pacific/Noumea", label: "(UTC+11) Noumea" },
+    { value: "Pacific/Guadalcanal", label: "(UTC+11) Guadalcanal" },
+    { value: "Asia/Magadan", label: "(UTC+11) Magadan" },
+    { value: "Pacific/Norfolk", label: "(UTC+11) Norfolk Island" },
+    { value: "Pacific/Auckland", label: "(UTC+12) Auckland" },
+    { value: "Pacific/Fiji", label: "(UTC+12) Fiji" },
+    { value: "Pacific/Tarawa", label: "(UTC+12) Tarawa" },
+    { value: "Pacific/Majuro", label: "(UTC+12) Majuro" },
+    { value: "Pacific/Nauru", label: "(UTC+12) Nauru" },
+    { value: "Pacific/Tongatapu", label: "(UTC+13) Tongatapu" },
+    { value: "Pacific/Apia", label: "(UTC+13) Apia" },
+    { value: "Pacific/Kiritimati", label: "(UTC+14) Kiritimati" },
+  ];
+  const tzLabel = (() => {
+    if (chartTimezone === "Exchange") return view?.dataset.timezone?.split("/").pop() ?? "UTC";
+    return chartTimezone.split("/").pop() ?? chartTimezone;
+  })();
 
   return (
     <div className="absolute inset-0 flex flex-col">
@@ -600,7 +713,8 @@ export function StudioChart({
           />
         </div>
 
-        <div ref={chartWrapRef} className="relative min-w-0 flex-1">
+        <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+         <div ref={chartWrapRef} className="relative min-w-0 flex-1">
           <div
             ref={hostRef}
             className="absolute inset-0"
@@ -731,6 +845,127 @@ export function StudioChart({
               />
             </div>
           ) : null}
+         </div>
+        
+         <div data-testid="studio-footer" className="flex h-7 shrink-0 items-center justify-between gap-0.5 border-t border-border/60 px-2">
+         <div className="flex items-center gap-0.5">
+         {([
+         { label: "5y", tf: "1W", spanMs: 5 * 365 * 24 * 60 * 60 * 1000 },
+         { label: "1y", tf: "1W", spanMs: 365 * 24 * 60 * 60 * 1000 },
+         { label: "6m", tf: "2H", spanMs: 180 * 24 * 60 * 60 * 1000 },
+         { label: "3m", tf: "1H", spanMs: 90 * 24 * 60 * 60 * 1000 },
+         { label: "1m", tf: "30m", spanMs: 30 * 24 * 60 * 60 * 1000 },
+         { label: "5d", tf: "5m", spanMs: 5 * 24 * 60 * 60 * 1000 },
+         { label: "1d", tf: "1m", spanMs: 24 * 60 * 60 * 1000 },
+         ])
+         .map((preset) => {
+         const disabled =
+         candles.length === 0
+         || view == null
+         || (view.transport.marketTime - preset.spanMs) > candles[candles.length - 1].time
+         || !aggregatableFrom(baseTf).includes(preset.tf as Timeframe);
+         const handleClick = () => {
+         if (disabled) return;
+         setDisplayTf(preset.tf as Timeframe);
+         const fromMs = view.transport.marketTime - preset.spanMs;
+         const toMs = view.transport.marketTime;
+         adapter?.setVisibleTimeRange?.(fromMs, toMs);
+         };
+         return (
+         <button
+         key={preset.label}
+         type="button"
+         disabled={disabled}
+         onClick={handleClick}
+         className={cn(
+         "h-6 min-w-[26px] rounded-[2px] px-1 text-[10px] font-mono font-semibold leading-none transition",
+         disabled
+         ? "cursor-not-allowed text-muted-foreground/40"
+         : "hover:bg-muted focus-visible:outline-none focus-visible:ring-2"
+         )}
+         >
+         {preset.label}
+         </button>
+         );
+         })}
+         <span className="mx-0.5 h-3.5 w-px shrink-0 bg-border/60" />
+         <Calendar
+         className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+         aria-label="Calendar"
+         />
+         </div>
+         <div className="flex items-center gap-1">
+         {view != null && (
+         <button
+         type="button"
+         data-testid="utc-clock"
+         onClick={() => setTzOpen((v) => !v)}
+         className="rounded-full bg-muted/60 px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground transition hover:bg-muted"
+         >
+         {new Date(view.transport.marketTime).toLocaleTimeString("en-GB", {
+         timeZone: chartTimezone === "Exchange" ? (view.dataset.timezone ?? "UTC") : chartTimezone,
+         hour: "2-digit",
+         minute: "2-digit",
+         second: "2-digit",
+         })}
+         {" " + tzLabel}
+         </button>
+         )}
+         <span className="mx-0.5 h-3.5 w-px shrink-0 bg-border/60" />
+         {(["percentage", "log", "auto"] as const).map((mode) => (
+         <button
+         key={mode}
+         type="button"
+         aria-label={`Price scale ${mode}`}
+         aria-pressed={priceScale === mode}
+         data-active={priceScale === mode ? "1" : "0"}
+         onClick={() => setPriceScale(mode)}
+         className="h-6 min-w-[26px] rounded-[2px] px-1 text-[10px] font-mono font-semibold leading-none transition data-[active=1]:bg-primary data-[active=1]:text-primary-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2"
+         >
+         {mode === "percentage" ? "%" : mode}
+         </button>
+         ))}
+         </div>
+         {tzOpen && view != null && (
+         <div
+         className="absolute bottom-full right-0 z-50 mb-0.5 max-h-56 w-48 overflow-y-auto rounded-md border border-border bg-popover p-0.5 shadow-lg"
+         data-testid="timezone-picker"
+         >
+         <button
+         type="button"
+         aria-label="Exchange timezone"
+         aria-pressed={chartTimezone === "Exchange"}
+         onClick={() => { setChartTimezone("Exchange"); setTzOpen(false); }}
+         className={cn(
+         "flex w-full items-center rounded-[2px] px-2 py-1 text-left text-[11px] transition",
+         chartTimezone === "Exchange"
+         ? "bg-accent text-accent-foreground font-semibold"
+         : "hover:bg-muted text-muted-foreground"
+         )}
+         >
+         Exchange
+         </button>
+         <span className="my-0.5 h-px w-full bg-border/60" />
+         {tzList.slice(1).map((tz) => (
+         <button
+         key={tz.value}
+         type="button"
+         aria-label={tz.label}
+         aria-pressed={chartTimezone === tz.value}
+         onClick={() => { setChartTimezone(tz.value); setTzOpen(false); }}
+         className={cn(
+         "flex w-full items-center rounded-[2px] px-2 py-1 text-left text-[11px] transition",
+         chartTimezone === tz.value
+         ? "bg-accent text-accent-foreground font-semibold"
+         : "hover:bg-muted text-muted-foreground"
+         )}
+         >
+         {tz.label}
+         </button>
+         ))}
+         </div>
+         )}
+         </div>
         </div>
       </div>
     </div>

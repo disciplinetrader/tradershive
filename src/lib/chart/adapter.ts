@@ -79,6 +79,9 @@ export interface ChartAdapter {
   panBy?(bars: number): void;
   /** Reset time-scale bar spacing / visible range to defaults. */
   resetTimeScale?(): void;
+ /** Set the visible time range in ms. */
+ setVisibleTimeRange?(fromMs: number, toMs: number): void;
+
 
 
   /**

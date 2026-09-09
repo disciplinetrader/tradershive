@@ -1032,6 +1032,22 @@ export const createLightweightAdapter: ChartAdapterFactory = ({ container, setti
       try { chart.timeScale().resetTimeScale(); chart.timeScale().fitContent(); } catch { /* ignore */ }
     },
 
+ setVisibleTimeRange(fromMs, toMs) {
+ try {
+ const ts = chart.timeScale();
+ const first = barTimes[0];
+ const last = barTimes[barTimes.length - 1];
+ if (!first || !last) return;
+ const margin = barStep * 20;
+ const clampedFrom = Math.max(fromMs, first - margin);
+ const minBars = Math.min(30, barTimes.length);
+ const clampedTo = Math.min(Math.max(toMs, clampedFrom + barStep * minBars), last + margin);
+ const from = timeToLogical(clampedFrom);
+ const to = timeToLogical(clampedTo);
+ if (from != null && to != null && to > from) ts.setVisibleLogicalRange({ from, to });
+ } catch { /* ignore */ }
+ },
+
     addPriceLine(opts) {
       const line = priceSeries.createPriceLine({
         price: opts.price,
