@@ -894,7 +894,7 @@ export function StudioChart({
          aria-label="Calendar"
          />
          </div>
-         <div className="flex items-center gap-1">
+         <div className="relative flex items-center gap-1">
          {view != null && (
          <button
          type="button"
@@ -911,24 +911,9 @@ export function StudioChart({
          {" " + tzLabel}
          </button>
          )}
-         <span className="mx-0.5 h-3.5 w-px shrink-0 bg-border/60" />
-         {(["percentage", "log", "auto"] as const).map((mode) => (
-         <button
-         key={mode}
-         type="button"
-         aria-label={`Price scale ${mode}`}
-         aria-pressed={priceScale === mode}
-         data-active={priceScale === mode ? "1" : "0"}
-         onClick={() => setPriceScale(mode)}
-         className="h-6 min-w-[26px] rounded-[2px] px-1 text-[10px] font-mono font-semibold leading-none transition data-[active=1]:bg-primary data-[active=1]:text-primary-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2"
-         >
-         {mode === "percentage" ? "%" : mode}
-         </button>
-         ))}
-         </div>
          {tzOpen && view != null && (
          <div
-         className="absolute bottom-full right-0 z-50 mb-0.5 max-h-56 w-48 overflow-y-auto rounded-md border border-border bg-popover p-0.5 shadow-lg"
+         className="absolute bottom-full right-0 z-50 mb-1 max-h-[400px] w-48 overflow-y-auto rounded-md border border-border bg-popover p-0.5 shadow-lg"
          data-testid="timezone-picker"
          >
          <button
@@ -965,6 +950,21 @@ export function StudioChart({
          ))}
          </div>
          )}
+         <span className="mx-0.5 h-3.5 w-px shrink-0 bg-border/60" />
+         {(["percentage", "log", "auto"] as const).map((mode) => (
+         <button
+         key={mode}
+         type="button"
+         aria-label={`Price scale ${mode}`}
+         aria-pressed={priceScale === mode}
+         data-active={priceScale === mode ? "1" : "0"}
+         onClick={() => setPriceScale(mode)}
+         className="h-6 min-w-[26px] rounded-[2px] px-1 text-[10px] font-mono font-semibold leading-none transition data-[active=1]:bg-primary data-[active=1]:text-primary-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2"
+         >
+         {mode === "percentage" ? "%" : mode}
+         </button>
+         ))}
+         </div>
          </div>
         </div>
       </div>
