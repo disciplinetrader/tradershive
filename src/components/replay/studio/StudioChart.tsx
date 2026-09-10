@@ -40,6 +40,10 @@ import { ChartContextMenu, type ChartOrderIntent } from "@/components/chart/Char
 import { findSymbol } from "@/lib/paper-trading/symbols";
 import { useReplayStudio } from "./context";
 import { useSecondarySymbol } from "./useSecondarySymbol";
+import { Calendar as CalendarPicker } from "@/components/ui/calendar";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 
 /** Decimals inferred from price magnitude — FX pairs need more than indices. */
 function decimalsFor(price: number | null): number {
@@ -184,6 +188,8 @@ export function StudioChart({
   }, []);
   const hostRef = useRef<HTMLDivElement | null>(null);
   const chartWrapRef = useRef<HTMLDivElement | null>(null);
+  const gotoRangeRef = useRef<{ from: number; to: number } | null>(null);
+
   const adapterRef = useRef<ChartAdapter | null>(null);
   const [adapter, setAdapter] = useState<ChartAdapter | null>(null);
   const fittedRef = useRef(false);
@@ -256,6 +262,8 @@ export function StudioChart({
   const [priceScale, setPriceScale] = useState<PriceScaleMode>("auto");
   const [chartTimezone, setChartTimezone] = useState<string>("Exchange");
   const [tzOpen, setTzOpen] = useState(false);
+
+  const [gotoOpen, setGotoOpen] = useState(false);
 
   const settings: ChartSettings = useMemo(
     () => ({
@@ -507,6 +515,7 @@ export function StudioChart({
     if (chartTimezone === "Exchange") return view?.dataset.timezone?.split("/").pop() ?? "UTC";
     return chartTimezone.split("/").pop() ?? chartTimezone;
   })();
+
 
   return (
     <div className="absolute inset-0 flex flex-col">
@@ -889,10 +898,17 @@ export function StudioChart({
          );
          })}
          <span className="mx-0.5 h-3.5 w-px shrink-0 bg-border/60" />
-         <Calendar
-         className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
-         aria-label="Calendar"
-         />
+         <button
+           type="button"
+           aria-label="Go to date"
+           disabled={candles.length === 0}
+           onClick={() => {
+             gotoRangeRef.current = adapter?.getVisibleTimeRange?.() ?? null;
+             setGotoOpen(true);
+           }}
+           className="rounded p-0.5 hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40">
+             <Calendar className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-label="Calendar" />
+         </button>
          </div>
          <div className="relative flex items-center gap-1">
          {view != null && (
@@ -965,9 +981,226 @@ export function StudioChart({
          </button>
          ))}
          </div>
+          {gotoOpen && view != null && (
+           <GotoDialog
+             open={gotoOpen}
+             onOpenChange={setGotoOpen}
+             candles={candles}
+             visibleRange={gotoRangeRef.current}
+             onGo={(from, to) => adapter?.setVisibleTimeRange?.(from, to)}
+           />
+          )}
          </div>
         </div>
       </div>
     </div>
   );
 }
+  function GotoDialog({
+    open,
+    onOpenChange,
+    candles,
+    visibleRange,
+    onGo,
+  }: {
+    open: boolean;
+    onOpenChange: (o: boolean) => void;
+    candles: Candle[];
+    visibleRange: { from: number; to: number } | null;
+    onGo: (fromMs: number, toMs: number) => void;
+  }) {
+   const [date, setDate] = useState<string>("");
+ const initializedRef = useRef(false);
+   const [time, setTime] = useState<string>("00:00");
+   const [month, setMonth] = useState<Date | undefined>(undefined);
+   const [activeTab, setActiveTab] = useState<"date" | "range">("date");
+   const [startDate, setStartDate] = useState<string>("");
+   const [startTime, setStartTime] = useState<string>("00:00");
+   const [endDate, setEndDate] = useState<string>("");
+   const [endTime, setEndTime] = useState<string>("00:00");
+   const todayMs = candles.length ? candles[candles.length - 1].time : 0;
+
+   useEffect(() => {
+   if (!open) { initializedRef.current = false; return; }
+   if (initializedRef.current) return;
+   initializedRef.current = true;
+   setMonth(new Date(todayMs));
+   const d = new Date(todayMs);
+   const yyyy = d.getUTCFullYear();
+   const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+   const dd = String(d.getUTCDate()).padStart(2, "0");
+   setDate(`${yyyy}-${mm}-${dd}`);
+   const hh = String(d.getUTCHours()).padStart(2, "0");
+   const mi = String(d.getUTCMinutes()).padStart(2, "0");
+   setTime(`${hh}:${mi}`);
+   setStartDate(`${yyyy}-${mm}-${dd}`);
+   setEndDate(`${yyyy}-${mm}-${dd}`);
+   setStartTime("00:00");
+   setEndTime("23:59");
+   }, [open]);
+
+   const todayDay = useMemo(() => {
+   const d = new Date(todayMs);
+   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+   }, [todayMs]);
+
+   const disabledMatcher = useCallback((day: Date) => {
+    const dayStart = Date.UTC(day.getFullYear(), day.getMonth(), day.getDate());
+    return dayStart > todayMs;
+   }, [todayMs]);
+
+   const handleGo = () => {
+    if (activeTab === "range") {
+    if (!startDate || !endDate) return;
+    const [y1, m1, d1] = startDate.split("-").map(Number);
+    const [y2, m2, d2] = endDate.split("-").map(Number);
+    const [hh1, mi1] = (startTime || "00:00").split(":").map(Number);
+    const [hh2, mi2] = (endTime || "00:00").split(":").map(Number);
+    const fromMs = Date.UTC(y1, m1 - 1, d1, hh1, mi1);
+    const toMs = Date.UTC(y2, m2 - 1, d2, hh2, mi2);
+    if (!Number.isFinite(fromMs) || !Number.isFinite(toMs)) return;
+    if (!(toMs > fromMs)) return;
+    onGo(fromMs, toMs);
+    onOpenChange(false);
+    return;
+    }
+    if (!date) return;
+    const [y, m, d] = date.split("-").map(Number);
+    const [hh, mi] = (time || "00:00").split(":").map(Number);
+    const ms = Date.UTC(y, m - 1, d, hh, mi);
+    if (!Number.isFinite(ms)) return;
+    const span = visibleRange ? visibleRange.to - visibleRange.from : 0;
+    onGo(ms, span > 0 ? ms + span : ms + 24 * 60 * 60 * 1000);
+    onOpenChange(false);
+   };
+
+   const selectedDate = date ? new Date(`${date}T00:00:00Z`) : undefined;
+
+   return (
+   <Dialog open={open} onOpenChange={onOpenChange}>
+   <DialogContent className="sm:max-w-sm" data-testid="goto-dialog">
+   <DialogHeader>
+   <DialogTitle>Go to</DialogTitle>
+   </DialogHeader>
+
+   <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "date" | "range")} className="w-full">
+   <TabsList className="grid w-full grid-cols-2">
+   <TabsTrigger value="date">Date</TabsTrigger>
+   <TabsTrigger value="range">Custom range</TabsTrigger>
+   </TabsList>
+<TabsContent value="date" className="space-y-2">
+
+   <div className="grid grid-cols-2 gap-2">
+   <div>
+   <label className="text-[11px] text-muted-foreground">Date</label>
+   <Input
+    type="date"
+    value={date}
+    onChange={(e) => setDate(e.target.value)}
+    className="h-8 text-[12px]"
+  />
+   </div>
+   <div>
+   <label className="text-[11px] text-muted-foreground">Time</label>
+   <Input
+    type="time"
+    value={time}
+    onChange={(e) => setTime(e.target.value)}
+    className="h-8 text-[12px]"
+  />
+   </div>
+   </div>
+
+   <CalendarPicker
+     month={month}
+     onMonthChange={setMonth}
+    mode="single"
+    selected={selectedDate}
+    onSelect={(d) => {
+      if (!d) return;
+      const yyyy = d.getUTCFullYear();
+      const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+      const dd = String(d.getUTCDate()).padStart(2, "0");
+      setDate(`${yyyy}-${mm}-${dd}`);
+      setMonth(d);
+    }}
+    disabled={disabledMatcher}
+    modifiers={{ replayDay: todayDay }}
+    modifiersClassNames={{ replayDay: "ring-1 ring-primary" }}
+  />
+
+</TabsContent>
+<TabsContent value="range" className="space-y-2">
+ <div className="grid grid-cols-2 gap-2">
+ <div>
+ <label className="text-[11px] text-muted-foreground">Start date</label>
+ <Input
+      type="date"
+      value={startDate}
+      onChange={(e) => setStartDate(e.target.value)}
+      className="h-8 text-[12px]"
+ />
+ </div>
+ <div>
+ <label className="text-[11px] text-muted-foreground">Start time</label>
+ <Input
+      type="time"
+      value={startTime}
+      onChange={(e) => setStartTime(e.target.value)}
+      className="h-8 text-[12px]"
+ />
+ </div>
+ </div>
+ <div className="grid grid-cols-2 gap-2">
+ <div>
+ <label className="text-[11px] text-muted-foreground">End date</label>
+ <Input
+      type="date"
+      value={endDate}
+      onChange={(e) => setEndDate(e.target.value)}
+      className="h-8 text-[12px]"
+ />
+ </div>
+ <div>
+ <label className="text-[11px] text-muted-foreground">End time</label>
+ <Input
+      type="time"
+      value={endTime}
+      onChange={(e) => setEndTime(e.target.value)}
+      className="h-8 text-[12px]"
+ />
+ </div>
+ </div>
+ <CalendarPicker
+    mode="range"
+    month={month}
+    onMonthChange={setMonth}
+    selected={{ from: startDate ? new Date(`${startDate}T00:00:00Z`) : undefined, to: endDate ? new Date(`${endDate}T00:00:00Z`) : undefined }}
+    onSelect={(r) => {
+      if (!r) return;
+      if (r.from) {
+        const y = r.from.getUTCFullYear();
+        const m = String(r.from.getUTCMonth() + 1).padStart(2, "0");
+        const d = String(r.from.getUTCDate()).padStart(2, "0");
+        setStartDate(`${y}-${m}-${d}`);
+      }
+      if (r.to) {
+        const y = r.to.getUTCFullYear();
+        const m = String(r.to.getUTCMonth() + 1).padStart(2, "0");
+        const d = String(r.to.getUTCDate()).padStart(2, "0");
+        setEndDate(`${y}-${m}-${d}`);
+      }
+      if (r.from) setMonth(r.from);
+    }}
+    disabled={disabledMatcher}
+ />
+</TabsContent>
+</Tabs>
+   <DialogFooter>
+   <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>Cancel</Button>
+   <Button size="sm" onClick={handleGo} disabled={activeTab === "range" ? (!startDate || !endDate) : !date}>Go to</Button>
+   </DialogFooter>
+   </DialogContent>
+   </Dialog>
+   );
+  }
