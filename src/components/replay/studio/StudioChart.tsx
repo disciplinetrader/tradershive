@@ -1074,7 +1074,9 @@ export function StudioChart({
     onOpenChange(false);
    };
 
-   const selectedDate = date ? new Date(`${date}T00:00:00Z`) : undefined;
+ const selectedDate = date
+  ? (() => { const [y,m,d] = date.split("-").map(Number); return new Date(y, m - 1, d); })()
+  : undefined;
 
    return (
    <Dialog open={open} onOpenChange={onOpenChange}>
@@ -1096,7 +1098,11 @@ export function StudioChart({
    <Input
     type="date"
     value={date}
-    onChange={(e) => setDate(e.target.value)}
+    onChange={(e) => {
+     setDate(e.target.value);
+     const [y, m, d] = e.target.value.split("-").map(Number);
+     if (y && m && d) setMonth(new Date(y, m - 1, d));
+    }}
     className="h-8 text-[12px]"
   />
    </div>
@@ -1118,9 +1124,9 @@ export function StudioChart({
     selected={selectedDate}
     onSelect={(d) => {
       if (!d) return;
-      const yyyy = d.getUTCFullYear();
-      const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
-      const dd = String(d.getUTCDate()).padStart(2, "0");
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
       setDate(`${yyyy}-${mm}-${dd}`);
       setMonth(d);
     }}
@@ -1137,7 +1143,11 @@ export function StudioChart({
  <Input
       type="date"
       value={startDate}
-      onChange={(e) => setStartDate(e.target.value)}
+      onChange={(e) => {
+       setStartDate(e.target.value);
+       const [y, m, d] = e.target.value.split("-").map(Number);
+       if (y && m && d) setMonth(new Date(y, m - 1, d));
+      }}
       className="h-8 text-[12px]"
  />
  </div>
@@ -1157,7 +1167,11 @@ export function StudioChart({
  <Input
       type="date"
       value={endDate}
-      onChange={(e) => setEndDate(e.target.value)}
+      onChange={(e) => {
+       setEndDate(e.target.value);
+       const [y, m, d] = e.target.value.split("-").map(Number);
+       if (y && m && d) setMonth(new Date(y, m - 1, d));
+      }}
       className="h-8 text-[12px]"
  />
  </div>
@@ -1175,19 +1189,26 @@ export function StudioChart({
     mode="range"
     month={month}
     onMonthChange={setMonth}
-    selected={{ from: startDate ? new Date(`${startDate}T00:00:00Z`) : undefined, to: endDate ? new Date(`${endDate}T00:00:00Z`) : undefined }}
+    selected={{
+     from: startDate
+     ? (() => { const [y,m,d] = startDate.split("-").map(Number); return new Date(y, m - 1, d); })()
+     : undefined,
+     to: endDate
+     ? (() => { const [y2,m2,d2] = endDate.split("-").map(Number); return new Date(y2, m2 - 1, d2); })()
+     : undefined,
+    }}
     onSelect={(r) => {
       if (!r) return;
       if (r.from) {
-        const y = r.from.getUTCFullYear();
-        const m = String(r.from.getUTCMonth() + 1).padStart(2, "0");
-        const d = String(r.from.getUTCDate()).padStart(2, "0");
+        const y = r.from.getFullYear();
+        const m = String(r.from.getMonth() + 1).padStart(2, "0");
+        const d = String(r.from.getDate()).padStart(2, "0");
         setStartDate(`${y}-${m}-${d}`);
       }
       if (r.to) {
-        const y = r.to.getUTCFullYear();
-        const m = String(r.to.getUTCMonth() + 1).padStart(2, "0");
-        const d = String(r.to.getUTCDate()).padStart(2, "0");
+        const y = r.to.getFullYear();
+        const m = String(r.to.getMonth() + 1).padStart(2, "0");
+        const d = String(r.to.getDate()).padStart(2, "0");
         setEndDate(`${y}-${m}-${d}`);
       }
       if (r.from) setMonth(r.from);
@@ -1195,7 +1216,7 @@ export function StudioChart({
     disabled={disabledMatcher}
  />
 </TabsContent>
-</Tabs>
+ </Tabs>
    <DialogFooter>
    <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>Cancel</Button>
    <Button size="sm" onClick={handleGo} disabled={activeTab === "range" ? (!startDate || !endDate) : !date}>Go to</Button>
