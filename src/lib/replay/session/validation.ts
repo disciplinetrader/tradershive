@@ -6,6 +6,7 @@
  *  2. A session never starts on a dataset it cannot deterministically replay.
  */
 
+import { TIMEFRAME_SECONDS } from "../constants";
 import type { DatasetIdentity } from "./dataset";
 import { datasetMatches } from "./dataset";
 import type { SessionLifecycle, SessionSnapshot } from "./model";
@@ -52,14 +53,29 @@ export function validateDataset(identity: DatasetIdentity, opts: { allowSyntheti
     errors.push("Synthetic data cannot back a real practice session.");
   }
 
-  const missing = identity.gaps.reduce((n, g) => n + g.missingBars, 0);
+  // A candle tape is NOT a continuous calendar. Overnight closes, weekends and
+  // holidays produce enormous "missing bar" counts on any intraday timeframe —
+  // counting those as data loss made every real forex/equity dataset fail this
+  // check. Only holes SHORT enough to sit inside one trading session count as
+  // genuinely missing data; longer ones are market structure and are reported
+  // as warnings.
+  const stepMs = TIMEFRAME_SECONDS[identity.timeframe] * 1000;
+  const STRUCTURAL_GAP_MS = 4 * 60 * 60 * 1000; // session break or longer
+  const isStructural = (g: { from: number; to: number }) =>
+    stepMs >= STRUCTURAL_GAP_MS || g.to - g.from >= STRUCTURAL_GAP_MS;
+
+  const intradayMissing = identity.gaps.reduce((n, g) => (isStructural(g) ? n : n + g.missingBars), 0);
+  const structuralGaps = identity.gaps.filter(isStructural).length;
+  const totalMissing = identity.gaps.reduce((n, g) => n + g.missingBars, 0);
+
   if (identity.gaps.length) {
     warnings.push(
-      `${identity.gaps.length} gap(s) totalling ${missing} missing bar(s) — expected across weekends and market holidays.`,
+      `${identity.gaps.length} gap(s) totalling ${totalMissing} missing bar(s) — ` +
+        `${structuralGaps} from session closes, weekends or market holidays.`,
     );
   }
-  if (missing > identity.barCount * 0.95) {
-    errors.push("More than 95% of the expected bars are missing; refusing to replay.");
+  if (intradayMissing > identity.barCount * 0.95) {
+    errors.push("More than 95% of the bars inside trading sessions are missing; refusing to replay.");
   }
 
   return { ok: errors.length === 0, errors, warnings };
