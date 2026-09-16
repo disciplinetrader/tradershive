@@ -558,18 +558,18 @@ export const getCommunityProfile = createServerFn({ method: "POST" })
       .eq("username", data.username)
       .maybeSingle();
     if (!profile) return { profile: null };
-    const [{ data: rep }, { count: followers }, { count: following }, { data: posts }] = await Promise.all([
+    const [{ data: rep }, { data: followRows }, { data: posts }] = await Promise.all([
       supabase.from("community_reputation").select("*").eq("user_id", profile.id).maybeSingle(),
-      supabase.from("social_follows").select("*", { count: "exact", head: true }).eq("following_id", profile.id),
-      supabase.from("social_follows").select("*", { count: "exact", head: true }).eq("follower_id", profile.id),
+      (supabase as any).rpc("social_follow_counts", { _user: profile.id }),
       supabase.from("community_posts").select(POST_SELECT).eq("author_id", profile.id).eq("is_published", true).eq("is_deleted", false).order("published_at", { ascending: false }).limit(20),
     ]);
+    const followCounts = Array.isArray(followRows) ? followRows[0] : followRows;
     const postsWithAuthor = (posts ?? []).map((p: any) => ({ ...p, author: profile }));
     return {
       profile,
       reputation: rep ?? null,
-      followers: followers ?? 0,
-      following: following ?? 0,
+      followers: followCounts?.followers ?? 0,
+      following: followCounts?.following ?? 0,
       posts: postsWithAuthor,
     };
   });

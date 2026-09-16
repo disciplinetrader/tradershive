@@ -235,12 +235,14 @@ export const getFollowState = createServerFn({ method: "POST" })
   .inputValidator((v: unknown) => idInput.parse(v))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as SupabaseCtx;
-    const [{ data: rel }, { count: followers }, { count: following }] = await Promise.all([
+    // Follow rows are only visible to the two people involved, so aggregate
+    // counts for another member come from a security-definer counter.
+    const [{ data: rel }, { data: counts }] = await Promise.all([
       supabase.from("social_follows").select("id").eq("follower_id", userId).eq("following_id", data.userId).maybeSingle(),
-      supabase.from("social_follows").select("id", { count: "exact", head: true }).eq("following_id", data.userId),
-      supabase.from("social_follows").select("id", { count: "exact", head: true }).eq("follower_id", data.userId),
+      (supabase as any).rpc("social_follow_counts", { _user: data.userId }),
     ]);
-    return { isFollowing: !!rel, followers: followers ?? 0, following: following ?? 0 };
+    const c = Array.isArray(counts) ? counts[0] : counts;
+    return { isFollowing: !!rel, followers: c?.followers ?? 0, following: c?.following ?? 0 };
   });
 
 /* ------------------ public profile ------------------ */
@@ -260,17 +262,17 @@ export const getPublicProfile = createServerFn({ method: "POST" })
     if (error) throw error;
     if (!profile) throw new Error("Not found");
 
-    const [customRes, privRes, achRes, followers, following, myFollow, viewsRes] = await Promise.all([
+    const [customRes, privRes, achRes, followRes, myFollow, viewsRes] = await Promise.all([
       (profile.id === userId
         ? supabase.from("profile_customization").select("*").eq("user_id", profile.id).maybeSingle()
         : (supabase as any).from("profile_customization_public").select("*").eq("user_id", profile.id).maybeSingle()),
       supabase.from("profile_privacy").select("*").eq("user_id", profile.id).maybeSingle(),
       supabase.from("user_achievements").select("id, achievement_id, unlocked_at, achievements(name, description, icon, category, rarity, xp_reward)").eq("user_id", profile.id),
-      supabase.from("social_follows").select("id", { count: "exact", head: true }).eq("following_id", profile.id),
-      supabase.from("social_follows").select("id", { count: "exact", head: true }).eq("follower_id", profile.id),
+      (supabase as any).rpc("social_follow_counts", { _user: profile.id }),
       supabase.from("social_follows").select("id").eq("follower_id", userId).eq("following_id", profile.id).maybeSingle(),
       supabase.from("profile_views").select("id", { count: "exact", head: true }).eq("profile_id", profile.id),
     ]);
+    const followCounts = Array.isArray(followRes.data) ? followRes.data[0] : followRes.data;
 
     const privacy = privRes.data ?? { hide_profile: false, hide_stats: false, hide_journal: true, hide_activity: false, show_country: true, show_league: true, eligible_for_leaderboard: true };
     if (privacy.hide_profile && userId !== profile.id) throw new Error("Profile is private");
@@ -296,8 +298,8 @@ export const getPublicProfile = createServerFn({ method: "POST" })
       customization: customRes.data ?? null,
       privacy,
       achievements: achRes.data ?? [],
-      followers: followers.count ?? 0,
-      following: following.count ?? 0,
+      followers: followCounts?.followers ?? 0,
+      following: followCounts?.following ?? 0,
       isFollowing: !!myFollow.data,
       isSelf: userId === profile.id,
       views: viewsRes.count ?? 0,

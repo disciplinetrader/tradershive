@@ -12459,6 +12459,13 @@ export type Database = {
         Returns: undefined
       }
       register_for_championship: { Args: { _champ: string }; Returns: string }
+      social_follow_counts: {
+        Args: { _user: string }
+        Returns: {
+          followers: number
+          following: number
+        }[]
+      }
       start_championship: { Args: { _champ: string }; Returns: undefined }
       tick_battle: { Args: { _battle_id: string }; Returns: string }
       tick_battles: { Args: never; Returns: undefined }
