@@ -6,6 +6,7 @@
  *  2. A session never starts on a dataset it cannot deterministically replay.
  */
 
+import { TIMEFRAME_SECONDS } from "../constants";
 import type { DatasetIdentity } from "./dataset";
 import { datasetMatches } from "./dataset";
 import type { SessionLifecycle, SessionSnapshot } from "./model";
