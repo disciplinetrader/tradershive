@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { applyXp, dailyRewardFor, leagueForLevel } from "./gamification/constants";
+import { dailyRewardFor } from "./gamification/constants";
 import { periodEndsAt, periodKeyForScope } from "./gamification/period";
 
 /* ============================================================
@@ -228,41 +228,53 @@ export const claimChallengeReward = createServerFn({ method: "POST" })
   });
 
 /* ============================================================
- * Award XP + Coins helper (writes txs + updates profile)
+ * Award XP + Coins — authoritative, server-only.
+ *
+ * The XP/coin economy is score-authoritative, so the write no longer happens
+ * from the user-scoped client (which RLS now blocks on the privileged profile
+ * columns anyway). It goes through the `award_xp_coins` SECURITY DEFINER RPC,
+ * executable only by `service_role`, which computes leveling/league, updates
+ * the profile and appends the ledger rows in one transaction and is idempotent
+ * on (user, source, source_id). See
+ * docs/migrations/remediation/phase2/I1_profile_integrity_rewards.sql.
+ *
+ * The `supabase` (user-scoped) argument is kept for call-site compatibility but
+ * is intentionally unused; the RPC runs on the service client.
  * ==========================================================*/
-async function awardXpCoins(supabase: any, userId: string,
+async function awardXpCoins(_supabase: unknown, userId: string,
   args: { xp: number; coins: number; source: string; source_id?: string | null; reason: string }) {
-  const { data: profile } = await supabase
-    .from("profiles").select("xp,level,coins,league").eq("id", userId).maybeSingle();
-  const currentXp = Number(profile?.xp ?? 0);
-  const currentLevel = Math.max(1, Number(profile?.level ?? 1));
-  const currentCoins = Number(profile?.coins ?? 0);
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-  const { level, xp, leveledUp } = applyXp(currentLevel, currentXp, args.xp);
-  const newLeague = leagueForLevel(level);
-  const newCoins = Math.max(0, currentCoins + args.coins);
+  // Prior level, so `leveledUp` can be reported to the UI without the RPC
+  // needing to return it.
+  const { data: prior } = await supabaseAdmin
+    .from("profiles").select("level").eq("id", userId).maybeSingle();
+  const priorLevel = Math.max(1, Number(prior?.level ?? 1));
 
-  await supabase.from("profiles").update({
-    xp, level, coins: newCoins, league: newLeague,
-  }).eq("id", userId);
+  const { data, error } = await supabaseAdmin.rpc("award_xp_coins" as never, {
+    _user_id: userId,
+    _xp: args.xp,
+    _coins: args.coins,
+    _source: args.source,
+    _source_id: args.source_id ?? null,
+    _reason: args.reason,
+  } as never);
+  if (error) throw error;
+  const row = (Array.isArray(data) ? data[0] : data) as
+    | { applied: boolean; xp: number; level: number; coins: number; league: string }
+    | undefined;
+  const applied = !!row?.applied;
+  const level = Number(row?.level ?? priorLevel);
 
-  if (args.xp !== 0) {
-    await supabase.from("xp_transactions").insert({
-      user_id: userId, delta: args.xp, reason: args.reason,
-      source: args.source, source_id: args.source_id ?? null,
-      balance_after: xp, level_after: level,
-    });
-  }
-  if (args.coins !== 0) {
-    await supabase.from("coin_transactions").insert({
-      user_id: userId, delta: args.coins, reason: args.reason,
-      source: args.source, source_id: args.source_id ?? null,
-      balance_after: newCoins,
-    });
-  }
-
-  return { xp_earned: args.xp, coins_earned: args.coins, level, xp, coins: newCoins,
-           league: newLeague, leveledUp };
+  return {
+    xp_earned: applied ? args.xp : 0,
+    coins_earned: applied ? args.coins : 0,
+    level,
+    xp: Number(row?.xp ?? 0),
+    coins: Number(row?.coins ?? 0),
+    league: row?.league ?? "bronze",
+    leveledUp: level > priorLevel,
+  };
 }
 
 /* ============================================================
@@ -297,7 +309,12 @@ export const claimDailyLogin = createServerFn({ method: "POST" })
       best_login_streak: Math.max(Number(stats?.best_login_streak ?? 0), streak),
       last_login_date: today,
     }, { onConflict: "user_id" });
-    await context.supabase.from("profiles").update({ streak }).eq("id", context.userId);
+    // `profiles.streak` is a privileged column (RLS blocks the user client), so
+    // the login-streak write goes through the service client.
+    {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      await supabaseAdmin.from("profiles").update({ streak }).eq("id", context.userId);
+    }
 
     const awarded = await awardXpCoins(context.supabase, context.userId, {
       xp: reward.xp, coins: reward.coins, source: "login",
