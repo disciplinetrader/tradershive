@@ -1095,7 +1095,52 @@ export async function runImport(rawOpts: RunImportOpts) {
 
 export type IncrementalSymbolRow = {
   id: string; symbol: string; native_symbol: string; source_code: string; base_timeframe: string;
+  /** Present on the scheduled path (the cron selects it); drives N-13 alerting. */
+  metadata?: Record<string, unknown> | null;
 };
+
+/**
+ * How many consecutive forward syncs may import 0 bars before the front edge is
+ * declared frozen (N-13). One empty window is normal — a symbol whose only
+ * session is shut returns nothing for that step — so a single miss must NOT
+ * alert. A sustained run of empties with a window that was NOT skipped means the
+ * edge is not advancing, which is exactly the silent stall Phase 0 found (1,344
+ * "successful" 0-bar jobs, no alert). At the 15-minute cadence, 8 is ~2 hours.
+ */
+export const FORWARD_EMPTY_ALERT_THRESHOLD = 8;
+
+export type ForwardEmptyState = { streak: number; alert: boolean; patch: Record<string, unknown> };
+
+/**
+ * Fold one forward-sync outcome into the symbol's zero-progress streak (N-13).
+ *
+ * Pure so the streak/alert-once invariant is testable without a provider or an
+ * admin client — same reasoning as `classifyStaleJob` / `shouldReportProgress`.
+ *
+ * A step that inserted bars clears the streak AND the one-shot alert marker, so
+ * the next freeze alerts again. A zero-bar step increments the streak and, the
+ * first time it reaches `threshold`, sets `forward_frozen_alerted_at` so the
+ * alert fires ONCE per frozen spell rather than every 15 minutes for ever.
+ */
+export function nextForwardEmptyState(
+  meta: Record<string, unknown> | null | undefined,
+  inserted: number,
+  threshold: number = FORWARD_EMPTY_ALERT_THRESHOLD,
+): ForwardEmptyState {
+  const m = { ...((meta ?? {}) as Record<string, unknown>) };
+  if (inserted > 0) {
+    delete m.forward_empty_streak;
+    delete m.forward_frozen_alerted_at;
+    return { streak: 0, alert: false, patch: m };
+  }
+  const prev = typeof m.forward_empty_streak === "number" ? m.forward_empty_streak : 0;
+  const streak = prev + 1;
+  const alreadyAlerted = Boolean(m.forward_frozen_alerted_at);
+  const alert = streak >= threshold && !alreadyAlerted;
+  m.forward_empty_streak = streak;
+  if (alert) m.forward_frozen_alerted_at = new Date().toISOString();
+  return { streak, alert, patch: m };
+}
 
 /**
  * The window an incremental sync would ask for, or nothing to do.
@@ -1162,7 +1207,7 @@ export async function runIncrementalUpdate(symbolRow: IncrementalSymbolRow) {
   const admin = await loadAdmin();
   const window = await incrementalWindow(admin, symbolRow);
   if (window.skipped) return { skipped: true };
-  return runImport({
+  const result = await runImport({
     symbol: symbolRow.symbol,
     nativeSymbol: symbolRow.native_symbol,
     sourceCode: symbolRow.source_code,
@@ -1171,6 +1216,38 @@ export async function runIncrementalUpdate(symbolRow: IncrementalSymbolRow) {
     triggeredBy: "cron",
     aggregateHigherTfs: true,
   });
+
+  // Zero-progress detection (N-13). This window was NOT skipped, so there was a
+  // complete bar to fetch; importing nothing means the front edge did not move.
+  // A cancelled run is not evidence either way, so it is excluded. The streak is
+  // kept in `historical_symbols.metadata` (already jsonb — no migration) and a
+  // sustained freeze raises ONE alert, turning the previously silent stall into
+  // something the notifications channel surfaces. It does not — and cannot from
+  // here — fix the upstream cause (provider coverage / plan credits / egress);
+  // it makes the stall visible so it can be diagnosed. See phase-0 N-13.
+  if (symbolRow.id) {
+    const cancelled = !!(result && typeof result === "object" && "cancelled" in result);
+    if (!cancelled) {
+      const inserted =
+        result && typeof result === "object" && "inserted" in result
+          ? Number((result as { inserted?: unknown }).inserted) || 0
+          : 0;
+      const st = nextForwardEmptyState(symbolRow.metadata, inserted);
+      const { error } = await admin
+        .from("historical_symbols").update({ metadata: st.patch } as never).eq("id", symbolRow.id);
+      if (error) throw error;
+      if (st.alert) {
+        await notify(
+          admin, "ingestion_frozen", "error",
+          `${symbolRow.symbol}: historical ingestion appears frozen`,
+          `${st.streak} consecutive forward syncs imported 0 bars — the front edge is not ` +
+            `advancing. Check provider coverage / plan credits / egress (N-13).`,
+          { symbol: symbolRow.symbol, timeframe: window.timeframe, streak: st.streak },
+        );
+      }
+    }
+  }
+  return result;
 }
 
 /**
