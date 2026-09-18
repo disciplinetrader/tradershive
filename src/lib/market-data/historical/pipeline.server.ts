@@ -1166,6 +1166,39 @@ export type IncrementalWindow =
  * candles without touching that column, so the column trails the real data
  * (MD-4).
  */
+/**
+ * How far behind the front edge may fall before the forward walk stops chasing
+ * a range the provider will no longer serve (N-13, root cause).
+ *
+ * Once ingestion lapses (a cron outage on 2026-09-04), the stored 1m edge ages
+ * past Twelve Data's rolling intraday window. `from = edge + step` is then
+ * permanently older than the plan's 1m depth, so every request comes back "No
+ * data is available on the specified dates" (a 400 the adapter correctly reads
+ * as an empty window), nothing inserts, the edge never advances, and `from`
+ * stays pinned — a ratchet that froze EVERY symbol, every provider, at once.
+ *
+ * `boundedIncrementalFrom` breaks it: when the edge is more than this far back,
+ * the walk RESUMES at `now - cap` (inside any plan's 1m depth) and leaves the
+ * intervening gap for the backfill walk or an owner reseed, instead of
+ * re-requesting a dead window for ever. This is resilience — it does NOT
+ * substitute for the provider-plan action documented in the preflight; it stops
+ * a transient lapse from becoming a permanent stall.
+ *
+ * Kept at 3 days: healthy incremental runs (every 15 min) are always inside it,
+ * so normal operation is unchanged; a first sync (SEED_DAYS = 2) is inside it
+ * too. Only a stale edge is clamped.
+ */
+export const MAX_INCREMENTAL_LOOKBACK_MS = 3 * 86_400_000;
+
+/**
+ * The `from` an incremental sync should request, clamped so a stale edge cannot
+ * pin it to a range older than `MAX_INCREMENTAL_LOOKBACK_MS`. Pure and exported
+ * for testing — same reasoning as `incrementalWindow`'s other extracted parts.
+ */
+export function boundedIncrementalFrom(rawFromMs: number, now: number): number {
+  return Math.max(rawFromMs, now - MAX_INCREMENTAL_LOOKBACK_MS);
+}
+
 export async function incrementalWindow(
   db: Admin,
   symbolRow: IncrementalSymbolRow,
@@ -1197,7 +1230,8 @@ export async function incrementalWindow(
    * backward-walking pass. See HD-1.
    */
   const SEED_DAYS = 2;
-  const from = last?.ts ? new Date(last.ts).getTime() + stepMs : now - SEED_DAYS * 86400_000;
+  const rawFrom = last?.ts ? new Date(last.ts).getTime() + stepMs : now - SEED_DAYS * 86400_000;
+  const from = boundedIncrementalFrom(rawFrom, now);
   const to = now;
   if (to - from < stepMs) return { skipped: true };
   return { skipped: false, timeframe: tf, from, to };
