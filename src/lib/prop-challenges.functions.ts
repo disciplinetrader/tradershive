@@ -99,7 +99,12 @@ export const createPropChallenge = createServerFn({ method: "POST" })
  // user did not pick one, provision a dedicated account sized to the rules.
  let paperAccountId = data.paper_account_id ?? null;
  if (!paperAccountId) {
- const { data: acct, error: aErr } = await context.supabase
+ // The money columns (starting_balance/balance/equity) are locked to
+ // `authenticated` (I2c), so the prop account is provisioned service-role
+ // with the server-validated account_size — a client cannot forge a
+ // larger funded prop account by a direct insert.
+ const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+ const { data: acct, error: aErr } = await supabaseAdmin
  .from("paper_accounts")
  .insert({
  user_id: context.userId,
