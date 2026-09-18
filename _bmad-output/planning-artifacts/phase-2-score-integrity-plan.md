@@ -324,11 +324,16 @@ Championship scheduler (B-5), AI rate limiter / N-20 (S-7), historical ingestion
 
 **Reward-eligibility policy (user decision, applies to both):** pay only for a genuinely competitive field — **ranked AND ≥2 distinct participants** for battles; **≥2 distinct participants** for championships. Solo/unranked/replay record results but pay nothing and move no rating.
 
-### >>> CONTINUATION MARKER — resume here <<<
-**Next task: Prop challenges — authoritative evaluation + cron.**
+### Completed & rehearsed (continued)
+- **Increment 3c — prop-challenge authoritative results — COMPLETE (green on rehearsal).** `I3c_prop_contract.sql` (+ rollback). `tickPropChallenge` already derived equity/verdict from the locked `paper_accounts.equity` + closed `paper_trades`; now `createChallenge`/`tickPropChallenge`/`abandonPropChallenge` persist via `supabaseAdmin`, and authenticated INSERT/UPDATE on `prop_challenges` + `prop_challenge_days` is revoked (SELECT + own-row DELETE kept). Rehearsed: forging status/equity/insert/day-snapshot all denied under `authenticated`. Commit `4fabfaf5`. Follow-up: no server-side cron expires an over-duration challenge (tick is HUD-driven).
+- **Increment 3d — journal share privacy (S-2) — COMPLETE (green on rehearsal).** `I3d_journal_share_token.sql` (+ rollback). `get_shared_journal_entry(_token)` SECURITY DEFINER (anon/authenticated) returns one entry only for the exact token (whitelisted columns, no PII); dropped the enumerable public-read policy; `fetchSharedEntry` calls the RPC. Rehearsed: correct token resolves, wrong/short/private return NULL, anon can no longer enumerate the table. Commit `266448d9`.
+- **Increment 3e — caller-supplied-identity definers (N-15) — COMPLETE (green on rehearsal).** `I3e_caller_identity_definers.sql` (+ rollback). `record_practice_activity` rejects `auth.uid() <> _user_id` and is revoked from PUBLIC/anon; `journal_sync_tag_arrays_for` (trigger-only) revoked from PUBLIC/anon/authenticated. Rehearsed: cross-user record raises, self records, grants correct. Commit `15f6b347`. (Reminder: REVOKE must include PUBLIC or anon inherits the default grant.)
 
-1. Audit `prop-challenges.functions.ts` + `prop-challenges/evaluator.ts` + prop SQL (`evaluateChallenge`, any `evaluate_prop_*` RPC, daily-loss/drawdown/target checks): ensure pass/fail/breach is computed server-side from authoritative `paper_trades`/account state (not client-submitted), status transitions are idempotent, and any payout/title uses `award_xp_coins`. Account provisioning already routed to `supabaseAdmin` (I2c).
-2. Then: journal privacy (S-2 token RPC) → caller-supplied-ID definers (N-15) → historical ingestion (N-13 zero-progress, pagination, timeouts, session-gaps) → cron lifecycle → email noop/stuck → grants/default-privileges → tests/CI → reconciliation report (D-7, report only).
+### >>> CONTINUATION MARKER — resume here <<<
+**Next task: Historical ingestion robustness (N-13) + remaining ops.**
+
+1. N-13: audit the historical-candle/market sync (edge function / cron / `historical-*` server fns): zero-progress detection, pagination, provider timeouts, session-gap handling, idempotent upserts. This is reliability/data-quality, not a forgery hole — scope the fix to what is verifiable in rehearsal (empty `historical_candles` there).
+2. Then: cron lifecycle (battle-settlement/championship tick + a prop-expiry cron) → email noop/stuck → **grants/default-privileges** (apply `phase1/default-privileges.proposed.sql` after re-review) → tests/CI → reconciliation report (D-7, report only).
 
 **Follow-ups noted (not blockers):** `position_history` left owner-writable (documented); battle tie at rank 1 picks winner by LIMIT 1 (documented); prod `historical_candles` coverage for replay datasets must be verified in the production preflight (the replay RPC fails closed without candles); app-level anti-alt-account farming for ranked battles/championships is out of scope (the ≥2 guard only stops single-participant farming).
 
