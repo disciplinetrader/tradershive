@@ -59,7 +59,11 @@ export interface EmailMessage {
 }
 
 export type EmailSendResult =
-  | { ok: true; providerMessageId: string | null; provider: string }
+  // `skipped` = the send succeeded as a no-op (a non-delivering provider such as
+  // `noop`): the message was NOT delivered, so the queue must record `skipped`,
+  // never `sent`. Without it a noop send is indistinguishable from a real
+  // delivery and the queue fills with `sent` rows for mail no one received (O-1).
+  | { ok: true; providerMessageId: string | null; provider: string; skipped?: boolean }
   | { ok: false; error: string; retryable: boolean; provider: string };
 
 /**

@@ -12,6 +12,8 @@ export const noopEmailProvider: EmailProvider = {
   name: "noop",
   isConfigured: () => true,
   async send(_message: EmailMessage): Promise<EmailSendResult> {
-    return { ok: true, providerMessageId: null, provider: "noop" };
+    // `skipped: true` — succeeds without delivering, so the queue records
+    // `skipped` (not `sent`). See EmailSendResult / O-1.
+    return { ok: true, providerMessageId: null, provider: "noop", skipped: true };
   },
 };

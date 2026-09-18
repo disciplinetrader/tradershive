@@ -268,21 +268,83 @@ export async function dispatchEmail<Props>(
     dedupeKey: args.dedupeKey,
   });
 
+  // A non-delivering provider (noop) succeeds but did not deliver → `skipped`.
+  const okStatus = result.ok && result.skipped ? "skipped" : "sent";
   await logEvent({
     user_id: args.to.userId ?? null,
     to_email: email,
     category: template.category,
     template: template.id,
     subject,
-    status: result.ok ? "sent" : "failed",
+    status: result.ok ? okStatus : "failed",
     provider: result.provider,
     provider_message_id: result.ok ? result.providerMessageId : null,
     error: result.ok ? null : result.error,
   });
 
   return result.ok
-    ? { ok: true, status: "sent", providerMessageId: result.providerMessageId }
+    ? { ok: true, status: okStatus, providerMessageId: result.providerMessageId }
     : { ok: false, status: "failed", reason: result.error };
+}
+
+/**
+ * A claimed job whose worker request died is left `processing` for ever — the
+ * worker only ever claims `pending`. Beyond this TTL a `processing` row is
+ * presumed abandoned and returned to the queue. Well beyond a request lifetime,
+ * mirroring the historical stale-job sweep (HD-6). (O-1: nothing reaped these.)
+ */
+export const STUCK_EMAIL_TTL_MS = 15 * 60_000;
+
+/** Pure: is a claimed job abandoned? Exported for testing. */
+export function isEmailJobStuck(
+  lockedAtIso: string | null | undefined,
+  now: number,
+  ttlMs: number = STUCK_EMAIL_TTL_MS,
+): boolean {
+  if (!lockedAtIso) return false;
+  const t = Date.parse(lockedAtIso);
+  if (!Number.isFinite(t)) return false;
+  return now - t >= ttlMs;
+}
+
+/**
+ * Return abandoned `processing` jobs to the queue (or `failed` when out of
+ * attempts). Idempotent and concurrency-safe: the update is conditional on
+ * `status = 'processing'`, so two reapers cannot both act on one row, and the
+ * bumped attempt count prevents an infinite reclaim loop. Re-delivery of a job
+ * that had actually been sent before its request died is bounded by the same
+ * `max_attempts` and the send-path dedupe.
+ */
+export async function reapStuckEmailJobs(
+  admin: Awaited<ReturnType<typeof getAdmin>>,
+  now: number = Date.now(),
+  ttlMs: number = STUCK_EMAIL_TTL_MS,
+): Promise<number> {
+  const cutoff = new Date(now - ttlMs).toISOString();
+  const { data } = await admin
+    .from("email_queue")
+    .select("id, attempts, max_attempts")
+    .eq("status", "processing")
+    .lt("locked_at", cutoff)
+    .limit(100);
+  let reaped = 0;
+  for (const j of (data ?? []) as Array<{ id: string; attempts: number | null; max_attempts: number | null }>) {
+    const attempts = (j.attempts ?? 0) + 1;
+    const exhausted = attempts >= (j.max_attempts ?? 5);
+    const { data: hit } = await admin
+      .from("email_queue")
+      .update({
+        status: exhausted ? "failed" : "pending",
+        attempts,
+        locked_at: null,
+        last_error: "reaped: worker did not finish before TTL",
+      })
+      .eq("id", j.id)
+      .eq("status", "processing")
+      .select("id");
+    if (hit && hit.length) reaped++;
+  }
+  return reaped;
 }
 
 /**
@@ -292,12 +354,17 @@ export async function dispatchEmail<Props>(
 export async function processQueueBatch(limit = 25): Promise<{
   claimed: number;
   sent: number;
+  skipped: number;
   failed: number;
+  reaped: number;
   results: Array<{ id: string; status: string; error?: string }>;
 }> {
   const admin = await getAdmin();
   const provider = resolveEmailProvider();
   const nowIso = new Date().toISOString();
+
+  // Return abandoned in-flight jobs BEFORE claiming, so they become eligible.
+  const reaped = await reapStuckEmailJobs(admin);
 
   const { data: due } = await admin
     .from("email_queue")
@@ -310,6 +377,7 @@ export async function processQueueBatch(limit = 25): Promise<{
 
   const results: Array<{ id: string; status: string; error?: string }> = [];
   let sent = 0;
+  let skipped = 0;
   let failed = 0;
 
   for (const row of (due ?? []) as Array<{ id: string }>) {
@@ -348,8 +416,13 @@ export async function processQueueBatch(limit = 25): Promise<{
       });
 
       if (result.ok) {
-        sent++;
-        await admin.from("email_queue").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", job.id);
+        // A non-delivering provider (noop) succeeds without delivering → mark
+        // `skipped`, not `sent`, and do not count it as a real send (O-1).
+        const okStatus = result.skipped ? "skipped" : "sent";
+        if (okStatus === "sent") sent++; else skipped++;
+        await admin.from("email_queue")
+          .update({ status: okStatus, sent_at: okStatus === "sent" ? new Date().toISOString() : null })
+          .eq("id", job.id);
         await logEvent({
           queue_id: job.id,
           user_id: job.user_id,
@@ -357,11 +430,11 @@ export async function processQueueBatch(limit = 25): Promise<{
           category: job.category,
           template: job.template,
           subject,
-          status: "sent",
+          status: okStatus,
           provider: result.provider,
           provider_message_id: result.providerMessageId,
         });
-        results.push({ id: job.id, status: "sent" });
+        results.push({ id: job.id, status: okStatus });
       } else {
         failed++;
         const attempts = (job.attempts ?? 0) + 1;
@@ -413,7 +486,7 @@ export async function processQueueBatch(limit = 25): Promise<{
     }
   }
 
-  return { claimed: due?.length ?? 0, sent, failed, results };
+  return { claimed: due?.length ?? 0, sent, skipped, failed, reaped, results };
 }
 
 export function activeProviderName(): string {
