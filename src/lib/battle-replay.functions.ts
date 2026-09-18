@@ -3,6 +3,8 @@ import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { isEnginePricedSymbol } from "@/lib/replay/battle-pnl";
+import { findSymbol } from "@/lib/paper-trading/symbols";
+import { pnl as computePnl } from "@/lib/paper-trading/calculations";
 
 /**
  * Record a replay-battle fill in `paper_trades`.
@@ -84,44 +86,59 @@ export const recordBattleReplayTrade = createServerFn({ method: "POST" })
     if (data.symbol !== battle.replay_symbol) {
       throw new Error("Trade symbol does not match the battle's dataset");
     }
-    if (!isEnginePricedSymbol(data.symbol)) {
+    const sym = findSymbol(data.symbol);
+    if (!sym || !isEnginePricedSymbol(data.symbol)) {
       throw new Error(
         `${data.symbol} is not priced in the account currency; replay battles are ` +
           "limited to USD-quoted symbols",
       );
     }
 
-    // `enforce_battle_rules_on_trade` still runs on insert and owns the real
-    // rules — battle live, inside the window, symbol allowed. Its errors surface
-    // to the client through the global error middleware.
-    const { data: row, error } = await supabase
-      .from("paper_trades")
-      .insert({
-        user_id: userId,
-        account_id: data.accountId,
-        battle_id: data.battleId,
+    // Authoritative P&L (D-6 crossover): the server recomputes the number from
+    // the fill prices using its own paper formula and discards the client's
+    // `pnl` / `rrRealized`. For the engine-priced symbols admitted above the
+    // paper formula is provably identical to the engine's, so the recomputed
+    // number matches the blotter the trader watched — see battle-pnl.ts — while
+    // a modified client can no longer inject an arbitrary P&L. The prices
+    // themselves are bounded to the traded candle range inside the RPC.
+    const gross = computePnl(
+      sym, data.direction, Number(data.entryPrice), Number(data.exitPrice), Number(data.lotSize),
+    );
+    const netPnl = gross - Number(data.commission ?? 0);
+    const rrRealized = data.riskAmount && Number(data.riskAmount) > 0
+      ? netPnl / Number(data.riskAmount) : 0;
+
+    // The account/battle/ranked/symbol checks and the price-in-range authority
+    // live in the service-role RPC, which is now the only writer of a
+    // paper_trades row (authenticated INSERT is revoked in I2d).
+    // `enforce_battle_rules_on_trade` still fires on the insert inside it.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: settled, error } = await supabaseAdmin.rpc("record_battle_replay_trade" as never, {
+      _user_id: userId,
+      _battle_id: data.battleId,
+      _account_id: data.accountId,
+      _fields: {
         symbol: data.symbol,
-        market: data.market as any,
-        direction: data.direction as any,
-        order_type: data.orderType as any,
-        status: "closed" as any,
+        market: data.market,
+        direction: data.direction,
+        order_type: data.orderType,
         lot_size: data.lotSize,
         entry_price: data.entryPrice,
         exit_price: data.exitPrice,
         stop_loss: data.stopLoss ?? null,
         take_profit: data.takeProfit ?? null,
         risk_amount: data.riskAmount ?? null,
-        pnl: data.pnl,
-        rr_realized: data.rrRealized,
-        commission: data.commission,
-        close_reason: (data.closeReason ?? null) as any,
+        pnl: netPnl,
+        rr_realized: rrRealized,
+        commission: data.commission ?? 0,
+        close_reason: data.closeReason ?? null,
         opened_at: data.openedAt,
         closed_at: data.closedAt,
         observation_cursor: data.observationCursor,
-      })
-      .select("id, pnl, battle_id, observation_cursor")
-      .single();
+      },
+    } as never);
     if (error) throw error;
-
-    return row;
+    const row = (Array.isArray(settled) ? settled[0] : settled) as
+      | { id: string; pnl: number; battle_id: string; observation_cursor: number } | undefined;
+    return row ?? null;
   });
