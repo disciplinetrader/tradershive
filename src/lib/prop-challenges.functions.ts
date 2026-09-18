@@ -150,7 +150,11 @@ export const createPropChallenge = createServerFn({ method: "POST" })
  lowest_equity: data.account_size,
  };
 
- const { data: row, error } = await context.supabase
+ // The result/equity columns are locked to `authenticated` (I3c) so a client
+ // cannot forge a passed or over-funded challenge by a direct insert. Creation
+ // is service-role with the server-validated preset values.
+ const { supabaseAdmin: sbAdmin } = await import("@/integrations/supabase/client.server");
+ const { data: row, error } = await sbAdmin
  .from("prop_challenges").insert(insert).select().single();
  if (error) throw error;
  return row as PropChallengeRow;
@@ -173,10 +177,13 @@ export const abandonPropChallenge = createServerFn({ method: "POST" })
  throw new Error("You do not own this challenge");
  }
 
- const { error } = await context.supabase
+ // status is locked to `authenticated` (I3c); abandon is a service-role write,
+ // still scoped to (id, owner) and only from an active challenge.
+ const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+ const { error } = await supabaseAdmin
  .from("prop_challenges")
  .update({ status: "abandoned", completed_at: new Date().toISOString() })
- .eq("id", data.id);
+ .eq("id", data.id).eq("user_id", context.userId).eq("status", "active");
  if (error) throw error;
  return { ok: true };
  });
@@ -296,8 +303,12 @@ export const tickPropChallenge = createServerFn({ method: "POST" })
  completedAt = new Date().toISOString();
  }
 
+ // The snapshot and result columns are locked to `authenticated` (I3c): the
+ // authoritative verdict is written service-role, derived above from the
+ // account equity and closed paper_trades, never from client input.
+ const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
  // Upsert the day snapshot.
- await context.supabase.from("prop_challenge_days").upsert({
+ await supabaseAdmin.from("prop_challenge_days").upsert({
  challenge_id: chal.id,
  user_id: context.userId,
  day_date: today,
@@ -312,7 +323,7 @@ export const tickPropChallenge = createServerFn({ method: "POST" })
  }, { onConflict: "challenge_id,day_date" });
 
  // Update the challenge record.
- await context.supabase.from("prop_challenges").update({
+ await supabaseAdmin.from("prop_challenges").update({
  current_equity: equity,
  peak_equity: peak,
  lowest_equity: lowest,
