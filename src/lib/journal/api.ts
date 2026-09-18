@@ -461,12 +461,10 @@ const SHARED_ENTRY_COLUMNS =
   "id, symbol, direction, session, setup, grade, rr, pnl, duration_seconds, emotions, mistakes, screenshots, notes_html, created_at, closed_at";
 
 export async function fetchSharedEntry(token: string): Promise<JournalEntry | null> {
-  const { data, error } = await supabase
-    .from("journal_entries")
-    .select(SHARED_ENTRY_COLUMNS)
-    .eq("share_token", token)
-    .eq("is_public", true)
-    .maybeSingle();
+  // Read through the token RPC (S-2): journal_entries is no longer anon-readable,
+  // so a share resolves only when the exact token is presented — the table can no
+  // longer be enumerated. The RPC returns only SHARED_ENTRY_COLUMNS.
+  const { data, error } = await supabase.rpc("get_shared_journal_entry" as never, { _token: token } as never);
   if (error) throw error;
   return (data ?? null) as JournalEntry | null;
 }
