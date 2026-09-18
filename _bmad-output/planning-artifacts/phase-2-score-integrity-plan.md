@@ -329,11 +329,22 @@ Championship scheduler (B-5), AI rate limiter / N-20 (S-7), historical ingestion
 - **Increment 3d — journal share privacy (S-2) — COMPLETE (green on rehearsal).** `I3d_journal_share_token.sql` (+ rollback). `get_shared_journal_entry(_token)` SECURITY DEFINER (anon/authenticated) returns one entry only for the exact token (whitelisted columns, no PII); dropped the enumerable public-read policy; `fetchSharedEntry` calls the RPC. Rehearsed: correct token resolves, wrong/short/private return NULL, anon can no longer enumerate the table. Commit `266448d9`.
 - **Increment 3e — caller-supplied-identity definers (N-15) — COMPLETE (green on rehearsal).** `I3e_caller_identity_definers.sql` (+ rollback). `record_practice_activity` rejects `auth.uid() <> _user_id` and is revoked from PUBLIC/anon; `journal_sync_tag_arrays_for` (trigger-only) revoked from PUBLIC/anon/authenticated. Rehearsed: cross-user record raises, self records, grants correct. Commit `15f6b347`. (Reminder: REVOKE must include PUBLIC or anon inherits the default grant.)
 
-### >>> CONTINUATION MARKER — resume here <<<
-**Next task: Historical ingestion robustness (N-13) + remaining ops.**
+### Completed & rehearsed (continued)
+- **Increment 3f — battle finalize after end (B-1) — COMPLETE.** `I3f_battle_finalize_after_end.sql` (+ rollback). A non-host tick/cron may settle a battle once `end_at` has passed; only an early end still needs the host. Rehearsed as a non-host JWT: early finalize rejected, post-end finalize settles + pays. Commit `76205c3e`.
+- **N-13 zero-progress detection — COMPLETE (code + vitest).** `nextForwardEmptyState` + `ingestion_frozen` one-shot alert in `pipeline.server`. Makes the silent stall visible; does NOT fix the environmental root cause. Commit `2358747a`.
+- **Default-privileges hardening — REHEARSED.** D1/D3/D5 (postgres) applied + verified on rehearsal; D2/D4/D6 blocked by K1 (need Supabase support). Production application gated on approval. Commit `288ffb97`.
 
-1. N-13: audit the historical-candle/market sync (edge function / cron / `historical-*` server fns): zero-progress detection, pagination, provider timeouts, session-gap handling, idempotent upserts. This is reliability/data-quality, not a forgery hole — scope the fix to what is verifiable in rehearsal (empty `historical_candles` there).
-2. Then: cron lifecycle (battle-settlement/championship tick + a prop-expiry cron) → email noop/stuck → **grants/default-privileges** (apply `phase1/default-privileges.proposed.sql` after re-review) → tests/CI → reconciliation report (D-7, report only).
+### >>> DONE for the rehearsable scope. See `phase-2-reconciliation-and-status.md`. <<<
+All score/economy/settlement/auth integrity increments (I1–I3f + default-privileges D1/D3/D5) are implemented, rehearsed, rollback-tested, committed. **Production untouched.**
+
+**Remaining = live-only / product (not rehearsable here), fully documented in the reconciliation report §4–§5:**
+- N-13 root-cause diagnosis (provider/plan/egress) — production preflight, read-only.
+- O-2 cron inventory / B-9 single finalizer + HTTP-outcome monitoring.
+- O-1 email noop→skipped + `processing` reaper (confirm `EMAIL_PROVIDER`).
+- O-3 secrets inventory; prop-expiry cron; supabase_admin default privileges (D2/D4/D6).
+- D-7 historical contamination reconciliation (report-only until fixes are live + user decision).
+
+**Next actions require the user:** approve production deployment (order in report §3); run the read-only production preflight; decide D-7.
 
 **Follow-ups noted (not blockers):** `position_history` left owner-writable (documented); battle tie at rank 1 picks winner by LIMIT 1 (documented); prod `historical_candles` coverage for replay datasets must be verified in the production preflight (the replay RPC fails closed without candles); app-level anti-alt-account farming for ranked battles/championships is out of scope (the ≥2 guard only stops single-participant farming).
 
