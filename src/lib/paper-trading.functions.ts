@@ -1,81 +1,21 @@
 import { createServerFn } from "@tanstack/react-start";
-import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type { Database } from "@/integrations/supabase/types";
 import { findSymbol } from "./paper-trading/symbols";
 import { pnl as computePnl, pipsBetween } from "./paper-trading/calculations";
 import { validateNewOrder, type OpenTradeInput } from "./paper-trading/risk";
-import {
-  clampRealizedPnl, nextBalance, nextStatistics, type AccountMoneyState,
-} from "./paper-trading/settlement";
 
-type PaperSupabase = ReturnType<typeof createClient<Database>>;
-
-/* ---------------- Realized-P&L settlement ---------------- */
-
-/**
- * Read the account figures the clamp needs.
+/* ---------------- Realized-P&L settlement ----------------
  *
- * Called BEFORE the trade row is written. Applying the negative-balance cap at
- * balance-update time instead leaves `paper_trades.pnl` holding the unclamped
- * loss, and the trade row then disagrees with both the balance and the
- * statistics by exactly the amount that was capped.
+ * All money settlement now happens inside service-role SECURITY DEFINER RPCs
+ * (`open_trade`, `close_trade`, `partial_close_trade`), which own the three-way
+ * invariant (`paper_trades.pnl` / `paper_accounts.balance` /
+ * `account_statistics.net_pnl`) atomically. The former TypeScript settlement
+ * helpers (`loadAccountMoney` / `commitSettlement`) are retired — a browser can
+ * no longer submit an authoritative P&L, and the balance/statistics columns are
+ * locked to `authenticated` (I2c). The pure math in `paper-trading/settlement`
+ * is preserved for reference/tests but is not a write path.
  */
-async function loadAccountMoney(
-  sb: PaperSupabase, accountId: string,
-): Promise<AccountMoneyState | null> {
-  const { data } = await sb.from("paper_accounts")
-    .select("balance, negative_balance_protection").eq("id", accountId).single();
-  if (!data) return null;
-  return {
-    balance: Number(data.balance),
-    negative_balance_protection: !!data.negative_balance_protection,
-  };
-}
-
-/**
- * Apply a realized P&L to the balance AND the statistics, together.
- *
- * The single place either is written. Any writer that realizes money on a
- * paper account goes through here, so the three-way invariant
- * (`paper_trades.pnl` / `paper_accounts.balance` /
- * `account_statistics.net_pnl`) cannot be half-satisfied by one caller
- * remembering the balance and forgetting the statistics — which is precisely
- * what `partialCloseTrade` did, and what BA-11's battle writer does with both.
- *
- * `pnl` must already be clamped by `clampRealizedPnl`, using the same
- * `account` snapshot passed here.
- */
-async function commitSettlement(
-  sb: PaperSupabase,
-  opts: {
-    accountId: string;
-    userId: string;
-    account: AccountMoneyState;
-    pnl: number;
-    /** True for a completed trade, false for a partial realization. */
-    countsAsTrade: boolean;
-  },
-): Promise<{ balance: number }> {
-  const balance = nextBalance(
-    opts.account.balance, opts.pnl, opts.account.negative_balance_protection,
-  );
-  const { error: balErr } = await sb.from("paper_accounts")
-    .update({ balance, equity: balance })
-    .eq("id", opts.accountId).eq("user_id", opts.userId);
-  if (balErr) throw balErr;
-
-  const { data: prev } = await sb.from("account_statistics")
-    .select("*").eq("account_id", opts.accountId).maybeSingle();
-  const next = nextStatistics(prev, opts.pnl, opts.countsAsTrade);
-  const { error: statErr } = await sb.from("account_statistics").upsert({
-    account_id: opts.accountId, user_id: opts.userId, ...next,
-  });
-  if (statErr) throw statErr;
-
-  return { balance };
-}
 
 /* ---------------- Accounts ---------------- */
 
@@ -123,7 +63,12 @@ export const createAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => createAccountSchema.parse(d))
   .handler(async ({ data, context }) => {
-    const { data: acct, error } = await context.supabase
+    // The money columns (starting_balance / balance / equity) are locked to
+    // `authenticated` (I2c) so a client cannot forge a funded account by a
+    // direct PostgREST insert. Account creation is therefore service-role:
+    // the server sets user_id and seeds balance = validated starting_balance.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: acct, error } = await supabaseAdmin
       .from("paper_accounts")
       .insert({
         user_id: context.userId,
@@ -142,7 +87,7 @@ export const createAccount = createServerFn({ method: "POST" })
       .select()
       .single();
     if (error) throw error;
-    await context.supabase.from("account_statistics").insert({ account_id: acct.id, user_id: context.userId });
+    await supabaseAdmin.from("account_statistics").insert({ account_id: acct.id, user_id: context.userId });
     return acct;
   });
 
@@ -178,22 +123,32 @@ export const resetAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
+    // Ownership check first, user-scoped, so a reset can only target the
+    // caller's own account.
     const { data: acct, error } = await context.supabase
       .from("paper_accounts").select("starting_balance").eq("id", data.id).eq("user_id", context.userId).single();
     if (error) throw error;
-    await context.supabase
+    // Money columns and account_statistics are locked to `authenticated`
+    // (I2c) — the balance reset and the stats zeroing are service-role writes.
+    // Both are still scoped to (id, user_id) so they touch only this account.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error: balErr } = await supabaseAdmin
       .from("paper_accounts")
       .update({ balance: acct.starting_balance, equity: acct.starting_balance })
       .eq("id", data.id).eq("user_id", context.userId);
+    if (balErr) throw balErr;
+    // Soft-closing the trades and cancelling resting orders stays user-scoped:
+    // deleted_at / order status are still writable by the owner (I2c).
     await context.supabase.from("paper_trades").update({ deleted_at: new Date().toISOString() })
       .eq("account_id", data.id).eq("user_id", context.userId).is("deleted_at", null);
     await context.supabase.from("paper_orders").update({ status: "cancelled", cancelled_at: new Date().toISOString() })
       .eq("account_id", data.id).eq("user_id", context.userId).eq("status", "pending");
-    await context.supabase.from("account_statistics").upsert({
+    const { error: statErr } = await supabaseAdmin.from("account_statistics").upsert({
       account_id: data.id, user_id: context.userId,
       total_trades: 0, wins: 0, losses: 0, breakevens: 0, win_rate: 0,
       gross_profit: 0, gross_loss: 0, net_pnl: 0, best_trade: 0, worst_trade: 0,
     });
+    if (statErr) throw statErr;
     return { ok: true };
   });
 
@@ -236,7 +191,7 @@ export const openTrade = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => openTradeSchema.parse(d))
   .handler(async ({ data, context }) => {
-    const { tag_ids, ...trade } = data;
+    const { tag_ids } = data;
 
     // ---- Broker-style pre-flight validation (hard gate) ----
     const [{ data: acct, error: acctErr }, { data: opens }] = await Promise.all([
@@ -253,16 +208,16 @@ export const openTrade = createServerFn({ method: "POST" })
     if (acctErr || !acct) throw new Error("Account not found");
     if (acct.is_archived || acct.deleted_at) throw new Error("Account is archived");
 
-    // Fetch a fresh quote for the validation if it's a market order
+    // Score authority (D-6): a market open is filled at the SERVER's trusted
+    // price, never the client's. The same trusted price is used for the margin
+    // validation below so the check and the fill agree. Fails closed (throws)
+    // when no trusted price is available — the client `entry_price` is only a
+    // hint and is never used to settle a scored market fill.
     let livePrice: number | null = null;
     if (data.order_type === "market") {
-      try {
-        const { twelveDataQuote } = await import("./market-data/twelvedata.functions");
-        const qRes = await twelveDataQuote({ data: { symbols: [data.symbol] } });
-        if (qRes.quotes?.[0]) livePrice = qRes.quotes[0].last;
-      } catch (e) {
-        console.warn("[openTrade] could not fetch live quote for validation:", e);
-      }
+      const { resolveScoredPrice } = await import("./market-data/scored-price.server");
+      const { price } = await resolveScoredPrice(data.symbol, data.market);
+      livePrice = price;
     }
 
     const validation = validateNewOrder(
@@ -292,38 +247,44 @@ export const openTrade = createServerFn({ method: "POST" })
       throw new Error(validation.errors.join(" · "));
     }
 
-    const { data: created, error } = await context.supabase
-      .from("paper_trades")
-      .insert({ 
-        ...trade, 
-        user_id: context.userId, 
-        status: "open", 
-        opened_at: new Date().toISOString(),
-        entry_price: data.order_type === "market" && livePrice ? livePrice : data.entry_price
-      })
-      .select()
-      .single();
-    if (error) throw error;
-    // Tags are chosen at entry — before the outcome is known, which is the
-    // honest moment to record intent — but `journal_entry_tags` needs an
-    // entry_id that only exists once the trade closes and
-    // `create_journal_draft_from_trade()` fires. `tag_ids` is the staging
-    // buffer that trigger drains; it is not a second tag system.
-    if (tag_ids?.length) {
-      const { error: tagErr } = await context.supabase
-        .from("paper_trades")
-        .update({ tag_ids })
-        .eq("id", created.id)
-        .eq("user_id", context.userId);
-      if (tagErr) throw tagErr;
-    }
-    await context.supabase.from("position_history").insert({
-      user_id: context.userId, account_id: data.account_id, trade_id: created.id,
-      event: "opened", payload: {
-        entry_price: created.entry_price, lot_size: data.lot_size,
+    // Authoritative open (service-role RPC): the server sets user_id / status /
+    // opened_at and the entry price. For a market order that is the trusted
+    // server price resolved above; for a resting limit/stop order it is the
+    // client's requested level (a target, not a scored fill — the actual fill
+    // is priced server-side when the order triggers). `tag_ids` is the staging
+    // buffer `create_journal_draft_from_trade()` drains; it is not a second tag
+    // system, so it is written at open inside the same authoritative row.
+    const entryPrice = data.order_type === "market" && livePrice ? livePrice : data.entry_price;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: newId, error } = await supabaseAdmin.rpc("open_trade" as never, {
+      _user_id: context.userId,
+      _account_id: data.account_id,
+      _entry_price: entryPrice,
+      _fields: {
+        symbol: data.symbol,
+        market: data.market,
+        direction: data.direction,
+        order_type: data.order_type,
+        lot_size: data.lot_size,
+        stop_loss: data.stop_loss ?? null,
+        take_profit: data.take_profit ?? null,
+        risk_amount: data.risk_amount ?? null,
+        reward_amount: data.reward_amount ?? null,
+        rr_planned: data.rr_planned ?? null,
+        commission: data.commission ?? 0,
+        swap: data.swap ?? 0,
+        notes: data.notes ?? null,
+        screenshot_path: data.screenshot_path ?? null,
+        tag_ids: tag_ids ?? [],
+      },
+      _opened_payload: {
         required_margin: validation.required_margin, liq_price: validation.liq_price,
       },
-    });
+    } as never);
+    if (error) throw error;
+    const { data: created, error: readErr } = await context.supabase
+      .from("paper_trades").select("*").eq("id", newId as never).single();
+    if (readErr) throw readErr;
     return created;
   });
 
@@ -370,59 +331,41 @@ export const closeTrade = createServerFn({ method: "POST" })
     if (trade.status !== "open") throw new Error("Trade is not open");
     const sym = findSymbol(trade.symbol);
     if (!sym) throw new Error("Unknown symbol");
-    const gross = computePnl(sym, trade.direction as "long"|"short", Number(trade.entry_price), data.exit_price, Number(trade.lot_size));
-    let pnl = gross - Number(trade.commission ?? 0) - Number(trade.swap ?? 0);
 
-    // Fetch the account BEFORE writing the trade so we can bound the
-    // realized loss under negative-balance-protection. Bounding here (not
-    // just at balance-update time) keeps `paper_trades.pnl`,
-    // `account_statistics.net_pnl` and `paper_accounts.balance` internally
-    // consistent — the invariant that closed a $70M drift on a $25k account.
-    const acct = await loadAccountMoney(context.supabase, trade.account_id);
+    // Score authority (D-6): the SERVER sets the fill price for a scored close.
+    // The client-supplied `exit_price` is ignored for settlement; it only ever
+    // hinted at a price and could be forged. Fails closed (throws) when no
+    // trusted price is available for the symbol.
+    const { resolveScoredPrice } = await import("./market-data/scored-price.server");
+    const { price: exitPrice } = await resolveScoredPrice(trade.symbol, sym.market);
 
-    let closeReason = data.close_reason;
-    if (acct) {
-      const capped = clampRealizedPnl(pnl, acct);
-      pnl = capped.pnl;
-      // A close that only completes because the loss was capped is a
-      // liquidation, not a manual exit.
-      if (capped.clamped && closeReason === "manual") closeReason = "liquidation";
-    }
-
+    const gross = computePnl(sym, trade.direction as "long"|"short", Number(trade.entry_price), exitPrice, Number(trade.lot_size));
+    const rawPnl = gross - Number(trade.commission ?? 0) - Number(trade.swap ?? 0);
     const rr_realized = trade.risk_amount && Number(trade.risk_amount) > 0
-      ? pnl / Number(trade.risk_amount)
-      : null;
-    const openedAt = new Date(trade.opened_at).getTime();
-    const closedAt = Date.now();
-    const { error: upErr } = await context.supabase.from("paper_trades").update({
-      status: "closed",
-      exit_price: data.exit_price,
-      pnl,
+      ? rawPnl / Number(trade.risk_amount) : null;
+
+    // Atomic, authoritative settlement: clamp + trade row + balance/equity +
+    // statistics + position_history, in one transaction, service-role only.
+    // The status guard inside the RPC makes a double/concurrent close settle once.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: settled, error: rpcErr } = await supabaseAdmin.rpc("close_trade" as never, {
+      _trade_id: data.id,
+      _user_id: context.userId,
+      _exit_price: exitPrice,
+      _raw_pnl: rawPnl,
+      _rr_realized: rr_realized,
+      _close_reason: data.close_reason,
+      _closed_at: new Date().toISOString(),
+    } as never);
+    if (rpcErr) throw rpcErr;
+    const row = (Array.isArray(settled) ? settled[0] : settled) as
+      | { pnl: number; new_balance: number; close_reason: string } | undefined;
+    return {
+      ok: true,
+      pnl: Number(row?.pnl ?? 0),
       rr_realized,
-      close_reason: closeReason,
-      closed_at: new Date(closedAt).toISOString(),
-    }).eq("id", data.id).eq("user_id", context.userId);
-    if (upErr) throw upErr;
-
-    // Balance and statistics move together, or not at all.
-    if (acct) {
-      await commitSettlement(context.supabase, {
-        accountId: trade.account_id,
-        userId: context.userId,
-        account: acct,
-        pnl,
-        countsAsTrade: true,
-      });
-    }
-
-    await context.supabase.from("position_history").insert({
-      user_id: context.userId, account_id: trade.account_id, trade_id: data.id,
-      event: "closed", payload: {
-        exit_price: data.exit_price, pnl, close_reason: closeReason,
-        duration_ms: closedAt - openedAt,
-      },
-    });
-    return { ok: true, pnl, rr_realized, close_reason: closeReason };
+      close_reason: (row?.close_reason ?? data.close_reason) as string,
+    };
   });
 
 export const listTrades = createServerFn({ method: "GET" })
@@ -675,46 +618,32 @@ export const partialCloseTrade = createServerFn({ method: "POST" })
     const remainingLot = Number((originalLot - closedLot).toFixed(4));
     if (remainingLot < sym.minLot) throw new Error("Remaining size would be below symbol minimum — close fully instead");
 
-    const gross = computePnl(sym, trade.direction as "long"|"short", Number(trade.entry_price), data.exit_price, closedLot);
+    // Score authority (D-6): server-derived fill price for the realized slice.
+    const { resolveScoredPrice } = await import("./market-data/scored-price.server");
+    const { price: exitPrice } = await resolveScoredPrice(trade.symbol, sym.market);
+
+    const gross = computePnl(sym, trade.direction as "long"|"short", Number(trade.entry_price), exitPrice, closedLot);
     const commissionShare = Number(trade.commission ?? 0) * data.fraction;
     const swapShare = Number(trade.swap ?? 0) * data.fraction;
-    let pnl = gross - commissionShare - swapShare;
+    const rawPnl = gross - commissionShare - swapShare;
+    const newCommission = Number(trade.commission ?? 0) - commissionShare;
+    const newSwap = Number(trade.swap ?? 0) - swapShare;
 
-    const acct = await loadAccountMoney(context.supabase, trade.account_id);
-
-    // Bound realized loss under NBP before writing anywhere — keeps stats
-    // consistent with the actual balance movement.
-    if (acct) pnl = clampRealizedPnl(pnl, acct).pnl;
-
-    const { error: upErr } = await context.supabase.from("paper_trades").update({
-      lot_size: remainingLot,
-      commission: Number(trade.commission ?? 0) - commissionShare,
-      swap: Number(trade.swap ?? 0) - swapShare,
-    }).eq("id", data.id).eq("user_id", context.userId);
-    if (upErr) throw upErr;
-
-    // Previously this moved the balance and never touched
-    // `account_statistics`, despite the comment above claiming otherwise — so
-    // every partial close drifted `net_pnl` from the balance by its own P&L.
-    // `countsAsTrade: false` records the money without counting a finished
-    // trade: the position is still open, and inflating `total_trades` would
-    // corrupt `win_rate`.
-    if (acct) {
-      await commitSettlement(context.supabase, {
-        accountId: trade.account_id,
-        userId: context.userId,
-        account: acct,
-        pnl,
-        countsAsTrade: false,
-      });
-    }
-
-    await context.supabase.from("position_history").insert({
-      user_id: context.userId, account_id: trade.account_id, trade_id: data.id,
-      event: "partial_close",
-      payload: { fraction: data.fraction, closed_lot: closedLot, remaining_lot: remainingLot, exit_price: data.exit_price, pnl },
-    });
-    return { ok: true, pnl, closed_lot: closedLot, remaining_lot: remainingLot };
+    // Atomic: reduce the open lot AND realize the slice's money (clamp +
+    // balance/equity + statistics + position_history) in one transaction.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: settled, error: rpcErr } = await supabaseAdmin.rpc("partial_close_trade" as never, {
+      _trade_id: data.id,
+      _user_id: context.userId,
+      _raw_pnl: rawPnl,
+      _new_lot_size: remainingLot,
+      _new_commission: newCommission,
+      _new_swap: newSwap,
+      _payload: { fraction: data.fraction, closed_lot: closedLot, remaining_lot: remainingLot, exit_price: exitPrice },
+    } as never);
+    if (rpcErr) throw rpcErr;
+    const row = (Array.isArray(settled) ? settled[0] : settled) as { pnl: number; new_balance: number } | undefined;
+    return { ok: true, pnl: Number(row?.pnl ?? 0), closed_lot: closedLot, remaining_lot: remainingLot };
   });
 
 /** Move stop-loss to entry (break-even). Idempotent. */
