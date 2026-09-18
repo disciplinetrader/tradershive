@@ -25,8 +25,13 @@ Every increment below was applied to the rehearsal DB, verified, **rollback-test
 | I3d | Journal share privacy (S‑2) | `get_shared_journal_entry(token)` RPC; dropped the enumerable anon read policy | `266448d9` |
 | I3e | Caller-identity definers (N‑15) | `record_practice_activity` identity guard + anon revoke; `journal_sync_tag_arrays_for` restricted to service_role | `15f6b347` |
 | I3f | Battle finalize after end (B‑1) | non-host tick/cron may settle a battle once `end_at` has passed | `76205c3e` |
-| N‑13 | Zero-progress detection | forward-empty streak + one-shot `ingestion_frozen` alert (detectability, not a cause fix) | `2358747a` |
+| N‑13 | Zero-progress detection | forward-empty streak + one-shot `ingestion_frozen` alert (detectability) | `2358747a` |
+| N‑13 | Ingestion ratchet fix | `boundedIncrementalFrom` — a stale edge can no longer pin the forward window to a range the provider won't serve (self-heals after a lapse) | this session |
+| O‑1 | Email correctness | `noop` records `skipped` (not `sent`); stuck-`processing` reaper | `58619e94` |
+| I3g | Prop expiry | `expire_prop_challenges()` service-role cron function (time-based expiry) | `3327e831` |
 | Def-priv | Future-object hardening (D‑1/N‑5/N‑8) | `ALTER DEFAULT PRIVILEGES` D1/D3/D5 rehearsed (postgres); D2/D4/D6 blocked by K1 | `288ffb97` |
+
+**Read-only production preflight complete** — see `phase-2-production-preflight.md`. Root causes classified, no production drift, production untouched.
 
 **Trust-domain separation held throughout:** practice (`chart_closed_trades`, `replay_sessions`) stays client/replay-priced and untouched; scored trading is server-authoritative; battle **replay** is the crossover — unranked, server-recomputed P&L bounded to the dataset candle.
 
@@ -52,9 +57,10 @@ Migrations live under `docs/migrations/remediation/phase2/` (each has a matching
 3. `I2_settlement_core.sql` → `I2b_settlement_open_and_partial.sql`
 4. `I2d_battle_replay_authoritative.sql` **before** `I2c` is not required, but `record_battle_replay_trade` must exist before the `paper_trades` INSERT revoke (the INSERT revoke lives inside I2d, after the RPC create — apply I2d as one unit).
 5. `I2c_contract.sql` (money/stats/scored-col locks). *(I2c and I2d together complete the paper_trades contract; apply I2c then I2d, or I2d’s INSERT revoke will precede the scored-col locks — order I2c → I2d.)*
-6. `I3a` → `I3f` (battle), `I3b` (championship), `I3c` (prop), `I3d` (journal), `I3e` (definers).
+6. `I3a` → `I3f` (battle), `I3b` (championship), `I3c` (prop), `I3d` (journal), `I3e` (definers), `I3g` (prop expiry). `I3a`/`I3b` depend on `award_xp_coins` (step 2) existing; `I3f` supersedes the `I3a` finalize_battle body (apply I3a then I3f, or I3f alone — it is the final version).
 7. **Before** default-privileges: record the K3 rule in AGENTS.md / Lovable project knowledge (new authenticated RPCs need explicit `GRANT EXECUTE … TO authenticated`). Then `default-privileges.proposed.sql` D1/D3/D5. D2/D4/D6 need Supabase support (K1).
-8. Post-deploy: run the production smoke checks (logged-in open/close/partial, battle create/join/settle, prop tick, journal share by token, anon cannot enumerate).
+8. **Owner cron + config actions** (production writes, owner-gated, NOT in these migrations): install `championship-tick-every-minute` and `prop-expiry-hourly` (specs in the preflight §2); move the cron secret into Vault and rotate it (§4); confirm/upgrade the Twelve Data 1-minute plan and resolve crypto egress CX-1 (§1); confirm `EMAIL_PROVIDER` (§3).
+9. Post-deploy: run the production smoke checks (logged-in open/close/partial, battle create/join/settle, prop tick, journal share by token, anon cannot enumerate) and confirm the historical front edges advance / no `ingestion_frozen` alert once the TD plan is resolved.
 
 Rollback for any step is its paired `*_rollback.sql`, applied in reverse dependency order (contract rollbacks re-grant before the RPCs are dropped).
 
@@ -73,9 +79,11 @@ These are **not** rehearsable in the copied DB (no data, no provider credentials
 
 ---
 
-## 5. D‑7 — historical contamination reconciliation (product decision, report-only)
+## 5. D‑7 — historical contamination reconciliation (RESOLVED: leave unchanged for now)
 
-**Do not alter suspicious historical data yet.** Once the fixes above are in production (so nothing can be re-forged), reconcile:
+**Owner decision (2026-09-18): LEAVE historical data UNCHANGED for this deployment** — no voiding, no rank/balance/reward recompute, no historical result edits. The methodology and recommendations below are **retained for a later, separate, owner-approved cleanup**. This closes D‑7 for this remediation.
+
+Retained methodology — once the fixes above are in production (so nothing can be re-forged), a future cleanup would reconcile:
 
 1. **Baseline vs post-fix:** re-run the Phase 0 `0C` integrity queries and diff against the Phase 0 baseline (`phase0-results/`). The fixes now close the forge vectors, so a post-deploy diff isolates *historical* contamination from anything new. Contamination vectors now closed: client-supplied P&L (settlement RPCs), forged balances/stats (I2c), forged paper_trades inserts (I2d), unpaid/forgeable rewards (I3a/I3b/I3c), enumerable journals (I3d), cross-user practice streaks (I3e).
 2. **Suspicious sets to quantify (read-only):** trades whose stored `pnl` disagrees with a server recompute from `entry/exit/lot`; accounts whose `balance − starting_balance ≠ account_statistics.net_pnl`; battle/championship results with <2 real participants that nonetheless minted rewards/ELO; prop `passed` challenges that fail the 0C‑6 re-evaluation.
@@ -85,8 +93,10 @@ This step is deliberately unstarted pending (a) production deployment of the fix
 
 ---
 
-## 6. Honest status line
+## 6. Status line
 
-**FULL REMEDIATION REHEARSAL = PARTIAL PASS.** Every score/economy/settlement/auth integrity item in scope (Increments 1–3f + default-privileges D1/D3/D5) is implemented, rehearsed, rollback-tested and committed, with production untouched. **Not** claimed as done: the live-only ops items in §4 (N‑13 root cause, cron/email/secrets inventories, prop-expiry cron, supabase_admin default privileges) and the D‑7 historical reconciliation in §5, none of which are verifiable in the rehearsal environment. Those are reported, not fabricated.
+**FULL REMEDIATION = READY FOR PRODUCTION** (for the code + migrations in this branch), subject to the **owner config/cron actions** in §3 step 8, which are production writes outside these migrations and cannot be done from a read-only preflight.
 
-**Next actions requiring the user:** (a) approve production deployment in the §3 order; (b) run the read-only production preflight for N‑13/O‑2/O‑3; (c) decide D‑7 after the fixes are live.
+The read-only production preflight is complete (`phase-2-production-preflight.md`): N‑13 root cause classified (Twelve Data 1-minute plan depth + a code ratchet now fixed + crypto egress CX‑1), cron inventory taken (single battle finalizer; championship + prop crons missing → specs prepared), O‑1 email fixed, O‑3 inline cron-secret exposure identified (Vault available), prop-expiry implemented, supabase_admin K1 confirmed. Production drift check is clean; production is untouched.
+
+**Blockers to a fully-healthy production are owner actions, not code:** (1) Twelve Data 1-minute plan / crypto egress (N‑13); (2) install the championship-tick and prop-expiry crons; (3) move the cron secret to Vault + rotate; (4) apply supabase_admin default privileges via Supabase support (D2/D4/D6). The code/migrations are rehearsed and ready.
