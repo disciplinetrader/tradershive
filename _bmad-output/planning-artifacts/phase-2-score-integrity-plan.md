@@ -318,12 +318,18 @@ Championship scheduler (B-5), AI rate limiter / N-20 (S-7), historical ingestion
 
 **Settlement spine COMPLETE.** All paper-trade money writes (open/close/partial/battle-replay) are service-role authoritative; money/stats/scored columns and INSERT on `paper_trades` are locked to `authenticated`.
 
+### Completed & rehearsed (continued)
+- **Increment 3a — battle reward payout (B-4) — COMPLETE (green on rehearsal).** `I3a_finalize_battle_rewards.sql` (+ rollback). `finalize_battle` now credits XP/coins via `award_xp_coins` and moves ELO only when eligible = ranked AND ≥2 distinct participants; ineligible (unranked/replay/solo-ranked) records 0 awards and no ELO. Rehearsed: 2-player pays winner/runner + ELO (via xp/coin_transactions.delta), solo/unranked pay nothing, re-finalize no-ops. Commit `e30e5ce3`.
+- **Increment 3b — championship reward payout fix + gate — COMPLETE (green on rehearsal).** `I3b_finalize_championship_rewards.sql` (+ rollback). Fixes a real bug (rewards were ledgered but never credited to `profiles`) by routing through `award_xp_coins`; gates rewards/rating/hall-of-fame/titles on ≥2 distinct participants (championships have no `ranked` flag). Rehearsed: 2-player credits profile balance + rating + HoF, solo mints nothing/no winner, re-finalize no-ops. Commit `c397b4aa`.
+
+**Reward-eligibility policy (user decision, applies to both):** pay only for a genuinely competitive field — **ranked AND ≥2 distinct participants** for battles; **≥2 distinct participants** for championships. Solo/unranked/replay record results but pay nothing and move no rating.
+
 ### >>> CONTINUATION MARKER — resume here <<<
-**Next task: Battle Arena integrity (host-immutability / attribution / settlement / ties + rewards).**
+**Next task: Prop challenges — authoritative evaluation + cron.**
 
-1. Audit `battle-arena.functions.ts` + battle SQL (`finalize_battle`, `tick_battle`, `recompute_battle_live_stats`, `join_battle`): host/attribution immutability, participation & window checks server-side, tie handling, and **wire `finalize_battle` to `award_xp_coins`** (B-4 payout-half) idempotently.
-2. Then: championship lifecycle+UTC+scoring+scheduler (wire `finalize_championship` payout) → prop authoritative eval+cron → journal privacy (S-2 token RPC) → caller-supplied-ID definers (N-15) → historical ingestion (N-13 zero-progress, pagination, timeouts, session-gaps) → cron lifecycle → email noop/stuck → grants/default-privileges → tests/CI → reconciliation report (D-7, report only).
+1. Audit `prop-challenges.functions.ts` + `prop-challenges/evaluator.ts` + prop SQL (`evaluateChallenge`, any `evaluate_prop_*` RPC, daily-loss/drawdown/target checks): ensure pass/fail/breach is computed server-side from authoritative `paper_trades`/account state (not client-submitted), status transitions are idempotent, and any payout/title uses `award_xp_coins`. Account provisioning already routed to `supabaseAdmin` (I2c).
+2. Then: journal privacy (S-2 token RPC) → caller-supplied-ID definers (N-15) → historical ingestion (N-13 zero-progress, pagination, timeouts, session-gaps) → cron lifecycle → email noop/stuck → grants/default-privileges → tests/CI → reconciliation report (D-7, report only).
 
-**Follow-ups noted (not blockers):** `position_history` left owner-writable (documented); wire finalize payouts (above); prod `historical_candles` coverage for replay datasets must be verified in the production preflight (the replay RPC fails closed without candles).
+**Follow-ups noted (not blockers):** `position_history` left owner-writable (documented); battle tie at rank 1 picks winner by LIMIT 1 (documented); prod `historical_candles` coverage for replay datasets must be verified in the production preflight (the replay RPC fails closed without candles); app-level anti-alt-account farming for ranked battles/championships is out of scope (the ≥2 guard only stops single-participant farming).
 
 **Rehearsal DB state at this marker:** Phase 1 containment + Increment 1 + Increment 2 (core/2b/2c/2d) applied; no synthetic data; paper tables empty. **Production untouched.**
