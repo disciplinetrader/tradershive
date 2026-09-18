@@ -2,11 +2,31 @@
 -- TradersHIVE remediation — PROPOSED default-privileges migration (Phase 1.3)
 -- =============================================================================
 --
---   STATUS: PROPOSAL — NOT EXECUTED, NOT APPROVED.
+--   STATUS: REHEARSED on the non-production DB (2026-09-18); PRODUCTION NOT YET
+--   APPLIED — gated on the final production-write approval.
 --   SEPARATE from containment.sql on purpose. Containment fixes 8 existing
 --   functions; this file changes what EVERY FUTURE object gets. It alters how
 --   new Lovable-generated migrations behave, so it must be rehearsed and
 --   approved on its own (REHEARSAL.md §7).
+--
+--   ---------------------------------------------------------------------------
+--   REHEARSAL RESULTS (rehearsal cluster 7678069749886157684, Phase 2 · I3f)
+--   ---------------------------------------------------------------------------
+--   · D1, D3, D5 (FOR ROLE postgres): APPLIED and functionally verified — a
+--     brand-new postgres-owned public function is callable only by
+--     service_role (anon=false, authenticated=false, PUBLIC=false, svc=true).
+--     Every audited app function is postgres-owned (Q-B1), so these cover the
+--     application surface. Apply → rollback (RB5/RB3/RB1) → re-apply verified;
+--     rehearsal left in the applied (hardened) state.
+--   · D2, D4, D6 (FOR ROLE supabase_admin): BLOCKED — `ERROR: 42501 permission
+--     denied to change default privileges`. K1 CONFIRMED: postgres is not a
+--     member of supabase_admin on this platform. These require Lovable/Supabase
+--     support and are OUT OF SCOPE for the self-serve migration; they affect
+--     only supabase_admin-created objects (Supabase-managed), not app functions.
+--   · ACTION BEFORE PRODUCTION (K3): record in AGENTS.md / Lovable project
+--     knowledge that any new RPC the app calls as a signed-in user MUST carry an
+--     explicit `GRANT EXECUTE … TO authenticated` in its migration, or it fails
+--     with 42501. Every Phase 2 RPC already follows this.
 --
 --   Root cause (finding D-1 / N-5 / N-8), live 2026-09-17, Q-B3:
 --     FOR ROLE postgres       IN SCHEMA public  functions  {postgres=X, anon=X, authenticated=X, service_role=X}
